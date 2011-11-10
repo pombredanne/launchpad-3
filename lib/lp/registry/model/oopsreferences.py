@@ -1,15 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
-
-from __future__ import absolute_import
+"""Find OOPS References within the LP database."""
 
 __metaclass__ = type
 
 __all__ = [
-    'referenced_oops', 'unwanted_oops_files', 'path_to_oopsid',
-    'prune_empty_oops_directories',
+    'referenced_oops',
     ]
 
 from datetime import (

@@ -10,6 +10,7 @@ import soupmatchers
 from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
+    MatchesAll,
     MatchesAny,
     Not,
     )
@@ -32,6 +33,7 @@ from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
@@ -213,6 +215,15 @@ class TestDistribution(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized,
             setattr, distro, "package_derivatives_email", "foo")
+
+    def test_implements_interfaces(self):
+        # Distribution fully implements its interfaces.
+        distro = removeSecurityProxy(self.factory.makeDistribution())
+        expected_interfaces = [
+            IHasOOPSReferences,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(distro, provides_all)
 
 
 class TestDistributionCurrentSourceReleases(

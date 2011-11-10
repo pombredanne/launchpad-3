@@ -7,6 +7,7 @@ from cStringIO import StringIO
 import datetime
 
 import pytz
+from testtools.matchers import MatchesAll
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -34,6 +35,7 @@ from lp.app.interfaces.launchpad import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -76,17 +78,22 @@ class TestProduct(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # Product fully implements its interfaces.
         product = removeSecurityProxy(self.factory.makeProduct())
-        self.assertThat(product, Provides(IProduct))
-        self.assertThat(product, Provides(IBugSummaryDimension))
-        self.assertThat(product, Provides(IFAQTarget))
-        self.assertThat(product, Provides(IHasBugHeat))
-        self.assertThat(product, Provides(IHasBugSupervisor))
-        self.assertThat(product, Provides(IHasCustomLanguageCodes))
-        self.assertThat(product, Provides(IHasIcon))
-        self.assertThat(product, Provides(IHasLogo))
-        self.assertThat(product, Provides(IHasMugshot))
-        self.assertThat(product, Provides(ILaunchpadUsage))
-        self.assertThat(product, Provides(IServiceUsage))
+        expected_interfaces = [
+            IProduct,
+            IBugSummaryDimension,
+            IFAQTarget,
+            IHasBugHeat,
+            IHasBugSupervisor,
+            IHasCustomLanguageCodes,
+            IHasIcon,
+            IHasLogo,
+            IHasMugshot,
+            IHasOOPSReferences,
+            ILaunchpadUsage,
+            IServiceUsage,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(product, provides_all)
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if

@@ -138,6 +138,7 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
@@ -160,6 +161,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
+from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.pillar import HasAliasMixin
@@ -309,7 +311,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        ILaunchpadUsage, IProduct, IServiceUsage)
+        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -974,6 +976,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQ.new(
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=self)
+
+    def findReferencedOOPS(self, start_date, end_date):
+        """See `IHasOOPSReferences`."""
+        return referenced_oops(
+            start_date, end_date, "product=%{product}s", {'product': self.id})
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""

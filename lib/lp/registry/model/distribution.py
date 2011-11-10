@@ -129,6 +129,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorFreshness,
     MirrorStatus,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
     validate_person,
@@ -155,6 +156,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
+from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
@@ -209,7 +211,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IBugSummaryDimension, IDistribution, IFAQTarget, IHasBugHeat,
         IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-        ILaunchpadUsage, IServiceUsage)
+        IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -1012,6 +1014,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQ.new(
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, distribution=self)
+
+    def findReferencedOOPS(self, start_date, end_date):
+        """See `IHasOOPSReferences`."""
+        return referenced_oops(
+            start_date, end_date, "distribution=%{distribution}s",
+            {'distribution': self.id})
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""

@@ -83,6 +83,7 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
