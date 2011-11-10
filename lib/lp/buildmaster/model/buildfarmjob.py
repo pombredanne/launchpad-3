@@ -419,7 +419,7 @@ class BuildFarmJobSet:
         # Sort the builds to match the jobs' order.
         sorted_builds = sorted(
             builds,
-            key=lambda build: jobs.index(build.build_farm_job))
+            key=lambda build: list(jobs).index(build.build_farm_job))
         return sorted_builds
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
