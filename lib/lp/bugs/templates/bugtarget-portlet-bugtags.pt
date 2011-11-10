@@ -9,50 +9,9 @@
   <a id="tags-content-link"
      tal:attributes="href context/fmt:url/+bugtarget-portlet-tags-content"></a>
   <script type="text/javascript">
-    LPS.use('io-base', 'node', function(Y) {
+    LPS.use('lp.bugs.bugtask.taglist', function(Y) {
       Y.on('domready', function() {
-        Y.one('#tags-portlet-spinner').setStyle('display', 'block');
-
-        function hide_spinner() {
-          Y.one('#tags-portlet-spinner').setStyle('display', 'none');
-        }
-
-        function on_success(transactionid, response, arguments) {
-          hide_spinner();
-          var portlet = Y.one('#portlet-tags');
-          if (Y.Lang.trim(response.responseText).length == 0) {
-            portlet.setStyle('display', 'none')
-          }
-          else {
-            portlet.set('innerHTML',
-                        response.responseText + portlet.get('innerHTML'));
-            var show_more_link = Y.one('#show-more-tags-link');
-            var show_less_link = Y.one('#show-less-tags-link');
-            var tag_list = Y.all('.tag-list li');
-            if (tag_list.size() > 20) {
-                var extra_tags = tag_list.slice(20);
-                extra_tags.addClass('hidden');
-                show_more_link.removeClass('hidden');
-                show_more_link.on('click', function(e) {
-                    e.halt();
-                    extra_tags.removeClass('hidden');
-                    show_more_link.addClass('hidden');
-                    show_less_link.removeClass('hidden');
-                });
-                show_less_link.on('click', function(e) {
-                    e.halt();
-                    extra_tags.addClass('hidden');
-                    show_more_link.removeClass('hidden');
-                    show_less_link.addClass('hidden');
-                });
-            }
-          }
-        }
-
-        var config = {on: {success: on_success,
-                           failure: hide_spinner}};
-        var url = Y.one('#tags-content-link').getAttribute('href').replace('bugs.', '');
-        Y.io(url, config);
+        Y.lp.bugs.bugtask.taglist.setup_taglist();
       });
     });
   </script>
