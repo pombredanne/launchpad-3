@@ -33,13 +33,13 @@
       replace="view/user/name"/>/+junk/<em>BRANCHNAME</em></tt>
   </p>
 
-  <div id="no-branch-message" tal:condition="not: view/branch_count">
+  <div id="no-branch-message" tal:condition="view/is_branch_count_zero">
     <p tal:content="view/no_branch_message">
       There are no branches related to Eric the Viking today.
     </p>
   </div>
 
-  <tal:has-branches condition="view/branch_count">
+  <tal:has-branches condition="not: view/is_branch_count_zero">
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />
   </tal:has-branches>
