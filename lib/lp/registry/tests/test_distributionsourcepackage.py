@@ -311,3 +311,59 @@ class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
         self.assertEqual(
             {(distribution.id, sourcepackagename.id): dsp.id},
             DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_not_cached_and_not_found(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # not exist in the database and no cache entry exists for it. It does
+        # not modify the cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.get(
+            distribution, sourcepackagename)
+        self.assertIs(None, dsp)
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_cached_and_not_found(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # exist in the database for a discovered cache entry, but the DSP
+        # discovered does not match the cache key.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        # Enter a bogus cache mapping.
+        bogus_dsp = DistributionSourcePackageInDatabase.new(
+            distribution, self.factory.makeSourcePackageName())
+        bogus_dsp_cache_key = distribution.id, sourcepackagename.id
+        DistributionSourcePackageInDatabase._cache[
+            bogus_dsp_cache_key] = bogus_dsp.id
+        dsp = DistributionSourcePackageInDatabase.get(
+            distribution, sourcepackagename)
+        self.assertIs(None, dsp)
+
+    def test_get_not_cached_and_found(self):
+        # DistributionSourcePackageInDatabase.get() returns the DSP if it's
+        # found in the database even if no cache entry exists for it. It
+        # updates the cache with this discovered information.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        # new() updates the cache so we must clear it.
+        DistributionSourcePackageInDatabase._cache.clear()
+        dsp_found = DistributionSourcePackageInDatabase.get(
+            distribution, sourcepackagename)
+        self.assertIs(dsp, dsp_found)
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_cached_and_found(self):
+        # DistributionSourcePackageInDatabase.get() returns the DSP if it's
+        # found in the database from a good cache entry.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        dsp_found = DistributionSourcePackageInDatabase.get(
+            distribution, sourcepackagename)
+        self.assertIs(dsp, dsp_found)
