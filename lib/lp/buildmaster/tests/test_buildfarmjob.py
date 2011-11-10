@@ -286,6 +286,15 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
                 build_farm_jobs)
         self.assertThat(recorder, HasQueryCount(Equals(2)))
 
+    def test_getSpecificJobs_no_specific_job(self):
+        build_farm_job_source = getUtility(IBuildFarmJobSource)
+        build_farm_job = build_farm_job_source.new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
+        flush_database_updates()
+        self.assertRaises(
+            InconsistentBuildFarmJobError,
+            self.build_farm_job_set.getSpecificJobs, [build_farm_job])
+
     def test_getBuildsForBuilder_all(self):
         # The default call without arguments returns all builds for the
         # builder, and not those for other builders.
