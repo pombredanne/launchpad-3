@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -262,3 +263,20 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             archive.name for archive in related_archives]
 
         self.assertEqual(related_archive_names, ['gedit-beta'])
+
+
+class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new(self):
+        # DistributionSourcePackageInDatabase.new() creates a new DSP, adds it
+        # to the store, and updates the cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        self.assertIs(Store.of(distribution), Store.of(dsp))
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
