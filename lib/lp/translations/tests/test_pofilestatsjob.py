@@ -72,18 +72,3 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # is added.
         pofilestatsjob.schedule(pofile.id)
         self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
-
-    def test_third_job_is_not_scheduled(self):
-        # If there is already two POFileStatsJob scheduled for a particular
-        # POFile, then no new one is scheduled.
-        self.assertEqual(len(list(POFileStatsJob.iterReady())), 0)
-        # We need a POFile to update.
-        pofile = self.factory.makePOFile(side=TranslationSide.UPSTREAM)
-        # If we schedule a job, then there will be one scheduled.
-        pofilestatsjob.schedule(pofile.id)
-        pofilestatsjob.schedule(pofile.id)
-        self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
-        # If we attempt to schedule another job for the same POFile, no new
-        # job is added.
-        pofilestatsjob.schedule(pofile.id)
-        self.assertIs(len(list(POFileStatsJob.iterReady())), 2)

@@ -84,32 +84,5 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
 
 
 def schedule(pofile):
-    """Schedule a job to update a POFile's stats (if not scheduled).
-
-    If a new job is scheduled, it is returned.  If not, None is returned.
-    """
-    # If there's already two jobs for the pofile, don't create a new one.
-    # This is to reduce the number of jobs run if several edits are quickly
-    # made to the same POFile.  Why two jobs and not one?  If only one were
-    # allowed then there would be a race condition in which one process checks
-    # to see if a job is needed, finds that one already exists and doesn't
-    # create a new one.  At the same time the processing for that job has
-    # already started and the new changes are missed.  We could have avoided
-    # the second job by making the job runner script smarter, but since the
-    # job processing isn't resource intensive, we accept the duplicate work as
-    # not worth the extra effort to avoid.  This way we can use the stock job
-    # runner script.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    jobs = list(store.find(
-        POFileStatsJob,
-        POFileStatsJob.pofile == pofile,
-        POFileStatsJob.job == Job.id,
-        Job.id.is_in(Job.ready_jobs)
-        ))
-
-    if len(jobs) in (0, 1):
-        job = POFileStatsJob(pofile)
-    else:
-        job = None
-
-    return job
+    """Schedule a job to update a POFile's stats."""
+    return POFileStatsJob(pofile)
