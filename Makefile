@@ -257,7 +257,8 @@ run: build inplace stop
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
-	LPCONFIG=$(LPCONFIG) bin/run-testapp -r memcached -i $(LPCONFIG)
+	LPCONFIG=$(LPCONFIG) INTERACTIVE_TESTS=1 bin/run-testapp \
+	-r memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb

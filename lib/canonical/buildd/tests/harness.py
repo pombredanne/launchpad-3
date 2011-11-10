@@ -11,11 +11,9 @@ import tempfile
 import unittest
 from ConfigParser import SafeConfigParser
 
-import canonical
-import canonical.buildd
+from txfixtures.tachandler import TacTestFixture
 
 from canonical.buildd.slave import BuildDSlave
-from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 from lp.services.osutils import remove_tree
 
@@ -58,7 +56,7 @@ class BuilddTestCase(unittest.TestCase):
         f.close()
 
 
-class BuilddSlaveTestSetup(TacTestSetup):
+class BuilddSlaveTestSetup(TacTestFixture):
     r"""Setup BuildSlave for use by functional tests
 
     >>> fixture = BuilddSlaveTestSetup()
@@ -119,7 +117,8 @@ class BuilddSlaveTestSetup(TacTestSetup):
     @property
     def tacfile(self):
         return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.buildd.__file__),
+            os.path.dirname(__file__),
+            os.path.pardir,
             'buildd-slave.tac'
             ))
 

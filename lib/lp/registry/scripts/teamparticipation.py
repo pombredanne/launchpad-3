@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 __all__ = [
-    "check_teamparticipation",
+    "check_teamparticipation_circular",
+    "check_teamparticipation_consistency",
+    "check_teamparticipation_self",
+    "fetch_team_participation_info",
     ]
 
 from collections import (
@@ -84,6 +87,21 @@ ConsistencyError = namedtuple(
     "ConsistencyError", ("type", "team", "people"))
 
 
+def report_progress(log, interval, results, what):
+    """Iterate through `results`, reporting on progress.
+
+    :param log: A logger.
+    :param interval: How many results to report progress about.
+    :param results: An iterable of things.
+    :param what: A string descriping what the results are.
+    """
+    for num, result in izip(count(1), results):
+        if num % interval == 0:
+            log.debug("%d %s", num, what)
+        yield result
+    log.debug("%d %s", num, what)
+
+
 def execute_long_query(store, log, interval, query):
     """Execute the given query, reporting as results are fetched.
 
@@ -91,21 +109,16 @@ def execute_long_query(store, log, interval, query):
     the total number of rows fetched thus far.
     """
     log.debug(query)
-    for rows, result in izip(count(1), store.execute(query)):
-        if rows % interval == 0:
-            log.debug("%d rows", rows)
-        yield result
+    results = store.execute(query)
+    # Hackish; the default is 10 which seems fairly low.
+    results._raw_cursor.arraysize = interval
+    return report_progress(log, interval, results, "rows")
 
 
-def check_teamparticipation_consistency(log):
-    """Check for missing or spurious participations.
-
-    For example, participations for people who are not members, or missing
-    participations for people who are members.
-    """
+def fetch_team_participation_info(log):
+    """Fetch people, teams, memberships and participations."""
     slurp = partial(execute_long_query, get_store(), log, 10000)
 
-    # Slurp everything in.
     people = dict(
         slurp(
             "SELECT id, name FROM Person"
@@ -131,35 +144,54 @@ def check_teamparticipation_consistency(log):
     # Don't hold any locks.
     transaction.commit()
 
+    return people, teams, team_memberships, team_participations
+
+
+def check_teamparticipation_consistency(log, info):
+    """Check for missing or spurious participations.
+
+    For example, participations for people who are not members, or missing
+    participations for people who are members.
+    """
+    people, teams, team_memberships, team_participations = info
+
+    # set.intersection() with a dict is slow.
+    people_set = frozenset(people)
+    teams_set = frozenset(teams)
+
     def get_participants(team):
         """Recurse through membership records to get participants."""
-        member_people = team_memberships[team].intersection(people)
+        member_people = team_memberships[team].intersection(people_set)
         member_people.add(team)  # Teams always participate in themselves.
-        member_teams = team_memberships[team].intersection(teams)
+        member_teams = team_memberships[team].intersection(teams_set)
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
 
-    def check_participants(expected, observed):
+    def check_participants(person, expected, observed):
         spurious = observed - expected
         missing = expected - observed
         if len(spurious) > 0:
-            yield ConsistencyError("spurious", team, sorted(spurious))
+            yield ConsistencyError("spurious", person, sorted(spurious))
         if len(missing) > 0:
-            yield ConsistencyError("missing", team, sorted(missing))
+            yield ConsistencyError("missing", person, sorted(missing))
 
     errors = []
 
-    for person in people:
+    log.debug("Checking consistency of %d people", len(people))
+    for person in report_progress(log, 50000, people, "people"):
         participants_expected = set((person,))
         participants_observed = team_participations[person]
         errors.extend(
-            check_participants(participants_expected, participants_observed))
+            check_participants(
+                person, participants_expected, participants_observed))
 
-    for team in teams:
+    log.debug("Checking consistency of %d teams", len(teams))
+    for team in report_progress(log, 1000, teams, "teams"):
         participants_expected = get_participants(team)
         participants_observed = team_participations[team]
         errors.extend(
-            check_participants(participants_expected, participants_observed))
+            check_participants(
+                team, participants_expected, participants_observed))
 
     def get_repr(id):
         if id in people:
@@ -177,10 +209,3 @@ def check_teamparticipation_consistency(log):
             get_repr(error.team), error.type, people_repr)
 
     return errors
-
-
-def check_teamparticipation(log):
-    """Perform various checks on the `TeamParticipation` table."""
-    check_teamparticipation_self(log)
-    check_teamparticipation_circular(log)
-    check_teamparticipation_consistency(log)
