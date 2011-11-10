@@ -107,8 +107,8 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                'lp.bugs.subscribers',
+      LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
+              'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
                 'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                 function(Y) {
           Y.on("domready", function () {
@@ -116,6 +116,7 @@
                   Y.lp.app.privacy.setup_privacy_notification();
                   Y.lp.app.privacy.display_privacy_notification();
               }
+              Y.lp.app.beta_features.display_beta_notification();
           });
       });
     </script>
@@ -266,11 +267,6 @@
       &nbsp;&bull;&nbsp;
       <a href="http://blog.launchpad.net/"
 	>Blog</a>
-      <tal:careers_link condition="not: features/baselayout.careers_link.disabled">
-	&nbsp;&bull;&nbsp;
-	<a href="http://www.canonical.com/about-canonical/careers"
-		>Careers</a>
-      </tal:careers_link>
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
