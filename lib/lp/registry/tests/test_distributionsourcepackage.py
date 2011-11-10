@@ -269,6 +269,11 @@ class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestDistributionSourcePackageInDatabase, self).setUp()
+        # We must reset the cache so that tests start from scratch.
+        DistributionSourcePackageInDatabase._cache.clear()
+
     def test_new(self):
         # DistributionSourcePackageInDatabase.new() creates a new DSP, adds it
         # to the store, and updates the cache.
@@ -277,6 +282,32 @@ class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
         dsp = DistributionSourcePackageInDatabase.new(
             distribution, sourcepackagename)
         self.assertIs(Store.of(distribution), Store.of(dsp))
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
+
+    def test_getDirect_not_found(self):
+        # DistributionSourcePackageInDatabase.getDirect() returns None if a
+        # DSP does not exist in the database. It does not modify the cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.getDirect(
+            distribution, sourcepackagename)
+        self.assertIs(None, dsp)
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_getDirect_found(self):
+        # DistributionSourcePackageInDatabase.getDirect() returns the
+        # DSPInDatabase if one already exists in the database. It also adds
+        # the new mapping to the cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        dsp_found = DistributionSourcePackageInDatabase.getDirect(
+            dsp.distribution, dsp.sourcepackagename)
+        self.assertIs(dsp, dsp_found)
         self.assertEqual(
             {(distribution.id, sourcepackagename.id): dsp.id},
             DistributionSourcePackageInDatabase._cache.items())
