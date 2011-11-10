@@ -9,23 +9,15 @@ __all__ = [
     'referenced_oops',
     ]
 
-from datetime import (
-    date,
-    datetime,
-    timedelta,
-    )
-import os
 import re
 
-from oops_datedir_repo import serializer
-from pytz import utc
-
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
-from lp.app.browser.stringformatter import FormattersAPI
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 
 
-def referenced_oops():
+def referenced_oops(start_date, end_date, context_clause, context_params):
     '''Return a set of OOPS codes that are referenced somewhere in the
     Launchpad database.
 
@@ -35,32 +27,43 @@ def referenced_oops():
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
     posix_oops_match = (r"~* '^(oops\\s*-\\s*\\w+)"
-        "|[^=]+(\\moops\\s*-\\s*\\w+)'")
-    query = """
+        r"|(\\moops\\s*-\\s*\\w+)'")
+    params = dict(start_date=start_date, end_date=end_date)
+    params.update(context_params)
+    sql_params = sqlvalues(**params)
+    sql_params['posix_oops_match'] = posix_oops_match
+    query = ("""
+        WITH recent_messages AS
+            (SELECT id FROM Message WHERE
+             datecreated BETWEEN %(start_date)s AND %(end_date)s)
         SELECT DISTINCT subject FROM Message
         WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
+            AND id IN (SELECT id FROM recent_messages)
         UNION ALL
         SELECT content FROM MessageChunk WHERE content %(posix_oops_match)s
+            AND message IN (SELECT id FROM recent_messages)
         UNION ALL
         SELECT title || ' ' || description
-        FROM Bug WHERE title %(posix_oops_match)s
-            OR description %(posix_oops_match)s
+        FROM Bug WHERE
+            date_last_updated BETWEEN %(start_date)s AND %(end_date)s AND
+            (title %(posix_oops_match)s OR description %(posix_oops_match)s)
         UNION ALL
         SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
-        FROM Question WHERE title %(posix_oops_match)s
-            OR description %(posix_oops_match)s
-            OR whiteboard %(posix_oops_match)s
-        """ % {'posix_oops_match': posix_oops_match}
+        FROM Question WHERE """ + context_clause + """
+            AND (datelastquery BETWEEN %(start_date)s AND %(end_date)s
+                OR datelastresponse BETWEEN %(start_date)s AND %(end_date)s)
+            AND (title %(posix_oops_match)s
+                OR description %(posix_oops_match)s
+                OR whiteboard %(posix_oops_match)s)
+        """) % sql_params
 
     referenced_codes = set()
+    oops_re = re.compile(r'(?i)(?P<oops>\boops-\w+)')
 
-    with SlaveOnlyDatabasePolicy():
-        cur = cursor()
-        cur.execute(query)
-        for content in (row[0] for row in cur.fetchall()):
-            for match in FormattersAPI._re_linkify.finditer(content):
-                if match.group('oops') is not None:
-                    code_string = match.group('oopscode')
-                    referenced_codes.add('OOPS-' + code_string.upper())
+    cur = cursor()
+    cur.execute(query)
+    for content in (row[0] for row in cur.fetchall()):
+        for oops in oops_re.findall(content):
+            referenced_codes.add(oops.upper())
 
     return referenced_codes
