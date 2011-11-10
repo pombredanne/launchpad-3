@@ -75,7 +75,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
@@ -940,6 +943,15 @@ normalize_mime_type = re.compile(r'\s+')
 
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+
+    def initialize(self):
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any subscribers.
+        if self.user is not None:
+            assignees = [task.assignee for task in self.bugtasks
+                         if task.assignee is not None]
+            precache_permission_for_objects(
+                self.request, 'launchpad.Exists', assignees)
 
     @cachedproperty
     def bugtasks(self):

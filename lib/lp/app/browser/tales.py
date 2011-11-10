@@ -1265,7 +1265,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         The default URL for a team is to the mainsite. None is returned
         when the user does not have permission to review the team.
         """
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.Exists', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1273,7 +1273,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.Exists', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1286,7 +1286,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         when the user does not have permission to review the team.
         """
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.Exists', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return '<span class="sprite team">%s</span>' % cgi.escape(
@@ -1296,7 +1296,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def displayname(self, view_name, rootsite=None):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.Exists', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden
@@ -1305,7 +1305,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def unique_displayname(self, view_name):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.Exists', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden

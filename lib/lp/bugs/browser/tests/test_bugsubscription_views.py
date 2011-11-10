@@ -21,10 +21,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -460,13 +457,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
         self.assertEqual(bug_content, bugtask_content)
 
-    def _makeBugWithNoSubscribers(self, product_owner=None,
-                                  official_malone=None):
-        registrant = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            owner=product_owner, registrant=registrant,
-            official_malone=official_malone)
-        bug = self.factory.makeBug(product=product)
+    def _makeBugWithNoSubscribers(self):
+        bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             # Unsubscribe the bug reporter to ensure we have no subscribers.
             bug.unsubscribe(bug.owner, bug.owner)
@@ -724,46 +716,3 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             harness = LaunchpadFormHarness(
                 bug, BugPortletSubscribersWithDetails)
             self.assertEqual(dumps([]), harness.view.subscriber_data_js)
-
-    def test_data_unauthorised_private_team_excluded(self):
-        # Private teams a user cannot see are not included in the results.
-        pillar_owner = self.factory.makeTeam(
-            name='pillar-owner', displayname='Pillar Owner',
-            visibility=PersonVisibility.PRIVATE)
-        # We create a bug with a private indirect subscriber who will not be
-        # visible in the results.
-        bug = self._makeBugWithNoSubscribers(
-            product_owner=pillar_owner, official_malone=True)
-        user = self.factory.makePerson()
-        # subscriber is someone we will see in the results.
-        subscriber = self.factory.makePerson(
-            name='subscriber', displayname='Subscriber')
-        # We will not see the private team.
-        private_team = self.factory.makeTeam(
-            name='team', displayname='Team Name',
-            visibility=PersonVisibility.PRIVATE)
-
-        with person_logged_in(user):
-            bug.subscribe(private_team, user,
-                          level=BugNotificationLevel.LIFECYCLE)
-            sub = bug.subscribe(subscriber, user,
-                          level=BugNotificationLevel.LIFECYCLE)
-
-        with person_logged_in(user):
-            harness = LaunchpadFormHarness(
-                bug, BugPortletSubscribersWithDetails)
-            api_request = IWebServiceClientRequest(harness.request)
-            expected_result = {
-                'subscriber': {
-                    'name': 'subscriber',
-                    'display_name': 'Subscriber',
-                    'is_team': False,
-                    'can_edit': True,
-                    'web_link': canonical_url(subscriber),
-                    'self_link': absoluteURL(subscriber, api_request),
-                    'display_subscribed_by': sub.display_subscribed_by,
-                    },
-                'subscription_level': "Lifecycle",
-                }
-            self.assertEqual(dumps([expected_result]),
-                harness.view.subscriber_data_js)

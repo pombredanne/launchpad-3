@@ -36,7 +36,10 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
@@ -537,15 +540,15 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(bug.getDirectSubscribersWithDetails())
         for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if (person == self.user
-                or (person.private
-                    and (not can_edit
-                        or not check_permission('launchpad.View', person)))):
-                # Skip the current user viewing the page,
-                # and private teams user is not a member of or does not have
-                # permission to view.
+            if person == self.user:
+                # Skip the current user viewing the page.
                 continue
 
+            # If we have made it to here then the logged in user can see the
+            # bug, hence they can see any subscribers.
+            if self.user is not None:
+                precache_permission_for_objects(
+                            self.request, 'launchpad.Exists', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -570,12 +573,14 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any subscribers.
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, 'launchpad.Exists', others)
         for person in others:
-            if (person == self.user
-                or (person.private
-                    and not check_permission('launchpad.View', person))):
+            if person == self.user:
                 # Skip the current user viewing the page,
-                # and private teams user does not have permission to view.
                 continue
             subscriber = {
                 'name': person.name,
