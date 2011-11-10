@@ -26,7 +26,8 @@
     });
   </script>
   <script type="text/javascript"
-    tal:condition="request/features/bugs.dynamic_bug_listings.enabled">
+    tal:define="simple not: view/shouldShowAdvancedForm"
+    tal:condition="request/features/bugs.dynamic_bug_listings.enabled and simple">
     LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
       function(Y) {
         Y.on('domready', function() {
