@@ -3,7 +3,7 @@
      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
      class="portlet" id="portlet-tags">
   <div id="tags-portlet-spinner"
-       style="text-align: center; display: none">
+       class="hidden centered">
     <img src="/@@/spinner" />
   </div>
   <a id="tags-content-link"
