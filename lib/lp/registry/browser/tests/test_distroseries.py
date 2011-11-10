@@ -73,7 +73,6 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -121,7 +120,6 @@ from lp.testing.matchers import (
     EqualsIgnoringWhitespace,
     HasQueryCount,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -2731,12 +2729,11 @@ class TestDistroSeriesEditView(TestCaseWithFactory):
         # set when the +edit view is used.
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         form = {
             'field.actions.change': 'Change',
             'field.status': 'CURRENT'
             }
-        with person_logged_in(admin):
-            create_initialized_view(
-                distroseries, name='+edit', principal=admin, form=form)
+        admin = login_celebrity('admin')
+        create_initialized_view(
+            distroseries, name='+edit', principal=admin, form=form)
         self.assertIsNot(None, distroseries.datereleased)
