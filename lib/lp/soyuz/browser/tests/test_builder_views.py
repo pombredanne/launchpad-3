@@ -74,7 +74,8 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         # The number of queries issued by setupBuildList is not dependent
         # on the number of builds.
         builder = self.factory.makeBuilder()
-        [self.createRecipeBuildWithBuilder(builder) for i in xrange(2)]
+        self.createRecipeBuildWithBuilder(builder)
+        self.createRecipeBuildWithBuilder(builder)
         # Record how many queries are issued when setupBuildList is
         # called with 2 builds.
         with StormStatementRecorder() as recorder1:
@@ -82,7 +83,8 @@ class TestBuilderHistoryView(TestCaseWithFactory):
             view.setupBuildList()
             self.assertEqual(2, len(view.complete_builds))
         # Create two more builds.
-        [self.createRecipeBuildWithBuilder(builder) for i in xrange(2)]
+        self.createRecipeBuildWithBuilder(builder)
+        self.createRecipeBuildWithBuilder(builder)
         # Record again the number of queries issued.
         with StormStatementRecorder() as recorder2:
             view = create_initialized_view(builder, '+history')
