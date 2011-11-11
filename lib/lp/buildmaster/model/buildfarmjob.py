@@ -417,9 +417,13 @@ class BuildFarmJobSet:
             raise InconsistentBuildFarmJobError(
                 "Could not find all the related specific jobs.")
         # Sort the builds to match the jobs' order.
-        sorted_builds = sorted(
-            builds,
-            key=lambda build: list(jobs).index(build.build_farm_job))
+
+        def key(build):
+            if hasattr(build, 'package_build'):
+                return list(jobs).index(build.package_build)
+            else:
+                return list(jobs).index(build.build_farm_job)
+        sorted_builds = sorted(builds, key=key)
         return sorted_builds
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
