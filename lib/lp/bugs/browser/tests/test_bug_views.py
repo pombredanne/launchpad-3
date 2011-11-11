@@ -12,14 +12,17 @@ from zope.security.proxy import removeSecurityProxy
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
+    login,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -365,3 +368,46 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.createInitializedSecrecyView(bug=bug, security_related=True)
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
+
+class TestBugTextViewPrivateTeams(TestCaseWithFactory):
+    """ Test for rendering BugTextView with private team artifacts.
+
+    If a user can see the bug, they can see a the name of private teams which
+    are assignees or subscribers.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def _makeBug(self):
+        owner = self.factory.makePerson()
+        private_assignee = self.factory.makeTeam(
+            name = 'bugassignee',
+            visibility = PersonVisibility.PRIVATE)
+        private_subscriber = self.factory.makeTeam(
+            name = 'bugsubscriber',
+            visibility = PersonVisibility.PRIVATE)
+
+        bug = self.factory.makeBug(owner=owner)
+        with person_logged_in(owner):
+            bug.default_bugtask.transitionToAssignee(private_assignee)
+            bug.subscribe(private_subscriber, owner)
+        return bug, private_assignee, private_subscriber
+
+    def _checkViewText(self, request, bug, assignee, subscriber):
+        bug_view = create_initialized_view(bug, name='+text', request=request)
+        view_text = bug_view.render()
+        self.assertIn(
+            "assignee: %s" % assignee.unique_displayname, view_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "subscribers:\n.*%s \(%s\)"
+            % (subscriber.displayname, subscriber.name), view_text)
+
+    def test_unauthenticated_view(self):
+        bug, assignee, subscriber = self._makeBug()
+        request = LaunchpadTestRequest()
+        self._checkViewText(request, bug, assignee, subscriber)
+
+    def test_authenticated_view(self):
+        bug, assignee, subscriber = self._makeBug()
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        self._checkViewText(request, bug, assignee, subscriber)

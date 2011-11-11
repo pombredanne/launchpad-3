@@ -947,16 +947,23 @@ class BugTextView(LaunchpadView):
     def initialize(self):
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any subscribers.
-        if self.user is not None:
-            assignees = [task.assignee for task in self.bugtasks
-                         if task.assignee is not None]
-            precache_permission_for_objects(
-                self.request, 'launchpad.Exists', assignees)
+        authorised_people = []
+        for task in self.bugtasks:
+            if task.assignee is not None:
+                authorised_people.append(task.assignee)
+        authorised_people.extend(self.subscribers)
+        precache_permission_for_objects(
+            self.request, 'launchpad.Exists', authorised_people)
 
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
         return list(self.context.bugtasks)
+
+    @cachedproperty
+    def subscribers(self):
+        """Cache subscribers and avoid hitting the DB twice."""
+        return [sub.person for sub in self.context.subscriptions]
 
     def bug_text(self):
 
@@ -1006,8 +1013,8 @@ class BugTextView(LaunchpadView):
         text.append('tags: %s' % ' '.join(bug.tags))
 
         text.append('subscribers: ')
-        for subscription in bug.subscriptions:
-            text.append(' %s' % subscription.person.unique_displayname)
+        for subscriber in self.subscribers:
+            text.append(' %s' % subscriber.unique_displayname)
 
         return ''.join(line + '\n' for line in text)
 
