@@ -631,14 +631,20 @@ div#client-listing .importance {
     padding: 0 5px;
     border-radius: 2px;
     text-transform: uppercase;
-    line-height: 1.5em;
-    margin: 5px 50px 5px 0;
+    line-height: 1.25em;
+    margin: 5px 50px 0 0;
     text-align: center;
     position: relative;
     left: 10px;
     }
 div#client-listing .buglisting-col2 {
     color: #999;
+    position: relative;
+    top: 2px;
+    }
+div#client-listing .buginfo-extras {
+    position: relative;
+    bottom: 2px;
     }
 div#client-listing .bug-related-icons {
     float: right;
