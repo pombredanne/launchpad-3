@@ -546,9 +546,8 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
-            if self.user is not None:
-                precache_permission_for_objects(
-                            self.request, 'launchpad.Exists', [person])
+            precache_permission_for_objects(
+                        self.request, 'launchpad.Exists', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,

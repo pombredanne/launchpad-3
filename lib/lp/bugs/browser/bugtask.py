@@ -3433,14 +3433,10 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any the owner and any assignees.
-        if self.user is not None:
-            authorised_people = []
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    authorised_people.append(task.assignee)
-            # TODO - add subscribers
-            precache_permission_for_objects(
-                self.request, 'launchpad.Exists', authorised_people)
+        authorised_people = [task.assignee for task in self.bugtasks
+                             if task.assignee is not None]
+        precache_permission_for_objects(
+            self.request, 'launchpad.Exists', authorised_people)
 
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.

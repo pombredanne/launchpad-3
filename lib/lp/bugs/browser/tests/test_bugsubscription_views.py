@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugSubscription views."""
+from zope.security.proxy import removeSecurityProxy
 
 __metaclass__ = type
 
@@ -21,7 +22,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -567,6 +568,37 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'display_subscribed_by': \
+                    'Subscribed by Team Owner (team-owner)',
+                },
+            'subscription_level': "Lifecycle",
+            }
+        self.assertEqual(
+            dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_private_team_subscription(self):
+        # For a private team subscription, the team name and url are rendered.
+        bug = self._makeBugWithNoSubscribers()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
+        subscriber = self.factory.makeTeam(
+            name='team', displayname='Team Name', owner=teamowner,
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(subscriber.teamowner):
+            bug.subscribe(subscriber, subscriber.teamowner,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
+
+        naked_subscriber = removeSecurityProxy(subscriber)
+        expected_result = {
+            'subscriber': {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': False,
+                'web_link': canonical_url(naked_subscriber),
+                'self_link': absoluteURL(naked_subscriber, api_request),
                 'display_subscribed_by': \
                     'Subscribed by Team Owner (team-owner)',
                 },
