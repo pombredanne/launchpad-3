@@ -4,7 +4,7 @@
 PYTHON=python2.6
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
-PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:/usr/share/launchpad-buildd:${PYTHONPATH}
+PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
 BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
