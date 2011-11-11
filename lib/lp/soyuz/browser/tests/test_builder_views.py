@@ -7,6 +7,7 @@ from storm.locals import Store
 from testtools.matchers import Equals
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -62,33 +63,69 @@ class TestBuilderHistoryView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def createRecipeBuildWithBuilder(self, builder=None):
+    nb_objects = 2
+
+    def setUp(self):
+        super(TestBuilderHistoryView, self).setUp()
+        self.builder = self.factory.makeBuilder()
+
+    def createRecipeBuildWithBuilder(self):
         build = self.factory.makeSourcePackageRecipeBuild()
         Store.of(build).flush()
-        if builder is None:
-            builder = self.factory.makeBuilder()
-        removeSecurityProxy(build).builder = builder
+        removeSecurityProxy(build).builder = self.builder
         return build
 
-    def test_build_history_queries_count(self):
-        # The number of queries issued by setupBuildList is not dependent
-        # on the number of builds.
-        builder = self.factory.makeBuilder()
-        self.createRecipeBuildWithBuilder(builder)
-        self.createRecipeBuildWithBuilder(builder)
-        # Record how many queries are issued when setupBuildList is
-        # called with 2 builds.
+    def createBinaryPackageBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        removeSecurityProxy(build).builder = self.builder
+        return build
+
+    def _record_queries_count(self, tested_method, item_creator):
+        # A simple helper that returns the two storm statement recorders
+        # obtained when running tested_method with {nb_objects} items creater
+        # (using item_creator) and then with {nb_objects}*2 items created.
+        for i in range(self.nb_objects):
+            item_creator()
+        # Record how many queries are issued when tested_method is
+        # called with {nb_objects} items created.
+        flush_database_caches()
         with StormStatementRecorder() as recorder1:
-            view = create_initialized_view(builder, '+history')
-            view.setupBuildList()
-            self.assertEqual(2, len(view.complete_builds))
-        # Create two more builds.
-        self.createRecipeBuildWithBuilder(builder)
-        self.createRecipeBuildWithBuilder(builder)
+            tested_method()
+        # Create {nb_objects} more items.
+        for i in range(self.nb_objects):
+            item_creator()
         # Record again the number of queries issued.
+        flush_database_caches()
         with StormStatementRecorder() as recorder2:
-            view = create_initialized_view(builder, '+history')
+            tested_method()
+        return recorder1, recorder2
+
+    def test_build_history_queries_count_view_recipe_builds(self):
+        # The builder's history view creation (i.e. the call to
+        # view.setupBuildList) issues a constant number of queries
+        # when recipe builds are displayed.
+        def call_setupBuildList():
+            view = create_initialized_view(self.builder, '+history')
             view.setupBuildList()
-            self.assertEqual(4, len(view.complete_builds))
+        recorder1, recorder2 = self._record_queries_count(
+            call_setupBuildList,
+            self.createRecipeBuildWithBuilder)
+
+        # rvb 2011-11-11: Each build issues 2 new queries.
+        # This is because of the way SourcePackageRecipe._recipe_data
+        # fetches SourcePackageRecipeData. I've no idea how to prefetch
+        # this.
+        self.assertThat(
+            recorder2,
+            HasQueryCount(Equals(recorder1.count + 2 * self.nb_objects)))
+
+    def test_build_history_queries_count_binary_package_builds(self):
+        # Rendering to builder's history issues a constant number of queries
+        # when binary builds are displayed.
+        def call_history_render():
+            create_initialized_view(self.builder, '+history').render()
+        recorder1, recorder2 = self._record_queries_count(
+            call_history_render,
+            self.createBinaryPackageBuild)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

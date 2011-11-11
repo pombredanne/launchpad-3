@@ -78,6 +78,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import (
     format_address,
@@ -871,11 +872,45 @@ class BinaryPackageBuildSet:
         clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
         build_farm_job_ids = [
             build_farm_job.id for build_farm_job in build_farm_jobs]
-        return Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+
+        def eager_load(rows):
+            # Circular imports.
+            from lp.registry.model.sourcepackagename import (
+                SourcePackageName
+                )
+            from lp.soyuz.model.sourcepackagerelease import (
+                SourcePackageRelease
+                )
+            from lp.soyuz.model.distroarchseries import (
+                DistroArchSeries
+                )
+            from lp.registry.model.distroseries import (
+                DistroSeries
+                )
+            from lp.registry.model.distribution import (
+                Distribution
+                )
+            from lp.soyuz.model.archive import Archive
+            sprs = load_related(
+                SourcePackageRelease, rows, ['source_package_release_id'])
+            load_related(
+                SourcePackageName, sprs, ['sourcepackagenameID'])
+            distro_arch_series = load_related(
+                DistroArchSeries, rows, ['distro_arch_series_id'])
+            package_builds = load_related(
+                PackageBuild, rows, ['package_build_id'])
+            load_related(
+                Archive, package_builds, ['archive_id'])
+            distroseries = load_related(
+                DistroSeries, distro_arch_series, ['distroseriesID'])
+            load_related(
+                Distribution, distroseries, ['distributionID'])
+        resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
             BinaryPackageBuild,
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.id.is_in(build_farm_job_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

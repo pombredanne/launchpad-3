@@ -35,6 +35,9 @@ from zope.interface import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -63,10 +66,17 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
+from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.person import Person
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -289,9 +299,26 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             return EmptyResultSet()
         build_farm_job_ids = [
             build_farm_job.id for build_farm_job in build_farm_jobs]
-        return Store.of(build_farm_jobs[0]).find(cls,
+
+        def eager_load(rows):
+            # Circular imports.
+            from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+            package_builds = load_related(
+                PackageBuild, rows, ['package_build_id'])
+            load_related(
+                Archive, package_builds, ['archive_id'])
+            sprs = load_related(
+                SourcePackageRecipe, rows, ['recipe_id'])
+            sprds = load_referencing(
+                SourcePackageRecipeData, sprs, ['sourcepackage_recipe_id'])
+            load_related(
+                Branch, sprds, ['base_branch_id'])
+            load_related(
+                Person, rows, ['requester_id'])
+        resultset = Store.of(build_farm_jobs[0]).find(cls,
             cls.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
