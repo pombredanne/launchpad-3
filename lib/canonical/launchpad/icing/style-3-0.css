@@ -1023,10 +1023,27 @@ h1 .yui3-ieditor-errors {
     }
 .yui3-buglisting-config-util a {
     position: relative;
-    top: 2px;
+    top: 3px;
     left: 4px;
     }
 .yui3-baseconfigutil a {
+    cursor: pointer;
+    }
+.yui3-buglisting-config-util-overlay a.close-button {
+    visibility: inherit;
+    }
+.yui3-buglisting-config-util-overlay .buglisting-opts {
+    position: relative;
+    left: -140px;
+    }
+.yui3-buglisting-config-util-overlay .update-buglisting {
+    position: relative;
+    left: -200px;
+    }
+.yui3-buglisting-config-util-overlay .reset-buglisting {
+    position: relative;
+    top: 20px;
+    left: 75px;
     cursor: pointer;
     }
 .error.message, .warning.message, .informational.message {
