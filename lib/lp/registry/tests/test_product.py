@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -445,3 +446,35 @@ class TestWebService(WebServiceTestCase):
         ws_group = self.wsObject(group)
         ws_product.translationgroup = ws_group
         ws_product.lp_save()
+
+    def test_oops_references_matching_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        question = self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = question.product
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid.upper()],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

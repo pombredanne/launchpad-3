@@ -1017,9 +1017,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def findReferencedOOPS(self, start_date, end_date):
         """See `IHasOOPSReferences`."""
-        return referenced_oops(
-            start_date, end_date, "distribution=%{distribution}s",
-            {'distribution': self.id})
+        return list(referenced_oops(
+            start_date, end_date, "distribution=%(distribution)s",
+            {'distribution': self.id}))
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""

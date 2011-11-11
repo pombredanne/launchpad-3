@@ -979,8 +979,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def findReferencedOOPS(self, start_date, end_date):
         """See `IHasOOPSReferences`."""
-        return referenced_oops(
-            start_date, end_date, "product=%{product}s", {'product': self.id})
+        return list(referenced_oops(
+            start_date, end_date, "product=%(product)s", {'product': self.id}
+            ))
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""

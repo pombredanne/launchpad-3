@@ -415,8 +415,8 @@ class IProductPublic(
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     IHasTranslationImports, ITranslationPolicy, IKarmaContext,
     ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
-    IServiceUsage):
+    IHasOOPSReferences, IPillar, ISpecificationTarget, IHasRecipes,
+    IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))

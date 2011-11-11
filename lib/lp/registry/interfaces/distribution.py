@@ -135,9 +135,9 @@ class IDistributionDriverRestricted(Interface):
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext, ILaunchpadUsage,
+    IMakesAnnouncements, IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
     ISpecificationTarget):
     """Public IDistribution properties."""
 

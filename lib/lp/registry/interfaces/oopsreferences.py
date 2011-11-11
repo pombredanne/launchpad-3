@@ -30,7 +30,7 @@ class IHasOOPSReferences(Interface):
 
     @operation_parameters(
         start_date=Datetime(title=_("Modified after date")),
-        emd_date=Datetime(title=_("Modified before date")),
+        end_date=Datetime(title=_("Modified before date")),
         )
     @export_read_operation()
     @operation_for_version('devel')

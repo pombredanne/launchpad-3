@@ -18,10 +18,23 @@ from canonical.database.sqlbase import (
 
 
 def referenced_oops(start_date, end_date, context_clause, context_params):
-    '''Return a set of OOPS codes that are referenced somewhere in the
-    Launchpad database.
+    '''Find OOPS codes that are referenced somewhere in Launchpad.
 
-    We currently check the entire Message store, Bugs, BugTasks and Question
+    This returns OOPS references from:
+     - any message, message chunk or bug.
+     - any question that passes context_clause.
+
+    Privacy and access controls are ignored: the maximum disclosure is a single
+    word immediately after the word 'OOPS'. Future iterations may tighten the
+    returned references up.
+
+    :param start_date: The earliest modification date to consider.
+    :param end_date: The last modification date to consider.
+    :param context_clause: A filter to restrict the question clause against.
+        For instance: 'product=%(product)s'.
+    :param context_params: Parameters needed to evaluate context_clause.
+        For instance: {'product': 12}
+    :return: A set of the found OOPS ids.
     '''
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter

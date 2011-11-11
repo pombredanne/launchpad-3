@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
+import datetime
+
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 import soupmatchers
 from storm.store import Store
 from testtools import ExpectedException
@@ -14,6 +17,7 @@ from testtools.matchers import (
     MatchesAny,
     Not,
     )
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -48,6 +52,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
@@ -353,7 +358,7 @@ class DistroSnapshotTestCase(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution(name="boobuntu")
 
     def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
+        """Snapshots of distributions should not include marked attribues.
 
         Wrap an export with 'doNotSnapshot' to force the snapshot to not
         include that attribute.
@@ -539,3 +544,39 @@ class TestDistributionTranslations(TestCaseWithFactory):
             distro.translation_focus = new_series
             distro.translationgroup = new_group
             distro.translationpermission = TranslationPermission.CLOSED
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_oops_references_matching_distro(self):
+        # The distro layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        distro = self.factory.makeDistribution()
+        question = self.factory.makeQuestion(
+            title="Crash with %s" % oopsid, target=distro)
+        transaction.commit()
+        ws_distro = self.wsObject(distro, distro.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid.upper()],
+            ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_distro.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_distro(self):
+        # The distro layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        distro = self.factory.makeDistribution()
+        transaction.commit()
+        ws_distro = self.wsObject(distro, distro.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
