@@ -603,6 +603,7 @@ div#current_user_subscription a.sprite {
 /* Rules for CustomBugListings bug search result lists. */
 div#client-listing {
     float: left;
+    color: #666;
     }
 div.buglisting-row {
     float: left;
@@ -638,7 +639,6 @@ div#client-listing .importance {
     left: 10px;
     }
 div#client-listing .buglisting-col2 {
-    color: #999;
     position: relative;
     top: 2px;
     }
