@@ -18,6 +18,7 @@ __all__ = [
     'DistributionBuildRecordsView',
     ]
 
+
 from lazr.batchnavigator import ListRangeFactory
 from lazr.delegates import delegates
 from lazr.restful.utils import safe_hasattr
@@ -59,6 +60,7 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -462,7 +464,9 @@ def setupCompleteBuilds(batch):
     list if no builds were contained in the received batch.
     """
     build_farm_job_set = getUtility(IBuildFarmJobSet)
-    builds = build_farm_job_set.getSpecificJobs(batch)
+    builds = build_farm_job_set.getSpecificJobs(
+        [build.build_farm_job if IPackageBuild.providedBy(build) else build
+            for build in batch])
     if not builds:
         return []
 
