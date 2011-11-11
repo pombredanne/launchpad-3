@@ -1021,7 +1021,14 @@ h1 .yui3-ieditor-errors {
     text-decoration: underline;
     cursor: pointer;
     }
-
+.yui3-buglisting-config-util a {
+    position: relative;
+    top: 2px;
+    left: 4px;
+    }
+.yui3-baseconfigutil a {
+    cursor: pointer;
+    }
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
