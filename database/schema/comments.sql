@@ -8,7 +8,7 @@
 
 -- AccessPolicy
 
-COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage pillar\'s artifacts.';
+COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage a project or distribution\'s artifacts.';
 COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy is used on.';
 COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy is used on.';
 COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Private, Security, etc.';
