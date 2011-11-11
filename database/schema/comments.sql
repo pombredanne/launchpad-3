@@ -8,23 +8,23 @@
 
 -- AccessPolicy
 
-COMMENT ON TABLE AccessPolicyUse IS 'An access policy as used to manage pillar\'s artifacts.';
-COMMENT ON COLUMN AccessPolicyUse.product IS 'The product that this policy is used on.';
-COMMENT ON COLUMN AccessPolicyUse.distribution IS 'The distribution that this policy is used on.';
-COMMENT ON COLUMN AccessPolicyUse.policy IS 'The type of policy (an enum value). Private, Security, etc.';
+COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage pillar\'s artifacts.';
+COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Private, Security, etc.';
 
 -- AccessPolicyArtifact
 
 COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
 COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
 COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.policy_use IS 'The AccessPolicyUse that controls access to this artifact.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'The policy that controls access to this artifact.';
 
 -- AccessPolicyGrant
 
 COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
 COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person to whom access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.policy_use IS 'The access policy use on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person who granted the access.';
 COMMENT ON COLUMN AccessPolicyGrant.person IS 'The date the access was granted.';
