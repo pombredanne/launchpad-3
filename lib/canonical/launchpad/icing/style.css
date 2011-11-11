@@ -633,7 +633,7 @@ div#client-listing .importance {
     border-radius: 2px;
     text-transform: uppercase;
     line-height: 1.25em;
-    margin: 5px 50px 0 0;
+    margin: 5px 50px 2px 0;
     text-align: center;
     position: relative;
     left: 10px;
@@ -641,10 +641,6 @@ div#client-listing .importance {
 div#client-listing .buglisting-col2 {
     position: relative;
     top: 2px;
-    }
-div#client-listing .buginfo-extras {
-    position: relative;
-    bottom: 2px;
     }
 div#client-listing .bug-related-icons {
     float: right;
