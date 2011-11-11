@@ -590,10 +590,10 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
         'status' field. See `createStatusField` method.
         """
         LaunchpadEditFormView.setUpFields(self)
-        self.is_derivitive = (
+        self.is_derivative = (
             not self.context.distribution.full_functionality)
         self.has_admin = check_permission('launchpad.Admin', self.context)
-        if self.has_admin or self.is_derivitive:
+        if self.has_admin or self.is_derivative:
             # The user is an admin or this is an IDerivativeDistribution.
             self.form_fields = (
                 self.form_fields + self.createStatusField())
@@ -601,7 +601,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
-        if self.has_admin or self.is_derivitive:
+        if self.has_admin or self.is_derivative:
             self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
