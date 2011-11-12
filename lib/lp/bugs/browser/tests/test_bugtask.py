@@ -349,6 +349,9 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.assertEqual(
             "This bug affects 3 people",
             self.view.anon_affected_statement)
+        self.assertEqual(
+            2,
+            self.view.other_users_affected_count)
 
     def test_total_users_affected_count_without_dupes(self):
         self.useFixture(FeatureFixture(
@@ -367,6 +370,9 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.assertEqual(
             "This bug affects 1 person",
             self.view.anon_affected_statement)
+        self.assertEqual(
+            1,
+            self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
