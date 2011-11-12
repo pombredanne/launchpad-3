@@ -1794,15 +1794,6 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
 
-    def test_hiding_bug_title(self):
-        """Hiding bug heat removes the text but link is still present."""
-        navigator, mustache_model = self.getNavigator()
-        self.assertIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_title'] = False
-        self.assertNotIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-
     def test_hiding_milstone_name(self):
         """Showing milestone name shows the text."""
         navigator, mustache_model = self.getNavigator()
