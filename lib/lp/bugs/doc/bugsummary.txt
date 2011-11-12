@@ -402,8 +402,15 @@ Create some teams too. team_a just has person_a as a member. team_c
 has both person_a and person_b as members. These teams will be subscribed
 to private bugs.
 
-    >>> team_a = factory.makeTeam(name='t-a', members=[person_a])
-    >>> team_c = factory.makeTeam(name='t-c', members=[person_a, person_b])
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> team_a = factory.makeTeam(
+    ...     name='t-a',
+    ...     members=[person_a],
+    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    >>> team_c = factory.makeTeam(
+    ...     name='t-c',
+    ...     members=[person_a, person_b],
+    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
 
 Create some bugs.
     - bug_a is a private distribution bug, subscribed by team_a

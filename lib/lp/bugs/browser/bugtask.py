@@ -92,6 +92,7 @@ from zope.app.form.interfaces import (
     InputErrors,
     )
 from zope.app.form.utility import setUpWidget
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -278,6 +279,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.utils import obfuscate_structure
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -2310,9 +2312,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
     @property
     def mustache(self):
         """The rendered mustache template."""
-        cache = IJSONRequestCache(self.request)
+        objects = IJSONRequestCache(self.request).objects
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            objects = obfuscate_structure(objects)
         return pystache.render(self.mustache_template,
-                               cache.objects['mustache_model'])
+                               objects['mustache_model'])
 
     @property
     def model(self):

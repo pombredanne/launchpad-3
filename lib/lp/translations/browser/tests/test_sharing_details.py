@@ -937,12 +937,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_cache_javascript(self):
         # Cache object entries propagate into the javascript.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
-        anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        # Anonymous users don't get cached objects due to bug #740208
-        self.assertNotIn(
-            'productseries', extract_lp_cache(anon_browser.contents))
-        browser = self._getSharingDetailsViewBrowser(
-            sourcepackage, user=self.user)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertIn(
             'productseries', extract_lp_cache(browser.contents))
 
