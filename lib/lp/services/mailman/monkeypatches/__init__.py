@@ -61,6 +61,9 @@ def monkey_patch(mailman_path, config):
             launchpad_top=launchpad_top,
             smtp_host=host,
             smtp_port=port,
+            smtp_max_rcpts=config.mailman.smtp_max_rcpts,
+            smtp_max_sesions_per_connection
+                =config.mailman.smtp_max_sesions_per_connection,
             xmlrpc_url=config.mailman.xmlrpc_url,
             xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
             xmlrpc_timeout=config.mailman.xmlrpc_timeout,
