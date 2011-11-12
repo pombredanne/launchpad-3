@@ -26,9 +26,6 @@ VALID_AMI_OWNERS = {
     # Amazon account number: name/nickname (only for logging).
     '255383312499': 'gary',
     '559320013529': 'flacoste',
-    '200337130613': 'mwhudson',
-    '366009196755': 'salgado',
-    '036590675370': 'jml',
     '038531743404': 'jelmer',
     '444667466231': 'allenap',
     '441991801793': 'gmb',

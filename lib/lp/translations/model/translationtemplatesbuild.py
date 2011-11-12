@@ -107,6 +107,16 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return match.one()
 
     @classmethod
+    def getByBuildFarmJobs(cls, buildfarmjobs, store=None):
+        buildfarmjob_ids = [buildfarmjob.id for buildfarmjob in buildfarmjobs]
+        """See `ITranslationTemplatesBuildSource`."""
+        store = cls._getStore(store)
+        return store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.build_farm_job_id.is_in(
+                buildfarmjob_ids))
+
+    @classmethod
     def findByBranch(cls, branch, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
