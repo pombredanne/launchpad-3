@@ -3464,14 +3464,25 @@ class BugTasksAndNominationsView(LaunchpadView):
             return self.context.users_affected_count
 
     @cachedproperty
+    def total_users_affected_count(self):
+        """The number of affected users, typically across all users.
+
+        Counting across duplicates may be disabled at run time.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            return self.context.users_affected_count
+        else:
+            return self.context.users_affected_count_with_dupes
+
+    @cachedproperty
     def affected_statement(self):
         """The default "this bug affects" statement to show.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        total_affected = self.context.users_affected_count_with_dupes
         me_affected = self.current_user_affected_status
+        total_affected = self.total_users_affected_count
         if me_affected is None:
             if total_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
@@ -3498,7 +3509,7 @@ class BugTasksAndNominationsView(LaunchpadView):
                 return "This bug affects %d people, but not you" % (
                     total_affected)
 
-    @property
+    @cachedproperty
     def anon_affected_statement(self):
         """The "this bug affects" statement to show to anonymous users.
 

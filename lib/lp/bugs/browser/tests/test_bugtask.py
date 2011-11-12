@@ -51,6 +51,7 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
@@ -99,7 +100,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(76)))
+        self.assertThat(recorder, HasQueryCount(LessThan(77)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -115,7 +116,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                82, self.factory.makePerson())
+                83, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -169,7 +170,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 45),
+            LessThan(count_with_no_branches + 46),
             ))
 
     def test_interesting_activity(self):
@@ -325,6 +326,33 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
+
+    def test_total_users_affected_count_with_dupes(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        user2 = self.factory.makePerson()
+        bug2 = self.factory.makeBug()
+        bug2.markUserAffected(user2, True)
+        self.assertEqual(
+            2, bug2.users_affected_count)
+        bug2.markAsDuplicate(self.bug)
+        self.refresh()
+        # 3 in total: user2, self.view.user, and admin (used to create
+        # self.bug).
+        self.assertEqual(
+            3, self.view.total_users_affected_count)
+
+    def test_total_users_affected_count_without_dupes(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': 'on'}))
+        user2 = self.factory.makePerson()
+        bug2 = self.factory.makeBug()
+        bug2.markUserAffected(user2, True)
+        bug2.markAsDuplicate(self.bug)
+        self.refresh()
+        # Does not count the two users of bug2, so just 1.
+        self.assertEqual(
+            1, self.view.total_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
