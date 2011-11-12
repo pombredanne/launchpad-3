@@ -138,7 +138,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                86, self.factory.makePerson())
+                87, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
