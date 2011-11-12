@@ -146,9 +146,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def current_component(self):
         """See `IBuild`."""
         latest_publication = self._getLatestPublication()
-        assert latest_publication is not None, (
-            'Build %d lacks a corresponding source publication.' % self.id)
-        return latest_publication.component
+        # Production has some buggy builds without source publications.
+        # They seem to have been created by early versions of gina and
+        # the readding of hppa.
+        if latest_publication is not None:
+            return latest_publication.component
 
     @property
     def current_source_publication(self):
@@ -349,6 +351,20 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`."""
         return self.status is BuildStatus.NEEDSBUILD
 
+    @property
+    def can_be_cancelled(self):
+        """See `IBuild`."""
+        if not self.buildqueue_record:
+            return False
+        if self.buildqueue_record.virtualized is False:
+            return False
+
+        cancellable_statuses = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        return self.status in cancellable_statuses
+
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
@@ -376,6 +392,20 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return None
         else:
             return self.buildqueue_record.lastscore
+
+    def cancel(self):
+        """See `IBinaryPackageBuild`."""
+        if not self.can_be_cancelled:
+            return
+
+        # If the build is currently building we need to tell the
+        # buildd-manager to terminate it.
+        if self.status == BuildStatus.BUILDING:
+            self.status = BuildStatus.CANCELLING
+            return
+
+        # Otherwise we can cancel it here.
+        self.buildqueue_record.cancel()
 
     def makeJob(self):
         """See `IBuildFarmJob`."""
@@ -835,6 +865,19 @@ class BinaryPackageBuildSet:
         if resulting_tuple is None:
             return None
         return resulting_tuple[0]
+
+    def getByBuildFarmJobs(self, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+        return Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id.is_in(build_farm_job_ids))
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

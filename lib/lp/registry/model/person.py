@@ -228,6 +228,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
@@ -1916,6 +1917,13 @@ class Person(
                         Upper(Team.displayname),
                         Upper(Team.name))
 
+    def anyone_can_join(self):
+        open_types = (
+            TeamSubscriptionPolicy.OPEN,
+            TeamSubscriptionPolicy.DELEGATED
+            )
+        return (self.subscriptionpolicy in open_types)
+
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
@@ -2910,6 +2918,10 @@ class Person(
                 atom, ' and '.join(reasons)))
         else:
             return None
+
+    def canCreatePPA(self):
+        """See `IPerson.`"""
+        return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
 
 class PersonSet:

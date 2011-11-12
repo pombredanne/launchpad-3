@@ -7,15 +7,14 @@ from datetime import datetime
 import logging
 import os
 import re
-from unittest import TestCase
 
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import OopsHandler
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
+from lp.testing import TestCase
 
 
 class TestHWDBSubmissionRelaxNGValidation(TestCase):
@@ -25,14 +24,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     submission_count = 0
 
-    def assertEqual(self, x1, x2, msg):
-        TestCase.assertEqual(self, x1, x2, msg)
-
-    def assertNotEqual(self, x1, x2, msg):
-        TestCase.assertNotEqual(self, x1, x2, msg)
-
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionRelaxNGValidation, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -124,14 +118,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             parser.fixFrequentErrors(two_comments),
             'Bad regular expression in fixFrequentErrors()')
 
-    def _getLastOopsTime(self):
-        try:
-            last_oops_time = globalErrorUtility.getLastOopsReport().time
-        except AttributeError:
-            # There haven't been any oopses in this test run
-            last_oops_time = None
-        return last_oops_time
-
     def test_bad_data_does_not_oops(self):
         # If the processing cronscript gets bad data, it should log it, but
         # it should not create an Oops.
@@ -144,16 +130,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             where='<hardware>',
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
-        # doesn't create an Oops report.
+        # doesn't create an Oops report (which a high value log would cause).
+        self.assertEqual([], self.oopses)
         logging.getLogger('test_hwdb_submission_parser').addHandler(
             OopsHandler(self.log.name))
         result, submission_id = self.runValidator(sample_data)
-        last_oops_time = self._getLastOopsTime()
-        # We use the class method here, because it's been overrided for the
-        # other tests in this test case.
-        TestCase.assertEqual(self,
-            self._getLastOopsTime(),
-            last_oops_time)
+        self.assertEqual([], self.oopses)
 
     def testInvalidFormatVersion(self):
         """The attribute `format` of the root node must be `1.0`."""
@@ -336,27 +318,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # If a log message does not exist for a given submission,
         # assertErrorMessage raises failureExeception.
-        try:
-            self.assertErrorMessage(
-                'assert_test_1', None, 'log message 3',
-                'assertErrorMessage test 2')
-        except TestCase.failureException:
-            pass
-        else:
-            self.fail('assertErrorMessage did not fail for a non-existing '
-                      'error message.')
+        self.assertRaises(
+            self.failureException, self.assertErrorMessage, 'assert_test_1',
+            None, 'log message 3', 'assertErrorMessage test 2')
 
         # If the parameter result is not None, assertErrorMessage
         # assertErrorMessage raises failureExeception.
-        try:
-            self.assertErrorMessage(
-                'assert_test_1', {}, 'log message 1',
-                'assertErrorMessage test 3')
-        except TestCase.failureException:
-            pass
-        else:
-            self.fail('assertErrorMessage did not fail for a non-None '
-                      'submission result.')
+        self.assertRaises(
+            self.failureException, self.assertErrorMessage, 'assert_test_1',
+            {}, 'log message 1', 'assertErrorMessage test 3')
 
     def testSubtagsOfSystem(self):
         """The root node <system> requires a fixed set of sub-tags."""

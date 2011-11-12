@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -701,9 +700,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -1507,61 +1504,6 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         return (
             foo_src_pub, foo_bin_pub, foo_one_common_pubs,
             foo_two_common_pubs, foo_three_pub)
-
-    def test_getOtherPublicationsForSameSource(self):
-        # By default getOtherPublicationsForSameSource should return all
-        # of the other binaries built by the same source as the passed
-        # binary publication, except the arch-indep ones.
-        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-            foo_three_pub) = self._makeMixedSingleBuildPackage()
-
-        foo_one_common_pub = foo_one_common_pubs[0]
-        others = foo_one_common_pub.getOtherPublicationsForSameSource()
-        others = list(others)
-
-        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
-
-    def test_getOtherPublicationsForSameSource_include_archindep(self):
-        # Check that the arch-indep binaries are returned if requested.
-        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-         foo_three_pub) = self._makeMixedSingleBuildPackage()
-
-        foo_one_common_pub = foo_one_common_pubs[0]
-        others = foo_one_common_pub.getOtherPublicationsForSameSource(
-            include_archindep=True)
-        others = list(others)
-
-        # We expect all publications created above to be returned,
-        # except the one we use to call the method on.
-        expected = [foo_three_pub, foo_bin_pub]
-        expected.extend(foo_one_common_pubs[1:])
-        expected.extend(foo_two_common_pubs)
-        self.assertContentEqual(expected, others)
-
-    def test_getOtherPublicationsForSameSource_inactive(self):
-        # Check that inactive publications are not returned.
-        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-             foo_three_pub) = self._makeMixedSingleBuildPackage()
-        foo_bin_pub.status = PackagePublishingStatus.SUPERSEDED
-        foo_three_pub.status = PackagePublishingStatus.SUPERSEDED
-        foo_one_common_pub = foo_one_common_pubs[0]
-        others = foo_one_common_pub.getOtherPublicationsForSameSource()
-        others = list(others)
-
-        self.assertEqual(0, len(others))
-
-    def test_getOtherPublicationsForSameSource_multiple_versions(self):
-        # Check that publications for only the same version as the
-        # context binary publication are returned.
-        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-         foo_three_pub) = self._makeMixedSingleBuildPackage(version="1.0")
-        self._makeMixedSingleBuildPackage(version="1.1")
-
-        foo_one_common_pub = foo_one_common_pubs[0]
-        others = foo_one_common_pub.getOtherPublicationsForSameSource()
-        others = list(others)
-
-        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):

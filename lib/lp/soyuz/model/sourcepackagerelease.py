@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -10,17 +10,17 @@ __all__ = [
     ]
 
 
-import apt_pkg
 import datetime
+import operator
+import re
+from StringIO import StringIO
+
+import apt_pkg
 from debian.changelog import (
     Changelog,
     ChangelogCreateError,
     ChangelogParseError,
     )
-import operator
-import re
-from StringIO import StringIO
-
 import pytz
 import simplejson
 from sqlobject import (
@@ -73,7 +73,10 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
@@ -646,3 +649,46 @@ class SourcePackageRelease(SQLBase):
 
         output = "\n\n".join(chunks)
         return output.decode("utf-8", "replace")
+
+    def getActiveArchSpecificPublications(self, archive, distroseries,
+                                          pocket):
+        """Find architecture-specific binary publications for this release.
+
+        For example, say source package release contains binary packages of:
+         * "foo" for i386 (pending in i386)
+         * "foo" for amd64 (published in amd64)
+         * "foo-common" for the "all" architecture (pending or published in
+           various real processor architectures)
+
+        In that case, this search will return foo(i386) and foo(amd64).  The
+        dominator uses this when figuring out whether foo-common can be
+        superseded: we don't track dependency graphs, but we know that the
+        architecture-specific "foo" releases are likely to depend on the
+        architecture-independent foo-common release.
+
+        :param archive: The `Archive` to search.
+        :param distroseries: The `DistroSeries` to search.
+        :param pocket: The `PackagePublishingPocket` to search.
+        :return: A Storm result set of active, architecture-specific
+            `BinaryPackagePublishingHistory` objects for this source package
+            release and the given `archive`, `distroseries`, and `pocket`.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.publishing import active_publishing_status
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        return Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageBuild.source_package_release_id == self.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == distroseries.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackageRelease.architecturespecific == True)

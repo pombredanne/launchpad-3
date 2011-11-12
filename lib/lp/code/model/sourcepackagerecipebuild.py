@@ -15,7 +15,6 @@ from datetime import (
     timedelta,
     )
 import logging
-import sys
 
 from psycopg2 import ProgrammingError
 from pytz import utc
@@ -24,7 +23,10 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -37,7 +39,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -235,8 +236,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     raise
                 except:
                     logger.exception(' - problem with %s', series_name)
-                    info = sys.exc_info()
-                    errorlog.globalErrorUtility.raising(info)
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
@@ -282,6 +281,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return Store.of(build_farm_job).find(cls,
             cls.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == build_farm_job.id).one()
+
+    @classmethod
+    def getByBuildFarmJobs(cls, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+        return Store.of(build_farm_jobs[0]).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
