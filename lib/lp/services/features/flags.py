@@ -40,6 +40,10 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.affected_count_includes_dupes.disabled',
+     'boolean',
+     ("Disable adding up affected users across all duplicate bugs."),
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
