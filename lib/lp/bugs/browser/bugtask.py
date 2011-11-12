@@ -3483,20 +3483,20 @@ class BugTasksAndNominationsView(LaunchpadView):
                 return "Does this bug affect you?"
         elif me_affected is True:
             if total_affected == 1:
+                return "This bug affects you"
+            elif total_affected == 2:
                 return "This bug affects you and 1 other person"
-            elif total_affected > 1:
+            else:
                 return "This bug affects you and %d other people" % (
                     total_affected - 1)
-            else:
-                return "This bug affects you"
         else:
-            if total_affected == 1:
+            if total_affected == 0:
+                return "This bug doesn't affect you"
+            elif total_affected == 1:
                 return "This bug affects 1 person, but not you"
             elif total_affected > 1:
                 return "This bug affects %d people, but not you" % (
                     total_affected)
-            else:
-                return "This bug doesn't affect you"
 
     @property
     def anon_affected_statement(self):
