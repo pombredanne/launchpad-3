@@ -322,8 +322,8 @@ class EC2TestRunner:
             # really wrong with the server or suite.
             user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
-        for ppa in 'bzr', 'bzr-beta-ppa', 'launchpad':
-            as_user("sudo add-apt-repository ppa:" + ppa)
+        as_user("sudo add-apt-repository ppa:bzr")
+        as_user("sudo add-apt-repository ppa:launchpad")
         as_user("sudo aptitude update")
         as_user("sudo DEBIAN_FRONTEND=noninteractive aptitude -y full-upgrade")
         # Set up bazaar.conf with smtp information if necessary
