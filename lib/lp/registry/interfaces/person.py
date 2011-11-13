@@ -1018,6 +1018,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     administrated_teams = Attribute(
         u"the teams that this person/team is an administrator of.")
 
+    def anyone_can_join():
+        """Quick check as to whether a team allows anyone to join."""
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""

@@ -438,8 +438,11 @@ class YUIAppServerTestCase(AbstractYUITestCase):
     # 6 seconds for each test.  Hopefully they are three or less for
     # yuixhr tests, and less than one for pure JS tests.
     incremental_timeout = 6000
-    # 20 seconds for the first test, to include warmup time.
-    initial_timeout = 20000
+    # 30 seconds for the first test, to include warmup time.  We should
+    # work with html5browser to decrease this (such as making html5browser
+    # into a server that accepts URIs to run on a long-running browser
+    # process.)
+    initial_timeout = 30000
 
     def __init__(self, module_name, facet='mainsite'):
         self.module_name = module_name

@@ -4,7 +4,10 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import simplejson
 import urllib
@@ -1677,13 +1680,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
 
-    def getBugtaskBrowser(self):
+    def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
+            if title is not None:
+                bugtask.bug.title = title
         browser = self.getViewBrowser(
-            bugtask.target, '+bugs', rootsite='bugs')
+            bugtask.target, '+bugs', rootsite='bugs', no_login=no_login)
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
@@ -1713,21 +1718,33 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
 
+    def test_mustache_rendering_obfuscation(self):
+        """For anonymous users, email addresses are obfuscated."""
+        with self.dynamic_listings():
+            bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
+                no_login=True)
+        self.assertNotIn('a@example.com', browser.contents)
+
     def getNavigator(self):
         request = LaunchpadTestRequest()
         navigator = BugListingBatchNavigator([], request, [], 1)
         cache = IJSONRequestCache(request)
         bugtask = {
-            'id': '3.14159',
-            'title': 'title1',
-            'status': 'status1',
-            'importance': 'importance1',
-            'importance_class': 'importance_class1',
+            'age': 'age1',
+            'assignee': 'assignee1',
             'bugtarget': 'bugtarget1',
             'bugtarget_css': 'bugtarget_css1',
             'bug_heat_html': 'bug_heat_html1',
             'bug_url': 'bug_url1',
-            'milestone_name': 'milestone_name1'
+            'id': '3.14159',
+            'importance': 'importance1',
+            'importance_class': 'importance_class1',
+            'last_updated': 'updated1',
+            'milestone_name': 'milestone_name1',
+            'status': 'status1',
+            'reporter': 'reporter1',
+            'tags': 'tags1',
+            'title': 'title1',
         }
         bugtask.update(navigator.field_visibility)
         cache.objects['mustache_model'] = {
@@ -1793,6 +1810,46 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_milestone_name'] = True
         self.assertIn('milestone_name1', navigator.mustache)
 
+    def test_hiding_assignee(self):
+        """Showing milestone name shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_assignee', navigator.field_visibility)
+        self.assertNotIn('Assignee: assignee1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_assignee'] = True
+        self.assertIn('Assignee: assignee1', navigator.mustache)
+
+    def test_hiding_age(self):
+        """Showing age shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_age', navigator.field_visibility)
+        self.assertNotIn('age1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_age'] = True
+        self.assertIn('age1', navigator.mustache)
+
+    def test_hiding_tags(self):
+        """Showing tags shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_tags', navigator.field_visibility)
+        self.assertNotIn('tags1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_tags'] = True
+        self.assertIn('tags1', navigator.mustache)
+
+    def test_hiding_reporter(self):
+        """Showing reporter shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_reporter', navigator.field_visibility)
+        self.assertNotIn('Reporter: reporter1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_reporter'] = True
+        self.assertIn('Reporter: reporter1', navigator.mustache)
+
+    def test_hiding_last_updated(self):
+        """Showing last_updated shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_last_updated', navigator.field_visibility)
+        self.assertNotIn('last updated updated1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_last_updated'] = True
+        self.assertIn('last updated updated1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 
@@ -1833,3 +1890,52 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_model_assignee(self):
+        """Model contains expected fields with expected values."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertIs(None, item.model['assignee'])
+            assignee = self.factory.makePerson(displayname='Example Person')
+            item.bugtask.transitionToAssignee(assignee)
+            self.assertEqual('Example Person', item.model['assignee'])
+
+    def test_model_age(self):
+        """Model contains bug age."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
+            self.assertEqual('3 days old', item.model['age'])
+
+    def test_model_tags(self):
+        """Model contains bug tags."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.tags = ['tag1', 'tag2']
+            self.assertEqual('tag1 tag2', item.model['tags'])
+
+    def test_model_reporter(self):
+        """Model contains bug reporter."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertEqual(owner.displayname, item.model['reporter'])
+
+    def test_model_last_updated_date_last_updated(self):
+        """last_updated uses date_last_updated if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2000, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'on 2001-01-01', item.model['last_updated'])
+
+    def test_model_last_updated_date_last_message(self):
+        """last_updated uses date_last_message if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2001, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'on 2001-01-01', item.model['last_updated'])
