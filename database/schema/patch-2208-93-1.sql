@@ -6,40 +6,46 @@ CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
     product integer REFERENCES Product,
     distribution integer REFERENCES Distribution,
-    name text NOT NULL,
-    display_name text NOT NULL,
-    CONSTRAINT accesspolicy__product__name__key
-        UNIQUE (product, name),
-    CONSTRAINT accesspolicy__product__display_name__key
-        UNIQUE (product, display_name),
-    CONSTRAINT accesspolicy__distribution__name__key
-        UNIQUE (distribution, name),
-    CONSTRAINT accesspolicy__distribution__display_name__key
-        UNIQUE (distribution, display_name),
-    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL),
-    CONSTRAINT valid_name CHECK (valid_name(name))
+    type integer NOT NULL,
+    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL)
 );
+
+CREATE UNIQUE INDEX accesspolicy__product__type__key
+    ON AccessPolicy(product, type) WHERE product IS NOT NULL;
+CREATE UNIQUE INDEX accesspolicy__distribution__type__key
+    ON AccessPolicy(distribution, type) WHERE distribution IS NOT NULL;
 
 CREATE TABLE AccessPolicyArtifact (
     id serial PRIMARY KEY,
     bug integer REFERENCES Bug,
     branch integer REFERENCES Branch,
-    CONSTRAINT accesspolicyartifact__bug__key UNIQUE (bug),
-    CONSTRAINT accesspolicyartifact__branch__key UNIQUE (branch),
+    policy integer REFERENCES AccessPolicy,
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
+CREATE UNIQUE INDEX accesspolicyartifact__bug__key
+    ON AccessPolicyArtifact(bug) WHERE branch IS NULL;
+CREATE UNIQUE INDEX accesspolicyartifact__branch__key
+    ON AccessPolicyArtifact(branch) WHERE bug IS NULL;
+CREATE INDEX accesspolicyartifact__policy__key
+    ON AccessPolicyArtifact(policy);
+
 CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
-    policy integer NOT NULL REFERENCES AccessPolicy,
     person integer NOT NULL REFERENCES Person,
+    policy integer REFERENCES AccessPolicy,
     artifact integer REFERENCES AccessPolicyArtifact,
-    CONSTRAINT accesspolicygrant__policy__person__artifact__key
-        UNIQUE (policy, person, artifact)
+    creator integer NOT NULL REFERENCES Person,
+    date_created timestamp without time zone
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    CONSTRAINT has_target CHECK (policy IS NULL != artifact IS NULL)
 );
 
 CREATE UNIQUE INDEX accesspolicygrant__policy__person__key
-    ON AccessPolicyGrant(policy, person) WHERE artifact IS NULL;
+    ON AccessPolicyGrant(policy, person) WHERE policy IS NOT NULL;
+CREATE UNIQUE INDEX accessartifactgrant__artifact__person__key
+    ON AccessPolicyGrant(artifact, person) WHERE artifact IS NOT NULL;
+CREATE INDEX accesspolicygrant__person__idx ON AccessPolicyGrant(person);
 
 ALTER TABLE bug
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;

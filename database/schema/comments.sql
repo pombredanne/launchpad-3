@@ -8,24 +8,26 @@
 
 -- AccessPolicy
 
-COMMENT ON TABLE AccessPolicy IS 'A policy to manage access to a pillar\'s artifacts.';
-COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy applies to.';
-COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy applies to.';
-COMMENT ON COLUMN AccessPolicy.name IS 'A URL name for this policy.';
-COMMENT ON COLUMN AccessPolicy.display_name IS 'A human-readable name for this policy.';
+COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage a project or distribution\'s artifacts.';
+COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Private, Security, etc.';
 
 -- AccessPolicyArtifact
 
 COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
 COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
 COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
 
 -- AccessPolicyGrant
 
-COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy\'s artifacts.';
-COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The access policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person that holds the grant.';
-COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The optional artifact to which the access is restricted.';
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessPolicyGrant.person IS 'The date the access was granted.';
 
 -- Announcement
 
