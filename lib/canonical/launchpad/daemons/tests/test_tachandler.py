@@ -132,7 +132,7 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         # One deprecation warning is emitted.
         self.assertEqual(1, len(warnings_log))
-        self.assertIs(DeprecationWarning, warnings_log[0].category)
+        self.assertIs(UserWarning, warnings_log[0].category)
 
     def test_truncateLog(self):
         """
