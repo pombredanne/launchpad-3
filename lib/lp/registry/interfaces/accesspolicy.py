@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AccessPolicyType',
     'IAccessPolicy',
     'IAccessPolicyArtifact',
     'IAccessPolicyArtifactSource',
@@ -13,17 +14,38 @@ __all__ = [
     'IAccessPolicySource',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 
 
+class AccessPolicyType(DBEnumeratedType):
+    """Access policy type."""
+
+    PRIVATE = DBItem(1, """
+        Private
+
+        This policy covers general private information.
+        """)
+
+    SECURITY = DBItem(2, """
+        Security
+
+        This policy covers information relating to confidential security
+        vulnerabilities.
+        """)
+
+
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
-    name = Attribute("Name")
-    display_name = Attribute("Display name")
+    type = Attribute("Type")
+
     grants = Attribute("Grants")
 
 

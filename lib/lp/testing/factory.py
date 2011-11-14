@@ -177,6 +177,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -4328,15 +4329,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
 
-    def makeAccessPolicy(self, pillar=None, name=None, display_name=None):
+    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
         if pillar is None:
             pillar = self.makeProduct()
-        if name is None:
-            name = self.getUniqueUnicode()
-        if display_name is None:
-            display_name = self.getUniqueUnicode()
-        return getUtility(IAccessPolicySource).create(
-            pillar, name, display_name)
+        return getUtility(IAccessPolicySource).create(pillar, type)
 
     def makeAccessPolicyArtifact(self, concrete=None):
         if concrete is None:

@@ -10,18 +10,17 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
-from storm.properties import (
-    Int,
-    Unicode,
-    )
+from storm.properties import Int
 from storm.references import (
     Reference,
     ReferenceSet,
     )
 from zope.interface import implements
 
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyGrant,
@@ -39,8 +38,7 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
-    name = Unicode()
-    display_name = Unicode()
+    type = DBEnum(allow_none=True, enum=AccessPolicyType)
 
     grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
 
@@ -49,7 +47,7 @@ class AccessPolicy(StormBase):
         return self.product or self.distribution
 
     @classmethod
-    def create(cls, pillar, name, display_name):
+    def create(cls, pillar, type):
         from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.product import IProduct
         obj = cls()
@@ -57,8 +55,7 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
-        obj.name = name
-        obj.display_name = display_name
+        obj.type = type
         IStore(cls).add(obj)
         return obj
 
@@ -85,9 +82,9 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(cls, cls._constraintForPillar(pillar))
 
     @classmethod
-    def getByPillarAndName(cls, pillar, name):
+    def getByPillarAndType(cls, pillar, type):
         """See `IAccessPolicySource`."""
-        return cls.findByPillar(pillar).find(name=name).one()
+        return cls.findByPillar(pillar).find(type=type).one()
 
 
 class AccessPolicyArtifact(StormBase):
