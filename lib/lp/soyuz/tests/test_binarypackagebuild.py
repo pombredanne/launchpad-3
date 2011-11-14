@@ -431,6 +431,18 @@ class TestBuildSet(TestCaseWithFactory):
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
                 sprb.build_farm_job))
 
+    def test_getByBuildFarmJobs_works(self):
+        bpbs = [self.factory.makeBinaryPackageBuild() for i in xrange(10)]
+        self.assertContentEqual(
+            bpbs,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(
+                [bpb.build_farm_job for bpb in bpbs]))
+
+    def test_getByBuildFarmJobs_works_empty(self):
+        self.assertContentEqual(
+            [],
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs([]))
+
 
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
