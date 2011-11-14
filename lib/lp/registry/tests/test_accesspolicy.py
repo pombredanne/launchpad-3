@@ -39,16 +39,11 @@ class TestAccessPolicySource(TestCaseWithFactory):
 
     def test_create_for_product(self):
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
-        display_name = self.factory.getUniqueUnicode()
-        policy = getUtility(IAccessPolicySource).create(
-            product, name, display_name)
+        type = AccessPolicyType.SECURITY
+        policy = getUtility(IAccessPolicySource).create(product, type)
         self.assertThat(
             policy,
-            MatchesStructure.byEquality(
-                pillar=product,
-                name=name,
-                display_name=display_name))
+            MatchesStructure.byEquality(pillar=product, type=type))
 
     def test_getByID(self):
         # getByID finds the right policy.
