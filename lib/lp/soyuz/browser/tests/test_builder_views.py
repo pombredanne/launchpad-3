@@ -104,14 +104,18 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         # The builder's history view creation (i.e. the call to
         # view.setupBuildList) issues a constant number of queries
         # when recipe builds are displayed.
-        def call_setupBuildList():
-            view = create_initialized_view(self.builder, '+history')
-            view.setupBuildList()
+        def call_history_render():
+            create_initialized_view(self.builder, '+history').render()
         recorder1, recorder2 = self._record_queries_count(
-            call_setupBuildList,
+            call_history_render,
             self.createRecipeBuildWithBuilder)
 
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        # XXX: rvb 2011-11-14 bug=890326: The only query remaining is the
+        # one that results from a call to
+        # sourcepackagerecipebuild.buildqueue_record for each recipe build.
+        self.assertThat(
+            recorder2,
+            HasQueryCount(Equals(recorder1.count + 1 * self.nb_objects)))
 
     def test_build_history_queries_count_binary_package_builds(self):
         # Rendering to builder's history issues a constant number of queries
