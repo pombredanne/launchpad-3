@@ -111,13 +111,7 @@ class TestBuilderHistoryView(TestCaseWithFactory):
             call_setupBuildList,
             self.createRecipeBuildWithBuilder)
 
-        # rvb 2011-11-11: Each build issues 2 new queries.
-        # This is because of the way SourcePackageRecipe._recipe_data
-        # fetches SourcePackageRecipeData. I've no idea how to prefetch
-        # this.
-        self.assertThat(
-            recorder2,
-            HasQueryCount(Equals(recorder1.count + 2 * self.nb_objects)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_build_history_queries_count_binary_package_builds(self):
         # Rendering to builder's history issues a constant number of queries

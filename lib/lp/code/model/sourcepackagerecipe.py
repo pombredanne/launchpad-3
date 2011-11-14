@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,W1001
@@ -65,12 +65,21 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
+from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.stormexpr import Greatest
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
 
@@ -158,7 +167,7 @@ class SourcePackageRecipe(Storm):
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=True)
 
-    @property
+    @cachedproperty
     def _recipe_data(self):
         return Store.of(self).find(
             SourcePackageRecipeData,
@@ -172,6 +181,20 @@ class SourcePackageRecipe(Storm):
     @property
     def base_branch(self):
         return self._recipe_data.base_branch
+
+    @staticmethod
+    def preLoadDataForSourcePackageRecipes(sourcepackagerecipes):
+        caches = dict((spr.id, get_property_cache(spr))
+            for spr in sourcepackagerecipes)
+        spr_datas = load_referencing(
+            SourcePackageRecipeData,
+            sourcepackagerecipes, ['sourcepackage_recipe_id'])
+        for spr_data in spr_datas:
+            cache = caches[spr_data.sourcepackage_recipe_id]
+            cache._recipe_data = spr_data
+        SourcePackageRecipeData.preLoadReferencedBranches(spr_datas)
+        load_related(
+            Branch, spr_datas, ['base_branch_id'])
 
     def setRecipeText(self, recipe_text):
         parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)

@@ -66,14 +66,9 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
-from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.person import Person
-from lp.services.database.bulk import (
-    load_referencing,
-    load_related,
-    )
+from lp.services.database.bulk import load_related
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
@@ -309,12 +304,8 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                 Archive, package_builds, ['archive_id'])
             sprs = load_related(
                 SourcePackageRecipe, rows, ['recipe_id'])
-            sprds = load_referencing(
-                SourcePackageRecipeData, sprs, ['sourcepackage_recipe_id'])
-            load_related(
-                Branch, sprds, ['base_branch_id'])
-            load_related(
-                Person, rows, ['requester_id'])
+            SourcePackageRecipe.preLoadDataForSourcePackageRecipes(
+                sprs)
         resultset = Store.of(build_farm_jobs[0]).find(cls,
             cls.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
