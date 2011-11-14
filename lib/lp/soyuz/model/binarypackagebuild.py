@@ -866,6 +866,19 @@ class BinaryPackageBuildSet:
             return None
         return resulting_tuple[0]
 
+    def getByBuildFarmJobs(self, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+        return Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id.is_in(build_farm_job_ids))
+
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""
         if not archseries:

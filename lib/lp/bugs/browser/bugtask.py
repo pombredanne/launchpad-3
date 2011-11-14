@@ -92,6 +92,7 @@ from zope.app.form.interfaces import (
     InputErrors,
     )
 from zope.app.form.utility import setUpWidget
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -278,6 +279,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.utils import obfuscate_structure
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -2310,9 +2312,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
     @property
     def mustache(self):
         """The rendered mustache template."""
-        cache = IJSONRequestCache(self.request)
+        objects = IJSONRequestCache(self.request).objects
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            objects = obfuscate_structure(objects)
         return pystache.render(self.mustache_template,
-                               cache.objects['mustache_model'])
+                               objects['mustache_model'])
 
     @property
     def model(self):
@@ -3622,59 +3626,76 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return 'false'
 
-    @property
+    @cachedproperty
     def other_users_affected_count(self):
-        """The number of other users affected by this bug."""
-        if self.current_user_affected_status:
-            return self.context.users_affected_count - 1
+        """The number of other users affected by this bug.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            if self.current_user_affected_status:
+                return self.context.users_affected_count - 1
+            else:
+                return self.context.users_affected_count
         else:
-            return self.context.users_affected_count
+            return self.context.other_users_affected_count_with_dupes
 
-    @property
+    @cachedproperty
+    def total_users_affected_count(self):
+        """The number of affected users, typically across all users.
+
+        Counting across duplicates may be disabled at run time.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            return self.context.users_affected_count
+        else:
+            return self.context.users_affected_count_with_dupes
+
+    @cachedproperty
     def affected_statement(self):
         """The default "this bug affects" statement to show.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.other_users_affected_count == 1:
-            if self.current_user_affected_status is None:
+        me_affected = self.current_user_affected_status
+        other_affected = self.other_users_affected_count
+        if me_affected is None:
+            if other_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
-            elif self.current_user_affected_status:
-                return "This bug affects you and 1 other person"
-            else:
-                return "This bug affects 1 person, but not you"
-        elif self.other_users_affected_count > 1:
-            if self.current_user_affected_status is None:
+            elif other_affected > 1:
                 return (
                     "This bug affects %d people. Does this bug "
-                    "affect you?" % (self.other_users_affected_count))
-            elif self.current_user_affected_status:
-                return "This bug affects you and %d other people" % (
-                    self.other_users_affected_count)
+                    "affect you?" % (other_affected))
             else:
-                return "This bug affects %d people, but not you" % (
-                    self.other_users_affected_count)
-        else:
-            if self.current_user_affected_status is None:
                 return "Does this bug affect you?"
-            elif self.current_user_affected_status:
+        elif me_affected is True:
+            if other_affected == 0:
                 return "This bug affects you"
+            elif other_affected == 1:
+                return "This bug affects you and 1 other person"
             else:
+                return "This bug affects you and %d other people" % (
+                    other_affected)
+        else:
+            if other_affected == 0:
                 return "This bug doesn't affect you"
+            elif other_affected == 1:
+                return "This bug affects 1 person, but not you"
+            elif other_affected > 1:
+                return "This bug affects %d people, but not you" % (
+                    other_affected)
 
-    @property
+    @cachedproperty
     def anon_affected_statement(self):
         """The "this bug affects" statement to show to anonymous users.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.context.users_affected_count == 1:
+        affected = self.total_users_affected_count
+        if affected == 1:
             return "This bug affects 1 person"
-        elif self.context.users_affected_count > 1:
-            return "This bug affects %d people" % (
-                self.context.users_affected_count)
+        elif affected > 1:
+            return "This bug affects %d people" % affected
         else:
             return None
 
