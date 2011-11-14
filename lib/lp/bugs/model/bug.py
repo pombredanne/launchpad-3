@@ -179,8 +179,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -190,7 +190,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
     validate_public_person,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries

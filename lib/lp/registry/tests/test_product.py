@@ -16,7 +16,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,

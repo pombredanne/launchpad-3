@@ -1,4 +1,5 @@
-= Bug report index page =
+Bug report index page
+=====================
 
 The bug index is the main page of a bug report. It contains all sorts of
 interesting things related to fixing a problem: the bug description,
@@ -17,7 +18,8 @@ The breadcrumbs and other navigation include a link to the bug itself.
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
-    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) -
+      http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
@@ -123,7 +125,8 @@ attachment or patch" page, for use when JavaScript isn't available.
     http://bugs.launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
 
 
-== Navigatig to a bug in the wrong context ==
+Navigatig to a bug in the wrong context
+---------------------------------------
 
 If we navigate to a bug in a context in which it doesn't exist, we are
 redirected to the default context.
@@ -133,7 +136,8 @@ redirected to the default context.
     http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
-== Bugs with many tasks ==
+Bugs with many tasks
+--------------------
 
 Some bugs have many bug tasks, which causes the Javascript initialization
 code for them take too long. As a last resort optimization we disable that
