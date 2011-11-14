@@ -24,9 +24,9 @@ CREATE TABLE AccessPolicyArtifact (
 );
 
 CREATE UNIQUE INDEX accesspolicyartifact__bug__key
-    ON AccessPolicyArtifact(bug) WHERE branch IS NULL;
+    ON AccessPolicyArtifact(bug) WHERE bug IS NOT NULL;
 CREATE UNIQUE INDEX accesspolicyartifact__branch__key
-    ON AccessPolicyArtifact(branch) WHERE bug IS NULL;
+    ON AccessPolicyArtifact(branch) WHERE branch IS NOT NULL;
 CREATE INDEX accesspolicyartifact__policy__key
     ON AccessPolicyArtifact(policy);
 
