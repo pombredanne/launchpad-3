@@ -2,9 +2,6 @@
 #
 # python port of the nice maintainace-check script by  Nick Barcet
 #
-# taken from:
-#  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
-# (where it will vanish once taken here)
 
 # this warning filter is only needed on older versions of python-apt,
 # once the machine runs lucid it can be removed
@@ -22,6 +19,33 @@ import urlparse
 
 from optparse import OptionParser
 
+
+class UbuntuMaintenance(object):
+    """ Represents the support timeframe for a regular ubuntu release """
+    
+    # architectures that are full supported (including LTS time)
+    PRIMARY_ARCHES = ["i386", "amd64"]
+
+    # architectures we support (but not for LTS time)
+    SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
+
+    # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
+    SERVER_SEEDS = ["supported-server", "server-ship"]
+    DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
+    SUPPORTED_SEEDS = ["all"]
+
+    # normal support timeframe
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("18m", SUPPORTED_SEEDS),
+        ]
+
+    # distro names and if they get LTS support
+    DISTRO_NAMES = [ 
+        ("ubuntu", False),
+        ("kubuntu", False),
+        ]
+
 # This is fun! We have a bunch of cases for 10.04 LTS
 #
 #  - distro "ubuntu" follows SUPPORT_TIMEFRAME_LTS but only for
@@ -30,41 +54,44 @@ from optparse import OptionParser
 #    considered *but* only follow SUPPORT_TIMEFRAME
 #  - anything that is in armel follows SUPPORT_TIMEFRAME
 #
+class LucidUbuntuMaintenance(UbuntuMaintenance):
+    """ Represents the support timeframe for a 10.04 (lucid) LTS release, 
+        the exact rules differ from LTS release to LTS release 
+    """
 
-# codename of the lts releases
-LTS_RELEASES = ["dapper", "hardy", "lucid"]
-
-# architectures that are full supported (including LTS time)
-PRIMARY_ARCHES = ["i386", "amd64"]
-
-# architectures we support (but not for LTS time)
-SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
-
-# what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-SERVER_SEEDS = ["supported-server", "server-ship"]
-DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
-SUPPORTED_SEEDS = ["all"]
-
-# normal support timeframe
-# time, seeds, arches
-SUPPORT_TIMEFRAME = [
-    ("18m", SUPPORTED_SEEDS),
-]
-
-# lts support timeframe
-# time, seeds, arches
-SUPPORT_TIMEFRAME_LTS = [
-    ("5y", SERVER_SEEDS),
-    ("3y", DESKTOP_SEEDS),
-    ("18m", SUPPORTED_SEEDS),
-]
-
-# distro names and if they get LTS support (order is important)
-DISTRO_NAMES_AND_LTS_SUPPORT = [
-    ("ubuntu", True),
-    ("kubuntu", True),
-    ("netbook", False),
+    # lts support timeframe, order is important, least supported must be last
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("5y",  UbuntuMaintenance.SERVER_SEEDS),
+        ("3y",  UbuntuMaintenance.DESKTOP_SEEDS),
+        ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
     ]
+
+    # distro names and if they get LTS support (order is important)
+    DISTRO_NAMES_AND_LTS_SUPPORT = [
+        ("ubuntu", True),
+        ("kubuntu", True),
+    ]
+
+class PreciseUbuntuMaintenance(UbuntuMaintenance):
+    """ The support timeframe for the 12.04 (precise) LTS release.
+        This changes the timeframe for desktop packages from 3y to 5y
+    """
+    # lts support timeframe, order is important, least supported must be last
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("5y", UbuntuMaintenance.SERVER_SEEDS),
+        ("5y", UbuntuMaintenance.DESKTOP_SEEDS),
+        ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
+    ]
+
+    # distro names and if they get LTS support (order is important)
+    DISTRO_NAMES_AND_LTS_SUPPORT = [
+        ("ubuntu", True),
+        ("kubuntu", False),
+        ("netbook", False),
+    ]
+
 
 # Names of the distribution releases that are not supported by this
 # tool. All later versions are supported.
@@ -317,6 +344,12 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         distro = "lucid"
+    
+    # maintenance class to use
+    klass = globals().get("%sUbuntuMaintenance" % distro.capitalize())
+    if klass is None:
+        klass = UbuntuMaintenance
+    ubuntu_maintenance = klass()
 
     # make sure our deb-src information is up-to-date
     create_and_update_deb_src_source_list(distro)
@@ -332,7 +365,7 @@ if __name__ == "__main__":
 
     # go over the distros we need to check
     pkg_support_time = {}
-    for (name, lts_supported) in DISTRO_NAMES_AND_LTS_SUPPORT:
+    for (name, lts_supported) in ubuntu_maintenance.DISTRO_NAMES_AND_LTS_SUPPORT:
 
         # get basic structure file
         try:
@@ -342,17 +375,13 @@ if __name__ == "__main__":
             continue
 
         # get dicts of pkgname -> support timeframe string
-        support_timeframe = SUPPORT_TIMEFRAME
-        if lts_supported and distro in LTS_RELEASES:
-            support_timeframe = SUPPORT_TIMEFRAME_LTS
-        else:
-            support_timeframe = SUPPORT_TIMEFRAME
+        support_timeframe = ubuntu_maintenance.SUPPORT_TIMEFRAME
         get_packages_support_time(
             structure, name, pkg_support_time, support_timeframe)
 
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
-    for arch in PRIMARY_ARCHES:
+    for arch in ubuntu_maintenance.PRIMARY_ARCHES:
         rootdir="./aptroot.%s" % distro
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
@@ -410,12 +439,12 @@ if __name__ == "__main__":
             # go over the supported arches, they are divided in
             # first-class (PRIMARY) and second-class with different
             # support levels
-            for arch in SUPPORTED_ARCHES:
+            for arch in ubuntu_maintenance.SUPPORTED_ARCHES:
                 # ensure we do not overwrite arch-specific overwrites
                 pkgname_and_arch = "%s/%s" % (pkgname, arch)
                 if pkgname_and_arch in pkg_support_time:
                     break
-                if arch in PRIMARY_ARCHES:
+                if arch in ubuntu_maintenance.PRIMARY_ARCHES:
                     # arch with full LTS support
                     print "%s %s %s" % (
                         pkgname_and_arch, SUPPORT_TAG,
@@ -425,4 +454,4 @@ if __name__ == "__main__":
                     # support_timeframe
                     print "%s %s %s" % (
                         pkgname_and_arch, SUPPORT_TAG,
-                        SUPPORT_TIMEFRAME[0][0])
+                        ubuntu_maintenance.SUPPORT_TIMEFRAME[-1][0])
