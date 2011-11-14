@@ -553,7 +553,7 @@ class TestWebService(WebServiceTestCase):
         # check we can access context filtered references - e.g. on question.
         oopsid = "OOPS-abcdef1234"
         distro = self.factory.makeDistribution()
-        question = self.factory.makeQuestion(
+        self.factory.makeQuestion(
             title="Crash with %s" % oopsid, target=distro)
         transaction.commit()
         ws_distro = self.wsObject(distro, distro.owner)
