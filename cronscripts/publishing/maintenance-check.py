@@ -77,6 +77,7 @@ class PreciseUbuntuMaintenance(UbuntuMaintenance):
     """ The support timeframe for the 12.04 (precise) LTS release.
         This changes the timeframe for desktop packages from 3y to 5y
     """
+
     # lts support timeframe, order is important, least supported must be last
     # time, seeds
     SUPPORT_TIMEFRAME = [
@@ -123,6 +124,18 @@ ARCHIVE_ROOT = os.environ.get(
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
+
+
+
+# python-apt compat, the fallback can be removed once the code
+# runs on lucid or newer
+try:
+    AcquireProgress = apt.progress.base.AcquireProgress
+    OpProgress = apt.progress.base.OpProgress
+except AttributeError:
+    # really old (hardy) interface
+    AcquireProgress = apt.progress.FetchProgress
+    OpProgress = apt.progress.OpProgress
 
 
 def get_binaries_for_source_pkg(srcname):
@@ -193,7 +206,7 @@ def create_and_update_deb_src_source_list(distroseries):
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     try:
-        cache.update(apt.progress.FetchProgress())
+        cache.update(AcquireProgress())
     except SystemError:
         logging.exception("cache.update() failed")
 
@@ -384,10 +397,10 @@ if __name__ == "__main__":
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
-            cache.update(apt.progress.FetchProgress())
+            cache.update(AcquireProgress())
         except SystemError:
             logging.exception("cache.update() failed")
-        cache.open(apt.progress.OpProgress())
+        cache.open(OpProgress())
         for pkg in cache:
             # ignore multiarch package names
             if ":" in pkg.name:
