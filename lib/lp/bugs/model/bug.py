@@ -481,6 +481,15 @@ class Bug(SQLBase):
         return self.users_affected_with_dupes.count()
 
     @property
+    def other_users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        if not current_user:
+            return self.users_affected_count_with_dupes
+        return self.users_affected_with_dupes.find(
+            Person.id != current_user.id).count()
+
+    @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         # Note that this is a decorated result set, so will cache its
