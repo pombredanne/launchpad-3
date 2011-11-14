@@ -10,6 +10,10 @@ import StringIO
 import sys
 
 from lazr.restful.utils import get_current_browser_request
+from testtools.content import (
+    Content,
+    UTF8_TEXT,
+    )
 
 from canonical.launchpad.webapp import adapter as da
 from canonical.testing import DatabaseFunctionalLayer
@@ -255,6 +259,19 @@ class TestLoggingOutsideOfRequest(TestCase):
         self.assertEqual(
             (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 142'),
             logger.query_data[0]['sql'])
+
+    def test_recorder_detail(self):
+        # StormStatementRecorder.detail is a testtools.content.Content object
+        # representing the recorded statements.
+        with StormStatementRecorder() as logger:
+            self.execute()
+        detail = logger.detail
+        self.assertIsInstance(detail, Content)
+        self.assertEqual(UTF8_TEXT, detail.content_type)
+        self.assertEqual(
+            "1-2@SQL-stub-database SELECT * FROM bar WHERE bing = 42\n"
+            "---------------------------------------------------------"
+            "-------------", "".join(detail.iter_text()).strip())
 
 
 class TestLoggingWithinRequest(TestCaseWithFactory):

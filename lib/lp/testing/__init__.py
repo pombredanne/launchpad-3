@@ -286,6 +286,11 @@ class StormStatementRecorder:
     def statements(self):
         return [record['sql'][3] for record in self.query_data]
 
+    @property
+    def detail(self):
+        """A `Content` object representing all the recorded information."""
+        return Content(UTF8_TEXT, lambda: [str(self)])
+
     def __enter__(self):
         self.query_data = start_sql_logging(self.tracebacks_if)
         return self
