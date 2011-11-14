@@ -33,11 +33,11 @@ CREATE INDEX accesspolicyartifact__policy__key
 CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
     grantee integer NOT NULL REFERENCES Person,
-    policy integer REFERENCES AccessPolicy,
-    artifact integer REFERENCES AccessPolicyArtifact,
     grantor integer NOT NULL REFERENCES Person,
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    policy integer REFERENCES AccessPolicy,
+    artifact integer REFERENCES AccessPolicyArtifact,
     CONSTRAINT has_target CHECK (policy IS NULL != artifact IS NULL)
 );
 
