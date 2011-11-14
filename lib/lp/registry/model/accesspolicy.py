@@ -12,16 +12,18 @@ __all__ = [
 
 from storm.properties import (
     Int,
-    Unicode,
+    DateTime,
     )
 from storm.references import (
     Reference,
     ReferenceSet,
     )
-from zope.interface import implements
+from zope.interface import implements, providedBy
 
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyGrant,
@@ -39,8 +41,7 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
-    name = Unicode()
-    display_name = Unicode()
+    type = DBEnum(allow_none=True, enum=AccessPolicyType)
 
     grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
 
@@ -49,7 +50,7 @@ class AccessPolicy(StormBase):
         return self.product or self.distribution
 
     @classmethod
-    def create(cls, pillar, name, display_name):
+    def create(cls, pillar, type):
         from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.product import IProduct
         obj = cls()
@@ -57,8 +58,7 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
-        obj.name = name
-        obj.display_name = display_name
+        obj.type = type
         IStore(cls).add(obj)
         return obj
 
@@ -85,9 +85,9 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(cls, cls._constraintForPillar(pillar))
 
     @classmethod
-    def getByPillarAndName(cls, pillar, name):
+    def getByPillarAndType(cls, pillar, type):
         """See `IAccessPolicySource`."""
-        return cls.findByPillar(pillar).find(name=name).one()
+        return cls.findByPillar(pillar).find(type=type).one()
 
 
 class AccessPolicyArtifact(StormBase):
@@ -100,6 +100,8 @@ class AccessPolicyArtifact(StormBase):
     bug = Reference(bug_id, 'Bug.id')
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
 
     @property
     def concrete_artifact(self):
@@ -142,13 +144,16 @@ class AccessPolicyGrant(StormBase):
     __storm_table__ = 'AccessPolicyGrant'
 
     id = Int(primary=True)
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
     policy_id = Int(name='policy')
     policy = Reference(policy_id, 'AccessPolicy.id')
-    person_id = Int(name='person')
-    person = Reference(person_id, 'Person.id')
     abstract_artifact_id = Int(name='artifact')
     abstract_artifact = Reference(
         abstract_artifact_id, 'AccessPolicyArtifact.id')
+    grantor_id = Int(name='grantor')
+    grantor = Reference(grantor_id, 'Person.id')
+    date_created = DateTime()
 
     @property
     def concrete_artifact(self):
@@ -156,14 +161,19 @@ class AccessPolicyGrant(StormBase):
             return self.abstract_artifact.concrete_artifact
 
     @classmethod
-    def grant(cls, person, policy, abstract_artifact=None):
+    def grant(cls, grantee, grantor, object):
         """See `IAccessPolicyGrantSource`."""
-        obj = cls()
-        obj.policy = policy
-        obj.person = person
-        obj.abstract_artifact = abstract_artifact
-        IStore(cls).add(obj)
-        return obj
+        grant = cls()
+        grant.grantee = grantee
+        grant.grantor = grantor
+        if IAccessPolicy.providedBy(object):
+            grant.policy = object
+        elif IAccessPolicyArtifact.providedBy(object):
+            grant.abstract_artifact = object
+        else:
+            raise AssertionError("Unsupported object: %r" % object)
+        IStore(cls).add(grant)
+        return grant
 
     @classmethod
     def getByID(cls, id):

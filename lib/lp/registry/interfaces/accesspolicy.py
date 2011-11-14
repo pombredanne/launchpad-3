@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AccessPolicyType',
     'IAccessPolicy',
     'IAccessPolicyArtifact',
     'IAccessPolicyArtifactSource',
@@ -16,6 +17,10 @@ __all__ = [
 
 import httplib
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
@@ -28,24 +33,45 @@ class UnsuitableAccessPolicyError(Exception):
     pass
 
 
+class AccessPolicyType(DBEnumeratedType):
+    """Access policy type."""
+
+    PRIVATE = DBItem(1, """
+        Private
+
+        This policy covers general private information.
+        """)
+
+    SECURITY = DBItem(2, """
+        Security
+
+        This policy covers information relating to confidential security
+        vulnerabilities.
+        """)
+
+
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
-    name = Attribute("Name")
-    display_name = Attribute("Display name")
+    type = Attribute("Type")
+
     grants = Attribute("Grants")
 
 
 class IAccessPolicyArtifact(Interface):
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
+    policy = Attribute("Access policy")
 
 
 class IAccessPolicyGrant(Interface):
     id = Attribute("ID")
+    grantee = Attribute("Grantee")
+    grantor = Attribute("Grantor")
+    date_created = Attribute("Date created")
     policy = Attribute("Access policy")
-    person = Attribute("Person")
     abstract_artifact = Attribute("Abstract artifact")
+
     concrete_artifact = Attribute("Concrete artifact")
 
 
@@ -57,8 +83,8 @@ class IAccessPolicySource(Interface):
     def getByID(id):
         """Return the `IAccessPolicy` with the given ID."""
 
-    def getByPillarAndName(pillar, display_name):
-        """Return the pillar's `IAccessPolicy` with the given name."""
+    def getByPillarAndType(pillar, type):
+        """Return the pillar's `IAccessPolicy` with the given type."""
 
     def findByPillar(pillar):
         """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
@@ -75,14 +101,13 @@ class IAccessPolicyArtifactSource(Interface):
 
 class IAccessPolicyGrantSource(Interface):
 
-    def grant(person, policy, abstract_artifact=None):
+    def grant(grantee, grantor, object):
         """Create an `IAccessPolicyGrant`.
 
-        :param person: the `IPerson` to hold the access.
-        :param policy: the `IAccessPolicy` to grant access to.
-        :param abstract_artifact: an optional `IAccessPolicyArtifact` to
-            which the grant should be restricted. If omitted, access is
-            granted to all artifacts under the policy.
+        :param grantee: the `IPerson` to hold the access.
+        :param grantor: the `IPerson` that grants the access.
+        :param object: the `IAccessPolicy` or `IAccessPolicyArtifact` to
+            grant access to.
         """
 
     def getByID(id):

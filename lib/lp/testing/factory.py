@@ -177,6 +177,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -4328,29 +4329,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
 
-    def makeAccessPolicy(self, pillar=None, name=None, display_name=None):
+    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
         if pillar is None:
             pillar = self.makeProduct()
-        if name is None:
-            name = self.getUniqueUnicode()
-        if display_name is None:
-            display_name = self.getUniqueUnicode()
-        return getUtility(IAccessPolicySource).create(
-            pillar, name, display_name)
+        policy = getUtility(IAccessPolicySource).create(pillar, type)
+        IStore(policy).flush()
+        return policy
 
-    def makeAccessPolicyArtifact(self, concrete=None):
+    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
         if concrete is None:
             concrete = self.makeBranch()
-        return getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact.policy = policy
+        IStore(artifact).flush()
+        return artifact
 
-    def makeAccessPolicyGrant(self, person=None, policy=None,
-                              abstract_artifact=None):
-        if person is None:
-            person = self.makePerson()
-        if policy is None:
-            policy = self.makeAccessPolicy()
-        return getUtility(IAccessPolicyGrantSource).grant(
-            person, policy, abstract_artifact)
+    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        if object is None:
+            object = self.makeAccessPolicy()
+        grant = getUtility(IAccessPolicyGrantSource).grant(
+            grantee, grantor, object)
+        IStore(grant).flush()
+        return grant
 
 
 # Some factory methods return simple Python types. We don't add

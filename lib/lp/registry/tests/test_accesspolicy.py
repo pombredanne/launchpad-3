@@ -9,6 +9,7 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
@@ -38,19 +39,14 @@ class TestAccessPolicySource(TestCaseWithFactory):
 
     def test_create_for_product(self):
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
-        display_name = self.factory.getUniqueUnicode()
-        policy = getUtility(IAccessPolicySource).create(
-            product, name, display_name)
+        type = AccessPolicyType.SECURITY
+        policy = getUtility(IAccessPolicySource).create(product, type)
         self.assertThat(
             policy,
-            MatchesStructure.byEquality(
-                pillar=product,
-                name=name,
-                display_name=display_name))
+            MatchesStructure.byEquality(pillar=product, type=type))
 
     def test_getByID(self):
-        # getByPillarAndName finds the right policy.
+        # getByID finds the right policy.
         policy = self.factory.makeAccessPolicy()
         # Flush so we get an ID.
         Store.of(policy).flush()
@@ -58,40 +54,45 @@ class TestAccessPolicySource(TestCaseWithFactory):
             policy, getUtility(IAccessPolicySource).getByID(policy.id))
 
     def test_getByID_nonexistent(self):
-        # getByPillarAndName returns None if the policy doesn't exist.
+        # getByID returns None if the policy doesn't exist.
         self.assertIs(
             None,
             getUtility(IAccessPolicySource).getByID(
                 self.factory.getUniqueInteger()))
 
-    def test_getByPillarAndName(self):
-        # getByPillarAndName finds the right policy.
+    def test_getByPillarAndType(self):
+        # getByPillarAndType finds the right policy.
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
-        # Create a policy with the desired attributes, and another
-        # random one.
-        policy = self.factory.makeAccessPolicy(
-            pillar=product, name=name)
-        self.factory.makeAccessPolicy()
-        self.assertEqual(
-            policy,
-            getUtility(IAccessPolicySource).getByPillarAndName(product, name))
 
-    def test_getByPillarAndName_nonexistent(self):
-        # getByPillarAndName returns None if the policy doesn't exist.
+        private_policy = self.factory.makeAccessPolicy(
+            pillar=product, type=AccessPolicyType.PRIVATE)
+        security_policy = self.factory.makeAccessPolicy(
+            pillar=product, type=AccessPolicyType.SECURITY)
+        self.assertEqual(
+            private_policy,
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.PRIVATE))
+        self.assertEqual(
+            security_policy,
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.SECURITY))
+
+    def test_getByPillarAndType_nonexistent(self):
+        # getByPillarAndType returns None if the policy doesn't exist.
         # Create policy identifiers, and an unrelated policy.
-        self.factory.makeAccessPolicy()
+        self.factory.makeAccessPolicy(type=AccessPolicyType.PRIVATE)
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
         self.assertIs(
             None,
-            getUtility(IAccessPolicySource).getByPillarAndName(product, name))
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.PRIVATE))
 
     def test_findByPillar(self):
         # findByPillar finds only the relevant policies.
         product = self.factory.makeProduct()
         policies = [
-            self.factory.makeAccessPolicy(pillar=product) for i in range(3)]
+            self.factory.makeAccessPolicy(pillar=product, type=type)
+            for type in AccessPolicyType.items]
         self.factory.makeAccessPolicy()
         self.assertContentEqual(
             policies,
@@ -105,6 +106,12 @@ class TestAccessPolicyArtifact(TestCaseWithFactory):
         self.assertThat(
             self.factory.makeAccessPolicyArtifact(),
             Provides(IAccessPolicyArtifact))
+
+    def test_policy(self):
+        policy = self.factory.makeAccessPolicy()
+        self.assertEqual(
+            policy,
+            self.factory.makeAccessPolicyArtifact(policy=policy).policy)
 
 
 class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
@@ -169,12 +176,12 @@ class TestAccessPolicyGrant(TestCaseWithFactory):
         bug = self.factory.makeBug()
         abstract = self.factory.makeAccessPolicyArtifact(bug)
         grant = self.factory.makeAccessPolicyGrant(
-            abstract_artifact=abstract)
+            object=abstract)
         self.assertEqual(bug, grant.concrete_artifact)
 
     def test_no_concrete_artifact(self):
         grant = self.factory.makeAccessPolicyGrant(
-            abstract_artifact=None)
+            object=self.factory.makeAccessPolicy())
         self.assertIs(None, grant.concrete_artifact)
 
 
@@ -183,28 +190,31 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
 
     def test_grant_for_policy(self):
         policy = self.factory.makeAccessPolicy()
-        person = self.factory.makePerson()
+        grantee = self.factory.makePerson()
+        grantor = self.factory.makePerson()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            person, policy)
+            grantee, grantor, policy)
         self.assertThat(
             grant,
             MatchesStructure.byEquality(
-                person=person,
+                grantee=grantee,
+                grantor=grantor,
                 policy=policy,
                 abstract_artifact=None,
-                concrete_artifact=None))
+                concrete_artifact=None,))
 
     def test_grant_with_artifact(self):
-        policy = self.factory.makeAccessPolicy()
-        person = self.factory.makePerson()
         artifact = self.factory.makeAccessPolicyArtifact()
+        grantee = self.factory.makePerson()
+        grantor = self.factory.makePerson()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            person, policy, artifact)
+            grantee, grantor, artifact)
         self.assertThat(
             grant,
             MatchesStructure.byEquality(
-                person=person,
-                policy=policy,
+                grantee=grantee,
+                grantor=grantor,
+                policy=None,
                 abstract_artifact=artifact,
                 concrete_artifact=artifact.concrete_artifact))
 
@@ -228,7 +238,7 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         # findByPolicy finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
         grants = [
-            self.factory.makeAccessPolicyGrant(policy=policy)
+            self.factory.makeAccessPolicyGrant(object=policy)
             for i in range(3)]
         self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
