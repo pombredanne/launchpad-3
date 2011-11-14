@@ -3626,13 +3626,17 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return 'false'
 
-    @property
+    @cachedproperty
     def other_users_affected_count(self):
-        """The number of other users affected by this bug."""
-        if self.current_user_affected_status:
-            return self.total_users_affected_count - 1
+        """The number of other users affected by this bug.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            if self.current_user_affected_status:
+                return self.context.users_affected_count - 1
+            else:
+                return self.context.users_affected_count
         else:
-            return self.total_users_affected_count
+            return self.context.other_users_affected_count_with_dupes
 
     @cachedproperty
     def total_users_affected_count(self):
@@ -3653,32 +3657,32 @@ class BugTasksAndNominationsView(LaunchpadView):
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
         me_affected = self.current_user_affected_status
-        total_affected = self.total_users_affected_count
+        other_affected = self.other_users_affected_count
         if me_affected is None:
-            if total_affected == 1:
+            if other_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
-            elif total_affected > 1:
+            elif other_affected > 1:
                 return (
                     "This bug affects %d people. Does this bug "
-                    "affect you?" % (total_affected))
+                    "affect you?" % (other_affected))
             else:
                 return "Does this bug affect you?"
         elif me_affected is True:
-            if total_affected == 1:
+            if other_affected == 0:
                 return "This bug affects you"
-            elif total_affected == 2:
+            elif other_affected == 1:
                 return "This bug affects you and 1 other person"
             else:
                 return "This bug affects you and %d other people" % (
-                    total_affected - 1)
+                    other_affected)
         else:
-            if total_affected == 0:
+            if other_affected == 0:
                 return "This bug doesn't affect you"
-            elif total_affected == 1:
+            elif other_affected == 1:
                 return "This bug affects 1 person, but not you"
-            elif total_affected > 1:
+            elif other_affected > 1:
                 return "This bug affects %d people, but not you" % (
-                    total_affected)
+                    other_affected)
 
     @cachedproperty
     def anon_affected_statement(self):

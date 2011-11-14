@@ -122,7 +122,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder, HasQueryCount(LessThan(85)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -138,7 +138,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                87, self.factory.makePerson())
+                88, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -335,13 +335,16 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_1, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_2, True)
+        self.refresh()
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
         self.bug.markUserAffected(other_user_1, False)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
@@ -349,22 +352,23 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
 
-    def test_total_users_affected_count_with_dupes(self):
+    def makeDuplicate(self):
+        user2 = self.factory.makePerson()
+        self.bug2 = self.factory.makeBug()
+        self.bug2.markUserAffected(user2, True)
+        self.assertEqual(
+            2, self.bug2.users_affected_count)
+        self.bug2.markAsDuplicate(self.bug)
+        # After this there are three users already affected: the creators of
+        # the two bugs, plus user2.  The current user is not yet affected by
+        # any of them.
+
+    def test_counts_user_unaffected(self):
         self.useFixture(FeatureFixture(
             {'bugs.affected_count_includes_dupes.disabled': ''}))
-        user2 = self.factory.makePerson()
-        bug2 = self.factory.makeBug()
-        bug2.markUserAffected(user2, True)
-        self.assertEqual(
-            2, bug2.users_affected_count)
-        bug2.markAsDuplicate(self.bug)
-        self.refresh()
-        # 3 in total: user2, self.view.user, and admin (used to create
-        # self.bug).
+        self.makeDuplicate()
         self.assertEqual(
             3, self.view.total_users_affected_count)
-        # Although you're affected by a duplicate, you're not affected by the
-        # directly viewed bug.
         self.assertEqual(
             "This bug affects 3 people. Does this bug affect you?",
             self.view.affected_statement)
@@ -372,16 +376,68 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 3 people",
             self.view.anon_affected_statement)
         self.assertEqual(
-            2,
-            self.view.other_users_affected_count)
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # Now with you affected by the duplicate, but not the master.
+        self.bug2.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # And now with you also affected by the master.
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects you and 3 other people",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate_not_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.bug2.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, False)
+        # You're not included in this count, even though you are affected by
+        # the dupe.
+        self.assertEqual(
+            "This bug affects 3 people, but not you",
+            self.view.affected_statement)
+        # It would be reasonable for Anon to see this bug cluster affecting
+        # either 3 or 4 people.  However at the moment the "No" answer on the
+        # master is more authoritative than the "Yes" on the dupe.
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
 
     def test_total_users_affected_count_without_dupes(self):
         self.useFixture(FeatureFixture(
             {'bugs.affected_count_includes_dupes.disabled': 'on'}))
-        user2 = self.factory.makePerson()
-        bug2 = self.factory.makeBug()
-        bug2.markUserAffected(user2, True)
-        bug2.markAsDuplicate(self.bug)
+        self.makeDuplicate()
         self.refresh()
         # Does not count the two users of bug2, so just 1.
         self.assertEqual(
