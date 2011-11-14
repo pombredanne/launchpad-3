@@ -23,11 +23,11 @@ COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that contro
 -- AccessPolicyGrant
 
 COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
-COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person who granted the access.';
-COMMENT ON COLUMN AccessPolicyGrant.person IS 'The date the access was granted.';
+COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
 
 -- Announcement
 

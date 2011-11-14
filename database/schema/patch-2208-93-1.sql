@@ -32,20 +32,20 @@ CREATE INDEX accesspolicyartifact__policy__key
 
 CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
-    person integer NOT NULL REFERENCES Person,
+    grantee integer NOT NULL REFERENCES Person,
     policy integer REFERENCES AccessPolicy,
     artifact integer REFERENCES AccessPolicyArtifact,
-    creator integer NOT NULL REFERENCES Person,
+    grantor integer NOT NULL REFERENCES Person,
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     CONSTRAINT has_target CHECK (policy IS NULL != artifact IS NULL)
 );
 
-CREATE UNIQUE INDEX accesspolicygrant__policy__person__key
-    ON AccessPolicyGrant(policy, person) WHERE policy IS NOT NULL;
-CREATE UNIQUE INDEX accessartifactgrant__artifact__person__key
-    ON AccessPolicyGrant(artifact, person) WHERE artifact IS NOT NULL;
-CREATE INDEX accesspolicygrant__person__idx ON AccessPolicyGrant(person);
+CREATE UNIQUE INDEX accesspolicygrant__policy__grantee__key
+    ON AccessPolicyGrant(policy, grantee) WHERE policy IS NOT NULL;
+CREATE UNIQUE INDEX accessartifactgrant__artifact__grantee__key
+    ON AccessPolicyGrant(artifact, grantee) WHERE artifact IS NOT NULL;
+CREATE INDEX accesspolicygrant__grantee__idx ON AccessPolicyGrant(grantee);
 
 ALTER TABLE bug
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
