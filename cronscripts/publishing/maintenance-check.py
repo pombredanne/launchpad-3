@@ -389,6 +389,9 @@ if __name__ == "__main__":
             logging.exception("cache.update() failed")
         cache.open(apt.progress.OpProgress())
         for pkg in cache:
+            # ignore multiarch package names
+            if ":" in pkg.name:
+                continue
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]
                 logging.warn(
