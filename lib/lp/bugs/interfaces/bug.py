@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -374,13 +374,17 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True)))
     users_affected_count_with_dupes = exported(
-      Int(title=_('The number of users affected by this bug '
-                  '(including duplicates)'),
-          required=True, readonly=True))
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates)'),
+        required=True, readonly=True))
+    other_users_affected_count_with_dupes = exported(
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates), excluding the current user'),
+        required=True, readonly=True))
     users_affected_with_dupes = exported(doNotSnapshot(CollectionField(
-            title=_('Users affected (including duplicates)'),
-            value_type=Reference(schema=IPerson),
-            readonly=True)))
+        title=_('Users affected (including duplicates)'),
+        value_type=Reference(schema=IPerson),
+        readonly=True)))
 
     heat = exported(
         Int(title=_("The 'heat' of the bug"),

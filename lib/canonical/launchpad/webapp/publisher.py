@@ -84,6 +84,7 @@ from lp.services.features import (
     defaultFlagValue,
     getFeatureFlag,
     )
+from lp.services.utils import obfuscate_structure
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -374,12 +375,11 @@ class LaunchpadView(UserAttributeCache):
     info_message = property(_getInfoMessage, _setInfoMessage)
 
     def getCacheJSON(self):
-        if self.user is not None:
-            cache = dict(IJSONRequestCache(self.request).objects)
-        else:
-            cache = dict()
+        cache = dict(IJSONRequestCache(self.request).objects)
         if WebLayerAPI(self.context).is_entry:
             cache['context'] = self.context
+        if self.user is None:
+            cache = obfuscate_structure(cache)
         return simplejson.dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
