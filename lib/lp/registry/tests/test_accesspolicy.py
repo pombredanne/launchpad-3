@@ -170,12 +170,12 @@ class TestAccessPolicyGrant(TestCaseWithFactory):
         bug = self.factory.makeBug()
         abstract = self.factory.makeAccessPolicyArtifact(bug)
         grant = self.factory.makeAccessPolicyGrant(
-            abstract_artifact=abstract)
+            object=abstract)
         self.assertEqual(bug, grant.concrete_artifact)
 
     def test_no_concrete_artifact(self):
         grant = self.factory.makeAccessPolicyGrant(
-            abstract_artifact=None)
+            object=self.factory.makeAccessPolicy())
         self.assertIs(None, grant.concrete_artifact)
 
 
@@ -232,7 +232,7 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         # findByPolicy finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
         grants = [
-            self.factory.makeAccessPolicyGrant(policy=policy)
+            self.factory.makeAccessPolicyGrant(object=policy)
             for i in range(3)]
         self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
