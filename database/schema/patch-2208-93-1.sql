@@ -46,6 +46,7 @@ CREATE UNIQUE INDEX accesspolicygrant__policy__grantee__key
 CREATE UNIQUE INDEX accessartifactgrant__artifact__grantee__key
     ON AccessPolicyGrant(artifact, grantee) WHERE artifact IS NOT NULL;
 CREATE INDEX accesspolicygrant__grantee__idx ON AccessPolicyGrant(grantee);
+CREATE INDEX accesspolicygrant__grantor__idx ON AccessPolicyGrant(grantor);
 
 ALTER TABLE bug
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
