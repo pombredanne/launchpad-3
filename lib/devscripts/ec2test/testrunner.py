@@ -209,8 +209,8 @@ class EC2TestRunner:
                     submit_location=pqm_submit_location,
                     tree=tree)
                 if tree is not None:
-                    # This is the part we want to do we're submitting or
-                    # not:
+                    # This is the part we want to do whether we're
+                    # submitting or not:
                     submission.check_tree()  # Any working changes.
                     submission.check_public_branch()  # Everything public.
                     branch = submission.public_location

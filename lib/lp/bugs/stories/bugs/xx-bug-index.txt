@@ -125,8 +125,8 @@ attachment or patch" page, for use when JavaScript isn't available.
     http://bugs.launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
 
 
-Navigatig to a bug in the wrong context
----------------------------------------
+Navigating to a bug in the wrong context
+----------------------------------------
 
 If we navigate to a bug in a context in which it doesn't exist, we are
 redirected to the default context.
