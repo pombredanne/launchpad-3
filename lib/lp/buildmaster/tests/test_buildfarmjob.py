@@ -248,11 +248,14 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         Store.of(sprb).flush()
         return sprb
 
+    def createBinaryPackageBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        return build
+
     def createBuilds(self):
         builds = []
-        for i in xrange(10):
-            # We don't create binary package builds because the test
-            # would be really heavy to setup.
+        for i in xrange(2):
+            builds.append(self.createBinaryPackageBuild())
             builds.append(self.createTranslationTemplateBuild())
             builds.append(self.createSourcePackageRecipeBuild())
         return builds
@@ -278,13 +281,20 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
             self.build_farm_job_set.getSpecificJobs([]))
 
     def test_getSpecificJobs_sql_queries_count(self):
-        # getSpecificJobs issues one query for each build type.
+        # getSpecificJobs issues a constant number of queries.
         builds = self.createBuilds()
         build_farm_jobs = [build.build_farm_job for build in builds]
+        flush_database_updates()
         with StormStatementRecorder() as recorder:
             self.build_farm_job_set.getSpecificJobs(
                 build_farm_jobs)
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        builds2 = self.createBuilds()
+        build_farm_jobs.extend([build.build_farm_job for build in builds2])
+        flush_database_updates()
+        with StormStatementRecorder() as recorder2:
+            self.build_farm_job_set.getSpecificJobs(
+                build_farm_jobs)
+        self.assertThat(recorder, HasQueryCount(Equals(recorder2.count)))
 
     def test_getSpecificJobs_no_specific_job(self):
         build_farm_job_source = getUtility(IBuildFarmJobSource)
