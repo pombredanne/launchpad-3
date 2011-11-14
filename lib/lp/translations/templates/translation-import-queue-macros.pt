@@ -97,7 +97,7 @@
                         <tal:status define="name string:status_${entry/id}"
                                     replace="structure view/widgets/?name" />
                       </noscript>
-                      <span class="status-choice" style="display:none">
+                      <span class="status-choice hidden">
                         <span tal:attributes="class string:value ${css_status}"
                               tal:content="entry/status/title">
                           Needs review</span>
