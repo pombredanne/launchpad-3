@@ -1951,6 +1951,9 @@
         class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+        <require
+            permission="zope.Public"
+            set_attributes="policy"/>
     </class>
     <securedutility
         component="lp.registry.model.accesspolicy.AccessPolicyArtifact"

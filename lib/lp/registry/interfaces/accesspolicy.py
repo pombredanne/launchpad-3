@@ -52,6 +52,7 @@ class IAccessPolicy(Interface):
 class IAccessPolicyArtifact(Interface):
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
+    policy = Attribute("Access policy")
 
 
 class IAccessPolicyGrant(Interface):

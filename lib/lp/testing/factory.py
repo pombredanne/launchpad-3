@@ -4336,10 +4336,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(policy).flush()
         return policy
 
-    def makeAccessPolicyArtifact(self, concrete=None):
+    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
         if concrete is None:
             concrete = self.makeBranch()
         artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact.policy = policy
         IStore(artifact).flush()
         return artifact
 

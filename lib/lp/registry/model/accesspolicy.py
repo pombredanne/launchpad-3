@@ -100,6 +100,8 @@ class AccessPolicyArtifact(StormBase):
     bug = Reference(bug_id, 'Bug.id')
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
 
     @property
     def concrete_artifact(self):

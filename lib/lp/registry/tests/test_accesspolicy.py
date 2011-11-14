@@ -107,6 +107,12 @@ class TestAccessPolicyArtifact(TestCaseWithFactory):
             self.factory.makeAccessPolicyArtifact(),
             Provides(IAccessPolicyArtifact))
 
+    def test_policy(self):
+        policy = self.factory.makeAccessPolicy()
+        self.assertEqual(
+            policy,
+            self.factory.makeAccessPolicyArtifact(policy=policy).policy)
+
 
 class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
