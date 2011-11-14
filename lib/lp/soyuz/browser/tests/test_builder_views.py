@@ -5,12 +5,15 @@ __metaclass__ = type
 
 from storm.locals import Store
 from testtools.matchers import Equals
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
     StormStatementRecorder,
@@ -20,6 +23,9 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 
 
 class TestBuilderEditView(TestCaseWithFactory):
@@ -68,6 +74,16 @@ class TestBuilderHistoryView(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilderHistoryView, self).setUp()
         self.builder = self.factory.makeBuilder()
+
+    def createTranslationTemplateBuildWithBuilder(self):
+        build_farm_job_source = getUtility(IBuildFarmJobSource)
+        build_farm_job = build_farm_job_source.new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+        removeSecurityProxy(build).builder = self.builder
+        return build
 
     def createRecipeBuildWithBuilder(self):
         build = self.factory.makeSourcePackageRecipeBuild()
@@ -127,5 +143,16 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         recorder1, recorder2 = self._record_queries_count(
             call_history_render,
             self.createBinaryPackageBuild)
+
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_build_history_queries_count_translation_template_builds(self):
+        # Rendering to builder's history issues a constant number of queries
+        # when translation template builds are displayed.
+        def call_history_render():
+            create_initialized_view(self.builder, '+history').render()
+        recorder1, recorder2 = self._record_queries_count(
+            call_history_render,
+            self.createTranslationTemplateBuildWithBuilder)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
