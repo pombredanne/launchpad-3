@@ -161,6 +161,14 @@ def attach_exc_info(report, context):
 _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
 
 
+def attach_previous_oopsid(report, context):
+    """Add a link to the previous OOPS generated this request, if any."""
+    request = context.get('http_request')
+    last_oopsid = getattr(request, 'oopsid', None)
+    if last_oopsid:
+        report['last_oops'] = last_oopsid
+
+
 def attach_http_request(report, context):
     """Add request metadata into the error report.
 
@@ -312,6 +320,8 @@ class ErrorReportingUtility:
         # In the zope environment we track how long a script / http
         # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
+        # Any previous OOPS reports generated this request.
+        self._oops_config.on_create.append(attach_previous_oopsid)
 
         def add_publisher(publisher):
             if publisher_adapter is not None:
