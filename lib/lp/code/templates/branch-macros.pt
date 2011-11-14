@@ -206,7 +206,7 @@
         condition="request/features/code.ajax_revision_diffs.enabled">
       <tal:diff-expander condition="show_diff_expander | nothing">
 	<div class="revision-group-diff" tal:condition="revisions | nothing">
-	  <a href="#" class="unseen expander-icon"
+	  <a href="#" class="unseen expander-icon js-action"
 	     tal:define="start_revno python:revisions[0].sequence;
 			 last_revno python:revisions[-1].sequence"
 	     tal:attributes="id string:expandable-${start_revno}-${last_revno}"
