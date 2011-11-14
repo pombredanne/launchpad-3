@@ -165,7 +165,7 @@ def attach_previous_oopsid(report, context):
     """Add a link to the previous OOPS generated this request, if any."""
     request = context.get('http_request')
     last_oopsid = getattr(request, 'oopsid', None)
-    if last_oopsid:
+    if last_oopsid is not None:
         report['last_oops'] = last_oopsid
 
 
