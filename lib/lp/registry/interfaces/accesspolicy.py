@@ -70,8 +70,8 @@ class IAccessPolicySource(Interface):
     def getByID(id):
         """Return the `IAccessPolicy` with the given ID."""
 
-    def getByPillarAndName(pillar, name):
-        """Return the pillar's `IAccessPolicy` with the given name."""
+    def getByPillarAndType(pillar, type):
+        """Return the pillar's `IAccessPolicy` with the given type."""
 
     def findByPillar(pillar):
         """Return a ResultSet of all `IAccessPolicy`s for the pillar."""

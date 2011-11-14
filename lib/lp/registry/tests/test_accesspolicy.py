@@ -9,6 +9,7 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
@@ -50,7 +51,7 @@ class TestAccessPolicySource(TestCaseWithFactory):
                 display_name=display_name))
 
     def test_getByID(self):
-        # getByPillarAndName finds the right policy.
+        # getByID finds the right policy.
         policy = self.factory.makeAccessPolicy()
         # Flush so we get an ID.
         Store.of(policy).flush()
@@ -58,40 +59,45 @@ class TestAccessPolicySource(TestCaseWithFactory):
             policy, getUtility(IAccessPolicySource).getByID(policy.id))
 
     def test_getByID_nonexistent(self):
-        # getByPillarAndName returns None if the policy doesn't exist.
+        # getByID returns None if the policy doesn't exist.
         self.assertIs(
             None,
             getUtility(IAccessPolicySource).getByID(
                 self.factory.getUniqueInteger()))
 
-    def test_getByPillarAndName(self):
-        # getByPillarAndName finds the right policy.
+    def test_getByPillarAndType(self):
+        # getByPillarAndType finds the right policy.
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
-        # Create a policy with the desired attributes, and another
-        # random one.
-        policy = self.factory.makeAccessPolicy(
-            pillar=product, name=name)
-        self.factory.makeAccessPolicy()
-        self.assertEqual(
-            policy,
-            getUtility(IAccessPolicySource).getByPillarAndName(product, name))
 
-    def test_getByPillarAndName_nonexistent(self):
-        # getByPillarAndName returns None if the policy doesn't exist.
+        private_policy = self.factory.makeAccessPolicy(
+            pillar=product, type=AccessPolicyType.PRIVATE)
+        security_policy = self.factory.makeAccessPolicy(
+            pillar=product, type=AccessPolicyType.SECURITY)
+        self.assertEqual(
+            private_policy,
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.PRIVATE))
+        self.assertEqual(
+            security_policy,
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.SECURITY))
+
+    def test_getByPillarAndType_nonexistent(self):
+        # getByPillarAndType returns None if the policy doesn't exist.
         # Create policy identifiers, and an unrelated policy.
-        self.factory.makeAccessPolicy()
+        self.factory.makeAccessPolicy(type=AccessPolicyType.PRIVATE)
         product = self.factory.makeProduct()
-        name = self.factory.getUniqueUnicode()
         self.assertIs(
             None,
-            getUtility(IAccessPolicySource).getByPillarAndName(product, name))
+            getUtility(IAccessPolicySource).getByPillarAndType(
+                product, AccessPolicyType.PRIVATE))
 
     def test_findByPillar(self):
         # findByPillar finds only the relevant policies.
         product = self.factory.makeProduct()
         policies = [
-            self.factory.makeAccessPolicy(pillar=product) for i in range(3)]
+            self.factory.makeAccessPolicy(pillar=product, type=type)
+            for type in AccessPolicyType.items]
         self.factory.makeAccessPolicy()
         self.assertContentEqual(
             policies,
