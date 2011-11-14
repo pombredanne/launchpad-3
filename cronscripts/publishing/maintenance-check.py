@@ -40,11 +40,11 @@ class UbuntuMaintenance(object):
         ("18m", SUPPORTED_SEEDS),
         ]
 
-    # distro names and if they get LTS support
-    DISTRO_NAMES = [ 
-        ("ubuntu", False),
-        ("kubuntu", False),
+    # distro names that we check the seeds for
+    DISTRO_NAMES = [
+        "ubuntu",
         ]
+
 
 # This is fun! We have a bunch of cases for 10.04 LTS
 #
@@ -67,10 +67,10 @@ class LucidUbuntuMaintenance(UbuntuMaintenance):
         ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
     ]
 
-    # distro names and if they get LTS support (order is important)
-    DISTRO_NAMES_AND_LTS_SUPPORT = [
-        ("ubuntu", True),
-        ("kubuntu", True),
+    # on a LTS this is significant, it defines what names get LTS support
+    DISTRO_NAMES = [
+        "ubuntu", 
+        "kubuntu",
     ]
 
 class PreciseUbuntuMaintenance(UbuntuMaintenance):
@@ -85,11 +85,9 @@ class PreciseUbuntuMaintenance(UbuntuMaintenance):
         ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
     ]
 
-    # distro names and if they get LTS support (order is important)
-    DISTRO_NAMES_AND_LTS_SUPPORT = [
-        ("ubuntu", True),
-        ("kubuntu", False),
-        ("netbook", False),
+    # on a LTS this is significant, it defines what names get LTS support
+    DISTRO_NAMES = [
+        "ubuntu", 
     ]
 
 
@@ -365,7 +363,7 @@ if __name__ == "__main__":
 
     # go over the distros we need to check
     pkg_support_time = {}
-    for (name, lts_supported) in ubuntu_maintenance.DISTRO_NAMES_AND_LTS_SUPPORT:
+    for name in ubuntu_maintenance.DISTRO_NAMES:
 
         # get basic structure file
         try:
