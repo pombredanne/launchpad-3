@@ -13,11 +13,11 @@
         <p class="large-warning" style="padding:2px 2px 0 36px;">
             You are about to mark bug
             "<tal:bug replace="context/bug/title">some bug</tal:bug>"
-            <br>as no longer affecting
+            <br />as no longer affecting
             <tal:target
                 replace="context/target/bugtargetdisplayname">some target
             </tal:target>.
-        <br><br>
+        <br /><br />
         <strong>Please confirm you really want to do this.</strong></p>
     </div>
   </div>

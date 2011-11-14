@@ -83,6 +83,7 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
@@ -134,10 +135,10 @@ class IDistributionDriverRestricted(Interface):
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, IServiceUsage, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
