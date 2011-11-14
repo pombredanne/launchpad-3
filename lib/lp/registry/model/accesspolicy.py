@@ -10,12 +10,15 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
-from storm.properties import Int
+from storm.properties import (
+    Int,
+    DateTime,
+    )
 from storm.references import (
     Reference,
     ReferenceSet,
     )
-from zope.interface import implements
+from zope.interface import implements, providedBy
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -139,13 +142,16 @@ class AccessPolicyGrant(StormBase):
     __storm_table__ = 'AccessPolicyGrant'
 
     id = Int(primary=True)
-    policy_id = Int(name='policy')
-    policy = Reference(policy_id, 'AccessPolicy.id')
     person_id = Int(name='person')
     person = Reference(person_id, 'Person.id')
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
     abstract_artifact_id = Int(name='artifact')
     abstract_artifact = Reference(
         abstract_artifact_id, 'AccessPolicyArtifact.id')
+    creator_id = Int(name='creator')
+    creator = Reference(creator_id, 'Person.id')
+    date_created = DateTime()
 
     @property
     def concrete_artifact(self):
@@ -153,14 +159,19 @@ class AccessPolicyGrant(StormBase):
             return self.abstract_artifact.concrete_artifact
 
     @classmethod
-    def grant(cls, person, policy, abstract_artifact=None):
+    def grant(cls, grantee, grantor, object):
         """See `IAccessPolicyGrantSource`."""
-        obj = cls()
-        obj.policy = policy
-        obj.person = person
-        obj.abstract_artifact = abstract_artifact
-        IStore(cls).add(obj)
-        return obj
+        grant = cls()
+        grant.person = grantee
+        grant.creator = grantor
+        if IAccessPolicy.providedBy(object):
+            grant.policy = object
+        elif IAccessPolicyArtifact.providedBy(object):
+            grant.abstract_artifact = object
+        else:
+            raise AssertionError("Unsupported object: %r" % object)
+        IStore(cls).add(grant)
+        return grant
 
     @classmethod
     def getByID(cls, id):

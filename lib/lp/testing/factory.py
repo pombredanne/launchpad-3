@@ -4343,14 +4343,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(artifact).flush()
         return artifact
 
-    def makeAccessPolicyGrant(self, person=None, policy=None,
-                              abstract_artifact=None):
-        if person is None:
-            person = self.makePerson()
-        if policy is None:
-            policy = self.makeAccessPolicy()
+    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        if object is None:
+            object = self.makeAccessPolicy()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            person, policy, abstract_artifact)
+            grantee, grantor, object)
         IStore(grant).flush()
         return grant
 

@@ -56,9 +56,12 @@ class IAccessPolicyArtifact(Interface):
 
 class IAccessPolicyGrant(Interface):
     id = Attribute("ID")
-    policy = Attribute("Access policy")
     person = Attribute("Person")
+    policy = Attribute("Access policy")
     abstract_artifact = Attribute("Abstract artifact")
+    creator = Attribute("Creator")
+    date_created = Attribute("Date created")
+
     concrete_artifact = Attribute("Concrete artifact")
 
 
@@ -88,14 +91,13 @@ class IAccessPolicyArtifactSource(Interface):
 
 class IAccessPolicyGrantSource(Interface):
 
-    def grant(person, policy, abstract_artifact=None):
+    def grant(grantee, grantor, object):
         """Create an `IAccessPolicyGrant`.
 
-        :param person: the `IPerson` to hold the access.
-        :param policy: the `IAccessPolicy` to grant access to.
-        :param abstract_artifact: an optional `IAccessPolicyArtifact` to
-            which the grant should be restricted. If omitted, access is
-            granted to all artifacts under the policy.
+        :param grantee: the `IPerson` to hold the access.
+        :param grantor: the `IPerson` that grants the access.
+        :param object: the `IAccessPolicy` or `IAccessPolicyArtifact` to
+            grant access to.
         """
 
     def getByID(id):
