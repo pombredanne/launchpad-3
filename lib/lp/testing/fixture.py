@@ -241,8 +241,8 @@ class CaptureOops(Fixture):
     def setUpQueue(self):
         """Sets up the queue to be used to receive reports.
 
-        The queue is autodelete which means we can only use it once: after that
-        it will be automatically nuked and must be recreated.
+        The queue is autodelete which means we can only use it once: after
+        that it will be automatically nuked and must be recreated.
         """
         self.queue_name, _, _ = self.channel.queue_declare(
             durable=True, auto_delete=True)
@@ -296,6 +296,6 @@ class CaptureOops(Fixture):
         try:
             receiver.run_forever()
         finally:
-            # Ensure we leave the queue ready to roll, or later calls to sync()
-            # will fail.
+            # Ensure we leave the queue ready to roll, or later calls to
+            # sync() will fail.
             self.setUpQueue()
