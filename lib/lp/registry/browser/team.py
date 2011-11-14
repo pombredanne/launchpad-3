@@ -137,14 +137,14 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    ClosedTeamSubscriptionPolicy,
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
-    OpenTeamSubscriptionPolicy,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
@@ -303,13 +303,17 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
             team.checkClosedSubscriptionPolicyAllowed()
         except TeamSubscriptionPolicyError:
             self.widgets['subscriptionpolicy'].vocabulary = (
-                OpenTeamSubscriptionPolicy)
+                SimpleVocabulary.fromItems(
+                    (policy.title, policy) for policy in OPEN_TEAM_POLICY)
+            )
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
         except TeamSubscriptionPolicyError:
             self.widgets['subscriptionpolicy'].vocabulary = (
-                ClosedTeamSubscriptionPolicy)
+                SimpleVocabulary.fromItems(
+                    (policy.title, policy) for policy in CLOSED_TEAM_POLICY)
+            )
 
     @action('Save', name='save')
     def action_save(self, action, data):

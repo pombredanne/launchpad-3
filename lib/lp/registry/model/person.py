@@ -232,14 +232,12 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
-    ClosedTeamSubscriptionPolicy,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
     IPersonSettings,
     ITeam,
     OPEN_TEAM_POLICY,
-    OpenTeamSubscriptionPolicy,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -592,8 +590,7 @@ class Person(
         default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
-        enum=(ClosedTeamSubscriptionPolicy, OpenTeamSubscriptionPolicy,
-              TeamSubscriptionPolicy),
+        enum=TeamSubscriptionPolicy,
         default=TeamSubscriptionPolicy.MODERATED,
         storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)

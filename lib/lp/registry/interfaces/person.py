@@ -9,7 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'CLOSED_TEAM_POLICY',
-    'ClosedTeamSubscriptionPolicy',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
@@ -30,7 +29,6 @@ __all__ = [
     'ImmutableVisibilityError',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
-    'OpenTeamSubscriptionPolicy',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -49,7 +47,6 @@ from lazr.enum import (
     DBItem,
     EnumeratedType,
     Item,
-    use_template,
     )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
@@ -228,9 +225,9 @@ def validate_subscription_policy(obj, attr, value):
     existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
     if value == existing_subscription_policy:
         return value
-    if value in OpenTeamSubscriptionPolicy:
+    if value in OPEN_TEAM_POLICY:
         team.checkOpenSubscriptionPolicyAllowed(policy=value)
-    if value in ClosedTeamSubscriptionPolicy:
+    if value in CLOSED_TEAM_POLICY:
         team.checkClosedSubscriptionPolicyAllowed(policy=value)
     return value
 
@@ -477,20 +474,6 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         for teams that manage things that need to be secure, like projects,
         branches, or PPAs.
         """)
-
-
-class ClosedTeamSubscriptionPolicy(DBEnumeratedType):
-    use_template(TeamSubscriptionPolicy, include=(
-        'MODERATED',
-        'RESTRICTED',
-        ))
-
-
-class OpenTeamSubscriptionPolicy(DBEnumeratedType):
-    use_template(TeamSubscriptionPolicy, include=(
-        'OPEN',
-        'DELEGATED',
-        ))
 
 
 OPEN_TEAM_POLICY = (

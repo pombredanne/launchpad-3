@@ -18,8 +18,8 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
-    ClosedTeamSubscriptionPolicy,
-    OpenTeamSubscriptionPolicy,
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
@@ -272,7 +272,7 @@ class TestTeamEditView(TestCaseWithFactory):
 
     def _test_edit_team_view_expected_subscription_vocab(self,
                                                          fn_setup,
-                                                         expected_vocab):
+                                                         expected_items):
         # The edit view renders only the specified policy choices when
         # the setup performed by fn_setup occurs.
         owner = self.factory.makePerson()
@@ -281,8 +281,10 @@ class TestTeamEditView(TestCaseWithFactory):
         fn_setup(team)
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
-            self.assertEqual(
-                expected_vocab, view.widgets['subscriptionpolicy'].vocabulary)
+            self.assertContentEqual(
+                expected_items,
+                [term.value
+                 for term in view.widgets['subscriptionpolicy'].vocabulary])
 
     def test_edit_team_view_pillar_owner(self):
         # The edit view renders only closed subscription policy choices when
@@ -292,7 +294,7 @@ class TestTeamEditView(TestCaseWithFactory):
             self.factory.makeProduct(owner=team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, ClosedTeamSubscriptionPolicy)
+            setup_team, CLOSED_TEAM_POLICY)
 
     def test_edit_team_view_pillar_security_contact(self):
         # The edit view renders only closed subscription policy choices when
@@ -302,7 +304,7 @@ class TestTeamEditView(TestCaseWithFactory):
             self.factory.makeProduct(security_contact=team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, ClosedTeamSubscriptionPolicy)
+            setup_team, CLOSED_TEAM_POLICY)
 
     def test_edit_team_view_has_ppas(self):
         # The edit view renders only closed subscription policy choices when
@@ -312,7 +314,7 @@ class TestTeamEditView(TestCaseWithFactory):
             team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, ClosedTeamSubscriptionPolicy)
+            setup_team, CLOSED_TEAM_POLICY)
 
     def test_edit_team_view_has_closed_super_team(self):
         # The edit view renders only closed subscription policy choices when
@@ -327,7 +329,7 @@ class TestTeamEditView(TestCaseWithFactory):
                     team, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, ClosedTeamSubscriptionPolicy)
+            setup_team, CLOSED_TEAM_POLICY)
 
     def test_edit_team_view_subscribed_private_bug(self):
         # The edit view renders only closed subscription policy choices when
@@ -339,7 +341,7 @@ class TestTeamEditView(TestCaseWithFactory):
                 bug.default_bugtask.transitionToAssignee(team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, ClosedTeamSubscriptionPolicy)
+            setup_team, CLOSED_TEAM_POLICY)
 
     def test_edit_team_view_has_open_member(self):
         # The edit view renders open closed subscription policy choices when
@@ -354,7 +356,7 @@ class TestTeamEditView(TestCaseWithFactory):
                     team_member, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, OpenTeamSubscriptionPolicy)
+            setup_team, OPEN_TEAM_POLICY)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it

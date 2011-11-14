@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.app.form.interfaces import ConversionError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login,
     login_person,
@@ -96,7 +97,9 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_cannot_appoint_another_team(self):
-        team = self.factory.makeTeam(name='smack', displayname='<smack />')
+        team = self.factory.makeTeam(
+            name='smack', displayname='<smack />',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         form = self._makeForm(team)
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
