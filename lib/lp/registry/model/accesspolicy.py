@@ -144,15 +144,15 @@ class AccessPolicyGrant(StormBase):
     __storm_table__ = 'AccessPolicyGrant'
 
     id = Int(primary=True)
-    person_id = Int(name='person')
-    person = Reference(person_id, 'Person.id')
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
     policy_id = Int(name='policy')
     policy = Reference(policy_id, 'AccessPolicy.id')
     abstract_artifact_id = Int(name='artifact')
     abstract_artifact = Reference(
         abstract_artifact_id, 'AccessPolicyArtifact.id')
-    creator_id = Int(name='creator')
-    creator = Reference(creator_id, 'Person.id')
+    grantor_id = Int(name='grantor')
+    grantor = Reference(grantor_id, 'Person.id')
     date_created = DateTime()
 
     @property
@@ -164,8 +164,8 @@ class AccessPolicyGrant(StormBase):
     def grant(cls, grantee, grantor, object):
         """See `IAccessPolicyGrantSource`."""
         grant = cls()
-        grant.person = grantee
-        grant.creator = grantor
+        grant.grantee = grantee
+        grant.grantor = grantor
         if IAccessPolicy.providedBy(object):
             grant.policy = object
         elif IAccessPolicyArtifact.providedBy(object):

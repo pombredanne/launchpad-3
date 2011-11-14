@@ -190,30 +190,30 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
 
     def test_grant_for_policy(self):
         policy = self.factory.makeAccessPolicy()
-        person = self.factory.makePerson()
+        grantee = self.factory.makePerson()
         grantor = self.factory.makePerson()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            person, grantor, policy)
+            grantee, grantor, policy)
         self.assertThat(
             grant,
             MatchesStructure.byEquality(
-                person=person,
-                creator=grantor,
+                grantee=grantee,
+                grantor=grantor,
                 policy=policy,
                 abstract_artifact=None,
                 concrete_artifact=None,))
 
     def test_grant_with_artifact(self):
         artifact = self.factory.makeAccessPolicyArtifact()
-        person = self.factory.makePerson()
+        grantee = self.factory.makePerson()
         grantor = self.factory.makePerson()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            person, grantor, artifact)
+            grantee, grantor, artifact)
         self.assertThat(
             grant,
             MatchesStructure.byEquality(
-                person=person,
-                creator=grantor,
+                grantee=grantee,
+                grantor=grantor,
                 policy=None,
                 abstract_artifact=artifact,
                 concrete_artifact=artifact.concrete_artifact))

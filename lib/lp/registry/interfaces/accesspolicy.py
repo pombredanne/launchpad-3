@@ -57,11 +57,11 @@ class IAccessPolicyArtifact(Interface):
 
 class IAccessPolicyGrant(Interface):
     id = Attribute("ID")
-    person = Attribute("Person")
+    grantee = Attribute("Grantee")
+    grantor = Attribute("Grantor")
+    date_created = Attribute("Date created")
     policy = Attribute("Access policy")
     abstract_artifact = Attribute("Abstract artifact")
-    creator = Attribute("Creator")
-    date_created = Attribute("Date created")
 
     concrete_artifact = Attribute("Concrete artifact")
 
