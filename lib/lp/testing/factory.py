@@ -4332,12 +4332,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
         if pillar is None:
             pillar = self.makeProduct()
-        return getUtility(IAccessPolicySource).create(pillar, type)
+        policy = getUtility(IAccessPolicySource).create(pillar, type)
+        IStore(policy).flush()
+        return policy
 
     def makeAccessPolicyArtifact(self, concrete=None):
         if concrete is None:
             concrete = self.makeBranch()
-        return getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        IStore(artifact).flush()
+        return artifact
 
     def makeAccessPolicyGrant(self, person=None, policy=None,
                               abstract_artifact=None):
@@ -4345,8 +4349,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         if policy is None:
             policy = self.makeAccessPolicy()
-        return getUtility(IAccessPolicyGrantSource).grant(
+        grant = getUtility(IAccessPolicyGrantSource).grant(
             person, policy, abstract_artifact)
+        IStore(grant).flush()
+        return grant
 
 
 # Some factory methods return simple Python types. We don't add
