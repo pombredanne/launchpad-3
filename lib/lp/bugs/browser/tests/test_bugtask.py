@@ -1805,7 +1805,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
-        return soupmatchers.Tag('bugnumber', 'a', text=bug_number_re)
+        return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
         """If the flag is missing, then no mustache features appear."""
@@ -1896,15 +1896,6 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_bug_heat'] = False
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
-
-    def test_hiding_bug_title(self):
-        """Hiding bug heat removes the text but link is still present."""
-        navigator, mustache_model = self.getNavigator()
-        self.assertIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_title'] = False
-        self.assertNotIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
 
     def test_hiding_milstone_name(self):
         """Showing milestone name shows the text."""
