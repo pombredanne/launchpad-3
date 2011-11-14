@@ -18,7 +18,7 @@ COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Priv
 COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
 COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
 COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'The policy that controls access to this artifact.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
 
 -- AccessPolicyGrant
 

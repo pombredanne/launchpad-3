@@ -6,7 +6,7 @@ CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
     product integer REFERENCES Product,
     distribution integer REFERENCES Distribution,
-    type integer,
+    type integer NOT NULL,
     CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL)
 );
 
@@ -19,7 +19,7 @@ CREATE TABLE AccessPolicyArtifact (
     id serial PRIMARY KEY,
     bug integer REFERENCES Bug,
     branch integer REFERENCES Branch,
-    policy integer NOT NULL REFERENCES AccessPolicy,
+    policy integer REFERENCES AccessPolicy,
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
