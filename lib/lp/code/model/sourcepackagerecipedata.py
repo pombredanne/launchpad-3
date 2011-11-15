@@ -320,8 +320,7 @@ class SourcePackageRecipeData(Storm):
 
     @staticmethod
     def preLoadReferencedBranches(sourcepackagerecipedatas):
-        caches = dict((sprd.id, [sprd, get_property_cache(sprd)])
-            for sprd in sourcepackagerecipedatas)
+        # Load the related Branch, _SourcePackageRecipeDataInstruction.
         load_related(
             Branch, sourcepackagerecipedatas, ['base_branch_id'])
         sprd_instructions = load_referencing(
@@ -329,9 +328,13 @@ class SourcePackageRecipeData(Storm):
             sourcepackagerecipedatas, ['recipe_data_id'])
         sub_branches = load_related(
             Branch, sprd_instructions, ['branch_id'])
+        # Store the pre-fetched objects on the sourcepackagerecipedatas
+        # objects.
         branch_to_recipe_data = dict([
             (instr.branch_id, instr.recipe_data_id)
                 for instr in sprd_instructions])
+        caches = dict((sprd.id, [sprd, get_property_cache(sprd)])
+            for sprd in sourcepackagerecipedatas)
         for unused, [sprd, cache] in caches.items():
             cache._referenced_branches = [sprd.base_branch]
         for recipe_data_id, branches in groupby(
