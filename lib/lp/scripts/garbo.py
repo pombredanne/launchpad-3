@@ -972,11 +972,14 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
     done = False
     maximum_chunk_size = 5000
 
+    SPPH = SourcePackagePublishingHistory
+
+    def getStore(self):
+        return IMasterStore(self.SPPH)
+
     def findSPPHs(self):
-        return IMasterStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.sourcepackagename == None
-            ).order_by(SourcePackagePublishingHistory.id)
+        SPPH = self.SPPH
+        return self.getStore().find(SPPH.id, SPPH.sourcepackagename == None)
 
     def isDone(self):
         """See `TunableLoop`."""
@@ -984,12 +987,21 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        spphs = self.findSPPHs()[:chunk_size]
-        for spph in spphs:
-            spph.sourcepackagename = (
-                spph.sourcepackagerelease.sourcepackagename)
+        spphs = list(self.findSPPHs()[:chunk_size])
+        if len(spphs) == 0:
+            self.done = True
+            return
+        self.getStore().execute("""
+            UPDATE SourcePackagePublishingHistory AS SPPH
+            SET sourcepackagename = SPR.sourcepackagename
+            FROM SourcePackageRelease AS SPR
+            WHERE
+                SPR.id = SPPH.sourcepackagerelease AND
+                SPPH.sourcepackagename IS NULL AND
+                SPPH.id IN %s
+            """ % sqlvalues(spphs))
         transaction.commit()
-        self.done = self.findSPPHs().is_empty()
+        self.done = (len(spphs) == 0)
 
 
 # XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
@@ -999,11 +1011,14 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
     done = False
     maximum_chunk_size = 5000
 
+    BPPH = BinaryPackagePublishingHistory
+
+    def getStore(self):
+        return IMasterStore(self.BPPH)
+
     def findBPPHs(self):
-        return IMasterStore(BinaryPackagePublishingHistory).find(
-            BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.binarypackagename == None
-            ).order_by(BinaryPackagePublishingHistory.id)
+        BPPH = self.BPPH
+        return self.getStore().find(BPPH.id, BPPH.binarypackagename == None)
 
     def isDone(self):
         """See `TunableLoop`."""
@@ -1011,12 +1026,20 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        bpphs = self.findBPPHs()[:chunk_size]
-        for bpph in bpphs:
-            bpph.binarypackagename = (
-                bpph.binarypackagerelease.binarypackagename)
+        bpphs = list(self.findBPPHs()[:chunk_size])
+        if len(bpphs) == 0:
+            self.done = True
+            return
+        self.getStore().execute("""
+            UPDATE BinaryPackagePublishingHistory AS BPPH
+            SET binarypackagename = BPR.binarypackagename
+            FROM BinaryPackageRelease AS BPR
+            WHERE
+                BPR.id = BPPH.binarypackagerelease AND
+                BPPH.binarypackagename IS NULL AND
+                BPPH.id IN %s
+            """ % sqlvalues(bpphs))
         transaction.commit()
-        self.done = self.findBPPHs().is_empty()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
