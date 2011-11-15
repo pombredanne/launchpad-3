@@ -120,11 +120,14 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         store = cls._getStore(store)
 
         def eager_load(rows):
+            # Load the related branches, products.
             branches = load_related(
                 Branch, rows, ['branch_id'])
             load_related(
                 Product, branches, ['productID'])
             branch_collection = GenericBranchCollection()
+            # Preload branches cached associated product series and
+            # suite source packages for all the related branches.
             branch_collection._preloadDataForBranches(branches)
 
         resultset = store.find(
