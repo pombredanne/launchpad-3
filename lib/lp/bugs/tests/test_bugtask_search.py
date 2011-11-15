@@ -610,6 +610,35 @@ class SearchTestBase:
             user=None, orderby='-milestone_name')
         self.assertSearchFinds(params, expected)
 
+    def test_sort_by_bug_reporter(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='reporter')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.owner.name)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-reporter')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_assignee(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].transitionToAssignee(
+                self.factory.makePerson(name="assignee-1"))
+            self.bugtasks[1].transitionToAssignee(
+                self.factory.makePerson(name="assignee-2"))
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        params = self.getBugTaskSearchParams(user=None, orderby='assignee')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-assignee')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_title(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='title')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.title)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-title')
+        self.assertSearchFinds(params, expected)
+
 
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
