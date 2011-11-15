@@ -822,7 +822,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
     Knowing the existence of a private team allow traversing to its URL and
     displaying basic information like name, displayname.
     """
-    permission = 'launchpad.Exists'
+    permission = 'launchpad.See'
     usedfor = IPersonViewExists
 
     def checkUnauthenticated(self):
@@ -835,7 +835,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
         """By default, we simply perform a View permission check.
 
         The context in which the permission is required is
-        responsible for pre-caching the launchpad.Exists permission on each
+        responsible for pre-caching the launchpad.See permission on each
         team which requires it.
         """
         return self.forwardCheckAuthenticated(

@@ -1477,7 +1477,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
 
 class IPersonViewExists(Interface):
-    """IPerson attributes that require launchpad.Exists permission."""
+    """IPerson attributes that require launchpad.See permission."""
 
     name = exported(
         PersonNameField(
@@ -1494,7 +1494,6 @@ class IPersonViewExists(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
 

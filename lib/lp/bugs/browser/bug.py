@@ -953,7 +953,7 @@ class BugTextView(LaunchpadView):
                 authorised_people.append(task.assignee)
         authorised_people.extend(self.subscribers)
         precache_permission_for_objects(
-            self.request, 'launchpad.Exists', authorised_people)
+            self.request, 'launchpad.See', authorised_people)
 
     @cachedproperty
     def bugtasks(self):
@@ -963,7 +963,8 @@ class BugTextView(LaunchpadView):
     @cachedproperty
     def subscribers(self):
         """Cache subscribers and avoid hitting the DB twice."""
-        return [sub.person for sub in self.context.subscriptions]
+        return [sub.person for sub in self.context.subscriptions
+                if self.user or not sub.person.private]
 
     def bug_text(self):
 
@@ -1045,7 +1046,8 @@ class BugTextView(LaunchpadView):
         if component:
             text.append('component: %s' % component.name)
 
-        if task.assignee:
+        if (task.assignee
+            and check_permission('launchpad.See', task.assignee)):
             text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')

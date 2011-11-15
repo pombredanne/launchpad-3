@@ -58,7 +58,7 @@ see other details of the team, such as the name.
     Traceback (most recent call last):
     ...
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
-        'name', 'launchpad.Exists')
+        'name', 'launchpad.See')
 
 Public teams can join private teams.  When adding one team to another
 the team is invited to join and that invitation must be accepted by
@@ -79,7 +79,7 @@ At this point the public team owner cannot see the priv-team's bits.
     Traceback (most recent call last):
     ...
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
-        'name', 'launchpad.Exists')
+        'name', 'launchpad.See')
 
     >>> login_person(priv_owner)
     >>> ignored = priv_team.addMember(pub_team, reviewer=priv_owner)
@@ -106,4 +106,4 @@ about the team.
     Traceback (most recent call last):
     ...
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
-        'name', 'launchpad.Exists')
+        'name', 'launchpad.See')

@@ -152,7 +152,7 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
 class TestTalesFormatterAPI(TestCaseWithFactory):
     """ Test permissions required to access TalesFormatterAPI methods.
 
-    A user must have launchpad.Exists permission to use TestTalesFormatterAPI
+    A user must have launchpad.See permission to use TestTalesFormatterAPI
     with private teams.
     """
     layer = DatabaseFunctionalLayer
@@ -160,8 +160,8 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
     def setUp(self):
         super(TestTalesFormatterAPI, self).setUp()
         self.team = self.factory.makeTeam(
-            name = 'team', displayname='a team',
-            visibility = PersonVisibility.PRIVATE)
+            name='team', displayname='a team',
+            visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
         # Helper to create the formatter and optionally cache the permission.
@@ -172,7 +172,7 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
         if cache_permission:
             login_person(any_person, request)
             precache_permission_for_objects(
-                request, 'launchpad.Exists', [self.team])
+                request, 'launchpad.See', [self.team])
         return formatter, request, any_person
 
     def _tales_value(self, attr, request):
@@ -200,7 +200,7 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
             self.assertEqual(hidden, value)
 
     def _test_can_view_attribute_with_permission(self, attr):
-        # Test attribute access when user has launchpad.Exists permission.
+        # Test attribute access when user has launchpad.See permission.
         formatter, request, any_person = self._make_formatter(
             cache_permission=True)
         self.assertNotEqual(
@@ -209,8 +209,8 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
     def _test_can_view_attribute(self, attr, hidden=None):
         # Test the visibility of the given attribute
         self._test_can_view_attribute_no_login(attr, hidden)
-#        self._test_can_view_attribute_no_permission(attr, hidden)
-#        self._test_can_view_attribute_with_permission(attr)
+        self._test_can_view_attribute_no_permission(attr, hidden)
+        self._test_can_view_attribute_with_permission(attr)
 
     def test_can_view_displayname(self):
         self._test_can_view_attribute('displayname')

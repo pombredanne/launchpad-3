@@ -543,11 +543,14 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
             if person == self.user:
                 # Skip the current user viewing the page.
                 continue
+            if self.user is None and person.private:
+                # Do not include private teams if there's no logged in user.
+                continue
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
-            precache_permission_for_objects(
-                        self.request, 'launchpad.Exists', [person])
+#            precache_permission_for_objects(
+#                        self.request, 'launchpad.See', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -574,12 +577,16 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         others = list(bug.getIndirectSubscribers())
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any subscribers.
-        if self.user is not None:
+        include_private = self.user is not None
+        if include_private:
             precache_permission_for_objects(
-                self.request, 'launchpad.Exists', others)
+                self.request, 'launchpad.See', others)
         for person in others:
             if person == self.user:
                 # Skip the current user viewing the page,
+                continue
+            if not include_private and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
             subscriber = {
                 'name': person.name,

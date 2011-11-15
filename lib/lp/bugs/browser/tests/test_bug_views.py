@@ -12,7 +12,6 @@ from zope.security.proxy import removeSecurityProxy
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -22,11 +21,14 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
-    login,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestPrivateBugLinks(BrowserTestCase):
@@ -369,22 +371,23 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
+
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
 
-    If a user can see the bug, they can see a the name of private teams which
-    are assignees or subscribers.
+    If an authenticated user can see the bug, they can see a the name of
+    private teams which are assignees or subscribers.
     """
     layer = DatabaseFunctionalLayer
 
     def _makeBug(self):
         owner = self.factory.makePerson()
         private_assignee = self.factory.makeTeam(
-            name = 'bugassignee',
-            visibility = PersonVisibility.PRIVATE)
+            name='bugassignee',
+            visibility=PersonVisibility.PRIVATE)
         private_subscriber = self.factory.makeTeam(
-            name = 'bugsubscriber',
-            visibility = PersonVisibility.PRIVATE)
+            name='bugsubscriber',
+            visibility=PersonVisibility.PRIVATE)
 
         bug = self.factory.makeBug(owner=owner)
         with person_logged_in(owner):
@@ -392,22 +395,31 @@ class TestBugTextViewPrivateTeams(TestCaseWithFactory):
             bug.subscribe(private_subscriber, owner)
         return bug, private_assignee, private_subscriber
 
-    def _checkViewText(self, request, bug, assignee, subscriber):
-        bug_view = create_initialized_view(bug, name='+text', request=request)
+    def test_unauthenticated_view(self):
+        # Unauthenticated users cannot see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        bug_view = create_initialized_view(bug, name='+text')
         view_text = bug_view.render()
+        # We don't see the assignee.
+        self.assertIn(
+            "assignee: \n", view_text)
+        # Nor do we see the subscriber.
+        self.assertNotIn(
+            removeSecurityProxy(subscriber).unique_displayname, view_text)
+
+    def test_authenticated_view(self):
+        # Authenticated users can see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        request = LaunchpadTestRequest()
+        bug_view = create_view(bug, name='+text', request=request)
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        bug_view.initialize()
+        view_text = bug_view.render()
+        naked_subscriber = removeSecurityProxy(subscriber)
         self.assertIn(
             "assignee: %s" % assignee.unique_displayname, view_text)
         self.assertTextMatchesExpressionIgnoreWhitespace(
             "subscribers:\n.*%s \(%s\)"
-            % (subscriber.displayname, subscriber.name), view_text)
-
-    def test_unauthenticated_view(self):
-        bug, assignee, subscriber = self._makeBug()
-        request = LaunchpadTestRequest()
-        self._checkViewText(request, bug, assignee, subscriber)
-
-    def test_authenticated_view(self):
-        bug, assignee, subscriber = self._makeBug()
-        request = LaunchpadTestRequest()
-        login(ANONYMOUS, request)
-        self._checkViewText(request, bug, assignee, subscriber)
+            % (naked_subscriber.displayname, naked_subscriber.name),
+            view_text)
