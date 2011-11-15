@@ -70,7 +70,11 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         self.builder = self.factory.makeBuilder()
 
     def createRecipeBuildWithBuilder(self):
-        build = self.factory.makeSourcePackageRecipeBuild()
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=self.factory.makeSourcePackageRecipe(
+                branches=[branch1, branch2]))
         Store.of(build).flush()
         removeSecurityProxy(build).builder = self.builder
         return build

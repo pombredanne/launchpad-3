@@ -184,17 +184,18 @@ class SourcePackageRecipe(Storm):
 
     @staticmethod
     def preLoadDataForSourcePackageRecipes(sourcepackagerecipes):
-        caches = dict((spr.id, get_property_cache(spr))
-            for spr in sourcepackagerecipes)
+        # Load the referencing SourcePackageRecipeData.
         spr_datas = load_referencing(
             SourcePackageRecipeData,
             sourcepackagerecipes, ['sourcepackage_recipe_id'])
+        # Load the related branches.
+        load_related(Branch, spr_datas, ['base_branch_id'])
+        # Store the SourcePackageRecipeData in the sourcepackagerecipes
+        # objects.
         for spr_data in spr_datas:
-            cache = caches[spr_data.sourcepackage_recipe_id]
+            cache = get_property_cache(spr_data.sourcepackage_recipe)
             cache._recipe_data = spr_data
         SourcePackageRecipeData.preLoadReferencedBranches(spr_datas)
-        load_related(
-            Branch, spr_datas, ['base_branch_id'])
 
     def setRecipeText(self, recipe_text):
         parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
