@@ -27,7 +27,9 @@ class TestSecurityContactEditView(TestCaseWithFactory):
             name='splat', displayname='<splat />')
         self.product = self.factory.makeProduct(
             name="boing", displayname='<boing />', owner=self.owner)
-        self.team = self.factory.makeTeam(name='thud', owner=self.owner)
+        self.team = self.factory.makeTeam(
+            name='thud', owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         login_person(self.owner)
 
     def _makeForm(self, person):
@@ -146,7 +148,8 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertEqual(another_user, self.product.security_contact)
 
     def test_admin_appoint_another_team(self):
-        another_team = self.factory.makeTeam()
+        another_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         login('admin@canonical.com')
         form = self._makeForm(another_team)
         view = create_initialized_view(
