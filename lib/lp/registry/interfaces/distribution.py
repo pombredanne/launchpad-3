@@ -136,9 +136,9 @@ class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
     IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationImports, ITranslationPolicy, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, IServiceUsage, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
