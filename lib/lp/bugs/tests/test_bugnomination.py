@@ -236,24 +236,16 @@ class TestApprovePerformance(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestApprovePerformance, self).setUp()
-        self.series = self.factory.makeProductSeries()
-        self.bug = self.factory.makeBug(product=self.series.product)
-        with person_logged_in(self.series.owner):
-            self.nomination = self.bug.addNomination(
-                target=self.series, owner=self.series.owner)
-
-    def test_heat_queries(self):
-        self.assertFalse(self.nomination.isApproved())
+    def check_heat_queries(self, nomination):
+        self.assertFalse(nomination.isApproved())
         # Statement patterns we're looking for:
         pattern = "^(SELECT Bug.heat|UPDATE .* max_bug_heat)"
         matcher = re.compile(pattern , re.DOTALL | re.I).match
         queries_heat = lambda statement: matcher(statement) is not None
-        with person_logged_in(self.series.owner):
+        with person_logged_in(nomination.target.owner):
             flush_database_updates()
             with StormStatementRecorder(queries_heat) as recorder:
-                self.nomination.approve(self.series.owner)
+                nomination.approve(nomination.target.owner)
         # Post-process the recorder to only have heat-related statements.
         recorder.query_data = [
             data for statement, data in izip(
@@ -269,3 +261,19 @@ class TestApprovePerformance(TestCaseWithFactory):
         # lazily evaluated, there are both explicit and implicit flushes in
         # bugtask subscriber code.
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
+    def test_heat_queries_for_productseries(self):
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(product=series.product)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)
+
+    def test_heat_queries_for_distroseries(self):
+        series = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=series.distribution)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)
