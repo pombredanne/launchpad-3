@@ -233,6 +233,7 @@ class TestCanApprove(TestCaseWithFactory):
 
 
 class TestApprovePerformance(TestCaseWithFactory):
+    """Test the performance of `BugNomination.approve`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -263,6 +264,8 @@ class TestApprovePerformance(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
     def test_heat_queries_for_productseries(self):
+        # The number of heat-related queries when approving a product series
+        # nomination is as low as reasonably possible.
         series = self.factory.makeProductSeries()
         bug = self.factory.makeBug(product=series.product)
         with person_logged_in(series.owner):
@@ -271,6 +274,8 @@ class TestApprovePerformance(TestCaseWithFactory):
         self.check_heat_queries(nomination)
 
     def test_heat_queries_for_distroseries(self):
+        # The number of heat-related queries when approving a distro series
+        # nomination is as low as reasonably possible.
         series = self.factory.makeDistroSeries()
         bug = self.factory.makeBug(distribution=series.distribution)
         with person_logged_in(series.owner):
