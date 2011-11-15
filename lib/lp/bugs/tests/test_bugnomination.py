@@ -8,6 +8,7 @@ __metaclass__ = type
 from itertools import izip
 import re
 
+from testtools.content import Content, UTF8_TEXT
 from testtools.matchers import (
     Equals,
     LessThan,
@@ -253,12 +254,13 @@ class TestApprovePerformance(TestCaseWithFactory):
             flush_database_updates()
             with StormStatementRecorder(queries_heat) as recorder:
                 self.nomination.approve(self.series.owner)
-        # Post-process the recorder to only have max_bug_heat updates.
+        # Post-process the recorder to only have heat-related statements.
         recorder.query_data = [
             data for statement, data in izip(
                 recorder.statements, recorder.query_data)
             if queries_heat(statement)]
-        self.addDetail("query_data", recorder.detail)
+        self.addDetail(
+            "query_data", Content(UTF8_TEXT, lambda: [str(recorder)]))
         # If there isn't at least one update to max_bug_heat it may mean that
         # this test is no longer relevant.
         self.assertThat(recorder, HasQueryCount(Not(Equals(0))))
