@@ -988,7 +988,9 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         spphs = list(self.findSPPHs()[:chunk_size])
+        self.log.info("Populating %d SPPH(s).", len(spphs))
         if len(spphs) == 0:
+            self.log.warn("Finished populating SPPHs.  Remove the populator.")
             self.done = True
             return
         self.getStore().execute("""
@@ -1001,7 +1003,6 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
                 SPPH.id IN %s
             """ % sqlvalues(spphs))
         transaction.commit()
-        self.done = (len(spphs) == 0)
 
 
 # XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
@@ -1027,7 +1028,9 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         bpphs = list(self.findBPPHs()[:chunk_size])
+        self.log.info("Populating %d BPPH(s).", len(bpphs))
         if len(bpphs) == 0:
+            self.log.warn("Finished populating BPPHs.  Remove the populator.")
             self.done = True
             return
         self.getStore().execute("""
