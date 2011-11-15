@@ -2455,6 +2455,12 @@ sub merge_pkg_build_deps {
 	
 	my $deps = $depends . ", " . $conflicts;
 	$deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
+	# For the moment, we treat multiarch-annotated build-dependencies as
+	# the same as any others because we're not implementing a
+	# cross-buildd.
+	$deps =~ s/:any//g;
+	$deps =~ s/:native//g;
+
 	@{$main::deps{$pkg}} = @l;
 	print "Merging pkg deps: $deps\n" if $main::debug;
 	parse_one_srcdep( $pkg, $deps, \%main::deps );

@@ -107,8 +107,8 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                'lp.bugs.subscribers',
+      LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
+              'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
                 'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                 function(Y) {
           Y.on("domready", function () {
@@ -116,6 +116,7 @@
                   Y.lp.app.privacy.setup_privacy_notification();
                   Y.lp.app.privacy.display_privacy_notification();
               }
+              Y.lp.app.beta_features.display_beta_notification();
           });
       });
     </script>

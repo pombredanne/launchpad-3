@@ -14,7 +14,6 @@ export DH_OPTIONS
 target = debian/launchpad-buildd
 topdir = ../../..
 
-daemons = $(topdir)/daemons
 buildd = $(topdir)/lib/canonical/buildd
 
 targetshare = $(target)/usr/share/launchpad-buildd
@@ -45,8 +44,7 @@ install:
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
 	touch $(pytarget)/../launchpad/daemons/__init__.py
-	cp launchpad-files/readyservice.py $(pytarget)/../launchpad/daemons/
-	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
+	install -m644 buildd-slave.tac $(targetshare)/buildd-slave.tac
 	cp -r pottery $(pytarget)
 	for pyfile in $(pyfiles); do \
 	  install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
@@ -90,8 +88,6 @@ clean:
 	dh_clean
 
 prepare:
-	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
-	cp ../launchpad/daemons/readyservice.py launchpad-files/readyservice.py
 
 package: prepare
 	debuild -uc -us -S
