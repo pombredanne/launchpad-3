@@ -231,7 +231,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         clear_property_cache(recipe_data)
         SourcePackageRecipeData.preLoadReferencedBranches([recipe_data])
         self.assertEquals(
-            referenced_branches,
+            sorted(referenced_branches),
             sorted(sp_recipe.getReferencedBranches()))
 
     def test_random_user_cant_edit(self):
