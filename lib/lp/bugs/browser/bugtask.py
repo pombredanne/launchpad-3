@@ -2266,6 +2266,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
+        self.field_visibility_defaults = self.field_visibility
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2589,6 +2590,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
 
             def _getBatchInfo(batch):
                 if batch is None:
