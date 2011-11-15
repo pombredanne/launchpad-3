@@ -368,15 +368,16 @@ def start_testapp(argv=list(sys.argv)):
         # here because we need to control fixtures within this process, and
         # because we want interactive tests to be as similar as possible to
         # tests run in the testrunner.
-        # Note that this changes the config instance-name, with the result that
-        # the configuration of utilities may become invalidated.
-        # XXX: Robert Collins - see bug 883980 about this. In short, we should
-        # inherit the other services from the test runner, rather than
-        # duplicating the work of test setup within the slave appserver. That
-        # will permit reuse of the librarian, DB, rabbit etc and
-        # correspondingly easier assertions and inspection of interactions with
-        # other services. That would mean we do not need to setup rabbit or the
-        # librarian here : the test runner would control and take care of that.
+        # Note that this changes the config instance-name, with the result
+        # that the configuration of utilities may become invalidated.
+        # XXX Robert Collins, bug=883980: In short, we should derive the
+        # other services from the test runner, rather than duplicating
+        # the work of test setup within the slave appserver. That will
+        # permit reuse of the librarian, DB, rabbit etc, and
+        # correspondingly easier assertions and inspection of interactions
+        # with other services. That would mean we do not need to set up rabbit
+        # or the librarian here: the test runner would control and take care
+        # of that.
         BaseLayer.setUp()
         teardowns.append(BaseLayer.tearDown)
         RabbitMQLayer.setUp()

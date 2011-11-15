@@ -2125,6 +2125,37 @@ body.global-notification-visible .login-logout {
     padding: 0;
     }
 
+/* ===========
+   Beta banner
+*/
+.beta-banner {
+    position: fixed;
+    z-index: 9;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #606060;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(64, 64, 64,0.9);
+    color: #fff;
+    font-size: 14px;
+    line-height: 21px;
+    }
+.beta-banner .info-link {
+    color: #4884ef;
+}
+.beta-warning {
+    padding: 4px;
+    margin-right: 8px;
+    background-color: #be0000;
+    font-weight: bold;
+    }
+.beta-feature {
+    font-weight: bold;
+    }
+
 
 /*
  * YOU HAVE REACHED THE END OF THIS FILE. IF YOU SEE ANYTHING BELOW SPRITES

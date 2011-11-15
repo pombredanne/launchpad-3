@@ -639,7 +639,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
 
         return deferred
 
-    def test_mirror(self):
+    # XXX gary 2011-11-15 bug 890816: This is a fragile test.
+    def DISABLE_test_mirror(self):
         # Actually mirror a branch using a worker sub-process.
         #
         # This test actually launches a worker process and makes sure that it
