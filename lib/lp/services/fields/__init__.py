@@ -55,6 +55,7 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_public_person_or_closed_team',
     'is_public_person',
     ]
 
@@ -243,6 +244,7 @@ class StrippedTextLine(TextLine):
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
 
+
 # Title
 # A field to capture a launchpad object title
 
@@ -276,7 +278,6 @@ class StrippableText(Text):
         """See `IField`."""
         value = self.normalize(value)
         return super(StrippableText, self).validate(value)
-
 
 
 # Summary
@@ -770,19 +771,19 @@ class BaseImageUpload(Bytes):
 class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
-    max_size = 5*1024
+    max_size = 5 * 1024
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
-    max_size = 50*1024
+    max_size = 50 * 1024
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
-    max_size = 100*1024
+    max_size = 100 * 1024
 
 
 class LocationField(Field):
@@ -828,6 +829,20 @@ def is_public_person(person):
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
+
+
+def is_public_person_or_closed_team(person):
+    """Return True if person is a Person or not an open or delegated team."""
+    from lp.registry.interfaces.person import (
+        IPerson,
+        PersonVisibility,
+        CLOSED_TEAM_POLICY,
+    )
+    if not IPerson.providedBy(person):
+        return False
+    if not person.is_team:
+        return person.visibility == PersonVisibility.PUBLIC
+    return person.subscriptionpolicy in CLOSED_TEAM_POLICY
 
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):
