@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to actually run the tests in an EC2 instance."""
@@ -19,7 +19,9 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import GlobalConfig
 from bzrlib.errors import UncommittedChanges
 from bzrlib.plugins.pqm.pqm_submit import (
-    NoPQMSubmissionAddress, PQMSubmission)
+    NoPQMSubmissionAddress,
+    PQMSubmission,
+    )
 
 
 TRUNK_BRANCH = 'bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel'
@@ -199,7 +201,7 @@ class EC2TestRunner:
                         pqm_submit_location = trunk_branch
                 elif pqm_submit_location is None and trunk_specified:
                     pqm_submit_location = trunk_branch
-                # modified from pqm_submit.py
+                # Modified from pqm_submit.py.
                 submission = PQMSubmission(
                     source_branch=bzrbranch,
                     public_location=pqm_public_location,
@@ -207,14 +209,14 @@ class EC2TestRunner:
                     submit_location=pqm_submit_location,
                     tree=tree)
                 if tree is not None:
-                    # this is the part we want to do whether or not we're
-                    # submitting.
-                    submission.check_tree() # any working changes
-                    submission.check_public_branch() # everything public
+                    # This is the part we want to do whether we're
+                    # submitting or not:
+                    submission.check_tree()  # Any working changes.
+                    submission.check_public_branch()  # Everything public.
                     branch = submission.public_location
                     if (include_download_cache_changes is None or
                         include_download_cache_changes):
-                        # We need to get the download cache settings
+                        # We need to get the download cache settings.
                         cache_tree, cache_bzrbranch, cache_relpath = (
                             BzrDir.open_containing_tree_or_branch(
                                 os.path.join(
@@ -239,11 +241,10 @@ class EC2TestRunner:
                 if pqm_message is not None:
                     if self.download_cache_additions:
                         raise UncommittedChanges(cache_tree)
-                    # get the submission message
+                    # Get the submission message.
                     mail_from = config.get_user_option('pqm_user_email')
                     if not mail_from:
                         mail_from = config.username()
-                    # Make sure this isn't unicode
                     mail_from = mail_from.encode('utf8')
                     if pqm_email is None:
                         if tree is None:
@@ -253,7 +254,7 @@ class EC2TestRunner:
                             pqm_email = config.get_user_option('pqm_email')
                     if not pqm_email:
                         raise NoPQMSubmissionAddress(bzrbranch)
-                    mail_to = pqm_email.encode('utf8') # same here
+                    mail_to = pqm_email.encode('utf8')
                     self.message = submission.to_email(mail_from, mail_to)
                 elif (self.download_cache_additions and
                       self.include_download_cache_changes is None):
@@ -322,6 +323,11 @@ class EC2TestRunner:
             # really wrong with the server or suite.
             user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
+        as_user("sudo add-apt-repository ppa:bzr")
+        as_user("sudo add-apt-repository ppa:launchpad")
+        as_user("sudo aptitude update")
+        as_user(
+            "sudo DEBIAN_FRONTEND=noninteractive aptitude -y full-upgrade")
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
             as_user('[ -d .bazaar ] || mkdir .bazaar')
@@ -380,7 +386,9 @@ class EC2TestRunner:
         user_connection.run_with_ssh_agent(
             'bzr pull lp:lp-source-dependencies '
             '-d /var/launchpad/download-cache')
-        p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
+        p(
+            'mv /var/launchpad/download-cache '
+            '/var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
             root = os.path.realpath(
@@ -390,7 +398,8 @@ class EC2TestRunner:
                 self.log('Copying %s to remote machine.\n' % (src,))
                 user_connection.sftp.put(
                     src,
-                    os.path.join('/var/launchpad/tmp/download-cache', info[0]))
+                    os.path.join(
+                        '/var/launchpad/tmp/download-cache', info[0]))
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database

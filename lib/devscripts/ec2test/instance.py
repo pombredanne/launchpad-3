@@ -78,7 +78,6 @@ sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
 cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
-deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
 deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
 deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF

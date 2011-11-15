@@ -513,6 +513,26 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEquals(build.requester,
             build.getUploader(None))
 
+    def test_getByBuildFarmJob(self):
+        sprb = self.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        self.assertEqual(
+            sprb,
+            SourcePackageRecipeBuild.getByBuildFarmJob(sprb.build_farm_job))
+
+    def test_getByBuildFarmJobs(self):
+        sprbs = [self.makeSourcePackageRecipeBuild() for i in range(10)]
+        Store.of(sprbs[0]).flush()
+        self.assertContentEqual(
+            sprbs,
+            SourcePackageRecipeBuild.getByBuildFarmJobs(
+                [sprb.build_farm_job for sprb in sprbs]))
+
+    def test_getByBuildFarmJobs_empty(self):
+        self.assertContentEqual(
+            [],
+            SourcePackageRecipeBuild.getByBuildFarmJobs([]))
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 

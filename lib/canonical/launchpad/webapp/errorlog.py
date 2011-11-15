@@ -161,6 +161,14 @@ def attach_exc_info(report, context):
 _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
 
 
+def attach_previous_oopsid(report, context):
+    """Add a link to the previous OOPS generated this request, if any."""
+    request = context.get('http_request')
+    last_oopsid = getattr(request, 'oopsid', None)
+    if last_oopsid is not None:
+        report['last_oops'] = last_oopsid
+
+
 def attach_http_request(report, context):
     """Add request metadata into the error report.
 
@@ -199,7 +207,7 @@ def attach_http_request(report, context):
     else:
         # Request has an UnauthenticatedPrincipal.
         login = 'unauthenticated'
-        if report['type'] in (
+        if _get_type(report) in (
             _ignored_exceptions_for_unauthenticated_users):
             report['ignore'] = True
 
@@ -256,6 +264,10 @@ def filter_sessions_timeline(report, context):
     report['timeline'] = statements
 
 
+def _get_type(report):
+    return report.get('type', 'No exception type')
+
+
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
@@ -308,10 +320,14 @@ class ErrorReportingUtility:
         # In the zope environment we track how long a script / http
         # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
+        # Any previous OOPS reports generated this request.
+        self._oops_config.on_create.append(attach_previous_oopsid)
+
         def add_publisher(publisher):
             if publisher_adapter is not None:
                 publisher = publisher_adapter(publisher)
             self._oops_config.publishers.append(publisher)
+
         # If amqp is configured we want to publish over amqp.
         if (config.error_reports.error_exchange and rabbit.is_configured()):
             exchange = config.error_reports.error_exchange
@@ -334,7 +350,7 @@ class ErrorReportingUtility:
                 operator.methodcaller('get', 'ignore'))
         #  - have a type listed in self._ignored_exceptions.
         self._oops_config.filters.append(
-                lambda report: report['type'] in self._ignored_exceptions)
+                lambda report: _get_type(report) in self._ignored_exceptions)
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
@@ -369,7 +385,7 @@ class ErrorReportingUtility:
 
     def _filter_bad_urls_by_referer(self, report):
         """Filter if the report was generated because of a bad offsite url."""
-        if report['type'] in self._ignored_exceptions_for_offsite_referer:
+        if _get_type(report) in self._ignored_exceptions_for_offsite_referer:
             was_http = report.get('url', '').lower().startswith('http')
             if was_http:
                 req_vars = dict(report.get('req_vars', ()))

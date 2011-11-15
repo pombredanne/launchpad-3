@@ -19,6 +19,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
+    BugSubscriptionAddView,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
@@ -26,6 +27,7 @@ from lp.bugs.enum import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
+    TeamSubscriptionPolicy,
     )
 from lp.testing import (
     login_person,
@@ -40,6 +42,41 @@ from lp.testing.views import create_initialized_view
 
 ON = 'on'
 OFF = None
+
+
+class BugsubscriptionPrivacyTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugsubscriptionPrivacyTests, self).setUp()
+        self.user = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.user)
+        removeSecurityProxy(self.bug).private = True
+
+    def _assert_subscription_fails(self, team):
+        with person_logged_in(self.user):
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionAddView)
+            form_data = {'field.person': team.name}
+            harness.submit('add', form_data)
+        subscription = removeSecurityProxy(self.bug).getSubscriptionForPerson(
+            team)
+        error_msg = harness.getFieldError('person')
+        expected_msg = (u'Open and delegated teams cannot be subscribed to '
+            'private bugs.')
+        self.assertEqual(expected_msg, error_msg)
+        self.assertIs(None, subscription)
+
+    def test_open_team_cannot_be_subscribed_to_private_bug(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        self._assert_subscription_fails(team)
+
+    def test_delegated_team_cannot_be_subscribed_to_private_bug(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+        self._assert_subscription_fails(team)
 
 
 class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):

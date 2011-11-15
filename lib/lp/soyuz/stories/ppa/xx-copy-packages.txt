@@ -1,4 +1,5 @@
-= PPA Package Copying =
+PPA Package Copying
+===================
 
 We allow users to copy packages from PPAs they can view to another
 that they upload packages to.
@@ -23,7 +24,8 @@ disk during the next publishing cycle, see `publishing.txt` for more
 information.
 
 
-== Who can copy packages ? ==
+Who can copy packages?
+----------------------
 
 Copying is only permitted for valid users, so Anonymous user can't
 access 'Copy package' page from any PPA.
@@ -95,7 +97,8 @@ copy package interface can see packages to be copied.
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
 
-== How does this copy-thing work ? ==
+How does this copy-thing work?
+------------------------------
 
 As mentioned before, James can select one or more sources to be copied
 to a PPA he has permission to upload.
@@ -108,7 +111,9 @@ for packages. This is certainly not part of the doctest story.
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet,
+    ...     )
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.model.processor import ProcessorFamily
 
@@ -184,7 +189,8 @@ The page section id is built using "pub$ID" notation.
       * Fix description (Malone #1)
       * Fix debian (Debian #2000)
       * Fix warty (Warty Ubuntu #1)
-      -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+      -- Sample Person &lt;test@canonical.com&gt;
+      Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
     Built packages
@@ -272,7 +278,8 @@ context.
       * Fix description (Malone #1)
       * Fix debian (Debian #2000)
       * Fix warty (Warty Ubuntu #1)
-      -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+      -- Sample Person &lt;test@canonical.com&gt;
+      Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
     Package files
@@ -315,7 +322,8 @@ build created during the copy is ready to be dispatched.
 Very nice, but now James gets really excited about the possibilities ...
 
 
-=== Copying packages within the PPA ===
+Copying packages within the PPA
+...............................
 
 James thinks that having Celso's 'pmount' copy in his PPA for hoary is
 great, however some of his friends are already using grumpy, the new
@@ -650,7 +658,8 @@ publication.
     pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
 
-=== Copying packages to other PPAs you participate ===
+Copying packages to other PPAs you participate
+..............................................
 
 The Copy-UI excitement is endless for James, he informed his friends
 and decided to open a team PPA where he and his friends could work
@@ -1115,8 +1124,8 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Uploader  Published  Status     Series  Section Build Status
-    foo - 9.9 (...) name16    ...        Published  Hoary   Base    i386
+    Source          Uploader Published Status    Series Section Build Status
+    foo - 9.9 (...) name16   ...       Published Hoary  Base    i386
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He

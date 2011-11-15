@@ -97,7 +97,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from zope.security.proxy import removeSecurityProxy
 
 
 class ForeignBranchPluginLayer(BaseLayer):

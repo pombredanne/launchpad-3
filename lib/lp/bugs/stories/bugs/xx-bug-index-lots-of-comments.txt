@@ -1,4 +1,5 @@
-== Bugs with lots of comments ==
+Bugs with lots of comments
+==========================
 
 When a bug has a very large number of comments, only some of them are
 displayed. A notice is added at the end of the comment list to tell
@@ -39,11 +40,14 @@ With a warning telling the user where the comments have gone:
     View all 6
     comments or add a comment.
 
-The add comment box is not present so people don't accidentally reply
-to the wrong message.
+The add comment box is present but hidden so people don't accidentally
+reply to the wrong message.
 
-    >>> print find_tag_by_id(user_browser.contents, 'add-comment-form')
-    None
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'add-comment-form-container')
+    <div id="add-comment-form-container" class="hidden">...
+    <div id="add-comment-form">...</div>...
+    </div>
 
 In amongst that message are two links that will let us see all the
 comments and the add comment box.

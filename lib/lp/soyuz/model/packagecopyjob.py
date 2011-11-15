@@ -517,7 +517,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             to_sourcepackagerelease = ancestry.sourcepackagerelease
             copied_source = copied_sources[0]
             try:
-                diff = to_sourcepackagerelease.requestDiffTo(
+                to_sourcepackagerelease.requestDiffTo(
                     self.requester, copied_source.sourcepackagerelease)
             except PackageDiffAlreadyRequested:
                 pass
