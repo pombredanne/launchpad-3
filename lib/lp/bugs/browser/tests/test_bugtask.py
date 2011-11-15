@@ -1783,6 +1783,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
 
+    def test_cache_field_visibility_defaults(self):
+        """Cache contains sane-looking field_visibility_defaults values."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        field_visibility_defaults = cache.objects['field_visibility_defaults']
+        self.assertTrue(field_visibility_defaults['show_title'])
+
     def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
