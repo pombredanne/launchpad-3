@@ -616,7 +616,7 @@ class EC2Instance:
             socket.gethostname())
 
         self.log('registering image: ')
-        credentials.connect('bundle').register_image(
+        credentials.connect('bundle').conn.register_image(
             name=name,
             description=description,
             image_location=manifest_path,
