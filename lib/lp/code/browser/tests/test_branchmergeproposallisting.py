@@ -423,7 +423,7 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
                 user, name='+activereviews', rootsite='code',
                 principal=user)
             view.render()
-        self.assertEqual(number_of_bmps, len(list(view.getProposals())))
+        self.assertEqual(number_of_bmps, view.proposal_count)
         return recorder
 
     def test_activereviews_query_count(self):
