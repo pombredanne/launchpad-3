@@ -3163,7 +3163,10 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         if BugTaskSet._ORDERBY_COLUMN is None:
             # Avoid circular imports.
-            from lp.bugs.model.bug import Bug
+            from lp.bugs.model.bug import (
+                Bug,
+                BugTag,
+                )
             from lp.registry.model.milestone import Milestone
             from lp.registry.model.person import Person
             Assignee = ClassAlias(Person)
@@ -3205,6 +3208,20 @@ class BugTaskSet:
                         (Bug, Join(Bug, BugTask.bug == Bug.id)),
                         (Reporter, Join(Reporter, Bug.owner == Reporter.id))
                         ]),
+                "tag": (
+                    BugTag.tag,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (BugTag,
+                         LeftJoin(
+                             BugTag,
+                             BugTag.bug == Bug.id and
+                             BugTag.id == SQL("""
+                                 SELECT id FROM BugTag AS bt
+                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                                 """))),
+                        ]
+                    ),
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
 

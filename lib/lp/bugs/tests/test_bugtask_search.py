@@ -639,6 +639,17 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None, orderby='-title')
         self.assertSearchFinds(params, expected)
 
+    def test_sort_by_tag(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.tags = ['tag-a', 'tag-d']
+            self.bugtasks[1].bug.tags = ['tag-b', 'tag-c']
+        params = self.getBugTaskSearchParams(user=None, orderby='tag')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-tag')
+        self.assertSearchFinds(params, expected)
+
 
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
