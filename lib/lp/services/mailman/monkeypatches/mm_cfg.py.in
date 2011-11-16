@@ -22,6 +22,8 @@ from lp.services.mailman.monkeypatches.defaults import *
 # Our dynamic overrides of all the static defaults.
 SMTPHOST = '%(smtp_host)s'
 SMTPPORT = %(smtp_port)d
+SMTP_MAX_RCPTS = %(smtp_max_rcpts)d
+SMTP_MAX_SESSIONS_PER_CONNECTION = %(smtp_max_sesions_per_connection)d
 
 # Configuration options for the XMLRPCRunner.
 XMLRPC_URL = '%(xmlrpc_url)s'

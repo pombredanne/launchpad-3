@@ -560,7 +560,8 @@ class InitializeDistroSeries:
                             sources, target_archive, self.distroseries,
                             target_pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
-                            close_bugs=False, create_dsd_job=False)
+                            close_bugs=False, create_dsd_job=False,
+                            person=None)
                         if self.rebuild:
                             rebuilds = []
                             for pubrec in sources_published:

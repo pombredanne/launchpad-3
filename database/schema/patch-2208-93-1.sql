@@ -18,7 +18,7 @@ CREATE UNIQUE INDEX accesspolicy__distribution__type__key
 CREATE TABLE AccessPolicyArtifact (
     id serial PRIMARY KEY,
     bug integer REFERENCES Bug,
-    branch integer REFERENCES Branch,
+    branch integer, -- FK to be added later.
     policy integer REFERENCES AccessPolicy,
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
@@ -32,8 +32,8 @@ CREATE INDEX accesspolicyartifact__policy__key
 
 CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
-    grantee integer NOT NULL,
-    grantor integer NOT NULL,
+    grantee integer NOT NULL, -- FK to be added later.
+    grantor integer NOT NULL, -- FK to be added later.
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     policy integer REFERENCES AccessPolicy,

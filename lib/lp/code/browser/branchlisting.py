@@ -613,7 +613,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self.branch_count > 0
+        return not self.is_branch_count_zero
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
@@ -623,6 +623,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
     def branch_count(self):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
+
+    @cachedproperty
+    def is_branch_count_zero(self):
+        """Is the number of total branches the user can see zero?."""
+        # If the batch itself is not empty, we don't need to check
+        # the whole collection count (it might be expensive to compute if the
+        # total number of branches is huge).
+        return (
+            len(self.branches().visible_branches_for_view) == 0 and
+            not self.branch_count)
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -885,21 +895,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
-    @cachedproperty
-    def has_branches(self):
-        """Should the template show the summary view with the links."""
-
     @property
     def show_summary(self):
         """Should the template show the summary view with the links."""
 
         if self.simplified_branches_menu:
-            return (
-                self.registered_branches_not_empty or
-                self.owned_branches_not_empty or
-                self.subscribed_branches_not_empty or
-                self.active_reviews_not_empty
-                )
+            return True
         else:
             return (
                 self.owned_branch_count or
@@ -921,31 +922,10 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             not self._getCountCollection().registeredBy(
                 self.person).is_empty())
 
-    @cachedproperty
-    def owned_branches_not_empty(self):
-        """False if the number of branches owned by self.person is zero."""
-        return not self._getCountCollection().ownedBy(self.person).is_empty()
-
-    @cachedproperty
-    def subscribed_branches_not_empty(self):
-        """False if the number of branches subscribed to by self.person
-        is zero.
-        """
-        return (
-            not self._getCountCollection().subscribedBy(
-                self.person).is_empty())
-
-    @cachedproperty
-    def active_reviews_not_empty(self):
-        """Return the number of active reviews for self.person's branches."""
-        active_reviews = PersonActiveReviewsView(self.context, self.request)
-        return not active_reviews.getProposals().is_empty()
-
     def simplified_owned(self):
         return Link(
             canonical_url(self.context, rootsite='code'),
-            'Owned branches',
-            enabled=self.owned_branches_not_empty)
+            'Owned branches')
 
     def simplified_registered(self):
         person_is_individual = (not self.person.is_team)
@@ -959,14 +939,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     def simplified_subscribed(self):
         return Link(
             '+subscribedbranches',
-            'Subscribed branches',
-            enabled=self.subscribed_branches_not_empty)
+            'Subscribed branches')
 
     def simplified_active_reviews(self):
         return Link(
             '+activereviews',
-            'Active reviews',
-            enabled=self.active_reviews_not_empty)
+            'Active reviews')
 
     @cachedproperty
     def registered_branch_count(self):
@@ -1033,7 +1011,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['registered', 'owned', 'subscribed', 'active_reviews']
+    links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
 
     def _getCountCollection(self):
         """See `PersonBranchesMenu`."""
