@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import urllib
+import urllib2
 import urlparse
 import xmlrpclib
 
@@ -187,6 +188,7 @@ class RootApp:
         lp_server = get_lp_server(user, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
+
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
@@ -236,6 +238,26 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
+            branch_api_url = urlparse.urljoin(
+                config.appserver_root_url('api'), 'devel', branch_name)
+            self.log.info('branch_api_url: %s', branch_api_url)
+            req = urllib2.Request(branch_api_url)
+            private = False
+            try:
+                # We need to determine if the branch is private
+                response = urllib2.urlopen(req)
+            except urllib2.HTTPError as response:
+                if response.getcode() in (400, 403):
+                    ## 400 and 403 are the possible returns for api requests
+                    ## on a private branch without authentication.
+                    self.log.info("Branch is private")
+                    private = True
+                self.log.info(
+                    "Branch state not determined; api error, return code: %s",
+                    response.getcode())
+            else:
+                self.log.info("Branch is public")
+
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
@@ -247,7 +269,7 @@ class RootApp:
                 view = BranchWSGIApp(
                     bzr_branch, branch_name, {'cachepath': cachepath},
                     self.graph_cache, branch_link=branch_link,
-                    served_url=None)
+                    served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
                 bzr_branch.unlock()
