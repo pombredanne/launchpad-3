@@ -2298,7 +2298,8 @@ class BugTaskSet:
                 "BugTask.datecreated > %s" % (
                     sqlvalues(params.created_since,)))
 
-        orderby_arg = self._processOrderBy(params)
+        orderby_arg, extra_joins = self._processOrderBy(params)
+        join_tables.extend(extra_joins)
 
         query = " AND ".join(extra_clauses)
 
@@ -3160,6 +3161,8 @@ class BugTaskSet:
 
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""
+        # Avoid circular imports.
+        from lp.registry.model.milestone import Milestone
         if BugTaskSet._ORDERBY_COLUMN is None:
             # Local import of Bug to avoid import loop.
             from lp.bugs.model.bug import Bug
@@ -3182,6 +3185,10 @@ class BugTaskSet:
                 "users_affected_count": Bug.users_affected_count,
                 "heat": BugTask.heat,
                 "latest_patch_uploaded": Bug.latest_patch_uploaded,
+                "milestone_name": (
+                    Milestone.name,
+                    (Milestone,
+                     LeftJoin(Milestone, BugTask.milestone == Milestone.id))),
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
 
@@ -3230,16 +3237,37 @@ class BugTaskSet:
 
         # Translate orderby keys into corresponding Table.attribute
         # strings.
+        extra_joins = []
         ambiguous = True
+        # Sorting by milestone only is a very "coarse" sort order.
+        # If no additional sort order is specified, add the bug task
+        # importance as a secondary sort order.
+        if len(orderby) == 1:
+            if orderby[0] == 'milestone_name':
+                # We want the most important bugtasks first; these have
+                # larger integer values.
+                orderby.append('-importance')
+            elif orderby[0] == '-milestone_name':
+                orderby.append('importance')
+            else:
+                # Other sort orders don't need tweaking.
+                pass
+
         for orderby_col in orderby:
             if isinstance(orderby_col, SQLConstant):
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
                 col = self.getOrderByColumnDBName(orderby_col[1:])
+                if isinstance(col, tuple):
+                    extra_joins.append(col[1])
+                    col = col[0]
                 order_clause = Desc(col)
             else:
                 col = self.getOrderByColumnDBName(orderby_col)
+                if isinstance(col, tuple):
+                    extra_joins.append(col[1])
+                    col = col[0]
                 order_clause = col
             if col in unambiguous_cols:
                 ambiguous = False
@@ -3251,7 +3279,7 @@ class BugTaskSet:
             else:
                 orderby_arg.append(BugTask.id)
 
-        return tuple(orderby_arg)
+        return tuple(orderby_arg), extra_joins
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

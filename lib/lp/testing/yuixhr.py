@@ -435,9 +435,11 @@ class YUIAppServerTestCase(AbstractYUITestCase):
     _testMethodName = 'runTest'
     # 5 minutes for the suite.  Hopefully we never get close to this.
     suite_timeout = 300000
-    # 6 seconds for each test.  Hopefully they are three or less for
-    # yuixhr tests, and less than one for pure JS tests.
-    incremental_timeout = 6000
+    # 12 seconds for each test.  Hopefully they are three or less for
+    # yuixhr tests, and less than one for pure JS tests, but
+    # occasionally buildbot runs over six seconds even for tests that
+    # are well-behaved locally and on ec2, so we up the limit to 12..
+    incremental_timeout = 12000
     # 30 seconds for the first test, to include warmup time.  We should
     # work with html5browser to decrease this (such as making html5browser
     # into a server that accepts URIs to run on a long-running browser

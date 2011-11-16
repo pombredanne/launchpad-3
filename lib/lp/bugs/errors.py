@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/bugs modules."""
@@ -25,6 +25,7 @@ class InvalidBugTargetType(Exception):
 @error_status(httplib.EXPECTATION_FAILED)
 class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
+
 
 @error_status(httplib.BAD_REQUEST)
 class SubscriptionPrivacyViolation(Exception):
