@@ -227,6 +227,7 @@ class cmd_test(EC2Command):
         trunk_option,
         machine_id_option,
         instance_type_option,
+        region_option,
         Option(
             'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
@@ -293,6 +294,7 @@ class cmd_test(EC2Command):
             noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             attached=False, debug=False, open_browser=False,
+            region=None,
             include_download_cache_changes=False):
         set_trace_if(debug)
         if branch is None:
@@ -321,7 +323,8 @@ class cmd_test(EC2Command):
                 "supported")
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
-        instance = EC2Instance.make(session_name, instance_type, machine)
+        instance = EC2Instance.make(session_name, instance_type, machine,
+            region=region)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
