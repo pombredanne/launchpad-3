@@ -22,16 +22,26 @@ from optparse import OptionParser
 
 class UbuntuMaintenance(object):
     """ Represents the support timeframe for a regular ubuntu release """
-    
+
     # architectures that are full supported (including LTS time)
-    PRIMARY_ARCHES = ["i386", "amd64"]
+    PRIMARY_ARCHES = [
+        "i386",
+        "amd64",
+        ]
 
     # architectures we support (but not for LTS time)
     SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 
     # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-    SERVER_SEEDS = ["supported-server", "server-ship"]
-    DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
+    SERVER_SEEDS = [
+        "server-ship",
+        "supported-server",
+        ]
+    DESKTOP_SEEDS = [
+        "ship",
+        "supported-desktop",
+        "supported-desktop-extra",
+        ]
     SUPPORTED_SEEDS = ["all"]
 
     # normal support timeframe
@@ -55,8 +65,8 @@ class UbuntuMaintenance(object):
 #  - anything that is in armel follows SUPPORT_TIMEFRAME
 #
 class LucidUbuntuMaintenance(UbuntuMaintenance):
-    """ Represents the support timeframe for a 10.04 (lucid) LTS release, 
-        the exact rules differ from LTS release to LTS release 
+    """ Represents the support timeframe for a 10.04 (lucid) LTS release,
+        the exact rules differ from LTS release to LTS release
     """
 
     # lts support timeframe, order is important, least supported must be last
@@ -65,13 +75,13 @@ class LucidUbuntuMaintenance(UbuntuMaintenance):
         ("5y",  UbuntuMaintenance.SERVER_SEEDS),
         ("3y",  UbuntuMaintenance.DESKTOP_SEEDS),
         ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
-    ]
+        ]
 
     # on a LTS this is significant, it defines what names get LTS support
     DISTRO_NAMES = [
-        "ubuntu", 
+        "ubuntu",
         "kubuntu",
-    ]
+        ]
 
 class PreciseUbuntuMaintenance(UbuntuMaintenance):
     """ The support timeframe for the 12.04 (precise) LTS release.
@@ -84,12 +94,12 @@ class PreciseUbuntuMaintenance(UbuntuMaintenance):
         ("5y", UbuntuMaintenance.SERVER_SEEDS),
         ("5y", UbuntuMaintenance.DESKTOP_SEEDS),
         ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
-    ]
+        ]
 
     # on a LTS this is significant, it defines what names get LTS support
     DISTRO_NAMES = [
-        "ubuntu", 
-    ]
+        "ubuntu",
+        ]
 
 
 # Names of the distribution releases that are not supported by this
@@ -108,13 +118,13 @@ UNSUPPORTED_DISTRO_RELEASED = [
 
 # germinate output base directory
 BASE_URL = os.environ.get(
-    "MAINTENANCE_CHECK_BASE_URL", 
+    "MAINTENANCE_CHECK_BASE_URL",
     "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
 HINTS_DIR_URL = os.environ.get(
-    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
+    "MAINTENANCE_CHECK_HINTS_DIR_URL",
     "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
@@ -355,7 +365,7 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         distro = "lucid"
-    
+
     # maintenance class to use
     klass = globals().get("%sUbuntuMaintenance" % distro.capitalize())
     if klass is None:
