@@ -121,17 +121,21 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     def test_related_feature_info__with_related_feature_nothing_enabled(self):
         # If a view has a non-empty sequence of related feature flags but if
-        # no matching feature rules are defined, its property
-        # related_feature_info is empty.
+        # no matching feature rules are defined, is_beta is False.
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
-        self.assertEqual(0, len(view.related_feature_info))
+        self.assertEqual({
+            'test_feature': {
+                'is_beta': False,
+                'title': 'title',
+                'url': 'http://wiki.lp.dev/LEP/sample',
+            }
+        }, view.related_feature_info)
 
     def test_related_feature_info__default_scope_only(self):
         # If a view has a non-empty sequence of related feature flags but if
-        # only a default scope is defined, its property
-        # related_feature_info is empty.
+        # only a default scope is defined, it is not considered beta.
         self.useFixture(FeatureFixture(
             {},
             (
@@ -145,7 +149,11 @@ class TestLaunchpadView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
-        self.assertEqual({}, view.related_feature_info)
+        self.assertEqual({'test_feature': {
+            'is_beta': False,
+            'title': 'title',
+            'url': 'http://wiki.lp.dev/LEP/sample',
+        }}, view.related_feature_info)
 
     def test_active_related_features__enabled_feature(self):
         # If a view has a non-empty sequence of related feature flags and if
@@ -166,6 +174,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         view.related_features = ['test_feature']
         self.assertEqual({
             'test_feature': {
+                'is_beta': True,
                 'title': 'title',
                 'url': 'http://wiki.lp.dev/LEP/sample'}
             },
@@ -201,7 +210,9 @@ class TestLaunchpadView(TestCaseWithFactory):
         view.related_features = ['test_feature']
         self.assertEqual({
             'test_feature': {
-                'title': 'title', 'url': 'http://wiki.lp.dev/LEP/sample'}},
+                'is_beta': True, 'title': 'title', 'url':
+                'http://wiki.lp.dev/LEP/sample'
+            }},
             view.related_feature_info)
 
     def test_related_feature_info__enabled_feature_with_default_same_value(
@@ -210,14 +221,17 @@ class TestLaunchpadView(TestCaseWithFactory):
         #   * has a non-empty sequence of related feature flags,
         #   * the default scope and a non-default scope are defined
         #     and have the same values,
-        # then the property related_feature_info does not contain this
-        # feature flag.
+        # then is_beta is false.
         self.useFixture(FeatureFixture(
             {}, self.makeFeatureFlagDictionaries(u'on', u'on')))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
-        self.assertEqual({}, view.related_feature_info)
+        self.assertEqual({'test_feature': {
+            'is_beta': False,
+            'title': 'title',
+            'url': 'http://wiki.lp.dev/LEP/sample',
+        }}, view.related_feature_info)
 
     def test_json_cache_has_related_features(self):
         # The property related_features is copied into the JSON cache.
@@ -232,6 +246,7 @@ class TestLaunchpadView(TestCaseWithFactory):
             self.assertEqual(
                 '{"related_features": {"test_feature": {'
                 '"url": "http://wiki.lp.dev/LEP/sample", '
+                '"is_beta": true, '
                 '"title": "title"'
                 '}}}',
                 view.getCacheJSON())
@@ -255,9 +270,9 @@ class TestLaunchpadView(TestCaseWithFactory):
             self.assertEqual(
                 '{"related_features": '
                 '{"test_feature_2": {"url": "http://wiki.lp.dev/LEP/sample2",'
-                ' "title": "title"}, '
+                ' "is_beta": true, "title": "title"}, '
                 '"test_feature": {"url": "http://wiki.lp.dev/LEP/sample", '
-                '"title": "title"}}}',
+                '"is_beta": true, "title": "title"}}}',
                 view.getCacheJSON())
 
     def test_view_creation_with_fake_or_none_request(self):

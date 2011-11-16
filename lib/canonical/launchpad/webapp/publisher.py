@@ -403,15 +403,13 @@ class LaunchpadView(UserAttributeCache):
                 currentScope(flag) not in ('default', None) and
                 defaultFlagValue(flag) != getFeatureFlag(flag))
 
-        active_beta_flags = set(
-            flag for flag in self.related_features
-            if flag_in_beta_status(flag))
         beta_info = {}
         for (flag_name, value_domain, documentation, default_behaviour, title,
              url) in flag_info:
-            if flag_name not in active_beta_flags:
+            if flag_name not in self.related_features:
                 continue
             beta_info[flag_name] = {
+                'is_beta': flag_in_beta_status(flag_name),
                 'title': title,
                 'url': url,
             }
