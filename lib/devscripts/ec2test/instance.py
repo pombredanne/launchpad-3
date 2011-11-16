@@ -82,6 +82,17 @@ deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
 deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF
 
+export DEBIAN_FRONTEND=noninteractive
+
+# Add the keys for the three PPAs added to sources.list above.
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
+
+aptitude update
+aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
+aptitude -y full-upgrade
+
 # This next part is cribbed from rocketfuel-setup
 dev_host() {
   sed -i \"s/^127.0.0.88.*$/&\ ${hostname}/\" /etc/hosts
@@ -124,15 +135,7 @@ echo '
 127.0.0.99      bazaar.launchpad.dev
 ' >> /etc/hosts
 
-# Add the keys for the three PPAs added to sources.list above.
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
-
-aptitude update
-aptitude -y full-upgrade
-
-DEBIAN_FRONTEND=noninteractive apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 # Create the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
