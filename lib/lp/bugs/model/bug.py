@@ -2138,22 +2138,7 @@ class Bug(SQLBase):
         return False
 
     def userCanSetCommentVisibility(self, user):
-        """See `IBug`.
-
-        This method is called by security adapters for authenticated users.
-
-        Users who can set bug comment visibility are:
-        - Admins and registry admins
-        - users in project roles on any bugtask:
-          - maintainer
-          - driver
-          - bug supervisor
-          - security contact
-
-        Additionally, the comment owners can hide their own comments but that
-        is not checked here - this method is to see if arbitrary users can
-        hide comments they did not make themselves.
-        """
+        """See `IBug`"""
 
         if user is None:
             return False
