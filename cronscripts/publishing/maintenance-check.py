@@ -137,17 +137,6 @@ SUPPORT_TAG = "Supported"
 
 
 
-# python-apt compat, the fallback can be removed once the code
-# runs on lucid or newer
-try:
-    AcquireProgress = apt.progress.base.AcquireProgress
-    OpProgress = apt.progress.base.OpProgress
-except AttributeError:
-    # really old (hardy) interface
-    AcquireProgress = apt.progress.FetchProgress
-    OpProgress = apt.progress.OpProgress
-
-
 def get_binaries_for_source_pkg(srcname):
     """ Return all binary package names for the given source package name.
 
@@ -216,7 +205,7 @@ def create_and_update_deb_src_source_list(distroseries):
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     try:
-        cache.update(AcquireProgress())
+        cache.update(apt.progress.base.AcquireProgress())
     except SystemError:
         logging.exception("cache.update() failed")
 
@@ -407,10 +396,10 @@ if __name__ == "__main__":
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
-            cache.update(AcquireProgress())
+            cache.update(apt.progress.base.AcquireProgress())
         except SystemError:
             logging.exception("cache.update() failed")
-        cache.open(OpProgress())
+        cache.open(apt.progress.base.OpProgress())
         for pkg in cache:
             # ignore multiarch package names
             if ":" in pkg.name:
