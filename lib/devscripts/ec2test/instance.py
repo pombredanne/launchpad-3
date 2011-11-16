@@ -365,7 +365,8 @@ class EC2Instance:
                 ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException, EOFError), e:
                 self.log('.')
-                if getattr(e, 'errno', None) == errno.ECONNREFUSED:
+                if getattr(e, 'errno', None) in (
+                        errno.ECONNREFUSED, errno.ETIMEDOUT):
                     # Pretty normal if the machine has started but sshd isn't
                     # up yet.  Don't make a fuss.
                     time.sleep(1)
