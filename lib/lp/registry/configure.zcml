@@ -932,7 +932,7 @@
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.LimitedView"
-                interface="lp.registry.interfaces.person.IPersonSee"/>
+                interface="lp.registry.interfaces.person.IPersonLimitedView"/>
             <require
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>

@@ -20,7 +20,7 @@ __all__ = [
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
     'ISoftwareCenterAgentApplication',
-    'IPersonSee',
+    'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -1470,7 +1470,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
 
-class IPersonSee(Interface):
+class IPersonLimitedView(Interface):
     """IPerson attributes that require launchpad.LimitedView permission."""
 
     name = exported(
@@ -1880,7 +1880,7 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonSee, IPersonViewRestricted,
+class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
               IPersonEditRestricted, IPersonCommAdminWriteRestricted,
               IPersonSpecialRestricted, IHasStanding, ISetLocation,
               IRootContext):

@@ -123,7 +123,7 @@ from lp.registry.interfaces.nameblacklist import (
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSee,
+    IPersonLimitedView,
     IPersonSet,
     ITeam,
     PersonVisibility,
@@ -823,7 +823,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
     displaying basic information like name, displayname.
     """
     permission = 'launchpad.LimitedView'
-    usedfor = IPersonSee
+    usedfor = IPersonLimitedView
 
     def checkUnauthenticated(self):
         """Unauthenticated users can only view public teams."""
