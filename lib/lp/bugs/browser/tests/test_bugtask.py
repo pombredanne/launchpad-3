@@ -4,7 +4,10 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import simplejson
 import urllib
@@ -119,7 +122,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder, HasQueryCount(LessThan(85)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -135,7 +138,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                86, self.factory.makePerson())
+                88, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -189,7 +192,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 45),
+            LessThan(count_with_no_branches + 46),
             ))
 
     def test_interesting_activity(self):
@@ -332,19 +335,122 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_1, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_2, True)
+        self.refresh()
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
         self.bug.markUserAffected(other_user_1, False)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
         self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
+
+    def makeDuplicate(self):
+        user2 = self.factory.makePerson()
+        self.bug2 = self.factory.makeBug()
+        self.bug2.markUserAffected(user2, True)
+        self.assertEqual(
+            2, self.bug2.users_affected_count)
+        self.bug2.markAsDuplicate(self.bug)
+        # After this there are three users already affected: the creators of
+        # the two bugs, plus user2.  The current user is not yet affected by
+        # any of them.
+
+    def test_counts_user_unaffected(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.assertEqual(
+            3, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # Now with you affected by the duplicate, but not the master.
+        self.bug2.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # And now with you also affected by the master.
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects you and 3 other people",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate_not_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.bug2.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, False)
+        # You're not included in this count, even though you are affected by
+        # the dupe.
+        self.assertEqual(
+            "This bug affects 3 people, but not you",
+            self.view.affected_statement)
+        # It would be reasonable for Anon to see this bug cluster affecting
+        # either 3 or 4 people.  However at the moment the "No" answer on the
+        # master is more authoritative than the "Yes" on the dupe.
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_total_users_affected_count_without_dupes(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': 'on'}))
+        self.makeDuplicate()
+        self.refresh()
+        # Does not count the two users of bug2, so just 1.
+        self.assertEqual(
+            1, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 1 person. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 1 person",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            1,
+            self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
@@ -1677,13 +1783,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
 
-    def getBugtaskBrowser(self):
+    def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
+            if title is not None:
+                bugtask.bug.title = title
         browser = self.getViewBrowser(
-            bugtask.target, '+bugs', rootsite='bugs')
+            bugtask.target, '+bugs', rootsite='bugs', no_login=no_login)
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
@@ -1697,7 +1805,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
-        return soupmatchers.Tag('bugnumber', 'a', text=bug_number_re)
+        return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
         """If the flag is missing, then no mustache features appear."""
@@ -1713,21 +1821,33 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
 
+    def test_mustache_rendering_obfuscation(self):
+        """For anonymous users, email addresses are obfuscated."""
+        with self.dynamic_listings():
+            bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
+                no_login=True)
+        self.assertNotIn('a@example.com', browser.contents)
+
     def getNavigator(self):
         request = LaunchpadTestRequest()
         navigator = BugListingBatchNavigator([], request, [], 1)
         cache = IJSONRequestCache(request)
         bugtask = {
-            'id': '3.14159',
-            'title': 'title1',
-            'status': 'status1',
-            'importance': 'importance1',
-            'importance_class': 'importance_class1',
+            'age': 'age1',
+            'assignee': 'assignee1',
             'bugtarget': 'bugtarget1',
             'bugtarget_css': 'bugtarget_css1',
             'bug_heat_html': 'bug_heat_html1',
             'bug_url': 'bug_url1',
-            'milestone_name': 'milestone_name1'
+            'id': '3.14159',
+            'importance': 'importance1',
+            'importance_class': 'importance_class1',
+            'last_updated': 'updated1',
+            'milestone_name': 'milestone_name1',
+            'status': 'status1',
+            'reporter': 'reporter1',
+            'tags': 'tags1',
+            'title': 'title1',
         }
         bugtask.update(navigator.field_visibility)
         cache.objects['mustache_model'] = {
@@ -1777,21 +1897,52 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
 
-    def test_hiding_bug_title(self):
-        """Hiding bug heat removes the text but link is still present."""
-        navigator, mustache_model = self.getNavigator()
-        self.assertIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_title'] = False
-        self.assertNotIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-
     def test_hiding_milstone_name(self):
         """Showing milestone name shows the text."""
         navigator, mustache_model = self.getNavigator()
         self.assertNotIn('milestone_name1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_milestone_name'] = True
         self.assertIn('milestone_name1', navigator.mustache)
+
+    def test_hiding_assignee(self):
+        """Showing milestone name shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_assignee', navigator.field_visibility)
+        self.assertNotIn('Assignee: assignee1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_assignee'] = True
+        self.assertIn('Assignee: assignee1', navigator.mustache)
+
+    def test_hiding_age(self):
+        """Showing age shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_age', navigator.field_visibility)
+        self.assertNotIn('age1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_age'] = True
+        self.assertIn('age1', navigator.mustache)
+
+    def test_hiding_tags(self):
+        """Showing tags shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_tags', navigator.field_visibility)
+        self.assertNotIn('tags1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_tags'] = True
+        self.assertIn('tags1', navigator.mustache)
+
+    def test_hiding_reporter(self):
+        """Showing reporter shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_reporter', navigator.field_visibility)
+        self.assertNotIn('Reporter: reporter1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_reporter'] = True
+        self.assertIn('Reporter: reporter1', navigator.mustache)
+
+    def test_hiding_last_updated(self):
+        """Showing last_updated shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_last_updated', navigator.field_visibility)
+        self.assertNotIn('last updated updated1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_last_updated'] = True
+        self.assertIn('last updated updated1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
@@ -1833,3 +1984,52 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_model_assignee(self):
+        """Model contains expected fields with expected values."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertIs(None, item.model['assignee'])
+            assignee = self.factory.makePerson(displayname='Example Person')
+            item.bugtask.transitionToAssignee(assignee)
+            self.assertEqual('Example Person', item.model['assignee'])
+
+    def test_model_age(self):
+        """Model contains bug age."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
+            self.assertEqual('3 days old', item.model['age'])
+
+    def test_model_tags(self):
+        """Model contains bug tags."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.tags = ['tag1', 'tag2']
+            self.assertEqual('tag1 tag2', item.model['tags'])
+
+    def test_model_reporter(self):
+        """Model contains bug reporter."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertEqual(owner.displayname, item.model['reporter'])
+
+    def test_model_last_updated_date_last_updated(self):
+        """last_updated uses date_last_updated if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2000, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'on 2001-01-01', item.model['last_updated'])
+
+    def test_model_last_updated_date_last_message(self):
+        """last_updated uses date_last_message if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2001, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'on 2001-01-01', item.model['last_updated'])

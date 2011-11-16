@@ -758,12 +758,14 @@ If we try and add an invalid bug task to a private bug we get an exception.
     >>> private_bug.addTask(owner=foobar, target=tomcat)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox. Private bugs cannot affect multiple projects.
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
 
     >>> private_bug.addTask(owner=foobar, target=ubuntu)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox. Private bugs cannot affect multiple projects.
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
 
 We can add a new product series task so long as it's for the same product as
 is already targeted.
@@ -776,7 +778,8 @@ is already targeted.
     >>> private_bug.addTask(owner=foobar, target=target)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox. Private bugs cannot affect multiple projects.
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
 
 Now we create a bug on a distribution.
 
@@ -804,12 +807,14 @@ We cannot add distro series or source package tasks for different distros.
     >>> private_bug.addTask(owner=foobar, target=warty)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Tubuntu. Private bugs cannot affect multiple projects.
+    IllegalTarget: This private bug already affects Tubuntu.
+    Private bugs cannot affect multiple projects.
 
     >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Tubuntu. Private bugs cannot affect multiple projects.
+    IllegalTarget: This private bug already affects Tubuntu.
+    Private bugs cannot affect multiple projects.
 
 
 Changing bug visibility.

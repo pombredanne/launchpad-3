@@ -123,7 +123,7 @@ class TestJsonModelView(BrowserTestCase):
         self.configZCML()
         browser = self.getUserBrowser(self.url)
         cache = loads(browser.contents)
-        self.assertEqual(['context'], cache.keys())
+        self.assertEqual(['beta_features', 'context'], cache.keys())
 
     def test_JsonModel_custom_cache(self):
         # Adding an item to the cache in the initialize method results in it
@@ -140,7 +140,8 @@ class TestJsonModelView(BrowserTestCase):
         self.configZCML()
         browser = self.getUserBrowser(self.url)
         cache = loads(browser.contents)
-        self.assertThat(cache, KeysEqual('context', 'target_info'))
+        self.assertThat(
+            cache, KeysEqual('beta_features', 'context', 'target_info'))
 
     def test_JsonModel_custom_cache_wrong_method(self):
         # Adding an item to the cache in some other method is not recognized,
@@ -164,4 +165,5 @@ class TestJsonModelView(BrowserTestCase):
         self.configZCML()
         browser = self.getUserBrowser(self.url)
         cache = loads(browser.contents)
-        self.assertThat(cache, KeysEqual('context', 'target_info'))
+        self.assertThat(
+            cache, KeysEqual('beta_features', 'context', 'target_info'))

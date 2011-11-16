@@ -1,10 +1,12 @@
-= Generic ExternalBugTracker Tests =
+Generic ExternalBugTracker Tests
+================================
 
 ExternalBugTracker instances are used to communicate with remote bug
 trackers. This document tests those features that are common to all
 ExternalBugTracker instances.
 
-== Updating bug watches ==
+Updating bug watches
+--------------------
 
 All the ExternalBugTrackers know how to update the status of a bug
 watch. The method that updates the bug watches is
@@ -12,7 +14,8 @@ CheckwatchesMaster.updateBugWatches(), which expects an IExternalBugTracker
 and the bug watches to update.
 
 
-=== Initializing ===
+Initializing
+............
 
 Before updating the bug watches, the initializeRemoteBugDB() method on
 the ExternalBugTracker is called. It gets the information for the bug
@@ -33,7 +36,8 @@ transaction, since it doesn't need DB access.
     initializeRemoteBugDB() called: []
 
 
-=== Choosing another ExternalBugTracker instance ===
+Choosing another ExternalBugTracker instance
+............................................
 
 Sometimes there is more than one ExternalBugTracker instance for a
 single bug tracker type. For example, for different versions, for
@@ -305,7 +309,8 @@ and the remote system is never asked about product information.
     1
 
 
-=== Checking the server DB time ===
+Checking the server DB time
+...........................
 
 Before initializeRemoteBugDB is called and we start importing
 information from the remote bug tracker, we check what the bug tracker
@@ -389,7 +394,9 @@ comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
     >>> from zope.interface import implements
-    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport,
+    ...     )
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
     ...     implements(ISupportsCommentImport)
@@ -404,7 +411,8 @@ logged saying that comments won't be imported.
                 trusted. No comments will be imported. (OOPS-...)
 
 
-=== Limiting which bug watches to update ===
+Limiting which bug watches to update
+....................................
 
 XXX: GavinPanella 2010-01-13 bug=507205: Move this section to
 checkwatches-batching.txt.
@@ -643,7 +651,8 @@ IDs to be updated.
     []
 
 
-== Configuration Options ==
+Configuration Options
+---------------------
 
 All ExternalBugTrackers have a batch_query_threshold attribute which is
 set by configuration options in launchpad.conf. This attribute is used
@@ -664,7 +673,8 @@ fulfill the implementation requirements of IExternalBugTracker.
     True
 
 
-== Error Handling ==
+Error Handling
+--------------
 
 When an error occurs during the updating of bug watches it will be
 recorded against the bug watches themselves so that it can be displayed
@@ -691,8 +701,10 @@ another.
     ...     example_bug_tracker, '1', sample_person)
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
-    ...     UnparsableBugData, UnparsableBugTrackerVersion)
+    ...     BugTrackerConnectError,
+    ...     UnparsableBugData,
+    ...     UnparsableBugTrackerVersion,
+    ...     )
 
 TestBrokenExternalBugTracker allows us to force errors to occur, so we
 can use it to check that bug watches' last_error_types are being set
@@ -754,13 +766,13 @@ updated.
     >>> capture.cleanUp()
 
 
-== Using `LookupTree` to map statuses ==
+Using `LookupTree` to map statuses
+----------------------------------
 
 Most of the status conversions are assisted by a customized LookupTree
 class.
 
-  >>> from lp.bugs.externalbugtracker import (
-  ...     LookupTree)
+    >>> from lp.bugs.externalbugtracker import LookupTree
 
 This is flexible enough to cover all current mapping scenarios with
 minimal preparation from `convertRemoteStatus`. Crucially, it also
@@ -769,72 +781,73 @@ rules.
 
 First, we need a tree to document.
 
-  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-  >>> tree = LookupTree(
-  ...     ('ASSIGNED', 'STARTED', BugTaskStatus.INPROGRESS),
-  ...     ('NEEDINFO', 'WAITING', 'SUSPENDED', BugTaskStatus.INCOMPLETE),
-  ...     ('PENDINGUPLOAD', 'RELEASE_PENDING', BugTaskStatus.FIXCOMMITTED),
-  ...     ('REJECTED', BugTaskStatus.INVALID),
-  ...     ('RESOLVED', 'CLOSED', LookupTree(
-  ...         ('ERRATA', 'FIXED', BugTaskStatus.FIXRELEASED),
-  ...         ('WONTFIX', BugTaskStatus.WONTFIX),
-  ...         (BugTaskStatus.INVALID,))),
-  ...     ('REOPENED', 'NEW', 'DEFERRED', BugTaskStatus.CONFIRMED),
-  ...     ('UNCONFIRMED', BugTaskStatus.NEW),
-  ...     (BugTaskStatus.UNKNOWN,),
-  ...     )
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> tree = LookupTree(
+    ...     ('ASSIGNED', 'STARTED', BugTaskStatus.INPROGRESS),
+    ...     ('NEEDINFO', 'WAITING', 'SUSPENDED', BugTaskStatus.INCOMPLETE),
+    ...     ('PENDINGUPLOAD', 'RELEASE_PENDING', BugTaskStatus.FIXCOMMITTED),
+    ...     ('REJECTED', BugTaskStatus.INVALID),
+    ...     ('RESOLVED', 'CLOSED', LookupTree(
+    ...         ('ERRATA', 'FIXED', BugTaskStatus.FIXRELEASED),
+    ...         ('WONTFIX', BugTaskStatus.WONTFIX),
+    ...         (BugTaskStatus.INVALID,))),
+    ...     ('REOPENED', 'NEW', 'DEFERRED', BugTaskStatus.CONFIRMED),
+    ...     ('UNCONFIRMED', BugTaskStatus.NEW),
+    ...     (BugTaskStatus.UNKNOWN,),
+    ...     )
 
 The customized LookupTree instance has a method to generate a MoinMoin
 compatible table that describes the paths through the tree. The result
 is always assumed to be a member of `BugTaskStatus`.
 
-  >>> for line in tree.moinmoin_table():
-  ...     print line
-  || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
-  || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
-  || PENDINGUPLOAD '''or''' RELEASE_PENDING || - (''ignored'') || Fix...
-  || REJECTED || - (''ignored'') || Invalid ||
-  || RESOLVED '''or''' CLOSED || ERRATA '''or''' FIXED || Fix Released ||
-  ||  || WONTFIX || Won't Fix ||
-  ||  || * (''any'') || Invalid ||
-  || REOPENED '''or''' NEW '''or''' DEFERRED || - (''ignored'') || Co...
-  || UNCONFIRMED || - (''ignored'') || New ||
-  || * (''any'') || - (''ignored'') || Unknown ||
+    >>> for line in tree.moinmoin_table():
+    ...     print line
+    || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
+    || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
+    || PENDINGUPLOAD '''or''' RELEASE_PENDING || - (''ignored'') || Fix...
+    || REJECTED || - (''ignored'') || Invalid ||
+    || RESOLVED '''or''' CLOSED || ERRATA '''or''' FIXED || Fix Released ||
+    ||  || WONTFIX || Won't Fix ||
+    ||  || * (''any'') || Invalid ||
+    || REOPENED '''or''' NEW '''or''' DEFERRED || - (''ignored'') || Co...
+    || UNCONFIRMED || - (''ignored'') || New ||
+    || * (''any'') || - (''ignored'') || Unknown ||
 
 Titles can also be provided for the table.
 
-  >>> titles = ('Status', 'Resolution', 'LP status')
-  >>> for line in tree.moinmoin_table(titles):
-  ...     print line
-  || '''Status''' || '''Resolution''' || '''LP status''' ||
-  || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
-  || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
-  ...
+    >>> titles = ('Status', 'Resolution', 'LP status')
+    >>> for line in tree.moinmoin_table(titles):
+    ...     print line
+    || '''Status''' || '''Resolution''' || '''LP status''' ||
+    || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
+    || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
+    ...
 
 It will complain if you don't provide a suitable number of titles.
 
-  >>> titles = ('Status', 'Resolution')
-  >>> for line in tree.moinmoin_table(titles):
-  ...     print line
-  Traceback (most recent call last):
-  ...
-  ValueError: Table of 3 columns needs 3 titles, but 2 given.
+    >>> titles = ('Status', 'Resolution')
+    >>> for line in tree.moinmoin_table(titles):
+    ...     print line
+    Traceback (most recent call last):
+    ...
+    ValueError: Table of 3 columns needs 3 titles, but 2 given.
 
 When constructing a status mapping tree, you are forced to choose a
 valid Launchpad status as the result of any lookup. This goes some way
 to ensuring that the tree is valid, and that `moinmoin_table` is safe
 to make that assumption.
 
-  >>> tree = LookupTree(
-  ...     ('ASSIGNED', BugTaskStatus.INPROGRESS),
-  ...     ('NEEDSINFO', 'Not a BugTaskStatus'),
-  ...     )
-  Traceback (most recent call last):
-  ...
-  TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
+    >>> tree = LookupTree(
+    ...     ('ASSIGNED', BugTaskStatus.INPROGRESS),
+    ...     ('NEEDSINFO', 'Not a BugTaskStatus'),
+    ...     )
+    Traceback (most recent call last):
+    ...
+    TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
 
 
-== Getting the remote product from a remote bug ==
+Getting the remote product from a remote bug
+--------------------------------------------
 
 Some ExternalBugTrackers offer a method by which can be used to get the
 remote product for a given remote bug.
@@ -870,7 +883,8 @@ capable of dealing with multiple remote products.
     None
 
 
-== Prioritisation of watches ==
+Prioritisation of watches
+-------------------------
 
 _getRemoteIdsToCheck() prioritizes the IDs it returns. Bug watches which have
 comments to push or which have never been checked will always be returned in
@@ -977,7 +991,8 @@ returned.
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
 
 
-== Setting the batch size ==
+Setting the batch size
+----------------------
 
 It's possible to set the batch size for a particular checkwatches run by
 passing a batch_size parameter to _getRemoteIdsToCheck(). This overrides

@@ -4,7 +4,7 @@
 """Helpers for writing tests that use feature flags."""
 
 __metaclass__ = type
-__all__ = ['active_features']
+__all__ = ['FeatureFixture']
 
 
 from fixtures import Fixture
@@ -37,13 +37,14 @@ class FeatureFixture(Fixture):
     The values are restored when the block exits.
     """
 
-    def __init__(self, features_dict):
+    def __init__(self, features_dict, full_feature_rules=None):
         """Constructor.
 
         :param features_dict: A dictionary-like object with keys and values
             that are flag names and those flags' settings.
         """
         self.desired_features = features_dict
+        self.full_feature_rules = full_feature_rules
 
     def setUp(self):
         """Set the feature flags that this fixture is responsible for."""
@@ -76,5 +77,10 @@ class FeatureFixture(Fixture):
                 value=unicode(value))
             for flag_name, value in self.desired_features.iteritems()
                 if value is not None]
+
+        if self.full_feature_rules is not None:
+            new_rules.extend(
+                Rule(**rule_spec)
+                for rule_spec in self.full_feature_rules)
 
         return new_rules
