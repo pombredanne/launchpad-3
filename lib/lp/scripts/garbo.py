@@ -990,7 +990,7 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
         spphs = list(self.findSPPHs()[:chunk_size])
         self.log.info("Populating %d SPPH(s).", len(spphs))
         if len(spphs) == 0:
-            self.log.warn("Finished populating SPPHs.  Remove the populator.")
+            self.log.info("Finished populating SPPHs.  Remove the populator.")
             self.done = True
             return
         self.getStore().execute("""
@@ -1030,7 +1030,7 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
         bpphs = list(self.findBPPHs()[:chunk_size])
         self.log.info("Populating %d BPPH(s).", len(bpphs))
         if len(bpphs) == 0:
-            self.log.warn("Finished populating BPPHs.  Remove the populator.")
+            self.log.info("Finished populating BPPHs.  Remove the populator.")
             self.done = True
             return
         self.getStore().execute("""
