@@ -1,4 +1,5 @@
-== Bugs with lots of comments ==
+Bugs with lots of comments
+==========================
 
 When a bug has a very large number of comments, only some of them are
 displayed. A notice is added at the end of the comment list to tell

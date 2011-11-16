@@ -73,7 +73,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
     def add_action(self, action, data):
         person = data['person']
         try:
-            self.context.bug.subscribe(person, self.user, suppress_notify=False)
+            self.context.bug.subscribe(
+                person, self.user, suppress_notify=False)
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
