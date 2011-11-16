@@ -130,7 +130,10 @@ from lp.bugs.adapters.bugchange import (
     UnsubscribedFromBug,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.errors import InvalidDuplicateValue
+from lp.bugs.errors import (
+    InvalidDuplicateValue,
+    SubscriptionPrivacyViolation,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
@@ -176,8 +179,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -475,6 +478,15 @@ class Bug(SQLBase):
     def users_affected_count_with_dupes(self):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
+
+    @property
+    def other_users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        if not current_user:
+            return self.users_affected_count_with_dupes
+        return self.users_affected_with_dupes.find(
+            Person.id != current_user.id).count()
 
     @property
     def indexed_messages(self):
@@ -790,7 +802,10 @@ class Bug(SQLBase):
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-
+        if person.isTeam() and self.private and person.anyone_can_join():
+            error_msg = ("Open and delegated teams cannot be subscribed "
+                "to private bugs.")
+            raise SubscriptionPrivacyViolation(error_msg)
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:

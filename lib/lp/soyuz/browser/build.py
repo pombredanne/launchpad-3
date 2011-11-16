@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builds."""
@@ -17,6 +17,7 @@ __all__ = [
     'BuildView',
     'DistributionBuildRecordsView',
     ]
+
 
 from lazr.batchnavigator import ListRangeFactory
 from lazr.delegates import delegates
@@ -59,8 +60,10 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -460,7 +463,10 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = [build.getSpecificJob() for build in batch]
+    build_farm_job_set = getUtility(IBuildFarmJobSet)
+    builds = build_farm_job_set.getSpecificJobs(
+        [build.build_farm_job if IPackageBuild.providedBy(build) else build
+            for build in batch])
     if not builds:
         return []
 

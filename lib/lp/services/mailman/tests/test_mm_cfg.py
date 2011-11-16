@@ -85,6 +85,15 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         self.assertEqual(host, mm_cfg.SMTPHOST)
         self.assertEqual(int(port), mm_cfg.SMTPPORT)
 
+    def test_smtp_max_config(self):
+        # Mailman SMTP max limits are configured from the LP config.
+        self.assertEqual(
+            config.mailman.smtp_max_rcpts,
+            mm_cfg.SMTP_MAX_RCPTS)
+        self.assertEqual(
+            config.mailman.smtp_max_sesions_per_connection,
+            mm_cfg.SMTP_MAX_SESSIONS_PER_CONNECTION)
+
     def test_xmlrpc_server(self):
         # Launchpad's smtp config values.
         self.assertEqual(
