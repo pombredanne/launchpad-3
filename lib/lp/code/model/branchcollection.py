@@ -400,7 +400,25 @@ class GenericBranchCollection:
         # limited by the defined collection.
         owned = self.ownedBy(person).getMergeProposals(status)
         reviewing = self.getMergeProposalsForReviewer(person, status)
-        return owned.union(reviewing)
+        resultset = owned.union(reviewing)
+
+        def do_eager_load(rows):
+            # Load the registrants' data.
+            load_related(Person, rows, ['registrantID'])
+            # Cache registrants' info (Person and ValidPersonCache).
+            list(self.store.find(
+                (Person, ValidPersonCache),
+                ValidPersonCache.id == Person.id,
+                Person.id.is_in([proposal.registrantID for proposal in rows]),
+                ))
+            # Load the source/target branches and preload the data for
+            # these branches.
+            source_branches = load_related(Branch, rows, ['source_branchID'])
+            target_branches = load_related(Branch, rows, ['target_branchID'])
+            self._preloadDataForBranches(target_branches + source_branches)
+            load_related(Person, source_branches, ['ownerID'])
+            load_related(Product, target_branches, ['productID'])
+        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
