@@ -346,14 +346,14 @@ class EC2Instance:
         for count in range(20):
             try:
                 ssh.connect(self.hostname, **connect_args)
-            except (socket.error, paramiko.AuthenticationException), e:
+            except (socket.error, paramiko.AuthenticationException, EOFError), e:
                 self.log('.')
-                if e.errno == errno.ECONNREFUSED:
+                if getattr(e, 'errno') == errno.ECONNREFUSED:
                     # Pretty normal if the machine has started but sshd isn't
                     # up yet.  Don't make a fuss.
                     time.sleep(1)
                     continue
-                self.log('_connect: %r\n' % (e,))
+                self.log('ssh _connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
                 else:
