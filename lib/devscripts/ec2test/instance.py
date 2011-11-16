@@ -84,6 +84,17 @@ EOF
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Put some io-intensive disposable directories on ramdisks; the machine is disposable
+# anyhow.  These must only be things whose content is not required to persist
+# between the machine being started and it being used: so you can't put
+# /var/launchpad here because the contents are used by spawned instances.
+for d in /tmp /var/tmp /var/lib/postgresql
+do
+    [ -d $d ] || mkdir $d
+    echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
+    mount $d
+done
+
 # Add the keys for the three PPAs added to sources.list above.
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
