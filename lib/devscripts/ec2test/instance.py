@@ -73,6 +73,9 @@ from_scratch_root = """
 # -e  Exit immediately if a command exits with a non-zero status.
 set -xe
 
+# They end up as just one stream; this avoids ordering problems.
+exec 2>&1
+
 sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
 
 . /etc/lsb-release
@@ -177,6 +180,9 @@ from_scratch_ec2test = """
 # -x  Print commands and their arguments as they are executed.
 # -e  Exit immediately if a command exits with a non-zero status.
 set -xe
+
+# They end up as just one stream; this avoids ordering problems.
+exec 2>&1
 
 bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
@@ -431,6 +437,7 @@ class EC2Instance:
                 from_scratch_ec2test
                 % {'launchpad-login': self._launchpad_login})
             self._from_scratch = False
+            self.log('done running from_scratch setup\n')
             return conn
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
