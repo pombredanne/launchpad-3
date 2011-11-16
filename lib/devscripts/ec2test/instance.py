@@ -75,6 +75,8 @@ sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
 
 . /etc/lsb-release
 
+mount -o remount,data=writeback,commit=3600,async,relatime /
+
 cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
@@ -94,6 +96,8 @@ do
     echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
     mount $d
 done
+sed -ie 's/ext3[ \t]*defaults/data=writeback,commit=3600,async,relatime/' /etc/fstab
+cat /etc/fstab
 
 # Add the keys for the three PPAs added to sources.list above.
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
