@@ -101,7 +101,9 @@ do
     echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
     mount $d
 done
-sed -ie 's/ext3[ \t]*defaults/data=writeback,commit=3600,async,relatime/' /etc/fstab
+
+# Brain surgery with an axe.
+sed -ie 's![ \t]\/[ \t]*ext3[ \t]*defaults[ \t]!/ ext3 data=writeback,commit=3600,async,relatime!' /etc/fstab
 echo contents of fstab after edit:
 cat /etc/fstab
 
