@@ -669,10 +669,13 @@ class Builder(SQLBase):
                 bytes_written = out_file.tell()
                 out_file.seek(0)
 
-                library_file = getUtility(ILibraryFileAliasSet).create(
-                    filename, bytes_written, out_file,
-                    contentType=filenameToContentType(filename),
-                    restricted=private)
+                transaction.commit()
+                with DatabaseTransactionPolicy(read_only=False):
+                    library_file = getUtility(ILibraryFileAliasSet).create(
+                        filename, bytes_written, out_file,
+                        contentType=filenameToContentType(filename),
+                        restricted=private)
+                    transaction.commit()
             finally:
                 # Remove the temporary file.  getFile() closes the file
                 # object.
