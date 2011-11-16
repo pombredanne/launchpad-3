@@ -613,19 +613,19 @@ class EC2Instance:
         manifest_path = os.path.join(name, mfilename)
 
         now = datetime.strftime(datetime.utcnow(), "%Y-%m-%d %H:%M:%S UTC")
-        description = "Created %s by %r on %s" % (
+        description = "launchpad ec2test created %s by %r on %s" % (
             now,
-            os.environ.get('EMAIL'),
+            os.environ.get('EMAIL', '<unknown>'),
             socket.gethostname())
 
         self.log('registering image: ')
-        credentials.connect('bundle').conn.register_image(
+        image_id = credentials.connect('bundle').conn.register_image(
             name=name,
             description=description,
             image_location=manifest_path,
             )
         self.log('ok\n')
-
+        self.log('** new instance: %r' % (image_id,))
 
 
 class EC2InstanceConnection:
