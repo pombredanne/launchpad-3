@@ -2083,8 +2083,13 @@ class Bug(SQLBase):
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
+
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = bug_message.owner == user
         if (not self.userCanSetCommentVisibility(user)
-            and bug_message.owner != user):
+            and not user_owns_comment):
             raise Unauthorized(
                 "User %s cannot hide or show bug comments" % user.name)
         bug_message.message.visible = visible
@@ -2145,7 +2150,8 @@ class Bug(SQLBase):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        return self.userInProjectRole(roles)
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
 
     def userInProjectRole(self, user):
         """ Return True if user has a project role for any affected pillar."""

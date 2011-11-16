@@ -23,6 +23,7 @@ from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
@@ -222,6 +223,8 @@ class TestBugHideCommentControls(
 
     layer = DatabaseFunctionalLayer
 
+    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
+
     def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
@@ -238,13 +241,20 @@ class TestBugHideCommentControls(
             no_login=no_login)
         return view
 
+    def _test_hide_link_visible(self, context, user):
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIs(None, hide_link)
+        with FeatureFixture(self.feature_flag):
+            view = self.getView(context=context, user=user)
+            hide_link = find_tag_by_id(view.contents, self.control_text)
+            self.assertIsNot(None, hide_link)
+
     def test_comment_owner_sees_hide_control(self):
         # The comment owner sees the hide control.
         owner = self.factory.makePerson()
         context = self.getContext(comment_owner=owner)
-        view = self.getView(context=context, user=owner)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIsNot(None, hide_link)
+        self._test_hide_link_visible(context, owner)
 
     def test_pillar_owner_sees_hide_control(self):
         # The pillar owner sees the hide control.
@@ -252,9 +262,7 @@ class TestBugHideCommentControls(
         context = self.getContext()
         naked_bugtask = removeSecurityProxy(context.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).owner = person
-        view = self.getView(context=context, user=person)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIsNot(None, hide_link)
+        self._test_hide_link_visible(context, person)
 
     def test_pillar_driver_sees_hide_control(self):
         # The pillar driver sees the hide control.
@@ -262,9 +270,7 @@ class TestBugHideCommentControls(
         context = self.getContext()
         naked_bugtask = removeSecurityProxy(context.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).driver = person
-        view = self.getView(context=context, user=person)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIsNot(None, hide_link)
+        self._test_hide_link_visible(context, person)
 
     def test_pillar_bug_supervisor_sees_hide_control(self):
         # The pillar bug supervisor sees the hide control.
@@ -272,9 +278,7 @@ class TestBugHideCommentControls(
         context = self.getContext()
         naked_bugtask = removeSecurityProxy(context.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
-        view = self.getView(context=context, user=person)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIsNot(None, hide_link)
+        self._test_hide_link_visible(context, person)
 
     def test_pillar_security_contact_sees_hide_control(self):
         # The pillar security contact sees the hide control.
@@ -282,6 +286,4 @@ class TestBugHideCommentControls(
         context = self.getContext()
         naked_bugtask = removeSecurityProxy(context.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).security_contact = person
-        view = self.getView(context=context, user=person)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIsNot(None, hide_link)
+        self._test_hide_link_visible(context, person)

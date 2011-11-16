@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bug messages."""
+from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -17,6 +18,7 @@ from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     launchpadlib_for,
+    login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -53,6 +55,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     """Tests who can successfully set comment visibility."""
 
     layer = DatabaseFunctionalLayer
+
+    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
 
     def setUp(self):
         super(TestSetCommentVisibility, self).setUp()
@@ -113,10 +117,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_registry_admin_can_set_visible(self):
         # Members of registry experts can set bug comment
         # visibility.
-        registry = self.person_set.getByName('registry')
-        person = self.factory.makePerson()
-        with person_logged_in(registry.teamowner):
-            registry.addMember(person, registry.teamowner)
+        person = login_celebrity('registry_experts')
         bug = self._get_bug_for_user(person)
         self._set_visibility(bug)
         self.assertCommentHidden()
@@ -124,54 +125,51 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_admin_can_set_visible(self):
         # Admins can set bug comment
         # visibility.
-        admins = self.person_set.getByName('admins')
-        person = self.factory.makePerson()
-        with person_logged_in(admins.teamowner):
-            admins.addMember(person, admins.teamowner)
+        person = login_celebrity('admin')
         bug = self._get_bug_for_user(person)
         self._set_visibility(bug)
         self.assertCommentHidden()
+
+    def _test_hide_comment_with_feature_flag(self, person):
+        bug = self._get_bug_for_user(person)
+        self.assertRaises(
+            HTTPError,
+            self._set_visibility,
+            bug)
+        with FeatureFixture(self.feature_flag):
+            self._set_visibility(bug)
+            self.assertCommentHidden()
 
     def test_pillar_owner_can_set_visible(self):
         # Pillar owner can set bug comment visibility.
         person = self.factory.makePerson()
         naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).owner = person
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        self._test_hide_comment_with_feature_flag(person)
 
     def test_pillar_driver_can_set_visible(self):
         # Pillar driver can set bug comment visibility.
         person = self.factory.makePerson()
         naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).driver = person
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        self._test_hide_comment_with_feature_flag(person)
 
     def test_pillar_bug_supervisor_can_set_visible(self):
         # Pillar bug supervisor can set bug comment visibility.
         person = self.factory.makePerson()
         naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        self._test_hide_comment_with_feature_flag(person)
 
     def test_pillar_security_contact_can_set_visible(self):
         # Pillar security_contact can set bug comment visibility.
         person = self.factory.makePerson()
         naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).security_contact = person
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        self._test_hide_comment_with_feature_flag(person)
 
     def test_comment_owner_can_set_visible(self):
         # The author of the comment can set bug comment visibility.
         person = self.factory.makePerson()
         removeSecurityProxy(self.message).owner = person
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        self._test_hide_comment_with_feature_flag(person)

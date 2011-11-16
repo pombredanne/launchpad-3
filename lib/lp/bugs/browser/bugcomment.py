@@ -46,6 +46,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.features import getFeatureFlag
 
 
 COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
@@ -200,7 +201,11 @@ class BugComment:
 
         self.synchronized = False
         self.visible = visible
-        user_owns_comment = user is not None and user == self.owner
+        # We use a feature flag to control users deleting their own comments.
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = user is not None and user == self.owner
         self.show_spam_controls = show_spam_controls or user_owns_comment
 
     @property
