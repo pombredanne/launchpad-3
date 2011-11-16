@@ -299,7 +299,8 @@ class EC2Instance:
             self._ec2test_user_has_keys = False
         else:
             raise BzrCommandError(
-                'failed to start: %s\n' % self._boto_instance.state)
+                'failed to start: %s: %r\n' % (
+                    self._boto_instance.state, self._boto_instance.state_reason))
 
     def shutdown(self):
         """Shut down the instance."""
@@ -323,16 +324,22 @@ class EC2Instance:
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
+        self.log('ssh connect to %s' % self.hostname)
         connect_args = {
             'username': username,
             'pkey': self.private_key,
             'allow_agent': False,
             'look_for_keys': False,
             }
-        for count in range(10):
+        for count in range(20):
             try:
                 ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException), e:
+                if e.errno == errno.ECONNREFUSED:
+                    # Pretty normal if the machine has started but sshd isn't
+                    # up yet.  Don't make a fuss.
+                    time.sleep(1)
+                    continue
                 self.log('_connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
