@@ -641,6 +641,8 @@ class EC2InstanceConnection:
     def sftp(self):
         if self._sftp is None:
             self._sftp = self._ssh.open_sftp()
+        if self._sftp is None:
+            raise AssertionError("failed to open sftp connection")
         return self._sftp
 
     def perform(self, cmd, ignore_failure=False, out=None, err=None):
