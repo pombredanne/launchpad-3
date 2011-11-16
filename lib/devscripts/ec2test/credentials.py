@@ -57,7 +57,7 @@ class EC2Credentials:
     def connect(self, name):
         """Connect to EC2 with these credentials.
 
-        :param name: Arbitrary local name for the instance.
+        :param name: Arbitrary local name for the object.
         :return: An `EC2Account` connected to EC2 with these credentials.
         """
         conn = boto.ec2.connect_to_region(

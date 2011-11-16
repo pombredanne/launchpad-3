@@ -536,10 +536,6 @@ class EC2Instance:
     def check_bundling_prerequisites(self, name):
         """Check, as best we can, that all the files we need to bundle exist.
         """
-        if subprocess.call(['which', 'ec2-register']):
-            raise BzrCommandError(
-                '`ec2-register` command not found.  '
-                'Try `sudo apt-get install ec2-api-tools`.')
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
             raise BzrCommandError(
@@ -613,21 +609,20 @@ class EC2Instance:
         mfilename = os.path.basename(manifest)
         manifest_path = os.path.join(name, mfilename)
 
-        env = os.environ.copy()
-        if 'JAVA_HOME' not in os.environ:
-            env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
         now = datetime.strftime(datetime.utcnow(), "%Y-%m-%d %H:%M:%S UTC")
-        description = "Created %s" % now
-        cmd = [
-            'ec2-register',
-            '--private-key=%s' % self.local_pk,
-            '--cert=%s' % self.local_cert,
-            '--name=%s' % (name,),
-            '--description=%s' % description,
-            manifest_path,
-            ]
-        self.log("Executing command: %s" % ' '.join(cmd))
-        subprocess.check_call(cmd, env=env)
+        description = "Created %s by %r on %s" % (
+            now,
+            os.environ.get('EMAIL'),
+            socket.gethostname())
+
+        self.log('registering image: ')
+        credentials.connect('bundle').register_image(
+            name=name,
+            description=description,
+            image_location=manifest_path,
+            )
+        self.log('ok\n')
+
 
 
 class EC2InstanceConnection:
