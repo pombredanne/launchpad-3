@@ -129,6 +129,14 @@ attached_option = Option(
           "and --file."))
 
 
+region_option = Option(
+    'region',
+    type=str,
+    help=("Name of the AWS region in which to run the instance.  "
+        "Must be the same as the region holding the image file. "
+        "For example, 'us-west-1'."))
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -502,6 +510,7 @@ class cmd_demo(EC2Command):
         postmortem_option,
         debug_option,
         include_download_cache_changes_option,
+        region_option,
         ListOption(
             'demo', type=str,
             help="Allow this netmask to connect to the instance."),
@@ -570,6 +579,7 @@ class cmd_update_image(EC2Command):
         instance_type_option,
         postmortem_option,
         debug_option,
+        region_option,
         ListOption(
             'extra-update-image-command', type=str,
             help=('Run this command (with an ssh agent) on the image before '
@@ -586,6 +596,7 @@ class cmd_update_image(EC2Command):
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
+            region=None,
             public=False):
         set_trace_if(debug)
 
@@ -599,17 +610,14 @@ class cmd_update_image(EC2Command):
         for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
             os.environ.pop(variable, None)
 
-        credentials = EC2Credentials.load_from_file()
-
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
-            credentials=credentials)
-        instance.check_bundling_prerequisites(
-            ami_name, credentials)
+            region=region)
+        instance.check_bundling_prerequisites(ami_name)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, credentials, public)
+            extra_update_image_command, ami_name, instance._credentials, public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials, public):
@@ -669,9 +677,13 @@ class cmd_images(EC2Command):
     The first in the list is the default image.
     """
 
-    def run(self):
-        credentials = EC2Credentials.load_from_file()
+    takes_options = [
+        region_option,
+        ]
+
+    def run(self, region=None):
         session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
         account = credentials.connect(session_name)
         format = "%5s  %-12s  %-12s  %-12s %s\n"
         self.outf.write(
@@ -698,6 +710,7 @@ class cmd_list(EC2Command):
     aliases = ["ls"]
 
     takes_options = [
+        region_option,
         Option('show-urls',
                help="Include more information about each instance"),
         Option('all', short_name='a',
@@ -766,9 +779,9 @@ class cmd_list(EC2Command):
             ': '.join((state, str(num)))
             for (state, num) in sorted(list(by_state.items())))
 
-    def run(self, show_urls=False, all=False):
-        credentials = EC2Credentials.load_from_file()
+    def run(self, show_urls=False, all=False, region=None):
         session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
         account = credentials.connect(session_name)
         instances = list(self.iter_instances(account))
         if len(instances) == 0:

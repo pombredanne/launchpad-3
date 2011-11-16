@@ -85,8 +85,6 @@ mount -o remount,data=writeback,commit=3600,async,relatime /
 cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
-deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
-deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF
 
 export DEBIAN_FRONTEND=noninteractive
@@ -113,7 +111,7 @@ apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
 
 aptitude update
-aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
+LANG=C aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
 aptitude -y full-upgrade
 
 # This next part is cribbed from rocketfuel-setup
@@ -210,7 +208,7 @@ class EC2Instance:
 
     @classmethod
     def make(cls, name, instance_type, machine_id, demo_networks=None,
-             credentials=None):
+             credentials=None, region=None):
         """Construct an `EC2Instance`.
 
         :param name: The name to use for the key pair and security group for
@@ -225,6 +223,7 @@ class EC2Instance:
         :param demo_networks: A list of networks to add to the security group
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
+        :param region: A string region name eg 'us-east-1'.
         """
         # This import breaks in the test environment.  Do it here so
         # that unit tests (which don't use this factory) can still
@@ -246,7 +245,7 @@ class EC2Instance:
         user_key = get_user_key()
 
         if credentials is None:
-            credentials = EC2Credentials.load_from_file()
+            credentials = EC2Credentials.load_from_file(region_name=region)
 
         # Make the EC2 connection.
         account = credentials.connect(name)
@@ -274,12 +273,14 @@ class EC2Instance:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
 
-        return EC2Instance(
+        instance = EC2Instance(
             name, image, instance_type, demo_networks, account,
-            from_scratch, user_key, login)
+            from_scratch, user_key, login, region)
+        instance._credentials = credentials
+        return instance
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 from_scratch, user_key, launchpad_login):
+                 from_scratch, user_key, launchpad_login, region):
         self._name = name
         self._image = image
         self._account = account
@@ -289,6 +290,7 @@ class EC2Instance:
         self._from_scratch = from_scratch
         self._user_key = user_key
         self._launchpad_login = launchpad_login
+        self._region = region
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -531,7 +533,7 @@ class EC2Instance:
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
-    def check_bundling_prerequisites(self, name, credentials):
+    def check_bundling_prerequisites(self, name):
         """Check, as best we can, that all the files we need to bundle exist.
         """
         if subprocess.call(['which', 'ec2-register']):
@@ -555,7 +557,8 @@ class EC2Instance:
         # The bucket `name` needs to exist and be accessible. We create it
         # here to reserve the name. If the bucket already exists and conforms
         # to the above requirements, this is a no-op.
-        credentials.connect_s3().create_bucket(name)
+        self._credentials.connect_s3().create_bucket(
+            name, location=self._credentials.region_name)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
