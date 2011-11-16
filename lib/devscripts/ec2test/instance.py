@@ -324,7 +324,7 @@ class EC2Instance:
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
-        self.log('ssh connect to %s' % self.hostname)
+        self.log('ssh connect to %s: ' % self.hostname)
         connect_args = {
             'username': username,
             'pkey': self.private_key,
@@ -335,6 +335,7 @@ class EC2Instance:
             try:
                 ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException), e:
+                self.log('.')
                 if e.errno == errno.ECONNREFUSED:
                     # Pretty normal if the machine has started but sshd isn't
                     # up yet.  Don't make a fuss.
@@ -343,11 +344,11 @@ class EC2Instance:
                 self.log('_connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
-                    self.log('retrying...')
                 else:
                     raise
             else:
                 break
+        self.log(' ok!\n'
         return EC2InstanceConnection(self, username, ssh)
 
     def _upload_local_key(self, conn, remote_filename):
