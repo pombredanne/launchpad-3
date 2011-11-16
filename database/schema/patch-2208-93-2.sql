@@ -7,4 +7,7 @@ ALTER TABLE AccessPolicyGrant ADD CONSTRAINT
 ALTER TABLE AccessPolicyGrant ADD CONSTRAINT
     "accesspolicygrant_grantor_fkey" FOREIGN KEY (grantor) REFERENCES Person;
 
+ALTER TABLE AccessPolicyArtifact ADD CONSTRAINT
+    "accesspolicyartifact_branch_fkey" FOREIGN KEY (branch) REFERENCES Branch;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 93, 2);
