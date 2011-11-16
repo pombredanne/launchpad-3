@@ -329,7 +329,7 @@ def unique_title(title):
 
 
 def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
-    slice_info=None, show_spam_controls=False):
+    slice_info=None, show_spam_controls=False, user=None):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
@@ -342,7 +342,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
-        slice_info=slice_info, show_spam_controls=show_spam_controls)
+        slice_info=slice_info, show_spam_controls=show_spam_controls,
+        user=user)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
@@ -749,11 +750,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return self._getComments()
 
     def _getComments(self, slice_info=None):
-        show_spam_controls = check_permission(
-            'launchpad.Admin', self.context.bug)
+        bug = self.context.bug
+        show_spam_controls = bug.userCanSetCommentVisibility(self.user)
         return get_comments_for_bugtask(
             self.context, truncate=True, slice_info=slice_info,
-            for_display=True, show_spam_controls=show_spam_controls)
+            for_display=True, show_spam_controls=show_spam_controls,
+            user=self.user)
 
     @cachedproperty
     def interesting_activity(self):

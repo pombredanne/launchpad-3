@@ -52,7 +52,8 @@ COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
 def build_comments_from_chunks(
-        bugtask, truncate=False, slice_info=None, show_spam_controls=False):
+        bugtask, truncate=False, slice_info=None, show_spam_controls=False,
+        user=None):
     """Build BugComments from MessageChunks.
 
     :param truncate: Perform truncation of large messages.
@@ -66,7 +67,7 @@ def build_comments_from_chunks(
         if bug_comment is None:
             bug_comment = BugComment(
                 bugmessage.index, message, bugtask, visible=message.visible,
-                show_spam_controls=show_spam_controls)
+                show_spam_controls=show_spam_controls, user=user)
             comments[message.id] = bug_comment
             # This code path is currently only used from a BugTask view which
             # has already loaded all the bug watches. If we start lazy loading
@@ -176,7 +177,7 @@ class BugComment:
 
     def __init__(
             self, index, message, bugtask, activity=None,
-            visible=True, show_spam_controls=False):
+            visible=True, show_spam_controls=False, user=None):
 
         self.index = index
         self.bugtask = bugtask
@@ -199,7 +200,8 @@ class BugComment:
 
         self.synchronized = False
         self.visible = visible
-        self.show_spam_controls = show_spam_controls
+        user_owns_comment = user is not None and user == self.owner
+        self.show_spam_controls = show_spam_controls or user_owns_comment
 
     @property
     def show_for_admin(self):

@@ -13,7 +13,7 @@
         class="lp.services.messages.model.message.Message">
         <allow interface="lp.services.messages.interfaces.message.IMessage" />
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.AnyPerson"
             set_attributes="visible"/>
     </class>
 

@@ -80,6 +80,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -191,6 +192,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -2081,6 +2083,10 @@ class Bug(SQLBase):
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
+        if (not self.userCanSetCommentVisibility(user)
+            and bug_message.owner != user):
+            raise Unauthorized(
+                "User %s cannot hide or show bug comments" % user.name)
         bug_message.message.visible = visible
 
     @cachedproperty
@@ -2129,6 +2135,44 @@ class Bug(SQLBase):
             not store.find(Bug, Bug.id == self.id, filter).is_empty()):
             self._known_viewers.add(user.id)
             return True
+        return False
+
+    def userCanSetCommentVisibility(self, user):
+        """See `IBug`.
+
+        This method is called by security adapters for authenticated users.
+
+        Users who can set bug comment visibility are:
+        - Admins and registry admins
+        - users in project roles on any bugtask:
+          - maintainer
+          - driver
+          - bug supervisor
+          - security contact
+
+        Additionally, the comment owners can hide their own comments but that
+        is not checked here - this method is to see if arbitrary users can
+        hide comments they did not make themselves.
+        """
+
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_registry_experts:
+            return True
+        return self.userInProjectRole(roles)
+
+    def userInProjectRole(self, user):
+        """ Return True if user has a project role for any affected pillar."""
+        roles = IPersonRoles(user)
+        if roles is None:
+            return False
+        for pillar in self.affected_pillars:
+            if (roles.isOwner(pillar)
+                or roles.isOneOfDrivers(pillar)
+                or roles.isBugSupervisor(pillar)
+                or roles.isSecurityContact(pillar)):
+                return True
         return False
 
     def linkHWSubmission(self, submission):

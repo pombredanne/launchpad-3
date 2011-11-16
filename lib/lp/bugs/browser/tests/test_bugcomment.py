@@ -13,7 +13,9 @@ from itertools import count
 
 from pytz import utc
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugcomment import group_comments_with_activity
@@ -220,12 +222,12 @@ class TestBugHideCommentControls(
 
     layer = DatabaseFunctionalLayer
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
         with person_logged_in(administrator):
-            self.factory.makeBugComment(bug=bug)
+            self.factory.makeBugComment(bug=bug, owner=comment_owner)
         return bug
 
     def getView(self, context, user=None, no_login=False):
@@ -235,3 +237,51 @@ class TestBugHideCommentControls(
             user=user,
             no_login=no_login)
         return view
+
+    def test_comment_owner_sees_hide_control(self):
+        # The comment owner sees the hide control.
+        owner = self.factory.makePerson()
+        context = self.getContext(comment_owner=owner)
+        view = self.getView(context=context, user=owner)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+    def test_pillar_owner_sees_hide_control(self):
+        # The pillar owner sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).owner = person
+        view = self.getView(context=context, user=person)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+    def test_pillar_driver_sees_hide_control(self):
+        # The pillar driver sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).driver = person
+        view = self.getView(context=context, user=person)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+    def test_pillar_bug_supervisor_sees_hide_control(self):
+        # The pillar bug supervisor sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
+        view = self.getView(context=context, user=person)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+    def test_pillar_security_contact_sees_hide_control(self):
+        # The pillar security contact sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).security_contact = person
+        view = self.getView(context=context, user=person)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)

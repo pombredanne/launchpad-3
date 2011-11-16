@@ -157,7 +157,6 @@ from lp.registry.interfaces.role import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
-from lp.services.messages.interfaces.message import IMessage
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -2565,15 +2564,6 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return self.forwardCheckAuthenticated(user, parent)
-
-
-class SetMessageVisibility(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IMessage
-
-    def checkAuthenticated(self, user):
-        """Admins and registry admins can set bug comment visibility."""
-        return (user.in_admin or user.in_registry_experts)
 
 
 class ViewPublisherConfig(AdminByAdminsTeam):

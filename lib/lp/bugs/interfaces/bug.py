@@ -944,6 +944,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
 
+    def userCanSetCommentVisibility(user):
+        """Return True if `user` can set bug comment visibility."""
+
     @operation_parameters(
         submission=Reference(
             Interface, title=_('A HWDB submission'), required=True))

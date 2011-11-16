@@ -10,11 +10,9 @@ import transaction
 from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
@@ -130,6 +128,50 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(admins.teamowner):
             admins.addMember(person, admins.teamowner)
+        bug = self._get_bug_for_user(person)
+        self._set_visibility(bug)
+        self.assertCommentHidden()
+
+    def test_pillar_owner_can_set_visible(self):
+        # Pillar owner can set bug comment visibility.
+        person = self.factory.makePerson()
+        naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).owner = person
+        bug = self._get_bug_for_user(person)
+        self._set_visibility(bug)
+        self.assertCommentHidden()
+
+    def test_pillar_driver_can_set_visible(self):
+        # Pillar driver can set bug comment visibility.
+        person = self.factory.makePerson()
+        naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).driver = person
+        bug = self._get_bug_for_user(person)
+        self._set_visibility(bug)
+        self.assertCommentHidden()
+
+    def test_pillar_bug_supervisor_can_set_visible(self):
+        # Pillar bug supervisor can set bug comment visibility.
+        person = self.factory.makePerson()
+        naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
+        bug = self._get_bug_for_user(person)
+        self._set_visibility(bug)
+        self.assertCommentHidden()
+
+    def test_pillar_security_contact_can_set_visible(self):
+        # Pillar security_contact can set bug comment visibility.
+        person = self.factory.makePerson()
+        naked_bugtask = removeSecurityProxy(self.bug.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).security_contact = person
+        bug = self._get_bug_for_user(person)
+        self._set_visibility(bug)
+        self.assertCommentHidden()
+
+    def test_comment_owner_can_set_visible(self):
+        # The author of the comment can set bug comment visibility.
+        person = self.factory.makePerson()
+        removeSecurityProxy(self.message).owner = person
         bug = self._get_bug_for_user(person)
         self._set_visibility(bug)
         self.assertCommentHidden()
