@@ -1471,7 +1471,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
 
 class IPersonSee(Interface):
-    """IPerson attributes that require launchpad.See permission."""
+    """IPerson attributes that require launchpad.LimitedView permission."""
 
     name = exported(
         PersonNameField(

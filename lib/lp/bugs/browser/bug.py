@@ -953,7 +953,7 @@ class BugTextView(LaunchpadView):
                 authorised_people.append(task.assignee)
         authorised_people.extend(self.subscribers)
         precache_permission_for_objects(
-            self.request, 'launchpad.See', authorised_people)
+            self.request, 'launchpad.LimitedView', authorised_people)
 
     @cachedproperty
     def bugtasks(self):
@@ -1047,7 +1047,7 @@ class BugTextView(LaunchpadView):
             text.append('component: %s' % component.name)
 
         if (task.assignee
-            and check_permission('launchpad.See', task.assignee)):
+            and check_permission('launchpad.LimitedView', task.assignee)):
             text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')

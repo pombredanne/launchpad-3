@@ -152,8 +152,8 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
 class TestTalesFormatterAPI(TestCaseWithFactory):
     """ Test permissions required to access TalesFormatterAPI methods.
 
-    A user must have launchpad.See permission to use TestTalesFormatterAPI
-    with private teams.
+    A user must have launchpad.LimitedView permission to use
+    TestTalesFormatterAPI with private teams.
     """
     layer = DatabaseFunctionalLayer
 
@@ -172,7 +172,7 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
         if cache_permission:
             login_person(any_person, request)
             precache_permission_for_objects(
-                request, 'launchpad.See', [self.team])
+                request, 'launchpad.LimitedView', [self.team])
         return formatter, request, any_person
 
     def _tales_value(self, attr, request):
@@ -200,7 +200,7 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
             self.assertEqual(hidden, value)
 
     def _test_can_view_attribute_with_permission(self, attr):
-        # Test attribute access when user has launchpad.See permission.
+        # Test attr access when user has launchpad.LimitedView permission.
         formatter, request, any_person = self._make_formatter(
             cache_permission=True)
         self.assertNotEqual(

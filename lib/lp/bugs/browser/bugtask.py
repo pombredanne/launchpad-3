@@ -3442,7 +3442,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         authorised_people = [task.assignee for task in self.bugtasks
                              if task.assignee is not None]
         precache_permission_for_objects(
-            self.request, 'launchpad.See', authorised_people)
+            self.request, 'launchpad.LimitedView', authorised_people)
 
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.

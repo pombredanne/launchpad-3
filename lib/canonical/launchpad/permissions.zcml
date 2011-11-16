@@ -13,7 +13,7 @@
   name, displayname
   -->
   <permission
-    id="launchpad.See" title="See that something exists" access_level="read" />
+    id="launchpad.LimitedView" title="View basic details like name, URL" access_level="read" />
 
   <permission
     id="launchpad.AnyPerson" title="Any Authenticated Person"
