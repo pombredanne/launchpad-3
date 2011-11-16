@@ -8,6 +8,8 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -415,7 +417,6 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
                 self.createBMP(target_branch_owner=user)
             else:
                 self.createBMP(reviewer=user)
-        transaction.commit()
         login_person(user)
         flush_database_caches()
         with StormStatementRecorder() as recorder:
@@ -428,5 +429,6 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
 
     def test_activereviews_query_count(self):
         recorder1 = self.createBMPsAndMeasureActiveReviewsPageRendering(3)
+        self.addDetail("r1tb", Content(UTF8_TEXT, lambda: [str(recorder1)]))
         recorder2 = self.createBMPsAndMeasureActiveReviewsPageRendering(7)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

@@ -69,6 +69,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -403,21 +404,20 @@ class GenericBranchCollection:
         resultset = owned.union(reviewing)
 
         def do_eager_load(rows):
-            # Load the registrants' data.
-            load_related(Person, rows, ['registrantID'])
-            # Cache registrants' info (Person and ValidPersonCache).
-            list(self.store.find(
-                (Person, ValidPersonCache),
-                ValidPersonCache.id == Person.id,
-                Person.id.is_in([proposal.registrantID for proposal in rows]),
-                ))
             # Load the source/target branches and preload the data for
             # these branches.
             source_branches = load_related(Branch, rows, ['source_branchID'])
             target_branches = load_related(Branch, rows, ['target_branchID'])
             self._preloadDataForBranches(target_branches + source_branches)
-            load_related(Person, source_branches, ['ownerID'])
             load_related(Product, target_branches, ['productID'])
+
+            # Cache person's data (registrants of the proposal and
+            # owners of the source branches).
+            person_ids = set().union(
+                (proposal.registrantID for proposal in rows),
+                (branch.ownerID for branch in source_branches))
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                person_ids, need_validity=True))
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
