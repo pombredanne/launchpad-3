@@ -320,9 +320,10 @@ class EC2Instance:
             return
         self._boto_instance.update()
         if self._boto_instance.state not in ('shutting-down', 'terminated'):
-            # terminate instance
-            self._boto_instance.stop()
+            self.log("terminating %s" % self._boto_instance)
+            self._boto_instance.terminate()
             self._boto_instance.update()
+            self.log("\n")
         self.log('instance %s\n' % (self._boto_instance.state,))
 
     @property
@@ -359,7 +360,7 @@ class EC2Instance:
                     raise
             else:
                 break
-        self.log(' ok!\n'
+        self.log(' ok!\n')
         return EC2InstanceConnection(self, username, ssh)
 
     def _upload_local_key(self, conn, remote_filename):
