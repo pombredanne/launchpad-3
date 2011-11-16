@@ -179,16 +179,18 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def storeBuildInfo(build, librarian, slave_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            # log, builder and date_finished are read-only, so we must
-            # currently remove the security proxy to set them.
-            naked_build = removeSecurityProxy(build)
-            naked_build.log = lfa_id
-            naked_build.builder = build.buildqueue_record.builder
             dependencies = slave_status.get('dependencies')
             if dependencies is not None:
                 dependencies = unicode(dependencies)
+
+            # log, builder and date_finished are read-only, so we must
+            # currently remove the security proxy to set them.
+            naked_build = removeSecurityProxy(build)
+
             transaction.commit()
             with DatabaseTransactionPolicy(read_only=False):
+                naked_build.log = lfa_id
+                naked_build.builder = build.buildqueue_record.builder
                 # XXX cprov 20060615 bug=120584: Currently buildduration
                 # includes the scanner latency.  It should really be asking
                 # the slave for the duration spent building locally.
