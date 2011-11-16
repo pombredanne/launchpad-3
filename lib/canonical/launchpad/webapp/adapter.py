@@ -737,7 +737,8 @@ class LaunchpadStatementTracer:
         action = getattr(connection, '_lp_statement_action', None)
         if action is not None:
             # action may be None if the tracer was installed after the
-            # statement was submitted.
+            # statement was submitted or if the timeline tracer is not
+            # installed.
             action.finish()
         log_sql = getattr(_local, 'sql_logging', None)
         if log_sql is not None or self._debug_sql or self._debug_sql_extra:
@@ -754,13 +755,16 @@ class LaunchpadStatementTracer:
                     # Times are in milliseconds, to mirror actions.
                     start = start - logging_start
                     stop = stop - logging_start
-                    data = (start, stop, dbname, statement)
+                    data = (start, stop, dbname, statement, None)
                     connection._lp_statement_info = None
             if data is not None:
                 if log_sql and log_sql[-1]['sql'] is None:
                     log_sql[-1]['sql'] = data
                 if self._debug_sql or self._debug_sql_extra:
-                    sys.stderr.write('%d-%d@%s %s\n' % data)
+                    # Don't print the backtrace from the data to stderr - too
+                    # messy given that LP_DEBUG_SQL_EXTRA logs that
+                    # separately anyhow.
+                    sys.stderr.write('%d-%d@%s %s\n' % data[:4])
                     sys.stderr.write("-" * 70 + "\n")
 
     def connection_raw_execute_error(self, connection, raw_cursor,
