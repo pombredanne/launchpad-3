@@ -88,6 +88,8 @@ EOF
 
 export DEBIAN_FRONTEND=noninteractive
 
+echo contents of fstab before editing
+cat /etc/fstab
 # Put some io-intensive disposable directories on ramdisks; the machine is disposable
 # anyhow.  These must only be things whose content is not required to persist
 # between the machine being started and it being used: so you can't put
@@ -98,8 +100,6 @@ do
     echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
     mount $d
 done
-echo contents of fstab
-cat /etc/fstab
 sed -ie 's/ext3[ \t]*defaults/data=writeback,commit=3600,async,relatime/' /etc/fstab
 echo contents of fstab after edit:
 cat /etc/fstab
