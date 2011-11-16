@@ -30,6 +30,7 @@ from lp.services.utils import (
     docstring_dedent,
     file_exists,
     iter_split,
+    obfuscate_structure,
     load_bz2_pickle,
     run_capturing_output,
     save_bz2_pickle,
@@ -343,3 +344,43 @@ class TestBZ2Pickle(TestCase):
         tempfile = os.path.join(tempdir, "dump")
         save_bz2_pickle(data, tempfile)
         self.assertEqual(data, load_bz2_pickle(tempfile))
+
+
+class TestObfuscateStructure(TestCase):
+
+    def test_obfuscate_string(self):
+        """Strings are obfuscated."""
+        obfuscated = obfuscate_structure('My address is a@example.com')
+        self.assertEqual(
+            'My address is <email address hidden>', obfuscated)
+
+    def test_obfuscate_list(self):
+        """List elements are obfuscated."""
+        obfuscated = obfuscate_structure(['My address is a@example.com'])
+        self.assertEqual(
+            ['My address is <email address hidden>'], obfuscated)
+
+    def test_obfuscate_tuple(self):
+        """Tuple elements are obfuscated."""
+        obfuscated = obfuscate_structure(('My address is a@example.com',))
+        self.assertEqual(
+            ['My address is <email address hidden>'], obfuscated)
+
+    def test_obfuscate_dict_key(self):
+        """Dictionary keys are obfuscated."""
+        obfuscated = obfuscate_structure(
+            {'My address is a@example.com': 'foo'})
+        self.assertEqual(
+            {'My address is <email address hidden>': 'foo'}, obfuscated)
+
+    def test_obfuscate_dict_value(self):
+        """Dictionary values are obfuscated."""
+        obfuscated = obfuscate_structure(
+            {'foo': 'My address is a@example.com'})
+        self.assertEqual(
+            {'foo': 'My address is <email address hidden>'}, obfuscated)
+
+    def test_recursion(self):
+        """Values are obfuscated recursively."""
+        obfuscated = obfuscate_structure({'foo': (['a@example.com'],)})
+        self.assertEqual({'foo': [['<email address hidden>']]}, obfuscated)

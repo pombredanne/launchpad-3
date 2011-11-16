@@ -1011,7 +1011,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['registered', 'owned', 'subscribed', 'active_reviews']
+    links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
 
     def _getCountCollection(self):
         """See `PersonBranchesMenu`."""
