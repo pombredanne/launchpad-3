@@ -98,7 +98,10 @@ do
     echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
     mount $d
 done
+echo contents of fstab
+cat /etc/fstab
 sed -ie 's/ext3[ \t]*defaults/data=writeback,commit=3600,async,relatime/' /etc/fstab
+echo contents of fstab after edit:
 cat /etc/fstab
 
 # Add the keys for the three PPAs added to sources.list above.
@@ -326,10 +329,10 @@ class EC2Instance:
             return
         self._boto_instance.update()
         if self._boto_instance.state not in ('shutting-down', 'terminated'):
-            self.log("terminating %s" % self._boto_instance)
+            self.log("terminating %s..." % self._boto_instance)
             self._boto_instance.terminate()
             self._boto_instance.update()
-            self.log("\n")
+            self.log(" done\n")
         self.log('instance %s\n' % (self._boto_instance.state,))
 
     @property
