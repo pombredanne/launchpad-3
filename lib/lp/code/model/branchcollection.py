@@ -127,6 +127,16 @@ class GenericBranchCollection:
         if exclude_from_search is None:
             exclude_from_search = []
         self._exclude_from_search = exclude_from_search
+        self._with_dict = {}
+
+    @property
+    def store_with_with(self):
+        store = self.store
+        if len(self._with_dict) != 0:
+            with_expr = [With(name, expr)
+                for (name, expr) in self._with_dict.items()]
+            store = store.with_(with_expr)
+        return store
 
     def count(self):
         """See `IBranchCollection`."""
@@ -264,7 +274,8 @@ class GenericBranchCollection:
             self._tables.values() + self._asymmetric_tables.values())
         tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
-        resultset = self.store.using(*tables).find(Branch, *expressions)
+        resultset = self.store_with_with.using(
+            *tables).find(Branch, *expressions)
         if not eager_load:
             return resultset
 
@@ -361,7 +372,7 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        resultset = self.store.using(*tables).find(
+        resultset = self.store_with_with.using(*tables).find(
             BranchMergeProposal, *expressions)
         if not eager_load:
             return resultset
@@ -423,7 +434,7 @@ class GenericBranchCollection:
         if status is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
-        proposals = self.store.using(*tables).find(
+        proposals = self.store_with_with.using(*tables).find(
             BranchMergeProposal, *expressions)
         # Apply sorting here as we can't do it in the browser code.  We need
         # to think carefully about the best places to do this, but not here
@@ -826,21 +837,29 @@ class VisibleBranchCollection(GenericBranchCollection):
                        Branch.transitively_private == True)))
         return private_branches
 
+    def _addVisibleBranchesCTE(self):
+        """Add the 'visible_branches' CTE to self._with_dict.
+
+        """
+        public_branches = Branch.transitively_private == False
+        if self._private_branch_ids is not None:
+            branches = Or(
+                public_branches,
+                Branch.id.is_in(self._private_branch_ids))
+        else:
+            branches = public_branches
+        branches_select = self.store.using(
+            [Branch]).find(Branch.id, branches)._get_select()
+        self._with_dict.update({'visible_branches': branches_select})
+
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
 
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.transitively_private == False
-        if self._private_branch_ids is None:
-            # Public only.
-            return [public_branches]
-        else:
-            public_or_private = Or(
-                public_branches,
-                branch_class.id.is_in(self._private_branch_ids))
-            return [public_or_private]
+        self._addVisibleBranchesCTE()
+        return [branch_class.id.is_in(SQL("SELECT id FROM visible_branches"))]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
