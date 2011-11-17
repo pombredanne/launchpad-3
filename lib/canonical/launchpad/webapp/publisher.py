@@ -398,18 +398,14 @@ class LaunchpadView(UserAttributeCache):
         # Avoid circular imports.
         from lp.services.features.flags import flag_info
 
-        def flag_in_beta_status(flag):
-            return (
-                currentScope(flag) not in ('default', None) and
-                defaultFlagValue(flag) != getFeatureFlag(flag))
-
         beta_info = {}
         for (flag_name, value_domain, documentation, default_behaviour, title,
              url) in flag_info:
             if flag_name not in self.related_features:
                 continue
+            value = getFeatureFlag(flag_name)
             beta_info[flag_name] = {
-                'is_beta': flag_in_beta_status(flag_name),
+                'is_beta': (defaultFlagValue(flag_name) != value),
                 'title': title,
                 'url': url,
             }
