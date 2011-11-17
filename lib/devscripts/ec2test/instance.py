@@ -89,24 +89,6 @@ EOF
 
 export DEBIAN_FRONTEND=noninteractive
 
-echo contents of fstab before editing
-cat /etc/fstab
-# Put some io-intensive disposable directories on ramdisks; the machine is disposable
-# anyhow.  These must only be things whose content is not required to persist
-# between the machine being started and it being used: so you can't put
-# /var/launchpad here because the contents are used by spawned instances.
-for d in /tmp /var/tmp /var/lib/postgresql
-do
-    [ -d $d ] || mkdir $d
-    echo "$d $d tmpfs defaults 0 0" >> /etc/fstab
-    mount $d
-done
-
-# Brain surgery with an axe.
-sed -ie 's![ \t]\/[ \t]*ext3[ \t]*defaults[ \t]!/ ext3 data=writeback,commit=3600,async,relatime!' /etc/fstab
-echo contents of fstab after edit:
-cat /etc/fstab
-
 # PPA keys
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af # launchpad
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd # bzr
@@ -620,7 +602,7 @@ class EC2Instance:
             image_location=manifest_path,
             )
         self.log('ok\n')
-        self.log('** new instance: %r' % (image_id,))
+        self.log('** new instance: %r\n' % (image_id,))
 
 
 class EC2InstanceConnection:
