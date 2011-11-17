@@ -123,6 +123,7 @@ from lp.registry.interfaces.nameblacklist import (
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonLimitedView,
     IPersonSet,
     ITeam,
     PersonVisibility,
@@ -812,6 +813,32 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
+
+
+class PublicOrPrivateTeamsExistence(AuthorizationBase):
+    """Restrict knowing about private teams' existence.
+
+    Knowing the existence of a private team allow traversing to its URL and
+    displaying basic information like name, displayname.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = IPersonLimitedView
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public teams."""
+        if self.obj.visibility == PersonVisibility.PUBLIC:
+            return True
+        return False
+
+    def checkAuthenticated(self, user):
+        """By default, we simply perform a View permission check.
+
+        The context in which the permission is required is
+        responsible for pre-caching the launchpad.LimitedView permission on
+        each team which requires it.
+        """
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View')
 
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(

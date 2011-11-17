@@ -517,7 +517,7 @@ class LaunchpadBrowserPublication(
         sql_statements = da.get_request_statements()
         sql_milliseconds = sum(
             endtime - starttime
-                for starttime, endtime, id, sql_statement in sql_statements)
+                for starttime, endtime, id, sql_statement, tb in sql_statements)
 
         # Log publication tickcount, sql statement count, and sql time
         # to the tracelog.
