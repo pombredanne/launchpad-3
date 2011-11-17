@@ -33,6 +33,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
+    attach_http_request,
     ErrorReport,
     ErrorReportingUtility,
     notify_publisher,
@@ -738,3 +739,16 @@ class TestWrappedParameterConverter(testtools.TestCase):
         customize_get_converter(module)
         converter = module.get_converter('int')
         self.assertTrue(converter is None)
+
+
+class TestHooks(testtools.TestCase):
+
+    def test_attach_http_nonbasicvalue(self):
+        report = {'req_vars': {}}
+        complexthing = object()
+        context = {
+            'http_request': {'SIMPLE': 'string', 'COMPLEX': complexthing}}
+        attach_http_request(report, context)
+        self.assertEqual(
+            {'SIMPLE': 'string', 'COMPLEX': unicode(complexthing)},
+            report['req_vars'])

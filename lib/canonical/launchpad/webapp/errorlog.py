@@ -233,6 +233,8 @@ def attach_http_request(report, context):
     for key, value in request.items():
         if _is_sensitive(request, key):
             value = '<hidden>'
+        if not isinstance(value, basestring):
+            value = oops.createhooks.safe_unicode(value)
         report['req_vars'][key] = value
     if IXMLRPCRequest.providedBy(request):
         args = request.getPositionalArguments()
