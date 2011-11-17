@@ -14,11 +14,8 @@ from storm.properties import (
     Int,
     DateTime,
     )
-from storm.references import (
-    Reference,
-    ReferenceSet,
-    )
-from zope.interface import implements, providedBy
+from storm.references import Reference
+from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -42,8 +39,6 @@ class AccessPolicy(StormBase):
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
     type = DBEnum(allow_none=True, enum=AccessPolicyType)
-
-    grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
 
     @property
     def pillar(self):

@@ -46,8 +46,6 @@ class IAccessPolicy(Interface):
     pillar = Attribute("Pillar")
     type = Attribute("Type")
 
-    grants = Attribute("Grants")
-
 
 class IAccessPolicyArtifact(Interface):
     id = Attribute("ID")
