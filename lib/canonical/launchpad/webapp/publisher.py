@@ -389,16 +389,20 @@ class LaunchpadView(UserAttributeCache):
 
     @property
     def related_feature_info(self):
-        """Beta feature flags that are active for this context and scope.
+        """Related feature flags that are active for this context and scope.
 
-        This property consists of all feature flags from related_features
-        whose current value is not the default value.
+        This property describes all features marked as related_features in the
+        view.  is_beta means that the value is not the default value.
+
+        Return a dict of flags keyed by flag_name, with title and url as given
+        by the flag's description.  Value is the value in the current scope,
+        and is_beta is true if this is not the default value.
         """
         # Avoid circular imports.
         from lp.services.features.flags import flag_info
 
         beta_info = {}
-        for (flag_name, value_domain, documentation, default_behaviour, title,
+        for (flag_name, value_domain, documentation, default_behavior, title,
              url) in flag_info:
             if flag_name not in self.related_features:
                 continue

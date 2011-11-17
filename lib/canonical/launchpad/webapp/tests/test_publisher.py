@@ -260,7 +260,7 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     def test_json_cache_collects_related_features_from_all_views(self):
         # A typical page includes data from more than one view,
-        # for example, from macros. Beta features from these sub-views
+        # for example, from macros. Related features from these sub-views
         # are included in the JSON cache.
         class TestView(LaunchpadView):
             related_features = ['test_feature']
