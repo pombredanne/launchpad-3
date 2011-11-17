@@ -107,10 +107,9 @@ sed -ie 's![ \t]\/[ \t]*ext3[ \t]*defaults[ \t]!/ ext3 data=writeback,commit=360
 echo contents of fstab after edit:
 cat /etc/fstab
 
-# Add the keys for the three PPAs added to sources.list above.
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
+# PPA keys
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af # launchpad
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd # bzr
 
 aptitude update
 LANG=C aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
