@@ -27,3 +27,4 @@ canonical/launchpad
 canonical/database/testing
 canonical/database
 canonical/config
+canonical/buildd

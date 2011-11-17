@@ -7,8 +7,7 @@ import tarfile
 
 from lp.testing.fakemethod import FakeMethod
 
-from lpbuildd import pottery
-from lpbuildd.pottery.generate_translation_templates import (
+from canonical.buildd.pottery.generate_translation_templates import (
     GenerateTranslationTemplates)
 
 from canonical.launchpad.ftests.script import run_script
@@ -111,8 +110,6 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         tempdir = self.makeTemporaryDirectory()
         workdir = self.makeTemporaryDirectory()
         (retval, out, err) = run_script(
-            os.path.join(
-                os.path.dirname(pottery.__file__),
-                'generate_translation_templates.py'),
+            'lib/canonical/buildd/pottery/generate_translation_templates.py',
             args=[tempdir, self.result_name, workdir])
         self.assertEqual(0, retval)
