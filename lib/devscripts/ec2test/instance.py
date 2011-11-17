@@ -367,13 +367,9 @@ class EC2Instance:
                 ssh.connect(self.hostname, **connect_args)
             except (socket.error, paramiko.AuthenticationException, EOFError), e:
                 self.log('.')
-                if getattr(e, 'errno', None) in (
-                        errno.ECONNREFUSED, errno.ETIMEDOUT):
-                    # Pretty normal if the machine has started but sshd isn't
-                    # up yet.  Don't make a fuss.
-                    time.sleep(1)
-                    continue
-                self.log('ssh _connect: %r\n' % (e,))
+                if getattr(e, 'errno', None) not in (
+                        errno.ECONNREFUSED, errno.ETIMEDOUT, errno.EHOSTUNREACH):
+                    self.log('ssh _connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
                 else:
@@ -562,7 +558,7 @@ class EC2Instance:
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
 
-        :param name: The name-to-be of the new AMI.
+        :param name: The name-to-be of the new AMI, eg 'launchpad-ec2test500'.
         :param credentials: An `EC2Credentials` object.
         """
         connection = self.connect()
