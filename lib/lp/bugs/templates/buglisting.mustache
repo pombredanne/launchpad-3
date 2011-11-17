@@ -18,7 +18,7 @@
     <div class="buglisting-col2">
         <div class="buginfo">
             {{#show_id}}
-                <a class="bugnumber" href="{{bug_url}}">#{{id}}</a>
+                <span class="bugnumber">#{{id}}</span>
             {{/show_id}}
             {{#show_title}}
                 <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
@@ -37,6 +37,31 @@
                 </span>
             {{/milestone_name}}
             {{/show_milestone_name}}
+            {{#show_last_updated}}
+                <span class="sprite milestone field">
+                    last updated {{last_updated}}
+                </span>
+            {{/show_last_updated}}
+            {{#show_assignee}}
+            {{#assignee}}
+                <span class="sprite person field">
+                    Assignee: {{assignee}}
+                </span>
+            {{/assignee}}
+            {{/show_assignee}}
+            {{#show_reporter}}
+                <span class="sprite person field">
+                    Reporter: {{reporter}}
+                </span>
+            {{/show_reporter}}
+            {{#show_age}}
+                <span class="sprite milestone field">
+                    {{age}}
+                </span>
+            {{/show_age}}
+            {{#show_tags}}
+                <span class="field">{{tags}}</span>
+            {{/show_tags}}
         </div>
     </div>
 

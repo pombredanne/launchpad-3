@@ -1021,7 +1021,31 @@ h1 .yui3-ieditor-errors {
     text-decoration: underline;
     cursor: pointer;
     }
-
+.yui3-buglisting-config-util a {
+    position: relative;
+    top: 3px;
+    left: 4px;
+    }
+.yui3-baseconfigutil a {
+    cursor: pointer;
+    }
+.yui3-buglisting-config-util-overlay a.close-button {
+    visibility: inherit;
+    }
+.yui3-buglisting-config-util-overlay .buglisting-opts {
+    position: relative;
+    left: -110px;
+    }
+.yui3-buglisting-config-util-overlay .update-buglisting {
+    position: relative;
+    left: -240px;
+    }
+.yui3-buglisting-config-util-overlay .reset-buglisting {
+    position: relative;
+    top: 20px;
+    left: 75px;
+    cursor: pointer;
+    }
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
@@ -2099,6 +2123,37 @@ body.global-notification-visible .login-logout {
     width: 8px;
     margin: 3px 0 0 7px;
     padding: 0;
+    }
+
+/* ===========
+   Beta banner
+*/
+.beta-banner {
+    position: fixed;
+    z-index: 9;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #606060;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(64, 64, 64,0.9);
+    color: #fff;
+    font-size: 14px;
+    line-height: 21px;
+    }
+.beta-banner .info-link {
+    color: #4884ef;
+}
+.beta-warning {
+    padding: 4px;
+    margin-right: 8px;
+    background-color: #be0000;
+    font-weight: bold;
+    }
+.beta-feature {
+    font-weight: bold;
     }
 
 

@@ -17,6 +17,10 @@
     background-image: url(/@@/remove.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.config {
+    background-image: url(/@@/config.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .info {
     background-image: url(/@@/info.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

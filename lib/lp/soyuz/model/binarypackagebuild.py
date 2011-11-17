@@ -147,9 +147,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def current_component(self):
         """See `IBuild`."""
         latest_publication = self._getLatestPublication()
-        assert latest_publication is not None, (
-            'Build %d lacks a corresponding source publication.' % self.id)
-        return latest_publication.component
+        # Production has some buggy builds without source publications.
+        # They seem to have been created by early versions of gina and
+        # the readding of hppa.
+        if latest_publication is not None:
+            return latest_publication.component
 
     @property
     def current_source_publication(self):

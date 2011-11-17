@@ -138,9 +138,11 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
+    validate_person_or_closed_team,
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -160,6 +162,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
+from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.pillar import HasAliasMixin
@@ -309,7 +312,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        ILaunchpadUsage, IProduct, IServiceUsage)
+        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -318,7 +321,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person,
+        storm_validator=validate_person_or_closed_team,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -331,7 +334,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person_or_closed_team, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -974,6 +977,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQ.new(
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=self)
+
+    def findReferencedOOPS(self, start_date, end_date):
+        """See `IHasOOPSReferences`."""
+        return list(referenced_oops(
+            start_date, end_date, "product=%(product)s", {'product': self.id}
+            ))
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""

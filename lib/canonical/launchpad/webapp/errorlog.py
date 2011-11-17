@@ -161,6 +161,14 @@ def attach_exc_info(report, context):
 _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
 
 
+def attach_previous_oopsid(report, context):
+    """Add a link to the previous OOPS generated this request, if any."""
+    request = context.get('http_request')
+    last_oopsid = getattr(request, 'oopsid', None)
+    if last_oopsid is not None:
+        report['last_oops'] = last_oopsid
+
+
 def attach_http_request(report, context):
     """Add request metadata into the error report.
 
@@ -179,7 +187,14 @@ def attach_http_request(report, context):
     # XXX jamesh 2005-11-22: Temporary fix, which Steve should
     #      undo. URL is just too HTTPRequest-specific.
     if safe_hasattr(request, 'URL'):
-        report['url'] = oops.createhooks.safe_unicode(request.URL)
+        # URL's are byte strings, but possibly str() will fail - safe_unicode
+        # handles all those cases, and then we can safely encode it to utf8.
+        # This is strictly double handling as a URL should never have unicode
+        # characters in it anyway (though it may have them % encoded, which is
+        # fine). Better safe than sorry, and the safe_unicode handling won't
+        # cause double-encoding, so it is safe.
+        url = oops.createhooks.safe_unicode(request.URL).encode('utf8')
+        report['url'] = url
 
     if WebServiceLayer.providedBy(request) and info is not None:
         webservice_error = getattr(
@@ -199,7 +214,7 @@ def attach_http_request(report, context):
     else:
         # Request has an UnauthenticatedPrincipal.
         login = 'unauthenticated'
-        if report['type'] in (
+        if _get_type(report) in (
             _ignored_exceptions_for_unauthenticated_users):
             report['ignore'] = True
 
@@ -212,17 +227,19 @@ def attach_http_request(report, context):
         report['username'] = username
 
     if getattr(request, '_orig_env', None):
-        report['topic'] = request._orig_env.get(
-                'launchpad.pageid', '')
+        report['topic'] = request._orig_env.get('launchpad.pageid', '')
 
     for key, value in request.items():
         if _is_sensitive(request, key):
-            report['req_vars'].append((key, '<hidden>'))
-        else:
-            report['req_vars'].append((key, value))
+            value = '<hidden>'
+        if not isinstance(value, basestring):
+            value = oops.createhooks.safe_unicode(value)
+        report['req_vars'][key] = value
     if IXMLRPCRequest.providedBy(request):
         args = request.getPositionalArguments()
-        report['req_vars'].append(('xmlrpc args', args))
+        # Request variables are strings: this could move to its own key and be
+        # raw.
+        report['req_vars']['xmlrpc args'] = unicode(args)
 
 
 def attach_ignore_from_exception(report, context):
@@ -254,6 +271,10 @@ def filter_sessions_timeline(report, context):
         detail = _filter_session_statement(category, detail)
         statements.append((start, end, category, detail) + event[4:])
     report['timeline'] = statements
+
+
+def _get_type(report):
+    return report.get('type', 'No exception type')
 
 
 class ErrorReportingUtility:
@@ -289,9 +310,14 @@ class ErrorReportingUtility:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
         reporter = config[section_name].oops_prefix
+        if reporter is None:
+            # Unconfigured section - make up a reporter slightly more useful
+            # than e.g 'T' or 'LPNET'
+            reporter = (config[self._default_config_section].oops_prefix +
+                '-' + section_name)
         self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
-        self._oops_config.template['req_vars'] = []
+        self._oops_config.template['req_vars'] = {}
         # Exceptions, with the zope formatter.
         self._oops_config.on_create.append(attach_exc_info)
         # Ignore IUnloggedException exceptions
@@ -308,10 +334,14 @@ class ErrorReportingUtility:
         # In the zope environment we track how long a script / http
         # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
+        # Any previous OOPS reports generated this request.
+        self._oops_config.on_create.append(attach_previous_oopsid)
+
         def add_publisher(publisher):
             if publisher_adapter is not None:
                 publisher = publisher_adapter(publisher)
             self._oops_config.publishers.append(publisher)
+
         # If amqp is configured we want to publish over amqp.
         if (config.error_reports.error_exchange and rabbit.is_configured()):
             exchange = config.error_reports.error_exchange
@@ -321,7 +351,11 @@ class ErrorReportingUtility:
             add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
         # analysis server, but only if we haven't already published to rabbit.
-        self._oops_datedir_repo = DateDirRepo(config[section_name].error_dir)
+        error_dir = config[section_name].error_dir
+        if error_dir is None:
+            # Inherit the base error_dir - sharing error dirs is safe.
+            error_dir = config[self._default_config_section].error_dir
+        self._oops_datedir_repo = DateDirRepo(error_dir)
         add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
         # And send everything within the zope application server (only for
         # testing).
@@ -334,7 +368,7 @@ class ErrorReportingUtility:
                 operator.methodcaller('get', 'ignore'))
         #  - have a type listed in self._ignored_exceptions.
         self._oops_config.filters.append(
-                lambda report: report['type'] in self._ignored_exceptions)
+                lambda report: _get_type(report) in self._ignored_exceptions)
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
@@ -358,8 +392,6 @@ class ErrorReportingUtility:
         if timeline is not None:
             context['timeline'] = timeline
         report = self._oops_config.create(context)
-        # req_vars should be a dict itself. Needs an oops-datedir-repo tweak.
-        report['req_vars'].sort()
         if self._oops_config.publish(report) is None:
             return
         if request:
@@ -369,10 +401,10 @@ class ErrorReportingUtility:
 
     def _filter_bad_urls_by_referer(self, report):
         """Filter if the report was generated because of a bad offsite url."""
-        if report['type'] in self._ignored_exceptions_for_offsite_referer:
+        if _get_type(report) in self._ignored_exceptions_for_offsite_referer:
             was_http = report.get('url', '').lower().startswith('http')
             if was_http:
-                req_vars = dict(report.get('req_vars', ()))
+                req_vars = report.get('req_vars', {})
                 referer = req_vars.get('HTTP_REFERER')
                 # If there is no referrer then either the user has refer
                 # disabled, or its someone coming from offsite or from some
@@ -391,9 +423,9 @@ class ErrorReportingUtility:
         """merges self._oops_messages into the report req_vars variable."""
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
         # storage for oops messages.
-        report['req_vars'].extend(
-            ('<oops-message-%d>' % key, str(message)) for key, message
-             in self._oops_messages.iteritems())
+        req_vars = report['req_vars']
+        for key, message in self._oops_messages.items():
+            req_vars['<oops-message-%d>' % key] = str(message)
 
     @contextlib.contextmanager
     def oopsMessage(self, message):

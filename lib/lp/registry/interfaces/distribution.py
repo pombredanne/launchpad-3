@@ -83,6 +83,7 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
@@ -134,10 +135,10 @@ class IDistributionDriverRestricted(Interface):
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, IServiceUsage, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -211,8 +212,12 @@ class IDistributionPublic(
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam',
