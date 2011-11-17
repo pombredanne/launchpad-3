@@ -3,7 +3,7 @@
      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
      class="portletBody">
   <div class="section" tal:define="tags_cloud_data view/tags_cloud_data">
-    <h2 tal:condition="tags_cloud_data">Tags</h2>
+    <h2>Tags</h2>
     <ul class="tag-list">
       <li tal:repeat="tag_info tags_cloud_data">
         <span tal:content="tag_info/count"
