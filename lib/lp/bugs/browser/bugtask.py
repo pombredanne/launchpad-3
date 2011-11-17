@@ -2449,7 +2449,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     implements(IBugTaskSearchListingMenu)
 
-    beta_features = ['bugs.dynamic_bug_listings.enabled']
+    related_features = ['bugs.dynamic_bug_listings.enabled']
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (

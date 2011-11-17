@@ -278,13 +278,8 @@ class LaunchpadView(UserAttributeCache):
         # Several view objects may be created for one page request:
         # One view for the main context and template, and other views
         # for macros included in the main template.
-        if 'beta_features' not in cache:
-            cache['beta_features'] = self.active_beta_features
-        else:
-            beta_info = cache['beta_features']
-            for feature in self.active_beta_features:
-                if feature not in beta_info:
-                    beta_info.append(feature)
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
 
     def initialize(self):
         """Override this in subclasses.
@@ -390,29 +385,31 @@ class LaunchpadView(UserAttributeCache):
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
 
-    # Flags for new features in beta status which affect a view.
-    beta_features = ()
+    # Names of feature flags which affect a view.
+    related_features = ()
 
     @property
-    def active_beta_features(self):
+    def related_feature_info(self):
         """Beta feature flags that are active for this context and scope.
 
-        This property consists of all feature flags from beta_features
+        This property consists of all feature flags from related_features
         whose current value is not the default value.
         """
         # Avoid circular imports.
         from lp.services.features.flags import flag_info
 
-        def flag_in_beta_status(flag):
-            return (
-                currentScope(flag) not in ('default', None) and
-                defaultFlagValue(flag) != getFeatureFlag(flag))
-
-        active_beta_flags = set(
-            flag for flag in self.beta_features if flag_in_beta_status(flag))
-        beta_info = [
-            info for info in flag_info if info[0] in active_beta_flags
-            ]
+        beta_info = {}
+        for (flag_name, value_domain, documentation, default_behaviour, title,
+             url) in flag_info:
+            if flag_name not in self.related_features:
+                continue
+            value = getFeatureFlag(flag_name)
+            beta_info[flag_name] = {
+                'is_beta': (defaultFlagValue(flag_name) != value),
+                'title': title,
+                'url': url,
+                'value': value,
+            }
         return beta_info
 
 
