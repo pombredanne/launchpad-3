@@ -25,6 +25,7 @@ import paramiko
 
 
 DEFAULT_INSTANCE_TYPE = 'm2.xlarge'
+DEFAULT_REGION = 'us-east-1'
 AVAILABLE_INSTANCE_TYPES = (
     'm1.large', 'm1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge',
     'c1.xlarge', 'cc1.4xlarge', 'cc1.8xlarge')

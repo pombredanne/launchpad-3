@@ -15,6 +15,7 @@ import boto
 import boto.ec2
 from bzrlib.errors import BzrCommandError
 from devscripts.ec2test.account import EC2Account
+from devscripts.ec2test import instance
 
 
 class CredentialsError(BzrCommandError):
@@ -36,7 +37,7 @@ class EC2Credentials:
     def __init__(self, identifier, secret, region_name):
         self.identifier = identifier
         self.secret = secret
-        self.region_name = region_name or 'us-east-1'
+        self.region_name = region_name or instance.DEFAULT_REGION
 
     @classmethod
     def load_from_file(cls, filename=None, region_name=None):
