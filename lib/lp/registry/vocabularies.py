@@ -886,6 +886,23 @@ class TeamVocabularyMixin:
             return 'Search'
 
 
+class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+                                ValidPersonOrTeamVocabulary):
+    """The set of people and closed teams in Launchpad.
+
+    A closed team is one for which the subscription policy is either
+    RESTRICTED or MODERATED.
+    """
+
+    @property
+    def is_closed_team(self):
+        return True
+
+    @property
+    def extra_clause(self):
+        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
+
+
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
     """The set of valid members of a given team.
