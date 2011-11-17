@@ -150,7 +150,10 @@ from canonical.launchpad.webapp import (
     redirection,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -2449,6 +2452,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     implements(IBugTaskSearchListingMenu)
 
+    beta_features = ['bugs.dynamic_bug_listings.enabled']
+
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
         BugTargetLatestBugsFeedLink,
@@ -3432,6 +3437,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any assignees.
+        authorised_people = [task.assignee for task in self.bugtasks
+                             if task.assignee is not None]
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
+
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.
         if self.bugtasks:
@@ -3626,59 +3638,76 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return 'false'
 
-    @property
+    @cachedproperty
     def other_users_affected_count(self):
-        """The number of other users affected by this bug."""
-        if self.current_user_affected_status:
-            return self.context.users_affected_count - 1
+        """The number of other users affected by this bug.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            if self.current_user_affected_status:
+                return self.context.users_affected_count - 1
+            else:
+                return self.context.users_affected_count
         else:
-            return self.context.users_affected_count
+            return self.context.other_users_affected_count_with_dupes
 
-    @property
+    @cachedproperty
+    def total_users_affected_count(self):
+        """The number of affected users, typically across all users.
+
+        Counting across duplicates may be disabled at run time.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            return self.context.users_affected_count
+        else:
+            return self.context.users_affected_count_with_dupes
+
+    @cachedproperty
     def affected_statement(self):
         """The default "this bug affects" statement to show.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.other_users_affected_count == 1:
-            if self.current_user_affected_status is None:
+        me_affected = self.current_user_affected_status
+        other_affected = self.other_users_affected_count
+        if me_affected is None:
+            if other_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
-            elif self.current_user_affected_status:
-                return "This bug affects you and 1 other person"
-            else:
-                return "This bug affects 1 person, but not you"
-        elif self.other_users_affected_count > 1:
-            if self.current_user_affected_status is None:
+            elif other_affected > 1:
                 return (
                     "This bug affects %d people. Does this bug "
-                    "affect you?" % (self.other_users_affected_count))
-            elif self.current_user_affected_status:
-                return "This bug affects you and %d other people" % (
-                    self.other_users_affected_count)
+                    "affect you?" % (other_affected))
             else:
-                return "This bug affects %d people, but not you" % (
-                    self.other_users_affected_count)
-        else:
-            if self.current_user_affected_status is None:
                 return "Does this bug affect you?"
-            elif self.current_user_affected_status:
+        elif me_affected is True:
+            if other_affected == 0:
                 return "This bug affects you"
+            elif other_affected == 1:
+                return "This bug affects you and 1 other person"
             else:
+                return "This bug affects you and %d other people" % (
+                    other_affected)
+        else:
+            if other_affected == 0:
                 return "This bug doesn't affect you"
+            elif other_affected == 1:
+                return "This bug affects 1 person, but not you"
+            elif other_affected > 1:
+                return "This bug affects %d people, but not you" % (
+                    other_affected)
 
-    @property
+    @cachedproperty
     def anon_affected_statement(self):
         """The "this bug affects" statement to show to anonymous users.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.context.users_affected_count == 1:
+        affected = self.total_users_affected_count
+        if affected == 1:
             return "This bug affects 1 person"
-        elif self.context.users_affected_count > 1:
-            return "This bug affects %d people" % (
-                self.context.users_affected_count)
+        elif affected > 1:
+            return "This bug affects %d people" % affected
         else:
             return None
 
@@ -3938,7 +3967,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     @property
     def user_can_edit_assignee(self):
-        """Can the user edit the Milestone field?
+        """Can the user edit the Assignee field?
 
         If yes, return True, otherwise return False.
         """

@@ -8,6 +8,7 @@ from others.
 Set Up
 ======
 
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
@@ -15,7 +16,9 @@ Set Up
 
     >>> login(ADMIN_EMAIL)
 
-    >>> soyuz_team = factory.makeTeam(name='soyuz-team')
+    >>> soyuz_team = factory.makeTeam(
+    ...     name='soyuz-team',
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
     >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)
     >>> removeSecurityProxy(parent_series).nominatedarchindep = arch

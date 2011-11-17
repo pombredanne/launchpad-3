@@ -1,5 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from BeautifulSoup import BeautifulSoup
+from lp.registry.interfaces.person import PersonVisibility
 
 __metaclass__ = type
 
@@ -122,7 +124,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder, HasQueryCount(LessThan(85)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -138,7 +140,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                86, self.factory.makePerson())
+                88, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -192,7 +194,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 45),
+            LessThan(count_with_no_branches + 46),
             ))
 
     def test_interesting_activity(self):
@@ -335,19 +337,122 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_1, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_2, True)
+        self.refresh()
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
         self.bug.markUserAffected(other_user_1, False)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
         self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
+
+    def makeDuplicate(self):
+        user2 = self.factory.makePerson()
+        self.bug2 = self.factory.makeBug()
+        self.bug2.markUserAffected(user2, True)
+        self.assertEqual(
+            2, self.bug2.users_affected_count)
+        self.bug2.markAsDuplicate(self.bug)
+        # After this there are three users already affected: the creators of
+        # the two bugs, plus user2.  The current user is not yet affected by
+        # any of them.
+
+    def test_counts_user_unaffected(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.assertEqual(
+            3, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # Now with you affected by the duplicate, but not the master.
+        self.bug2.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # And now with you also affected by the master.
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects you and 3 other people",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate_not_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.bug2.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, False)
+        # You're not included in this count, even though you are affected by
+        # the dupe.
+        self.assertEqual(
+            "This bug affects 3 people, but not you",
+            self.view.affected_statement)
+        # It would be reasonable for Anon to see this bug cluster affecting
+        # either 3 or 4 people.  However at the moment the "No" answer on the
+        # master is more authoritative than the "Yes" on the dupe.
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_total_users_affected_count_without_dupes(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': 'on'}))
+        self.makeDuplicate()
+        self.refresh()
+        # Does not count the two users of bug2, so just 1.
+        self.assertEqual(
+            1, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 1 person. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 1 person",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            1,
+            self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
@@ -627,6 +732,36 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
                 series.product, path_only_if_possible=True),
             content)
         self.assertIn(series.product.displayname, content)
+
+    def test_bugtask_listing_for_private_assignees(self):
+        # Private assignees are rendered in the bug portal view.
+
+        # Create a bugtask with a private assignee.
+        product_foo = self.factory.makeProduct(name="foo")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        assignee = self.factory.makeTeam(
+            name="assignee",
+            visibility=PersonVisibility.PRIVATE)
+        foo_bug.default_bugtask.transitionToAssignee(assignee)
+
+        # Render the view.
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+        foo_bugtasks_and_nominations_view.initialize()
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        getUtility(ILaunchBag).add(foo_bug.default_bugtask)
+        self.assertEqual(1, len(task_and_nomination_views))
+        content = task_and_nomination_views[0]()
+
+        # Check the result.
+        soup = BeautifulSoup(content)
+        tag = soup.find('label', attrs={'for': "foo.assignee.assigned_to"})
+        tag_text = tag.renderContents().strip()
+        self.assertEqual(assignee.unique_displayname, tag_text)
 
 
 class TestBugTaskDeleteLinks(TestCaseWithFactory):
@@ -1702,7 +1837,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
-        return soupmatchers.Tag('bugnumber', 'a', text=bug_number_re)
+        return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
         """If the flag is missing, then no mustache features appear."""
@@ -1793,15 +1928,6 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_bug_heat'] = False
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
-
-    def test_hiding_bug_title(self):
-        """Hiding bug heat removes the text but link is still present."""
-        navigator, mustache_model = self.getNavigator()
-        self.assertIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_title'] = False
-        self.assertNotIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
 
     def test_hiding_milstone_name(self):
         """Showing milestone name shows the text."""
