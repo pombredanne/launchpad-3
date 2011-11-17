@@ -53,6 +53,8 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
+        else:
+            raise AssertionError("%r is not a supported pillar" % pillar)
         obj.type = type
         IStore(cls).add(obj)
         return obj
