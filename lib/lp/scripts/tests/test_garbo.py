@@ -66,15 +66,10 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.answers.model.answercontact import AnswerContact
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    )
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -115,7 +110,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -863,55 +857,6 @@ class TestGarbo(TestCaseWithFactory):
             AccountStatus.DEACTIVATED, None, expected_count=1)
         self._test_AnswerContactPruner(
             AccountStatus.SUSPENDED, ONE_DAY_AGO, expected_count=1)
-
-    def test_BugTaskIncompleteMigrator(self):
-        # BugTasks with status INCOMPLETE should be either
-        # INCOMPLETE_WITHOUT_RESPONSE or INCOMPLETE_WITH_RESPONSE.
-        # Create a bug with two tasks set to INCOMPLETE and a comment between
-        # them.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        store = IMasterStore(BugTask)
-        bug = self.factory.makeBug()
-        with_response = bug.bugtasks[0]
-        with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
-        removeSecurityProxy(with_response)._status = BugTaskStatus.INCOMPLETE
-        transaction.commit()
-        self.factory.makeBugComment(bug=bug)
-        transaction.commit()
-        without_response = self.factory.makeBugTask(bug=bug)
-        without_response.transitionToStatus(
-            BugTaskStatus.INCOMPLETE, bug.owner)
-        removeSecurityProxy(without_response)._status = (
-            BugTaskStatus.INCOMPLETE)
-        transaction.commit()
-        self.runHourly()
-        self.assertEqual(
-            1,
-            store.find(BugTask.id,
-                BugTask.id == with_response.id,
-                BugTask._status ==
-                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE).count())
-        self.assertEqual(
-            1,
-            store.find(BugTask.id,
-                BugTask.id == without_response.id,
-                BugTask._status ==
-                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
-
-    def test_BugTaskIncompleteMigrator_filed_as_incomplete(self):
-        # BugTaskIncompleteMigrator also deals with bugs that have never
-        # transitioned to Incomplete.
-        with dbuser('launchpad'):
-            bug = self.factory.makeBug(status=BugTaskStatus.INCOMPLETE)
-        without_response = bug.bugtasks[0]
-        transaction.commit()
-        self.runHourly()
-        self.assertEqual(
-            1,
-            IMasterStore(BugTask).find(BugTask.id,
-                BugTask.id == without_response.id,
-                BugTask._status ==
-                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.

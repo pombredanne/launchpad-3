@@ -67,6 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -551,6 +552,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self, build_states)
         return DecoratedResultSet(result_set, operator.itemgetter(1))
 
+    def getFileByName(self, name):
+        """See `ISourcePackagePublishingHistory`."""
+        changelog = self.sourcepackagerelease.changelog
+        if changelog is not None and name == changelog.filename:
+            return changelog
+        raise NotFoundError(name)
+
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
         # We use getChangesFileLFA() as opposed to getChangesFilesForSources()
@@ -573,6 +581,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # a 302 so that webapp threads are not tied up.
         the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
+
+    def changelogUrl(self):
+        """See `ISourcePackagePublishingHistory`."""
+        lfa = self.sourcepackagerelease.changelog
+        if lfa is not None:
+            return self._proxied_urls((lfa,), self)[0]
+        return None
 
     def _getAllowedArchitectures(self, available_archs):
         """Filter out any restricted architectures not specifically allowed
@@ -1496,9 +1511,6 @@ class PublishingSet:
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
-
-        if creator is None:
-            creator = sourcepackagerelease.creator
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,

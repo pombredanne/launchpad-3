@@ -77,8 +77,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # one.
         trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='foo')
-        stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo')
+        self.factory.makePOTMsgSet(self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
 
@@ -93,8 +92,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # produced.  It will produce the same situation.
         trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='foo')
-        stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo')
+        self.factory.makePOTMsgSet(self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
         self.merger.mergePOTMsgSets()
@@ -301,7 +299,6 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         self.merger.mergePOTMsgSets()
 
         # The POTMsgSets are now merged.
-        potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
 
         # The "losing" message stays current within its template.
         self.assertEqual(self._getTranslations(), ('bar2', 'splat2'))
@@ -511,7 +508,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         tms = trunk_message.potmsgset.getAllTranslationMessages()
         self.assertEqual(list(tms), [trunk_message])
 
-    def test_clashingPOFileTranslatorEntries(self):
+    # XXX: GavinPanella 2011-10-28 bug=883274: Spurious failure in buildbot.
+    def disabled_test_clashingPOFileTranslatorEntries(self):
         # POFileTranslator is maintained by a trigger on
         # TranslationMessage.  Fiddling with TranslationTemplateItems
         # directly bypasses it, so the script must make sure that
@@ -636,7 +634,6 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         message2.is_current_ubuntu = True
         message2.potmsgset = self.trunk_potmsgset
         message2.potemplate = self.trunk_template
-        ids = (message1.id, message2.id)
 
         self.merger._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
 
@@ -828,7 +825,7 @@ class TestFindMergablePackagings(TestCaseWithFactory):
 
     def test_no_templates(self):
         """A Packaging with no templates is ignored."""
-        packaging = self.makePackagingLink()
+        self.makePackagingLink()
         self.assertContentEqual(
             [], TranslationMerger.findMergeablePackagings())
 

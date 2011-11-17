@@ -1,4 +1,5 @@
-= OrderingCheck =
+OrderingCheck
+=============
 
 Often when you iterate over a sequence of items, you assume that they're
 in some particular order.  If you're worried that they might not be in
@@ -22,10 +23,11 @@ functions.
     ...     checker.check(number)
 
 
-== Sorting criteria ==
+Sorting criteria
+----------------
 
-Like the built-in Python ordering functions, you can also use a
-comparison function instead of a key function and/or reverse the order.
+The OrderingCheck accepts all the same sorting options (as keyword args)
+as Python's built-in sorting functions.
 
     >>> def sort_cmp(left_item, right_item):
     ...     return left_item - right_item
@@ -35,7 +37,8 @@ comparison function instead of a key function and/or reverse the order.
     ...     checker.check(number)
 
 
-== Unexpected values ==
+Unexpected values
+-----------------
 
 If any item is out of sequence, the OrderingCheck raises an assertion
 error.
@@ -48,7 +51,8 @@ error.
     AssertionError: Unexpected ordering at item 1: 0 should come before 1.
 
 
-== Edge cases ==
+Edge cases
+----------
 
 It is safe to use the None value.  Python places it below any other
 integer.
@@ -66,10 +70,11 @@ Values may also repeat, as long as the ordering is deterministic.
     >>> checker.check(2)
 
 
-== Customization ==
+Customization
+-------------
 
-If raising an assertion error is not the right thing to do when an
-incorrect ordering is seen, override the "fail" method.
+If raising an assertion error is not the response you want for a bad
+ordering, override the "fail" method.
 
     >>> def alternative_fail(item):
     ...     """Don't raise an error, just print a message."""
@@ -84,10 +89,11 @@ incorrect ordering is seen, override the "fail" method.
     >>> checker.check(8)
     Item 8 was out of sequence.
 
-The failure handler allowed execution to continue despite the unexpected
-value.  The ordering check continues on the assumption that it was an
-acceptable value after all, and takes it as the comparison base for the
-next value.
+Because this custom failure handler did not raise an error, execution
+continued despite the unexpected values.
+
+Since no exception was raised, the OrderingCheck still accepted that
+last value as a comparison base for the next one.
 
     >>> checker.check(9)
 

@@ -59,7 +59,7 @@
     -webkit-border-radius: 5px 5px 0 0;
     -khtml-border-radius: 5px 5px 0 0;
     border-radius: 5px 5px 0 0;
-    height:2em;
+    height: 2em;
     }
 .footer .lp-arcana img {
     vertical-align: middle;
@@ -137,6 +137,18 @@ body.private {
 body.feature-flag-bugs-private-notification-enabled.private {
     background-image: none;
     }
+body.private .private-disallow {
+    /* We want to disable/hide some actions on private artifacts */
+    display: none
+    }
+.private-only {
+    /* We want to only show some items on private artifacts */
+    display: none;
+    }
+body.private .private-only {
+    /* We want to only show some items on private artifacts */
+    display: block;
+    }
 * html body {
     /* stops floats dropping in IE 5.5/6 */
     word-wrap: break-word;
@@ -194,7 +206,7 @@ pre.wrap {
 div.left, div.right {
     width: 50%;
     }
-div.left, .cves{
+div.left, .cves {
     clear: both;
     float: left;
     }
@@ -332,11 +344,11 @@ dl.faq dd {
     padding-left: 1em;
     }
 ol {
-   margin-left: 1.8em;
+    margin-left: 1.8em;
     }
 ol li {
-   list-style: decimal outside;
-   }
+    list-style: decimal outside;
+    }
 li {
     padding-bottom: .3em;
     }
@@ -364,7 +376,7 @@ ul.mail, li.mail {
 ul.meeting, li.meeting {
     list-style-image: url(/@@/meeting);
     }
-ul.rss, li.rss  {
+ul.rss, li.rss {
     list-style-image: url(/@@/rss);
     }
 ul.translation, li.translation {
@@ -596,7 +608,7 @@ table.cozy-listing td {
     border-style: dotted none none none;
     }
 table.sortable a.sortheader {
-    color:#666;
+    color: #666;
     font-weight: bold;
     text-decoration: none;
     display: block;
@@ -791,7 +803,7 @@ input[type='image'] {
     vertical-align: middle;
     }
 input {
-    visibility:inherit;
+    visibility: inherit;
     }
 input[type=radio] {
     margin-left: 1em;
@@ -805,7 +817,7 @@ textarea {
     max-width: 60em;
     }
 button {
-    padding:0;
+    padding: 0;
     }
 button.overlay-close-button {
     float: right;
@@ -1009,7 +1021,31 @@ h1 .yui3-ieditor-errors {
     text-decoration: underline;
     cursor: pointer;
     }
-
+.yui3-buglisting-config-util a {
+    position: relative;
+    top: 3px;
+    left: 4px;
+    }
+.yui3-baseconfigutil a {
+    cursor: pointer;
+    }
+.yui3-buglisting-config-util-overlay a.close-button {
+    visibility: inherit;
+    }
+.yui3-buglisting-config-util-overlay .buglisting-opts {
+    position: relative;
+    left: -110px;
+    }
+.yui3-buglisting-config-util-overlay .update-buglisting {
+    position: relative;
+    left: -240px;
+    }
+.yui3-buglisting-config-util-overlay .reset-buglisting {
+    position: relative;
+    top: 20px;
+    left: 75px;
+    cursor: pointer;
+    }
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
@@ -1078,7 +1114,7 @@ table.form .error {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
     padding: 5px 5px 5px 5px;
-    width:44em;
+    width: 44em;
     }
 .sml-informational::before {
     content: url('/@@/info');
@@ -1127,7 +1163,7 @@ table.form .error {
    These appear to be 3.0 specific.
 */
 div.see-all {
-    text-align:right;
+    text-align: right;
     }
 span.nolink {
     font-weight: bold;
@@ -1145,11 +1181,11 @@ span.see-all {
     display: none;
     }
 .invisible-link {
-    display:none;
+    display: none;
     }
 .invisible {
-    left:-9999em;
-    display:block;
+    left: -9999em;
+    display: block;
     }
 .transparent {
   opacity: 0;
@@ -1207,7 +1243,6 @@ div.beta {
 div.beta img {
     height: 10px;
     }
-
 
 /* =========================
    Universal
@@ -1292,7 +1327,7 @@ div.watermark-apps-portlet span img {
     clear: none;
     }
 .watermark-apps-portlet li {
-    display:inline;
+    display: inline;
     list-style-type: none;
     }
 .watermark-apps-portlet li a, .watermark-apps-portlet li span {
@@ -1343,7 +1378,7 @@ div.watermark-apps-portlet span img {
     font-size: 10px;
     }
 .breadcrumbs li {
-    display:inline;
+    display: inline;
     padding: 0;
     }
 .breadcrumbs li a {
@@ -1575,9 +1610,9 @@ span.help {
     border: 1px solid #ddd;
     }
 .lowlight {
-  opacity: .5;
-  filter: alpha(opacity=50);
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+    opacity: .5;
+    filter: alpha(opacity=50);
+    -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
 
@@ -1708,6 +1743,31 @@ span.help {
 .importanceUNDECIDED, .importanceUNDECIDED a {
     color: #999;
     }
+#client-listing .importanceCRITICAL, #client-listing .importanceCRITICAL a {
+    background: red;
+    color: white;
+    }
+#client-listing .importanceHIGH, #client-listing .importanceHIGH a {
+    background:#f60;
+    color: white;
+    }
+#client-listing .importanceMEDIUM, #client-listing .importanceMEDIUM a {
+    background: green;
+    color: white;
+    }
+#client-listing .importanceLOW, #client-listing .importanceLOW a {
+    background: black;
+    color: white;
+    }
+#client-listing .importanceWISHLIST, #client-listing .importanceWISHLIST a {
+    background: blue;
+    color: white;
+    }
+#client-listing .importanceUNDECIDED, #client-listing .importanceUNDECIDED a {
+    background: #999;
+    color: white;
+    }
+
 .status :link, .importance :link {
     text-decoration: none;
     }
@@ -1871,6 +1931,7 @@ a.unofficial-tag {
 
 .discreet, .lesser, .duplicate-details {
     font-size: 10px;
+    clear: left;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
@@ -2064,6 +2125,37 @@ body.global-notification-visible .login-logout {
     padding: 0;
     }
 
+/* ===========
+   Beta banner
+*/
+.beta-banner {
+    position: fixed;
+    z-index: 9;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #606060;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(64, 64, 64,0.9);
+    color: #fff;
+    font-size: 14px;
+    line-height: 21px;
+    }
+.beta-banner .info-link {
+    color: #4884ef;
+}
+.beta-warning {
+    padding: 4px;
+    margin-right: 8px;
+    background-color: #be0000;
+    font-weight: bold;
+    }
+.beta-feature {
+    font-weight: bold;
+    }
+
 
 /*
  * YOU HAVE REACHED THE END OF THIS FILE. IF YOU SEE ANYTHING BELOW SPRITES
@@ -2101,7 +2193,7 @@ tr.bug-branch-summary td.first {
 ul.latest-ppa-updates li {
     padding: 3px;
     background-repeat: no-repeat;
-    background-position:right center;
+    background-position: right center;
     }
 table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
@@ -2178,7 +2270,7 @@ form.translations div.fields {
 form.translations div.actions {
     padding: 1em;
     text-align: left;
-    clear:both;
+    clear: both;
     }
 form.translations input {
     padding-left: 0.5em;
@@ -2204,7 +2296,7 @@ form.translations .listbox label {
  *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
 form.translations div.alignment .content {
-    float:left;
+    float: left;
     }
 form.translations div.alignment .selector {
     margin-right: 0.5em;
@@ -2245,10 +2337,10 @@ div.translations-legend {
     padding-bottom: 1em;
     }
 table.translation-stats td {
-    text-align:center;
+    text-align: center;
     }
 table.translation-stats td.template-name {
-    text-align:left;
+    text-align: left;
     }
 table.translation-stats tfoot td,
 table.translation-stats tfoot th {
@@ -2261,10 +2353,10 @@ table.translation-stats tfoot th {
     font-weight: bold;
     }
 table.translation-stats tfoot th {
-    text-align:left;
+    text-align: left;
     }
 table.translation-stats tfoot td {
-    text-align:center;
+    text-align: center;
     }
 
 /* Translations help links.

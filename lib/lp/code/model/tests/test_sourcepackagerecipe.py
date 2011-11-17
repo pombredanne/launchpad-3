@@ -12,6 +12,7 @@ from datetime import (
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
+from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
 import transaction
@@ -20,7 +21,6 @@ from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
@@ -40,6 +40,7 @@ from lp.code.errors import (
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
+    ISourcePackageRecipeView,
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -76,6 +77,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -91,6 +93,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
         recipe = self.factory.makeSourcePackageRecipe()
         verifyObject(ISourcePackageRecipe, recipe)
+
+    def test_avoids_problematic_snapshots(self):
+        problematic_properties = [
+            'builds',
+            'completed_builds',
+            'pending_builds',
+            ]
+        self.assertThat(
+            self.factory.makeSourcePackageRecipe(),
+            DoesNotSnapshot(problematic_properties, ISourcePackageRecipeView))
 
     def makeRecipeComponents(self, branches=()):
         """Return a dict of values that can be used to make a recipe.

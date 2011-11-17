@@ -194,6 +194,7 @@
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
@@ -235,6 +236,9 @@
                     getConjoinedMaster
                     findSimilarBugs
                     getContributorInfo"/>
+            <require
+                permission="launchpad.Delete"
+                interface="lp.bugs.interfaces.bugtask.IBugTaskDelete"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -814,6 +818,7 @@
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
+                    other_users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
@@ -1076,6 +1081,9 @@
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>
+    <subscriber
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="lp.bugs.subscribers.bugactivity.notify_bugtask_deleted"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_created"/>

@@ -6,6 +6,29 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
+-- AccessPolicy
+
+COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage a project or distribution\'s artifacts.';
+COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Private, Security, etc.';
+
+-- AccessPolicyArtifact
+
+COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
+COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
+
+-- AccessPolicyGrant
+
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
+
 -- Announcement
 
 COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';
@@ -823,7 +846,6 @@ of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
 COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
 COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
-COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
 COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line number where this message set was extracted from.';
@@ -2391,15 +2413,12 @@ COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let 
 COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
 COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
 
-
 -- SuggestivePOTemplate
 COMMENT ON TABLE SuggestivePOTemplate IS
 'Cache of POTemplates that can provide external translation suggestions.';
-
 
 -- OpenIdIdentifier
 COMMENT ON TABLE OpenIdIdentifier IS
 'OpenId Identifiers that can be used to log into an Account.';
 COMMENT ON COLUMN OpenIdIdentifier.identifier IS
 'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
-

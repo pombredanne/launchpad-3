@@ -743,12 +743,6 @@ But it doesn't include merged accounts:
 ValidPersonOrTeam
 .................
 
-To use the new sorting functionality, we need to turn on the feature flag.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 All 'valid' persons or teams. This is currently defined as people with a
 password, a preferred email address and not merged (Person.merged is
 None).  It also includes all public teams and private teams the user has
@@ -958,9 +952,6 @@ Search for names with '%' and '?' is supported.
     ...     print person.name
     symbolic
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
 ValidOwner
 ..........
 
@@ -975,7 +966,7 @@ All valid persons and teams are also valid owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them. There's also the ircperson
+search for 'team' will give us some of them. There's also the ircperson
 created earlier with an icr nickname of 'team':
 
     >>> sorted(person.name for person in vocab.search('team'))
@@ -984,6 +975,28 @@ created earlier with an icr nickname of 'team':
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
+ValidPillarOwner
+..........
+
+Valid persons and closed teams are valid pillar owners.
+
+    >>> login(ANONYMOUS)
+    >>> vocab = get_naked_vocab(None, "ValidPillarOwner")
+    >>> vocab.step_title
+    'Search for a restricted team, a moderated team, or a person'
+
+    >>> list(vocab.search(None))
+    []
+
+Almost all teams have the word 'team' as part of their names, so a
+search for 'team' will give us some of them. Only restricted or moderated
+teams will be returned in the search results. There's also the ircperson
+created earlier with an icr nickname of 'team':
+
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'hwdb-team', u'ircperson', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam',
+     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
 
 ValidTeam
 .........
@@ -1148,8 +1161,8 @@ heterogeneous.
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
+    Ubuntu Linux - class Distribution
+    Ubuntu Test - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1180,7 +1193,7 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Project) - class Product
+    Tomcat - class Product
 
     >>> tomcat = product_set.getByName('tomcat')
     >>> tomcat in vocab
@@ -1215,8 +1228,8 @@ is heterogeneous.
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
+    Ubuntu Linux - class Distribution
+    Ubuntu Test - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1266,12 +1279,12 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Apache (Project Group) - class ProjectGroup
+    Apache - class ProjectGroup
 
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Project) - class Product
+    Tomcat - class Product
 
 
 FeaturedProjectVocabulary
@@ -1289,15 +1302,15 @@ _clauseTables).
 
     >>> for term in featured_project_vocabulary:
     ...     print term.token, term.value.displayname, term.title
-    applets         Gnome Applets        The Gnome Panel Applets (Project)
-    bazaar          Bazaar               Bazaar (Project)
-    firefox         Mozilla Firefox      Mozilla Firefox (Project)
-    gentoo          Gentoo               The Gentoo Linux (Distribution)
-    gnome           GNOME                The GNOME Project (Project Group)
-    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Project)
-    mozilla The     Mozilla Project      The Mozilla Project (Project Group)
-    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Project)
-    ubuntu          Ubuntu               Ubuntu Linux (Distribution)
+    applets         Gnome Applets        The Gnome Panel Applets
+    bazaar          Bazaar               Bazaar
+    firefox         Mozilla Firefox      Mozilla Firefox
+    gentoo          Gentoo               The Gentoo Linux
+    gnome           GNOME                The GNOME Project
+    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator
+    mozilla The     Mozilla Project      The Mozilla Project
+    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird
+    ubuntu          Ubuntu               Ubuntu Linux
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary

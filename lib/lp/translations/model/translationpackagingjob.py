@@ -26,9 +26,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.services.job.interfaces.job import (
-    IRunnableJob,
-    )
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
@@ -94,7 +92,7 @@ class TranslationMergeJob(TranslationPackagingJob):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
         if not self.distroseries.distribution.full_functionality:
-            logger.warning(
+            logger.info(
                 'Skipping merge for unsupported distroseries "%s".' %
                 self.distroseries.displayname)
             return

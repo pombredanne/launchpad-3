@@ -37,7 +37,9 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
+    'validate_person_or_closed_team',
     'validate_public_person',
+    'validate_subscription_policy',
     ]
 
 from lazr.enum import (
@@ -119,6 +121,7 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
+    OpenTeamLinkageError,
     PrivatePersonLinkageError,
     TeamSubscriptionPolicyError,
     )
@@ -144,6 +147,7 @@ from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
+    is_public_person_or_closed_team,
     is_public_person,
     LogoImageUpload,
     MugshotImageUpload,
@@ -153,7 +157,6 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.soyuz.enums import ArchiveStatus
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -163,7 +166,8 @@ PRIVATE_TEAM_PREFIX = 'private-'
 
 
 @block_implicit_flushes
-def validate_person_common(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func,
+                           error_class=PrivatePersonLinkageError):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -174,7 +178,7 @@ def validate_person_common(obj, attr, value, validate_func):
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not validate_func(person):
-        raise PrivatePersonLinkageError(
+        raise error_class(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
@@ -197,6 +201,35 @@ def validate_public_person(obj, attr, value):
         return is_public_person(person)
 
     return validate_person_common(obj, attr, value, validate)
+
+
+def validate_person_or_closed_team(obj, attr, value):
+
+    def validate(person):
+        return is_public_person_or_closed_team(person)
+
+    return validate_person_common(
+        obj, attr, value, validate, error_class=OpenTeamLinkageError)
+
+
+def validate_subscription_policy(obj, attr, value):
+    """Validate the team subscription_policy."""
+    if value is None:
+        return None
+
+    # If we are just creating a new team, it can have any subscription policy.
+    if getattr(obj, '_SO_creating', True):
+        return value
+
+    team = obj
+    existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
+    if value == existing_subscription_policy:
+        return value
+    if value in OPEN_TEAM_POLICY:
+        team.checkOpenSubscriptionPolicyAllowed(policy=value)
+    if value in CLOSED_TEAM_POLICY:
+        team.checkClosedSubscriptionPolicyAllowed(policy=value)
+    return value
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -522,12 +555,16 @@ class PersonNameField(BlacklistableContentNameField):
 
 
 def team_subscription_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy
+    """Can the team can change its subscription policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
     cannot be members of MODERATED or RESTRICTED teams. OPEN teams
     cannot have PPAs. Changes from between OPEN and the two closed states
     can be blocked by team membership and team artifacts.
+
+    We only perform the check if a subscription policy is transitioning from
+    open->closed or visa versa. So if a team already has a closed subscription
+    policy, it is always allowed to transition to another closed policy.
 
     :param team: The team to change.
     :param policy: The TeamSubsciptionPolicy to change to.
@@ -537,30 +574,12 @@ def team_subscription_policy_can_transition(team, policy):
     if team is None or policy == team.subscriptionpolicy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif policy in OPEN_TEAM_POLICY:
-        # The team can be open if its super teams are open.
-        for team in team.super_teams:
-            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its super teams are not open." % policy)
-        # The team can be open if it has PPAs.
-        for ppa in team.ppas:
-            if ppa.status != ArchiveStatus.DELETED:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because it "
-                    "has one or more active PPAs." % policy)
-    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
-        # The team can become MODERATED or RESTRICTED if its member teams
-        # are not OPEN.
-        for member in team.activemembers:
-            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its member teams are Open." % policy)
-    else:
-        # The policy change is between MODERATED and RESTRICTED.
-        pass
+    elif (policy in OPEN_TEAM_POLICY
+          and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
+        team.checkOpenSubscriptionPolicyAllowed(policy)
+    elif (policy in CLOSED_TEAM_POLICY
+          and team.subscriptionpolicy in OPEN_TEAM_POLICY):
+        team.checkClosedSubscriptionPolicyAllowed(policy)
     return True
 
 
@@ -982,6 +1001,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     administrated_teams = Attribute(
         u"the teams that this person/team is an administrator of.")
 
+    def anyone_can_join():
+        """Quick check as to whether a team allows anyone to join."""
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""
@@ -1163,6 +1185,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :param match_name: string optional project name to screen the results.
         """
+
+    def isAnyPillarOwner():
+        """Is this person the owner of any pillar?"""
+
+    def isAnySecurityContact():
+        """Is this person the security contact of any pillar?"""
 
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
@@ -1432,6 +1460,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :return: a text string of the reason, or None if the rename is
         allowed.
+        """
+
+    def canCreatePPA():
+        """Check if a person or team can create a PPA.
+
+        :return: a boolean.
         """
 
 
@@ -1933,6 +1967,45 @@ class ITeamPublic(Interface):
     defaultrenewedexpirationdate = Attribute(
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
+
+    def checkOpenSubscriptionPolicyAllowed(policy='open'):
+        """ Check whether this team's subscription policy can be open.
+
+        An open subscription policy is OPEN or DELEGATED.
+        A closed subscription policy is MODERATED or RESTRICTED.
+        An closed subscription policy is required when:
+        - any of the team's super teams are closed.
+        - the team has any active PPAs
+        - it is subscribed or assigned to any private bugs
+        - it owns or is the security contact for any pillars
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when an open policy is not allowed. Sometimes though, the caller
+            just wants to know if any open policy is allowed without having a
+            particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be open.
+        """
+
+    def checkClosedSubscriptionPolicyAllowed(policy='closed'):
+        """ Return true if this team's subscription policy must be open.
+
+        An open subscription policy is OPEN or DELEGATED.
+        A closed subscription policy is MODERATED or RESTRICTED.
+        An open subscription policy is required when:
+        - any of the team's sub (member) teams are open.
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when a closed policy is not allowed. Sometimes though, the caller
+            just wants to know if any closed policy is allowed without having
+            a particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be closed.
+        """
 
 
 class ITeam(IPerson, ITeamPublic):

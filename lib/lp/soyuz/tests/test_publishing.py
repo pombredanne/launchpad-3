@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -701,9 +700,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -1458,17 +1455,55 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
 
 
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version=version, architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version=version, build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version=version, build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version=version, build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
+        return (
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):

@@ -1634,6 +1634,12 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def label(self):
         return self.getSearchPageHeading()
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return ("in %s related to %s" %
+                (self.current_package.displayname, self.context.displayname))
+
 
 class RelevantMilestonesMixin:
     """Mixin to narrow the milestone list to only relevant milestones."""
@@ -1694,11 +1700,16 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
             assignee_params, subscriber_params, owner_params,
             commenter_params, prejoins=prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "related to %s" % self.context.displayname
+
     def getSearchPageHeading(self):
-        return "Bugs related to %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
-        return "Search bugs related to %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
@@ -1745,13 +1756,18 @@ class PersonAffectingBugTaskSearchListingView(
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "affecting %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs affecting %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs affecting %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1799,13 +1815,18 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "assigned to %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs assigned to %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs assigned to %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1840,13 +1861,18 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "commented on by %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs commented on by %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs commented on by %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1884,13 +1910,18 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "reported by %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs reported by %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs reported by %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1938,9 +1969,14 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the team subscribed bugs portlet be shown?"""
         return True
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "%s is subscribed to" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""

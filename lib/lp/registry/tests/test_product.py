@@ -6,10 +6,16 @@ __metaclass__ = type
 from cStringIO import StringIO
 import datetime
 
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
+from testtools.matchers import MatchesAll
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -18,11 +24,26 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.product import (
     IProduct,
     License,
+    )
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -39,7 +60,14 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    Provides,
+    )
 from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes,
+    )
 
 
 class TestProduct(TestCaseWithFactory):
@@ -51,6 +79,26 @@ class TestProduct(TestCaseWithFactory):
         # Products are really called Projects
         product = self.factory.makeProduct()
         self.assertEqual("Project", product.pillar_category)
+
+    def test_implements_interfaces(self):
+        # Product fully implements its interfaces.
+        product = removeSecurityProxy(self.factory.makeProduct())
+        expected_interfaces = [
+            IProduct,
+            IBugSummaryDimension,
+            IFAQTarget,
+            IHasBugHeat,
+            IHasBugSupervisor,
+            IHasCustomLanguageCodes,
+            IHasIcon,
+            IHasLogo,
+            IHasMugshot,
+            IHasOOPSReferences,
+            ILaunchpadUsage,
+            IServiceUsage,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(product, provides_all)
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -186,6 +234,34 @@ class TestProduct(TestCaseWithFactory):
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
 
+    def test_owner_cannot_be_open_team(self):
+        """Product owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Product owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(owner=closed_team)
+
+    def test_security_contact_cannot_be_open_team(self):
+        """Product security contacts cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                security_contact=open_team)
+
+    def test_security_contact_can_be_closed_team(self):
+        """Product security contacts can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(security_contact=closed_team)
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
@@ -306,29 +382,30 @@ class ProductAttributeCacheTestCase(TestCase):
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
-    """A TestCase for product snapshots."""
+    """Test product snapshots.
 
-    layer = DatabaseFunctionalLayer
+    Some attributes of a product should not be included in snapshots,
+    typically because they are either too costly to fetch unless there's
+    a real need, or because they get too big and trigger a shortlist
+    overflow error.
+
+    To stop an attribute from being snapshotted, wrap its declaration in
+    the interface in `doNotSnapshot`.
+    """
+
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
         self.product = self.factory.makeProduct(name="shamwow")
 
-    def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
-
-        Wrap an export with 'doNotSnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(self.product, providing=IProduct)
+    def test_excluded_from_snapshot(self):
         omitted = [
             'series',
+            'recipes',
             'releases',
             ]
-        for attribute in omitted:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "Snapshot should not include %s." % attribute)
+        self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):
@@ -401,3 +478,35 @@ class TestWebService(WebServiceTestCase):
         ws_group = self.wsObject(group)
         ws_product.translationgroup = ws_group
         ws_product.lp_save()
+
+    def test_oops_references_matching_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        question = self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = question.product
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid.upper()],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

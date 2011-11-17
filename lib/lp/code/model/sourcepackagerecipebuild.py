@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -15,7 +15,6 @@ from datetime import (
     timedelta,
     )
 import logging
-import sys
 
 from psycopg2 import ProgrammingError
 from pytz import utc
@@ -24,10 +23,11 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
-from zope.component import (
-    getUtility,
+from storm.store import (
+    EmptyResultSet,
+    Store,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -39,7 +39,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -67,9 +66,9 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
+from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
-from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -99,9 +98,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     @property
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
-        return Store.of(self).find(BinaryPackageBuild,
+        return Store.of(self).find(
+            BinaryPackageBuild,
             BinaryPackageBuild.source_package_release ==
-            SourcePackageRelease.id,
+                SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build == self.id)
 
     @property
@@ -228,7 +228,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     # disabled, security, wrong pocket etc
                     logger.debug(
                         ' - daily build failed for %s: %s',
-                        series_name, str(e))
+                        series_name, repr(e))
                 except BuildNotAllowedForDistro:
                     logger.debug(
                         ' - cannot build against %s.' % series_name)
@@ -236,8 +236,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     raise
                 except:
                     logger.exception(' - problem with %s', series_name)
-                    info = sys.exc_info()
-                    errorlog.globalErrorUtility.raising(info)
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
@@ -283,6 +281,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return Store.of(build_farm_job).find(cls,
             cls.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == build_farm_job.id).one()
+
+    @classmethod
+    def getByBuildFarmJobs(cls, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+        return Store.of(build_farm_jobs[0]).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):

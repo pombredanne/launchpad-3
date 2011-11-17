@@ -39,6 +39,7 @@ At the top level we provide a collection of bugs.
     messages_collection_link: u'http://.../bugs/11/messages'
     name: None
     number_of_duplicates: 0
+    other_users_affected_count_with_dupes: 0
     owner_link: u'http://.../~name16'
     private: False
     resource_type_link: u'http://.../#bug'

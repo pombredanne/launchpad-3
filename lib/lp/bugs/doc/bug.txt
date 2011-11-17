@@ -726,6 +726,97 @@ or oldest bugtask.
     >>> print firefox_bug.default_bugtask.bugtargetdisplayname
     Mozilla Firefox
 
+It's not always possible to add another bug task to a bug.
+Private bugs are only allowed to affect a single project or distribution.
+
+    >>> params = CreateBugParams(
+    ...     title="a test private bug",
+    ...     comment="a description of the bug",
+    ...     owner=current_user())
+    >>> private_bug = firefox.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
+    True
+
+    >>> params = CreateBugParams(
+    ...     title="a test public bug",
+    ...     comment="a description of the bug",
+    ...     owner=current_user())
+    >>> public_bug = firefox.createBug(params)
+
+We can always add any new bug task to a public bug.
+
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> public_bug.addTask(owner=foobar, target=tomcat)
+    <BugTask for bug...
+
+    >>> target = tomcat.getSeries('trunk')
+    >>> public_bug.addTask(owner=foobar, target=target)
+    <BugTask for bug...
+
+If we try and add an invalid bug task to a private bug we get an exception.
+
+    >>> private_bug.addTask(owner=foobar, target=tomcat)
+    Traceback (most recent call last):
+    ...
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
+
+    >>> private_bug.addTask(owner=foobar, target=ubuntu)
+    Traceback (most recent call last):
+    ...
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
+
+We can add a new product series task so long as it's for the same product as
+is already targeted.
+
+    >>> target = firefox.getSeries('1.0')
+    >>> private_bug.addTask(owner=foobar, target=target)
+    <BugTask for bug...
+
+    >>> target = tomcat.getSeries('trunk')
+    >>> private_bug.addTask(owner=foobar, target=target)
+    Traceback (most recent call last):
+    ...
+    IllegalTarget: This private bug already affects Mozilla Firefox.
+    Private bugs cannot affect multiple projects.
+
+Now we create a bug on a distribution.
+
+    >>> private_bug = ubuntu.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
+    True
+
+We can add a new distro series task so long as it's for the same distro as
+is already targeted.
+
+    >>> private_bug.addTask(owner=foobar, target=warty)
+    <BugTask for bug...
+
+We can also add an allowed distro series source package.
+
+    >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
+    <BugTask for bug...
+
+We cannot add distro series or source package tasks for different distros.
+
+    >>> private_bug = tubuntu.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
+    True
+
+    >>> private_bug.addTask(owner=foobar, target=warty)
+    Traceback (most recent call last):
+    ...
+    IllegalTarget: This private bug already affects Tubuntu.
+    Private bugs cannot affect multiple projects.
+
+    >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
+    Traceback (most recent call last):
+    ...
+    IllegalTarget: This private bug already affects Tubuntu.
+    Private bugs cannot affect multiple projects.
+
+
 Changing bug visibility.
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)

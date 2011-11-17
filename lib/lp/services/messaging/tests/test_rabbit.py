@@ -9,7 +9,6 @@ from functools import partial
 from itertools import count
 import thread
 
-from amqplib import client_0_8 as amqp
 from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
@@ -25,7 +24,6 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
-    MessagingException,
     MessagingUnavailable,
     QueueEmpty,
     QueueNotFound,
@@ -41,6 +39,7 @@ from lp.services.messaging.rabbit import (
     unreliable_session as global_unreliable_session,
     )
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.matchers import Provides
 
@@ -199,41 +198,45 @@ class TestRabbitSession(RabbitTestCase):
 class TestRabbitUnreliableSession(TestRabbitSession):
 
     session_factory = RabbitUnreliableSession
+    layer = RabbitMQLayer
 
-    def raise_AMQPException(self):
-        raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
+    def setUp(self):
+        super(TestRabbitUnreliableSession, self).setUp()
+        self.prev_oops = self.getOops()
 
-    def test_finish_suppresses_AMQPException(self):
+    def getOops(self):
+        try:
+            self.oops_capture.sync()
+            return self.oopses[-1]
+        except IndexError:
+            return None
+
+    def assertNoOops(self):
+        oops_report = self.getOops()
+        self.assertEqual(repr(self.prev_oops), repr(oops_report))
+
+    def assertOops(self, text_in_oops):
+        oops_report = self.getOops()
+        self.assertNotEqual(
+            repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
+        self.assertIn(text_in_oops, str(oops_report))
+
+    def _test_finish_suppresses_exception(self, exception):
+        # Simple helper to test that the given exception is suppressed
+        # when raised by finish().
         session = self.session_factory()
-        session.defer(self.raise_AMQPException)
-        session.finish()
-        # Look, no exceptions!
+        session.defer(FakeMethod(failure=exception))
+        session.finish()  # Look, no exceptions!
 
-    def raise_MessagingException(self):
-        raise MessagingException("Arm stuck in combine.")
+    def test_finish_suppresses_MessagingUnavailable(self):
+        self._test_finish_suppresses_exception(
+            MessagingUnavailable('Messaging borked.'))
+        self.assertNoOops()
 
-    def test_finish_suppresses_MessagingException(self):
-        session = self.session_factory()
-        session.defer(self.raise_MessagingException)
-        session.finish()
-        # Look, no exceptions!
-
-    def raise_IOError(self):
-        raise IOError("Leg eaten by cow.")
-
-    def test_finish_suppresses_IOError(self):
-        session = self.session_factory()
-        session.defer(self.raise_IOError)
-        session.finish()
-        # Look, no exceptions!
-
-    def raise_Exception(self):
-        raise Exception("That hent worked.")
-
-    def test_finish_does_not_suppress_other_errors(self):
-        session = self.session_factory()
-        session.defer(self.raise_Exception)
-        self.assertRaises(Exception, session.finish)
+    def test_finish_suppresses_other_errors_with_oopses(self):
+        exception = Exception("That hent worked.")
+        self._test_finish_suppresses_exception(exception)
+        self.assertOops(str(exception))
 
 
 class TestRabbitMessageBase(RabbitTestCase):

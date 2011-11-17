@@ -1,4 +1,4 @@
-
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -97,7 +97,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from zope.security.proxy import removeSecurityProxy
 
 
 class ForeignBranchPluginLayer(BaseLayer):
@@ -137,7 +136,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
     layer = ForeignBranchPluginLayer
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(WorkerTest, self).setUp()
         self.disable_directory_isolation()
         SafeBranchOpener.install_hook()
 

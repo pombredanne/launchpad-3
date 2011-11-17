@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import re
+import simplejson
 import unittest
 from zope.component import getUtility
 from BeautifulSoup import BeautifulSoup
@@ -69,7 +71,12 @@ class _TestResultsMixin:
             None, self.new_edit_link,
             "Expected edit_bug_mail link missing")
         # Ensure the LP.cache has been populated.
-        self.assertIn('LP.cache = {"administratedTeams": [', self.contents)
+        mo = re.search(
+            r'<script>\s*LP.cache\s*=\s*({.*?});\s*</script>', self.contents)
+        if mo is None:
+            self.fail('No JSON cache found')
+        cache = simplejson.loads(mo.group(1))
+        self.assertIn('administratedTeams', cache)
         # Ensure the call to setup the subscription is in the HTML.
         # Only check for the presence of setup's configuration step; more
         # detailed checking is needlessly brittle.

@@ -10,12 +10,17 @@ from datetime import (
 
 import pytz
 from storm.store import Store
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from twisted.trial.unittest import TestCase as TrialTestCase
-
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.testing.pages import webservice_for_person
+from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -27,7 +32,10 @@ from lp.buildmaster.tests.test_packagebuild import (
     TestHandleStatusMixin,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
@@ -39,7 +47,12 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    login,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -169,6 +182,48 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
         self.assertEquals("Somebody <somebody@ubuntu.com>",
             self.build.getUploader(MockChanges()))
+
+    def test_can_be_cancelled(self):
+        # For all states that can be cancelled, assert can_be_cancelled
+        # returns True.
+        ok_cases = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        for status in BuildStatus:
+            if status in ok_cases:
+                self.assertTrue(self.build.can_be_cancelled)
+            else:
+                self.assertFalse(self.build.can_be_cancelled)
+
+    def test_can_be_cancelled_virtuality(self):
+        # Only virtual builds can be cancelled.
+        bq = removeSecurityProxy(self.build.queueBuild())
+        bq.virtualized = True
+        self.assertTrue(self.build.can_be_cancelled)
+        bq.virtualized = False
+        self.assertFalse(self.build.can_be_cancelled)
+
+    def test_cancel_not_in_progress(self):
+        # Testing the cancel() method for a pending build should leave
+        # it in the CANCELLED state.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        build.queueBuild()
+        build.cancel()
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        self.assertIs(None, build.buildqueue_record)
+
+    def test_cancel_in_progress(self):
+        # Testing the cancel() method for a building build should leave
+        # it in the CANCELLING state.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        bq = build.queueBuild()
+        build.status = BuildStatus.BUILDING
+        build.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        self.assertEqual(bq, build.buildqueue_record)
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
@@ -374,6 +429,18 @@ class TestBuildSet(TestCaseWithFactory):
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
                 sprb.build_farm_job))
 
+    def test_getByBuildFarmJobs_works(self):
+        bpbs = [self.factory.makeBinaryPackageBuild() for i in xrange(10)]
+        self.assertContentEqual(
+            bpbs,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(
+                [bpb.build_farm_job for bpb in bpbs]))
+
+    def test_getByBuildFarmJobs_works_empty(self):
+        self.assertContentEqual(
+            [],
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs([]))
+
 
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
@@ -503,3 +570,59 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 class TestHandleStatusForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""
+
+
+class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
+    """Test cases for BinaryPackageBuild on the webservice.
+
+    NB. Note that most tests are currently in
+    lib/lp/soyuz/stories/webservice/xx-builds.txt but unit tests really
+    ought to be here instead.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBinaryPackageBuildWebservice, self).setUp()
+        self.ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.build = self.factory.makeBinaryPackageBuild(archive=self.ppa)
+        self.webservice = webservice_for_person(
+            self.ppa.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        login(ANONYMOUS)
+
+    def test_can_be_cancelled_is_exported(self):
+        # Check that the can_be_cancelled property is exported.
+        expected = self.build.can_be_cancelled
+        entry_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(
+            entry_url, api_version='devel').jsonBody()
+        self.assertEqual(expected, entry['can_be_cancelled'])
+
+    def test_cancel_is_exported(self):
+        # Check that the cancel() named op is exported.
+        build_url = api_url(self.build)
+        self.build.queueBuild()
+        logout()
+        entry = self.webservice.get(
+            build_url, api_version='devel').jsonBody()
+        response = self.webservice.named_post(
+            entry['self_link'], 'cancel', api_version='devel')
+        self.assertEqual(200, response.status)
+        entry = self.webservice.get(
+            build_url, api_version='devel').jsonBody()
+        self.assertEqual(BuildStatus.CANCELLED.title, entry['buildstate'])
+
+    def test_cancel_security(self):
+        # Check that unauthorised users cannot call cancel()
+        build_url = api_url(self.build)
+        person = self.factory.makePerson()
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        logout()
+
+        entry = webservice.get(
+            build_url, api_version='devel').jsonBody()
+        response = webservice.named_post(
+            entry['self_link'], 'cancel', api_version='devel')
+        self.assertEqual(401, response.status)

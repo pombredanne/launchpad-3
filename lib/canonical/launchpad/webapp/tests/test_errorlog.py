@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import datetime
 import httplib
-import logging
 import StringIO
 import sys
 from textwrap import dedent
@@ -16,10 +15,9 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
-from lp_sitecustomize import customize_get_converter
+import oops_amqp
 import pytz
 import testtools
-from testtools.matchers import StartsWith
 from timeline.timeline import Timeline
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal,
@@ -38,18 +36,19 @@ from canonical.launchpad.webapp.errorlog import (
     ErrorReport,
     ErrorReportingUtility,
     notify_publisher,
-    OopsLoggingHandler,
     ScriptRequest,
     )
 from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
+from canonical.testing.layers import LaunchpadLayer
 from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
+from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.utc
@@ -122,17 +121,20 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
         self.assertEqual(entry.duration, 42)
         self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT',
-                                             'Mozilla/5.0'))
-        self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
-                                             'http://localhost:9000/'))
-        self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
+        self.assertEqual(entry.req_vars[0], ['HTTP_USER_AGENT',
+                                             'Mozilla/5.0'])
+        self.assertEqual(entry.req_vars[1], ['HTTP_REFERER',
+                                             'http://localhost:9000/'])
+        self.assertEqual(entry.req_vars[2], ['name=foo', 'hello\nworld'])
         self.assertEqual(len(entry.timeline), 2)
-        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(entry.timeline[0], [1, 5, 'store_a', 'SELECT 1'])
+        self.assertEqual(entry.timeline[1], [5, 10, 'store_b', 'SELECT 2'])
 
 
 class TestErrorReportingUtility(testtools.TestCase):
+
+    # want rabbit
+    layer = LaunchpadLayer
 
     def setUp(self):
         super(TestErrorReportingUtility, self).setUp()
@@ -154,40 +156,54 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
         self.assertEqual(config.branchscanner.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
 
         # The default error section can be restored.
         utility.configure()
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
 
-        # We should have had two publishers setup:
+        # We should have had three publishers setup:
         oops_config = utility._oops_config
-        self.assertEqual(2, len(oops_config.publishers))
-        # - a datedir publisher
+        self.assertEqual(3, len(oops_config.publishers))
+        # - a rabbit publisher
+        self.assertIsInstance(oops_config.publishers[0], oops_amqp.Publisher)
+        # - a datedir publisher wrapped in a publish_new_only wrapper
         datedir_repo = utility._oops_datedir_repo
-        self.assertEqual(oops_config.publishers[0], datedir_repo.publish)
+        publisher = oops_config.publishers[1].func_closure[0].cell_contents
+        self.assertEqual(publisher, datedir_repo.publish)
         # - a notify publisher
-        self.assertEqual(oops_config.publishers[1], notify_publisher)
+        self.assertEqual(oops_config.publishers[2], notify_publisher)
 
-    def test_setOopsToken(self):
-        """Test ErrorReportingUtility.setOopsToken()."""
+    def test_multiple_raises_in_request(self):
+        """An OOPS links to the previous OOPS in the request, if any."""
         utility = ErrorReportingUtility()
-        utility.setOopsToken('foo')
-        self.assertEqual('Tfoo', utility.oops_prefix)
-        # Some scripts run multiple processes and append a string number
-        # to the prefix.
-        utility.setOopsToken('1')
-        self.assertEqual('T1', utility.oops_prefix)
+        del utility._oops_config.publishers[0]
+
+        request = TestRequestWithPrincipal()
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertFalse('last_oops' in report)
+        last_oopsid = request.oopsid
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertTrue('last_oops' in report)
+        self.assertEqual(report['last_oops'], last_oopsid)
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
@@ -598,66 +614,6 @@ class TestRequestWithPrincipal(TestRequest):
         @staticmethod
         def getLogin():
             return u'Login'
-
-
-class TestOopsLoggingHandler(testtools.TestCase):
-    """Tests for a Python logging handler that logs OOPSes."""
-
-    def assertOopsMatches(self, report, exc_type, exc_value):
-        """Assert that 'report' is an OOPS of a particular exception.
-
-        :param report: An `IErrorReport`.
-        :param exc_type: The string of an exception type.
-        :param exc_value: The string of an exception value.
-        """
-        self.assertEqual(exc_type, report['type'])
-        self.assertEqual(exc_value, report['value'])
-        self.assertThat(report['tb_text'],
-                StartsWith('Traceback (most recent call last):\n'))
-        self.assertEqual(None, report.get('topic'))
-        self.assertEqual(None, report.get('username'))
-        self.assertEqual(None, report.get('url'))
-        self.assertEqual([], report['req_vars'])
-        self.assertEqual([], report['timeline'])
-
-    def setUp(self):
-        super(TestOopsLoggingHandler, self).setUp()
-        self.logger = logging.getLogger(self.getUniqueString())
-        self.error_utility = ErrorReportingUtility()
-        self.oopses = []
-
-        def publish(report):
-            report['id'] = str(len(self.oopses))
-            self.oopses.append(report)
-            return report.get('id')
-
-        del self.error_utility._oops_config.publishers[:]
-        self.error_utility._oops_config.publishers.append(publish)
-        self.logger.addHandler(
-            OopsLoggingHandler(error_utility=self.error_utility))
-
-    def test_exception_records_oops(self):
-        # When OopsLoggingHandler is a handler for a logger, any exceptions
-        # logged will have OOPS reports generated for them.
-        error_message = self.getUniqueString()
-        try:
-            1 / 0
-        except ZeroDivisionError:
-            self.logger.exception(error_message)
-        oops_report = self.oopses[-1]
-        self.assertOopsMatches(
-            oops_report, 'ZeroDivisionError',
-            'integer division or modulo by zero')
-
-    def test_warning_does_nothing(self):
-        # Logging a warning doesn't generate an OOPS.
-        self.logger.warning("Cheeseburger")
-        self.assertEqual(0, len(self.oopses))
-
-    def test_error_does_nothing(self):
-        # Logging an error without an exception does nothing.
-        self.logger.error("Delicious ponies")
-        self.assertEqual(0, len(self.oopses))
 
 
 class TestOopsIgnoring(testtools.TestCase):

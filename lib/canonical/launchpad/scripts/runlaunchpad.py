@@ -344,6 +344,7 @@ def process_config_arguments(args):
 
 
 def start_testapp(argv=list(sys.argv)):
+    from canonical.config.fixture import ConfigUseFixture
     from canonical.testing.layers import (
         BaseLayer,
         DatabaseLayer,
@@ -359,43 +360,63 @@ def start_testapp(argv=list(sys.argv)):
         '%r does not start with "testrunner-appserver"' %
         config.instance_name)
     interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+    teardowns = []
 
     def setup():
         # This code needs to be run after other zcml setup happens in
-        # runlaunchpad, so it is passed in as a callable.
+        # runlaunchpad, so it is passed in as a callable.  We set up layers
+        # here because we need to control fixtures within this process, and
+        # because we want interactive tests to be as similar as possible to
+        # tests run in the testrunner.
+        # Note that this changes the config instance-name, with the result
+        # that the configuration of utilities may become invalidated.
+        # XXX Robert Collins, bug=883980: In short, we should derive the
+        # other services from the test runner, rather than duplicating
+        # the work of test setup within the slave appserver. That will
+        # permit reuse of the librarian, DB, rabbit etc, and
+        # correspondingly easier assertions and inspection of interactions
+        # with other services. That would mean we do not need to set up rabbit
+        # or the librarian here: the test runner would control and take care
+        # of that.
         BaseLayer.setUp()
-        if interactive_tests:
-            # The test suite runs its own RabbitMQ.  We only need this
-            # for interactive tests.  We set it up here rather than by
-            # passing it in as an argument to start_launchpad because
-            # the appserver config does not normally need/have
-            # RabbitMQ config set.
-            RabbitMQLayer.setUp()
+        teardowns.append(BaseLayer.tearDown)
+        RabbitMQLayer.setUp()
+        teardowns.append(RabbitMQLayer.tearDown)
         # We set up the database here even for the test suite because we want
         # to be able to control the database here in the subprocess.  It is
         # possible to do that when setting the database up in the parent
         # process, but it is messier.  This is simple.
         installFakeConnect()
+        teardowns.append(uninstallFakeConnect)
         DatabaseLayer.setUp()
+        teardowns.append(DatabaseLayer.tearDown)
         # The Librarian needs access to the database, so setting it up here
         # where we are setting up the database makes the most sense.
         LibrarianLayer.setUp()
+        teardowns.append(LibrarianLayer.tearDown)
+        # Switch to the appserver config.
+        fixture = ConfigUseFixture(BaseLayer.appserver_config_name)
+        fixture.setUp()
+        teardowns.append(fixture.cleanUp)
         # Interactive tests always need this.  We let functional tests use
         # a local one too because of simplicity.
         LayerProcessController.startSMTPServer()
+        teardowns.append(LayerProcessController.stopSMTPServer)
+        if interactive_tests:
+            root_url = config.appserver_root_url()
+            print '*' * 70
+            print 'In a few seconds, go to ' + root_url + '/+yuitest'
+            print '*' * 70
     try:
         start_launchpad(argv, setup)
     finally:
-        LayerProcessController.stopSMTPServer()
-        LibrarianLayer.tearDown()
-        DatabaseLayer.tearDown()
-        uninstallFakeConnect()
-        if interactive_tests:
+        teardowns.reverse()
+        for teardown in teardowns:
             try:
-                RabbitMQLayer.tearDown()
+                teardown()
             except NotImplementedError:
+                # We are in a separate process anyway.  Bah.
                 pass
-        BaseLayer.tearDown()
 
 
 def start_launchpad(argv=list(sys.argv), setup=None):

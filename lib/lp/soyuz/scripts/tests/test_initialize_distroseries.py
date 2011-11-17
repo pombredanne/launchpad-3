@@ -123,8 +123,8 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), packagesets=(), rebuild=False,
-                        distribution=None, overlays=(),
+                        arches=(), archindep_archtag=None, packagesets=(),
+                        rebuild=False, distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
             child = self.factory.makeDistroSeries(
@@ -134,8 +134,11 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         if pub_config is None:
             self.factory.makePublisherConfig(distribution=child.distribution)
         ids = InitializeDistroSeries(
-            child, [parent.id for parent in parents], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
+            child, [parent.id for parent in parents], arches=arches,
+            archindep_archtag=archindep_archtag,
+            packagesets=packagesets, rebuild=rebuild, overlays=overlays,
+            overlay_pockets=overlay_pockets,
+            overlay_components=overlay_components)
         ids.check()
         ids.initialize()
         return child
@@ -1246,6 +1249,31 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertFalse(
             ids._use_cloner(target_archive, target_archive))
 
+    def test_copied_publishings_creator_None_cloner(self):
+        # The new publishings, copied over from the parents, have their
+        # 'creator' field set to None.  This tests that behaviour when
+        # the cloner is used to perform the initialization.
+        parent, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(previous_parents=[parent])
+        self.factory.makeSourcePackagePublishingHistory(distroseries=child)
+        self._fullInitialize([parent], child=child)
+
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEqual(None, published_sources[0].creator)
+
+    def test_copied_publishings_creator_None_copier(self):
+        # The new publishings, copied over from the parents, have their
+        # 'creator' field set to None.  This tests that behaviour when
+        # the copier is used to perform the initialization.
+        parent, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(previous_parents=[parent])
+        self._fullInitialize([parent], child=child)
+
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEqual(None, published_sources[0].creator)
+
     def test__has_same_parents_as_previous_series_explicit(self):
         # IDS._has_same_parents_as_previous_series returns True if the
         # parents for the series to be initialized are the same as
@@ -1389,33 +1417,71 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # nominatedarchindep for all the parent intersect, the child's
         # nominatedarchindep is taken from the intersection of the two
         # lists.
-        parent1, unused = self.setupParent(
-            packages={}, arch_tag='i386')
-        parent2, unused = self.setupParent(
-            packages={}, arch_tag='amd64')
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
         child = self._fullInitialize(
             [parent1, parent2],
             arches=[parent2.nominatedarchindep.architecturetag])
         self.assertEqual(
-            child.nominatedarchindep.architecturetag,
-            parent2.nominatedarchindep.architecturetag)
+            parent2.nominatedarchindep.architecturetag,
+            child.nominatedarchindep.architecturetag)
 
     def test_multiple_parents_no_child_nominatedarchindep(self):
         # If the list of the selected architectures and the list of the
         # nominatedarchindep for all the parents don't intersect, an
         # error is raised because it means that the child won't have an
         # architecture to build architecture independent binaries.
-        parent1, unused = self.setupParent(
-            packages={}, arch_tag='i386')
-        self.setupDas(parent1, 'hppa', 'powerpc')
-        parent2, unused = self.setupParent(
-            packages={}, arch_tag='amd64')
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(
             child, [parent1.id, parent2.id],
-            arches=['powerpc'])
+            arches=['hppa'])
         self.assertRaisesWithContent(
             InitializationError,
             ("The distroseries has no architectures selected to "
              "build architecture independent binaries."),
+            ids.check)
+
+    def test_override_child_nominatedarchindep(self):
+        # One can use archindep_archtag to force the nominatedarchindep
+        # of the derived series.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        self.setupDas(parent1, 'amd64', 'amd64')
+        parent2, unused = self.setupParent(packages={}, arch_tag='i386')
+        child = self._fullInitialize(
+            [parent1, parent2], arches=['i386', 'hppa'],
+            archindep_archtag='hppa')
+        self.assertEqual(
+            'hppa',
+            child.nominatedarchindep.architecturetag)
+
+    def test_override_child_nominatedarchindep_with_all_arches(self):
+        # If arches is omitted from the call to initialize, all the
+        # parents' architecture are selected.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        self.setupDas(parent1, 'amd64', 'amd64')
+        parent2, unused = self.setupParent(packages={}, arch_tag='i386')
+        child = self._fullInitialize(
+            [parent1, parent2], archindep_archtag='hppa')
+        self.assertEqual(
+            'hppa',
+            child.nominatedarchindep.architecturetag)
+
+    def test_invalid_archindep_archtag(self):
+        # If the given archindep_archtag is not among the selected
+        # architectures, an error is raised.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [parent1.id, parent2.id],
+            arches=['i386', 'amd64'], archindep_archtag='hppa')
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("The selected architecture independent architecture tag is not "
+             "among the selected architectures."),
             ids.check)

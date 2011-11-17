@@ -18,6 +18,11 @@
           tal:content="view/getSeriesTargetName"
         />
       </tal:not-conjoined-task>
+        <a tal:condition="data/user_can_delete"
+           tal:attributes="
+            id string:bugtask-delete-${data/form_row_id};
+            href data/delete_link"
+           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
     </td>
     <td tal:condition="not:data/indent_task">
       <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
@@ -33,6 +38,11 @@
           Edit
         </button>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
+        <a tal:condition="data/user_can_delete"
+           tal:attributes="
+            id string:bugtask-delete-${data/form_row_id};
+            href data/delete_link"
+           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
       </span>
     </td>
 
@@ -52,15 +62,21 @@
       <div class="status-content"
            style="width: 100%; float: left"
            tal:define="status context/status">
-        <a href="+editstatus"
-           tal:attributes="class string:value status${status/name};
-                           href data/edit_link"
-           style="float: left"
-           tal:content="status/title" />
-        <a href="+editstatus" style="margin-left: 3px"
-           tal:attributes="href data/edit_link">
-          <img class="editicon" src="/@@/edit" />
-        </a>
+        <span tal:condition="not: data/user_can_edit_status"
+              style="float: left"
+              tal:attributes="class string:value status${status/name};"
+              tal:content="status/title"/>
+        <tal:edit-status tal:condition="data/user_can_edit_status">
+          <a href="+editstatus"
+             tal:attributes="class string:value status${status/name};
+                             href data/edit_link"
+             style="float: left"
+             tal:content="status/title" />
+          <a href="+editstatus" style="margin-left: 3px"
+             tal:attributes="href data/edit_link">
+            <img class="editicon" src="/@@/edit" />
+          </a>
+        </tal:edit-status>
       </div>
     </td>
 
@@ -129,6 +145,13 @@
               Unassigned
             </tal:unassigned>
           </span>
+          <a class="assignee-edit"
+             tal:condition="python: view.many_bugtasks and
+                                    view.user_can_edit_assignee"
+             href="+editstatus"
+             tal:attributes="href data/edit_link">
+            <img class="editicon" src="/@@/edit" />
+          </a>
           <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
             Edit
           </button>
@@ -160,30 +183,6 @@
 
     </tal:not-conjoined-task>
   </tr>
-  <script type="text/javascript"
-          class="bugtasks-table-row-init-script"
-          tal:condition="not:view/many_bugtasks"
-          tal:content="string:
-    LPS.use('event', 'lp.bugs.bugtask_index', 'lp.app.widgets.expander',
-            function(Y) {
-        Y.on('domready', function() {
-          Y.lp.bugs.bugtask_index.setup_bugtask_row(${view/js_config});
-
-          // Set-up the expander on the bug task summary row.
-          var icon_node = Y.one('tr#${data/row_id} a.bugtask-expander');
-          var row_node = Y.one('tr#${data/form_row_id}');
-          if (Y.Lang.isValue(row_node)) {
-            // When no row is present, this is bug task on a project with
-            // multiple per-series tasks, so we do not need to set
-            // the expander for the descriptive parent project task.
-            var content_node = row_node.one('td form');
-            var expander = new Y.lp.app.widgets.expander.Expander(
-              icon_node, row_node, { animate_node: content_node });
-            expander.setUp();
-          }
-        });
-    });
-  "/>
 
   <tal:form condition="view/displayEditForm">
     <tr
