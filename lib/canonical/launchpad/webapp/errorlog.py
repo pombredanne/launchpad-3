@@ -310,6 +310,11 @@ class ErrorReportingUtility:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
         reporter = config[section_name].oops_prefix
+        if reporter is None:
+            # Unconfigured section - make up a reporter slightly more useful
+            # than e.g 'T' or 'LPNET'
+            reporter = (config[self._default_config_section].oops_prefix +
+                '-' + section_name)
         self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
         self._oops_config.template['req_vars'] = {}
@@ -346,7 +351,11 @@ class ErrorReportingUtility:
             add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
         # analysis server, but only if we haven't already published to rabbit.
-        self._oops_datedir_repo = DateDirRepo(config[section_name].error_dir)
+        error_dir = config[section_name].error_dir
+        if error_dir is None:
+            # Inherit the base error_dir - sharing error dirs is safe.
+            error_dir = config[self._default_config_section].error_dir
+        self._oops_datedir_repo = DateDirRepo(error_dir)
         add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
         # And send everything within the zope application server (only for
         # testing).
