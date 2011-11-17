@@ -80,7 +80,6 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 from lp.services.features import (
-    currentScope,
     defaultFlagValue,
     getFeatureFlag,
     )
