@@ -1032,13 +1032,11 @@ h1 .yui3-ieditor-errors {
 .yui3-buglisting-config-util-overlay a.close-button {
     visibility: inherit;
     }
-.yui3-buglisting-config-util-overlay .buglisting-opts {
-    position: relative;
-    left: -110px;
+.yui3-buglisting-config-util-overlay form {
+    width: 80%;
     }
-.yui3-buglisting-config-util-overlay .update-buglisting {
-    position: relative;
-    left: -240px;
+.yui3-buglisting-config-util-overlay div.yui3-lazr-formoverlay-actions {
+    text-align: left;
     }
 .yui3-buglisting-config-util-overlay .reset-buglisting {
     position: relative;
