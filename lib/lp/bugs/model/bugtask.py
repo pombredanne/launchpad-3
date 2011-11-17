@@ -162,6 +162,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -3216,9 +3217,33 @@ class BugTaskSet:
                          LeftJoin(
                              BugTag,
                              BugTag.bug == Bug.id and
+                             # We want at most one tag per bug. Select the
+                             # tag that comes first in alphabetic order.
                              BugTag.id == SQL("""
                                  SELECT id FROM BugTag AS bt
                                  WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                                 """))),
+                        ]
+                    ),
+                "specification": (
+                    Specification.name,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (Specification,
+                         LeftJoin(
+                             Specification,
+                             # We want at most one specification per bug.
+                             # Select the specification that comes first
+                             # in alphabetic order.
+                             Specification.id == SQL("""
+                                 SELECT Specification.id
+                                 FROM SpecificationBug
+                                 JOIN Specification
+                                     ON SpecificationBug.specification=
+                                         Specification.id
+                                 WHERE SpecificationBug.bug=Bug.id
+                                 ORDER BY Specification.name
+                                 LIMIT 1
                                  """))),
                         ]
                     ),

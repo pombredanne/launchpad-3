@@ -650,6 +650,26 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None, orderby='-tag')
         self.assertSearchFinds(params, expected)
 
+    def test_sort_by_linked_specification(self):
+        with person_logged_in(self.owner):
+            spec_1 = self.factory.makeSpecification(
+                name='spec-1', owner=self.owner)
+            spec_1.linkBug(self.bugtasks[2].bug)
+            spec_1_1 = self.factory.makeSpecification(
+                name='spec-1-1', owner=self.owner)
+            spec_1_1.linkBug(self.bugtasks[2].bug)
+            spec_2 = self.factory.makeSpecification(
+                name='spec-2', owner=self.owner)
+            spec_2.linkBug(self.bugtasks[1].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='specification')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-specification')
+        self.assertSearchFinds(params, expected)
+
 
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
