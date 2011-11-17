@@ -41,7 +41,10 @@ from lp.registry.errors import (
     NoSuchSourcePackageName,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.person import (
+    NoSuchPerson,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
@@ -958,11 +961,22 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_anyone(self):
-        # No +junk branches are private.
+        # +junk branches are not private for individuals
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
         self.assertFalse(namespace.canBranchesBePrivate())
 
+    def test_public_team(self):
+        # +junk branches for public teams cannot be private
+        team = self.factory.makeTeam()
+        namespace = PersonalNamespace(team)
+        self.assertFalse(namespace.canBranchesBePrivate())
+
+    def test_private_team(self):
+        # +junk branches can be private for private teams
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        namespace = PersonalNamespace(team)
+        self.assertTrue(namespace.canBranchesBePrivate())
 
 class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
     """Tests for PersonalNamespace.canBranchesBePublic."""
