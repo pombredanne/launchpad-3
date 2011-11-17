@@ -2092,7 +2092,7 @@ class Bug(SQLBase):
             and not user_owns_comment):
             raise Unauthorized(
                 "User %s cannot hide or show bug comments" % user.name)
-        bug_message.message.visible = visible
+        bug_message.message.setVisible(visible)
 
     @cachedproperty
     def _known_viewers(self):
