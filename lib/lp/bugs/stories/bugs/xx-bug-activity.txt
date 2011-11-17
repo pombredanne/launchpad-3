@@ -297,3 +297,19 @@ If a target of a bug task is changed the old and new value will be shown.
     affects:
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
     --------
+
+If a bug task is deleted the pillar no longer affected will be shown.
+
+    >>> admin_browser.open("http://bugs.launchpad.dev/firefox/+bug/6")
+    >>> admin_browser.getLink(url='+distrotask').click()
+    >>> admin_browser.getControl('Distribution').value = ['ubuntu']
+    >>> admin_browser.getControl('Continue').click()
+    >>> admin_browser.open("https://bugs.launchpad.dev/ubuntu/+bug/6/+delete")
+    >>> admin_browser.getControl('Delete').click()
+    >>> print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    wrote
+    ... ago:
+    bug task deleted:
+    No longer affects ubuntu
+    --------
