@@ -20,6 +20,7 @@ __all__ = [
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
     'ISoftwareCenterAgentApplication',
+    'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -1469,8 +1470,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
 
-class IPersonViewRestricted(Interface):
-    """IPerson attributes that require launchpad.View permission."""
+class IPersonLimitedView(Interface):
+    """IPerson attributes that require launchpad.LimitedView permission."""
 
     name = exported(
         PersonNameField(
@@ -1489,6 +1490,11 @@ class IPersonViewRestricted(Interface):
         exported_as='display_name')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
+
+
+class IPersonViewRestricted(Interface):
+    """IPerson attributes that require launchpad.View permission."""
+
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
@@ -1874,9 +1880,10 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation, IRootContext):
+class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
+              IPersonEditRestricted, IPersonCommAdminWriteRestricted,
+              IPersonSpecialRestricted, IHasStanding, ISetLocation,
+              IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
