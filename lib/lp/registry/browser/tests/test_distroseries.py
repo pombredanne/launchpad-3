@@ -1497,8 +1497,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
+        self.assertIn(
+            "by %s" % (
                 dsd.source_package_release.creator.displayname,),
             normalize_whitespace(creator_cell.text_content()))
 
