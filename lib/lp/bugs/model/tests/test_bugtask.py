@@ -66,6 +66,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -678,7 +679,8 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         super(TestBugTaskPermissionsToSetAssigneeMixin, self).setUp()
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
+            owner=self.target_owner_member,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         self.regular_user = self.factory.makePerson()
 
         login_person(self.target_owner_member)

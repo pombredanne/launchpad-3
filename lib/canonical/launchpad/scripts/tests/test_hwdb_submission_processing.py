@@ -5456,7 +5456,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         error_report = self.oopses[0]
         self.assertEqual('ZeroDivisionError', error_report['type'])
         self.assertStartsWith(
-                dict(error_report['req_vars'])['error-explanation'],
+                error_report['req_vars']['error-explanation'],
                 'Exception while processing HWDB')
 
         messages = [record.getMessage() for record in self.handler.records]

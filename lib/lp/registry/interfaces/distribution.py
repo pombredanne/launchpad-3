@@ -212,8 +212,12 @@ class IDistributionPublic(
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam',
