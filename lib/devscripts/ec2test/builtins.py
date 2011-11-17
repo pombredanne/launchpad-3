@@ -80,13 +80,8 @@ machine_id_option = Option(
           'recent one with an approved owner.'))
 
 
-def _convert_instance_type(arg):
-    """Ensure that `arg` is acceptable as an instance type."""
-    return arg
-
-
 instance_type_option = Option(
-    'instance', short_name='i', type=_convert_instance_type,
+    'instance', short_name='i',
     param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
