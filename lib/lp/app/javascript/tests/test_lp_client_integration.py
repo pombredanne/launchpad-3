@@ -17,6 +17,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 
 factory = LaunchpadObjectFactory()
 
+
 @setup
 def create_user(request, data):
     data['user'] = factory.makePerson()
@@ -47,7 +48,7 @@ def create_bug_and_login(request, data):
 
 @setup
 def login_as_admin(request, data):
-    data['admin'] = factory.makeAdministrator();
+    data['admin'] = factory.makeAdministrator()
     login_as_person(data['admin'])
 
 
