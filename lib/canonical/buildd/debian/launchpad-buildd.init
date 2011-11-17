@@ -1,0 +1,98 @@
+#!/bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# launchpad-buildd
+#               This file is used to start and stop launchpad buildds
+
+### BEGIN INIT INFO
+# Provides:          launchpad_buildd
+# Required-Start:    $local_fs $network $syslog $time
+# Required-Stop:     $local_fs $network $syslog $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     false
+# Short-Description: Start/stop launchpad buildds
+### END INIT INFO
+
+set -e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DESC="launchpad build slaves"
+
+TACFILE="/usr/share/launchpad-buildd/buildd-slave.tac"
+
+PIDROOT="/var/run/launchpad-buildd"
+LOGROOT="/var/log/launchpad-buildd"
+CONFROOT="/etc/launchpad-buildd"
+
+# Gracefully exit if the package has been removed.
+test -e $TACFILE || exit 0
+
+#
+#       Function that starts a buildd slave
+#
+d_start() {
+    CONF=$1
+    PIDFILE="$PIDROOT"/"$CONF".pid
+    LOGFILE="$LOGROOT"/"$CONF".log
+    # prior to karmic, twisted didn't support --umask, and defaulted it well.
+    # we need it to be 022, not 077.
+    case $(lsb_release -sc) in
+	[a-j]*)	UMASK="";;
+	[k-z]*)	UMASK="--umask 022";;
+    esac
+    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE $UMASK"
+}
+
+#
+#       Function that stops a buildd slave
+#
+d_stop() {
+    CONF=$1
+    PIDFILE="$PIDROOT"/"$CONF".pid
+    test -r $PIDFILE && kill -TERM $(cat $PIDFILE) || true
+}
+
+CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
+
+case "$1" in
+  start)
+        echo -n "Starting $DESC:"
+        install -m 755 -o buildd -g buildd -d $PIDROOT
+
+	# Create any missing directories and chown them appropriately
+	install -d -o buildd -g buildd /home/buildd/filecache-default
+
+	for conf in $CONFS; do
+	    echo -n " $conf"
+	    d_start $conf
+	done
+        echo "."
+        ;;
+  stop)
+        echo -n "Stopping $DESC:"
+	for conf in $CONFS; do
+	    echo -n " $conf"
+	    d_stop $conf
+	done
+        echo "."
+        ;;
+  restart|force-reload)
+        #
+        #       If the "reload" option is implemented, move the "force-reload"
+        #       option to the "reload" entry above. If not, "force-reload" is
+        #       just the same as "restart".
+        #
+	$0 stop
+	sleep 1
+	$0 start
+        ;;
+  *)
+        echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

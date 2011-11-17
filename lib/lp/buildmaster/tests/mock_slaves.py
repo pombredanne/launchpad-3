@@ -33,7 +33,7 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
-from lpbuildd.tests.harness import BuilddSlaveTestSetup
+from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,

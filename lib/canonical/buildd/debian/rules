@@ -1,0 +1,96 @@
+#!/usr/bin/make -f
+#
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+export DH_OPTIONS
+
+# This is an incomplete debian rules file for making the launchpad-buildd deb
+# Only ever invoke this as debian/rules package, which will build the source
+# package in the parent directory, after copying in the files that live above
+# this directory, so that the source package is valid.
+# after that, build the source package found in the parent directory.
+
+target = debian/launchpad-buildd
+topdir = ../../..
+
+buildd = $(topdir)/lib/canonical/buildd
+
+targetshare = $(target)/usr/share/launchpad-buildd
+pytarget = $(targetshare)/canonical/buildd
+
+pyfiles = debian.py slave.py binarypackage.py utils.py __init__.py \
+    sourcepackagerecipe.py translationtemplates.py
+slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
+    scan-for-processes umount-chroot remove-build override-sources-list \
+    buildrecipe generate-translation-templates
+
+BUILDDUID=65500
+BUILDDGID=65500
+
+install: DH_OPTIONS=-plaunchpad-buildd
+install:
+	dh_testdir
+	dh_clean
+	dh_testroot
+	dh_installdirs usr/bin etc usr/share/launchpad-buildd/slavebin \
+	  usr/share/launchpad-buildd/canonical/buildd \
+	  var/run/launchpad-buildd var/log/launchpad-buildd  \
+	  etc/launchpad-buildd \
+	  usr/share/launchpad-buildd/canonical/launchpad/daemons \
+	  usr/share/doc/launchpad-buildd
+	dh_installexamples
+
+	# Do installs here
+	touch $(pytarget)/../launchpad/__init__.py
+	touch $(pytarget)/../launchpad/daemons/__init__.py
+	install -m644 buildd-slave.tac $(targetshare)/buildd-slave.tac
+	cp -r pottery $(pytarget)
+	for pyfile in $(pyfiles); do \
+	  install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
+	  done
+	for slavebin in $(slavebins); do \
+	  install -m755 ./$$slavebin $(targetshare)/slavebin/$$slavebin; \
+	done
+	install -m755 ./sbuild $(target)/usr/bin/sbuild
+	touch $(targetshare)/canonical/__init__.py
+	install -m644 template-buildd-slave.conf $(targetshare)/template-buildd-slave.conf
+	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
+	install -m644 sbuildrc $(targetshare)/sbuildrc
+	install -m644 sbuild.conf $(target)/etc/sbuild.conf
+	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
+	install -m755 check-implicit-pointer-functions $(target)/usr/bin/check-implicit-pointer-functions
+	# Okay, that's installed all the slave-related files
+
+
+binary-arch:
+	@echo No arch-specific binaries to make
+
+binary-indep: DH_OPTIONS=-plaunchpad-buildd
+binary-indep: install
+	dh_installdocs
+	dh_installchangelogs
+	dh_installinit
+	dh_installcron
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep
+
+.PHONY: binary binary-indep binary-arch install clean build
+
+clean:
+	dh_clean
+
+prepare:
+
+package: prepare
+	debuild -uc -us -S
+
+build:
+	@echo Mmm builders

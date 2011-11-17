@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from bzrlib.bzrdir import BzrDir
 
-from lpbuildd.pottery.intltool import (
+from canonical.buildd.pottery.intltool import (
     check_potfiles_in,
     ConfigFile,
     find_intltool_dirs,
