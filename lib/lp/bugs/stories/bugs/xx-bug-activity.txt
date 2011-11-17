@@ -310,5 +310,5 @@ If a bug task is deleted the pillar no longer affected will be shown.
     Foo Bar (name16)
     ... ago
     bug task deleted:
-    No longer affects ubuntu
+    no longer affects ubuntu
     --------
