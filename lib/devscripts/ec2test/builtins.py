@@ -82,8 +82,6 @@ machine_id_option = Option(
 
 def _convert_instance_type(arg):
     """Ensure that `arg` is acceptable as an instance type."""
-    if arg not in AVAILABLE_INSTANCE_TYPES:
-        raise BzrCommandError('Unknown instance type %r' % arg)
     return arg
 
 

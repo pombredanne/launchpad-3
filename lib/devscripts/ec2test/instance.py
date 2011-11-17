@@ -220,8 +220,6 @@ class EC2Instance:
         from devscripts.ec2test.credentials import EC2Credentials
 
         assert isinstance(name, EC2SessionName)
-        if instance_type not in AVAILABLE_INSTANCE_TYPES:
-            raise ValueError('unknown instance_type %s' % (instance_type,))
 
         # We call this here so that it has a chance to complain before the
         # instance is started (which can take some time).
