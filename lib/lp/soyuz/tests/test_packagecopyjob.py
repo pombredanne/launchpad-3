@@ -580,6 +580,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
 
+        # There should also be a PackageDiff generated between the new
+        # publication and the ancestry.
+        [diff] = new_publication.sourcepackagerelease.package_diffs
+        self.assertIsNot(None, diff)
+
     def test_copying_to_ppa_archive(self):
         # Packages can be copied into PPA archives.
         publisher = SoyuzTestPublisher()

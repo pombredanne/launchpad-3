@@ -15,6 +15,7 @@ __all__ = [
 
 from datetime import timedelta
 from optparse import OptionParser
+import os.path
 import time
 
 import psycopg2
@@ -30,6 +31,7 @@ from canonical.launchpad.scripts import (
     logger_options,
     )
 import replication.helpers
+import upgrade
 
 
 # Ignore connections by these users.
@@ -50,7 +52,18 @@ FRAGILE_USERS = frozenset([
     'publish_ftpmaster',
     ])
 
+# If these users have long running transactions, just kill 'em. Entries
+# added here must come with a bug number, a if part of Launchpad holds
+# open a long running transaction it is a bug we need to fix.
+BAD_USERS = frozenset([
+    'karma',  # Bug #863109
+    'rosettaadmin',  # Bug #863122
+    ])
+
 # How lagged the cluster can be before failing the preflight check.
+# If this is set too low, perfectly normal state will abort rollouts. If
+# this is set too high, then we will have unacceptable downtime as
+# replication needs to catch up before the database patches will apply.
 MAX_LAG = timedelta(seconds=60)
 
 
@@ -83,11 +96,19 @@ class DatabasePreflight:
             self.lpmain_nodes = set(
                 node for node in self.nodes
                 if node.node_id in lpmain_node_ids)
+
+            # Store a reference to the lpmain origin.
+            lpmain_master_node_id = replication.helpers.get_master_node(
+                master_con, 1).node_id
+            self.lpmain_master_node = [
+                node for node in self.lpmain_nodes
+                    if node.node_id == lpmain_master_node_id][0]
         else:
             node = replication.helpers.Node(None, None, None, True)
             node.con = master_con
             self.nodes = set([node])
             self.lpmain_nodes = self.nodes
+            self.lpmain_master_node = node
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -176,6 +197,11 @@ class DatabasePreflight:
         max_secs defines what is long running. For database rollouts,
         this will be short. Even if the transaction is benign like a
         autovacuum task, we should wait until things have settled down.
+
+        We ignore transactions held open by BAD_USERS. These are bugs
+        that need to be fixed, but we have determined that rudely aborting
+        them is fine for now and there is no need to block a rollout on
+        their behalf.
         """
         success = True
         for node in self.nodes:
@@ -190,10 +216,15 @@ class DatabasePreflight:
                     AND datname=current_database()
                 """ % max_secs)
             for datname, usename, age, current_query in cur.fetchall():
-                self.log.fatal(
-                    "%s has transaction by %s open %s",
-                    datname, usename, age)
-                success = False
+                if usename in BAD_USERS:
+                    self.log.info(
+                        "%s has transactions by %s open %s (ignoring)",
+                        datname, usename, age)
+                else:
+                    self.log.fatal(
+                        "%s has transaction by %s open %s",
+                        datname, usename, age)
+                    success = False
         if success:
             self.log.info("No long running transactions detected.")
         return success
@@ -247,6 +278,13 @@ class DatabasePreflight:
         else:
             return True
 
+    def report_patches(self):
+        """Report what patches are due to be applied from this tree."""
+        con = self.lpmain_master_node.con
+        upgrade.log = self.log
+        for patch_num, patch_file in upgrade.get_patchlist(con):
+            self.log.info("%s is pending", os.path.basename(patch_file))
+
     def check_all(self):
         """Run all checks.
 
@@ -256,6 +294,8 @@ class DatabasePreflight:
             # No point continuing - results will be bogus without access
             # to pg_stat_activity
             return False
+
+        self.report_patches()
 
         success = True
         if not self.check_replication_lag():
@@ -312,6 +352,9 @@ class KillConnectionsPreflight(DatabasePreflight):
                         self.log.fatal(
                             "Unable to kill %s [%s] on %s",
                             usename, procpid, datname)
+                    elif usename in BAD_USERS:
+                        self.log.info(
+                            "Killed %s [%s] on %s", usename, procpid, datname)
                     else:
                         self.log.warning(
                             "Killed %s [%s] on %s", usename, procpid, datname)

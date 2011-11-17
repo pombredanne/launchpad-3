@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -72,6 +72,10 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchHasPendingWrites,
+    UpdatePreviewDiffNotReady,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
@@ -328,10 +332,6 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.target_branch.bzr_identity))
 
 
-class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
-
-
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
@@ -346,6 +346,10 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
+    retry_error_types = (BranchHasPendingWrites, )
+
+    max_retries = 20
+
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
@@ -356,7 +360,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             raise UpdatePreviewDiffNotReady(
                 'The target branch has no revisions.')
         if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
+            raise BranchHasPendingWrites(
                 'The source branch has pending writes.')
 
     @staticmethod
@@ -814,7 +818,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             if IUpdatePreviewDiffJob.providedBy(derived_job):
                 try:
                     derived_job.checkReady()
-                except UpdatePreviewDiffNotReady:
+                except (UpdatePreviewDiffNotReady, BranchHasPendingWrites):
                     # If the job was created under 15 minutes ago wait a bit.
                     minutes = (
                         config.codehosting.update_preview_diff_ready_timeout)
