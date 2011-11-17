@@ -130,6 +130,7 @@ class TestLaunchpadView(TestCaseWithFactory):
                 'is_beta': False,
                 'title': 'title',
                 'url': 'http://wiki.lp.dev/LEP/sample',
+                'value': None,
             }
         }, view.related_feature_info)
 
@@ -153,6 +154,7 @@ class TestLaunchpadView(TestCaseWithFactory):
             'is_beta': False,
             'title': 'title',
             'url': 'http://wiki.lp.dev/LEP/sample',
+            'value': 'on',
         }}, view.related_feature_info)
 
     def test_active_related_features__enabled_feature(self):
@@ -176,7 +178,8 @@ class TestLaunchpadView(TestCaseWithFactory):
             'test_feature': {
                 'is_beta': True,
                 'title': 'title',
-                'url': 'http://wiki.lp.dev/LEP/sample'}
+                'url': 'http://wiki.lp.dev/LEP/sample',
+                'value': 'on'}
             },
             view.related_feature_info)
 
@@ -210,8 +213,10 @@ class TestLaunchpadView(TestCaseWithFactory):
         view.related_features = ['test_feature']
         self.assertEqual({
             'test_feature': {
-                'is_beta': True, 'title': 'title', 'url':
-                'http://wiki.lp.dev/LEP/sample'
+                'is_beta': True,
+                'title': 'title',
+                'url': 'http://wiki.lp.dev/LEP/sample',
+                'value': 'on',
             }},
             view.related_feature_info)
 
@@ -231,6 +236,7 @@ class TestLaunchpadView(TestCaseWithFactory):
             'is_beta': False,
             'title': 'title',
             'url': 'http://wiki.lp.dev/LEP/sample',
+            'value': 'on',
         }}, view.related_feature_info)
 
     def test_json_cache_has_related_features(self):
@@ -247,6 +253,7 @@ class TestLaunchpadView(TestCaseWithFactory):
                 '{"related_features": {"test_feature": {'
                 '"url": "http://wiki.lp.dev/LEP/sample", '
                 '"is_beta": true, '
+                '"value": "on", '
                 '"title": "title"'
                 '}}}',
                 view.getCacheJSON())
@@ -270,9 +277,9 @@ class TestLaunchpadView(TestCaseWithFactory):
             self.assertEqual(
                 '{"related_features": '
                 '{"test_feature_2": {"url": "http://wiki.lp.dev/LEP/sample2",'
-                ' "is_beta": true, "title": "title"}, '
+                ' "is_beta": true, "value": "on", "title": "title"}, '
                 '"test_feature": {"url": "http://wiki.lp.dev/LEP/sample", '
-                '"is_beta": true, "title": "title"}}}',
+                '"is_beta": true, "value": "on", "title": "title"}}}',
                 view.getCacheJSON())
 
     def test_view_creation_with_fake_or_none_request(self):

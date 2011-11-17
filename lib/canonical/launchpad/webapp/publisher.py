@@ -408,6 +408,7 @@ class LaunchpadView(UserAttributeCache):
                 'is_beta': (defaultFlagValue(flag_name) != value),
                 'title': title,
                 'url': url,
+                'value': value,
             }
         return beta_info
 
