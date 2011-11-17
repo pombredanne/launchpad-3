@@ -33,6 +33,7 @@ from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES,
     DEFAULT_INSTANCE_TYPE,
+    DEFAULT_REGION,
     EC2Instance,
     )
 from devscripts.ec2test.session import EC2SessionName
@@ -339,6 +340,8 @@ class cmd_land(EC2Command):
     takes_options = [
         debug_option,
         instance_type_option,
+        region_option,
+        machine_id_option,
         Option('dry-run', help="Just print the equivalent ec2 test command."),
         Option('print-commit', help="Print the full commit message."),
         Option(
@@ -389,7 +392,9 @@ class cmd_land(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             no_qa=False, incremental=False, rollback=None, print_commit=False,
-            force=False, attached=False):
+            force=False, attached=False,
+            region=DEFAULT_REGION,
+            ):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -478,7 +483,7 @@ class cmd_land(EC2Command):
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            session_name, instance_type, machine)
+            session_name, instance_type, machine, region=region)
 
         runner = EC2TestRunner(
             mp.source_branch, email=emails,
