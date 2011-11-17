@@ -121,6 +121,7 @@ from lp.registry.browser.person import (
     PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
@@ -136,12 +137,14 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
@@ -291,6 +294,32 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
+
+    def setUpWidgets(self):
+        super(TeamEditView, self).setUpWidgets()
+        team = self.context
+        # Do we need to only show open subscription policy choices?
+        try:
+            team.checkClosedSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
+            # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
+            # it doesn't so we need to be a bit more verbose.
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                SimpleVocabulary([SimpleVocabulary.createTerm(
+                    policy, policy.name, policy.title)
+                    for policy in OPEN_TEAM_POLICY])
+                )
+        # Do we need to only show closed subscription policy choices?
+        try:
+            team.checkOpenSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
+            # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
+            # it doesn't so we need to be a bit more verbose.
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                SimpleVocabulary([SimpleVocabulary.createTerm(
+                    policy, policy.name, policy.title)
+                    for policy in CLOSED_TEAM_POLICY])
+                )
 
     @action('Save', name='save')
     def action_save(self, action, data):
