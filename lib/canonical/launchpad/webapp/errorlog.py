@@ -227,8 +227,7 @@ def attach_http_request(report, context):
         report['username'] = username
 
     if getattr(request, '_orig_env', None):
-        report['topic'] = request._orig_env.get(
-                'launchpad.pageid', '')
+        report['topic'] = request._orig_env.get('launchpad.pageid', '')
 
     for key, value in request.items():
         if _is_sensitive(request, key):
