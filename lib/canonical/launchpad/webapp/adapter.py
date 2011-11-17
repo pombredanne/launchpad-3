@@ -386,6 +386,7 @@ def print_queries(queries, file=None):
     if file is None:
         file = sys.stdout
     for query in queries:
+        # Note: this could use the sql tb if it exists.
         stack = query['stack']
         if stack is not None:
             exception = query['exception']
@@ -401,7 +402,7 @@ def print_queries(queries, file=None):
             file.write("." * 70 + "\n")
         sql = query['sql']
         if sql is not None:
-            file.write('%d-%d@%s %s\n' % sql)
+            file.write('%d-%d@%s %s\n' % sql[:4])
         else:
             file.write('(no SQL recorded)\n')
         file.write("-" * 70 + "\n")
