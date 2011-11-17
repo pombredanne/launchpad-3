@@ -444,6 +444,7 @@ class SourcePackageRelease(SQLBase):
             BuildDAS.id == BinaryPackageBuild.distro_arch_series_id,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
             PublishDAS.id ==
                 BinaryPackagePublishingHistory.distroarchseriesID,
             PublishDAS.distroseriesID == distroseries.id,
@@ -452,8 +453,7 @@ class SourcePackageRelease(SQLBase):
             # all architectures.  This condition makes sure we consider
             # only builds that have been published in their own
             # architecture.
-            PublishDAS.architecturetag == BuildDAS.architecturetag,
-            BinaryPackagePublishingHistory.archiveID == archive.id)
+            PublishDAS.architecturetag == BuildDAS.architecturetag)
         results = list(query.config(distinct=True))
         mapped_results = dict(results)
         assert len(mapped_results) == len(results), (
