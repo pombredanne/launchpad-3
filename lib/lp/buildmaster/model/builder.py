@@ -43,7 +43,8 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.buildd.slave import BuilderStatus
+from lpbuildd.slave import BuilderStatus
+
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -313,7 +314,7 @@ def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
-    # two status we care about. See see lib/canonical/buildd/slave.py
+    # two status we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -328,7 +329,6 @@ def rescueBuilderIfLost(builder, logger=None):
         Always return status_sentence.
         """
         # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
         # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 

@@ -334,6 +334,7 @@ class cmd_land(EC2Command):
 
     takes_options = [
         debug_option,
+        instance_type_option,
         Option('dry-run', help="Just print the equivalent ec2 test command."),
         Option('print-commit', help="Print the full commit message."),
         Option(
