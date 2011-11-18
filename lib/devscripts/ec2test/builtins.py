@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import pdb
 import socket
@@ -748,9 +748,10 @@ class cmd_list(EC2Command):
         """How long has 'instance' been running?"""
         expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
         launch_time = datetime.strptime(instance.launch_time, expected_format)
-        return (
+        delta = (
             datetime.utcnow().replace(tzinfo=UTC)
             - launch_time.replace(tzinfo=UTC))
+        return timedelta(delta.days, delta.seconds)  # Round it.
 
     def get_http_url(self, instance):
         hostname = instance.public_dns_name
