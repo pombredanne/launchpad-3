@@ -532,8 +532,16 @@ class EC2Instance:
         # The bucket `name` needs to exist and be accessible. We create it
         # here to reserve the name. If the bucket already exists and conforms
         # to the above requirements, this is a no-op.
+        # 
+        # The API for region creation is a little quirky: you apparently can't
+        # explicitly ask for 'us-east-1' you must just say '', etc.
+        location = self._credentials.region_name
+        if location.startswith('us-east'):
+            location = ''
+        elif location.startswith('eu'):
+            location = 'EU'
         self._credentials.connect_s3().create_bucket(
-            name, location=self._credentials.region_name)
+            name, location=location)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
