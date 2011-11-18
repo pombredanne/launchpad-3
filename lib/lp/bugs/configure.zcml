@@ -199,8 +199,7 @@
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userCanEditImportance
-                    userCanEditMilestone
+                    userHasPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require

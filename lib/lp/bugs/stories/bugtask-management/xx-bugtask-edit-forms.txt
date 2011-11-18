@@ -30,9 +30,7 @@ Traceback (most recent call last):
 ...
 LinkNotFoundError
 >>> print admin_browser.getLink('Low', index=1).url
-Traceback (most recent call last):
-...
-LinkNotFoundError
+http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus
 
 >>> print admin_browser.getLink('New', index=1).url
 http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus
