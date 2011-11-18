@@ -18,9 +18,12 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
+    TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
-    TeamMembershipRenewalPolicy)
+    )
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_person,
@@ -260,9 +263,100 @@ class TestTeamEditView(TestCaseWithFactory):
                 TeamSubscriptionPolicy.MODERATED,
                 view.widgets['subscriptionpolicy']._data)
             self.assertEqual(
+                TeamSubscriptionPolicy,
+                view.widgets['subscriptionpolicy'].vocabulary)
+            self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
             self.assertIsNone(view.widgets['defaultrenewalperiod']._data)
+
+    def _test_edit_team_view_expected_subscription_vocab(self,
+                                                         fn_setup,
+                                                         expected_items):
+        # The edit view renders only the specified policy choices when
+        # the setup performed by fn_setup occurs.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        fn_setup(team)
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertContentEqual(
+                expected_items,
+                [term.value
+                 for term in view.widgets['subscriptionpolicy'].vocabulary])
+
+    def test_edit_team_view_pillar_owner(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is a pillar owner.
+
+        def setup_team(team):
+            self.factory.makeProduct(owner=team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_pillar_security_contact(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is a pillar security contact.
+
+        def setup_team(team):
+            self.factory.makeProduct(security_contact=team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_ppas(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team has any ppas.
+
+        def setup_team(team):
+            team.createPPA()
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_closed_super_team(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team has any closed super teams.
+
+        def setup_team(team):
+            super_team = self.factory.makeTeam(
+                owner=team.teamowner,
+                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            with person_logged_in(team.teamowner):
+                super_team.addMember(
+                    team, team.teamowner, force_team_add=True)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_subscribed_private_bug(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is subscribed to a private bug.
+
+        def setup_team(team):
+            bug = self.factory.makeBug(owner=team.teamowner, private=True)
+            with person_logged_in(team.teamowner):
+                bug.default_bugtask.transitionToAssignee(team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_open_member(self):
+        # The edit view renders open closed subscription policy choices when
+        # the team has any open sub teams.
+
+        def setup_team(team):
+            team_member = self.factory.makeTeam(
+                owner=team.teamowner,
+                subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+            with person_logged_in(team.teamowner):
+                team.addMember(
+                    team_member, team.teamowner, force_team_add=True)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, OPEN_TEAM_POLICY)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it
