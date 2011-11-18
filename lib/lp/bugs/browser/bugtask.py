@@ -1356,7 +1356,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
 
             # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
             # doesn't belong here!
-            if not self.context.userHasPrivileges(self.user):
+            if not self.user_has_privileges:
                 if 'milestone' in editable_field_names:
                     editable_field_names.remove("milestone")
                 if 'importance' in editable_field_names:
@@ -1366,14 +1366,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
             if self.context.bugwatch is None:
                 editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
-                    and self.context.userHasPrivileges(self.user)):
+                    and self.user_has_privileges):
                     editable_field_names.add('importance')
             else:
                 bugtracker = self.context.bugwatch.bugtracker
                 if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                     editable_field_names.add('status')
                     if ('importance' in self.default_field_names
-                        and self.context.userHasPrivileges(self.user)):
+                        and self.user_has_privileges):
                         editable_field_names.add('importance')
 
         if self.show_target_widget:
@@ -1527,7 +1527,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self.context.userHasPrivileges(self.user):
+            if not self.user_has_privileges:
                 read_only_field_names.append("milestone")
                 read_only_field_names.append("importance")
         else:
