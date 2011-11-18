@@ -83,6 +83,7 @@ machine_id_option = Option(
 
 instance_type_option = Option(
     'instance', short_name='i',
+    type=str,
     param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
