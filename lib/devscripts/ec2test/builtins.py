@@ -697,6 +697,25 @@ class cmd_images(EC2Command):
                     image.description or ''))
 
 
+class cmd_kill(EC2Command):
+    """Kill one or more running EC2 instances.
+
+    You can get the instance id from 'ec2 list'.
+    """
+
+    takes_options = [
+        region_option,
+        ]
+    takes_args = ['instance_id*']
+
+    def run(self, instance_id_list, region=None):
+        credentials = EC2Credentials.load_from_file(region_name=region)
+        account = credentials.connect('ec2 kill')
+        self.outf.write("killing %d instances: " % len(instance_id_list,))
+        account.conn.terminate_instances(instance_id_list)
+        self.outf.write("done\n")
+
+
 class cmd_list(EC2Command):
     """List all your current EC2 test runs.
 
