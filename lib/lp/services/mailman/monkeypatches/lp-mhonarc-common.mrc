@@ -118,7 +118,7 @@ ul ul {
     margin-left: .5em;
     }
 </style>
-<link rel="stylesheet" href="https://launchpad.net/+icing/style-3-0.css" />
+<link rel="stylesheet" href="https://launchpad.net/+icing/css/import.css" />
 <link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" />
 </head>
 <body>
