@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""{Describe your test suite here}.
+"""Support for the lp.client YUIXHR tests.
 """
 
 __metaclass__ = type
