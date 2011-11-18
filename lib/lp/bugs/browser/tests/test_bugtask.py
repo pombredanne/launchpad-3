@@ -1,5 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from BeautifulSoup import BeautifulSoup
+from lp.registry.interfaces.person import PersonVisibility
 
 __metaclass__ = type
 
@@ -730,6 +732,36 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
                 series.product, path_only_if_possible=True),
             content)
         self.assertIn(series.product.displayname, content)
+
+    def test_bugtask_listing_for_private_assignees(self):
+        # Private assignees are rendered in the bug portal view.
+
+        # Create a bugtask with a private assignee.
+        product_foo = self.factory.makeProduct(name="foo")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        assignee = self.factory.makeTeam(
+            name="assignee",
+            visibility=PersonVisibility.PRIVATE)
+        foo_bug.default_bugtask.transitionToAssignee(assignee)
+
+        # Render the view.
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+        foo_bugtasks_and_nominations_view.initialize()
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        getUtility(ILaunchBag).add(foo_bug.default_bugtask)
+        self.assertEqual(1, len(task_and_nomination_views))
+        content = task_and_nomination_views[0]()
+
+        # Check the result.
+        soup = BeautifulSoup(content)
+        tag = soup.find('label', attrs={'for': "foo.assignee.assigned_to"})
+        tag_text = tag.renderContents().strip()
+        self.assertEqual(assignee.unique_displayname, tag_text)
 
 
 class TestBugTaskDeleteLinks(TestCaseWithFactory):
@@ -1782,6 +1814,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
+
+    def test_cache_field_visibility_defaults(self):
+        """Cache contains sane-looking field_visibility_defaults values."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        field_visibility_defaults = cache.objects['field_visibility_defaults']
+        self.assertTrue(field_visibility_defaults['show_title'])
 
     def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
