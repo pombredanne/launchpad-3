@@ -24,6 +24,7 @@ from bzrlib.option import (
     Option,
     )
 from bzrlib.transport import get_transport
+from bzrlib.trace import is_verbose
 from pytz import UTC
 import simplejson
 
@@ -776,16 +777,19 @@ class cmd_list(EC2Command):
         :param data: Launchpad-specific data.
         :param verbose: Whether we want verbose output.
         """
+        description = instance.id
         uptime = self.get_uptime(instance)
-        if data is None:
-            description = instance.id
-            current_status = 'unknown '
+        if instance.state != 'running':
+            current_status = instance.state
         else:
-            description = data['description']
-            if data['failed-yet']:
-                current_status = '[FAILED]'
+            if data is None:
+                current_status = 'unknown '
             else:
-                current_status = '[OK]    '
+                description = data['description']
+                if data['failed-yet']:
+                    current_status = '[FAILED]'
+                else:
+                    current_status = '[OK]    '
         output = '%-40s  %-10s (up for %s) %10s' % (description, current_status, uptime,
             instance.id)
         if verbose:
@@ -793,6 +797,9 @@ class cmd_list(EC2Command):
             if url is None:
                 url = "No web service"
             output += '\n  %s' % (url,)
+            if instance.state_reason:
+                output += '\n  transition reason: %s' % instance.state_reason.get(
+                    'message', '')
         return output
 
     def format_summary(self, by_state):
@@ -815,7 +822,7 @@ class cmd_list(EC2Command):
             data = self.get_ec2test_info(instance)
             if data is None and not all:
                 continue
-            print self.format_instance(instance, data, show_urls)
+            print self.format_instance(instance, data, verbose=(show_urls or is_verbose()))
         print 'Summary: %s' % (self.format_summary(by_state),)
 
 
