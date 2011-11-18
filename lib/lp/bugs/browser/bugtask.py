@@ -150,7 +150,10 @@ from canonical.launchpad.webapp import (
     redirection,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -2266,6 +2269,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
+        self.field_visibility_defaults = self.field_visibility
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2591,6 +2595,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
 
             def _getBatchInfo(batch):
                 if batch is None:
@@ -3434,6 +3440,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any assignees.
+        authorised_people = [task.assignee for task in self.bugtasks
+                             if task.assignee is not None]
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
+
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.
         if self.bugtasks:
@@ -3957,7 +3970,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     @property
     def user_can_edit_assignee(self):
-        """Can the user edit the Milestone field?
+        """Can the user edit the Assignee field?
 
         If yes, return True, otherwise return False.
         """

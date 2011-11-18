@@ -162,6 +162,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -2298,7 +2299,8 @@ class BugTaskSet:
                 "BugTask.datecreated > %s" % (
                     sqlvalues(params.created_since,)))
 
-        orderby_arg = self._processOrderBy(params)
+        orderby_arg, extra_joins = self._processOrderBy(params)
+        join_tables.extend(extra_joins)
 
         query = " AND ".join(extra_clauses)
 
@@ -3161,27 +3163,90 @@ class BugTaskSet:
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""
         if BugTaskSet._ORDERBY_COLUMN is None:
-            # Local import of Bug to avoid import loop.
-            from lp.bugs.model.bug import Bug
+            # Avoid circular imports.
+            from lp.bugs.model.bug import (
+                Bug,
+                BugTag,
+                )
+            from lp.registry.model.milestone import Milestone
+            from lp.registry.model.person import Person
+            Assignee = ClassAlias(Person)
+            Reporter = ClassAlias(Person)
             BugTaskSet._ORDERBY_COLUMN = {
-                "task": BugTask.id,
-                "id": BugTask.bugID,
-                "importance": BugTask.importance,
+                "task": (BugTask.id, []),
+                "id": (BugTask.bugID, []),
+                "importance": (BugTask.importance, []),
                 # TODO: sort by their name?
-                "assignee": BugTask.assigneeID,
-                "targetname": BugTask.targetnamecache,
-                "status": BugTask._status,
-                "title": Bug.title,
-                "milestone": BugTask.milestoneID,
-                "dateassigned": BugTask.date_assigned,
-                "datecreated": BugTask.datecreated,
-                "date_last_updated": Bug.date_last_updated,
-                "date_closed": BugTask.date_closed,
-                "number_of_duplicates": Bug.number_of_duplicates,
-                "message_count": Bug.message_count,
-                "users_affected_count": Bug.users_affected_count,
-                "heat": BugTask.heat,
-                "latest_patch_uploaded": Bug.latest_patch_uploaded,
+                "assignee": (
+                    Assignee.name,
+                    [
+                        (Assignee,
+                         LeftJoin(Assignee, BugTask.assignee == Assignee.id))
+                        ]),
+                "targetname": (BugTask.targetnamecache, []),
+                "status": (BugTask._status, []),
+                "title": (Bug.title, []),
+                "milestone": (BugTask.milestoneID, []),
+                "dateassigned": (BugTask.date_assigned, []),
+                "datecreated": (BugTask.datecreated, []),
+                "date_last_updated": (Bug.date_last_updated, []),
+                "date_closed": (BugTask.date_closed, []),
+                "number_of_duplicates": (Bug.number_of_duplicates, []),
+                "message_count": (Bug.message_count, []),
+                "users_affected_count": (Bug.users_affected_count, []),
+                "heat": (BugTask.heat, []),
+                "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+                "milestone_name": (
+                    Milestone.name,
+                    [
+                        (Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))
+                        ]),
+                "reporter": (
+                    Reporter.name,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (Reporter, Join(Reporter, Bug.owner == Reporter.id))
+                        ]),
+                "tag": (
+                    BugTag.tag,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (BugTag,
+                         LeftJoin(
+                             BugTag,
+                             BugTag.bug == Bug.id and
+                             # We want at most one tag per bug. Select the
+                             # tag that comes first in alphabetic order.
+                             BugTag.id == SQL("""
+                                 SELECT id FROM BugTag AS bt
+                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                                 """))),
+                        ]
+                    ),
+                "specification": (
+                    Specification.name,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (Specification,
+                         LeftJoin(
+                             Specification,
+                             # We want at most one specification per bug.
+                             # Select the specification that comes first
+                             # in alphabetic order.
+                             Specification.id == SQL("""
+                                 SELECT Specification.id
+                                 FROM SpecificationBug
+                                 JOIN Specification
+                                     ON SpecificationBug.specification=
+                                         Specification.id
+                                 WHERE SpecificationBug.bug=Bug.id
+                                 ORDER BY Specification.name
+                                 LIMIT 1
+                                 """))),
+                        ]
+                    ),
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
 
@@ -3230,16 +3295,33 @@ class BugTaskSet:
 
         # Translate orderby keys into corresponding Table.attribute
         # strings.
+        extra_joins = []
         ambiguous = True
+        # Sorting by milestone only is a very "coarse" sort order.
+        # If no additional sort order is specified, add the bug task
+        # importance as a secondary sort order.
+        if len(orderby) == 1:
+            if orderby[0] == 'milestone_name':
+                # We want the most important bugtasks first; these have
+                # larger integer values.
+                orderby.append('-importance')
+            elif orderby[0] == '-milestone_name':
+                orderby.append('importance')
+            else:
+                # Other sort orders don't need tweaking.
+                pass
+
         for orderby_col in orderby:
             if isinstance(orderby_col, SQLConstant):
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col = self.getOrderByColumnDBName(orderby_col[1:])
+                col, sort_joins = self.getOrderByColumnDBName(orderby_col[1:])
+                extra_joins.extend(sort_joins)
                 order_clause = Desc(col)
             else:
-                col = self.getOrderByColumnDBName(orderby_col)
+                col, sort_joins = self.getOrderByColumnDBName(orderby_col)
+                extra_joins.extend(sort_joins)
                 order_clause = col
             if col in unambiguous_cols:
                 ambiguous = False
@@ -3251,7 +3333,7 @@ class BugTaskSet:
             else:
                 orderby_arg.append(BugTask.id)
 
-        return tuple(orderby_arg)
+        return tuple(orderby_arg), extra_joins
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

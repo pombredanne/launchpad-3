@@ -73,6 +73,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -586,7 +587,8 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # owner is an individual.
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam(
-                displayname=u"Team Teamy Team Team")
+                displayname=u"Team Teamy Team Team",
+                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
@@ -1495,8 +1497,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
+        self.assertIn(
+            "by %s" % (
                 dsd.source_package_release.creator.displayname,),
             normalize_whitespace(creator_cell.text_content()))
 

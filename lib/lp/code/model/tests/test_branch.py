@@ -112,6 +112,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
@@ -2250,6 +2251,11 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
+
+    def test_personal_branches_for_private_teams_are_private(self):
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makePersonalBranch(owner=team)
+        self.assertTrue(branch.private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
