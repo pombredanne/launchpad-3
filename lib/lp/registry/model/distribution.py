@@ -132,6 +132,7 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
+    validate_person_or_closed_team,
     validate_person,
     validate_public_person,
     )
@@ -231,7 +232,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     domainname = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_or_closed_team, notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -244,7 +245,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     bug_reported_acknowledgement = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person_or_closed_team, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",

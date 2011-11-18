@@ -520,6 +520,46 @@ class TestPerson(TestCaseWithFactory):
             0,
             synchronised_spphs.count())
 
+    def test_product_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for products
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_projectgroup_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for project groups
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProject(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_distribution_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for distributions
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeDistribution(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_product_isAnySecurityContact(self):
+        # Test isAnySecurityContact for products
+        person = self.factory.makePerson()
+        contact = self.factory.makePerson()
+        self.factory.makeProduct(security_contact=contact)
+        self.assertTrue(contact.isAnySecurityContact())
+        self.assertFalse(person.isAnySecurityContact())
+
+    def test_distribution_isAnySecurityContact(self):
+        # Test isAnySecurityContact for distributions
+        person = self.factory.makePerson()
+        contact = self.factory.makePerson()
+        self.factory.makeDistribution(security_contact=contact)
+        self.assertTrue(contact.isAnySecurityContact())
+        self.assertFalse(person.isAnySecurityContact())
+
 
 class TestPersonStates(TestCaseWithFactory):
 
