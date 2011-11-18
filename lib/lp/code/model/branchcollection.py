@@ -296,6 +296,15 @@ class GenericBranchCollection:
                           target_branch=None, merged_revnos=None,
                           eager_load=False):
         """See `IBranchCollection`."""
+        return self._getMergeProposals(
+            statuses=statuses, for_branches=for_branches,
+            target_branch=target_branch, merged_revnos=merged_revnos,
+            eager_load=eager_load)
+
+    def _getMergeProposals(self, statuses=None, for_branches=None,
+                          target_branch=None, merged_revnos=None,
+                          eager_load=False, return_ids=False,
+                          include_with=True):
         if for_branches is not None and not for_branches:
             # We have an empty branches list, so we can shortcut.
             return EmptyResultSet()
@@ -307,15 +316,19 @@ class GenericBranchCollection:
             target_branch is not None or
             merged_revnos is not None):
             return self._naiveGetMergeProposals(statuses, for_branches,
-                target_branch, merged_revnos, eager_load)
+                target_branch, merged_revnos, eager_load,
+                return_ids=return_ids, include_with=include_with)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
             # unscoped or when tight constraints on branches are present.
-            return self._scopedGetMergeProposals(statuses)
+            return self._scopedGetMergeProposals(
+                statuses, return_ids=return_ids)
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
-        target_branch=None, merged_revnos=None, eager_load=False):
+                                target_branch=None, merged_revnos=None,
+                                eager_load=False, return_ids=False,
+                                include_with=True):
 
         def do_eager_load(rows):
             branch_ids = set()
@@ -372,14 +385,20 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        resultset = self.store_with_with.using(*tables).find(
-            BranchMergeProposal, *expressions)
+        if include_with:
+            store = self.store_with_with
+        else:
+            store = self.store
+        returned_obj = (
+            BranchMergeProposal.id if return_ids else BranchMergeProposal)
+        resultset = store.using(*tables).find(
+            returned_obj, *expressions)
         if not eager_load:
             return resultset
         else:
             return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
-    def _scopedGetMergeProposals(self, statuses):
+    def _scopedGetMergeProposals(self, statuses, return_ids=False):
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
@@ -402,19 +421,30 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
+        returned_obj = (
+            BranchMergeProposal.id if return_ids else BranchMergeProposal)
         return self.store.with_(with_expr).using(*tables).find(
-            BranchMergeProposal, *expressions)
+            returned_obj, *expressions)
 
     def getMergeProposalsForPerson(self, person, status=None):
         """See `IBranchCollection`."""
         # We want to limit the proposals to those where the source branch is
         # limited by the defined collection.
-        owned = self.ownedBy(person).getMergeProposals(status)
-        reviewing = self.getMergeProposalsForReviewer(person, status)
-        return owned.union(reviewing)
+        owned = self.ownedBy(person)._getMergeProposals(
+            status, include_with=False, return_ids=True)
+        reviewing = self._getMergeProposalsForReviewer(
+            person, status, include_with=False, return_ids=True)
+        result = owned.union(reviewing)
+        return self.store_with_with.using([BranchMergeProposal]).find(
+            BranchMergeProposal,
+            In(BranchMergeProposal.id, result._get_select()))
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
+        return self._getMergeProposalsForReviewer(reviewer, status=status)
+
+    def _getMergeProposalsForReviewer(self, reviewer, status=None,
+                                     include_with=True, return_ids=False):
         tables = [
             BranchMergeProposal,
             Join(CodeReviewVoteReference,
@@ -434,8 +464,14 @@ class GenericBranchCollection:
         if status is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
-        proposals = self.store_with_with.using(*tables).find(
-            BranchMergeProposal, *expressions)
+        if include_with:
+            store = self.store_with_with
+        else:
+            store = self.store
+        returned_obj = (
+            BranchMergeProposal.id if return_ids else BranchMergeProposal)
+        proposals = store.using(*tables).find(
+            returned_obj, *expressions)
         # Apply sorting here as we can't do it in the browser code.  We need
         # to think carefully about the best places to do this, but not here
         # nor now.
