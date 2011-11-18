@@ -179,8 +179,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -190,7 +190,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
     validate_public_person,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -479,6 +478,15 @@ class Bug(SQLBase):
     def users_affected_count_with_dupes(self):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
+
+    @property
+    def other_users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        if not current_user:
+            return self.users_affected_count_with_dupes
+        return self.users_affected_with_dupes.find(
+            Person.id != current_user.id).count()
 
     @property
     def indexed_messages(self):

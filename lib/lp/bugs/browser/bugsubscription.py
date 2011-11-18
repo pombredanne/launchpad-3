@@ -36,7 +36,10 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
@@ -73,7 +76,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
     def add_action(self, action, data):
         person = data['person']
         try:
-            self.context.bug.subscribe(person, self.user, suppress_notify=False)
+            self.context.bug.subscribe(
+                person, self.user, suppress_notify=False)
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
@@ -542,11 +546,17 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(bug.getDirectSubscribersWithDetails())
         for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if person == self.user or (person.private and not can_edit):
-                # Skip the current user viewing the page,
-                # and private teams user is not a member of.
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
+            if self.user is None and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
 
+            # If we have made it to here then the logged in user can see the
+            # bug, hence they can see any subscribers.
+            precache_permission_for_objects(
+                        self.request, 'launchpad.LimitedView', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -571,9 +581,18 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any subscribers.
+        include_private = self.user is not None
+        if include_private:
+            precache_permission_for_objects(
+                self.request, 'launchpad.LimitedView', others)
         for person in others:
             if person == self.user:
-                # Skip the current user viewing the page.
+                # Skip the current user viewing the page,
+                continue
+            if not include_private and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
             subscriber = {
                 'name': person.name,
