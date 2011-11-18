@@ -109,7 +109,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugBlueprintSearch,
@@ -1355,12 +1354,9 @@ class BugTask(SQLBase):
 
         # Otherwise, if you're a member of the pillar owner, drivers, or the
         # bug supervisor, you can change bug details.
-        bugsupervisor = None
-        if IHasBugSupervisor.providedBy(self.pillar):
-            bugsupervisor = self.pillar.bug_supervisor
         return (
             role.isOwner(self.pillar) or role.isOneOfDrivers(self.pillar) or
-            role.inTeam(bugsupervisor) or 
+            role.isBugSupervisor(self.pillar) or
             (self.distroseries is not None and
                 role.isDriver(self.distroseries)) or
             (self.productseries is not None and

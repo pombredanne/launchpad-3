@@ -210,15 +210,6 @@ class ViewBugMessage(AnonymousAuthorization):
     usedfor = IMessage
 
 
-class SetBugCommentVisibility(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IBug
-
-    def checkAuthenticated(self, user):
-        """Admins and registry admins can set bug comment visibility."""
-        return (user.in_admin or user.in_registry_experts)
-
-
 class ViewBugTracker(AnonymousAuthorization):
     """Anyone can view a bug tracker."""
     usedfor = IBugTracker
