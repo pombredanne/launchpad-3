@@ -767,7 +767,8 @@ class cmd_list(EC2Command):
                 current_status = '[FAILED]'
             else:
                 current_status = '[OK]    '
-        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+        output = '%-40s  %-10s (up for %s) %10s' % (description, current_status, uptime,
+            instance.id)
         if verbose:
             url = self.get_http_url(instance)
             if url is None:
