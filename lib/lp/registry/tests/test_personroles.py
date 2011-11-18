@@ -115,6 +115,18 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertFalse(roles.isOneOfDrivers(sprint))
 
+    def test_isBugSupervisor(self):
+        # The person can be the bug supervisor of something, e.g. a product.
+        product = self.factory.makeProduct(bug_supervisor=self.person)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isBugSupervisor(product))
+
+    def test_isSecurityContact(self):
+        # The person can be the security contact of something, e.g. a product.
+        product = self.factory.makeProduct(security_contact=self.person)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isSecurityContact(product))
+
     def test_isOneOf(self):
         # Objects may have multiple roles that a person can fulfill.
         # Specifications are such a case.
