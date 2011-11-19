@@ -58,6 +58,7 @@
   </head>
 
   <body id="document"
+    itemscope itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
