@@ -2,6 +2,7 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
+  itemscope itemtype="http://schema.org/UserComments" 
   tal:define="comment context;
               remote_bug_comment_class
               python: comment.bugwatch and 'remoteBugComment' or '';
@@ -20,6 +21,7 @@
                 replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
+		  itemprop="commentTime"
                   tal:content="comment/datecreated/fmt:displaydate">
               7 minutes ago
               </span>:
@@ -46,8 +48,9 @@
               </a>
           </td>
           <td class="bug-comment-index">
-            <a tal:attributes="href comment/fmt:url"
-               tal:content="string: #${comment/index}" />
+	  <a itemprop="url"
+	     tal:attributes="href comment/fmt:url"
+             tal:content="string: #${comment/index}" />
           </td>
         </tr>
       </tbody>
@@ -79,7 +82,7 @@
       </li>
     </ul>
 
-    <div class="bug-comment"
+    <div class="bug-comment" itemprop="commentText"
       tal:content="structure
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.
