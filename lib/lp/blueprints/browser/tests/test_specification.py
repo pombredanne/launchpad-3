@@ -8,10 +8,7 @@ import doctest
 import unittest
 
 import pytz
-from testtools.matchers import (
-    DocTestMatches,
-    Equals,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -35,6 +32,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import DocTestMatches
 from lp.testing.views import create_initialized_view
 
 
@@ -158,12 +156,7 @@ class TestSpecificationView(TestCaseWithFactory):
                 spec, '+index')()
         self.assertThat(
             extract_text(html), DocTestMatches(
-                extract_text(
-                    "... Registered by Some Person a moment ago ..."),
-                (
-                    doctest.ELLIPSIS |
-                    doctest.NORMALIZE_WHITESPACE |
-                    doctest.REPORT_NDIFF)))
+                "... Registered by Some Person ... ago ..."))
 
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
