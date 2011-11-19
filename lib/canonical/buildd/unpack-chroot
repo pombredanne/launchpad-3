@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# Buildd Slave tool to unpack a chroot tarball
+
+# Expects build id as arg 1, makes build-id to contain the build
+# Expects bzip2 compressed tarball as arg 2
+
+# Needs TAR to be set to a gnu tar instance, that needs bzip2
+# Needs SUDO to be set to a sudo instance for passwordless access
+# BUNZIP2 must un-bzip2
+# FILE must implement the -b and -i arguments (so a Debianish file)
+
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:${PATH}
+
+NTPDATE=ntpdate
+TAR=tar
+SUDO=sudo
+BUNZIP2=bunzip2
+FILE=file
+
+BUILDID="$1"
+TARBALL="$2"
+
+set -e
+
+exec 2>&1
+
+MIMETYPE=$($FILE -bi "$TARBALL")
+
+if [ x"$MIMETYPE" = "xapplication/x-bzip2" ]; then
+  echo "Uncompressing the tarball..."
+  $BUNZIP2 -c < "$TARBALL" > "$TARBALL".tmp
+  mv "$TARBALL".tmp "$TARBALL"
+  exec $0 "$@"
+fi
+
+if [ -f /etc/launchpad-buildd/default ]; then
+  eval `grep ntphost /etc/launchpad-buildd/default | sed 's/ //g'`
+fi
+if [ -n "$ntphost" ]; then
+  echo "Synching the system clock with the buildd NTP service..."
+  $SUDO $NTPDATE -u $ntphost
+fi
+
+cd $HOME
+cd "build-$BUILDID"
+
+echo "Unpacking chroot for build $BUILDID"
+$SUDO $TAR -xf "$TARBALL"

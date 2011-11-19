@@ -236,6 +236,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
+    CannotDeleteBugtask,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
     IBugTaskSearch,
@@ -332,7 +333,7 @@ def unique_title(title):
 
 
 def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
-    slice_info=None, show_spam_controls=False):
+    slice_info=None, show_spam_controls=False, user=None):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
@@ -345,7 +346,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
-        slice_info=slice_info, show_spam_controls=show_spam_controls)
+        slice_info=slice_info, show_spam_controls=show_spam_controls,
+        user=user)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
@@ -752,11 +754,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return self._getComments()
 
     def _getComments(self, slice_info=None):
-        show_spam_controls = check_permission(
-            'launchpad.Admin', self.context.bug)
+        bug = self.context.bug
+        show_spam_controls = bug.userCanSetCommentVisibility(self.user)
         return get_comments_for_bugtask(
             self.context, truncate=True, slice_info=slice_info,
-            for_display=True, show_spam_controls=show_spam_controls)
+            for_display=True, show_spam_controls=show_spam_controls,
+            user=self.user)
 
     @cachedproperty
     def interesting_activity(self):
@@ -1799,11 +1802,21 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         bugtask = self.context
         bug = bugtask.bug
         deleted_bugtask_url = canonical_url(self.context, rootsite='bugs')
-        message = ("This bug no longer affects %s."
+        success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
-        bugtask.delete()
-        self.request.response.addNotification(message)
+        error_message = None
+
+        try:
+            bugtask.delete()
+            self.request.response.addNotification(success_message)
+        except CannotDeleteBugtask as e:
+            error_message = str(e)
+            self.request.response.addErrorNotification(error_message)
         if self.request.is_ajax:
+            if error_message:
+                self.request.response.setHeader('Content-type',
+                    'application/json')
+                return dumps(None)
             launchbag = getUtility(ILaunchBag)
             launchbag.add(bug.default_bugtask)
             # If we are deleting the current highlighted bugtask via ajax,
@@ -2269,6 +2282,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
+        self.field_visibility_defaults = self.field_visibility
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2452,7 +2466,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     implements(IBugTaskSearchListingMenu)
 
-    beta_features = ['bugs.dynamic_bug_listings.enabled']
+    related_features = ['bugs.dynamic_bug_listings.enabled']
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -2594,6 +2608,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
 
             def _getBatchInfo(batch):
                 if batch is None:

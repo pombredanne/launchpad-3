@@ -194,6 +194,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.users_hide_own_bug_comments.enabled',
+     'boolean',
+     'Allows users in project roles and comment owners to hide bug comments.',
+     '',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '

@@ -499,7 +499,7 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
-table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
   text-align: right;
   background-color: #f6f6f6;

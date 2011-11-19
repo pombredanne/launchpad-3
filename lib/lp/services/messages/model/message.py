@@ -139,6 +139,9 @@ class Message(SQLBase):
         """See IMessage.__iter__"""
         return iter(self.chunks)
 
+    def setVisible(self, visible):
+        self.visible = visible
+
     @property
     def followup_title(self):
         """See IMessage."""

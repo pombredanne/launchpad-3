@@ -1497,8 +1497,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
+        self.assertIn(
+            "by %s" % (
                 dsd.source_package_release.creator.displayname,),
             normalize_whitespace(creator_cell.text_content()))
 
@@ -1514,11 +1514,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s (uploaded by %s)" % (
+        matches = DocTestMatches(
+            "... ago by %s (uploaded by %s)" % (
                 dsd.source_package_release.creator.displayname,
-                dsd.source_package_release.dscsigningkey.owner.displayname),
-            normalize_whitespace(creator_cell.text_content()))
+                dsd.source_package_release.dscsigningkey.owner.displayname))
+        self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_links_to_parent_changelog(self):
         # After the parent's version, there should be text "(changelog)"
@@ -2572,10 +2572,10 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
-                dsd.parent_source_package_release.creator.displayname,),
-            normalize_whitespace(creator_cell.text_content()))
+        matches = DocTestMatches(
+            "... ago by %s" % (
+                dsd.parent_source_package_release.creator.displayname,))
+        self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_last_changed_also_shows_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
@@ -2594,11 +2594,11 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
         parent_spr = dsd.parent_source_package_release
-        self.assertEqual(
-            "a moment ago by %s (uploaded by %s)" % (
+        matches = DocTestMatches(
+            "... ago by %s (uploaded by %s)" % (
                 parent_spr.creator.displayname,
-                parent_spr.dscsigningkey.owner.displayname),
-            normalize_whitespace(creator_cell.text_content()))
+                parent_spr.dscsigningkey.owner.displayname))
+        self.assertThat(creator_cell.text_content(), matches)
 
 
 class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
