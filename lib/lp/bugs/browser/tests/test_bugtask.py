@@ -904,6 +904,24 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0].message)
 
+    def test_delete_only_bugtask(self):
+        # Test that the deleting the only bugtask results in an error message.
+        bug = self.factory.makeBug()
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bug.owner)
+            form = {
+                'field.actions.delete_bugtask': 'Delete',
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name='+delete', form=form,
+                principal=bug.owner)
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = view.request.response.notifications
+            self.assertEqual(1, len(notifications))
+            expected = ('Cannot delete only bugtask affecting: %s.'
+                % bug.default_bugtask.target.bugtargetdisplayname)
+            self.assertEqual(expected, notifications[0].message)
+
     def _create_bugtask_to_delete(self):
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
@@ -944,6 +962,38 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
                 view.request.response.getHeader('content-type'))
             expected_url = canonical_url(bug.default_bugtask, rootsite='bugs')
             self.assertEqual(dict(bugtask_url=expected_url), result_data)
+
+    def test_ajax_delete_only_bugtask(self):
+        # Test that deleting the only bugtask returns an empty JSON response
+        # with an error notification.
+        bug = self.factory.makeBug()
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bug.owner)
+            # Set up the request so that we correctly simulate an XHR call
+            # from the URL of the bugtask we are deleting.
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.delete_bugtask': 'Delete'
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name='+delete', server_url=server_url,
+                form=form, principal=bug.owner, **extra)
+            result_data = simplejson.loads(view.render())
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = simplejson.loads(
+                view.request.response.getHeader('X-Lazr-Notifications'))
+            self.assertEqual(1, len(notifications))
+            expected = ('Cannot delete only bugtask affecting: %s.'
+                % bug.default_bugtask.target.bugtargetdisplayname)
+            self.assertEqual(expected, notifications[0][1])
+            self.assertEqual(
+                'application/json',
+                view.request.response.getHeader('content-type'))
+            self.assertEqual(None, result_data)
 
     def test_ajax_delete_non_current_bugtask(self):
         # Test that deleting the non-current bugtask returns the new bugtasks

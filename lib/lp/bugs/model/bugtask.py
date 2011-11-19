@@ -640,19 +640,29 @@ class BugTask(SQLBase):
         return self._status in RESOLVED_BUGTASK_STATUSES
 
     def canBeDeleted(self):
+        try:
+            self.checkCanBeDeleted()
+        except Exception:
+            return False
+        return True
+
+    def checkCanBeDeleted(self):
         num_bugtasks = Store.of(self).find(
             BugTask, bug=self.bug).count()
 
-        return num_bugtasks > 1
+        if num_bugtasks < 2:
+            raise CannotDeleteBugtask(
+                "Cannot delete only bugtask affecting: %s."
+                % self.target.bugtargetdisplayname)
 
     def delete(self, who=None):
         """See `IBugTask`."""
         if who is None:
             who = getUtility(ILaunchBag).user
 
-        if not self.canBeDeleted():
-            raise CannotDeleteBugtask(
-                "Cannot delete bugtask: %s" % self.title)
+        # Raise an error if the bugtask cannot be deleted.
+        self.checkCanBeDeleted()
+
         bug = self.bug
         target = self.target
         notify(ObjectDeletedEvent(self, who))

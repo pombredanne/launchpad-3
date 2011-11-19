@@ -236,6 +236,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
+    CannotDeleteBugtask,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
     IBugTaskSearch,
@@ -1801,11 +1802,21 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         bugtask = self.context
         bug = bugtask.bug
         deleted_bugtask_url = canonical_url(self.context, rootsite='bugs')
-        message = ("This bug no longer affects %s."
+        success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
-        bugtask.delete()
-        self.request.response.addNotification(message)
+        error_message = None
+
+        try:
+            bugtask.delete()
+            self.request.response.addNotification(success_message)
+        except CannotDeleteBugtask as e:
+            error_message = str(e)
+            self.request.response.addErrorNotification(error_message)
         if self.request.is_ajax:
+            if error_message:
+                self.request.response.setHeader('Content-type',
+                    'application/json')
+                return dumps(None)
             launchbag = getUtility(ILaunchBag)
             launchbag.add(bug.default_bugtask)
             # If we are deleting the current highlighted bugtask via ajax,
