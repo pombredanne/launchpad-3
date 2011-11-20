@@ -603,7 +603,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False, member_of=(),
+        homepage_content=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -640,6 +641,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
         naked_person._password_cleartext_cached = password
+        if homepage_content is not None:
+            naked_person.homepage_content = homepage_content
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')

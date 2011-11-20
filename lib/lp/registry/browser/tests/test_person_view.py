@@ -10,9 +10,11 @@ from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
     DocTestMatches,
+    Equals,
     LessThan,
     Not,
     )
+
 import transaction
 from zope.component import getUtility
 
@@ -96,6 +98,14 @@ class TestPersonIndexView(TestCaseWithFactory):
         self.assertThat(extract_text(html), DocTestMatches(extract_text(
             "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
             | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
+
+    def test_person_view_page_description(self):
+        person_description = self.factory.getUniqueString()
+        person = self.factory.makePerson(
+            homepage_content=person_description)
+        view = create_initialized_view(person, '+index')
+        self.assertThat(view.page_description,
+            Equals(person_description))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -891,6 +901,8 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+        self.assertEqual(
+            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):

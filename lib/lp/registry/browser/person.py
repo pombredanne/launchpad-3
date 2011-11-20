@@ -2950,6 +2950,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
             return "%s does not use Launchpad" % context.displayname
 
     @cachedproperty
+    def page_description(self):
+        context = self.context
+        if context.is_valid_person_or_team:
+            return self.context.homepage_content
+        else:
+            return None
+
+    @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
         return self.is_delegated_identity
