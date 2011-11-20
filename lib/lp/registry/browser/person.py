@@ -2953,7 +2953,9 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
     def page_description(self):
         context = self.context
         if context.is_valid_person_or_team:
-            return self.context.homepage_content
+            return (
+                self.context.homepage_content
+                or self.context.teamdescription)
         else:
             return None
 
