@@ -459,6 +459,10 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
+    @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
 
