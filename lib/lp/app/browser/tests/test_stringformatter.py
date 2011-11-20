@@ -25,6 +25,7 @@ from lp.app.browser.stringformatter import (
     linkify_bug_numbers,
     )
 from lp.testing import TestCase
+from lp.services.features.testing import FeatureFixture
 
 
 def test_split_paragraphs():
@@ -416,11 +417,33 @@ class MarksDownAs(Matcher):
             FormattersAPI(input_string).markdown())
 
 
+class TestMarkdownDisabled(TestCase):
+    """Feature flag can turn Markdown stuff off.
+    """
+
+    layer = DatabaseFunctionalLayer  # Fixtures need the database for now
+
+    def setUp(self):
+        super(TestMarkdownDisabled, self).setUp()
+        self.useFixture(FeatureFixture({'markdown.enabled': None}))
+
+    def test_plain_text(self):
+        self.assertThat(
+            'hello **simple** world',
+            MarksDownAs('<p>hello **simple** world</p>'))
+
+
 class TestMarkdown(TestCase):
     """Test for Markdown integration within Launchpad.
 
     Not an exhaustive test, more of a check for our integration and configuration.
     """
+
+    layer = DatabaseFunctionalLayer  # Fixtures need the database for now
+
+    def setUp(self):
+        super(TestMarkdown, self).setUp()
+        self.useFixture(FeatureFixture({'markdown.enabled': 'on'}))
 
     def test_plain_text(self):
         self.assertThat(

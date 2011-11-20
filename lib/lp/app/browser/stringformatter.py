@@ -40,6 +40,9 @@ from lp.services.utils import (
     re_email_address,
     obfuscate_email,
     )
+from lp.services.features import (
+    getFeatureFlag,
+    )
 
 
 def escape(text, quote=True):
@@ -974,7 +977,10 @@ class FormattersAPI:
         return '<a href="%s">%s</a>' % (url, self._stringtoformat)
 
     def markdown(self):
-        return format_markdown(self._stringtoformat)
+        if getFeatureFlag('markdown.enabled'):
+            return format_markdown(self._stringtoformat)
+        else:
+            return self.text_to_html()
 
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
@@ -1031,7 +1037,8 @@ class FormattersAPI:
 
 def format_markdown(text):
     """Return html form of marked-up text."""
+    # This returns whole paragraphs (in p tags), similarly to text_to_html.
     md = markdown.Markdown(
         safe_mode='escape',
         )
-    return md.convert(text)
+    return md.convert(text)  # How easy was that?
