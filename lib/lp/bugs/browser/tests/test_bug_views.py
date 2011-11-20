@@ -12,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from BeautifulSoup import BeautifulSoup
 
 from testtools.matchers import (
+    MatchesAll,
     Contains,
     Not,
     )
@@ -131,15 +132,18 @@ class TestEmailObfuscated(BrowserTestCase):
         browser = self.getBrowserForBugWithEmail(no_login=True)
         soup = BeautifulSoup(browser.contents)
         meat = soup.find('meta', dict(name='description'))
-        self.assertThat(meat['content'], Contains('Description with'))
-        self.assertThat(meat['content'], Not(Contains('@')))
+        self.assertThat(meat['content'], MatchesAll(
+            Contains('Description with'),
+            Not(Contains('@')),
+            Contains('...')))  # Ellipsis from hidden address.
 
-    def test_bug_description_in_meta_description_anonymous(self):
+    def test_bug_description_in_meta_description_not_anonymous(self):
         browser = self.getBrowserForBugWithEmail(no_login=False)
         soup = BeautifulSoup(browser.contents)
         meat = soup.find('meta', dict(name='description'))
-        self.assertThat(meat['content'], Contains('Description with'))
-        self.assertThat(meat['content'], Contains(self.email_address))
+        self.assertThat(meat['content'], MatchesAll(
+            Contains('Description with'),
+            Contains(self.email_address)))
 
 
 class TestBugPortletSubscribers(TestCaseWithFactory):

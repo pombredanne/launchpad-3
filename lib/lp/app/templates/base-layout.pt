@@ -54,7 +54,7 @@
 
     <meta name="description" 
       tal:condition="view/page_description | nothing"
-      tal:attributes="content view/page_description/fmt:obfuscate-email/fmt:shorten/500">
+      tal:attributes="content view/page_description/fmt:strip-email/fmt:shorten/500">
 
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
