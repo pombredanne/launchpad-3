@@ -1042,5 +1042,5 @@ def format_markdown(text):
         safe_mode='escape',
         extensions=[
             'tables',
-            'nl2br'])
+            ])
     return md.convert(text)  # How easy was that?
