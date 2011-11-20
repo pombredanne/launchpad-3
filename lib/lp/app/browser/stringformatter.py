@@ -1040,5 +1040,7 @@ def format_markdown(text):
     # This returns whole paragraphs (in p tags), similarly to text_to_html.
     md = markdown.Markdown(
         safe_mode='escape',
-        )
+        extensions=[
+            'tables',
+            'nl2br'])
     return md.convert(text)  # How easy was that?
