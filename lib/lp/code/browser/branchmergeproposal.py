@@ -597,10 +597,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     label = "Proposal to merge branch"
     schema = ClaimButton
 
-    @property
-    def page_description(self):
-        return self.context.description
-
     def initialize(self):
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
