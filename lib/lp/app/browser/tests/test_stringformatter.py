@@ -9,6 +9,11 @@ from doctest import DocTestSuite
 from textwrap import dedent
 import unittest
 
+from testtools.matchers import (
+    Equals,
+    Matcher,
+    )
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -399,6 +404,28 @@ class TestOOPSFormatter(TestCase):
             expected_string, formatted_string,
             "Formatted string should be '%s', was '%s'" % (
                 expected_string, formatted_string))
+
+
+class MarksDownAs(Matcher):
+
+    def __init__(self, expected_html):
+        self.expected_html = expected_html
+
+    def match(self, input_string):
+        return Equals(self.expected_html).match(
+            FormattersAPI(input_string).markdown())
+
+
+class TestMarkdown(TestCase):
+    """Test for Markdown integration within Launchpad.
+
+    Not an exhaustive test, more of a check for our integration and configuration.
+    """
+
+    def test_plain_text(self):
+        self.assertThat(
+            'hello world',
+            MarksDownAs('<p>hello world</p>'))
 
 
 def test_suite():

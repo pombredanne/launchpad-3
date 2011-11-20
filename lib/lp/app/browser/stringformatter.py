@@ -22,6 +22,7 @@ import cgi
 import re
 from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
+import markdown
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -972,6 +973,9 @@ class FormattersAPI:
         url = root_url + self._stringtoformat
         return '<a href="%s">%s</a>' % (url, self._stringtoformat)
 
+    def markdown(self):
+        return format_markdown(self._stringtoformat)
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -981,6 +985,8 @@ class FormattersAPI:
             return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
+        elif name == 'markdown':
+            return self.markdown()
         elif name == 'text-to-html':
             return self.text_to_html()
         elif name == 'text-to-html-with-target':
@@ -1021,3 +1027,11 @@ class FormattersAPI:
             return self.oops_id()
         else:
             raise TraversalError(name)
+
+
+def format_markdown(text):
+    """Return html form of marked-up text."""
+    md = markdown.Markdown(
+        safe_mode='escape',
+        )
+    return md.convert(text)
