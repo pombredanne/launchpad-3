@@ -11,6 +11,16 @@ from zope.security.proxy import removeSecurityProxy
 
 from BeautifulSoup import BeautifulSoup
 
+from testtools.matchers import (
+    Contains,
+    Not,
+    )
+
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -99,25 +109,37 @@ class TestEmailObfuscated(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def getBrowserForBugWithEmail(self, email_address, no_login):
-        bug = self.factory.makeBug(
-            title="Title with %s contained" % email_address,
-            description="Description with %s contained." % email_address)
-        return self.getViewBrowser(bug, rootsite="bugs", no_login=no_login)
+    email_address = "mark@example.com"
+
+    def getBrowserForBugWithEmail(self, no_login):
+        self.bug = self.factory.makeBug(
+            title="Title with %s contained" % self.email_address,
+            description="Description with %s contained." % self.email_address)
+        return self.getViewBrowser(self.bug, rootsite="bugs", no_login=no_login)
 
     def test_user_sees_email_address(self):
         """A logged-in user can see the email address on the page."""
-        email_address = "mark@example.com"
-        browser = self.getBrowserForBugWithEmail(
-            email_address, no_login=False)
-        self.assertEqual(7, browser.contents.count(email_address))
+        browser = self.getBrowserForBugWithEmail(no_login=False)
+        self.assertEqual(8, browser.contents.count(self.email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
-        email_address = "mark@example.com"
-        browser = self.getBrowserForBugWithEmail(
-            email_address, no_login=True)
-        self.assertEqual(0, browser.contents.count(email_address))
+        browser = self.getBrowserForBugWithEmail(no_login=True)
+        self.assertEqual(0, browser.contents.count(self.email_address))
+
+    def test_bug_description_in_meta_description_anonymous(self):
+        browser = self.getBrowserForBugWithEmail(no_login=True)
+        soup = BeautifulSoup(browser.contents)
+        meat = soup.find('meta', dict(name='description'))
+        self.assertThat(meat['content'], Contains('Description with'))
+        self.assertThat(meat['content'], Not(Contains('@')))
+
+    def test_bug_description_in_meta_description_anonymous(self):
+        browser = self.getBrowserForBugWithEmail(no_login=False)
+        soup = BeautifulSoup(browser.contents)
+        meat = soup.find('meta', dict(name='description'))
+        self.assertThat(meat['content'], Contains('Description with'))
+        self.assertThat(meat['content'], Contains(self.email_address))
 
 
 class TestBugPortletSubscribers(TestCaseWithFactory):

@@ -660,6 +660,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
         return smartquote('%s: "%s"') % (heading, title)
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""

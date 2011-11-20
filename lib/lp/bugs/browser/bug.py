@@ -459,10 +459,6 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
-    def page_description(self):
-        return IBug(self.context).description
-
-    @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
 
@@ -547,6 +543,10 @@ class BugView(LaunchpadView, BugViewMixin):
     but it was the best solution we came up with when deciding to hang
     all the pages off IBugTask instead of IBug.
     """
+
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
 
     @property
     def subscription(self):

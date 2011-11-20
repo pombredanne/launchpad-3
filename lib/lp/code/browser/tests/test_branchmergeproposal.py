@@ -859,7 +859,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 name='description',
                 content=True))
         head = Tag('head', 'head')
-        import pdb;pdb.set_trace()
         self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
