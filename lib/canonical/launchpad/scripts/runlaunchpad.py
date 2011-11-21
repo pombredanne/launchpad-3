@@ -451,19 +451,19 @@ def start_launchpad(argv=list(sys.argv), setup=None):
                 except KeyboardInterrupt:
                     pass
     except Exception, e:
-        print >>sys.stderr, "stopping services on exception %r" % e
+        print >> sys.stderr, "stopping services on exception %r" % e
         for service in services:
-            print >>sys.stderr, service, "fixture details:"
+            print >> sys.stderr, service, "fixture details:"
             # There may be no details on some services if they haven't been
             # initialized yet.
             if getattr(service, '_details', None) is None:
-                print >>sys.stderr, "(not ready yet?)"
+                print >> sys.stderr, "(not ready yet?)"
                 continue
             details_str = _details_to_str(service.getDetails())
             if details_str:
-                print >>sys.stderr, details_str
+                print >> sys.stderr, details_str
             else:
-                print >>sys.stderr, "(no details present)"
+                print >> sys.stderr, "(no details present)"
         raise
 
 
