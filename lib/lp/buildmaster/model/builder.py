@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -312,7 +312,7 @@ def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
-    # two status we care about. See see lib/canonical/buildd/slave.py
+    # two status we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -327,7 +327,6 @@ def rescueBuilderIfLost(builder, logger=None):
         Always return status_sentence.
         """
         # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
         # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 

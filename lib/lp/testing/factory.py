@@ -2700,7 +2700,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         Note: the builder returned will not be able to actually build -
         we currently have a build slave setup for 'bob' only in the
         test environment.
-        See lib/canonical/buildd/tests/buildd-slave-test.conf
         """
         if processor is None:
             processor_fam = ProcessorFamilySet().getByName('x86')
