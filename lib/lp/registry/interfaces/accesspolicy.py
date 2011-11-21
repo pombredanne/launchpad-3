@@ -87,6 +87,12 @@ class IAccessPolicyArtifactSource(Interface):
         Creates the abstract artifact if it doesn't already exist.
         """
 
+    def delete(concrete_artifact):
+        """Delete the `IAccessPolicyArtifact` for a concrete artifact.
+
+        Also removes any AccessPolicyGrants for the artifact.
+        """
+
 
 class IAccessPolicyGrantSource(Interface):
 

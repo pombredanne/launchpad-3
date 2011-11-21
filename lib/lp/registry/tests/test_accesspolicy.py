@@ -3,10 +3,12 @@
 
 __metaclass__ = type
 
+from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
@@ -148,6 +150,18 @@ class BaseAccessPolicyArtifactTests:
         self.assertEqual(
             abstract.id,
             getUtility(IAccessPolicyArtifactSource).ensure(concrete).id)
+
+    def test_delete(self):
+        # delete() removes the abstract artifact and any associated
+        # grants.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        grant = self.factory.makeAccessPolicyGrant(object=abstract)
+        getUtility(IAccessPolicyArtifactSource).delete(concrete)
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'policy')
+        self.assertRaises(
+            LostObjectError, getattr, abstract, 'concrete_artifact')
 
 
 class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,
