@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import pdb
 import socket
@@ -24,6 +24,7 @@ from bzrlib.option import (
     Option,
     )
 from bzrlib.transport import get_transport
+from bzrlib.trace import is_verbose
 from pytz import UTC
 import simplejson
 
@@ -33,6 +34,7 @@ from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES,
     DEFAULT_INSTANCE_TYPE,
+    DEFAULT_REGION,
     EC2Instance,
     )
 from devscripts.ec2test.session import EC2SessionName
@@ -80,15 +82,8 @@ machine_id_option = Option(
           'recent one with an approved owner.'))
 
 
-def _convert_instance_type(arg):
-    """Ensure that `arg` is acceptable as an instance type."""
-    if arg not in AVAILABLE_INSTANCE_TYPES:
-        raise BzrCommandError('Unknown instance type %r' % arg)
-    return arg
-
-
 instance_type_option = Option(
-    'instance', short_name='i', type=_convert_instance_type,
+    'instance', short_name='i',
     param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
@@ -127,6 +122,14 @@ attached_option = Option(
     'attached',
     help=("Remain attached, i.e. do not go headless. Implied by --postmortem "
           "and --file."))
+
+
+region_option = Option(
+    'region',
+    type=str,
+    help=("Name of the AWS region in which to run the instance.  "
+        "Must be the same as the region holding the image file. "
+        "For example, 'us-west-1'."))
 
 
 def filename_type(filename):
@@ -219,6 +222,7 @@ class cmd_test(EC2Command):
         trunk_option,
         machine_id_option,
         instance_type_option,
+        region_option,
         Option(
             'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
@@ -285,6 +289,7 @@ class cmd_test(EC2Command):
             noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             attached=False, debug=False, open_browser=False,
+            region=None,
             include_download_cache_changes=False):
         set_trace_if(debug)
         if branch is None:
@@ -313,7 +318,8 @@ class cmd_test(EC2Command):
                 "supported")
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
-        instance = EC2Instance.make(session_name, instance_type, machine)
+        instance = EC2Instance.make(session_name, instance_type, machine,
+            region=region)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -335,6 +341,8 @@ class cmd_land(EC2Command):
     takes_options = [
         debug_option,
         instance_type_option,
+        region_option,
+        machine_id_option,
         Option('dry-run', help="Just print the equivalent ec2 test command."),
         Option('print-commit', help="Print the full commit message."),
         Option(
@@ -385,7 +393,9 @@ class cmd_land(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             no_qa=False, incremental=False, rollback=None, print_commit=False,
-            force=False, attached=False):
+            force=False, attached=False,
+            region=DEFAULT_REGION,
+            ):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -474,7 +484,7 @@ class cmd_land(EC2Command):
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            session_name, instance_type, machine)
+            session_name, instance_type, machine, region=region)
 
         runner = EC2TestRunner(
             mp.source_branch, email=emails,
@@ -502,6 +512,7 @@ class cmd_demo(EC2Command):
         postmortem_option,
         debug_option,
         include_download_cache_changes_option,
+        region_option,
         ListOption(
             'demo', type=str,
             help="Allow this netmask to connect to the instance."),
@@ -570,6 +581,7 @@ class cmd_update_image(EC2Command):
         instance_type_option,
         postmortem_option,
         debug_option,
+        region_option,
         ListOption(
             'extra-update-image-command', type=str,
             help=('Run this command (with an ssh agent) on the image before '
@@ -586,6 +598,7 @@ class cmd_update_image(EC2Command):
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
+            region=None,
             public=False):
         set_trace_if(debug)
 
@@ -599,17 +612,14 @@ class cmd_update_image(EC2Command):
         for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
             os.environ.pop(variable, None)
 
-        credentials = EC2Credentials.load_from_file()
-
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
-            credentials=credentials)
-        instance.check_bundling_prerequisites(
-            ami_name, credentials)
+            region=region)
+        instance.check_bundling_prerequisites(ami_name)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, credentials, public)
+            extra_update_image_command, ami_name, instance._credentials, public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials, public):
@@ -669,9 +679,13 @@ class cmd_images(EC2Command):
     The first in the list is the default image.
     """
 
-    def run(self):
-        credentials = EC2Credentials.load_from_file()
+    takes_options = [
+        region_option,
+        ]
+
+    def run(self, region=None):
         session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
         account = credentials.connect(session_name)
         format = "%5s  %-12s  %-12s  %-12s %s\n"
         self.outf.write(
@@ -682,6 +696,25 @@ class cmd_images(EC2Command):
                     revision, image.id, image.ownerId,
                     VALID_AMI_OWNERS.get(image.ownerId, "unknown"),
                     image.description or ''))
+
+
+class cmd_kill(EC2Command):
+    """Kill one or more running EC2 instances.
+
+    You can get the instance id from 'ec2 list'.
+    """
+
+    takes_options = [
+        region_option,
+        ]
+    takes_args = ['instance_id*']
+
+    def run(self, instance_id_list, region=None):
+        credentials = EC2Credentials.load_from_file(region_name=region)
+        account = credentials.connect('ec2 kill')
+        self.outf.write("killing %d instances: " % len(instance_id_list,))
+        account.conn.terminate_instances(instance_id_list)
+        self.outf.write("done\n")
 
 
 class cmd_list(EC2Command):
@@ -698,6 +731,7 @@ class cmd_list(EC2Command):
     aliases = ["ls"]
 
     takes_options = [
+        region_option,
         Option('show-urls',
                help="Include more information about each instance"),
         Option('all', short_name='a',
@@ -714,9 +748,10 @@ class cmd_list(EC2Command):
         """How long has 'instance' been running?"""
         expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
         launch_time = datetime.strptime(instance.launch_time, expected_format)
-        return (
+        delta = (
             datetime.utcnow().replace(tzinfo=UTC)
             - launch_time.replace(tzinfo=UTC))
+        return timedelta(delta.days, delta.seconds)  # Round it.
 
     def get_http_url(self, instance):
         hostname = instance.public_dns_name
@@ -743,22 +778,29 @@ class cmd_list(EC2Command):
         :param data: Launchpad-specific data.
         :param verbose: Whether we want verbose output.
         """
+        description = instance.id
         uptime = self.get_uptime(instance)
-        if data is None:
-            description = instance.id
-            current_status = 'unknown '
+        if instance.state != 'running':
+            current_status = instance.state
         else:
-            description = data['description']
-            if data['failed-yet']:
-                current_status = '[FAILED]'
+            if data is None:
+                current_status = 'unknown '
             else:
-                current_status = '[OK]    '
-        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+                description = data['description']
+                if data['failed-yet']:
+                    current_status = '[FAILED]'
+                else:
+                    current_status = '[OK]    '
+        output = '%-40s  %-10s (up for %s) %10s' % (description, current_status, uptime,
+            instance.id)
         if verbose:
             url = self.get_http_url(instance)
             if url is None:
                 url = "No web service"
             output += '\n  %s' % (url,)
+            if instance.state_reason:
+                output += '\n  transition reason: %s' % instance.state_reason.get(
+                    'message', '')
         return output
 
     def format_summary(self, by_state):
@@ -766,9 +808,9 @@ class cmd_list(EC2Command):
             ': '.join((state, str(num)))
             for (state, num) in sorted(list(by_state.items())))
 
-    def run(self, show_urls=False, all=False):
-        credentials = EC2Credentials.load_from_file()
+    def run(self, show_urls=False, all=False, region=None):
         session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
         account = credentials.connect(session_name)
         instances = list(self.iter_instances(account))
         if len(instances) == 0:
@@ -781,7 +823,7 @@ class cmd_list(EC2Command):
             data = self.get_ec2test_info(instance)
             if data is None and not all:
                 continue
-            print self.format_instance(instance, data, show_urls)
+            print self.format_instance(instance, data, verbose=(show_urls or is_verbose()))
         print 'Summary: %s' % (self.format_summary(by_state),)
 
 
