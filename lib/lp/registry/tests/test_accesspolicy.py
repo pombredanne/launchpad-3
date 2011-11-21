@@ -141,6 +141,14 @@ class BaseAccessPolicyArtifactTests:
         Store.of(abstract).flush()
         self.assertEqual(concrete, abstract.concrete_artifact)
 
+    def test_get(self):
+        # get() finds an abstract artifact which maps to the concrete
+        # one.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        self.assertEqual(
+            abstract, getUtility(IAccessPolicyArtifactSource).get(concrete))
+
     def test_ensure_twice(self):
         # ensure() will reuse an existing matching abstract artifact if
         # it exists.

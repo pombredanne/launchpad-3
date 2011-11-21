@@ -119,11 +119,16 @@ class AccessPolicyArtifact(StormBase):
                 "%r is not a valid artifact" % concrete_artifact)
 
     @classmethod
-    def ensure(cls, concrete_artifact):
+    def get(cls, concrete_artifact):
         """See `IAccessPolicyArtifactSource`."""
         constraints = {
             cls._getConcreteAttribute(concrete_artifact): concrete_artifact}
-        existing = IStore(cls).find(cls, **constraints).one()
+        return IStore(cls).find(cls, **constraints).one()
+
+    @classmethod
+    def ensure(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        existing = cls.get(concrete_artifact)
         if existing is not None:
             return existing
         # No existing object. Create a new one.
