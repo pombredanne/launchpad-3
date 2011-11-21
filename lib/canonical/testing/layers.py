@@ -223,8 +223,7 @@ def reconnect_stores(reset=False):
     """
     disconnect_stores()
     if reset:
-        dbconfig.override(
-            dbuser=config.launchpad.dbuser, isolation_level=None)
+        dbconfig.reset()
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
