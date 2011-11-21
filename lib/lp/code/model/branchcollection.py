@@ -441,19 +441,27 @@ class GenericBranchCollection:
             In(BranchMergeProposal.id, result._get_select()))
 
         def do_eager_load(rows):
+            # Load the related diffs.
+            preview_diffs = load_related(
+                PreviewDiff, rows, ['preview_diff_id'])
+            load_related(Diff, preview_diffs, ['diff_id'])
+            # Load related branches.
             source_branches = load_related(Branch, rows, ['source_branchID'])
+            target_branches = load_related(Branch, rows, ['target_branchID'])
+            load_related(Branch, rows, ['prerequisite_branchID'])
             # Cache person's data (registrants of the proposal and
-            # owners of the source branches).            
+            # owners of the source branches).
             person_ids = set().union(
                 (proposal.registrantID for proposal in rows),
                 (branch.ownerID for branch in source_branches))
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 person_ids, need_validity=True))
-            # Load the source/target branches and preload the data for
-            # these branches.
-            target_branches = load_related(Branch, rows, ['target_branchID'])
-            self._preloadDataForBranches(target_branches + source_branches)
-            load_related(Product, target_branches, ['productID'])
+            # Preload the data for source/target branches.
+            branches = target_branches + source_branches
+            load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+            load_related(DistroSeries, branches, ['distroseriesID'])
+            self._preloadDataForBranches(branches)
+            load_related(Product, branches, ['productID'])
 
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
