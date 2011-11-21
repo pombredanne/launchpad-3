@@ -502,13 +502,14 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
 
     Returns the message-id.
 
-    :param message_detail: Information about the message to include in the
-        request timeline.
+    :param message_detail: String of detail about the message
+        to be recorded to help with debugging.
     """
-    # Note that raw_sendail has no tests, unit or otherwise.
+    # Note that raw_sendmail has no tests, unit or otherwise.
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
+    assert isinstance(message_detail, basestring), message_detail
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
     request = get_current_browser_request()
     timeline = get_request_timeline(request)

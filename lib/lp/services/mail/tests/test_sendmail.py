@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,11 +7,22 @@ from doctest import DocTestSuite
 from email.Message import Message
 import unittest
 
+from zope.app import zapi
+from zope.interface import implements
+from zope.sendmail.interfaces import IMailDelivery
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+
+from lazr.restful.utils import get_current_browser_request
+
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
-from lp.testing import TestCase
+from lp.services.timeline.requesttimeline import get_request_timeline
 
+from lp.testing import TestCase
 
 class TestMailController(TestCase):
 
@@ -236,6 +247,39 @@ class TestMailController(TestCase):
             sendmail.sendmail = real_sendmail
         self.assertEqual('to@example.com', sendmail_kwargs['message']['To'])
         self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
+
+    def test_sendmail_into_timeline(self):
+        """sendmail records stuff in the timeline.
+
+        See https://bugs.launchpad.net/launchpad/+bug/885972
+        """
+        fake_mailer = FakeMailer()
+        getGlobalSiteManager().registerUtility(
+            fake_mailer, IMailDelivery, 'Mail')
+        to_addresses = ['to1@example.com', 'to2@example.com']
+        subject = self.getUniqueString('subject')
+        ctrl = MailController(
+            'from@example.com', to_addresses,
+            subject, 'body', {'key': 'value'})
+        ctrl.send()
+        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEquals(fake_mailer.to_addr, to_addresses)
+        timeline = get_request_timeline(get_current_browser_request())
+        actions = timeline.actions
+        self.assertEquals(len(actions), 1)
+        a0 = actions[0]
+        self.assertEquals(a0.category, 'sendmail')
+        self.assertEquals(a0.detail, subject)
+
+
+class FakeMailer(object):
+
+    implements(IMailDelivery)
+
+    def send(self, from_addr, to_addr, raw_message):
+        self.from_addr = from_addr
+        self.to_addr = to_addr
+        self.raw_message = raw_message
 
 
 def test_suite():
