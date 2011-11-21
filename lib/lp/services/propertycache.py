@@ -117,6 +117,18 @@ class CachedProperty:
             setattr(cache, self.name, value)
             return value
 
+    def __set__(self, instance, value):
+        raise AttributeError(
+            "%s cannot be set here; instead set explicitly with "
+            "get_property_cache(object).%s = %r" % (
+                self.name, self.name, value))
+
+    def __delete__(self, instance):
+        raise AttributeError(
+            "%s cannot be deleted here; instead delete explicitly "
+            "with del get_property_cache(object).%s" % (
+                self.name, self.name))
+
 
 def cachedproperty(name_or_function):
     """Decorator to create a cached property.
