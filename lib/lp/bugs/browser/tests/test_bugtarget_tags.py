@@ -37,3 +37,17 @@ class TestBugTargetTags(TestCaseWithFactory):
         self.assertEqual(
             [u'foo'],
             [tag['tag'] for tag in view.tags_cloud_data])
+
+    def test_tags_order(self):
+        self.factory.makeBug(product=self.target_product, tags=['tag-last'])
+        for i in range(0, 2):
+            self.factory.makeBug(product=self.target_product, tags=['tag-middle'])
+        for i in range(0, 3):
+            self.factory.makeBug(product=self.target_product, tags=['tag-first'])
+        view = create_view(
+            self.project,
+            name="+bugtarget-portlet-tags-content",
+            layer=BugsLayer)
+        self.assertEqual(
+            [u'tag-first', u'tag-middle', u'tag-last'],
+            [tag['tag'] for tag in view.tags_cloud_data])
