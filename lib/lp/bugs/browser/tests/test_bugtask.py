@@ -185,7 +185,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(bug.default_bugtask)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(100)))
+        self.assertThat(recorder, HasQueryCount(LessThan(101)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)

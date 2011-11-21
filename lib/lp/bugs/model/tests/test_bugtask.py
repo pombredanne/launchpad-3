@@ -2590,3 +2590,68 @@ class TestWebservice(TestCaseWithFactory):
         # Check the delete really worked.
         with person_logged_in(removeSecurityProxy(db_bug).owner):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
+
+
+class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskUserHasPriviliges, self).setUp()
+        self.celebrities = getUtility(ILaunchpadCelebrities)
+
+    def test_admin_is_allowed(self):
+        # An admin always has privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertTrue(bugtask.userHasPrivileges(self.celebrities.admin))
+
+    def test_bug_celebrities_are_allowed(self):
+        # The three bug celebrities (bug watcher, bug importer and
+        # janitor always have privileges.
+        bugtask = self.factory.makeBugTask()
+        for celeb in (
+            self.celebrities.bug_watch_updater,
+            self.celebrities.bug_importer, self.celebrities.janitor):
+            self.assertTrue(bugtask.userHasPrivileges(celeb))
+
+    def test_pillar_owner_is_allowed(self):
+        # The pillar owner has privileges.
+        pillar = self.factory.makeProduct()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(pillar.owner))
+
+    def test_pillar_driver_is_allowed(self):
+        # The pillar driver has privileges.
+        pillar = self.factory.makeProduct()
+        removeSecurityProxy(pillar).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(pillar.driver))
+
+    def test_pillar_bug_supervisor(self):
+        # The pillar bug supervisor has privileges.
+        pillar = self.factory.makeProduct()
+        bugsupervisor = self.factory.makePerson()
+        removeSecurityProxy(pillar).setBugSupervisor(
+            bugsupervisor, self.celebrities.admin)
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(bugsupervisor))
+
+    def test_productseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        series = self.factory.makeProductSeries()
+        removeSecurityProxy(series).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=series)
+        self.assertTrue(bugtask.userHasPrivileges(series.driver))
+
+    def test_distroseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        distroseries = self.factory.makeDistroSeries()
+        removeSecurityProxy(distroseries).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=distroseries)
+        self.assertTrue(bugtask.userHasPrivileges(distroseries.driver))
+
+    def test_random_has_no_privileges(self):
+        # Joe Random has no privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertFalse(
+            bugtask.userHasPrivileges(self.factory.makePerson()))
