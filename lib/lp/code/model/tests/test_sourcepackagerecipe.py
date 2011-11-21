@@ -55,12 +55,15 @@ from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild,
     SourcePackageRecipeBuildJob,
     )
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.bulk import load_referencing
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -203,16 +206,32 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
+    def createSourcePackageRecipe(self, number_of_branches=2):
+        branches = []
+        for i in range(number_of_branches):
+            branches.append(self.factory.makeAnyBranch())
+        sp_recipe = self.factory.makeSourcePackageRecipe(branches=branches)
+        transaction.commit()
+        return sp_recipe, branches
+
     def test_multiple_branch_links_created(self):
         # If a recipe links to more than one branch, getReferencedBranches()
         # returns all of them.
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        sp_recipe = self.factory.makeSourcePackageRecipe(
-            branches=[branch1, branch2])
-        transaction.commit()
+        sp_recipe, [branch1, branch2] = self.createSourcePackageRecipe()
         self.assertEquals(
             sorted([branch1, branch2]),
+            sorted(sp_recipe.getReferencedBranches()))
+
+    def test_preLoadReferencedBranches(self):
+        sp_recipe, unused = self.createSourcePackageRecipe()
+        recipe_data = load_referencing(
+            SourcePackageRecipeData,
+            [sp_recipe], ['sourcepackage_recipe_id'])[0]
+        referenced_branches = sp_recipe.getReferencedBranches()
+        clear_property_cache(recipe_data)
+        SourcePackageRecipeData.preLoadReferencedBranches([recipe_data])
+        self.assertEquals(
+            sorted(referenced_branches),
             sorted(sp_recipe.getReferencedBranches()))
 
     def test_random_user_cant_edit(self):

@@ -136,9 +136,9 @@ class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
     IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationImports, ITranslationPolicy, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, IServiceUsage, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -212,8 +212,12 @@ class IDistributionPublic(
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam',

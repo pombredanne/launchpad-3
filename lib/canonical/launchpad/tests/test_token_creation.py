@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 import random
-import unittest
+import testtools
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.components.tokens import (
@@ -16,17 +16,21 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
-class Test_create_token(unittest.TestCase):
+class Test_create_token(testtools.TestCase):
 
     def test_length(self):
         token = create_token(99)
         self.assertEquals(len(token), 99)
 
 
-class Test_create_unique_token_for_table(unittest.TestCase):
+class Test_create_unique_token_for_table(testtools.TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_token_uniqueness(self):
+        # Since the prng will be seeded in this test it is important we clean
+        # up by calling seed with no parameters, which will use OS-provided
+        # entropy if available or use the system clock.
+        self.addCleanup(random.seed)
         # Calling create_unique_token_for_table() twice with the same
         # random.seed() will generate two identical tokens, as the token was
         # never inserted in the table.

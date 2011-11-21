@@ -13,6 +13,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class BranchPrivacyTriggersTestCase(unittest.TestCase):
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
