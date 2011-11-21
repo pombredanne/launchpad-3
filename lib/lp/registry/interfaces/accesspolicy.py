@@ -87,6 +87,12 @@ class IAccessPolicyArtifactSource(Interface):
         Creates the abstract artifact if it doesn't already exist.
         """
 
+    def get(concrete_artifact):
+        """Return the `IAccessPolicyArtifact` for an artifact, if it exists.
+
+        Use ensure() if you want to create one if it doesn't yet exist.
+        """
+
     def delete(concrete_artifact):
         """Delete the `IAccessPolicyArtifact` for a concrete artifact.
 

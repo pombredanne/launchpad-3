@@ -141,6 +141,14 @@ class BaseAccessPolicyArtifactTests:
         Store.of(abstract).flush()
         self.assertEqual(concrete, abstract.concrete_artifact)
 
+    def test_get(self):
+        # get() finds an abstract artifact which maps to the concrete
+        # one.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        self.assertEqual(
+            abstract, getUtility(IAccessPolicyArtifactSource).get(concrete))
+
     def test_ensure_twice(self):
         # ensure() will reuse an existing matching abstract artifact if
         # it exists.
@@ -157,11 +165,30 @@ class BaseAccessPolicyArtifactTests:
         concrete = self.getConcreteArtifact()
         abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
         grant = self.factory.makeAccessPolicyGrant(object=abstract)
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessPolicyGrant(
+                object=self.factory.makeAccessPolicyArtifact()),
+            self.factory.makeAccessPolicyGrant(
+                object=self.factory.makeAccessPolicy()),
+            ]
+
         getUtility(IAccessPolicyArtifactSource).delete(concrete)
         IStore(grant).invalidate()
         self.assertRaises(LostObjectError, getattr, grant, 'policy')
         self.assertRaises(
             LostObjectError, getattr, abstract, 'concrete_artifact')
+
+        for other_grant in other_grants:
+            self.assertEqual(
+                other_grant,
+                getUtility(IAccessPolicyGrantSource).getByID(other_grant.id))
+
+    def test_delete_noop(self):
+        # delete() works even if there's no abstract artifact.
+        concrete = self.getConcreteArtifact()
+        getUtility(IAccessPolicyArtifactSource).delete(concrete)
 
 
 class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,
