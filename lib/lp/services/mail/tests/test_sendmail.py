@@ -270,6 +270,7 @@ class TestMailController(TestCase):
         a0 = actions[0]
         self.assertEquals(a0.category, 'sendmail')
         self.assertEquals(a0.detail, subject)
+        self.assertIsInstance(a0.detail, str)
 
 
 class FakeMailer(object):
