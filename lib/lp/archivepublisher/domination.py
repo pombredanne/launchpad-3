@@ -108,7 +108,7 @@ def join_spph_spn():
     SPPH = SourcePackagePublishingHistory
     SPN = SourcePackageName
 
-    return SPN.id == SPPH.sourcepackagename_id
+    return SPN.id == SPPH.sourcepackagenameID
 
 
 def join_spph_spr():
@@ -339,7 +339,7 @@ def find_live_binary_versions_pass_2(sorted_pubs, cache):
     bpbs = load_related(
         BinaryPackageBuild,
         [pub.binarypackagerelease for pub in arch_indep_pubs], ['buildID'])
-    load_related(SourcePackageRelease, bpbs, ['source_package_releaseID'])
+    load_related(SourcePackageRelease, bpbs, ['source_package_release_id'])
 
     reprieved_pubs = [
         pub
@@ -587,16 +587,13 @@ class Dominator:
             BPPH.pocket == pocket,
             ]
         candidate_binary_names = Select(
-            BPPH.binarypackagename_id,
-            *bpph_location_clauses,
-            group_by=BPPH.binarypackagename_id,
-            having=(Count() > 1))
-        main_clauses = [
+            BPPH.binarypackagenameID, And(*bpph_location_clauses),
+            group_by=BPPH.binarypackagenameID, having=(Count() > 1))
+        main_clauses = bpph_location_clauses + [
             BPR.id == BPPH.binarypackagereleaseID,
             BPR.binarypackagenameID.is_in(candidate_binary_names),
             BPR.binpackageformat != BinaryPackageFormat.DDEB,
             ]
-        main_clauses.extend(bpph_location_clauses)
 
         # We're going to access the BPRs as well.  Since we make the
         # database look them up anyway, and since there won't be many
@@ -605,7 +602,7 @@ class Dominator:
         # the join would complicate the query.
         query = IStore(BPPH).find((BPPH, BPR), *main_clauses)
         bpphs = list(DecoratedResultSet(query, itemgetter(0)))
-        load_related(BinaryPackageName, bpphs, ['binarypackagename_id'])
+        load_related(BinaryPackageName, bpphs, ['binarypackagenameID'])
         return bpphs
 
     def dominateBinaries(self, distroseries, pocket):
@@ -703,9 +700,9 @@ class Dominator:
         spph_location_clauses = self._composeActiveSourcePubsCondition(
             distroseries, pocket)
         candidate_source_names = Select(
-            SPPH.sourcepackagename_id,
+            SPPH.sourcepackagenameID,
             And(join_spph_spr(), spph_location_clauses),
-            group_by=SPPH.sourcepackagename_id,
+            group_by=SPPH.sourcepackagenameID,
             having=(Count() > 1))
 
         # We'll also access the SourcePackageReleases associated with
@@ -720,7 +717,7 @@ class Dominator:
             SPPH.sourcepackagenameID.is_in(candidate_source_names),
             spph_location_clauses)
         spphs = DecoratedResultSet(query, itemgetter(0))
-        load_related(SourcePackageName, spphs, ['sourcepackagename_id'])
+        load_related(SourcePackageName, spphs, ['sourcepackagenameID'])
         return spphs
 
     def dominateSources(self, distroseries, pocket):
