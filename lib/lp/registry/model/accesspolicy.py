@@ -134,6 +134,14 @@ class AccessPolicyArtifact(StormBase):
         IStore(cls).add(obj)
         return obj
 
+    @classmethod
+    def delete(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        abstract = cls.ensure(concrete_artifact)
+        IStore(abstract).find(
+            AccessPolicyGrant, abstract_artifact=abstract).remove()
+        IStore(abstract).find(AccessPolicyArtifact, id=abstract.id).remove()
+
 
 class AccessPolicyGrant(StormBase):
     implements(IAccessPolicyGrant)
