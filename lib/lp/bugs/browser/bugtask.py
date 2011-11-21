@@ -779,7 +779,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             activity = self.context.bug.activity
         bug_change_re = (
             'affects|description|security vulnerability|'
-            'summary|tags|visibility')
+            'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
@@ -4376,6 +4376,9 @@ class BugActivityItem:
                     return_dict[key] = 'none'
                 else:
                     return_dict[key] = cgi.escape(return_dict[key])
+
+        elif attribute == 'bug task deleted':
+            return 'no longer affects %s' % self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.
