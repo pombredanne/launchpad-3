@@ -131,7 +131,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
@@ -402,6 +401,8 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # If the context is a project group we want to render the optional
         # fields since they will initially be hidden and later exposed if the
         # selected project supports them.
+        # XXX: StevenK 2011-11-18 bug=885692 This should make use of
+        # IBugTask.userHasPrivileges().
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields and IHasBugSupervisor.providedBy(context):
             include_extra_fields = self.user.inTeam(context.bug_supervisor)
@@ -627,6 +628,8 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if extra_data.private:
             params.private = extra_data.private
 
+        # XXX: StevenK 2011-11-18 bug=885692 This should make use of
+        # IBugTask.userHasPrivileges().
         # Apply any extra options given by a bug supervisor.
         if IHasBugSupervisor.providedBy(context):
             if self.user.inTeam(context.bug_supervisor):

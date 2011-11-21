@@ -40,11 +40,9 @@ from operator import (
     isSequenceType,
     )
 import os
-from random import randint
 from StringIO import StringIO
 import sys
 from textwrap import dedent
-from threading import local
 from types import InstanceType
 import warnings
 
@@ -400,9 +398,9 @@ class ObjectFactory:
 
     __metaclass__ = AutoDecorate(default_master_store)
 
-    def __init__(self):
-        # Initialize the unique identifier.
-        self._local = local()
+    # This allocates process-wide unique integers.  We count on Python doing
+    # only cooperative threading to make this safe across threads.
+    _unique_int_counter = count(100000)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
@@ -413,11 +411,7 @@ class ObjectFactory:
         For each thread, this will be a series of increasing numbers, but the
         starting point will be unique per thread.
         """
-        counter = getattr(self._local, 'integer', None)
-        if counter is None:
-            counter = count(randint(0, 1000000))
-            self._local.integer = counter
-        return counter.next()
+        return ObjectFactory._unique_int_counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -2712,7 +2706,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         Note: the builder returned will not be able to actually build -
         we currently have a build slave setup for 'bob' only in the
         test environment.
-        See lib/canonical/buildd/tests/buildd-slave-test.conf
         """
         if processor is None:
             processor_fam = ProcessorFamilySet().getByName('x86')
