@@ -61,6 +61,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
@@ -1184,6 +1185,39 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # See comments in assertConflictingSubscriptionDeletes.
         dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp)
+
+    def test_merge_accesspolicygrants(self):
+        person = self.factory.makePerson()
+        grant = self.factory.makeAccessPolicyGrant()
+        self._do_premerge(grant.grantee, person)
+        with person_logged_in(person):
+            self._do_merge(grant.grantee, person)
+        self.assertEqual(person, grant.grantee)
+
+    def test_merge_accesspolicygrants_conflicts(self):
+        policy = self.factory.makeAccessPolicy()
+
+        person = self.factory.makePerson()
+        person_grantor = self.factory.makePerson()
+        person_grant = self.factory.makeAccessPolicyGrant(
+            grantee=person, grantor=person_grantor, object=policy)
+
+        duplicate = self.factory.makePerson()
+        duplicate_grantor = self.factory.makePerson()
+        duplicate_grant = self.factory.makeAccessPolicyGrant(
+            grantee=duplicate, grantor=duplicate_grantor, object=policy)
+
+        self._do_premerge(duplicate, person)
+        with person_logged_in(person):
+            self._do_merge(duplicate, person)
+        transaction.commit()
+
+        self.assertEqual(person, person_grant.grantee)
+        self.assertEqual(person_grantor, person_grant.grantor)
+        self.assertIs(
+            None,
+            IStore(AccessPolicyGrant).get(
+                AccessPolicyGrant, duplicate_grant.id))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
