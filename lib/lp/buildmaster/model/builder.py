@@ -43,7 +43,6 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -698,7 +697,7 @@ class Builder(SQLBase):
             return False
 
         def check_available(status):
-            return status[0] == BuilderStatus.IDLE
+            return status[0] == 'BuilderStatus.IDLE'
         return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):

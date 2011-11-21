@@ -155,6 +155,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -640,19 +641,29 @@ class BugTask(SQLBase):
         return self._status in RESOLVED_BUGTASK_STATUSES
 
     def canBeDeleted(self):
+        try:
+            self.checkCanBeDeleted()
+        except Exception:
+            return False
+        return True
+
+    def checkCanBeDeleted(self):
         num_bugtasks = Store.of(self).find(
             BugTask, bug=self.bug).count()
 
-        return num_bugtasks > 1
+        if num_bugtasks < 2:
+            raise CannotDeleteBugtask(
+                "Cannot delete only bugtask affecting: %s."
+                % self.target.bugtargetdisplayname)
 
     def delete(self, who=None):
         """See `IBugTask`."""
         if who is None:
             who = getUtility(ILaunchBag).user
 
-        if not self.canBeDeleted():
-            raise CannotDeleteBugtask(
-                "Cannot delete bugtask: %s" % self.title)
+        # Raise an error if the bugtask cannot be deleted.
+        self.checkCanBeDeleted()
+
         bug = self.bug
         target = self.target
         notify(ObjectDeletedEvent(self, who))
@@ -825,7 +836,7 @@ class BugTask(SQLBase):
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
-        if not self.userCanEditMilestone(user):
+        if not self.userHasPrivileges(user):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
@@ -834,7 +845,7 @@ class BugTask(SQLBase):
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
-        if not self.userCanEditImportance(user):
+        if not self.userHasPrivileges(user):
             raise UserCannotEditBugTaskImportance(
                 "User does not have sufficient permissions "
                 "to edit the bug task importance.")
@@ -902,15 +913,10 @@ class BugTask(SQLBase):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         new_status = normalize_bugtask_status(new_status)
-        celebrities = getUtility(ILaunchpadCelebrities)
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
             return True
-        elif (user.inTeam(self.pillar.bug_supervisor) or
-              user.inTeam(self.pillar.owner) or
-              user.id == celebrities.bug_watch_updater.id or
-              user.id == celebrities.bug_importer.id or
-              user.id == celebrities.janitor.id):
+        elif self.userHasPrivileges(user):
             return True
         else:
             return (self.status not in (
@@ -1055,20 +1061,6 @@ class BugTask(SQLBase):
         if new_status < BugTaskStatus.FIXRELEASED:
             self.date_fix_released = None
 
-    def _userCanSetAssignee(self, user):
-        """Used by methods to check if user can assign or unassign bugtask."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (
-            user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.inTeam(self.pillar.driver) or
-            (self.distroseries is not None and
-             user.inTeam(self.distroseries.driver)) or
-            (self.productseries is not None and
-             user.inTeam(self.productseries.driver)) or
-            user.inTeam(celebrities.admin)
-            or user == celebrities.bug_importer)
-
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
         if user is None:
@@ -1076,7 +1068,7 @@ class BugTask(SQLBase):
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return self._userCanSetAssignee(user)
+            return self.userHasPrivileges(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1086,7 +1078,7 @@ class BugTask(SQLBase):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self._userCanSetAssignee(user))
+            user.inTeam(self.assignee) or self.userHasPrivileges(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -1354,25 +1346,31 @@ class BugTask(SQLBase):
         else:
             return None
 
-    def _userIsPillarEditor(self, user):
-        """Can the user edit this tasks's pillar?"""
-        if user is None:
+    def userHasPrivileges(self, user):
+        """See `IBugTask`."""
+        if not user:
             return False
-        pillar = self.pillar
-        return ((pillar.bug_supervisor is not None and
-                 user.inTeam(pillar.bug_supervisor)) or
-                pillar.userCanEdit(user))
+        role = IPersonRoles(user)
+        # Admins can always change bug details.
+        if role.in_admin:
+            return True
 
-    def userCanEditMilestone(self, user):
-        """See `IBugTask`."""
-        return self._userIsPillarEditor(user)
+        # Similar to admins, the Bug Watch Updater, Bug Importer and 
+        # Janitor can always change bug details.
+        if (
+            role.in_bug_watch_updater or role.in_bug_importer or
+            role.in_janitor):
+            return True
 
-    def userCanEditImportance(self, user):
-        """See `IBugTask`."""
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self._userIsPillarEditor(user) or
-                user == celebs.bug_watch_updater or
-                user == celebs.bug_importer)
+        # Otherwise, if you're a member of the pillar owner, drivers, or the
+        # bug supervisor, you can change bug details.
+        return (
+            role.isOwner(self.pillar) or role.isOneOfDrivers(self.pillar) or
+            role.isBugSupervisor(self.pillar) or
+            (self.distroseries is not None and
+                role.isDriver(self.distroseries)) or
+            (self.productseries is not None and
+                role.isDriver(self.productseries)))
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)

@@ -50,7 +50,7 @@ class TestHideQuestionMessageControls(
 
     control_text = 'mark-spam-0'
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()
