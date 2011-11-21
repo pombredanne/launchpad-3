@@ -913,11 +913,12 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         not a package task, returns None.
         """
 
-    def userCanEditMilestone(user):
-        """Can the user edit the Milestone field?"""
+    def userHasPrivileges(user):
+        """Is the user a privledged one, allowed to changed details on a 
+        bug?.
 
-    def userCanEditImportance(user):
-        """Can the user edit the Importance field?"""
+        :return: A boolean.
+        """
 
 
 # Set schemas that were impossible to specify during the definition of

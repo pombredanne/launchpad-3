@@ -24,8 +24,10 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     IPersonSet,
     ITeamPublic,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
@@ -419,6 +421,26 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
             TeamSubscriptionPolicyError, self.field.validate,
             TeamSubscriptionPolicy.OPEN)
 
+    def test_closed_team_owning_a_pillar_cannot_become_open(self):
+        # The team cannot become open if it owns a pillar.
+        self.setUpTeams()
+        self.factory.makeProduct(owner=self.team)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.OPEN)
+
+    def test_closed_team_security_contact_cannot_become_open(self):
+        # The team cannot become open if it is a security contact.
+        self.setUpTeams()
+        self.factory.makeProduct(security_contact=self.team)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.OPEN)
+
 
 class TestTeamSubscriptionPolicyChoiceRestrcted(
                                    TestTeamSubscriptionPolicyChoiceModerated):
@@ -459,6 +481,41 @@ class TestTeamSubscriptionPolicyChoiceDelegated(
     """Test `TeamSubsciptionPolicyChoice` Delegated constraints."""
 
     POLICY = TeamSubscriptionPolicy.DELEGATED
+
+
+class TestTeamSubscriptionPolicyValidator(TestCaseWithFactory):
+    # Test that the subscription policy storm validator stops bad transitions.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_illegal_transition_to_open_subscription(self):
+        # Check that TeamSubscriptionPolicyError is raised when an attempt is
+        # made to set an illegal open subscription policy on a team.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team.createPPA()
+        for policy in OPEN_TEAM_POLICY:
+            self.assertRaises(
+                TeamSubscriptionPolicyError,
+                removeSecurityProxy(team).__setattr__,
+                "subscriptionpolicy", policy)
+
+    def test_illegal_transition_to_closed_subscription(self):
+        # Check that TeamSubscriptionPolicyError is raised when an attempt is
+        # made to set an illegal closed subscription policy on a team.
+        team = self.factory.makeTeam()
+        other_team = self.factory.makeTeam(
+            owner=team.teamowner,
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                other_team, team.teamowner, force_team_add=True)
+
+        for policy in CLOSED_TEAM_POLICY:
+            self.assertRaises(
+                TeamSubscriptionPolicyError,
+                removeSecurityProxy(team).__setattr__,
+                "subscriptionpolicy", policy)
 
 
 class TestVisibilityConsistencyWarning(TestCaseWithFactory):
