@@ -26,7 +26,7 @@
                               href view/getNominationEditLink">approve/decline</a>)
         <div tal:attributes="id nomination_form_id"
              tal:condition="user_is_driver"
-             style="display: none">
+             class="hidden">
             <span style="padding-left: 1.5em" tal:content="structure context/@@+edit-form">
                 Approve/Decline
             </span>
