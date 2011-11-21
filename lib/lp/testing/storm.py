@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'reload_object',
-    'reload_dsp',
     ]
 
 
@@ -18,13 +17,3 @@ def reload_object(obj):
     """Return a new instance of a storm objet from the store."""
     store = IStore(Distribution)
     return store.get(removeSecurityProxy(obj).__class__, obj.id)
-
-
-def reload_dsp(dsp):
-    """Return a new instance of a DistributionSourcePackage from the store."""
-    store = IStore(Distribution)
-    distribution_class = removeSecurityProxy(dsp.distribution.__class__)
-    distribution = store.get(distribution_class, dsp.distribution.id)
-    spn_class = removeSecurityProxy(dsp.sourcepackagename.__class__)
-    spn = store.get(spn_class, dsp.sourcepackagename.id)
-    return distribution.getSourcePackage(name=spn.name)
