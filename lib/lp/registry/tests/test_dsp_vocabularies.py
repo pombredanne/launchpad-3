@@ -5,21 +5,17 @@
 
 __metaclass__ = type
 
-import transaction
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    reconnect_stores,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
 
 
 class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
@@ -221,16 +217,13 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         else:
             archive = self.factory.makeArchive(
                 distribution=distribution, purpose=archive)
-        transaction.commit()
-        reconnect_stores('statistician')
-        DistributionSourcePackageCache(
-            distribution=dsp.distribution,
-            sourcepackagename=dsp.sourcepackagename,
-            archive=archive,
-            name=package_name,
-            binpkgnames=binary_names)
-        transaction.commit()
-        reconnect_stores('launchpad')
+        with dbuser('statistician'):
+            DistributionSourcePackageCache(
+                distribution=dsp.distribution,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive,
+                name=package_name,
+                binpkgnames=binary_names)
 
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
