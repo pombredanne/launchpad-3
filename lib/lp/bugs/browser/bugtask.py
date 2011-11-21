@@ -3998,12 +3998,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
         if self.context.milestone is None:
             return ''
         else:
-            return 'display: none'
+            return 'hidden'
 
     @property
     def style_for_edit_milestone(self):
         if self.context.milestone is None:
-            return 'display: none'
+            return 'hidden'
         else:
             return ''
 
