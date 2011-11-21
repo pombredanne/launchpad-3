@@ -171,6 +171,11 @@ class BaseAccessPolicyArtifactTests:
         self.assertRaises(
             LostObjectError, getattr, abstract, 'concrete_artifact')
 
+    def test_delete_noop(self):
+        # delete() works even if there's no abstract artifact.
+        concrete = self.getConcreteArtifact()
+        getUtility(IAccessPolicyArtifactSource).delete(concrete)
+
 
 class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,
                                      TestCaseWithFactory):
