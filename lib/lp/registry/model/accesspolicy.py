@@ -142,7 +142,9 @@ class AccessPolicyArtifact(StormBase):
     @classmethod
     def delete(cls, concrete_artifact):
         """See `IAccessPolicyArtifactSource`."""
-        abstract = cls.ensure(concrete_artifact)
+        abstract = cls.get(concrete_artifact)
+        if abstract is None:
+            return
         IStore(abstract).find(
             AccessPolicyGrant, abstract_artifact=abstract).remove()
         IStore(abstract).find(AccessPolicyArtifact, id=abstract.id).remove()
