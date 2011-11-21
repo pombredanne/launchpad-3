@@ -199,8 +199,7 @@
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userCanEditImportance
-                    userCanEditMilestone
+                    userHasPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require
@@ -746,6 +745,7 @@
                     who_made_private
                     date_made_private
                     userCanView
+                    userCanSetCommentVisibility
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
@@ -849,6 +849,7 @@
                     mute
                     newMessage
                     removeWatch
+                    setCommentVisibility
                     setPrivate
                     setSecurityRelated
                     setPrivacyAndSecurityRelated
@@ -882,7 +883,6 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
         </class>
