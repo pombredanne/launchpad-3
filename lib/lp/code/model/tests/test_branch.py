@@ -114,6 +114,7 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.accesspolicy import AccessPolicyArtifact
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
@@ -1138,6 +1139,12 @@ class TestBranchDeletion(TestCaseWithFactory):
             branch.canBeDeleted(), True,
             "A branch that has a import is deletable.")
 
+    def test_accessPolicyArtifactDoesntDisableDeletion(self):
+        """A branch referenced by an AccessPolicyArtifact can be deleted."""
+        artifact = self.factory.makeAccessPolicyArtifact(self.branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertEqual(True, self.branch.canBeDeleted())
+
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
@@ -1271,6 +1278,16 @@ class TestBranchDeletion(TestCaseWithFactory):
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
         self.assertNotEqual([], list(other_buildqueue))
+
+    def test_AccessPolicyArtifact_deleted(self):
+        # Any AccessPolicyArtifact referencing the branch is removed.
+        branch = self.factory.makeAnyBranch()
+        artifact = self.factory.makeAccessPolicyArtifact(branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        store = Store.of(branch)
+        branch.destroySelf()
+        self.assertContentEqual(
+            [], store.find(AccessPolicyArtifact, branch=branch))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
