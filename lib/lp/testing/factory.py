@@ -174,6 +174,12 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -4317,6 +4323,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
+        if pillar is None:
+            pillar = self.makeProduct()
+        policy = getUtility(IAccessPolicySource).create(pillar, type)
+        IStore(policy).flush()
+        return policy
+
+    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
+        if concrete is None:
+            concrete = self.makeBranch()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact.policy = policy
+        IStore(artifact).flush()
+        return artifact
+
+    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        if object is None:
+            object = self.makeAccessPolicy()
+        grant = getUtility(IAccessPolicyGrantSource).grant(
+            grantee, grantor, object)
+        IStore(grant).flush()
+        return grant
 
 
 # Some factory methods return simple Python types. We don't add
