@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for canonical.launchpad.daemons.tachandler"""
@@ -110,17 +110,14 @@ class TacTestSetupTestCase(testtools.TestCase):
         tempdir = self.useFixture(TempDir()).path
         fixture = SimpleTac("okay", tempdir)
 
-        # Run a short-lived process with the intention of using its pid in the
-        # next step. Linux uses pids sequentially (from the information I've
-        # been able to discover) so this approach is safe as long as we don't
-        # delay until pids wrap... which should be a very long time unless the
-        # machine is seriously busy.
+        # Create a pidfile for a process that is no longer running.
         process = subprocess.Popen("true")
+        # Write the pidfile and wait for the process to complete.  (This
+        # would work in either order, but waiting only at the end may
+        # waste infinitesimally less time).
+        with open(fixture.pidfile, "w") as pidfile:
+            pidfile.write(repr(process.pid))
         process.wait()
-
-        # Put the (now bogus) pid in the pid file.
-        with open(fixture.pidfile, "wb") as pidfile:
-            pidfile.write(str(process.pid))
 
         # Fire up the fixture, capturing warnings.
         with warnings.catch_warnings(record=True) as warnings_log:
@@ -131,8 +128,8 @@ class TacTestSetupTestCase(testtools.TestCase):
                 fixture.cleanUp()
 
         # One deprecation warning is emitted.
-        self.assertEqual(1, len(warnings_log))
-        self.assertIs(DeprecationWarning, warnings_log[0].category)
+        self.assertEqual(
+            [UserWarning], [item.category for item in warnings_log])
 
     def test_truncateLog(self):
         """
