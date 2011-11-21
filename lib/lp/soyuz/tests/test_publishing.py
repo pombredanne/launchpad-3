@@ -23,7 +23,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
-    reconnect_stores,
     ZopelessDatabaseLayer,
     )
 from lp.app.errors import NotFoundError
@@ -31,7 +30,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
@@ -69,6 +67,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import HasQueryCount
 
@@ -553,23 +552,13 @@ class SoyuzTestPublisher:
             distroseries=source_pub.distroseries,
             source_package=source_pub.meta_sourcepackage)
 
-    def updateDistroSeriesPackageCache(
-        self, distroseries, restore_db_connection='launchpad'):
-        # XXX: EdwinGrubbs 2010-08-04 bug=396419. Currently there is no
-        # test api call to switchDbUser that works for non-zopeless layers.
-        # When bug 396419 is fixed, we can instead use
-        # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-        transaction.commit()
-        reconnect_stores(config.statistician.dbuser)
-        distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
-
-        DistroSeriesPackageCache.updateAll(
-            distroseries,
-            archive=distroseries.distribution.main_archive,
-            ztm=transaction,
-            log=DevNullLogger())
-        transaction.commit()
-        reconnect_stores(restore_db_connection)
+    def updateDistroSeriesPackageCache(self, distroseries):
+        with dbuser(config.statistician.dbuser):
+            DistroSeriesPackageCache.updateAll(
+                distroseries,
+                archive=distroseries.distribution.main_archive,
+                ztm=transaction,
+                log=DevNullLogger())
 
 
 class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
