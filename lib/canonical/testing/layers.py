@@ -215,18 +215,15 @@ def disconnect_stores():
             store.close()
 
 
-def reconnect_stores(database_config_section=None):
+def reconnect_stores(reset=False):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.
 
     After reconnecting, the database revision will be checked to make
     sure the right data is available.
     """
     disconnect_stores()
-    if database_config_section:
-        section = getattr(config, database_config_section)
-        dbconfig.override(
-            dbuser=getattr(section, 'dbuser', None),
-            isolation_level=getattr(section, 'isolation_level', None))
+    if reset:
+        dbconfig.reset()
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
@@ -1353,7 +1350,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     @profiled
     def testSetUp(cls):
         # Connect Storm
-        reconnect_stores('launchpad')
+        reconnect_stores(reset=True)
 
     @classmethod
     @profiled
@@ -1382,7 +1379,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         OpStats.resetStats()
 
         # Connect Storm
-        reconnect_stores('launchpad')
+        reconnect_stores(reset=True)
 
     @classmethod
     @profiled
@@ -1447,7 +1444,7 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores('launchpad')
+            reconnect_stores(reset=True)
 
     @classmethod
     @profiled
@@ -1480,7 +1477,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores('launchpad')
+            reconnect_stores(reset=True)
 
     @classmethod
     @profiled
