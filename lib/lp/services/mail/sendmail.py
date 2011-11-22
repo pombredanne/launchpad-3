@@ -447,6 +447,9 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
+    if not isinstance(message_detail, basestring):
+        # Might be a Header object; can be squashed.
+        message_detail = unicode(message_detail)
     if _immediate_mail_delivery:
         # Immediate email delivery is not unit tested, and won't be.
         # The immediate-specific stuff is pretty simple though so this
@@ -503,13 +506,12 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
     Returns the message-id.
 
     :param message_detail: String of detail about the message
-        to be recorded to help with debugging.
+        to be recorded to help with debugging, eg the messag subject.
     """
     # Note that raw_sendmail has no tests, unit or otherwise.
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
-    assert isinstance(message_detail, basestring), message_detail
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
     request = get_current_browser_request()
     timeline = get_request_timeline(request)

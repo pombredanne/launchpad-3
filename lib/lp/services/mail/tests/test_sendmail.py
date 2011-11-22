@@ -5,20 +5,19 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 from email.Message import Message
+import email.header
 import unittest
 
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailDelivery
 
-from lazr.restful.utils import get_current_browser_request
-
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
 from lp.testing.fixture import (
+    CaptureTimeline,
     ZopeUtilityFixture,
     )
-from lp.services.timeline.requesttimeline import get_request_timeline
 
 from lp.testing import TestCase
 
@@ -258,19 +257,44 @@ class TestMailController(TestCase):
             fake_mailer, IMailDelivery, 'Mail'))
         to_addresses = ['to1@example.com', 'to2@example.com']
         subject = self.getUniqueString('subject')
-        ctrl = MailController(
-            'from@example.com', to_addresses,
-            subject, 'body', {'key': 'value'})
-        ctrl.send()
+        with CaptureTimeline() as ctl:
+            ctrl = MailController(
+                'from@example.com', to_addresses,
+                subject, 'body', {'key': 'value'})
+            ctrl.send()
         self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
         self.assertEquals(fake_mailer.to_addr, to_addresses)
-        timeline = get_request_timeline(get_current_browser_request())
+        self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject)
+
+    def test_sendmail_with_email_header(self):
+        """Check the timeline is ok even if there is an email.Header.
+
+        See https://bugs.launchpad.net/launchpad/+bug/885972
+        """
+        # I don't see how this can happen in the real code but apparently it
+        # does. -- mbp 2011-11-22
+        fake_mailer = RecordingMailer()
+        self.useFixture(ZopeUtilityFixture(
+            fake_mailer, IMailDelivery, 'Mail'))
+        subject_str = self.getUniqueString('subject')
+        subject_header = email.header.Header(subject_str)
+        message = Message()
+        message.add_header('From', 'bounces@canonical.com')
+        message['Subject'] = subject_header
+        message.add_header('To', 'dest@example.com')
+        with CaptureTimeline() as ctl:
+            sendmail.sendmail(message)
+        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEquals(fake_mailer.to_addr, ['dest@example.com'])
+        self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject_str)
+
+    def checkTimelineHasOneMailAction(self, timeline, subject):
         actions = timeline.actions
         self.assertEquals(len(actions), 1)
         a0 = actions[0]
         self.assertEquals(a0.category, 'sendmail')
         self.assertEquals(a0.detail, subject)
-        self.assertIsInstance(a0.detail, str)
+        self.assertIsInstance(a0.detail, basestring)
 
 
 class RecordingMailer(object):
