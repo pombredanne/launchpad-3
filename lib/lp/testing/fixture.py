@@ -15,6 +15,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import time
 
 import amqplib.client_0_8 as amqp
 from fixtures import (
@@ -46,9 +47,12 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
+from canonical.launchpad import webapp
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
+from lazr.restful.utils import get_current_browser_request
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -325,3 +329,18 @@ class CaptureOops(Fixture):
             # Ensure we leave the queue ready to roll, or later calls to
             # sync() will fail.
             self.setUpQueue()
+
+
+class CaptureTimeline(Fixture):
+    """Record and return the timeline.
+
+    This won't work well (yet) for code that starts new requests as they will
+    reset the timeline.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        webapp.adapter.set_request_started(time.time())
+        self.timeline = get_request_timeline(
+            get_current_browser_request())
+        self.addCleanup(webapp.adapter.clear_request_started)
