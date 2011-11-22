@@ -135,6 +135,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -400,14 +401,12 @@ def validate_target(bug, target, retarget_existing=True):
             "A fix for this bug has already been requested for %s"
             % target.displayname)
 
-    # Because we don't have a sensible way to determine a new access
-    # policy, it is presently forbidden to transition a task to another
-    # pillar.
     if (bug.access_policy is not None and
-        target.pillar != bug.access_policy.pillar):
+        not getUtility(IAccessPolicySource).getByPillarAndType(
+            target.pillar, bug.access_policy.type)):
         raise IllegalTarget(
-            "%s is not allowed by this bug's access policy."
-            % target.pillar.displayname)
+            "%s doesn't have a %s access policy."
+            % (target.pillar.displayname, bug.access_policy.type.title))
 
     if (IDistributionSourcePackage.providedBy(target) or
         ISourcePackage.providedBy(target)):

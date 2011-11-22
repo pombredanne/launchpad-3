@@ -2513,32 +2513,37 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
 
-    def test_access_policy_permits_same_pillar(self):
-        # If an access policy is set, targets within the policy's pillar
-        # are permitted.
-        distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
-        policy = self.factory.makeAccessPolicy(pillar=distro)
-        with person_logged_in(bug.owner):
-            bug.setAccessPolicy(policy.type)
-        validate_target(
-            bug,
-            self.factory.makeDistributionSourcePackage(distribution=distro))
+    def test_access_policy_changed(self):
+        # If an access policy is set, changing the pillar also switches
+        # to the matching policy on the new pillar.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
 
-    def test_access_policy_forbids_other_pillars(self):
-        # If an access policy is set, targets outside the policy's pillar
-        # are forbidden.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        policy = self.factory.makeAccessPolicy(pillar=product)
+        bug = self.factory.makeBug(product=orig_product)
         with person_logged_in(bug.owner):
-            bug.setAccessPolicy(policy.type)
-        other_product = self.factory.makeProduct()
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        validate_target(bug, new_product)
+
+    def test_missing_access_policy_rejected(self):
+        # If the new pillar doesn't have a corresponding access polciy,
+        # the transition is forbidden.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
         self.assertRaisesWithContent(
             IllegalTarget,
-            "%s is not allowed by this bug's access policy."
-            % other_product.displayname,
-            validate_target, bug, other_product)
+            "%s doesn't have a %s access policy."
+            % (new_product.displayname, bug.access_policy.type.title),
+            validate_target, bug, new_product)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
