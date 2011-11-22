@@ -112,9 +112,9 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
