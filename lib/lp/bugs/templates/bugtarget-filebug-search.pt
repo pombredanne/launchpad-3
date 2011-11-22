@@ -138,14 +138,14 @@
             tal:define="widget nocall:view/widgets/product|nothing"
             tal:condition="not:widget">
           <div tal:condition="context/enable_bugfiling_duplicate_search"
-               id="filebug-form-container" class="transparent" style="opacity: 0; display: none">
+               id="filebug-form-container" class="transparent hidden">
             <tal:filebug-form define="launchpad_form_id string:filebug-form">
               <metal:display-similar-bugs
                   use-macro="context/@@+filebug-macros/inline-filebug-form" />
             </tal:filebug-form>
           </div>
         </tal:not_project_group>
-        <p style="display: none">
+        <p class="hidden">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"

@@ -80,6 +80,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -130,7 +131,10 @@ from lp.bugs.adapters.bugchange import (
     UnsubscribedFromBug,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.errors import InvalidDuplicateValue
+from lp.bugs.errors import (
+    InvalidDuplicateValue,
+    SubscriptionPrivacyViolation,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
@@ -176,8 +180,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -188,6 +192,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -475,6 +480,15 @@ class Bug(SQLBase):
     def users_affected_count_with_dupes(self):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
+
+    @property
+    def other_users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        if not current_user:
+            return self.users_affected_count_with_dupes
+        return self.users_affected_with_dupes.find(
+            Person.id != current_user.id).count()
 
     @property
     def indexed_messages(self):
@@ -790,7 +804,10 @@ class Bug(SQLBase):
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-
+        if person.isTeam() and self.private and person.anyone_can_join():
+            error_msg = ("Open and delegated teams cannot be subscribed "
+                "to private bugs.")
+            raise SubscriptionPrivacyViolation(error_msg)
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -2066,7 +2083,16 @@ class Bug(SQLBase):
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.message.visible = visible
+
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = bug_message.owner == user
+        if (not self.userCanSetCommentVisibility(user)
+            and not user_owns_comment):
+            raise Unauthorized(
+                "User %s cannot hide or show bug comments" % user.name)
+        bug_message.message.setVisible(visible)
 
     @cachedproperty
     def _known_viewers(self):
@@ -2114,6 +2140,30 @@ class Bug(SQLBase):
             not store.find(Bug, Bug.id == self.id, filter).is_empty()):
             self._known_viewers.add(user.id)
             return True
+        return False
+
+    def userCanSetCommentVisibility(self, user):
+        """See `IBug`"""
+
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_registry_experts:
+            return True
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
+
+    def userInProjectRole(self, user):
+        """ Return True if user has a project role for any affected pillar."""
+        roles = IPersonRoles(user)
+        if roles is None:
+            return False
+        for pillar in self.affected_pillars:
+            if (roles.isOwner(pillar)
+                or roles.isOneOfDrivers(pillar)
+                or roles.isBugSupervisor(pillar)
+                or roles.isSecurityContact(pillar)):
+                return True
         return False
 
     def linkHWSubmission(self, submission):

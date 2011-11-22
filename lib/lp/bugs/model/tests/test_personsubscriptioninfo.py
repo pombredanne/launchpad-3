@@ -16,6 +16,7 @@ from lp.bugs.interfaces.personsubscriptioninfo import (
     IVirtualSubscriptionInfoCollection,
     )
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     person_logged_in,
@@ -460,7 +461,9 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_owner_through_team(self):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
-        team = self.factory.makeTeam(members=[self.subscriber])
+        team = self.factory.makeTeam(
+            members=[self.subscriber],
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         removeSecurityProxy(target).owner = team
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
@@ -477,7 +480,8 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_owner_through_team_as_admin(self):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
-        team = self.factory.makeTeam()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.addMember(self.subscriber, team.teamowner,
                            status=TeamMembershipStatus.ADMIN)

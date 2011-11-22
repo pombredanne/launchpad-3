@@ -12,12 +12,17 @@ Bug subscriptions
 
     >>> # Create the necessary teams.
     >>> team_owner = factory.makePerson(name='team-owner')
-    >>> from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonVisibility,
+    ...     TeamSubscriptionPolicy,
+    ...     )
     >>> admin_user = getUtility(IPersonSet).getByEmail('admin@canonical.com')
     >>> login_person(admin_user)
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
-    ...     visibility=PersonVisibility.PRIVATE)
+    ...     visibility=PersonVisibility.PRIVATE,
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
 
 A private team can be subscribed to a bug.
 
@@ -182,7 +187,8 @@ or private, can be the project registrant.
     >>> login_person(admin_user)
     >>> public_team = factory.makeTeam(name='public-team',
     ...     owner=team_owner,
-    ...     visibility=PersonVisibility.PUBLIC)
+    ...     visibility=PersonVisibility.PUBLIC,
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
     >>> product = factory.makeProduct(registrant=team_owner)
     >>> product = factory.makeProduct(registrant=public_team)
     >>> product = factory.makeProduct(registrant=priv_team)

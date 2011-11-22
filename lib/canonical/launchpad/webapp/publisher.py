@@ -80,10 +80,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 from lp.services.features import (
-    currentScope,
     defaultFlagValue,
     getFeatureFlag,
     )
+from lp.services.utils import obfuscate_structure
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -277,13 +277,8 @@ class LaunchpadView(UserAttributeCache):
         # Several view objects may be created for one page request:
         # One view for the main context and template, and other views
         # for macros included in the main template.
-        if 'beta_features' not in cache:
-            cache['beta_features'] = self.active_beta_features
-        else:
-            beta_info = cache['beta_features']
-            for feature in self.active_beta_features:
-                if feature not in beta_info:
-                    beta_info.append(feature)
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
 
     def initialize(self):
         """Override this in subclasses.
@@ -291,6 +286,24 @@ class LaunchpadView(UserAttributeCache):
         Default implementation does nothing.
         """
         pass
+
+    @property
+    def page_description(self):
+        """Return a string containing a description of the context.
+
+        Typically this is the contents of the most-descriptive text attribute
+        of the context, by default its 'description' attribute if there is one.
+
+        This will be inserted into the HTML meta description, and may
+        eventually end up in search engine summary results, or when a link to
+        the page is shared elsewhere.
+
+        This may be specialized by view subclasses.
+
+        Do not write eg "This is a page about...", just directly describe the
+        object on the page.
+        """
+        return getattr(self.context, 'description', None)
 
     @property
     def template(self):
@@ -374,12 +387,11 @@ class LaunchpadView(UserAttributeCache):
     info_message = property(_getInfoMessage, _setInfoMessage)
 
     def getCacheJSON(self):
-        if self.user is not None:
-            cache = dict(IJSONRequestCache(self.request).objects)
-        else:
-            cache = dict()
+        cache = dict(IJSONRequestCache(self.request).objects)
         if WebLayerAPI(self.context).is_entry:
             cache['context'] = self.context
+        if self.user is None:
+            cache = obfuscate_structure(cache)
         return simplejson.dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
@@ -390,29 +402,35 @@ class LaunchpadView(UserAttributeCache):
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
 
-    # Flags for new features in beta status which affect a view.
-    beta_features = ()
+    # Names of feature flags which affect a view.
+    related_features = ()
 
     @property
-    def active_beta_features(self):
-        """Beta feature flags that are active for this context and scope.
+    def related_feature_info(self):
+        """Related feature flags that are active for this context and scope.
 
-        This property consists of all feature flags from beta_features
-        whose current value is not the default value.
+        This property describes all features marked as related_features in the
+        view.  is_beta means that the value is not the default value.
+
+        Return a dict of flags keyed by flag_name, with title and url as given
+        by the flag's description.  Value is the value in the current scope,
+        and is_beta is true if this is not the default value.
         """
         # Avoid circular imports.
         from lp.services.features.flags import flag_info
 
-        def flag_in_beta_status(flag):
-            return (
-                currentScope(flag) not in ('default', None) and
-                defaultFlagValue(flag) != getFeatureFlag(flag))
-
-        active_beta_flags = set(
-            flag for flag in self.beta_features if flag_in_beta_status(flag))
-        beta_info = [
-            info for info in flag_info if info[0] in active_beta_flags
-            ]
+        beta_info = {}
+        for (flag_name, value_domain, documentation, default_behavior, title,
+             url) in flag_info:
+            if flag_name not in self.related_features:
+                continue
+            value = getFeatureFlag(flag_name)
+            beta_info[flag_name] = {
+                'is_beta': (defaultFlagValue(flag_name) != value),
+                'title': title,
+                'url': url,
+                'value': value,
+            }
         return beta_info
 
 

@@ -92,6 +92,7 @@ from zope.app.form.interfaces import (
     InputErrors,
     )
 from zope.app.form.utility import setUpWidget
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -149,7 +150,10 @@ from canonical.launchpad.webapp import (
     redirection,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -232,6 +236,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
+    CannotDeleteBugtask,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
     IBugTaskSearch,
@@ -278,6 +283,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.utils import obfuscate_structure
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -327,7 +333,7 @@ def unique_title(title):
 
 
 def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
-    slice_info=None, show_spam_controls=False):
+    slice_info=None, show_spam_controls=False, user=None):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
@@ -340,7 +346,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
-        slice_info=slice_info, show_spam_controls=show_spam_controls)
+        slice_info=slice_info, show_spam_controls=show_spam_controls,
+        user=user)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
@@ -654,6 +661,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
         return smartquote('%s: "%s"') % (heading, title)
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
@@ -747,11 +758,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return self._getComments()
 
     def _getComments(self, slice_info=None):
-        show_spam_controls = check_permission(
-            'launchpad.Admin', self.context.bug)
+        bug = self.context.bug
+        show_spam_controls = bug.userCanSetCommentVisibility(self.user)
         return get_comments_for_bugtask(
             self.context, truncate=True, slice_info=slice_info,
-            for_display=True, show_spam_controls=show_spam_controls)
+            for_display=True, show_spam_controls=show_spam_controls,
+            user=self.user)
 
     @cachedproperty
     def interesting_activity(self):
@@ -771,7 +783,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             activity = self.context.bug.activity
         bug_change_re = (
             'affects|description|security vulnerability|'
-            'summary|tags|visibility')
+            'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
@@ -1273,7 +1285,20 @@ class BugTaskBugWatchMixin:
             }
 
 
-class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
+class BugTaskPrivilegeMixin:
+
+    @cachedproperty
+    def user_has_privileges(self):
+        """Is the user privileged? That is, an admin, pillar owner, driver
+        or bug supervisor.
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userHasPrivileges(self.user)
+
+
+class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
+                      BugTaskPrivilegeMixin):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
@@ -1338,26 +1363,24 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
             # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
             # doesn't belong here!
-            if ('milestone' in editable_field_names and
-                not self.userCanEditMilestone()):
-                editable_field_names.remove("milestone")
-
-            if ('importance' in editable_field_names and
-                not self.userCanEditImportance()):
-                editable_field_names.remove("importance")
+            if not self.user_has_privileges:
+                if 'milestone' in editable_field_names:
+                    editable_field_names.remove("milestone")
+                if 'importance' in editable_field_names:
+                    editable_field_names.remove("importance")
         else:
             editable_field_names = set(('bugwatch', ))
             if self.context.bugwatch is None:
                 editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
-                    and self.userCanEditImportance()):
+                    and self.user_has_privileges):
                     editable_field_names.add('importance')
             else:
                 bugtracker = self.context.bugwatch.bugtracker
                 if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                     editable_field_names.add('status')
                     if ('importance' in self.default_field_names
-                        and self.userCanEditImportance()):
+                        and self.user_has_privileges):
                         editable_field_names.add('importance')
 
         if self.show_target_widget:
@@ -1511,10 +1534,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self.userCanEditMilestone():
+            if not self.user_has_privileges:
                 read_only_field_names.append("milestone")
-
-            if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
             editable_field_names = self.editable_field_names
@@ -1523,20 +1544,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 if field_name not in editable_field_names]
 
         return read_only_field_names
-
-    def userCanEditMilestone(self):
-        """Can the user edit the Milestone field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditMilestone(self.user)
-
-    def userCanEditImportance(self):
-        """Can the user edit the Importance field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditImportance(self.user)
 
     def validate(self, data):
         if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
@@ -1794,11 +1801,21 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         bugtask = self.context
         bug = bugtask.bug
         deleted_bugtask_url = canonical_url(self.context, rootsite='bugs')
-        message = ("This bug no longer affects %s."
+        success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
-        bugtask.delete()
-        self.request.response.addNotification(message)
+        error_message = None
+
+        try:
+            bugtask.delete()
+            self.request.response.addNotification(success_message)
+        except CannotDeleteBugtask as e:
+            error_message = str(e)
+            self.request.response.addErrorNotification(error_message)
         if self.request.is_ajax:
+            if error_message:
+                self.request.response.setHeader('Content-type',
+                    'application/json')
+                return dumps(None)
             launchbag = getUtility(ILaunchBag)
             launchbag.add(bug.default_bugtask)
             # If we are deleting the current highlighted bugtask via ajax,
@@ -2264,6 +2281,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
+        self.field_visibility_defaults = self.field_visibility
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2310,9 +2328,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
     @property
     def mustache(self):
         """The rendered mustache template."""
-        cache = IJSONRequestCache(self.request)
+        objects = IJSONRequestCache(self.request).objects
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            objects = obfuscate_structure(objects)
         return pystache.render(self.mustache_template,
-                               cache.objects['mustache_model'])
+                               objects['mustache_model'])
 
     @property
     def model(self):
@@ -2444,6 +2464,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     implements(IBugTaskSearchListingMenu)
+
+    related_features = (
+        'bugs.dynamic_bug_listings.enabled',
+        'bugs.dynamic_bug_listings.pre_fetch',
+    )
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -2585,6 +2610,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
 
             def _getBatchInfo(batch):
                 if batch is None:
@@ -3428,6 +3455,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any assignees.
+        authorised_people = [task.assignee for task in self.bugtasks
+                             if task.assignee is not None]
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
+
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.
         if self.bugtasks:
@@ -3622,59 +3656,76 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return 'false'
 
-    @property
+    @cachedproperty
     def other_users_affected_count(self):
-        """The number of other users affected by this bug."""
-        if self.current_user_affected_status:
-            return self.context.users_affected_count - 1
+        """The number of other users affected by this bug.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            if self.current_user_affected_status:
+                return self.context.users_affected_count - 1
+            else:
+                return self.context.users_affected_count
         else:
-            return self.context.users_affected_count
+            return self.context.other_users_affected_count_with_dupes
 
-    @property
+    @cachedproperty
+    def total_users_affected_count(self):
+        """The number of affected users, typically across all users.
+
+        Counting across duplicates may be disabled at run time.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            return self.context.users_affected_count
+        else:
+            return self.context.users_affected_count_with_dupes
+
+    @cachedproperty
     def affected_statement(self):
         """The default "this bug affects" statement to show.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.other_users_affected_count == 1:
-            if self.current_user_affected_status is None:
+        me_affected = self.current_user_affected_status
+        other_affected = self.other_users_affected_count
+        if me_affected is None:
+            if other_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
-            elif self.current_user_affected_status:
-                return "This bug affects you and 1 other person"
-            else:
-                return "This bug affects 1 person, but not you"
-        elif self.other_users_affected_count > 1:
-            if self.current_user_affected_status is None:
+            elif other_affected > 1:
                 return (
                     "This bug affects %d people. Does this bug "
-                    "affect you?" % (self.other_users_affected_count))
-            elif self.current_user_affected_status:
-                return "This bug affects you and %d other people" % (
-                    self.other_users_affected_count)
+                    "affect you?" % (other_affected))
             else:
-                return "This bug affects %d people, but not you" % (
-                    self.other_users_affected_count)
-        else:
-            if self.current_user_affected_status is None:
                 return "Does this bug affect you?"
-            elif self.current_user_affected_status:
+        elif me_affected is True:
+            if other_affected == 0:
                 return "This bug affects you"
+            elif other_affected == 1:
+                return "This bug affects you and 1 other person"
             else:
+                return "This bug affects you and %d other people" % (
+                    other_affected)
+        else:
+            if other_affected == 0:
                 return "This bug doesn't affect you"
+            elif other_affected == 1:
+                return "This bug affects 1 person, but not you"
+            elif other_affected > 1:
+                return "This bug affects %d people, but not you" % (
+                    other_affected)
 
-    @property
+    @cachedproperty
     def anon_affected_statement(self):
         """The "this bug affects" statement to show to anonymous users.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.context.users_affected_count == 1:
+        affected = self.total_users_affected_count
+        if affected == 1:
             return "This bug affects 1 person"
-        elif self.context.users_affected_count > 1:
-            return "This bug affects %d people" % (
-                self.context.users_affected_count)
+        elif affected > 1:
+            return "This bug affects %d people" % affected
         else:
             return None
 
@@ -3727,7 +3778,8 @@ class BugTasksAndNominationsView(LaunchpadView):
         return True
 
 
-class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
+class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
+                          BugTaskPrivilegeMixin):
     """Browser class for rendering a bugtask row on the bug page."""
 
     is_conjoined_slave = None
@@ -3775,7 +3827,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             target_link_title=self.target_link_title,
             user_can_delete=self.user_can_delete_bugtask,
             delete_link=delete_link,
-            user_can_edit_importance=self.user_can_edit_importance,
+            user_can_edit_importance=self.user_has_privileges,
             importance_css_class='importance' + self.context.importance.name,
             importance_title=self.context.importance.title,
             # We always look up all milestones, so there's no harm
@@ -3914,9 +3966,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        bugtask = self.context
-        return (self.user_can_edit_status
-                and bugtask.userCanEditImportance(self.user))
+        return self.user_can_edit_status and self.user_has_privileges
 
     @cachedproperty
     def user_can_edit_status(self):
@@ -3934,19 +3984,11 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     @property
     def user_can_edit_assignee(self):
-        """Can the user edit the Milestone field?
+        """Can the user edit the Assignee field?
 
         If yes, return True, otherwise return False.
         """
         return self.user is not None
-
-    @cachedproperty
-    def user_can_edit_milestone(self):
-        """Can the user edit the Milestone field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditMilestone(self.user)
 
     @cachedproperty
     def user_can_delete_bugtask(self):
@@ -3963,12 +4005,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         if self.context.milestone is None:
             return ''
         else:
-            return 'display: none'
+            return 'hidden'
 
     @property
     def style_for_edit_milestone(self):
         if self.context.milestone is None:
-            return 'display: none'
+            return 'hidden'
         else:
             return ''
 
@@ -4022,9 +4064,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                     request=self.api_request)
                 if cx.milestone else None),
             user_can_edit_assignee=self.user_can_edit_assignee,
-            user_can_edit_milestone=self.user_can_edit_milestone,
+            user_can_edit_milestone=self.user_has_privileges,
             user_can_edit_status=self.user_can_edit_status,
-            user_can_edit_importance=self.user_can_edit_importance,
+            user_can_edit_importance=self.user_has_privileges,
             )
 
 
@@ -4327,6 +4369,9 @@ class BugActivityItem:
                     return_dict[key] = 'none'
                 else:
                     return_dict[key] = cgi.escape(return_dict[key])
+
+        elif attribute == 'bug task deleted':
+            return 'no longer affects %s' % self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.

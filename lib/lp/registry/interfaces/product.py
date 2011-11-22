@@ -114,6 +114,7 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
@@ -414,8 +415,8 @@ class IProductPublic(
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     IHasTranslationImports, ITranslationPolicy, IKarmaContext,
     ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
-    IServiceUsage):
+    IHasOOPSReferences, IPillar, ISpecificationTarget, IHasRecipes,
+    IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
@@ -440,9 +441,10 @@ class IProductPublic(
         PersonChoice(
             title=_('Maintainer'),
             required=True,
-            vocabulary='ValidOwner',
-            description=_("The person or team who maintains the project "
-                          "information in Launchpad.")))
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(

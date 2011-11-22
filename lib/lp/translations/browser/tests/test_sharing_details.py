@@ -10,7 +10,7 @@ from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,
     Tag,
-)
+    )
 
 from canonical.launchpad.testing.pages import (
     extract_text,
@@ -18,9 +18,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -215,16 +213,16 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # If only template synchronization is enabled on the upstream series,
         # is_upstream_synchronization_enabled returns False.
         self.configureSharing(
-            translation_import_mode=
-                TranslationsBranchImportMode.IMPORT_TEMPLATES)
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TEMPLATES))
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__import_translations(self):
         # If full translation synchronization is enabled on the upstream
         # series, is_upstream_synchronization_enabled returns False.
         self.configureSharing(
-            translation_import_mode=
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         self.assertTrue(self.view.is_upstream_synchronization_enabled)
 
     def test_is_configuration_complete__nothing_configured(self):
@@ -251,7 +249,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # If the packaging link is set and if an upstream series
         # uses Launchpad translations but if the other conditions
         # are not fulfilled, is_configuration_complete is False.
-        self.configureSharing(translations_usage = ServiceUsage.LAUNCHPAD)
+        self.configureSharing(translations_usage=ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__no_auto_sync(self):
@@ -262,8 +260,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # but if the upstream series does not synchronize translations
         # then is_configuration_complete is False.
         self.configureSharing(
-            set_upstream_branch = True,
-            translations_usage = ServiceUsage.LAUNCHPAD)
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__all_conditions_fulfilled(self):
@@ -274,10 +272,10 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         #   - the upstream series synchronizes translations
         # then is_configuration_complete is True.
         self.configureSharing(
-            set_upstream_branch = True,
-            translations_usage = ServiceUsage.LAUNCHPAD,
-            translation_import_mode =
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         self.assertTrue(self.view.is_configuration_complete)
 
     def test_template_info__no_sharing(self):
@@ -308,8 +306,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing(
             set_upstream_branch=True,
             translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         expected = [
             {
                 'name': 'shared-template',
@@ -937,12 +935,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_cache_javascript(self):
         # Cache object entries propagate into the javascript.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
-        anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        # Anonymous users don't get cached objects due to bug #740208
-        self.assertNotIn(
-            'productseries', extract_lp_cache(anon_browser.contents))
-        browser = self._getSharingDetailsViewBrowser(
-            sourcepackage, user=self.user)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertIn(
             'productseries', extract_lp_cache(browser.contents))
 

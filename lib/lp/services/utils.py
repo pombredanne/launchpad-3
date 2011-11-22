@@ -20,6 +20,7 @@ __all__ = [
     'iter_split',
     'load_bz2_pickle',
     'obfuscate_email',
+    'obfuscate_structure',
     're_email_address',
     'run_capturing_output',
     'save_bz2_pickle',
@@ -322,18 +323,22 @@ re_email_address = re.compile(r"""
     """, re.VERBOSE)              # ' <- font-lock turd
 
 
-def obfuscate_email(text_to_obfuscate):
+def obfuscate_email(text_to_obfuscate, replacement=None):
     """Obfuscate an email address.
 
-    The email address is obfuscated as <email address hidden>.
+    The email address is obfuscated as <email address hidden> by default,
+    or with the given replacement.
 
     The pattern used to identify an email address is not 2822. It strives
     to match any possible email address embedded in the text. For example,
     mailto:person@domain.dom and http://person:password@domain.dom both
     match, though the http match is in fact not an email address.
     """
+    if replacement is None:
+        replacement = '<email address hidden>'
     text = re_email_address.sub(
-        r'<email address hidden>', text_to_obfuscate)
+        replacement, text_to_obfuscate)
+    # Avoid doubled angle brackets.
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
@@ -355,3 +360,26 @@ def load_bz2_pickle(filename):
         return pickle.load(fin)
     finally:
         fin.close()
+
+
+def obfuscate_structure(o):
+    """Obfuscate the strings of a json-serializable structure.
+
+    Note: tuples are converted to lists because json encoders do not
+    distinguish between lists and tuples.
+
+    :param o: Any json-serializable object.
+    :return: a possibly-new structure in which all strings, list and tuple
+        elements, and dict keys and values have undergone obfuscate_email
+        recursively.
+    """
+    if isinstance(o, basestring):
+        return obfuscate_email(o)
+    elif isinstance(o, (list, tuple)):
+        return [obfuscate_structure(value) for value in o]
+    elif isinstance(o, (dict)):
+        return dict(
+            (obfuscate_structure(key), obfuscate_structure(value))
+            for key, value in o.iteritems())
+    else:
+        return o
