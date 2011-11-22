@@ -2278,17 +2278,31 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
-        # Setup a cookie name to find cookie.
+        self.field_visibility = None
+        self._setFieldVisibility(request, user)
+        TableBatchNavigator.__init__(
+            self, tasks, request, columns_to_show=columns_to_show, size=size)
+
+    @cachedproperty
+    def bug_badge_properties(self):
+        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+            self.currentBatch())
+
+    def _setFieldVisibility(self, request, user):
+        """Parse buglist-fields cookie for field_visibility.
+
+        The cookie is stored per user name and of the form:
+        'show_bugtarget=true%show_assignee=true'
+        This method converts that string into a proper
+        field_visibility dict.
+        """
         cookie_name_template = '%s-buglist-fields'
         cookie_name = ''
         if user is not None:
             cookie_name = cookie_name_template % user.name
         else:
             cookie_name = cookie_name_template % 'anon'
-        # Get the cookie.
         cookie = request.cookies.get(cookie_name)
-        import pdb;pdb.set_trace()
-        # If it really exists then parse the cookie into our fields dict.
         fields_from_cookie = {}
         if cookie is not None:
             for item in cookie.split('&'):
@@ -2299,16 +2313,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
                     value = False
                 fields_from_cookie[field] = value
             self.field_visibility = fields_from_cookie
-        # Otherwise, set field_visibility to the defaults.
         else:
             self.field_visibility = self.field_visibility_defaults
-        TableBatchNavigator.__init__(
-            self, tasks, request, columns_to_show=columns_to_show, size=size)
-
-    @cachedproperty
-    def bug_badge_properties(self):
-        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
-            self.currentBatch())
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
