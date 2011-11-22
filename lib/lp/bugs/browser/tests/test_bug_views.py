@@ -17,13 +17,18 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestPrivateBugLinks(BrowserTestCase):
@@ -105,7 +110,7 @@ class TestEmailObfuscated(BrowserTestCase):
         email_address = "mark@example.com"
         browser = self.getBrowserForBugWithEmail(
             email_address, no_login=False)
-        self.assertEqual(6, browser.contents.count(email_address))
+        self.assertEqual(7, browser.contents.count(email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
@@ -365,3 +370,56 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.createInitializedSecrecyView(bug=bug, security_related=True)
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
+
+
+class TestBugTextViewPrivateTeams(TestCaseWithFactory):
+    """ Test for rendering BugTextView with private team artifacts.
+
+    If an authenticated user can see the bug, they can see a the name of
+    private teams which are assignees or subscribers.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def _makeBug(self):
+        owner = self.factory.makePerson()
+        private_assignee = self.factory.makeTeam(
+            name='bugassignee',
+            visibility=PersonVisibility.PRIVATE)
+        private_subscriber = self.factory.makeTeam(
+            name='bugsubscriber',
+            visibility=PersonVisibility.PRIVATE)
+
+        bug = self.factory.makeBug(owner=owner)
+        with person_logged_in(owner):
+            bug.default_bugtask.transitionToAssignee(private_assignee)
+            bug.subscribe(private_subscriber, owner)
+        return bug, private_assignee, private_subscriber
+
+    def test_unauthenticated_view(self):
+        # Unauthenticated users cannot see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        bug_view = create_initialized_view(bug, name='+text')
+        view_text = bug_view.render()
+        # We don't see the assignee.
+        self.assertIn(
+            "assignee: \n", view_text)
+        # Nor do we see the subscriber.
+        self.assertNotIn(
+            removeSecurityProxy(subscriber).unique_displayname, view_text)
+
+    def test_authenticated_view(self):
+        # Authenticated users can see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        request = LaunchpadTestRequest()
+        bug_view = create_view(bug, name='+text', request=request)
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        bug_view.initialize()
+        view_text = bug_view.render()
+        naked_subscriber = removeSecurityProxy(subscriber)
+        self.assertIn(
+            "assignee: %s" % assignee.unique_displayname, view_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "subscribers:\n.*%s \(%s\)"
+            % (naked_subscriber.displayname, naked_subscriber.name),
+            view_text)

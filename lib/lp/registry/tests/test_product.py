@@ -7,6 +7,7 @@ from cStringIO import StringIO
 import datetime
 
 import pytz
+from testtools.matchers import MatchesAll
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -34,9 +35,15 @@ from lp.app.interfaces.launchpad import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.product import (
     IProduct,
     License,
+    )
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -76,17 +83,22 @@ class TestProduct(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # Product fully implements its interfaces.
         product = removeSecurityProxy(self.factory.makeProduct())
-        self.assertThat(product, Provides(IProduct))
-        self.assertThat(product, Provides(IBugSummaryDimension))
-        self.assertThat(product, Provides(IFAQTarget))
-        self.assertThat(product, Provides(IHasBugHeat))
-        self.assertThat(product, Provides(IHasBugSupervisor))
-        self.assertThat(product, Provides(IHasCustomLanguageCodes))
-        self.assertThat(product, Provides(IHasIcon))
-        self.assertThat(product, Provides(IHasLogo))
-        self.assertThat(product, Provides(IHasMugshot))
-        self.assertThat(product, Provides(ILaunchpadUsage))
-        self.assertThat(product, Provides(IServiceUsage))
+        expected_interfaces = [
+            IProduct,
+            IBugSummaryDimension,
+            IFAQTarget,
+            IHasBugHeat,
+            IHasBugSupervisor,
+            IHasCustomLanguageCodes,
+            IHasIcon,
+            IHasLogo,
+            IHasMugshot,
+            IHasOOPSReferences,
+            ILaunchpadUsage,
+            IServiceUsage,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(product, provides_all)
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -221,6 +233,34 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
+
+    def test_owner_cannot_be_open_team(self):
+        """Product owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Product owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(owner=closed_team)
+
+    def test_security_contact_cannot_be_open_team(self):
+        """Product security contacts cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                security_contact=open_team)
+
+    def test_security_contact_can_be_closed_team(self):
+        """Product security contacts can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(security_contact=closed_team)
 
 
 class TestProductFiles(TestCase):
@@ -438,3 +478,35 @@ class TestWebService(WebServiceTestCase):
         ws_group = self.wsObject(group)
         ws_product.translationgroup = ws_group
         ws_product.lp_save()
+
+    def test_oops_references_matching_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        question = self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = question.product
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid.upper()],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

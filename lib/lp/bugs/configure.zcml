@@ -194,12 +194,12 @@
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userCanEditImportance
-                    userCanEditMilestone
+                    userHasPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require
@@ -746,6 +746,7 @@
                     who_made_private
                     date_made_private
                     userCanView
+                    userCanSetCommentVisibility
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
@@ -818,6 +819,7 @@
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
+                    other_users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
@@ -848,6 +850,7 @@
                     mute
                     newMessage
                     removeWatch
+                    setCommentVisibility
                     setPrivate
                     setSecurityRelated
                     setPrivacyAndSecurityRelated
@@ -882,7 +885,6 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
         </class>

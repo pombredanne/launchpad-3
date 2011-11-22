@@ -18,12 +18,19 @@ from zope.interface import (
     implements,
     )
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,
     )
+from lp.registry.model.product import Product
+from lp.services.database.bulk import load_related
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
@@ -105,6 +112,29 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.build_farm_job_id == buildfarmjob.id)
         return match.one()
+
+    @classmethod
+    def getByBuildFarmJobs(cls, buildfarmjobs, store=None):
+        buildfarmjob_ids = [buildfarmjob.id for buildfarmjob in buildfarmjobs]
+        """See `ITranslationTemplatesBuildSource`."""
+        store = cls._getStore(store)
+
+        def eager_load(rows):
+            # Load the related branches, products.
+            branches = load_related(
+                Branch, rows, ['branch_id'])
+            load_related(
+                Product, branches, ['productID'])
+            branch_collection = GenericBranchCollection()
+            # Preload branches cached associated product series and
+            # suite source packages for all the related branches.
+            branch_collection._preloadDataForBranches(branches)
+
+        resultset = store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.build_farm_job_id.is_in(
+                buildfarmjob_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     @classmethod
     def findByBranch(cls, branch, store=None):

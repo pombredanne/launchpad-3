@@ -79,7 +79,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
-	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
+	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
 	    --force "$(APIDOC_TMPDIR)"
@@ -257,7 +257,8 @@ run: build inplace stop
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
-	LPCONFIG=$(LPCONFIG) bin/run-testapp -r memcached -i $(LPCONFIG)
+	LPCONFIG=$(LPCONFIG) INTERACTIVE_TESTS=1 bin/run-testapp \
+	-r memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
@@ -375,13 +376,13 @@ clean: clean_js clean_buildout clean_logs
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
-	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
-	$(RM) -rf $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
+	$(RM) -r $(LP_BUILT_JS_ROOT)/*
+	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -r $(APIDOC_DIR)
+	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -rf \
+	$(RM) -r \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
@@ -397,7 +398,7 @@ clean: clean_js clean_buildout clean_logs
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then \
-		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+		$(RM) -r /var/tmp/launchpad_mailqueue; \
 	fi
 
 

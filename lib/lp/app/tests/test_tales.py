@@ -3,8 +3,10 @@
 
 """tales.py doctests."""
 
-from lxml import html
+from datetime import datetime, timedelta
 
+from lxml import html
+from pytz import utc
 from zope.component import (
     getAdapter,
     getUtility
@@ -13,6 +15,11 @@ from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
+from canonical.launchpad.webapp.authorization import (
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -21,12 +28,16 @@ from canonical.testing.layers import (
     )
 from lp.app.browser.tales import (
     format_link,
+    DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    login_person,
     test_tales,
+    TestCase,
     TestCaseWithFactory,
     )
 
@@ -136,6 +147,86 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
             formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
+
+
+class TestTalesFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TalesFormatterAPI methods.
+
+    A user must have launchpad.LimitedView permission to use
+    TestTalesFormatterAPI with private teams.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTalesFormatterAPI, self).setUp()
+        self.team = self.factory.makeTeam(
+            name='team', displayname='a team',
+            visibility=PersonVisibility.PRIVATE)
+
+    def _make_formatter(self, cache_permission=False):
+        # Helper to create the formatter and optionally cache the permission.
+        formatter = getAdapter(self.team, IPathAdapter, 'fmt')
+        clear_cache()
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        if cache_permission:
+            login_person(any_person, request)
+            precache_permission_for_objects(
+                request, 'launchpad.LimitedView', [self.team])
+        return formatter, request, any_person
+
+    def _tales_value(self, attr, request):
+        # Evaluate the given formatted attribute value on team.
+        return test_tales(
+            "team/fmt:%s" % attr, team=self.team, request=request)
+
+    def _test_can_view_attribute_no_login(self, attr, hidden=None):
+        # Test attribute access with no login.
+        formatter, request, ignore = self._make_formatter()
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_no_permission(self, attr, hidden=None):
+        # Test attribute access when user has no permission.
+        formatter, request, any_person = self._make_formatter()
+        login_person(any_person, request)
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_with_permission(self, attr):
+        # Test attr access when user has launchpad.LimitedView permission.
+        formatter, request, any_person = self._make_formatter(
+            cache_permission=True)
+        self.assertNotEqual(
+            formatter.hidden, self._tales_value(attr, request))
+
+    def _test_can_view_attribute(self, attr, hidden=None):
+        # Test the visibility of the given attribute
+        self._test_can_view_attribute_no_login(attr, hidden)
+        self._test_can_view_attribute_no_permission(attr, hidden)
+        self._test_can_view_attribute_with_permission(attr)
+
+    def test_can_view_displayname(self):
+        self._test_can_view_attribute('displayname')
+
+    def test_can_view_unique_displayname(self):
+        self._test_can_view_attribute('unique_displayname')
+
+    def test_can_view_link(self):
+        self._test_can_view_attribute(
+            'link', u'<span class="sprite team">&lt;hidden&gt;</span>')
+
+    def test_can_view_api_url(self):
+        self._test_can_view_attribute('api_url')
+
+    def test_can_view_url(self):
+        self._test_can_view_attribute('url')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):
@@ -324,3 +415,52 @@ class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(icon=icon)
         display_api = ObjectImageDisplayAPI(product)
         self.assertEqual(icon.getURL(), display_api.custom_icon_url())
+
+
+class TestDateTimeFormatterAPI(TestCase):
+
+    def test_yearDelta(self):
+        """Test that year delta gives reasonable values."""
+        def assert_delta(expected, old, new):
+            old = datetime(*old, tzinfo=utc)
+            new = datetime(*new, tzinfo=utc)
+            delta = DateTimeFormatterAPI._yearDelta(old, new)
+            self.assertEqual(expected, delta)
+        assert_delta(1, (2000, 1, 1), (2001, 1, 1))
+        assert_delta(0, (2000, 1, 2), (2001, 1, 1))
+        # Check leap year handling (2004 is an actual leap year)
+        assert_delta(0, (2003, 10, 10), (2004, 2, 29))
+        assert_delta(0, (2004, 2, 29), (2005, 2, 28))
+
+    def getDurationsince(self, delta):
+        """Return the durationsince for a given delta."""
+        creation = datetime(2000, 1, 1, tzinfo=utc)
+        formatter = DateTimeFormatterAPI(creation)
+        formatter._now = lambda: creation + delta
+        return formatter.durationsince()
+
+    def test_durationsince_in_years(self):
+        """Values with different years are measured in years."""
+        self.assertEqual('1 year', self.getDurationsince(timedelta(366)))
+        self.assertEqual('2 years', self.getDurationsince(timedelta(731)))
+
+    def test_durationsince_in_day(self):
+        """Values with different days are measured in days."""
+        self.assertEqual('1 day', self.getDurationsince(timedelta(1)))
+        self.assertEqual('365 days', self.getDurationsince(timedelta(365)))
+
+    def test_durationsince_in_hours(self):
+        """Values with different hours are measured in hours."""
+        self.assertEqual('2 hours', self.getDurationsince(timedelta(0, 7200)))
+        self.assertEqual('1 hour', self.getDurationsince(timedelta(0, 3600)))
+
+    def test_durationsince_in_minutes(self):
+        """Values with different minutes are measured in minutes."""
+        five = self.getDurationsince(timedelta(0, 300))
+        self.assertEqual('5 minutes', five)
+        self.assertEqual('1 minute', self.getDurationsince(timedelta(0, 60)))
+
+    def test_durationsince_in_seconds(self):
+        """Values in seconds are reported as "less than a minute."""
+        self.assertEqual('less than a minute',
+            self.getDurationsince(timedelta(0, 59)))

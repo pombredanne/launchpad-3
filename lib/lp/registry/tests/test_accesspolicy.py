@@ -3,10 +3,12 @@
 
 __metaclass__ = type
 
+from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
@@ -120,7 +122,7 @@ class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
     def test_ensure_other_fails(self):
         # ensure() rejects unsupported objects.
         self.assertRaises(
-            AssertionError,
+            ValueError,
             getUtility(IAccessPolicyArtifactSource).ensure,
             self.factory.makeProduct())
 
@@ -139,6 +141,14 @@ class BaseAccessPolicyArtifactTests:
         Store.of(abstract).flush()
         self.assertEqual(concrete, abstract.concrete_artifact)
 
+    def test_get(self):
+        # get() finds an abstract artifact which maps to the concrete
+        # one.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        self.assertEqual(
+            abstract, getUtility(IAccessPolicyArtifactSource).get(concrete))
+
     def test_ensure_twice(self):
         # ensure() will reuse an existing matching abstract artifact if
         # it exists.
@@ -148,6 +158,37 @@ class BaseAccessPolicyArtifactTests:
         self.assertEqual(
             abstract.id,
             getUtility(IAccessPolicyArtifactSource).ensure(concrete).id)
+
+    def test_delete(self):
+        # delete() removes the abstract artifact and any associated
+        # grants.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        grant = self.factory.makeAccessPolicyGrant(object=abstract)
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessPolicyGrant(
+                object=self.factory.makeAccessPolicyArtifact()),
+            self.factory.makeAccessPolicyGrant(
+                object=self.factory.makeAccessPolicy()),
+            ]
+
+        getUtility(IAccessPolicyArtifactSource).delete(concrete)
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'policy')
+        self.assertRaises(
+            LostObjectError, getattr, abstract, 'concrete_artifact')
+
+        for other_grant in other_grants:
+            self.assertEqual(
+                other_grant,
+                getUtility(IAccessPolicyGrantSource).getByID(other_grant.id))
+
+    def test_delete_noop(self):
+        # delete() works even if there's no abstract artifact.
+        concrete = self.getConcreteArtifact()
+        getUtility(IAccessPolicyArtifactSource).delete(concrete)
 
 
 class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,

@@ -22,6 +22,18 @@
 ...
 */
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    margin: 1em 0;
+    }
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
+    top: 0;
+    }
 
 /* === Fonts and colors === */
 
@@ -34,15 +46,6 @@
     padding: 0em;
     margin-top: 0em;
     margin-bottom: 0.2em;
-}
-
-/* Using colored text as you wish. */
-.green {
-    color: green;
-}
-
-.red {
-    color: red;
 }
 
 .helpwanted {
@@ -273,6 +276,60 @@ div#branch-description {
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
+
+ul.latest-ppa-updates li {
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    }
+table#packages_list tr.superseded, tr.blacklisted {
+    background-color: #eee;
+    }
+ul.latest-ppa-updates li:nth-child(odd) {
+    /* The following could be generalised for use to the following selector:
+       .side .portlet li.nth-child(odd)
+       if needed. */
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
+    }
+ul.latest-ppa-updates li.FULLYBUILT {
+    background-image: url('/@@/yes');
+    }
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background-image: url('/@@/build-success-publishing');
+    }
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background-image: url('/@@/build-needed');
+    }
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background-image: url('/@@/build-failed');
+    }
+ul.latest-ppa-updates li.BUILDING {
+    background-image: url('/@@/processing');
+    }
+
+.package-diff-status span.COMPLETED {
+    background-image: url('/@@/packagediff-ok');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+     }
+.package-diff-status span.PENDING {
+    background-image: url('/@@/packagediff-loading');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.FAILED {
+    background-image: url('/@@/packagediff-failed');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.request-derived-diff {
+    background-image: url('/@@/packagediff-unknown');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
@@ -447,6 +504,17 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
+table.code {
+    margin-bottom: 1em;
+    }
+table.code th {
+    text-align: left;
+    font-weight: bold;
+    }
+table.code th, table.code td {
+    padding-right: 3em;
+    }
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -499,7 +567,7 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
-table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
   text-align: right;
   background-color: #f6f6f6;
@@ -542,6 +610,13 @@ dl.reviews dd {
 
 
 /* === Bugs === */
+
+tr.bug-branch-summary td {
+    padding: 0px 6px;
+    }
+tr.bug-branch-summary td.first {
+    padding-left: 0px;
+    }
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
@@ -600,6 +675,64 @@ div#current_user_subscription a.sprite {
   display: inline;
 }
 
+/* Rules for CustomBugListings bug search result lists. */
+div#client-listing {
+    float: left;
+    color: #666;
+    }
+div.buglisting-row {
+    float: left;
+    margin-top: 5px;
+    border-bottom: 1px solid #EEE;
+    min-width: 585px;
+    width: 100%;
+    }
+div.buglisting-col1 {
+    width: 100px;
+    float: left;
+    padding-bottom: 8px;
+    }
+div.buglisting-col2 {
+    width: 70%;
+    float: left;
+    }
+div.buglisting-col3 {
+    width: 10%;
+    float: right;
+    }
+div#client-listing .importance {
+    height: 1.5em;
+    width: 6em;
+    font-size: .8em;
+    padding: 0 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    line-height: 1.25em;
+    margin: 5px 50px 2px 0;
+    text-align: center;
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .buglisting-col2 {
+    position: relative;
+    top: 2px;
+    }
+div#client-listing .bug-related-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .bug-heat-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .status {
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .field {
+    margin-left: 1em;
+}
+
 /* === Translations === */
 
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */
@@ -611,6 +744,75 @@ div#current_user_subscription a.sprite {
 /* In translation forms, single-line text fields occupy nearly all of the
 available width, just like multi-line fields (see "textarea" above): */
 input.translate {width: 90%; max-width: 60em;}
+
+
+
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+    }
+
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+    }
+table.translation-stats td {
+    text-align: center;
+    }
+table.translation-stats td.template-name {
+    text-align: left;
+    }
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    }
+table.translation-stats tfoot th {
+    text-align: left;
+    }
+table.translation-stats tfoot td {
+    text-align: center;
+    }
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+    float: right;
+    }
+div.translation-help-links div {
+    clear: both;
+    }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
+    }
+
+
 
 /* ====== Content area styles ====== */
 

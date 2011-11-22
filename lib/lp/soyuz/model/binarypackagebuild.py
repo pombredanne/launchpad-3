@@ -78,6 +78,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import (
     format_address,
@@ -146,9 +147,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def current_component(self):
         """See `IBuild`."""
         latest_publication = self._getLatestPublication()
-        assert latest_publication is not None, (
-            'Build %d lacks a corresponding source publication.' % self.id)
-        return latest_publication.component
+        # Production has some buggy builds without source publications.
+        # They seem to have been created by early versions of gina and
+        # the readding of hppa.
+        if latest_publication is not None:
+            return latest_publication.component
 
     @property
     def current_source_publication(self):
@@ -863,6 +866,53 @@ class BinaryPackageBuildSet:
         if resulting_tuple is None:
             return None
         return resulting_tuple[0]
+
+    def getByBuildFarmJobs(self, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+
+        def eager_load(rows):
+            # Circular imports.
+            from lp.registry.model.sourcepackagename import (
+                SourcePackageName
+                )
+            from lp.soyuz.model.sourcepackagerelease import (
+                SourcePackageRelease
+                )
+            from lp.soyuz.model.distroarchseries import (
+                DistroArchSeries
+                )
+            from lp.registry.model.distroseries import (
+                DistroSeries
+                )
+            from lp.registry.model.distribution import (
+                Distribution
+                )
+            from lp.soyuz.model.archive import Archive
+            sprs = load_related(
+                SourcePackageRelease, rows, ['source_package_release_id'])
+            load_related(
+                SourcePackageName, sprs, ['sourcepackagenameID'])
+            distro_arch_series = load_related(
+                DistroArchSeries, rows, ['distro_arch_series_id'])
+            package_builds = load_related(
+                PackageBuild, rows, ['package_build_id'])
+            load_related(
+                Archive, package_builds, ['archive_id'])
+            distroseries = load_related(
+                DistroSeries, distro_arch_series, ['distroseriesID'])
+            load_related(
+                Distribution, distroseries, ['distributionID'])
+        resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id.is_in(build_farm_job_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

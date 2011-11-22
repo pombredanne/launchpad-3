@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builds."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildBreadcrumb',
+    'BuildCancelView',
     'BuildContextMenu',
     'BuildNavigation',
     'BuildNavigationMixin',
@@ -17,11 +18,15 @@ __all__ = [
     'DistributionBuildRecordsView',
     ]
 
+
 from lazr.batchnavigator import ListRangeFactory
 from lazr.delegates import delegates
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
@@ -55,8 +60,10 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -156,7 +163,7 @@ class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
     usedfor = IBinaryPackageBuild
 
-    links = ['ppa', 'records', 'retry', 'rescore']
+    links = ['ppa', 'records', 'retry', 'rescore', 'cancel']
 
     @property
     def is_ppa_build(self):
@@ -189,6 +196,14 @@ class BuildContextMenu(ContextMenu):
             '+rescore', text, icon='edit',
             enabled=self.context.can_be_rescored)
 
+    @enabled_with_permission('launchpad.Edit')
+    def cancel(self):
+        """Only enabled for pending/active virtual builds."""
+        text = 'Cancel build'
+        return Link(
+            '+cancel', text, icon='edit',
+            enabled=self.context.can_be_cancelled)
+
 
 class BuildBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBinaryPackageBuild`."""
@@ -213,6 +228,8 @@ class BuildView(LaunchpadView):
     @property
     def label(self):
         return self.context.title
+
+    page_title = label
 
     @property
     def user_can_retry_build(self):
@@ -397,6 +414,32 @@ class BuildRescoringView(LaunchpadFormView):
             "Build rescored to %s." % score)
 
 
+class BuildCancelView(LaunchpadFormView):
+    """View class for build cancellation."""
+
+    class schema(Interface):
+        """Schema for cancelling a build."""
+
+    page_title = label = "Cancel build"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+    next_url = cancel_url
+
+    @action("Cancel build", name="cancel")
+    def request_action(self, action, data):
+        """Cancel the build."""
+        self.context.cancel()
+        if self.context.status == BuildStatus.CANCELLING:
+            self.request.response.addNotification(
+                "Build cancellation in progress.")
+        elif self.context.status == BuildStatus.CANCELLED:
+            self.request.response.addNotification("Build cancelled.")
+        else:
+            self.request.response.addNotification("Unable to cancel build.")
+
+
 class CompleteBuild:
     """Super object to store related IBinaryPackageBuild & IBuildQueue."""
     delegates(IBinaryPackageBuild)
@@ -420,7 +463,10 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = [build.getSpecificJob() for build in batch]
+    build_farm_job_set = getUtility(IBuildFarmJobSet)
+    builds = build_farm_job_set.getSpecificJobs(
+        [build.build_farm_job if IPackageBuild.providedBy(build) else build
+            for build in batch])
     if not builds:
         return []
 

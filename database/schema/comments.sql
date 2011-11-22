@@ -24,10 +24,10 @@ COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that contro
 
 COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
 COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
 COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 
 -- Announcement
 
@@ -2413,15 +2413,12 @@ COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let 
 COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
 COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
 
-
 -- SuggestivePOTemplate
 COMMENT ON TABLE SuggestivePOTemplate IS
 'Cache of POTemplates that can provide external translation suggestions.';
-
 
 -- OpenIdIdentifier
 COMMENT ON TABLE OpenIdIdentifier IS
 'OpenId Identifiers that can be used to log into an Account.';
 COMMENT ON COLUMN OpenIdIdentifier.identifier IS
 'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
-

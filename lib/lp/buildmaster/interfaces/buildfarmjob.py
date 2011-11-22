@@ -16,9 +16,7 @@ __all__ = [
     'ISpecificBuildFarmJobSource',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -291,6 +289,13 @@ class ISpecificBuildFarmJobSource(Interface):
         :param id: An ID of the concrete job class to look up.
         """
 
+    def getByBuildFarmJobs(build_farm_jobs):
+        """"Look up the concrete `IBuildFarmJob`s for a list of BuildFarmJobs.
+
+        :param build_farm_jobs: A list of BuildFarmJobs for which to get the
+            concrete jobs.
+        """
+
     def getByBuildFarmJob(build_farm_job):
         """"Look up the concrete `IBuildFarmJob` for a BuildFarmJob.
 
@@ -316,6 +321,12 @@ class IBuildFarmJobSource(Interface):
 
 class IBuildFarmJobSet(Interface):
     """A utility representing a set of build farm jobs."""
+
+    def getSpecificJobs(jobs):
+        """Return the specific build jobs associated with each of the jobs
+        in the provided job list.
+
+        """
 
     def getBuildsForBuilder(builder_id, status=None, user=None):
         """Return `IBuildFarmJob` records touched by a builder.

@@ -827,7 +827,11 @@ class AbstractYUITestCase(TestCase):
 
     layer = None
     suite_name = ''
-    js_timeout = 30000
+    # 30 seconds for the suite.
+    suite_timeout = 30000
+    # By default we do not restrict per-test or times.  yuixhr tests do.
+    incremental_timeout = None
+    initial_timeout = None
     html_uri = None
     test_path = None
 
@@ -858,15 +862,21 @@ class AbstractYUITestCase(TestCase):
         # twisted tests to break because of gtk's initialize.
         import html5browser
         client = html5browser.Browser()
-        page = client.load_page(self.html_uri, timeout=self.js_timeout)
+        page = client.load_page(self.html_uri,
+                                timeout=self.suite_timeout,
+                                initial_timeout=self.initial_timeout,
+                                incremental_timeout=self.incremental_timeout)
+        report = None
+        if page.content:
+            report = simplejson.loads(page.content)
         if page.return_code == page.CODE_FAIL:
             self._yui_results = self.TIMEOUT
+            self._last_test_info = report
             return
         # Data['type'] is complete (an event).
         # Data['results'] is a dict (type=report)
         # with 1 or more dicts (type=testcase)
         # with 1 for more dicts (type=test).
-        report = simplejson.loads(page.content)
         if report.get('type', None) != 'complete':
             # Did not get a report back.
             self._yui_results = self.MISSING_REPORT
@@ -890,7 +900,22 @@ class AbstractYUITestCase(TestCase):
         from here.
         """
         if self._yui_results == self.TIMEOUT:
-            self.fail("js timed out.")
+            msg = 'JS timed out.'
+            if self._last_test_info is not None:
+                try:
+                    msg += ('  The last test that ran to '
+                            'completion before timing out was '
+                            '%(testCase)s:%(testName)s.  The test %(type)sed.'
+                            % self._last_test_info)
+                except (KeyError, TypeError):
+                    msg += ('  The test runner received an unexpected error '
+                            'when trying to show information about the last '
+                            'test to run.  The data it received was %r.'
+                            % (self._last_test_info,))
+            elif (self.incremental_timeout is not None or
+                  self.initial_timeout is not None):
+                msg += '  The test may never have started.'
+            self.fail(msg)
         elif self._yui_results == self.MISSING_REPORT:
             self.fail("The data returned by js is not a test report.")
         elif self._yui_results is None or len(self._yui_results) == 0:
@@ -1297,7 +1322,9 @@ class ExpectedException(TTExpectedException):
 
 
 def extract_lp_cache(text):
-    match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
+    match = re.search(r'<script[^>]*>LP.cache = (\{.*\});</script>', text)
+    if match is None:
+        raise ValueError('No JSON cache found.')
     return simplejson.loads(match.group(1))
 
 

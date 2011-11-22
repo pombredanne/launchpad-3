@@ -14,11 +14,8 @@ from storm.properties import (
     Int,
     DateTime,
     )
-from storm.references import (
-    Reference,
-    ReferenceSet,
-    )
-from zope.interface import implements, providedBy
+from storm.references import Reference
+from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -43,8 +40,6 @@ class AccessPolicy(StormBase):
     distribution = Reference(distribution_id, 'Distribution.id')
     type = DBEnum(allow_none=True, enum=AccessPolicyType)
 
-    grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
-
     @property
     def pillar(self):
         return self.product or self.distribution
@@ -58,6 +53,8 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
+        else:
+            raise ValueError("%r is not a supported pillar" % pillar)
         obj.type = type
         IStore(cls).add(obj)
         return obj
@@ -71,7 +68,7 @@ class AccessPolicy(StormBase):
         elif IDistribution.providedBy(pillar):
             col = cls.distribution
         else:
-            raise AssertionError("%r is not a supported pillar" % pillar)
+            raise ValueError("%r is not a supported pillar" % pillar)
         return col == pillar
 
     @classmethod
@@ -118,15 +115,20 @@ class AccessPolicyArtifact(StormBase):
         elif IBranch.providedBy(concrete_artifact):
             return 'branch'
         else:
-            raise AssertionError(
+            raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
+
+    @classmethod
+    def get(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        constraints = {
+            cls._getConcreteAttribute(concrete_artifact): concrete_artifact}
+        return IStore(cls).find(cls, **constraints).one()
 
     @classmethod
     def ensure(cls, concrete_artifact):
         """See `IAccessPolicyArtifactSource`."""
-        constraints = {
-            cls._getConcreteAttribute(concrete_artifact): concrete_artifact}
-        existing = IStore(cls).find(cls, **constraints).one()
+        existing = cls.get(concrete_artifact)
         if existing is not None:
             return existing
         # No existing object. Create a new one.
@@ -136,6 +138,16 @@ class AccessPolicyArtifact(StormBase):
             concrete_artifact)
         IStore(cls).add(obj)
         return obj
+
+    @classmethod
+    def delete(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        abstract = cls.get(concrete_artifact)
+        if abstract is None:
+            return
+        IStore(abstract).find(
+            AccessPolicyGrant, abstract_artifact=abstract).remove()
+        IStore(abstract).find(AccessPolicyArtifact, id=abstract.id).remove()
 
 
 class AccessPolicyGrant(StormBase):
@@ -171,7 +183,7 @@ class AccessPolicyGrant(StormBase):
         elif IAccessPolicyArtifact.providedBy(object):
             grant.abstract_artifact = object
         else:
-            raise AssertionError("Unsupported object: %r" % object)
+            raise ValueError("Unsupported object: %r" % object)
         IStore(cls).add(grant)
         return grant
 
