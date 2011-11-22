@@ -122,7 +122,7 @@ class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
     def test_ensure_other_fails(self):
         # ensure() rejects unsupported objects.
         self.assertRaises(
-            AssertionError,
+            ValueError,
             getUtility(IAccessPolicyArtifactSource).ensure,
             self.factory.makeProduct())
 
