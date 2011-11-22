@@ -2267,7 +2267,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
-        user = getUtility(ILaunchBag).user
+        self.user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
             'show_age': False,
             'show_assignee': False,
@@ -2283,7 +2283,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_title': True,
         }
         self.field_visibility = None
-        self._setFieldVisibility(request, user)
+        self._setFieldVisibility()
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2292,33 +2292,33 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
 
-    def _setFieldVisibility(self, request, user):
-        """Set field_visibility for the page load.
+    def getCookieName(self):
+        """Return the cookie name used in bug listings js code."""
+        cookie_name_template = '%s-buglist-fields'
+        cookie_name = ''
+        if self.user is not None:
+            cookie_name = cookie_name_template % self.user.name
+        else:
+            cookie_name = cookie_name_template % 'anon'
+        return cookie_name
 
+    def _setFieldVisibility(self):
+        """Set field_visibility for the page load.
 
         If a cookie of the form $USER-buglist-fields is found,
         we set field_visibility from this cookie; otherwise,
         field_visibility will match the defaults.
         """
-        cookie_name_template = '%s-buglist-fields'
-        cookie_name = ''
-        if user is not None:
-            cookie_name = cookie_name_template % user.name
-        else:
-            cookie_name = cookie_name_template % 'anon'
-        cookie = request.cookies.get(cookie_name)
+        cookie_name = self.getCookieName()
+        cookie = self.request.cookies.get(cookie_name)
         fields_from_cookie = {}
         # "cookie" looks like a URL query string, so we split
         # on '&' to get items, and then split on '=' to get
         # field/value pairs.
         if cookie is not None:
-            for item in cookie.split('&'):
-                field, value = item.split('=')
-                if value == 'true':
-                    value = True
-                else:
-                    value = False
-                fields_from_cookie[field] = value
+            for field, value in urlparse.parse_qsl(cookie):
+                # We only record True or False for field values.
+                fields_from_cookie[field] = (value == 'true')
             self.field_visibility = fields_from_cookie
         else:
             self.field_visibility = self.field_visibility_defaults
@@ -2645,6 +2645,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 batch_navigator.field_visibility)
             cache.objects['field_visibility_defaults'] = (
                 batch_navigator.field_visibility_defaults)
+            cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
 
             def _getBatchInfo(batch):
                 if batch is None:
