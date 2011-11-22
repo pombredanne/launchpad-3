@@ -402,6 +402,7 @@ def validate_target(bug, target, retarget_existing=True):
             % target.displayname)
 
     if (bug.access_policy is not None and
+        bug.access_policy.pillar != target.pillar and
         not getUtility(IAccessPolicySource).getByPillarAndType(
             target.pillar, bug.access_policy.type)):
         raise IllegalTarget(
