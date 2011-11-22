@@ -29,7 +29,10 @@ import threading
 import time
 
 from bzrlib.commands import Command, register_command
-from bzrlib.option import Option
+from bzrlib.option import (
+    Option,
+    RegistryOption,
+    )
 from bzrlib import (
     commands,
     errors,
@@ -39,8 +42,10 @@ from bzrlib import (
     ui,
     )
 
-from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport
+from bzrlib.transport import (
+    get_transport,
+    transport_server_registry,
+    )
 
 
 class cmd_launchpad_server(Command):
@@ -70,28 +75,13 @@ class cmd_launchpad_server(Command):
                help='the url of the internal XML-RPC server. Defaults to '
                     'config.codehosting.codehosting_endpoint.',
                type=unicode),
+        RegistryOption('protocol',
+               help="Protocol to serve.",
+               lazy_registry=('bzrlib.transport', 'transport_server_registry'),
+               value_switches=True),
         ]
 
     takes_args = ['user_id']
-
-    def get_smart_server(self, transport, port, inet):
-        """Construct a smart server."""
-        if inet:
-            smart_server = medium.SmartServerPipeStreamMedium(
-                sys.stdin, sys.stdout, transport)
-        else:
-            host = medium.BZR_DEFAULT_INTERFACE
-            if port is None:
-                port = medium.BZR_DEFAULT_PORT
-            else:
-                if ':' in port:
-                    host, port = port.split(':')
-                port = int(port)
-            smart_server = server.SmartTCPServer(
-                transport, host=host, port=port)
-            print 'listening on port: ', smart_server.port
-            sys.stdout.flush()
-        return smart_server
 
     def run_server(self, smart_server):
         """Run the given smart server."""
@@ -106,27 +96,49 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
+    def get_host_and_port(self, port):
+        """Return the host and port to run the smart server on.
+
+        If 'port' is None, None will be returned for the host and port.
+
+        If 'port' has a colon in it, the string before the colon will be
+        interpreted as the host.
+
+        :param port: A string of the port to run the server on.
+        :return: A tuple of (host, port), where 'host' is a host name or IP,
+            and port is an integer TCP/IP port.
+        """
+        host = None
+        if port is not None:
+            if ':' in port:
+                host, port = port.split(':')
+            port = int(port)
+        return host, port
+
     def run(self, user_id, port=None, branch_directory=None,
-            codehosting_endpoint_url=None, inet=False):
+            codehosting_endpoint_url=None, inet=False, protocol=None):
         from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server, hooks
         install_oops_handler(user_id)
         four_gig = int(4e9)
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
         seen_new_branch = hooks.SetProcTitleHook()
+        if protocol is None:
+            protocol = transport_server_registry.get()
         lp_server = get_lp_server(
             int(user_id), codehosting_endpoint_url, branch_directory,
             seen_new_branch.seen)
         lp_server.start_server()
-
-        old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
+            old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
             lp_transport = get_transport(lp_server.get_url())
-            smart_server = self.get_smart_server(lp_transport, port, inet)
+            host, port = self.get_host_and_port(port)
             lockdir._DEFAULT_TIMEOUT_SECONDS = 0
-            self.run_server(smart_server)
+            try:
+                protocol(lp_transport, host, port, inet)
+            finally:
+                lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
         finally:
-            lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
             lp_server.stop_server()
 
 
