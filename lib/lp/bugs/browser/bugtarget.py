@@ -131,6 +131,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
@@ -401,11 +402,10 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # If the context is a project group we want to render the optional
         # fields since they will initially be hidden and later exposed if the
         # selected project supports them.
-        # XXX: StevenK 2011-11-18 bug=885692 This should make use of
-        # IBugTask.userHasPrivileges().
         include_extra_fields = IProjectGroup.providedBy(context)
-        if not include_extra_fields and IHasBugSupervisor.providedBy(context):
-            include_extra_fields = self.user.inTeam(context.bug_supervisor)
+        if not include_extra_fields:
+            include_extra_fields = BugTask.userHasPrivilegesContext(
+                context, self.user)
 
         if include_extra_fields:
             field_names.extend(
@@ -628,19 +628,16 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if extra_data.private:
             params.private = extra_data.private
 
-        # XXX: StevenK 2011-11-18 bug=885692 This should make use of
-        # IBugTask.userHasPrivileges().
-        # Apply any extra options given by a bug supervisor.
-        if IHasBugSupervisor.providedBy(context):
-            if self.user.inTeam(context.bug_supervisor):
-                if 'assignee' in data:
-                    params.assignee = data['assignee']
-                if 'status' in data:
-                    params.status = data['status']
-                if 'importance' in data:
-                    params.importance = data['importance']
-                if 'milestone' in data:
-                    params.milestone = data['milestone']
+        # Apply any extra options given by priviliged users.
+        if BugTask.userHasPrivilegesContext(context, self.user):
+            if 'assignee' in data:
+                params.assignee = data['assignee']
+            if 'status' in data:
+                params.status = data['status']
+            if 'importance' in data:
+                params.importance = data['importance']
+            if 'milestone' in data:
+                params.milestone = data['milestone']
 
         self.added_bug = bug = context.createBug(params)
 

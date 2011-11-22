@@ -1346,6 +1346,20 @@ class BugTask(SQLBase):
         else:
             return None
 
+    @classmethod
+    def userHasPrivilegesContext(cls, context, user):
+        """Does the user have priviliges for the given context?
+
+        :return: a boolean.
+        """
+        role = IPersonRoles(user)
+        if role.in_admin:
+            return True
+        pillar = context.pillar
+        return (
+            role.isOwner(pillar) or role.isOneOfDrivers(pillar) or
+            role.isBugSupervisor(pillar))
+
     def userHasPrivileges(self, user):
         """See `IBugTask`."""
         if not user:

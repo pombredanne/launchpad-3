@@ -697,23 +697,28 @@ The base class allows security bugs to be filed.
     True
 
 
-Extra fields for bug supervisors
---------------------------------
+Extra fields for priviliged users
+---------------------------------
 
-Bug supervisors are offered several extra options when filing bugs.
+Priviliged users are offered several extra options when filing bugs.
 
-    >>> person = factory.makePerson(name=u'bug-superdude')
-    >>> product = factory.makeProduct(owner=person)
+    >>> owner = factory.makePerson(name=u'bug-superdude')
+    >>> person = factory.makePerson()
+    >>> product = factory.makeProduct(owner=owner)
 
     >>> login_person(person)
-
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
-    >>> product.setBugSupervisor(person, person)
+    >>> login_person(owner)
+    >>> filebug_view = create_initialized_view(product, '+filebug')
+    >>> owner_fields = set(filebug_view.field_names)
+    >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Supervisors get all the same fields as normal users, plus a few extra.
+Priviliged users get all the same fields as normal users, plus a few extra.
 
+    >>> owner_fields == supervisor_fields
+    True
     >>> supervisor_fields.issuperset(normal_fields)
     True
 
@@ -734,7 +739,7 @@ Bugs can be filed with settings for all these extra fields.
 
     >>> bug_data = dict(
     ...     title=u'Extra Fields Bug', comment=u'Test description.',
-    ...     assignee=person, importance=BugTaskImportance.HIGH,
+    ...     assignee=owner, importance=BugTaskImportance.HIGH,
     ...     milestone=milestone, status=BugTaskStatus.TRIAGED)
     >>> print filebug_view.validate(bug_data)
     None
