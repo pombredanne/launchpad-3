@@ -31,11 +31,14 @@
                 </span>
             {{/show_bugtarget}}
             {{#show_milestone_name}}
-            {{#milestone_name}}
                 <span class="sprite milestone field">
+                    {{#milestone_name}}
                     {{milestone_name}}
+                    {{/milestone_name}}
+                    {{^milestone_name}}
+                    No milestone set
+                    {{/milestone_name}}
                 </span>
-            {{/milestone_name}}
             {{/show_milestone_name}}
             {{#show_last_updated}}
                 <span class="sprite milestone field">
@@ -43,11 +46,10 @@
                 </span>
             {{/show_last_updated}}
             {{#show_assignee}}
-            {{#assignee}}
                 <span class="sprite person field">
-                    Assignee: {{assignee}}
+                    {{#assignee}}Assignee: {{assignee}}{{/assignee}}
+                    {{^assignee}}Assignee: None{{/assignee}}
                 </span>
-            {{/assignee}}
             {{/show_assignee}}
             {{#show_reporter}}
                 <span class="sprite person field">
@@ -62,7 +64,7 @@
             {{#show_tags}}
                 <span class="field">Tags:
                   {{#tags}}{{tags}}{{/tags}}
-                  {{!#tags}}None{{/tags}}
+                  {{^tags}}None{{/tags}}
                 </span>
             {{/show_tags}}
         </div>
