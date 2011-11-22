@@ -1869,8 +1869,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Cache contains cookie-matching values for field_visibiliy."""
         task = self.factory.makeBugTask()
         cookie = (
-            'anon-buglist-fields=show_age=true&show_reporter=true&show_id=true'
-            '&show_bugtarget=true&show_title=true'
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true&show_title=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_bug_heat=true&show_tags=true'
             '&show_importance=true&show_status=true')

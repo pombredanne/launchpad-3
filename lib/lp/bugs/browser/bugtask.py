@@ -2258,12 +2258,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
 
     def __init__(self, tasks, request, columns_to_show, size,
-                 target_context=None):
+                 target_context=None, user=None):
         # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
-        self.field_visibility = {
+        self.user = user
+        self.field_visibility_defaults = {
             'show_age': False,
             'show_assignee': False,
             'show_bugtarget': True,
@@ -2277,7 +2278,29 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
-        self.field_visibility_defaults = self.field_visibility
+        # Setup a cookie name to find cookie.
+        cookie_name_template = '%s-buglist-fields'
+        cookie_name = ''
+        if self.user is not None:
+            cookie_name = cookie_name_template % self.user.name
+        else:
+            cookie_name = cookie_name_template % 'anon'
+        # Get the cookie.
+        cookie = request.cookies.get(cookie_name)
+        # If it really exists then parse the cookie into our fields dict.
+        fields_from_cookie = {}
+        if cookie is not None:
+            for item in cookie.split('&'):
+                field, value = item.split('=')
+                if value == 'true':
+                    value = True
+                else:
+                    value = False
+                fields_from_cookie[field] = value
+            self.field_visibility = fields_from_cookie
+        # Otherwise, set field_visibility to the defaults.
+        else:
+            self.field_visibility = self.field_visibility_defaults
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
