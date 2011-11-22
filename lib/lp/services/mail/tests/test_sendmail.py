@@ -7,22 +7,21 @@ from doctest import DocTestSuite
 from email.Message import Message
 import unittest
 
-from zope.app import zapi
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailDelivery
-from zope.component import (
-    getGlobalSiteManager,
-    getUtility,
-    )
 
 from lazr.restful.utils import get_current_browser_request
 
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing.fixture import (
+    ZopeUtilityFixture,
+    )
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 from lp.testing import TestCase
+
 
 class TestMailController(TestCase):
 
@@ -237,6 +236,7 @@ class TestMailController(TestCase):
         ctrl = MailController('from@example.com', 'to@example.com', 'subject',
                               'body', envelope_to=['to@example.org'])
         sendmail_kwargs = {}
+
         def fake_sendmail(message, to_addrs=None, bulk=True):
             sendmail_kwargs.update(locals())
         real_sendmail = sendmail.sendmail
@@ -253,9 +253,9 @@ class TestMailController(TestCase):
 
         See https://bugs.launchpad.net/launchpad/+bug/885972
         """
-        fake_mailer = FakeMailer()
-        getGlobalSiteManager().registerUtility(
-            fake_mailer, IMailDelivery, 'Mail')
+        fake_mailer = RecordingMailer()
+        self.useFixture(ZopeUtilityFixture(
+            fake_mailer, IMailDelivery, 'Mail'))
         to_addresses = ['to1@example.com', 'to2@example.com']
         subject = self.getUniqueString('subject')
         ctrl = MailController(
@@ -273,7 +273,7 @@ class TestMailController(TestCase):
         self.assertIsInstance(a0.detail, str)
 
 
-class FakeMailer(object):
+class RecordingMailer(object):
 
     implements(IMailDelivery)
 
