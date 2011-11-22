@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad test fixtures that have no better home."""
@@ -191,6 +191,31 @@ class ZopeViewReplacementFixture(Fixture):
         self.gsm.adapters.register(
             (self.context_interface, self.request_interface), Interface,
              self.name, self.original)
+
+
+class ZopeUtilityFixture(Fixture):
+    """A fixture that temporarily registers a different utility."""
+
+    def __init__(self, component, intf, name):
+        """Construct a new fixture.
+
+        :param component: An instance of a class that provides this
+            interface.
+        :param intf: The Zope interface class to register, eg
+            IMailDelivery.
+        :param name: A string name to match.
+        """
+        self.component = component
+        self.name = name
+        self.intf = intf
+        self.gsm = getGlobalSiteManager()
+
+    def setUp(self):
+        super(ZopeUtilityFixture, self).setUp()
+        self.gsm.registerUtility(self.component, self.intf, self.name)
+        self.addCleanup(
+            self.gsm.unregisterUtility,
+            self.component, self.intf, self.name)
 
 
 class Urllib2Fixture(Fixture):
