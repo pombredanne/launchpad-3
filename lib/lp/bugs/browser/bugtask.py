@@ -2258,12 +2258,12 @@ class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
 
     def __init__(self, tasks, request, columns_to_show, size,
-                 target_context=None, user=None):
+                 target_context=None):
         # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
-        self.user = user
+        user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
             'show_age': False,
             'show_assignee': False,
@@ -2281,12 +2281,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # Setup a cookie name to find cookie.
         cookie_name_template = '%s-buglist-fields'
         cookie_name = ''
-        if self.user is not None:
-            cookie_name = cookie_name_template % self.user.name
+        if user is not None:
+            cookie_name = cookie_name_template % user.name
         else:
             cookie_name = cookie_name_template % 'anon'
         # Get the cookie.
         cookie = request.cookies.get(cookie_name)
+        import pdb;pdb.set_trace()
         # If it really exists then parse the cookie into our fields dict.
         fields_from_cookie = {}
         if cookie is not None:
