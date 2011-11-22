@@ -159,7 +159,7 @@
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
-            style="display: none"
+            class="hidden"
             >
          <dl><dd>
        </dd></dl>

@@ -5,7 +5,7 @@
 
 <metal:add-branch define-macro="add-branch-content">
 
-  <div id="branch-unique-name-div" style="display:none">
+  <div id="branch-unique-name-div" class="hidden">
     The resulting location of the branch will be:
     <strong><span id="branch-unique-name"></span></strong> (<a href="/+help/register-branch.html" target="help">Do you need to register?</a>)
   </div>

@@ -27,7 +27,7 @@
                  type="hidden"
                  name="tryagain.actions.tryagain"
                  value="" />
-              <a href="javascript:document.tryagain.submit()" style="display: none" id="tryagainlink">
+              <a href="javascript:document.tryagain.submit()" class="hidden" id="tryagainlink">
                 <img src="/@@/retry" />
                 Try again
               </a>

@@ -54,7 +54,7 @@ class AccessPolicy(StormBase):
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
         else:
-            raise AssertionError("%r is not a supported pillar" % pillar)
+            raise ValueError("%r is not a supported pillar" % pillar)
         obj.type = type
         IStore(cls).add(obj)
         return obj
@@ -68,7 +68,7 @@ class AccessPolicy(StormBase):
         elif IDistribution.providedBy(pillar):
             col = cls.distribution
         else:
-            raise AssertionError("%r is not a supported pillar" % pillar)
+            raise ValueError("%r is not a supported pillar" % pillar)
         return col == pillar
 
     @classmethod
@@ -115,7 +115,7 @@ class AccessPolicyArtifact(StormBase):
         elif IBranch.providedBy(concrete_artifact):
             return 'branch'
         else:
-            raise AssertionError(
+            raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
 
     @classmethod
@@ -183,7 +183,7 @@ class AccessPolicyGrant(StormBase):
         elif IAccessPolicyArtifact.providedBy(object):
             grant.abstract_artifact = object
         else:
-            raise AssertionError("Unsupported object: %r" % object)
+            raise ValueError("Unsupported object: %r" % object)
         IStore(cls).add(grant)
         return grant
 

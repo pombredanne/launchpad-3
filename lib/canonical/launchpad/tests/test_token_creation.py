@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -27,10 +27,8 @@ class Test_create_unique_token_for_table(testtools.TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_token_uniqueness(self):
-        # Since the prng will be seeded in this test it is important we clean
-        # up by calling seed with no parameters, which will use OS-provided
-        # entropy if available or use the system clock.
-        self.addCleanup(random.seed)
+        orig_state = random.getstate()
+        self.addCleanup(lambda: random.setstate(orig_state))
         # Calling create_unique_token_for_table() twice with the same
         # random.seed() will generate two identical tokens, as the token was
         # never inserted in the table.
