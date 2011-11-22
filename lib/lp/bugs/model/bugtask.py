@@ -401,14 +401,6 @@ def validate_target(bug, target, retarget_existing=True):
             "A fix for this bug has already been requested for %s"
             % target.displayname)
 
-    if (bug.access_policy is not None and
-        bug.access_policy.pillar != target.pillar and
-        not getUtility(IAccessPolicySource).getByPillarAndType(
-            target.pillar, bug.access_policy.type)):
-        raise IllegalTarget(
-            "%s doesn't have a %s access policy."
-            % (target.pillar.displayname, bug.access_policy.type.title))
-
     if (IDistributionSourcePackage.providedBy(target) or
         ISourcePackage.providedBy(target)):
         # If the distribution has at least one series, check that the
@@ -434,6 +426,14 @@ def validate_target(bug, target, retarget_existing=True):
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
+
+    if (bug.access_policy is not None and
+        bug.access_policy.pillar != target.pillar and
+        not getUtility(IAccessPolicySource).getByPillarAndType(
+            target.pillar, bug.access_policy.type)):
+        raise IllegalTarget(
+            "%s doesn't have a %s access policy."
+            % (target.pillar.displayname, bug.access_policy.type.title))
 
 
 def validate_new_target(bug, target):
