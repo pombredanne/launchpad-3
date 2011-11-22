@@ -1286,7 +1286,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(object=artifact)
         self.assertIsNot(
             None, getUtility(IAccessPolicyArtifactSource).get(branch))
-        store = Store.of(branch)
         branch.destroySelf()
         self.assertIs(
             None, getUtility(IAccessPolicyArtifactSource).get(branch))
