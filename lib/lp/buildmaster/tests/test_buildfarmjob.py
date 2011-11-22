@@ -275,6 +275,13 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
             [(build.id, build.__class__) for build in builds],
             [(job.id, job.__class__) for job in specific_jobs])
 
+    def test_getSpecificJobs_duplicated_builds(self):
+        builds = self.createBuilds()
+        duplicated_builds = builds + builds
+        specific_jobs = self.build_farm_job_set.getSpecificJobs(
+            [build.build_farm_job for build in duplicated_builds])
+        self.assertEqual(len(duplicated_builds), len(specific_jobs))
+
     def test_getSpecificJobs_empty(self):
         self.assertContentEqual(
             [],
