@@ -1187,6 +1187,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertConflictingSubscriptionDeletes(dsp)
 
     def test_merge_accesspolicygrants(self):
+        # AccessPolicyGrants are transferred from the duplicate.
         person = self.factory.makePerson()
         grant = self.factory.makeAccessPolicyGrant()
         self._do_premerge(grant.grantee, person)
@@ -1195,6 +1196,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(person, grant.grantee)
 
     def test_merge_accesspolicygrants_conflicts(self):
+        # Conflicting AccessPolicyGrants are deleted.
         policy = self.factory.makeAccessPolicy()
 
         person = self.factory.makePerson()
