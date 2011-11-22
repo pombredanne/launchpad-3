@@ -2311,13 +2311,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # on '&' to get items, and then split on '=' to get
         # field/value pairs.
         if cookie is not None:
-            for item in cookie.split('&'):
-                field, value = item.split('=')
-                if value == 'true':
-                    value = True
-                else:
-                    value = False
-                fields_from_cookie[field] = value
+            for field, value in urlparse.parse_qsl(cookie):
+                # We only record True or False for field values.
+                fields_from_cookie[field] = (value == 'true')
             self.field_visibility = fields_from_cookie
         else:
             self.field_visibility = self.field_visibility_defaults
