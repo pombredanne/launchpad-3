@@ -142,6 +142,7 @@ from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
+    validate_person_or_closed_team,
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -320,7 +321,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person,
+        storm_validator=validate_person_or_closed_team,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -333,7 +334,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person_or_closed_team, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",

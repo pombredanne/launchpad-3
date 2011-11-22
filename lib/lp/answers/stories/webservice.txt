@@ -9,6 +9,7 @@ contact, and asker, and three questions.
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> lang_set = getUtility(ILanguageSet)
@@ -19,7 +20,10 @@ contact, and asker, and three questions.
     >>> _contact.addLanguage(lang_set['en'])
     >>> _project.answers_usage = ServiceUsage.LAUNCHPAD
     >>> success = _project.addAnswerContact(_contact, _contact)
-    >>> _team = factory.makeTeam(owner=_contact, name='my-team')
+    >>> _team = factory.makeTeam(
+    ...     owner=_contact,
+    ...     name='my-team',
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
     >>> _question_1 = factory.makeQuestion(
