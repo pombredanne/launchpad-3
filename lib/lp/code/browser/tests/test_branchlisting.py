@@ -11,6 +11,7 @@ from pprint import pformat
 import re
 
 from lazr.uri import URI
+from lxml import html
 import soupmatchers
 from storm.expr import (
     Asc,
@@ -59,6 +60,7 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.matchers import DocTestMatches
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,
@@ -554,9 +556,12 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         branch = self.factory.makeBranch(sourcepackage=source_package)
         view = create_initialized_view(
             dsp, name='+code-index', rootsite='code')
-        html = view()
-        self.assertIn(branch.name, html)
-        self.assertIn('a moment ago</span>\n', html)
+        root = html.fromstring(view())
+        [series_branches_table] = root.cssselect("table#series-branches")
+        series_branches_last_row = series_branches_table.cssselect("tr")[-1]
+        self.assertThat(
+            series_branches_last_row.text_content(),
+            DocTestMatches("%s ... ago" % branch.displayname))
 
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
