@@ -247,10 +247,8 @@ class TestMailController(TestCase):
         self.assertEqual('to@example.com', sendmail_kwargs['message']['To'])
         self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
 
-    def test_sendmail_into_timeline(self):
+    def test_MailController_into_timeline(self):
         """sendmail records stuff in the timeline.
-
-        See https://bugs.launchpad.net/launchpad/+bug/885972
         """
         fake_mailer = RecordingMailer()
         self.useFixture(ZopeUtilityFixture(
@@ -271,8 +269,6 @@ class TestMailController(TestCase):
 
         See https://bugs.launchpad.net/launchpad/+bug/885972
         """
-        # I don't see how this can happen in the real code but apparently it
-        # does. -- mbp 2011-11-22
         fake_mailer = RecordingMailer()
         self.useFixture(ZopeUtilityFixture(
             fake_mailer, IMailDelivery, 'Mail'))
