@@ -39,6 +39,7 @@ class TestBugTargetTags(TestCaseWithFactory):
             [tag['tag'] for tag in view.tags_cloud_data])
 
     def test_tags_order(self):
+        """Test that the tags are ordered by most used first"""
         self.factory.makeBug(product=self.target_product, tags=['tag-last'])
         for i in range(0, 2):
             self.factory.makeBug(product=self.target_product, tags=['tag-middle'])
