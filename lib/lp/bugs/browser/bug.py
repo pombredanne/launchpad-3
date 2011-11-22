@@ -544,6 +544,10 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""

@@ -803,6 +803,16 @@ class FormattersAPI:
             return self._stringtoformat
         return obfuscate_email(self._stringtoformat)
 
+    def strip_email(self):
+        """Strip out things that may be email.
+
+        This is a variation on obfuscate_email for when we are generating a
+        snipped for page metadata: we don't want to waste space spelling out
+        "<email address hidden>", and we do want to strip addresses even for
+        logged-in users in case they use the summary in a sharing tool.
+        """
+        return obfuscate_email(self._stringtoformat, replacement="...")
+
     def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
 
@@ -991,6 +1001,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'strip-email':
+            return self.strip_email()
         elif name == 'linkify-email':
             return self.linkify_email()
         elif name == 'shorten':
