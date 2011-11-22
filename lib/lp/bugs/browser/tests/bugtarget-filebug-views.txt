@@ -697,10 +697,10 @@ The base class allows security bugs to be filed.
     True
 
 
-Extra fields for priviliged users
+Extra fields for privileged users
 ---------------------------------
 
-Priviliged users are offered several extra options when filing bugs.
+Privileged users are offered several extra options when filing bugs.
 
     >>> owner = factory.makePerson(name=u'bug-superdude')
     >>> person = factory.makePerson()
@@ -715,7 +715,7 @@ Priviliged users are offered several extra options when filing bugs.
     >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Priviliged users get all the same fields as normal users, plus a few extra.
+Privileged users get all the same fields as normal users, plus a few extra.
 
     >>> owner_fields == supervisor_fields
     True

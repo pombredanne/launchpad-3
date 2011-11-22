@@ -628,7 +628,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if extra_data.private:
             params.private = extra_data.private
 
-        # Apply any extra options given by priviliged users.
+        # Apply any extra options given by privileged users.
         if BugTask.userHasPrivilegesContext(context, self.user):
             if 'assignee' in data:
                 params.assignee = data['assignee']
