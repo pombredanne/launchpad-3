@@ -2014,7 +2014,7 @@ class PreviewDiffView(DelegatedAuthorization):
     usedfor = IPreviewDiff
 
     def __init__(self, obj):
-        super(PreviewDiffView, self).__init__(obj, obj._branch_merge_proposal)
+        super(PreviewDiffView, self).__init__(obj, obj.branch_merge_proposal)
 
 
 class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
