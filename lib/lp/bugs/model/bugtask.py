@@ -394,7 +394,7 @@ def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist, and that the new
-    target's pillar matches the bug access policy if one is set.
+    target's pillar supports the bug's access policy.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -1220,8 +1220,6 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
-        # If there's a policy set and we're changing to a another
-        # pillar, recalculate the access policy.
         new_key = bug_target_to_key(target)
 
         # As a special case, if the sourcepackagename has changed then
@@ -1235,6 +1233,8 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self.updateTargetNameCache()
 
+        # If there's a policy set and we're changing to a another
+        # pillar, recalculate the access policy.
         if (self.bug.access_policy is not None and
             self.bug.access_policy.pillar != target.pillar):
             self.bug.setAccessPolicy(self.bug.access_policy.type)
