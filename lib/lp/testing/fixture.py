@@ -185,12 +185,13 @@ class ZopeViewReplacementFixture(Fixture):
         # can add more flexibility then.
         defineChecker(self.replacement, self.checker)
 
-    def tearDown(self):
-        super(ZopeViewReplacementFixture, self).tearDown()
-        undefineChecker(self.replacement)
-        self.gsm.adapters.register(
-            (self.context_interface, self.request_interface), Interface,
-             self.name, self.original)
+        self.addCleanup(
+            undefineChecker, self.replacement)
+        self.addCleanup(
+            self.gsm.adapters.register,
+            (self.context_interface, self.request_interface),
+            Interface,
+            self.name, self.original)
 
 
 class ZopeUtilityFixture(Fixture):
@@ -208,13 +209,13 @@ class ZopeUtilityFixture(Fixture):
         self.component = component
         self.name = name
         self.intf = intf
-        self.gsm = getGlobalSiteManager()
 
     def setUp(self):
         super(ZopeUtilityFixture, self).setUp()
-        self.gsm.registerUtility(self.component, self.intf, self.name)
+        gsm = getGlobalSiteManager()
+        gsm.registerUtility(self.component, self.intf, self.name)
         self.addCleanup(
-            self.gsm.unregisterUtility,
+            gsm.unregisterUtility,
             self.component, self.intf, self.name)
 
 
