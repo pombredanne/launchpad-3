@@ -1,4 +1,5 @@
-= Checking messages against gettext =
+Checking messages against gettext
+=================================
 
 Before accepting a translation message, Launchpad runs it through
 gettext to check for certain errors.  For example, if the message is
@@ -14,14 +15,12 @@ gettext update that notices incompatibilities that earlier versions
 didn't.
 
 
-== Test setup ==
+Test setup
+----------
 
 Here we use an instrumented version of the script that counts messages
 checked instead of real time.  This gets around the indeterminate commit
 points that would otherwise be in the output.
-
-    >>> from datetime import datetime
-    >>> from pytz import timezone
 
     >>> from zope.security.proxy import removeSecurityProxy
 
@@ -48,8 +47,6 @@ points that would otherwise be in the output.
 
     >>> logout()
     >>> login('foo.bar@canonical.com')
-
-    >>> UTC = timezone('UTC')
 
     >>> pofile = factory.makePOFile()
     >>> template = pofile.potemplate
@@ -84,7 +81,8 @@ in Launchpad that differs from the upstream one.
     >>> ubuntu_message.is_current_ubuntu = True
 
 
-== Basic operation ==
+Basic operation
+---------------
 
 The gettext_check_message script goes through a given set of messages
 and re-does the gettext check.  Which messages it checks is specified as
@@ -102,7 +100,8 @@ a plain SQL WHERE clause.
     INFO Commit points: ...
 
 
-== Detecting errors ==
+Detecting errors
+----------------
 
 If a translation fails to validate against its potmsgset, the script
 detects the problem when it checks that message.
@@ -133,7 +132,8 @@ The failed message is demoted to a mere suggestion.
     False
 
 
-== Output ==
+Output
+------
 
 Besides Ubuntu messages, the script's output also distinguishes
 upstream ones, and ones that are completely unused. The upstream message
@@ -169,7 +169,8 @@ The script also notes when a message is shared between upstream and Ubuntu.
     INFO ... (ubuntu, upstream): number of format specifications ...
 
 
-== Dry runs ==
+Dry runs
+--------
 
 The --dry-run option makes the script abort all its database changes.
 
@@ -191,7 +192,8 @@ The --dry-run option makes the script abort all its database changes.
     INFO Commit points: 2
 
 
-== Commit points ==
+Commit points
+-------------
 
 To avoid long-running transactions and potential locks, the script
 commits regularly.  Normally this happens every few seconds.  For the
