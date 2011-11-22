@@ -165,9 +165,8 @@
            tal:condition="data/target_has_milestones"
            style="width: 100%; float: left">
         <a tal:condition="view/user_has_privileges"
-           class="nulltext addicon js-action sprite add"
            tal:attributes="href data/edit_link;
-                           style view/style_for_add_milestone">
+                           class string:nulltext addicon js-action sprite add ${view/style_for_add_milestone}">
           Target to milestone
         </a>
         <a class="value"
@@ -175,8 +174,8 @@
            tal:content="context/milestone/title | nothing" />
         <a tal:condition="view/user_has_privileges"
            tal:attributes="href data/edit_link"
-          ><img class="editicon" src="/@@/edit"
-                tal:attributes="style view/style_for_edit_milestone"
+          ><img src="/@@/edit"
+                tal:attributes="class string:editicon ${view/style_for_edit_milestone}"
           /></a>
       </div>
     </td>

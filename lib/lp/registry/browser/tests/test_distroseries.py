@@ -28,7 +28,6 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import (
     ProxyFactory,
@@ -57,7 +56,6 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
-    reconnect_stores,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
@@ -115,6 +113,7 @@ from lp.testing import (
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import (
     DocTestMatches,
@@ -608,14 +607,11 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # We need to switch to the initializedistroseries user to set the
         # error_description on the given job. Which is a PITA.
         distroseries = job.distroseries
-        transaction.commit()
-        reconnect_stores("initializedistroseries")
-        job = self.job_source.get(distroseries)
-        job.start()
-        job.fail()
-        job.notifyUserError(error)
-        transaction.commit()
-        reconnect_stores('launchpad')
+        with dbuser("initializedistroseries"):
+            job = self.job_source.get(distroseries)
+            job.start()
+            job.fail()
+            job.notifyUserError(error)
 
     def test_initialization_failure_explanation_shown(self):
         # When initialization has failed an explanation of the failure can be

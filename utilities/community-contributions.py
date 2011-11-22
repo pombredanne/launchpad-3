@@ -185,6 +185,8 @@ known_canonical_lp_devs = \
                               u'Paul Hummer',
                               u'Raphael Badin',
                               u'Raphaël Badin',
+                              u'Richard Harding',
+                              u'Rick Harding',
                               u'Robert Collins',
                               u'root <root {_AT_} ubuntu>',
                               u'rvb',

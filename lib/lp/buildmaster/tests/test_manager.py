@@ -23,7 +23,8 @@ from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.buildd.tests import BuilddSlaveTestSetup
+from lpbuildd.tests import BuilddSlaveTestSetup
+
 from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
