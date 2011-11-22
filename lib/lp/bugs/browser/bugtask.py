@@ -2293,12 +2293,12 @@ class BugListingBatchNavigator(TableBatchNavigator):
             self.currentBatch())
 
     def _setFieldVisibility(self, request, user):
-        """Parse buglist-fields cookie for field_visibility.
+        """Set field_visibility for the page load.
 
-        The cookie is stored per user name and of the form:
-        'show_bugtarget=true%show_assignee=true'
-        This method converts that string into a proper
-        field_visibility dict.
+
+        If a cookie of the form $USER-buglist-fields is found,
+        we set field_visibility from this cookie; otherwise,
+        field_visibility will match the defaults.
         """
         cookie_name_template = '%s-buglist-fields'
         cookie_name = ''
@@ -2308,6 +2308,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
             cookie_name = cookie_name_template % 'anon'
         cookie = request.cookies.get(cookie_name)
         fields_from_cookie = {}
+        # "cookie" looks like a URL query string, so we split
+        # on '&' to get items, and then split on '=' to get
+        # field/value pairs.
         if cookie is not None:
             for item in cookie.split('&'):
                 field, value = item.split('=')
