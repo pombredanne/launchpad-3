@@ -686,6 +686,7 @@ div.buglisting-row {
     border-bottom: 1px solid #EEE;
     min-width: 585px;
     width: 100%;
+    padding-bottom: 5px;
     }
 div.buglisting-col1 {
     width: 100px;
@@ -729,7 +730,10 @@ div#client-listing .status {
     left: 10px;
     }
 div#client-listing .field {
-    margin-left: 1em;
+    display: inline-block;
+    min-width: 120px;
+    line-height: 16px;
+    margin-right: 5px;
 }
 
 /* === Translations === */
