@@ -1789,8 +1789,8 @@ class Bug(SQLBase):
                 self.default_bugtask.pillar, type)
             if policy is None:
                 raise UnsuitableAccessPolicyError(
-                    "%s does not use the %s access policy."
-                    % (self.default_bugtask.pillar.name, type.name))
+                    "%s doesn't have a %s access policy."
+                    % (self.default_bugtask.pillar.name, type.title))
         self.access_policy = policy
 
     def getRequiredSubscribers(self, for_private, for_security_related, who):
