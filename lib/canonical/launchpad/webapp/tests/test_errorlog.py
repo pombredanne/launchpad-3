@@ -184,6 +184,27 @@ class TestErrorReportingUtility(testtools.TestCase):
         # - a notify publisher
         self.assertEqual(oops_config.publishers[2], notify_publisher)
 
+    def test_multiple_raises_in_request(self):
+        """An OOPS links to the previous OOPS in the request, if any."""
+        utility = ErrorReportingUtility()
+        del utility._oops_config.publishers[0]
+
+        request = TestRequestWithPrincipal()
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertFalse('last_oops' in report)
+        last_oopsid = request.oopsid
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertTrue('last_oops' in report)
+        self.assertEqual(report['last_oops'], last_oopsid)
+
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()

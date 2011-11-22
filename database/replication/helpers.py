@@ -44,7 +44,6 @@ LPMAIN_SEED = frozenset([
     ('public', 'openidnonce'),
     ('public', 'openidassociation'),
     ('public', 'person'),
-    ('public', 'launchpaddatabaserevision'),
     ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
@@ -72,6 +71,10 @@ IGNORED_TABLES = set([
     # Session tables that in some situations will exist in the main lp
     # database.
     'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
+    # Database revision logs. Should not be replicated as they are
+    # updated via slonik EXECUTE SCRIPT.
+    'public.launchpaddatabaserevision',
+    'public.launchpaddatabaseupdatelog',
     # Mirror tables, per Bug #489078. These tables have their own private
     # replication set that is setup manually.
     'public.lp_account',

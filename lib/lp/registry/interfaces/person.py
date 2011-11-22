@@ -37,7 +37,9 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
+    'validate_person_or_closed_team',
     'validate_public_person',
+    'validate_subscription_policy',
     ]
 
 from lazr.enum import (
@@ -69,12 +71,6 @@ from lazr.restful.fields import (
     Reference,
     )
 from lazr.restful.interface import copy_field
-from storm.expr import (
-    And,
-    Join,
-    Select,
-    Union,
-    )
 from zope.component import getUtility
 from zope.formlib.form import NoInputData
 from zope.interface import (
@@ -107,7 +103,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -126,6 +121,7 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
+    OpenTeamLinkageError,
     PrivatePersonLinkageError,
     TeamSubscriptionPolicyError,
     )
@@ -151,6 +147,7 @@ from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
+    is_public_person_or_closed_team,
     is_public_person,
     LogoImageUpload,
     MugshotImageUpload,
@@ -160,7 +157,6 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.soyuz.enums import ArchiveStatus
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -170,7 +166,8 @@ PRIVATE_TEAM_PREFIX = 'private-'
 
 
 @block_implicit_flushes
-def validate_person_common(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func,
+                           error_class=PrivatePersonLinkageError):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -181,7 +178,7 @@ def validate_person_common(obj, attr, value, validate_func):
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not validate_func(person):
-        raise PrivatePersonLinkageError(
+        raise error_class(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
@@ -204,6 +201,35 @@ def validate_public_person(obj, attr, value):
         return is_public_person(person)
 
     return validate_person_common(obj, attr, value, validate)
+
+
+def validate_person_or_closed_team(obj, attr, value):
+
+    def validate(person):
+        return is_public_person_or_closed_team(person)
+
+    return validate_person_common(
+        obj, attr, value, validate, error_class=OpenTeamLinkageError)
+
+
+def validate_subscription_policy(obj, attr, value):
+    """Validate the team subscription_policy."""
+    if value is None:
+        return None
+
+    # If we are just creating a new team, it can have any subscription policy.
+    if getattr(obj, '_SO_creating', True):
+        return value
+
+    team = obj
+    existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
+    if value == existing_subscription_policy:
+        return value
+    if value in OPEN_TEAM_POLICY:
+        team.checkOpenSubscriptionPolicyAllowed(policy=value)
+    if value in CLOSED_TEAM_POLICY:
+        team.checkClosedSubscriptionPolicyAllowed(policy=value)
+    return value
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -536,6 +562,10 @@ def team_subscription_policy_can_transition(team, policy):
     cannot have PPAs. Changes from between OPEN and the two closed states
     can be blocked by team membership and team artifacts.
 
+    We only perform the check if a subscription policy is transitioning from
+    open->closed or visa versa. So if a team already has a closed subscription
+    policy, it is always allowed to transition to another closed policy.
+
     :param team: The team to change.
     :param policy: The TeamSubsciptionPolicy to change to.
     :raises TeamSubsciptionPolicyError: Raised when a membership constrain
@@ -544,57 +574,12 @@ def team_subscription_policy_can_transition(team, policy):
     if team is None or policy == team.subscriptionpolicy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif policy in OPEN_TEAM_POLICY:
-        # The team can be open if its super teams are open.
-        for team in team.super_teams:
-            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its super teams are not open." % policy)
-        # The team can not be open if it has PPAs.
-        for ppa in team.ppas:
-            if ppa.status != ArchiveStatus.DELETED:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because it "
-                    "has one or more active PPAs." % policy)
-        # Circular imports.
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugsubscription import BugSubscription
-        from lp.bugs.model.bugtask import BugTask
-        # The team cannot be open if it is subscribed to or assigned to
-        # private bugs.
-        private_bugs_involved = IStore(Bug).execute(Union(
-            Select(
-                Bug.id,
-                tables=(
-                    Bug,
-                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
-                where=And(
-                    Bug.private == True,
-                    BugSubscription.person_id == team.id)),
-            Select(
-                Bug.id,
-                tables=(
-                    Bug,
-                    Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.private == True, BugTask.assignee == team.id)),
-            limit=1))
-        if private_bugs_involved.rowcount:
-            raise TeamSubscriptionPolicyError(
-                "The team subscription policy cannot be %s because it is "
-                "subscribed to or assigned to one or more private "
-                "bugs." % policy)
-    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
-        # The team can become MODERATED or RESTRICTED if its member teams
-        # are not OPEN.
-        for member in team.activemembers:
-            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its member teams are Open." % policy)
-    else:
-        # The policy change is between MODERATED and RESTRICTED.
-        pass
+    elif (policy in OPEN_TEAM_POLICY
+          and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
+        team.checkOpenSubscriptionPolicyAllowed(policy)
+    elif (policy in CLOSED_TEAM_POLICY
+          and team.subscriptionpolicy in OPEN_TEAM_POLICY):
+        team.checkClosedSubscriptionPolicyAllowed(policy)
     return True
 
 
@@ -1200,6 +1185,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :param match_name: string optional project name to screen the results.
         """
+
+    def isAnyPillarOwner():
+        """Is this person the owner of any pillar?"""
+
+    def isAnySecurityContact():
+        """Is this person the security contact of any pillar?"""
 
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
@@ -1976,6 +1967,45 @@ class ITeamPublic(Interface):
     defaultrenewedexpirationdate = Attribute(
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
+
+    def checkOpenSubscriptionPolicyAllowed(policy='open'):
+        """ Check whether this team's subscription policy can be open.
+
+        An open subscription policy is OPEN or DELEGATED.
+        A closed subscription policy is MODERATED or RESTRICTED.
+        An closed subscription policy is required when:
+        - any of the team's super teams are closed.
+        - the team has any active PPAs
+        - it is subscribed or assigned to any private bugs
+        - it owns or is the security contact for any pillars
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when an open policy is not allowed. Sometimes though, the caller
+            just wants to know if any open policy is allowed without having a
+            particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be open.
+        """
+
+    def checkClosedSubscriptionPolicyAllowed(policy='closed'):
+        """ Return true if this team's subscription policy must be open.
+
+        An open subscription policy is OPEN or DELEGATED.
+        A closed subscription policy is MODERATED or RESTRICTED.
+        An open subscription policy is required when:
+        - any of the team's sub (member) teams are open.
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when a closed policy is not allowed. Sometimes though, the caller
+            just wants to know if any closed policy is allowed without having
+            a particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be closed.
+        """
 
 
 class ITeam(IPerson, ITeamPublic):
