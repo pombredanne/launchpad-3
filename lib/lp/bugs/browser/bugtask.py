@@ -2292,6 +2292,16 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
 
+    def _getCookieName(self, user):
+        """Return the cookie name used in bug listings js code."""
+        cookie_name_template = '%s-buglist-fields'
+        cookie_name = ''
+        if user is not None:
+            cookie_name = cookie_name_template % user.name
+        else:
+            cookie_name = cookie_name_template % 'anon'
+        return cookie_name
+
     def _setFieldVisibility(self, request, user):
         """Set field_visibility for the page load.
 
@@ -2299,12 +2309,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         we set field_visibility from this cookie; otherwise,
         field_visibility will match the defaults.
         """
-        cookie_name_template = '%s-buglist-fields'
-        cookie_name = ''
-        if user is not None:
-            cookie_name = cookie_name_template % user.name
-        else:
-            cookie_name = cookie_name_template % 'anon'
+        cookie_name = self._getCookieName(user)
         cookie = request.cookies.get(cookie_name)
         fields_from_cookie = {}
         # "cookie" looks like a URL query string, so we split
