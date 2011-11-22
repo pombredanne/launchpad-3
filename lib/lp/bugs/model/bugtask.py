@@ -1220,6 +1220,8 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
+        # If there's a policy set and we're changing to a another
+        # pillar, recalculate the access policy.
         new_key = bug_target_to_key(target)
 
         # As a special case, if the sourcepackagename has changed then
@@ -1232,6 +1234,10 @@ class BugTask(SQLBase):
         for name, value in new_key.iteritems():
             setattr(self, name, value)
         self.updateTargetNameCache()
+
+        if (self.bug.access_policy is not None and
+            self.bug.access_policy.pillar != target.pillar):
+            self.bug.setAccessPolicy(self.bug.access_policy.type)
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
