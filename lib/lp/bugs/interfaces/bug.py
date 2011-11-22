@@ -944,6 +944,25 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
 
+    def userCanSetCommentVisibility(user):
+        """Return True if `user` can set bug comment visibility.
+
+        This method is called by security adapters for authenticated users.
+
+        Users who can set bug comment visibility are:
+        - Admins and registry admins
+        - users in project roles on any bugtask:
+          - maintainer
+          - driver
+          - bug supervisor
+          - security contact
+
+        Additionally, the comment owners can hide their own comments but that
+        is not checked here - this method is to see if arbitrary users can
+        hide comments they did not make themselves.
+
+        """
+
     @operation_parameters(
         submission=Reference(
             Interface, title=_('A HWDB submission'), required=True))

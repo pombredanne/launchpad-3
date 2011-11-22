@@ -23,21 +23,15 @@ does not happen automatically.
     >>> from lp.services.log.logger import BufferLogger
     >>> logger = BufferLogger()
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import reconnect_stores
+    >>> from lp.testing.dbuser import dbuser
     >>> def updateCache():
     ...     # Switch to the statistician user who is the only user with
     ...     # write permission to the source package cache tables.
-    ...     transaction.commit()
-    ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     DistributionSourcePackageCache.updateAll(
-    ...         ubuntu, archive=ubuntu.main_archive, log=logger,
-    ...         ztm=transaction)
-    ...     transaction.commit()
-    ...     reconnect_stores('launchpad')
-    ...     # Get ubuntu, our product, and the sourcepackage name again
-    ...     # since the transaction changed.
-    ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    ...     with dbuser(config.statistician.dbuser):
+    ...         DistributionSourcePackageCache.updateAll(
+    ...             ubuntu, archive=ubuntu.main_archive, log=logger,
+    ...             ztm=transaction)
     ...     product = getUtility(IProductSet)['bingo']
     ...     spn = getUtility(ISourcePackageNameSet)['bingo']
     ...     login(ANONYMOUS)

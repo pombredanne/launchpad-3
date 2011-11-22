@@ -159,7 +159,7 @@
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
-            style="display: none"
+            class="hidden"
             >
          <dl><dd>
        </dd></dl>
@@ -205,17 +205,17 @@
     <tal:ajax-revision-diffs
         condition="request/features/code.ajax_revision_diffs.enabled">
       <tal:diff-expander condition="show_diff_expander | nothing">
-	<div class="revision-group-diff" tal:condition="revisions | nothing">
-	  <a href="#" class="unseen expander-icon"
-	     tal:define="start_revno python:revisions[0].sequence;
-			 last_revno python:revisions[-1].sequence"
-	     tal:attributes="id string:expandable-${start_revno}-${last_revno}"
-	  >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
-	    <tal:plural condition="python: start_revno!=last_revno">
-	      to revision <tal:revno replace="last_revno">2</tal:revno>
-	    </tal:plural></a>
-	<div class="unseen expander-content">Loading diff</div>
-	</div>
+  <div class="revision-group-diff" tal:condition="revisions | nothing">
+        <a href="#" class="unseen expander-icon js-action"
+            tal:define="start_revno python:revisions[0].sequence;
+       last_revno python:revisions[-1].sequence"
+       tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+    >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
+      <tal:plural condition="python: start_revno!=last_revno">
+        to revision <tal:revno replace="last_revno">2</tal:revno>
+      </tal:plural></a>
+  <div class="unseen expander-content">Loading diff</div>
+  </div>
       </tal:diff-expander>
     </tal:ajax-revision-diffs>
   </dl>

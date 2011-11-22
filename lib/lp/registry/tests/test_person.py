@@ -18,6 +18,7 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -36,10 +37,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    reconnect_stores,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
@@ -89,11 +87,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.dbuser import dbuser
 from lp.testing.matchers import HasQueryCount
-from lp.testing.storm import (
-    reload_dsp,
-    reload_object,
-    )
 from lp.testing.views import create_initialized_view
 
 
@@ -814,20 +809,17 @@ class KarmaTestMixin:
         user 'karma'. This invalidates the objects under test so they
         must be retrieved again.
         """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        total = 0
-        # Insert category total for person and project.
-        for category_name, value in category_name_values:
-            category = KarmaCategory.byName(category_name)
+        with dbuser('karma'):
+            total = 0
+            # Insert category total for person and project.
+            for category_name, value in category_name_values:
+                category = KarmaCategory.byName(category_name)
+                self.cache_manager.new(
+                    value, person.id, category.id, product_id=product.id)
+                total += value
+            # Insert total cache for person and project.
             self.cache_manager.new(
-                value, person.id, category.id, product_id=product.id)
-            total += value
-        # Insert total cache for person and project.
-        self.cache_manager.new(
-            total, person.id, None, product_id=product.id)
-        transaction.commit()
-        reconnect_stores('launchpad')
+                total, person.id, None, product_id=product.id)
 
     def _makeKarmaTotalCache(self, person, total):
         """Create a KarmaTotalCache entry.
@@ -836,11 +828,8 @@ class KarmaTestMixin:
         user 'karma'. This invalidates the objects under test so they
         must be retrieved again.
         """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        KarmaTotalCache(person=person.id, karma_total=total)
-        transaction.commit()
-        reconnect_stores('launchpad')
+        with dbuser('karma'):
+            KarmaTotalCache(person=person.id, karma_total=total)
 
 
 class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
@@ -864,13 +853,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def _do_merge(self, from_person, to_person, reviewer=None):
         # Perform the merge as the db user that will be used by the jobs.
-        transaction.commit()
-        reconnect_stores('IPersonMergeJobSource')
-        from_person = reload_object(from_person)
-        to_person = reload_object(to_person)
-        if reviewer is not None:
-            reviewer = reload_object(reviewer)
-        self.person_set.merge(from_person, to_person, reviewer=reviewer)
+        with dbuser(config.IPersonMergeJobSource.dbuser):
+            self.person_set.merge(from_person, to_person, reviewer=reviewer)
         return from_person, to_person
 
     def _get_testable_account(self, person, date_created, openid_identifier):
@@ -884,10 +868,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         team = self.factory.makeTeam()
         owner = team.teamowner
         transaction.commit()
-        reconnect_stores('IPersonMergeJobSource')
-        team = reload_object(team)
-        owner = reload_object(owner)
-        self.person_set.delete(team, owner)
+        with dbuser(config.IPersonMergeJobSource.dbuser):
+            self.person_set.delete(team, owner)
         notification_set = getUtility(IPersonNotificationSet)
         notifications = notification_set.getNotificationsToSend()
         self.assertEqual(0, notifications.count())
@@ -1101,7 +1083,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
 
-    def assertSubscriptionMerges(self, target, reloader=reload_object):
+    def assertSubscriptionMerges(self, target):
         # Given a subscription target, we want to make sure that subscriptions
         # that the duplicate person made are carried over to the merged
         # account.
@@ -1114,12 +1096,10 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         duplicate, person = self._do_merge(duplicate, person)
         # The merged person has the subscription, and the duplicate person
         # does not.
-        target = reloader(target)
         self.assertTrue(target.getSubscription(person) is not None)
         self.assertTrue(target.getSubscription(duplicate) is None)
 
-    def assertConflictingSubscriptionDeletes(self, target,
-                                                      reloader=reload_object):
+    def assertConflictingSubscriptionDeletes(self, target):
         # Given a subscription target, we want to make sure that subscriptions
         # that the duplicate person made that conflict with existing
         # subscriptions in the merged account are deleted.
@@ -1135,7 +1115,6 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, person)
         login_person(person)
         duplicate, person = self._do_merge(duplicate, person)
-        target = reloader(target)
         # The merged person still has the original subscription, as shown
         # by the marker name.
         self.assertEqual(
@@ -1199,12 +1178,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
     def test_merge_with_sourcepackage_subscription(self):
         # See comments in assertSubscriptionMerges.
         dsp = self.factory.makeDistributionSourcePackage()
-        self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
+        self.assertSubscriptionMerges(dsp)
 
     def test_merge_with_conflicting_sourcepackage_subscription(self):
         # See comments in assertConflictingSubscriptionDeletes.
         dsp = self.factory.makeDistributionSourcePackage()
-        self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
+        self.assertConflictingSubscriptionDeletes(dsp)
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
