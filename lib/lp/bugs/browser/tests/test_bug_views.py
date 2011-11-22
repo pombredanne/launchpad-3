@@ -17,11 +17,6 @@ from testtools.matchers import (
     Not,
     )
 
-from soupmatchers import (
-    HTMLContains,
-    Tag,
-    )
-
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -116,12 +111,13 @@ class TestEmailObfuscated(BrowserTestCase):
         self.bug = self.factory.makeBug(
             title="Title with %s contained" % self.email_address,
             description="Description with %s contained." % self.email_address)
-        return self.getViewBrowser(self.bug, rootsite="bugs", no_login=no_login)
+        return self.getViewBrowser(
+            self.bug, rootsite="bugs", no_login=no_login)
 
     def test_user_sees_email_address(self):
         """A logged-in user can see the email address on the page."""
         browser = self.getBrowserForBugWithEmail(no_login=False)
-        self.assertEqual(8, browser.contents.count(self.email_address))
+        self.assertEqual(7, browser.contents.count(self.email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
@@ -141,9 +137,12 @@ class TestEmailObfuscated(BrowserTestCase):
         browser = self.getBrowserForBugWithEmail(no_login=False)
         soup = BeautifulSoup(browser.contents)
         meat = soup.find('meta', dict(name='description'))
+        # Even logged in users get email stripped from the metadata, in case
+        # they use a tool that copies it out.
         self.assertThat(meat['content'], MatchesAll(
             Contains('Description with'),
-            Contains(self.email_address)))
+            Not(Contains('@')),
+            Contains('...')))  # Ellipsis from hidden address.
 
 
 class TestBugPortletSubscribers(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for Answer Tracker related unit tests.
@@ -40,7 +40,7 @@ class TestEmailObfuscated(BrowserTestCase):
         email_address = "mark@example.com"
         browser = self.getBrowserForQuestionWithEmail(
             email_address, no_login=False)
-        self.assertEqual(5, browser.contents.count(email_address))
+        self.assertEqual(4, browser.contents.count(email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""

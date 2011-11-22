@@ -847,8 +847,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_description_is_meta_description(self):
         description = (
             "I'd like to make the bmp description appear as the meta "
-            "description: this does that " 
-            + "abcdef " * 30)
+            "description: this does that "
+            + "abcdef " * 300)
         bmp = self.factory.makeBranchMergeProposal(
             description=description)
         browser = self.getUserBrowser(
@@ -857,8 +857,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             'meta description',
             'meta', attrs=dict(
                 name='description',
-                content=True))
-        head = Tag('head', 'head')
+                content=description[:497] + '...'))
         self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
