@@ -2295,7 +2295,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _setFieldVisibility(self, request, user):
         """Set field_visibility for the page load.
 
-
         If a cookie of the form $USER-buglist-fields is found,
         we set field_visibility from this cookie; otherwise,
         field_visibility will match the defaults.
