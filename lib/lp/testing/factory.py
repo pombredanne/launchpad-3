@@ -1527,11 +1527,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u''):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
         diff = self.makeDiff()
-        bmp = self.makeBranchMergeProposal()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff.branch_merge_proposal = bmp
+        preview_diff._branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()

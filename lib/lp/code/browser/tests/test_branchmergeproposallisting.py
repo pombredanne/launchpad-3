@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
@@ -16,7 +16,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
@@ -388,16 +391,17 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
 class PersonActiveReviewsPerformance(TestCaseWithFactory):
     """Test the performance of the person's active reviews page."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def createBMP(self, reviewer=None, target_branch_owner=None):
         target_branch = None
         if target_branch_owner is not None:
-            target_branch = self.factory.makeProductBranch(
+            target_branch = self.factory.makePackageBranch(
                 owner=target_branch_owner)
         bmp = self.factory.makeBranchMergeProposal(
             reviewer=reviewer,
             target_branch=target_branch)
+        self.factory.makePreviewDiff(merge_proposal=bmp)
         login_person(bmp.source_branch.owner)
         bmp.requestReview()
         return bmp
@@ -431,9 +435,12 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         # Note that we keep the number of bmps created small (3 and 7)
         # so that the all the per-cached objects will fit into the cache
         # used in tests (storm_cache_size: 100).
-        recorder1, view1 = self.createBMPsAndRecordQueries(3)
-        self.assertEqual(3, view1.proposal_count)
+        base_bmps = 3
+        added_bmps = 4
+        recorder1, view1 = self.createBMPsAndRecordQueries(base_bmps)
+        self.assertEqual(base_bmps, view1.proposal_count)
         self.addDetail("r1tb", Content(UTF8_TEXT, lambda: [str(recorder1)]))
-        recorder2, view2 = self.createBMPsAndRecordQueries(7)
-        self.assertEqual(7, view2.proposal_count)
+        recorder2, view2 = self.createBMPsAndRecordQueries(
+            base_bmps + added_bmps)
+        self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
