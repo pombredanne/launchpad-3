@@ -2520,7 +2520,7 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         bug = self.factory.makeBug(distribution=distro)
         policy = self.factory.makeAccessPolicy(pillar=distro)
         with person_logged_in(bug.owner):
-            bug.setAccessPolicy(policy)
+            bug.setAccessPolicy(policy.type)
         validate_target(
             bug,
             self.factory.makeDistributionSourcePackage(distribution=distro))
@@ -2532,7 +2532,7 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         bug = self.factory.makeBug(product=product)
         policy = self.factory.makeAccessPolicy(pillar=product)
         with person_logged_in(bug.owner):
-            bug.setAccessPolicy(policy)
+            bug.setAccessPolicy(policy.type)
         other_product = self.factory.makeProduct()
         self.assertRaisesWithContent(
             IllegalTarget,

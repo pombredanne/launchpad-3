@@ -889,7 +889,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Return (private_changed, security_related_changed) tuple.
         """
 
-    def setAccessPolicy(policy):
+    def setAccessPolicy(policy_type):
         """Set the `IAccessPolicy` that controls access to this bug."""
 
     def getBugTask(target):

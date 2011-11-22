@@ -185,7 +185,10 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.interfaces.accesspolicy import UnsuitableAccessPolicyError
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    UnsuitableAccessPolicyError,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -1777,13 +1780,17 @@ class Bug(SQLBase):
         return self.setPrivacyAndSecurityRelated(
             self.private, security_related, who)[1]
 
-    def setAccessPolicy(self, policy):
+    def setAccessPolicy(self, type):
         """See `IBug`."""
-        if (policy is not None and
-            policy.pillar != self.default_bugtask.pillar):
-            raise UnsuitableAccessPolicyError(
-                "Only access policies for %s can be used."
-                % self.default_bugtask.pillar.name)
+        if type is None:
+            policy = None
+        else:
+            policy = getUtility(IAccessPolicySource).getByPillarAndType(
+                self.default_bugtask.pillar, type)
+            if policy is None:
+                raise UnsuitableAccessPolicyError(
+                    "%s does not use the %s access policy."
+                    % (self.default_bugtask.pillar.name, type.name))
         self.access_policy = policy
 
     def getRequiredSubscribers(self, for_private, for_security_related, who):
