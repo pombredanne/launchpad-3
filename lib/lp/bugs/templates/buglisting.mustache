@@ -60,7 +60,10 @@
                 </span>
             {{/show_age}}
             {{#show_tags}}
-                <span class="field">{{tags}}</span>
+                <span class="field">Tags:
+                  {{#tags}}{{tags}}{{/tags}}
+                  {{!#tags}}None{{/tags}}
+                </span>
             {{/show_tags}}
         </div>
     </div>
