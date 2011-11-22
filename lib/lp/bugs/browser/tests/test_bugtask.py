@@ -1865,6 +1865,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
 
+    def test_cache_cookie_name(self):
+        """The cookie name should be in cache for js code access."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        cookie_name = cache.objects['cbl_cookie_name']
+        self.assertEqual('anon-buglist-fields', cookie_name)
+
     def test_cache_field_visibility_matches_cookie(self):
         """Cache contains cookie-matching values for field_visibiliy."""
         task = self.factory.makeBugTask()
