@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import LessThan
+from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -443,9 +443,4 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         recorder2, view2 = self.createBMPsAndRecordQueries(
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
-        # XXX rvb 2011-11-21: We issue one query per BMP because displaying
-        # proposal/preview_diff/diff_lines_count materializes preview_diff
-        # which has a backward reference to BMP.
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + added_bmps + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

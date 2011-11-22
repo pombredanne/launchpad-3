@@ -444,6 +444,7 @@ class GenericBranchCollection:
             # Load the related diffs.
             preview_diffs = load_related(
                 PreviewDiff, rows, ['preview_diff_id'])
+            PreviewDiff.preloadData(preview_diffs)
             load_related(Diff, preview_diffs, ['diff_id'])
             # Load related branches.
             source_branches = load_related(Branch, rows, ['source_branchID'])
