@@ -114,7 +114,7 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.accesspolicy import AccessPolicyArtifact
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
@@ -1284,10 +1284,12 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         artifact = self.factory.makeAccessPolicyArtifact(branch)
         self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertIsNot(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
         store = Store.of(branch)
         branch.destroySelf()
-        self.assertContentEqual(
-            [], store.find(AccessPolicyArtifact, branch=branch))
+        self.assertIs(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
