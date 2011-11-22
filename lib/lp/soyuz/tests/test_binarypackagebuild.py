@@ -10,14 +10,11 @@ from datetime import (
 
 import pytz
 from storm.store import Store
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from twisted.trial.unittest import TestCase as TrialTestCase
-
-from canonical.launchpad.testing.pages import (
-    webservice_for_person,
-    )
+from canonical.launchpad.testing.pages import webservice_for_person
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.testing.layers import (
@@ -431,6 +428,18 @@ class TestBuildSet(TestCaseWithFactory):
             None,
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
                 sprb.build_farm_job))
+
+    def test_getByBuildFarmJobs_works(self):
+        bpbs = [self.factory.makeBinaryPackageBuild() for i in xrange(10)]
+        self.assertContentEqual(
+            bpbs,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(
+                [bpb.build_farm_job for bpb in bpbs]))
+
+    def test_getByBuildFarmJobs_works_empty(self):
+        self.assertContentEqual(
+            [],
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs([]))
 
 
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):

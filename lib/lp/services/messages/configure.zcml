@@ -12,6 +12,12 @@
     <class
         class="lp.services.messages.model.message.Message">
         <allow interface="lp.services.messages.interfaces.message.IMessage" />
+        <!-- setVisible is required to allow IBug.setCommentVisibility() to
+             change the visibility attribute whilst still ensuring restricted
+             access to the attribute via the API.-->
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="setVisible"/>
         <require
             permission="launchpad.Admin"
             set_attributes="visible"/>

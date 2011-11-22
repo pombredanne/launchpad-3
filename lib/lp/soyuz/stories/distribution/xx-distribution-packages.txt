@@ -176,27 +176,18 @@ It will thus not be listed in the "...other untrusted versions of..." portlet.
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
     >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> from lp.testing.dbuser import dbuser
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> ppa_disabled_owner_id = ppa_disabled.owner.id
     >>> ppa_disabled.disable()
-    >>> transaction.commit()
-
-    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
-    # test api call to switchDbUser that works for non-zopeless layers.
-    # When bug 396419 is fixed, we can instead use
-    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> reconnect_stores('karmacacheupdater')
-    >>> from zope.component import getUtility
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_beta_owner_id, karma_total=200)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_nightly_owner_id, karma_total=201)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_disabled_owner_id, karma_total=202)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
+    >>> with dbuser('karma'):
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_beta_owner_id, karma_total=200)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_nightly_owner_id, karma_total=201)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_disabled_owner_id, karma_total=202)
 
     >>> logout()
 

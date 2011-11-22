@@ -11,6 +11,7 @@ from pprint import pformat
 import re
 
 from lazr.uri import URI
+from lxml import html
 import soupmatchers
 from storm.expr import (
     Asc,
@@ -44,6 +45,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     )
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
@@ -58,6 +60,7 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.matchers import DocTestMatches
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,
@@ -265,37 +268,44 @@ SIMPLIFIED_BRANCHES_MENU_FLAG = {
     'code.simplified_branches_menu.enabled': 'on'}
 
 
-class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
+class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    registered_branches_matcher = soupmatchers.HTMLContains(
-        soupmatchers.Tag(
-            'Registered link', 'a', text='Registered branches',
-            attrs={'href': 'http://launchpad.dev/~barney'
-                           '/+registeredbranches'}))
-
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestSimplifiedPersonBranchesView, self).setUp()
         self.user = self.factory.makePerson()
         self.person = self.factory.makePerson(name='barney')
         self.team = self.factory.makeTeam(owner=self.person)
         self.product = self.factory.makeProduct(name='bambam')
 
-    def get_branch_list_page(self, page_name='+branches', user=None):
-        if user is None:
-            user = self.person
+        self.code_base_url = 'http://code.launchpad.dev/~barney'
+        self.base_url = 'http://launchpad.dev/~barney'
+        self.registered_branches_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Registered link', 'a', text='Registered branches',
+                attrs={'href': self.base_url + '/+registeredbranches'}))
+        self.default_target = self.person
+
+    def makeABranch(self):
+        return self.factory.makeAnyBranch(owner=self.person)
+
+    def get_branch_list_page(self, target=None, page_name='+branches'):
+        if target is None:
+            target = self.default_target
         with FeatureFixture(SIMPLIFIED_BRANCHES_MENU_FLAG):
             with person_logged_in(self.user):
                 return create_initialized_view(
-                    user, page_name, rootsite='code',
+                    target, page_name, rootsite='code',
                     principal=self.user)()
 
     def test_branch_list_h1(self):
+        self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Title', 'h1', text='Bazaar branches owned by Barney'))
+                'Title', 'h1',
+                text='Bazaar branches owned by Barney'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
@@ -309,7 +319,7 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_registered_link(self):
-        self.factory.makeAnyBranch(owner=self.person)
+        self.makeABranch()
         page = self.get_branch_list_page()
         self.assertThat(page, self.registered_branches_matcher)
 
@@ -318,8 +328,8 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         owned_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Owned link', 'a', text='Owned branches',
-                attrs={'href': 'http://code.launchpad.dev/~barney'}))
-        page = self.get_branch_list_page('+subscribedbranches')
+                attrs={'href': self.code_base_url}))
+        page = self.get_branch_list_page(page_name='+subscribedbranches')
         self.assertThat(page, owned_branches_matcher)
 
     def test_branch_list_subscribed_link(self):
@@ -327,8 +337,7 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         subscribed_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Subscribed link', 'a', text='Subscribed branches',
-                attrs={'href': 'http://launchpad.dev/~barney'
-                               '/+subscribedbranches'}))
+                attrs={'href': self.base_url + '/+subscribedbranches'}))
         page = self.get_branch_list_page()
         self.assertThat(page, subscribed_branches_matcher)
 
@@ -337,14 +346,54 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         active_review_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Active reviews link', 'a', text='Active reviews',
-                attrs={'href': 'http://launchpad.dev/~barney'
-                               '/+activereviews'}))
+                attrs={'href': self.base_url + '/+activereviews'}))
         page = self.get_branch_list_page()
         self.assertThat(page, active_review_matcher)
 
     def test_branch_list_no_registered_link_team(self):
-        self.factory.makeAnyBranch(owner=self.person)
-        page = self.get_branch_list_page(user=self.team)
+        self.makeABranch()
+        page = self.get_branch_list_page(target=self.team)
+        self.assertThat(page, Not(self.registered_branches_matcher))
+
+
+class TestSimplifiedPersonProductBranchesView(
+    TestSimplifiedPersonBranchesView):
+
+    def setUp(self):
+        super(TestSimplifiedPersonProductBranchesView, self).setUp()
+        self.person_product = getUtility(IPersonProductFactory).create(
+            self.person, self.product)
+        self.team_product = getUtility(IPersonProductFactory).create(
+            self.team, self.product)
+        self.code_base_url = 'http://code.launchpad.dev/~barney/bambam'
+        self.base_url = 'http://launchpad.dev/~barney/bambam'
+        self.registered_branches_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Registered link', 'a', text='Registered branches',
+                attrs={'href': self.base_url + '/+registeredbranches'}))
+        self.default_target = self.person_product
+
+    def makeABranch(self):
+        return self.factory.makeAnyBranch(
+            owner=self.person, product=self.product)
+
+    def test_branch_list_h1(self):
+        self.makeABranch()
+        page = self.get_branch_list_page()
+        h1_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Title', 'h1',
+                text='Bazaar Branches of Bambam owned by Barney'))
+        self.assertThat(page, h1_matcher)
+
+    def test_branch_list_empty(self):
+        page = self.get_branch_list_page()
+        empty_message_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Empty message', 'p',
+                text='There are no branches of Bambam owned by Barney '
+                     'in Launchpad today.'))
+        self.assertThat(page, empty_message_matcher)
         self.assertThat(page, Not(self.registered_branches_matcher))
 
 
@@ -507,9 +556,12 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         branch = self.factory.makeBranch(sourcepackage=source_package)
         view = create_initialized_view(
             dsp, name='+code-index', rootsite='code')
-        html = view()
-        self.assertIn(branch.name, html)
-        self.assertIn('a moment ago</span>\n', html)
+        root = html.fromstring(view())
+        [series_branches_table] = root.cssselect("table#series-branches")
+        series_branches_last_row = series_branches_table.cssselect("tr")[-1]
+        self.assertThat(
+            series_branches_last_row.text_content(),
+            DocTestMatches("%s ... ago" % branch.displayname))
 
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):

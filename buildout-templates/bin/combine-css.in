@@ -42,9 +42,23 @@ names = [
     GALLERY_ACCORDION + 'gallery-accordion-core.css',
     GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
     'build/sprite.css',
-    # This one goes at the end because it's our main stylesheet and should
+    # Include our main stylesheets at the end so they
     # take precedence over the others.
-    'style-3-0.css']
+    'css/base.css',
+    'css/colours.css',
+    'css/forms.css',
+    'css/typography.css',
+    'css/layout.css',
+    'css/modifiers.css']
+
+# Get all the component css files so we don't have to edit this file every
+# time a new component is added
+component_dir = 'css/components'
+component_path = os.path.abspath(os.path.join(icing, component_dir))
+for root, dirs, files in os.walk(component_path):
+    for file in files:
+        if file.endswith('.css'):
+            names.append('%s/%s' % (component_dir, file))
 
 absolute_names = []
 for name in names:

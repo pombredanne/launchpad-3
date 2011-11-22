@@ -2139,7 +2139,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         enabled_restricted_families = data.get('enabled_restricted_families')
         require_virtualized = data.get('require_virtualized')
         proc_family_set = getUtility(IProcessorFamilySet)
-        if (enabled_restricted_families is not None and
+        if (enabled_restricted_families and
             not require_virtualized and
             set(enabled_restricted_families) !=
                 set(proc_family_set.getRestricted())):

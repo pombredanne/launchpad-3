@@ -6,6 +6,29 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
+-- AccessPolicy
+
+COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage a project or distribution\'s artifacts.';
+COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy is used on.';
+COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Private, Security, etc.';
+
+-- AccessPolicyArtifact
+
+COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
+COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
+
+-- AccessPolicyGrant
+
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
+
 -- Announcement
 
 COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';

@@ -32,18 +32,6 @@
             });
          });
       </script>
-      <tal:if
-        condition="request/features/bugs.batched_comment_loading.enabled">
-      <script type="text/javascript">
-          var batched_comment_loading_enabled = true;
-      </script>
-      </tal:if>
-      <tal:else
-        condition="not: request/features/bugs.batched_comment_loading.enabled">
-      <script type="text/javascript">
-          var batched_comment_loading_enabled = false;
-      </script>
-      </tal:else>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
@@ -167,8 +155,8 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 35em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
+                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
+                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
                   LPS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
@@ -193,11 +181,11 @@
                   });
               </script>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
-                      id="edit-tags-ok" style="display: none"
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
+                      id="edit-tags-ok"
                       type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
-                      id="edit-tags-cancel" style="display: none"
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
+                      id="edit-tags-cancel"
                       type="button">Cancel</button>
            </form>
            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
@@ -313,15 +301,12 @@
                 view_all_href">add a comment</a>.
             </tal:what-next>
           </div>
-          <tal:if
-            condition="request/features/bugs.batched_comment_loading.enabled">
-              <tal:logged-in condition="view/user">
-                <div id="add-comment-form-container" class="hidden">
-                  <metal:comment-form
-                      metal:use-macro="context/@@bugcomment-macros/comment-form" />
-                </div>
-              </tal:logged-in>
-          </tal:if>
+            <tal:logged-in condition="view/user">
+              <div id="add-comment-form-container" class="hidden">
+                <metal:comment-form
+                    metal:use-macro="context/@@bugcomment-macros/comment-form" />
+              </div>
+            </tal:logged-in>
         </tal:comment-list-truncated>
       </tal:comments>
 
