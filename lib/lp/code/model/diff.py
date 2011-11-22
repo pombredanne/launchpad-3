@@ -353,7 +353,7 @@ class PreviewDiff(Storm):
         from lp.code.model.branchmergeproposal import BranchMergeProposal
         bmps = load_referencing(
             BranchMergeProposal, preview_diffs, ['preview_diff_id'])
-        bmps_preview = dict([(bmp.preview_diff_id, bmp) for bmp in bmps])
+        bmps_preview = dict((bmp.preview_diff_id, bmp) for bmp in bmps)
         for preview_diff in preview_diffs:
             cache = get_property_cache(preview_diff)
             cache.branch_merge_proposal = bmps_preview[preview_diff.id]
