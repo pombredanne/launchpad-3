@@ -42,7 +42,10 @@ from lp.app.browser.launchpadform import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
@@ -63,7 +66,7 @@ class CodeReviewDisplayComment:
 
     def __init__(self, comment, from_superseded=False):
         self.comment = comment
-        self.has_body = bool(self.comment.message_body)
+        get_property_cache(self).has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated

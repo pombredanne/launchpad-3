@@ -110,7 +110,8 @@ detects the problem when it checks that message.
     >>> ubuntu_message.is_current_ubuntu
     True
 
-    >>> ubuntu_message.translations = [u'%s c']
+    >>> from lp.services.propertycache import get_property_cache
+    >>> get_property_cache(ubuntu_message).translations = [u'%s c']
 
     >>> run_checker(["-w id=%s" % quote(ubuntu_message.id)])
     DEBUG Checking messages matching:  id=...
@@ -138,7 +139,7 @@ Besides Ubuntu messages, the script's output also distinguishes
 upstream ones, and ones that are completely unused. The upstream message
 happens to produce validation errors.
 
-    >>> upstream_message.translations = [u'%s %s i']
+    >>> get_property_cache(upstream_message).translations = [u'%s %s i']
 
 In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
