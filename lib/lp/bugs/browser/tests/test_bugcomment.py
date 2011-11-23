@@ -15,6 +15,15 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+
+from canonical.launchpad.ftests import (
+    login,
+    login_person,
+    )
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -287,3 +296,24 @@ class TestBugHideCommentControls(
         naked_bugtask = removeSecurityProxy(context.default_bugtask)
         removeSecurityProxy(naked_bugtask.pillar).security_contact = person
         self._test_hide_link_visible(context, person)
+
+
+class TestBugCommentMicroformats(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_comment_metadata(self):
+        owner = self.factory.makePerson()
+        login_person(owner)
+        bug_comment = self.factory.makeBugComment()
+        browser = self.getViewBrowser(bug_comment)
+        iso_date = bug_comment.datecreated.isoformat()
+        self.assertThat(
+            browser.contents,
+            HTMLContains(Tag(
+                'comment time tag',
+                'time',
+                attrs=dict(
+                    itemprop='commentTime',
+                    title=True,
+                    datetime=iso_date))))
