@@ -499,6 +499,7 @@ class TestSourcePackage(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
+        self.assertNotEqual([], distroseries.drivers)
         self.assertEqual(sourcepackage.drivers, distroseries.drivers)
 
 

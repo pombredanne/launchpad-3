@@ -150,6 +150,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         dsp = self.factory.makeDistributionSourcePackage(
             distribution=distribution)
+        self.assertNotEqual([], distribution.drivers)
         self.assertEqual(dsp.drivers, distribution.drivers)
 
 
