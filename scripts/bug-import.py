@@ -50,21 +50,16 @@ class BugImportScript(LaunchpadScript):
 
         Returns the new object's name.
         """
-        try:
-            product = LaunchpadObjectFactory().makeProduct()
-            product.official_malone = True
-            self.logger.info("Product %s created", product.name)
-            return product.name
-        except:
-            transaction.abort()
-            raise
-        finally:
-            transaction.commit()
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct(official_malone=True)
+        transaction.commit()
+        return product.name
 
     def main(self):
         if self.options.product is None:
             if self.options.testing:
                 self.options.product = self.create_test_product()
+                self.logger.info("Product %s created", self.options.product)
             else:
                 self.parser.error('No product specified')
         if len(self.args) != 1:
