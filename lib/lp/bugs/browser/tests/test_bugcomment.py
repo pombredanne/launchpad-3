@@ -21,7 +21,6 @@ from soupmatchers import (
     )
 
 from canonical.launchpad.ftests import (
-    login,
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
