@@ -77,8 +77,8 @@ def massage(root, project_name, fix_nickname, tag_nickname):
         dupe_of = duplicates.get(bug_id)
         return (bug_id if dupe_of is None else resolve(dupe_of))
 
-    for bug_id in duplicates:
-        duplicates[bug_id] = resolve(bug_id)
+    duplicates = dict(
+        (bug_id, resolve(bug_id)) for bug_id in duplicates)
 
     # Scan the tree, fixing up issues.
     for bug in root.findall('{%s}bug' % NS):
