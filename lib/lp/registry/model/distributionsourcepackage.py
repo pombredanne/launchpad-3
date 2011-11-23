@@ -203,6 +203,10 @@ class DistributionSourcePackage(BugTargetBase,
         return series.getSourcePackage(self.sourcepackagename)
 
     @property
+    def driver(self):
+        return self.distribution.driver
+
+    @property
     def _self_in_database(self):
         """Return the equivalent database-backed record of self."""
         # XXX: allenap 2008-11-13 bug=297736: This is a temporary
@@ -218,6 +222,11 @@ class DistributionSourcePackage(BugTargetBase,
         # in the future.
         return self._get(
             self.distribution, self.sourcepackagename) is not None
+
+    @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        return self.distribution.drivers
 
     def delete(self):
         """See `DistributionSourcePackage`."""

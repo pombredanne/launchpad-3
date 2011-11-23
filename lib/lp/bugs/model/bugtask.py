@@ -1368,22 +1368,13 @@ class BugTask(SQLBase):
 
         # Otherwise, if you're a member of the pillar owner, drivers, or the
         # bug supervisor, you can change bug details.
-        pillar = context.pillar
-        role_checks = (
-            role.isOwner(pillar) or role.isOneOfDrivers(pillar) or
-            role.isBugSupervisor(pillar))
-        # If the context is a bugtask, we check the series permission too.
-        if IBugTask.providedBy(context):
-            role_checks = role_checks or (
-                context.distroseries is not None and
-                role.isDriver(context.distroseries)) or (
-                context.productseries is not None and
-                role.isDriver(context.productseries))
-        return role_checks
+        return (
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isBugSupervisor(context.pillar))
 
     def userHasPrivileges(self, user):
         """See `IBugTask`."""
-        return self.userHasPrivilegesContext(self, user)
+        return self.userHasPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
