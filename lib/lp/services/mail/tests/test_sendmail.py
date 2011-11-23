@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from doctest import DocTestSuite
-from email.Message import Message
 import email.header
+from email.Message import Message
 import unittest
 
 from zope.interface import implements
@@ -248,8 +248,7 @@ class TestMailController(TestCase):
         self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
 
     def test_MailController_into_timeline(self):
-        """sendmail records stuff in the timeline.
-        """
+        """sendmail records stuff in the timeline."""
         fake_mailer = RecordingMailer()
         self.useFixture(ZopeUtilityFixture(
             fake_mailer, IMailDelivery, 'Mail'))

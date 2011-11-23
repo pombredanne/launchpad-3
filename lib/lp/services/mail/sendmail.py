@@ -506,7 +506,7 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
     Returns the message-id.
 
     :param message_detail: String of detail about the message
-        to be recorded to help with debugging, eg the messag subject.
+        to be recorded to help with debugging, eg the message subject.
     """
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'

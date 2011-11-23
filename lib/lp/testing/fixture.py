@@ -22,6 +22,7 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
+from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
 import pgbouncer.fixture
@@ -49,7 +50,6 @@ from zope.security.checker import (
 from canonical.config import config
 from canonical.launchpad import webapp
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
-from lazr.restful.utils import get_current_browser_request
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
