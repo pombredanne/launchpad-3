@@ -50,7 +50,10 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -88,10 +91,13 @@ from lp.code.model.diff import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
@@ -903,6 +909,60 @@ class BranchMergeProposal(SQLBase):
         ranges = self.getIncrementalDiffRanges()
         diffs = self.getIncrementalDiffs(ranges)
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
+
+    @staticmethod
+    def _preloadDataForBMPs(branch_merge_proposals):
+        # Utility to load the data related to a list of bmps.
+        # Circular imports.
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.registry.model.product import Product
+        from lp.registry.model.distroseries import DistroSeries
+
+        branch_ids = set()
+        source_branch_ids = set()
+        person_ids = set()
+        diff_ids = set()
+        for mp in branch_merge_proposals:
+            branch_ids.add(mp.target_branchID)
+            branch_ids.add(mp.prerequisite_branchID)
+            branch_ids.add(mp.source_branchID)
+            source_branch_ids.add(mp.source_branchID)
+            person_ids.add(mp.registrantID)
+            person_ids.add(mp.merge_reporterID)
+            diff_ids.add(mp.preview_diff_id)
+
+        if not branch_ids:
+            return
+
+        store = IStore(BranchMergeProposal)
+
+        # Pre-load PreviewDiffs and Diffs.
+        preview_diffs_and_diffs = list(store.find(
+            (PreviewDiff, Diff),
+            PreviewDiff.id.is_in(diff_ids),
+            Diff.id == PreviewDiff.diff_id))
+        PreviewDiff.preloadData(
+            [preview_diff_and_diff[0] for preview_diff_and_diff
+                in list(preview_diffs_and_diffs)])
+
+        branches = set(
+                store.find(Branch, Branch.id.is_in(branch_ids)))
+        GenericBranchCollection._preloadDataForBranches(branches)
+
+        # Add source branch owners' to the list of pre-loaded persons.
+        for branch in branches:
+            if branch.id in source_branch_ids:
+                person_ids.add(branch.ownerID)
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
+        # Pre-load branches' data.
+        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, branches, ['distroseriesID'])
+        load_related(Product, branches, ['productID'])
 
 
 class BranchMergeProposalGetter:
