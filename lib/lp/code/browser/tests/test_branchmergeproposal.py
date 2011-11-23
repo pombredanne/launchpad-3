@@ -30,6 +30,7 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     IPrimaryContext,
@@ -842,6 +843,22 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         self.assertIn("longpoll", cache.objects)
         self.assertIn("merge_proposal_event_key", cache.objects)
+
+    def test_description_is_meta_description(self):
+        description = (
+            "I'd like to make the bmp description appear as the meta "
+            "description: this does that "
+            + "abcdef " * 300)
+        bmp = self.factory.makeBranchMergeProposal(
+            description=description)
+        browser = self.getUserBrowser(
+            canonical_url(bmp, rootsite='code'))
+        expected_meta = Tag(
+            'meta description',
+            'meta', attrs=dict(
+                name='description',
+                content=description[:497] + '...'))
+        self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
