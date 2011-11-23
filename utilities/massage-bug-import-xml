@@ -57,6 +57,9 @@ def massage(root, project_name, fix_nickname, tag_nickname):
 
     - Fixing up the bug nickname, adding the existing nickname as a tag,
 
+    - Resolving duplicates to a bug that is not itself a duplicate
+      (i.e. remove chains of duplicates),
+
     - Fixing up the description, including truncating it if it's too long,
 
     - Fixing up the first comment, including truncating it if it's too long,
@@ -190,8 +193,9 @@ def main(arguments):
     usage = "Usage: %prog [options]"
     description = """
         This acts as a filter: pipe bug import XML into stdin and capture
-        stdout. By default it will ensure that bug descriptions and the first
-        comment are correct. If either exceeds 50,000 characters it is
+        stdout. By default it removes duplicate chains and ensures that bug
+        descriptions and the first comment are correct. If either the
+        description or the first comment exceeds 50,000 characters it is
         truncated and an attachment is created to hold the original.
         """
     parser = OptionParser(
