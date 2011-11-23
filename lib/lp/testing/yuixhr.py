@@ -440,11 +440,11 @@ class YUIAppServerTestCase(AbstractYUITestCase):
     # occasionally buildbot runs over six seconds even for tests that
     # are well-behaved locally and on ec2, so we up the limit to 12..
     incremental_timeout = 12000
-    # 30 seconds for the first test, to include warmup time.  We should
-    # work with html5browser to decrease this (such as making html5browser
-    # into a server that accepts URIs to run on a long-running browser
-    # process.)
-    initial_timeout = 30000
+    # 45 seconds for the first test, to include warmup time.  These times
+    # are wildly large, and they are only necessary on buildbot.  ec2 and
+    # local instances are much, much faster.  We have not yet investigated
+    # why buildbot is so slow for these.
+    initial_timeout = 45000
 
     def __init__(self, module_name, facet='mainsite'):
         self.module_name = module_name
