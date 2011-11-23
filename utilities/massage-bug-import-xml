@@ -198,21 +198,23 @@ def main(arguments):
         fix_nickname=False,
         tag_nickname=False)
 
-    options, args = parser.parse_args(arguments)
-    if len(args) != 0:
-        parser.error("Positional arguments are not recognized.")
+    options, filenames = parser.parse_args(arguments)
     if options.project_name is None:
         parser.error("A project name must be specified.")
 
-    tree = etree.parse(sys.stdin)
-    massage(
-        root=tree.getroot(),
-        project_name=options.project_name,
-        fix_nickname=options.fix_nickname,
-        tag_nickname=options.tag_nickname)
-    tree.write(
-        sys.stdout, encoding='utf-8',
-        pretty_print=True, xml_declaration=True)
+    if len(filenames) == 0:
+        filenames = ["-"]
+
+    for filename in filenames:
+        tree = etree.parse(sys.stdin if filename == "-" else filename)
+        massage(
+            root=tree.getroot(),
+            project_name=options.project_name,
+            fix_nickname=options.fix_nickname,
+            tag_nickname=options.tag_nickname)
+        tree.write(
+            (sys.stdout if filename == "-" else filename), encoding='utf-8',
+            pretty_print=True, xml_declaration=True)
 
     return 0
 
