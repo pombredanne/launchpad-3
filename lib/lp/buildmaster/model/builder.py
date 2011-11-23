@@ -78,7 +78,10 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
@@ -543,6 +546,7 @@ class Builder(SQLBase):
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
         self._testing_slave = proxy
+        del get_property_cache(self).slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
