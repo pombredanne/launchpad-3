@@ -20,11 +20,13 @@
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
-            <span tal:attributes="title comment/datecreated/fmt:datetime"
-		  itemprop="commentTime"
-                  tal:content="comment/datecreated/fmt:displaydate">
-              7 minutes ago
-              </span>:
+            <time 
+              itemprop="commentTime"
+              tal:attributes="title comment/datecreated/fmt:datetime;
+                datetime comment/datecreated/fmt:isodate"
+              tal:content="comment/datecreated/fmt:displaydate">
+                7 minutes ago
+            </time>
               <a tal:attributes="href comment/fmt:url"
                  tal:condition="comment/display_title">
                 <strong tal:content="comment/title" />
