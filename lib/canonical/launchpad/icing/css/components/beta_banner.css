@@ -1,0 +1,36 @@
+/* ===========
+   Beta banner
+*/
+.beta-banner {
+    position: fixed;
+    z-index: 9;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #606060;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(64, 64, 64, 0.9);
+    color: #fff;
+    font-size: 14px;
+    line-height: 21px;
+    }
+.beta-banner .info-link {
+    color: #4884ef;
+}
+.beta-warning {
+    padding: 4px;
+    margin-right: 12px;
+    background-color: #be0000;
+    font-weight: bold;
+    border-radius: 4px;
+    }
+.beta-feature {
+    font-weight: bold;
+    }
+.beta-banner .global-notification-close,
+.beta-banner .global-notification-close:active,
+.beta-banner .global-notification-close:visited {
+    color: #fff;
+    }

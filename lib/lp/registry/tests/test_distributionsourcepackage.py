@@ -145,6 +145,14 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage(with_db=False)
         self.assertFalse(dsp.is_official)
 
+    def test_drivers_are_distributions(self):
+        # DSP.drivers returns the drivers for the distribution.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        self.assertNotEqual([], distribution.drivers)
+        self.assertEqual(dsp.drivers, distribution.drivers)
+
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 

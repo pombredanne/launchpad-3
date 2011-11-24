@@ -481,6 +481,7 @@
                 displayname
                 distribution
                 distro
+                drivers
                 findRelatedArchivePublications
                 findRelatedArchives
                 getMergeProposals
@@ -1938,4 +1939,41 @@
         for="lp.registry.interfaces.person.IPerson"
         provides="lp.registry.interfaces.role.IPersonRoles"
         factory="lp.registry.model.personroles.PersonRoles" />
+
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicy">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicy"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicySource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+        <require
+            permission="zope.Public"
+            set_attributes="policy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
 </configure>

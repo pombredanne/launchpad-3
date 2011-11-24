@@ -661,6 +661,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
         return smartquote('%s: "%s"') % (heading, title)
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
@@ -779,7 +783,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             activity = self.context.bug.activity
         bug_change_re = (
             'affects|description|security vulnerability|'
-            'summary|tags|visibility')
+            'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
@@ -1281,7 +1285,20 @@ class BugTaskBugWatchMixin:
             }
 
 
-class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
+class BugTaskPrivilegeMixin:
+
+    @cachedproperty
+    def user_has_privileges(self):
+        """Is the user privileged? That is, an admin, pillar owner, driver
+        or bug supervisor.
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userHasPrivileges(self.user)
+
+
+class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
+                      BugTaskPrivilegeMixin):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
@@ -1346,26 +1363,24 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
             # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
             # doesn't belong here!
-            if ('milestone' in editable_field_names and
-                not self.userCanEditMilestone()):
-                editable_field_names.remove("milestone")
-
-            if ('importance' in editable_field_names and
-                not self.userCanEditImportance()):
-                editable_field_names.remove("importance")
+            if not self.user_has_privileges:
+                if 'milestone' in editable_field_names:
+                    editable_field_names.remove("milestone")
+                if 'importance' in editable_field_names:
+                    editable_field_names.remove("importance")
         else:
             editable_field_names = set(('bugwatch', ))
             if self.context.bugwatch is None:
                 editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
-                    and self.userCanEditImportance()):
+                    and self.user_has_privileges):
                     editable_field_names.add('importance')
             else:
                 bugtracker = self.context.bugwatch.bugtracker
                 if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                     editable_field_names.add('status')
                     if ('importance' in self.default_field_names
-                        and self.userCanEditImportance()):
+                        and self.user_has_privileges):
                         editable_field_names.add('importance')
 
         if self.show_target_widget:
@@ -1519,10 +1534,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self.userCanEditMilestone():
+            if not self.user_has_privileges:
                 read_only_field_names.append("milestone")
-
-            if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
             editable_field_names = self.editable_field_names
@@ -1531,20 +1544,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 if field_name not in editable_field_names]
 
         return read_only_field_names
-
-    def userCanEditMilestone(self):
-        """Can the user edit the Milestone field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditMilestone(self.user)
-
-    def userCanEditImportance(self):
-        """Can the user edit the Importance field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditImportance(self.user)
 
     def validate(self, data):
         if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
@@ -2268,7 +2267,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
-        self.field_visibility = {
+        self.user = getUtility(ILaunchBag).user
+        self.field_visibility_defaults = {
             'show_age': False,
             'show_assignee': False,
             'show_bugtarget': True,
@@ -2282,7 +2282,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_tags': False,
             'show_title': True,
         }
-        self.field_visibility_defaults = self.field_visibility
+        self.field_visibility = None
+        self._setFieldVisibility()
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2290,6 +2291,37 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def bug_badge_properties(self):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
+
+    def getCookieName(self):
+        """Return the cookie name used in bug listings js code."""
+        cookie_name_template = '%s-buglist-fields'
+        cookie_name = ''
+        if self.user is not None:
+            cookie_name = cookie_name_template % self.user.name
+        else:
+            cookie_name = cookie_name_template % 'anon'
+        return cookie_name
+
+    def _setFieldVisibility(self):
+        """Set field_visibility for the page load.
+
+        If a cookie of the form $USER-buglist-fields is found,
+        we set field_visibility from this cookie; otherwise,
+        field_visibility will match the defaults.
+        """
+        cookie_name = self.getCookieName()
+        cookie = self.request.cookies.get(cookie_name)
+        fields_from_cookie = {}
+        # "cookie" looks like a URL query string, so we split
+        # on '&' to get items, and then split on '=' to get
+        # field/value pairs.
+        if cookie is not None:
+            for field, value in urlparse.parse_qsl(cookie):
+                # We only record True or False for field values.
+                fields_from_cookie[field] = (value == 'true')
+            self.field_visibility = fields_from_cookie
+        else:
+            self.field_visibility = self.field_visibility_defaults
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
@@ -2466,7 +2498,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     implements(IBugTaskSearchListingMenu)
 
-    related_features = ['bugs.dynamic_bug_listings.enabled']
+    related_features = (
+        'bugs.dynamic_bug_listings.enabled',
+        'bugs.dynamic_bug_listings.pre_fetch',
+    )
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -2610,6 +2645,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 batch_navigator.field_visibility)
             cache.objects['field_visibility_defaults'] = (
                 batch_navigator.field_visibility_defaults)
+            cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
 
             def _getBatchInfo(batch):
                 if batch is None:
@@ -3776,7 +3812,8 @@ class BugTasksAndNominationsView(LaunchpadView):
         return True
 
 
-class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
+class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
+                          BugTaskPrivilegeMixin):
     """Browser class for rendering a bugtask row on the bug page."""
 
     is_conjoined_slave = None
@@ -3824,7 +3861,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             target_link_title=self.target_link_title,
             user_can_delete=self.user_can_delete_bugtask,
             delete_link=delete_link,
-            user_can_edit_importance=self.user_can_edit_importance,
+            user_can_edit_importance=self.user_has_privileges,
             importance_css_class='importance' + self.context.importance.name,
             importance_title=self.context.importance.title,
             # We always look up all milestones, so there's no harm
@@ -3963,9 +4000,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        bugtask = self.context
-        return (self.user_can_edit_status
-                and bugtask.userCanEditImportance(self.user))
+        return self.user_can_edit_status and self.user_has_privileges
 
     @cachedproperty
     def user_can_edit_status(self):
@@ -3990,14 +4025,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         return self.user is not None
 
     @cachedproperty
-    def user_can_edit_milestone(self):
-        """Can the user edit the Milestone field?
-
-        If yes, return True, otherwise return False.
-        """
-        return self.context.userCanEditMilestone(self.user)
-
-    @cachedproperty
     def user_can_delete_bugtask(self):
         """Can the user delete the bug task?
 
@@ -4012,12 +4039,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         if self.context.milestone is None:
             return ''
         else:
-            return 'display: none'
+            return 'hidden'
 
     @property
     def style_for_edit_milestone(self):
         if self.context.milestone is None:
-            return 'display: none'
+            return 'hidden'
         else:
             return ''
 
@@ -4071,9 +4098,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                     request=self.api_request)
                 if cx.milestone else None),
             user_can_edit_assignee=self.user_can_edit_assignee,
-            user_can_edit_milestone=self.user_can_edit_milestone,
+            user_can_edit_milestone=self.user_has_privileges,
             user_can_edit_status=self.user_can_edit_status,
-            user_can_edit_importance=self.user_can_edit_importance,
+            user_can_edit_importance=self.user_has_privileges,
             )
 
 
@@ -4376,6 +4403,9 @@ class BugActivityItem:
                     return_dict[key] = 'none'
                 else:
                     return_dict[key] = cgi.escape(return_dict[key])
+
+        elif attribute == 'bug task deleted':
+            return 'no longer affects %s' % self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.

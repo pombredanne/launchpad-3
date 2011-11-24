@@ -403,8 +403,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # fields since they will initially be hidden and later exposed if the
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
-        if not include_extra_fields and IHasBugSupervisor.providedBy(context):
-            include_extra_fields = self.user.inTeam(context.bug_supervisor)
+        if not include_extra_fields:
+            include_extra_fields = BugTask.userHasPrivilegesContext(
+                context, self.user)
 
         if include_extra_fields:
             field_names.extend(
@@ -627,17 +628,16 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if extra_data.private:
             params.private = extra_data.private
 
-        # Apply any extra options given by a bug supervisor.
-        if IHasBugSupervisor.providedBy(context):
-            if self.user.inTeam(context.bug_supervisor):
-                if 'assignee' in data:
-                    params.assignee = data['assignee']
-                if 'status' in data:
-                    params.status = data['status']
-                if 'importance' in data:
-                    params.importance = data['importance']
-                if 'milestone' in data:
-                    params.milestone = data['milestone']
+        # Apply any extra options given by privileged users.
+        if BugTask.userHasPrivilegesContext(context, self.user):
+            if 'assignee' in data:
+                params.assignee = data['assignee']
+            if 'status' in data:
+                params.status = data['status']
+            if 'importance' in data:
+                params.importance = data['importance']
+            if 'milestone' in data:
+                params.milestone = data['milestone']
 
         self.added_bug = bug = context.createBug(params)
 
@@ -1413,10 +1413,6 @@ class BugTargetBugTagsView(LaunchpadView):
         # Use path_only here to reduce the size of the rendered page.
         return "+bugs?field.tag=%s" % urllib.quote(tag)
 
-    def _calculateFactor(self, tag, count, max_count, official_tags):
-        bonus = 1.5 if tag in official_tags else 1
-        return (count / max_count) + bonus
-
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
@@ -1428,12 +1424,11 @@ class BugTargetBugTagsView(LaunchpadView):
         return sorted(
             [dict(
                 tag=tag,
-                factor=self._calculateFactor(
-                    tag, count, max_count, official_tags),
+                count=count,
                 url=self._getSearchURL(tag),
                 )
             for (tag, count) in tags.iteritems()],
-            key=itemgetter('tag'))
+            key=itemgetter('count'), reverse=True)
 
     @property
     def show_manage_tags_link(self):
