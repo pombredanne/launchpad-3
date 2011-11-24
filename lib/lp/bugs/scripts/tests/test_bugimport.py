@@ -3,8 +3,6 @@
 
 import os
 import re
-import shutil
-import tempfile
 import unittest
 
 import pytz
@@ -687,15 +685,13 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug101.security_related, True)
 
 
-class BugImportCacheTestCase(unittest.TestCase):
+class BugImportCacheTestCase(TestCase):
     """Test of bug mapping cache load/save routines."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        super(BugImportCacheTestCase, self).setUp()
+        self.tmpdir = self.makeTemporaryDirectory()
 
     def test_load_no_cache(self):
         # Test that loadCache() when no cache file exists resets the
@@ -779,14 +775,10 @@ class BugImportScriptTestCase(TestCase):
 
     def setUp(self):
         super(BugImportScriptTestCase, self).setUp()
-        self.tmpdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        super(BugImportScriptTestCase, self).tearDown()
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-        # We ran a subprocess that may have changed the database, so
-        # force the test system to treat it as dirty.
-        self.layer.force_dirty_database()
+        self.tmpdir = self.makeTemporaryDirectory()
+        # We'll be running subprocesses that may change the database, so force
+        # the test system to treat it as dirty.
+        self.addCleanup(self.layer.force_dirty_database)
 
     def write_example_xml(self):
         xml_file = os.path.join(self.tmpdir, 'bugs.xml')
