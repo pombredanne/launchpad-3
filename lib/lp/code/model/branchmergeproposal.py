@@ -932,6 +932,10 @@ class BranchMergeProposal(SQLBase):
             Branch, branch_merge_proposals, (
                 "target_branchID", "prerequisite_branchID",
                 "source_branchID"))
+        # The stacked on branches are used to check branch visibility.
+        # This is only temporary because we should fetch the whole chain
+        # of stacked on branches instead of only the first level.
+        load_related(Branch, branches, ["stacked_onID"])
 
         if len(branches) == 0:
             return
