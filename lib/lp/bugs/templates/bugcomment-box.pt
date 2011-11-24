@@ -27,7 +27,7 @@
                 datetime comment/datecreated/fmt:isodate"
               tal:content="comment/datecreated/fmt:displaydate">
                 7 minutes ago
-            </time>
+            </time>:
               <a tal:attributes="href comment/fmt:url"
                  tal:condition="comment/display_title">
                 <strong tal:content="comment/title" />
