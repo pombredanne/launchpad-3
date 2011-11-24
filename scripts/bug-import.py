@@ -41,8 +41,9 @@ class BugImportScript(LaunchpadScript):
             default=True)
         self.parser.add_option(
             '--testing', dest="testing", action="store_true", help=(
-                "Testing mode; create the product specified with --product "
-                "with the object factory. Do *not* use in production!"),
+                "Testing mode; if --product=name is omitted, create a "
+                "product with Launchpad's test object factory. Do *not* "
+                "use in production!"),
             default=False)
 
     def create_test_product(self):
