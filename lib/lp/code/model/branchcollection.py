@@ -218,7 +218,7 @@ class GenericBranchCollection:
             With("candidate_branches", SQL("SELECT id from scope_branches"))]
 
     @staticmethod
-    def _preloadDataForBranches(branches):
+    def preloadDataForBranches(branches):
         """Preload branches cached associated product series and
         suite source packages."""
         caches = dict((branch.id, get_property_cache(branch))
@@ -268,7 +268,7 @@ class GenericBranchCollection:
             branch_ids = set(branch.id for branch in rows)
             if not branch_ids:
                 return
-            GenericBranchCollection._preloadDataForBranches(rows)
+            GenericBranchCollection.preloadDataForBranches(rows)
             load_related(Product, rows, ['productID'])
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the /branches API call.
@@ -335,7 +335,7 @@ class GenericBranchCollection:
         else:
             return DecoratedResultSet(
                 resultset,
-                pre_iter_hook=BranchMergeProposal._preloadDataForBMPs)
+                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
 
     def _scopedGetMergeProposals(self, statuses, eager_load=False):
         scope_tables = [Branch] + self._tables.values()
@@ -367,7 +367,7 @@ class GenericBranchCollection:
         else:
             return DecoratedResultSet(
                 resultset,
-                pre_iter_hook=BranchMergeProposal._preloadDataForBMPs)
+                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
 
     def getMergeProposalsForPerson(self, person, status=None,
                                    eager_load=False):
@@ -383,7 +383,7 @@ class GenericBranchCollection:
         else:
             return DecoratedResultSet(
                 resultset,
-                pre_iter_hook=BranchMergeProposal._preloadDataForBMPs)
+                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""

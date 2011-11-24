@@ -911,7 +911,7 @@ class BranchMergeProposal(SQLBase):
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
     @staticmethod
-    def _preloadDataForBMPs(branch_merge_proposals):
+    def preloadDataForBMPs(branch_merge_proposals):
         # Utility to load the data related to a list of bmps.
         # Circular imports.
         from lp.code.model.branch import Branch
@@ -919,20 +919,21 @@ class BranchMergeProposal(SQLBase):
         from lp.registry.model.product import Product
         from lp.registry.model.distroseries import DistroSeries
 
-        branch_ids = set()
         source_branch_ids = set()
         person_ids = set()
         diff_ids = set()
         for mp in branch_merge_proposals:
-            branch_ids.add(mp.target_branchID)
-            branch_ids.add(mp.prerequisite_branchID)
-            branch_ids.add(mp.source_branchID)
             source_branch_ids.add(mp.source_branchID)
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
             diff_ids.add(mp.preview_diff_id)
 
-        if not branch_ids:
+        branches = load_related(
+            Branch, branch_merge_proposals, (
+                "target_branchID", "prerequisite_branchID",
+                "source_branchID"))
+
+        if len(branches) == 0:
             return
 
         store = IStore(BranchMergeProposal)
@@ -944,16 +945,14 @@ class BranchMergeProposal(SQLBase):
             Diff.id == PreviewDiff.diff_id))
         PreviewDiff.preloadData(
             [preview_diff_and_diff[0] for preview_diff_and_diff
-                in list(preview_diffs_and_diffs)])
+                in preview_diffs_and_diffs])
 
-        branches = set(
-                store.find(Branch, Branch.id.is_in(branch_ids)))
-        GenericBranchCollection._preloadDataForBranches(branches)
+        GenericBranchCollection.preloadDataForBranches(branches)
 
         # Add source branch owners' to the list of pre-loaded persons.
-        for branch in branches:
-            if branch.id in source_branch_ids:
-                person_ids.add(branch.ownerID)
+        person_ids.update(
+            branch.ownerID for branch in branches
+            if branch.id in source_branch_ids)
 
         # Pre-load Person and ValidPersonCache.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
