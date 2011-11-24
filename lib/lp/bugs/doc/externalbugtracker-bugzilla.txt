@@ -282,6 +282,8 @@ if the bug is closed:
     'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
     'Incomplete'
+    >>> external_bugzilla.convertRemoteStatus('NEEDSINFO').title
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
@@ -301,6 +303,8 @@ if the bug is closed:
     "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED DUPLICATE').title
+    'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
     "Won't Fix"
 
@@ -311,6 +315,10 @@ returned.
     Traceback (most recent call last):
       ...
     UnknownRemoteStatusError: FOO
+    >>> external_bugzilla.convertRemoteStatus('CLOSED BAR').title
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError: CLOSED BAR
 
 
 Importance Conversion
@@ -341,12 +349,18 @@ isn't available in which case we map against priority values.
     'High'
     >>> external_bugzilla.convertRemoteImportance('MAJOR').title
     'High'
+    >>> external_bugzilla.convertRemoteImportance('CRASH').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('GRAVE').title
+    'High'
 
     >>> external_bugzilla.convertRemoteImportance('URGENT NORMAL').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW NORMAL').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('NORMAL').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('NOR').title
     'Medium'
 
     >>> external_bugzilla.convertRemoteImportance('URGENT MINOR').title
@@ -367,6 +381,8 @@ isn't available in which case we map against priority values.
     'Wishlist'
     >>> external_bugzilla.convertRemoteImportance('ENHANCEMENT').title
     'Wishlist'
+    >>> external_bugzilla.convertRemoteImportance('WISHLIST').title
+    'Wishlist'
 
     >>> external_bugzilla.convertRemoteImportance('IMMEDIATE').title
     'Critical'
@@ -377,6 +393,17 @@ isn't available in which case we map against priority values.
     >>> external_bugzilla.convertRemoteImportance('MEDIUM').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW').title
+    'Low'
+
+    >>> external_bugzilla.convertRemoteImportance('P5').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('P4').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('P3').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('P2').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('P1').title
     'Low'
 
 Some bugzillas don't provide a value, resulting in blank strings for
@@ -418,8 +445,8 @@ update:
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
-    WARNING:...Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
@@ -452,9 +479,6 @@ Let's add a handful of watches:
     ...         'RESOLVED', 'FIXED', 'HIGH', 'ENHANCEMENT')
     ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
     ...     expected_remote_importances[remote_bug_id] = 'HIGH ENHANCEMENT'
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
 
 Set the batch threshold higher than the number of bug watches.
 
@@ -473,8 +497,8 @@ Then updateBugWatches() will make one request per bug watch:
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
-    WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...:Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -506,8 +530,6 @@ Let's add a few more watches:
     ...         'ASSIGNED', '', 'MEDIUM', 'URGENT')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
     ...     expected_remote_importances[remote_bug_id] = 'MEDIUM URGENT'
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
 
 
 Set the batch threshold very low and remove the batch size limit:
@@ -523,8 +545,8 @@ updateBugWatches() issues only one request to update all watches:
     ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 207 watches for 207 bugs...
     CALLED _postPage()
-    WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...:Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)

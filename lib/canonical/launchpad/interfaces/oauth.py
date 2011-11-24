@@ -20,8 +20,10 @@ __all__ = [
     'NonceAlreadyUsed',
     'TimestampOrderingError',
     'ClockSkew',
+    'TokenException',
     ]
 
+import httplib
 from zope.interface import (
     Attribute,
     Interface,
@@ -33,6 +35,8 @@ from zope.schema import (
     Object,
     TextLine,
     )
+
+from lazr.restful.declarations import error_status
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
@@ -300,14 +304,26 @@ class IOAuthSignedRequest(Interface):
     """Marker interface for a request signed with OAuth credentials."""
 
 
-# Note that these three exceptions are converted to Unauthorized (equating to
-# 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.
+# Note that these exceptions are marked as UNAUTHORIZED (401 status)
+# so they may be raised but will not cause an OOPS to be generated.  The
+# client will see them as an UNAUTHORIZED error.
 
-class NonceAlreadyUsed(Exception):
+@error_status(httplib.UNAUTHORIZED)
+class _TokenException(Exception):
+    """Base class for token, nonce, and timestamp exceptions."""
+
+
+class NonceAlreadyUsed(_TokenException):
     """Nonce has been used together with same token but another timestamp."""
 
-class TimestampOrderingError(Exception):
+
+class TimestampOrderingError(_TokenException):
     """Timestamp is too old, compared to the last request."""
 
-class ClockSkew(Exception):
+
+class ClockSkew(_TokenException):
     """Timestamp is too far off from server's clock."""
+
+
+class TokenException(_TokenException):
+    """Token has expired."""

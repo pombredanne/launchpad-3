@@ -28,7 +28,6 @@ __metaclass__ = type
 
 __all__ = [
     'IPOTMsgSet',
-    'BrokenTextError',
     'POTMsgSetInIncompatibleTemplatesError',
     'TranslationCreditsType',
     ]
@@ -60,10 +59,6 @@ class TranslationCreditsType(EnumeratedType):
 
         How they do them in KDE for translator names.
         """)
-
-
-class BrokenTextError(ValueError):
-    """Exception raised when we detect values on a text that aren't valid."""
 
 
 class POTMsgSetInIncompatibleTemplatesError(Exception):
@@ -100,8 +95,6 @@ class IPOTMsgSet(Interface):
         readonly=True,
         schema=IPOMsgID)
 
-    sequence = Attribute("The ordering of this set within its file.")
-
     commenttext = Attribute("The manual comments this set has.")
 
     filereferences = Attribute("The files where this set appears.")
@@ -133,6 +126,9 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
+    def clone():
+        """Return a new copy of this POTMsgSet."""
+
     def getCurrentTranslationMessageOrDummy(pofile):
         """Return the current `TranslationMessage`, or a dummy.
 
@@ -141,21 +137,6 @@ class IPOTMsgSet(Interface):
             there is one.  Otherwise, a `DummyTranslationMessage` for
             `self` in `pofile`.
         """
-
-    def getCurrentTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage marked as being currently used.
-
-        Diverged messages are preferred.
-        """
-
-    def getImportedTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage as imported from the package.
-
-        Diverged messages are preferred.
-        """
-
-    def getSharedTranslationMessage(language):
-        """Returns a shared TranslationMessage."""
 
     def getOtherTranslation(language, side):
         """Returns the TranslationMessage that is current on the other side.
@@ -212,6 +193,19 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
+    def getExternallySuggestedOrUsedTranslationMessages(
+        suggested_languages=(), used_languages=()):
+        """Find externally suggested/used translations for the same message.
+
+        This returns a mapping: language -> namedtuple (suggested, used)
+        containing the results of
+        self.getExternallySuggestedTranslationMessages and
+        self.getExternallyUsedTranslationMessages for each language.
+
+        :param suggested_languages: languages we want suggestions for.
+        :param used_languages: languges we want used messages for.
+        """
+
     def hasTranslationChangedInLaunchpad(potemplate, language):
         """Whether an imported translation differs from the current one.
 
@@ -233,44 +227,6 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations,
-                          is_current_upstream, lock_timestamp,
-                          force_shared=False, force_diverged=False,
-                          force_suggestion=False, ignore_errors=False,
-                          force_edition_rights=False, allow_credits=False):
-        """Update or create a translation message using `new_translations`.
-
-        This method is Launchpad Translations's sliderule: it does
-        everything, nobody fully understands it all, and we intend to
-        replace it with a range of less flexible tools.
-
-        :param pofile: a `POFile` to add `new_translations` to.
-        :param submitter: author of the translations.
-        :param new_translations: a dictionary of plural forms, with the
-            integer plural form number as the key and the translation as the
-            value.
-        :param is_current_upstream: indicates whether this update is
-            imported from a packaged po file.
-        :param lock_timestamp: The timestamp when we checked the values we
-            want to update.
-        :param force_suggestion: Whether to force translation to be
-            a suggestion, even if submitted by an editor.
-        :param ignore_errors: A flag that controls whether the translations
-            should be stored even when an error is detected.
-        :param force_edition_rights: A flag that 'forces' handling this
-            submission as coming from an editor, even if `submitter` is not.
-        :param allow_credits: Override the protection of translation credits
-            message.
-
-        If there is an error with the translations and ignore_errors is not
-        True or it's not a fuzzy submit, raises GettextValidationError.
-
-        :return: a modified or newly created translation message; or None if
-            no message is to be updated.  This can happen when updating a
-            translation credits message without the is_current_upstream
-            parameter set.
-        """
-
     def validateTranslations(translations):
         """Validate `translations` against gettext.
 
@@ -280,13 +236,17 @@ class IPOTMsgSet(Interface):
             translations.
         """
 
-    def submitSuggestion(pofile, submitter, new_translations):
+    def submitSuggestion(pofile, submitter, new_translations,
+                         from_import=False):
         """Submit a suggested translation for this message.
 
         If an identical message is already present, it will be returned
         (and it is not changed).  Otherwise, a new one is created and
         returned.  Suggestions for translation credits messages are
         ignored, and None is returned in that case.
+        Setting from_import to true will prevent karma assignment and
+        set the origin of the created message to SCM instead of
+        ROSETTAWEB.
         """
 
     def dismissAllSuggestions(pofile, reviewer, lock_timestamp):
@@ -325,13 +285,6 @@ class IPOTMsgSet(Interface):
             share it with the other `TranslationSide` as well.
         :param lock_timestamp: Timestamp of the original translation state
             that this change is based on.
-        """
-
-    def old_resetCurrentTranslation(pofile, lock_timestamp):
-        """Reset a translation.
-
-        OBSOLETE in Recife.  In the new model, use the new
-        `resetCurrentTranslation` implementation instead.
         """
 
     def resetCurrentTranslation(pofile, lock_timestamp=None,
@@ -374,44 +327,6 @@ class IPOTMsgSet(Interface):
             that this change is based on.
         """
 
-    def applySanityFixes(unicode_text):
-        """Return 'unicode_text' or None after doing some sanitization.
-
-        The text is checked against the msgid using the following filters:
-
-          self.convertDotToSpace
-          self.normalizeWhitespaces
-          self.normalizeNewLines
-
-        If the resulting string after these operations is an empty string,
-        it returns None.
-
-        :param unicode_text: A unicode text that needs to be checked.
-        """
-
-    def convertDotToSpace(unicode_text):
-        """Return 'unicode_text' with the u'\u2022' char exchanged with a
-        normal space.
-
-        If the self.singular_text contains that character, 'unicode_text' is
-        returned without changes as it's a valid char instead of our way to
-        represent a normal space to the user.
-        """
-
-    def normalizeWhitespaces(unicode_text):
-        """Return 'unicode_text' with the same trailing and leading
-        whitespaces that self.singular_text has.
-
-        If 'unicode_text' has only whitespaces but self.singular_text has
-        other characters, the empty string (u'') is returned to note it as an
-        untranslated string.
-        """
-
-    def normalizeNewLines(unicode_text):
-        """Return 'unicode_text' with new lines chars in sync with the msgid.
-        """
-
-
     hide_translations_from_anonymous = Attribute(
         """Whether the translations for this message should be hidden.
 
@@ -425,7 +340,7 @@ class IPOTMsgSet(Interface):
     translation_credits_type = Choice(
         title=u"The type of translation credit of this message.",
         required=True,
-        vocabulary = TranslationCreditsType)
+        vocabulary=TranslationCreditsType)
 
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.

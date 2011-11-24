@@ -7,7 +7,8 @@ which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+    >>> from lp.registry.interfaces.commercialsubscription import (
+    ...     ICommercialSubscription)
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
@@ -59,8 +60,7 @@ regular users, and the project owner all are denied.
 
 A member of the commercial admins team does have modification privileges.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> commercial_admin = celebs.commercial_admin
     >>> login('commercial-member@canonical.com')
@@ -268,22 +268,22 @@ can only be set on a product that does not have OTHER_PROPRIETARY
 included as one of the licenses.
 
     >>> bzr.license_info = 'bar'
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
 
     >>> bzr.license_info
     u'bar'
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
     >>> bzr.license_approved
     True
 
 Setting license_approved implies that the license has been reviewed,
-so license_reviewed is set automatically.
+so project_reviewed is set automatically.
 
-    >>> bzr.license_reviewed = False
+    >>> bzr.project_reviewed = False
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
 
 Set the bzr license to Other/Open Source and Other/Proprietary.  It
@@ -291,37 +291,38 @@ may not be approved because Other/Proprietary requires a commercial
 subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
     Traceback (most recent call last):
     ...
-    AssertionError: Projects with 'Other/Proprietary' licenses may not be...
+    ValueError: Projects without a license or have 'Other/Proprietary'
+    may not be approved.
 
 A project with an Other/Open Source license or additional license info that
 is reviewed, but not approved requires a commercial subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting
     False
 
 If the licenses or license_info attributes are changed, the
-license_reviewed and license_approved attributes are reset to false.
+project_reviewed and license_approved attributes are reset to false.
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_info = 'foo'
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.licenses = [License.BSD]
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
 When the products license is OTHER_OPEN_SOURCE or the license_info
@@ -331,7 +332,7 @@ attribute is false for products that have licenses that required
 approval, but were not approved.
 
 However, qualifies_for_free_hosting remains true until
-it has been reviewed (license_reviewed is set to true). The
+it has been reviewed (project_reviewed is set to true). The
 OTHER_PROPRIETARY license does not need to be reviewed as do the
 OTHER_OPEN_SOURCE license or an unknown license in license_info.
 
@@ -341,7 +342,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -350,7 +351,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -382,6 +383,23 @@ then display name.
     Gnome Applets
     gnomebaker
 
+The license_info field is also searched for matching search_text:
+
+    >>> bzr.license_info = 'Code in /contrib is under a mit-like license.'
+    >>> for product in product_set.forReview(search_text='mit'):
+    ...     print product.name
+    bzr
+
+The whiteboard field is also searched for matching search_text:
+
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('registry_experts'):
+    ...     bzr.reviewer_whiteboard = (
+    ...         'cc-nc discriminates against commercial uses.')
+    >>> for product in product_set.forReview(search_text='cc-nc'):
+    ...     print product.name
+    bzr
+
 You can search for whether the product is active or not.
 
     >>> for product in product_set.forReview(active=False):
@@ -391,12 +409,11 @@ You can search for whether the product is active or not.
 
 You can search for whether the product is marked reviewed or not.
 
-    >>> for product in product_set.forReview(license_reviewed=True):
+    >>> for product in product_set.forReview(project_reviewed=True):
     ...     print product.name
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
     obsolete-junk
 
 You can search for products by license. This will match products with
@@ -411,52 +428,15 @@ any one of the licenses listed.
     ...     print product.name
     bzr
 
-You can also search for projects that have zero licenses. This is also
-convenient for searching for projects with at least one license.
-
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=True, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    firefox
-    a52dec
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=False, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    bzr
-    derby
-
-You can search for products whose license_info field is empty or not empty.
-This OR the licenses search field must match.
-
-    >>> for product in product_set.forReview(license_info_is_empty=True):
-    ...     print product.name
-    tomcat
-    python-gnome2-dev
-    unassigned
-    arch-mirrors
-    firefox
-    ...
-    >>> for product in product_set.forReview(license_info_is_empty=False):
-    ...     print product.name
-    mega-money-maker
-    obsolete-junk
-    >>> for product in product_set.forReview(license_info_is_empty=False,
-    ...                                      licenses=[License.GNU_GPL_V2]):
-    ...     print product.name
-    bzr
-    mega-money-maker
-    obsolete-junk
-
 It is possible to search for problem project that have been reviewed, but
 not approved
 
     >>> for product in product_set.forReview(
-    ...     license_reviewed=True, license_approved=False):
+    ...     project_reviewed=True, license_approved=False):
     ...     print product.name
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
 
 You can search for products based on a date range in which the product
 was created.
@@ -512,6 +492,13 @@ the web form delivers.
     ...     print product.name
     bzr
 
+A reviewer can search for projects without a commercial subscription.
+
+    >>> for product in product_set.forReview(
+    ...     has_subscription=False, licenses=[License.OTHER_PROPRIETARY]):
+    ...     print product.name
+    mega-money-maker
+
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
@@ -534,13 +521,6 @@ All the products are returned when no parameters are passed in.
     >>> from lp.registry.model.product import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
-
-The license_info_is_empty parameter only accepts True, False, or None.
-
-    >>> product_set.forReview(license_info_is_empty='foo').count()
-    Traceback (most recent call last):
-    ...
-    AssertionError...
 
 The full text search will not match strings with dots in their name
 but a clause is included to search specifically for the name.

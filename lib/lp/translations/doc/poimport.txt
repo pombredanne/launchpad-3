@@ -9,8 +9,7 @@ Test Setup
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
@@ -134,22 +133,10 @@ The last update date is the one we got.
     >>> potemplate.date_last_updated > saved_date
     True
 
-A successful import is confirmed by email.
+We don't send mail about successful imports.
 
     >>> print subject
-    Translation template import - ...
-
-    >>> print body
-    Hello Mark Shuttleworth,
-    <BLANKLINE>
-    On ..., you uploaded a translation
-    template for ... in Launchpad.
-    <BLANKLINE>
-    The template has now been imported successfully.
-    <BLANKLINE>
-    Thank you,
-    <BLANKLINE>
-    The Launchpad team
+    None
 
 Since there was no error, the queue entry's error_output is blank.
 
@@ -209,7 +196,7 @@ Now let's get a PO file to import.
 By default, we got a safe path to prevent collisions with other IPOFile.
 
     >>> print pofile.path
-    generic-string...-cy.po
+    unique-...-cy.po
 
 Let's override the default good path with one we know is the right one.
 
@@ -304,7 +291,28 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-And the statistics reflect it.
+Three translations have been properly imported. Note that the translation
+"balloon" -> "blah" is considered as current, even though "balloon" does
+not appear in the POTemplate.
+
+    >>> def show_translation_details(translationmessage, pofile):
+    ...     print translationmessage.potmsgset.singular_text,
+    ...     print translationmessage.translations,
+    ...     print translationmessage.potmsgset.getSequence(pofile.potemplate)
+    >>> for translationmessage in pofile.translation_messages:
+    ...     if translationmessage.is_current_ubuntu:
+    ...         show_translation_details(translationmessage, pofile)
+    translator-credits
+        [u'This is a dummy translation so that the credits
+         are counted as translated.'] 6
+    foo [u'blah'] 1
+    balloon [u'blah'] 0
+    Singular %d
+        [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d'] 5
+
+And the statistics reflect it. (Note that only translations with a
+sequence number greater than 0 are counted, hence the translation
+"balloon" -> "blah" does not appear in currentCount().)
 
     >>> pofile.currentCount()
     3
@@ -460,7 +468,8 @@ that, but it should help a bit.
 Import Without Errors
 .....................
 
-Now, let's import one without errors.
+Now, let's import one without errors. This file changes one translation
+and adds another one.
 
     >>> pofile_without_errors = r'''
     ... msgid ""
@@ -473,7 +482,10 @@ Now, let's import one without errors.
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
-    ... msgstr "blah"
+    ... msgstr "new translation"
+    ...
+    ... msgid "baz"
+    ... msgstr "zab"
     ...
     ... msgid "translator-credits"
     ... msgstr "helpful@example.com"
@@ -502,20 +514,6 @@ We must approve the entry to be able to import it.
 
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
-At this point, the statistics note that we have 3 translations coming
-from imported files (currentCount), and none updated in Launchpad
-Translations. The translation credits message is counted as translated
-in rosetta.
-
-    >>> pofile.currentCount()
-    3
-
-    >>> pofile.updatesCount()
-    0
-
-    >>> pofile.rosettaCount()
-    0
-
 We do the import.
 
     >>> (subject, body) = pofile.importFromQueue(entry, FakeLogger())
@@ -525,24 +523,21 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-# XXX JeroenVermeulen 2010-11-24, bug=681434: This no longer makes sense.
-# We'll have to re-think what this should do once the statistics have been
-# updated for the Recife model.
+Since the translations from the older imports are still present,
+we now have four current translations.
 
-Now, the statistics note that we have two translations coming from
-imported files (currentCount), which is the translation we just
-imported, and the other two translation that was coming from imported
-files are now counted as coming from Launchpad translations
-(rosettaCount) because latest imported file doesn't have them anymore.
-
+    >>> for translationmessage in pofile.translation_messages.order_by('id'):
+    ...     if (translationmessage.is_current_ubuntu and
+    ...         translationmessage.potmsgset.getSequence(pofile.potemplate)
+    ...         > 0):
+    ...         show_translation_details(translationmessage, pofile)
+    Singular %d
+        [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d'] 5
+    foo [u'new translation'] 1
+    baz [u'zab'] 3
+    translator-credits [u'helpful@example.com'] 6
     >>> pofile.currentCount()
-    3
-
-    >>> pofile.updatesCount()
-    0
-
-#    >>> pofile.rosettaCount()
-#    1
+    4
 
 This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is an upstream
@@ -569,7 +564,7 @@ upstream translations for these messages are ignored.
 
     >>> message = get_pofile_translation_message(pofile, 'foo')
     >>> message.msgstr0.translation
-    u'blah'
+    u'new translation'
 
     >>> message = get_pofile_translation_message(pofile, 'translator-credits')
     >>> message.msgstr0.translation

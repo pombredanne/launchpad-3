@@ -259,7 +259,7 @@ The sprint attendances property returns a list of SprintAttendance
 objects.
 
     >>> ubz.attendances
-    [<SprintAttendance ...>]
+    [<...SprintAttendance ...>]
 
     >>> for attendance in ubz.attendances:
     ...     print attendance.attendee.name

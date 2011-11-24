@@ -10,7 +10,7 @@ Users can directly see and edit milestones through the milestone views.
 
 The default url for a milestone is to the main site.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net')
@@ -138,10 +138,10 @@ formatted text descriptions of the bugtasks and specifications. The text
 supports plural descriptions.
 
     >>> print view.bugtask_count_text
-    <strong>1 bug</strong>
+    1 bug
 
     >>> print view.specification_count_text
-    <strong>1 blueprint</strong>
+    1 blueprint
 
     >>> bug = factory.makeBug(title="emo")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
@@ -153,10 +153,10 @@ supports plural descriptions.
 
     >>> view = create_view(milestone, '+index')
     >>> print view.bugtask_count_text
-    <strong>2 bugs</strong>
+    2 bugs
 
     >>> print view.specification_count_text
-    <strong>2 blueprints</strong>
+    2 blueprints
 
 Bugtasks are ordered by status (fix released last), and importance
 (critical first).
@@ -577,7 +577,7 @@ Distroseries driver and milestones
 The driver of a series that belongs to an `IDerivativeDistribution` is a
 release manager and can create milestones.
 
-    >>> distroseries = factory.makeDistroRelease(name='pumpkin')
+    >>> distroseries = factory.makeDistroSeries(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
     >>> login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver
@@ -682,7 +682,7 @@ milestone.
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
     >>> [subscription for subscription in owner.structural_subscriptions]
-    [<StructuralSubscription ...>]
+    [<...StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]

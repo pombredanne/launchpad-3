@@ -5,7 +5,7 @@ Answer tracker workflow
 The state of a question is tracked through its status, which model a
 question's lifecycle.  These are defined in the QuestionStatus enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> for status in QuestionStatus.items:
     ...     print status.name
     OPEN
@@ -18,7 +18,7 @@ question's lifecycle.  These are defined in the QuestionStatus enumeration.
 Status change occurs as a consequence of a user's action.  The possible
 actions are defined in the QuestionAction enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionAction
+    >>> from lp.answers.enums import QuestionAction
     >>> for status in QuestionAction.items:
     ...     print status.name
     REQUESTINFO
@@ -53,7 +53,7 @@ Ubuntu Team owning the distribution.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> english = getUtility(ILanguageSet)['en']
     >>> sample_person.addLanguage(english)
-    >>> ubuntu.addAnswerContact(sample_person)
+    >>> ubuntu.addAnswerContact(sample_person, sample_person)
     True
 
     # Sanity check: the admin isn't in the team owning the distribution.
@@ -423,7 +423,7 @@ As a Launchpad administrator, so can Stub.
 
     >>> login(marilize.preferredemail.email)
     >>> spam_question.reject(
-    ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
+    ...     marilize, "We don't send free CDs any more.")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -432,7 +432,7 @@ When rejecting a question, a comment explaining the reason is given.
 
     >>> login('test@canonical.com')
     >>> reject_message = spam_question.reject(
-    ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
+    ...     sample_person, "We don't send free CDs any more.",
     ...     datecreated=now_plus_one_hour)
     >>> print reject_message.action.name
     REJECT
@@ -739,7 +739,7 @@ Using an IMessage as an explanation
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)
@@ -760,4 +760,4 @@ method.
     >>> question.setStatus(stub, QuestionStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
-    AssertionError...
+    NotMessageOwnerError...

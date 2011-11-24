@@ -9,8 +9,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationgroup import TranslationPermission
@@ -379,33 +379,63 @@ class TestSharingPolicy(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.language = self.factory.makeLanguage()
 
-    def _doesPackageShare(self, sourcepackage, from_upstream=False):
+    def _doesPackageShare(self, sourcepackage, by_maintainer=False):
         """Does this `SourcePackage` share with upstream?"""
         distro = sourcepackage.distroseries.distribution
         return distro.sharesTranslationsWithOtherSide(
             self.user, self.language, sourcepackage=sourcepackage,
-            purportedly_upstream=from_upstream)
+            purportedly_upstream=by_maintainer)
 
     def test_product_always_shares(self):
         product = self.factory.makeProduct()
         self.assertTrue(
             product.sharesTranslationsWithOtherSide(self.user, self.language))
 
-    def test_distribution_shares_only_if_invited(self):
+    def _makePackageAndProductSeries(self):
         package = self.factory.makeSourcePackage()
         self.factory.makePackagingLink(
             sourcepackagename=package.sourcepackagename,
             distroseries=package.distroseries)
-        product = package.productseries.product
+        return (package, package.productseries)
+
+    def test_distribution_shares_only_if_invited_with_template(self):
+        # With an upstream template, translations will be shared if the
+        # product invites edits.
+        package, productseries = self._makePackageAndProductSeries()
+        product = productseries.product
+        self.factory.makePOTemplate(productseries=productseries)
 
         product.translationpermission = TranslationPermission.OPEN
         self.assertTrue(self._doesPackageShare(package))
         product.translationpermission = TranslationPermission.CLOSED
         self.assertFalse(self._doesPackageShare(package))
 
-    def test_unlinked_package_shares_only_upstream_translations(self):
+    def test_distribution_shares_not_without_template(self):
+        # Without an upstream template, translations will not be shared
+        # if they do not originate from uploads done by the maintainer.
+        package, productseries = self._makePackageAndProductSeries()
+        product = productseries.product
+
+        product.translationpermission = TranslationPermission.OPEN
+        self.assertFalse(self._doesPackageShare(package))
+        product.translationpermission = TranslationPermission.CLOSED
+        self.assertFalse(self._doesPackageShare(package))
+
+    def test_distribution_shares_only_by_maintainer_without_template(self):
+        # Without an upstream template, translations will be shared
+        # if they do originate from uploads done by the maintainer.
+        package, productseries = self._makePackageAndProductSeries()
+        product = productseries.product
+
+        product.translationpermission = TranslationPermission.OPEN
+        self.assertTrue(self._doesPackageShare(package, by_maintainer=True))
+        product.translationpermission = TranslationPermission.CLOSED
+        self.assertTrue(self._doesPackageShare(package, by_maintainer=True))
+
+    def test_distribution_shares_only_by_maintainer_without_upstream(self):
+        # Without an upstream product series, translations will only be
+        # shared if they do originate from uploads done by the maintainer.
         package = self.factory.makeSourcePackage()
-        distro = package.distroseries.distribution
-        for from_upstream in [False, True]:
+        for by_maintainer in [False, True]:
             self.assertEqual(
-                from_upstream, self._doesPackageShare(package, from_upstream))
+                by_maintainer, self._doesPackageShare(package, by_maintainer))

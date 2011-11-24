@@ -7,7 +7,6 @@ import os
 from StringIO import StringIO
 import tempfile
 from operator import itemgetter
-import unittest
 
 from zope.component import getUtility
 
@@ -508,7 +507,3 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         self.assertIs(entry, entry2)
         self.assertIsNot(None, entry2)
         self.assertEqual(entry2.bytes_read, len(first_line))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

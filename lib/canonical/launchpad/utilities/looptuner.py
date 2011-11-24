@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,6 +13,7 @@ __all__ = [
 from datetime import timedelta
 import time
 
+from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -117,55 +118,60 @@ class LoopTuner:
 
     def run(self):
         """Run the loop to completion."""
-        chunk_size = self.minimum_chunk_size
-        iteration = 0
-        total_size = 0
-        self.start_time = self._time()
-        last_clock = self.start_time
-        while not self.operation.isDone():
+        try:
+            chunk_size = self.minimum_chunk_size
+            iteration = 0
+            total_size = 0
+            self.start_time = self._time()
+            last_clock = self.start_time
+            while not self.operation.isDone():
 
-            if self._isTimedOut():
-                self.log.warn(
-                    "Task aborted after %d seconds." % self.abort_time)
-                break
+                if self._isTimedOut():
+                    self.log.warn(
+                        "Task aborted after %d seconds.", self.abort_time)
+                    break
 
-            self.operation(chunk_size)
+                self.operation(chunk_size)
 
-            new_clock = self._time()
-            time_taken = new_clock - last_clock
-            last_clock = new_clock
-            self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
-                         (iteration, chunk_size, time_taken))
+                new_clock = self._time()
+                time_taken = new_clock - last_clock
+                last_clock = new_clock
 
-            last_clock = self._coolDown(last_clock)
+                self.log.debug2(
+                    "Iteration %d (size %.1f): %.3f seconds",
+                    iteration, chunk_size, time_taken)
 
-            total_size += chunk_size
+                last_clock = self._coolDown(last_clock)
 
-            # Adjust parameter value to approximate goal_seconds.  The new
-            # value is the average of two numbers: the previous value, and an
-            # estimate of how many rows would take us to exactly goal_seconds
-            # seconds.
-            # The weight in this estimate of any given historic measurement
-            # decays exponentially with an exponent of 1/2.  This softens the
-            # blows from spikes and dips in processing time.
-            # Set a reasonable minimum for time_taken, just in case we get
-            # weird values for whatever reason and destabilize the
-            # algorithm.
-            time_taken = max(self.goal_seconds/10, time_taken)
-            chunk_size *= (1 + self.goal_seconds/time_taken)/2
-            chunk_size = max(chunk_size, self.minimum_chunk_size)
-            chunk_size = min(chunk_size, self.maximum_chunk_size)
-            iteration += 1
+                total_size += chunk_size
 
-        total_time = last_clock - self.start_time
-        average_size = total_size/max(1, iteration)
-        average_speed = total_size/max(1, total_time)
-        self.log.debug(
-            "Done. %d items in %d iterations, "
-            "%.3f seconds, "
-            "average size %f (%s/s)" %
-                (total_size, iteration, total_time, average_size,
-                 average_speed))
+                # Adjust parameter value to approximate goal_seconds.
+                # The new value is the average of two numbers: the
+                # previous value, and an estimate of how many rows would
+                # take us to exactly goal_seconds seconds. The weight in
+                # this estimate of any given historic measurement decays
+                # exponentially with an exponent of 1/2. This softens
+                # the blows from spikes and dips in processing time. Set
+                # a reasonable minimum for time_taken, just in case we
+                # get weird values for whatever reason and destabilize
+                # the algorithm.
+                time_taken = max(self.goal_seconds / 10, time_taken)
+                chunk_size *= (1 + self.goal_seconds / time_taken) / 2
+                chunk_size = max(chunk_size, self.minimum_chunk_size)
+                chunk_size = min(chunk_size, self.maximum_chunk_size)
+                iteration += 1
+
+            total_time = last_clock - self.start_time
+            average_size = total_size / max(1, iteration)
+            average_speed = total_size / max(1, total_time)
+            self.log.debug2(
+                "Done. %d items in %d iterations, %3f seconds, "
+                "average size %f (%s/s)",
+                total_size, iteration, total_time, average_size,
+                average_speed)
+        finally:
+            if safe_hasattr(self.operation, 'cleanUp'):
+                self.operation.cleanUp()
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.
@@ -228,10 +234,10 @@ class DBLoopTuner(LoopTuner):
     """
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30)  # In seconds.
 
     # We block if there are transactions running longer than this threshold.
-    long_running_transaction = 30*60 # In seconds
+    long_running_transaction = 30 * 60  # In seconds.
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
@@ -248,9 +254,10 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 self.log.info(
                     "Database replication lagged %s. "
-                    "Sleeping up to 10 minutes." % lag)
+                    "Sleeping up to 10 minutes.", lag)
 
-            transaction.abort() # Don't become a long running transaction!
+            # Don't become a long running transaction!
+            transaction.abort()
             self._sleep(10)
 
     def _blockForLongRunningTransactions(self):
@@ -282,10 +289,11 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
-                        "Blocked on %s old xact %s@%s/%d - %s."
-                        % (runtime, usename, datname, procpid, query))
+                        "Blocked on %s old xact %s@%s/%d - %s.",
+                        runtime, usename, datname, procpid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
-            transaction.abort() # Don't become a long running transaction!
+            # Don't become a long running transaction!
+            transaction.abort()
             self._sleep(10)
 
     def _coolDown(self, bedtime):
@@ -305,9 +313,9 @@ class TunableLoop:
     """A base implementation of `ITunableLoop`."""
     implements(ITunableLoop)
 
-    goal_seconds = 4
+    goal_seconds = 2
     minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
+    maximum_chunk_size = None  # Override.
     cooldown_time = 0
 
     def __init__(self, log, abort_time=None):
@@ -323,7 +331,8 @@ class TunableLoop:
             "Did not override maximum_chunk_size.")
         DBLoopTuner(
             self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
+            minimum_chunk_size=self.minimum_chunk_size,
+            maximum_chunk_size=self.maximum_chunk_size,
+            cooldown_time=self.cooldown_time,
+            abort_time=self.abort_time,
+            log=self.log).run()

@@ -5,6 +5,7 @@ The polls portlet shows the state of current polls, and links to past
 polls.
 
     >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from datetime import timedelta
 
     >>> user = factory.makePerson()
     >>> team = factory.makeTeam(name='team')
@@ -52,11 +53,10 @@ Unless the user is a team owner.
 The portlet shows a link to polls to all users when there is a poll, but it
 has not opened.
 
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
     >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
+    >>> from lp.services.utils import utc_now
 
-    >>> open_date = datetime.now().replace(tzinfo=pytz.timezone('UTC'))
+    >>> open_date = utc_now() + timedelta(hours=6)
     >>> close_date = open_date + timedelta(weeks=1)
     >>> poll_subset = IPollSubset(team)
     >>> poll = poll_subset.new(
@@ -101,7 +101,7 @@ and an owner is the owner has a link to create more polls.
     >>> print extract_text(view.render())
     Polls
     title - closes on ...
-    You have seven days left to vote in this poll.
+    You have 7 days left to vote in this poll.
     Show polls
 
     >>> login_person(owner)
@@ -109,7 +109,7 @@ and an owner is the owner has a link to create more polls.
     >>> print extract_text(view.render())
     Polls
     title - closes on ...
-    You have seven days left to vote in this poll.
+    You have 7 days left to vote in this poll.
     Show polls
     Create a poll
 

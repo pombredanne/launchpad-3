@@ -9,9 +9,10 @@ import errno
 import os
 import socket
 import tempfile
-import unittest
 
 from lp.services.osutils import (
+    ensure_directory_exists,
+    open_for_writing,
     remove_tree,
     until_no_eintr,
     )
@@ -44,6 +45,54 @@ class TestRemoveTree(TestCase):
         fd.write('data')
         fd.close()
         self.assertRaises(OSError, remove_tree, filename)
+
+
+class TestEnsureDirectoryExists(TestCase):
+    """Tests for 'ensure_directory_exists'."""
+
+    def test_directory_exists(self):
+        directory = self.makeTemporaryDirectory()
+        self.assertFalse(ensure_directory_exists(directory))
+
+    def test_directory_doesnt_exist(self):
+        directory = os.path.join(self.makeTemporaryDirectory(), 'foo/bar/baz')
+        self.assertTrue(ensure_directory_exists(directory))
+        self.assertTrue(os.path.isdir(directory))
+
+
+class TestOpenForWriting(TestCase):
+    """Tests for 'open_for_writing'."""
+
+    def test_opens_for_writing(self):
+        # open_for_writing opens a file for, umm, writing.
+        directory = self.makeTemporaryDirectory()
+        filename = os.path.join(directory, 'foo')
+        fp = open_for_writing(filename, 'w')
+        fp.write("Hello world!\n")
+        fp.close()
+        self.assertEqual("Hello world!\n", open(filename).read())
+
+    def test_opens_for_writing_append(self):
+        # open_for_writing can also open to append.
+        directory = self.makeTemporaryDirectory()
+        filename = os.path.join(directory, 'foo')
+        fp = open_for_writing(filename, 'w')
+        fp.write("Hello world!\n")
+        fp.close()
+        fp = open_for_writing(filename, 'a')
+        fp.write("Next line\n")
+        fp.close()
+        self.assertEqual("Hello world!\nNext line\n", open(filename).read())
+
+    def test_even_if_directory_doesnt_exist(self):
+        # open_for_writing will open a file for writing even if the directory
+        # doesn't exist.
+        directory = self.makeTemporaryDirectory()
+        filename = os.path.join(directory, 'foo', 'bar', 'baz', 'filename')
+        fp = open_for_writing(filename, 'w')
+        fp.write("Hello world!\n")
+        fp.close()
+        self.assertEqual("Hello world!\n", open(filename).read())
 
 
 class TestUntilNoEINTR(TestCase):
@@ -141,7 +190,3 @@ class TestUntilNoEINTR(TestCase):
             IOError, until_no_eintr, self.MAX_RETRIES, function)
         self.assertEqual(errno.EINTR, error.errno)
         self.assertEqual(self.MAX_RETRIES, len(calls))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

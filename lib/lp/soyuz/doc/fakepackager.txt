@@ -9,7 +9,7 @@ used in tests.
 
 == Setup and reset ==
 
-When FakePackager is initialised it automatically creates a temporary
+When FakePackager is initialized it automatically creates a temporary
 directory we call 'sandbox'. It's where the packages will get created.
 
     >>> packager = FakePackager('biscuit', '1.0')
@@ -21,7 +21,7 @@ directory we call 'sandbox'. It's where the packages will get created.
     True
 
 Source 'name' and 'version' and 'gpg_key_id' are set according the
-give arguments passed in the initialisation.
+give arguments passed in the initialization.
 
     >>> print packager.name
     biscuit
@@ -127,7 +127,7 @@ The error was raised because no signing key was set.
     >>> print packager.gpg_key_id
     None
 
-A GPG key can only be set on initialisation so we will have to create a
+A GPG key can only be set on initialization so we will have to create a
 new packager passing a filename available in our test_keys directory
 (see launchpad/ftests/keys_for_tests.py)
 

@@ -10,10 +10,7 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit,
-    ISOLATION_LEVEL_READ_COMMITTED,
-    )
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
@@ -59,19 +56,11 @@ def uploaderSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
-def uploaderTearDown(test):
-    """Tear down the package uploader script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setGlobs(test)
 
 
@@ -141,11 +130,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'build-notification.txt': LayeredDocFileSuite(
-        '../doc/build-notification.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',
         setUp=builddmasterSetUp,
@@ -182,6 +166,9 @@ special = {
         '../doc/soyuz-set-of-uploads.txt',
         layer=LaunchpadZopelessLayer,
         ),
+    'package-relationship.txt': LayeredDocFileSuite(
+        '../doc/package-relationship.txt',
+        stdout_logging=False, layer=None),
     'publishing.txt': LayeredDocFileSuite(
         '../doc/publishing.txt',
         setUp=setUp,
@@ -194,11 +181,6 @@ special = {
     'manage-chroot.txt': LayeredDocFileSuite(
         '../doc/manage-chroot.txt',
         setUp=manageChrootSetup,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
-        '../doc/build-estimated-dispatch-time.txt',
-        setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
     'package-arch-specific.txt': LayeredDocFileSuite(

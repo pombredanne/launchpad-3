@@ -62,6 +62,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
+    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -112,7 +113,7 @@ class _BaseNamespace:
             registrant=registrant,
             name=name, owner=self.owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, explicitly_private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
@@ -218,7 +219,7 @@ class _BaseNamespace:
             name = "%s-%s" % (prefix, count)
         return name
 
-    def getBranches(self):
+    def getBranches(self, eager_load=False):
         """See `IBranchNamespace`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(Branch, self._getBranchesClause())
@@ -301,7 +302,11 @@ class PersonalNamespace(_BaseNamespace):
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
-        return False
+        private = False
+        if self.owner.is_team and (
+            self.owner.visibility == PersonVisibility.PRIVATE):
+            private = True
+        return private
 
     def canBranchesBePublic(self):
         """See `IBranchNamespace`."""

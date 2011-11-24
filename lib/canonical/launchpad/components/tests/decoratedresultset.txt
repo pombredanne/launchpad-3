@@ -136,3 +136,36 @@ Splicing a decorated resultset returns another decorated resultset:
     >>> isinstance(decorated_result_set[0:3], DecoratedResultSet)
     True
 
+== find() ==
+
+DecoratedResultSet.find() returns another DecoratedResultSet containing
+a refined query.
+
+    >>> result_set = store.find(Distribution)
+    >>> proxied_result_set = ProxyFactory(result_set)
+    >>> decorated_result_set = DecoratedResultSet(
+    ...     proxied_result_set, result_decorator)
+    >>> ubuntu_distros = removeSecurityProxy(decorated_result_set).find(
+    ...     "Distribution.name like 'ubuntu%'")
+    >>> for dist in ubuntu_distros:
+    ...     dist
+    u'Dist name is: ubuntu'
+    u'Dist name is: ubuntutest'
+
+
+== get_plain_result_set() ==
+
+DecoratedResultSet.get_plain_result_set() returns the plain Storm result
+set.
+
+    >>> decorated_result_set.get_plain_result_set()
+    <storm.store.ResultSet object at...
+
+get_plain_result_set() works for nested DecoratedResultSets.
+
+    >>> def embellish(result):
+    ...     return result.replace('Dist name', 'The distribution name')
+    >>> embellished_result_set = DecoratedResultSet(
+    ...     decorated_result_set, embellish)
+    >>> embellished_result_set.get_plain_result_set()
+    <storm.store.ResultSet object at...

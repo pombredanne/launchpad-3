@@ -14,6 +14,17 @@
     <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
       tal:content="view/register_milestone_script"></script>
+    <tal:uses_launchpad_bugtracker
+       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
   </metal:block>
 
     <tal:heading metal:fill-slot="heading">
@@ -110,6 +121,10 @@
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+code-summary" />
+
+          <p tal:condition="context/branch/required:launchpad.View|nothing">
+            <a tal:replace="structure context/branch/menu:context/source/fmt:link"/>
+          </p>
         </div>
       </div>
 
@@ -174,6 +189,9 @@
             </ul>
           </div>
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
       </div>
     </div>
 
@@ -187,12 +205,14 @@
           <li tal:condition="overview_menu/delete/enabled">
             <a tal:replace="structure overview_menu/delete/fmt:link" />
           </li>
-          <li>
-            <a tal:replace="structure overview_menu/subscribe/fmt:link" />
+          <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/edit_bug_mail/enabled|nothing">
+            <a tal:replace="structure overview_menu/edit_bug_mail/fmt:link" />
           </li>
         </ul>
       </div>
-
 
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">

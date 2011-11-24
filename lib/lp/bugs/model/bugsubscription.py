@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['BugSubscription']
 
 import pytz
-from storm.base import Storm
 from storm.locals import (
     DateTime,
     Int,
@@ -17,12 +16,14 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.role import IPersonRoles
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscription(Storm):
+class BugSubscription(StormBase):
     """A relationship between a person and a bug."""
 
     implements(IBugSubscription)
@@ -61,10 +62,11 @@ class BugSubscription(Storm):
     @property
     def display_subscribed_by(self):
         """See `IBugSubscription`."""
-        if self.person == self.subscribed_by:
+        if self.person_id == self.subscribed_by_id:
             return u'Self-subscribed'
         else:
-            return u'Subscribed by %s' % self.subscribed_by.displayname
+            return u'Subscribed by %s (%s)' % (
+                self.subscribed_by.displayname, self.subscribed_by.name)
 
     @property
     def display_duplicate_subscribed_by(self):
@@ -72,13 +74,14 @@ class BugSubscription(Storm):
         if self.person == self.subscribed_by:
             return u'Self-subscribed to bug %s' % (self.bug_id)
         else:
-            return u'Subscribed to bug %s by %s' % (self.bug_id,
-                self.subscribed_by.displayname)
+            return u'Subscribed to bug %s by %s (%s)' % (
+                self.bug_id, self.subscribed_by.displayname,
+                self.subscribed_by.name)
 
     def canBeUnsubscribedByUser(self, user):
         """See `IBugSubscription`."""
         if user is None:
             return False
-        if self.person.is_team:
-            return user.inTeam(self.person)
-        return user == self.person
+        return (user.inTeam(self.person) or
+                user.inTeam(self.subscribed_by) or
+                IPersonRoles(user).in_admin)

@@ -29,8 +29,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskAdded
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
@@ -127,32 +127,29 @@ class BugNomination(SQLBase):
                 return True
 
         if self.distroseries is not None:
-            # For distributions anyone that can upload to the
-            # distribution may approve nominations.
-            bug_packagenames_and_components = set()
             distribution = self.distroseries.distribution
+            # An uploader to any of the packages can approve the
+            # nomination. Compile a list of possibilities, and check
+            # them all.
+            package_names = []
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
                     and bugtask.sourcepackagename is not None):
-                    source_package = self.distroseries.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    bug_packagenames_and_components.add(
-                        bugtask.sourcepackagename)
-                    if source_package.latest_published_component is not None:
-                        bug_packagenames_and_components.add(
-                            source_package.latest_published_component)
-            if len(bug_packagenames_and_components) == 0:
+                    package_names.append(bugtask.sourcepackagename)
+            if len(package_names) == 0:
                 # If the bug isn't targeted to a source package, allow
-                # any uploader to approve the nomination.
-                bug_packagenames_and_components = set(
-                    upload_component.component
-                    for upload_component in distribution.uploaders)
-            for packagename_or_component in bug_packagenames_and_components:
-                if distribution.main_archive.checkArchivePermission(
-                    person, packagename_or_component):
+                # any component uploader to approve the nomination, like
+                # a new package.
+                return distribution.main_archive.verifyUpload(
+                    person, None, None, None, strict_component=False) is None
+            for name in package_names:
+                component = self.distroseries.getSourcePackage(
+                    name).latest_published_component
+                if distribution.main_archive.verifyUpload(
+                    person, name, component, self.distroseries) is None:
                     return True
-
         return False
+
 
 class BugNominationSet:
     """See IBugNominationSet."""

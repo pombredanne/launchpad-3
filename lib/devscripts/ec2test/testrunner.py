@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to actually run the tests in an EC2 instance."""
@@ -19,7 +19,9 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import GlobalConfig
 from bzrlib.errors import UncommittedChanges
 from bzrlib.plugins.pqm.pqm_submit import (
-    NoPQMSubmissionAddress, PQMSubmission)
+    NoPQMSubmissionAddress,
+    PQMSubmission,
+    )
 
 
 TRUNK_BRANCH = 'bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel'
@@ -199,7 +201,7 @@ class EC2TestRunner:
                         pqm_submit_location = trunk_branch
                 elif pqm_submit_location is None and trunk_specified:
                     pqm_submit_location = trunk_branch
-                # modified from pqm_submit.py
+                # Modified from pqm_submit.py.
                 submission = PQMSubmission(
                     source_branch=bzrbranch,
                     public_location=pqm_public_location,
@@ -207,14 +209,14 @@ class EC2TestRunner:
                     submit_location=pqm_submit_location,
                     tree=tree)
                 if tree is not None:
-                    # this is the part we want to do whether or not we're
-                    # submitting.
-                    submission.check_tree() # any working changes
-                    submission.check_public_branch() # everything public
+                    # This is the part we want to do whether we're
+                    # submitting or not:
+                    submission.check_tree()  # Any working changes.
+                    submission.check_public_branch()  # Everything public.
                     branch = submission.public_location
                     if (include_download_cache_changes is None or
                         include_download_cache_changes):
-                        # We need to get the download cache settings
+                        # We need to get the download cache settings.
                         cache_tree, cache_bzrbranch, cache_relpath = (
                             BzrDir.open_containing_tree_or_branch(
                                 os.path.join(
@@ -239,11 +241,10 @@ class EC2TestRunner:
                 if pqm_message is not None:
                     if self.download_cache_additions:
                         raise UncommittedChanges(cache_tree)
-                    # get the submission message
+                    # Get the submission message.
                     mail_from = config.get_user_option('pqm_user_email')
                     if not mail_from:
                         mail_from = config.username()
-                    # Make sure this isn't unicode
                     mail_from = mail_from.encode('utf8')
                     if pqm_email is None:
                         if tree is None:
@@ -253,7 +254,7 @@ class EC2TestRunner:
                             pqm_email = config.get_user_option('pqm_email')
                     if not pqm_email:
                         raise NoPQMSubmissionAddress(bzrbranch)
-                    mail_to = pqm_email.encode('utf8') # same here
+                    mail_to = pqm_email.encode('utf8')
                     self.message = submission.to_email(mail_from, mail_to)
                 elif (self.download_cache_additions and
                       self.include_download_cache_changes is None):
@@ -320,17 +321,22 @@ class EC2TestRunner:
         if self.timeout is not None:
             # Activate a fail-safe shutdown just in case something goes
             # really wrong with the server or suite.
-            #
-            # We need to use a call to /usr/bin/at here instead of a call to
-            # /sbin/shutdown because the test suite already uses the shutdown
-            # command after the suite finishes. If we called shutdown
-            # here, it would prevent the end-of-suite shutdown from executing,
-            # leaving the server running until the failsafe finally activates.
-            # See bug 617598 for the details.
-            user_connection.perform(
-                "echo sudo shutdown -h now | at today + %d minutes"
-                % self.timeout)
+            user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
+        as_user("sudo mount -o remount,data=writeback,commit=3600,async,relatime /")
+        for d in ['/tmp', '/var/tmp']:
+            as_user('sudo mkdir -p %s && sudo mount -t tmpfs none %s' % (d, d))
+        as_user("sudo service postgresql-8.4 stop"
+            "; sudo mv /var/lib/postgresql /tmp/postgresql-tmp"
+            "&& sudo mkdir /var/lib/postgresql"
+            "&& sudo mount -t tmpfs none /var/lib/postgresql"
+            "&& sudo mv /tmp/postgresql-tmp/* /var/lib/postgresql"
+            "&& sudo service postgresql-8.4 start")
+        as_user("sudo add-apt-repository ppa:bzr")
+        as_user("sudo add-apt-repository ppa:launchpad")
+        as_user("sudo aptitude update")
+        as_user(
+            "sudo DEBIAN_FRONTEND=noninteractive aptitude -y full-upgrade")
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
             as_user('[ -d .bazaar ] || mkdir .bazaar')
@@ -361,9 +367,11 @@ class EC2TestRunner:
         user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
+        user_connection.perform('sudo mkdir /var/launchpad/test '
+            '&& sudo mount -t tmpfs none /var/launchpad/test')
         # Get trunk.
         user_connection.run_with_ssh_agent(
-            'bzr branch %s /var/launchpad/test' % (self._trunk_branch,))
+            'bzr branch --use-existing-dir %s /var/launchpad/test' % (self._trunk_branch,))
         # Merge the branch in.
         if self._branch is not None:
             user_connection.run_with_ssh_agent(
@@ -377,27 +385,22 @@ class EC2TestRunner:
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
-            # Most sourcecode branches share no history with Launchpad and
-            # might be in different formats so we "branch --standalone" them
-            # to avoid terribly slow on-the-fly conversions.  However, neither
-            # thing is true of canonical-identity or shipit, so we let them
-            # use the Launchpad repository.
-            if dest in ('canonical-identity-provider', 'shipit'):
-                standalone = ''
-            else:
-                standalone = '--standalone'
             user_connection.run_with_ssh_agent(
-                'bzr branch %s %s %s' % (standalone, src, fulldest))
+                'bzr branch --standalone %s %s' % (src, fulldest))
         # prepare fresh copy of sourcecode and buildout sources for building
         p = user_connection.perform
-        p('rm -rf /var/launchpad/tmp')
-        p('mkdir /var/launchpad/tmp')
+        p('rm -rf /var/launchpad/tmp'
+            '&& mkdir /var/launchpad/tmp '
+            '&& sudo mount -t tmpfs none /var/launchpad/tmp')
         p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
+        p('mkdir /var/launchpad/tmp/yui')
         user_connection.run_with_ssh_agent(
             'bzr pull lp:lp-source-dependencies '
             '-d /var/launchpad/download-cache')
-        p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
+        p(
+            'mv /var/launchpad/download-cache '
+            '/var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
             root = os.path.realpath(
@@ -407,7 +410,8 @@ class EC2TestRunner:
                 self.log('Copying %s to remote machine.\n' % (src,))
                 user_connection.sftp.put(
                     src,
-                    os.path.join('/var/launchpad/tmp/download-cache', info[0]))
+                    os.path.join(
+                        '/var/launchpad/tmp/download-cache', info[0]))
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database

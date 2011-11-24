@@ -4,22 +4,27 @@
 # This file is imported by parts/scripts/sitecustomize.py, as set up in our
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
+from collections import defaultdict
 import itertools
+import logging
 import os
 import warnings
-import logging
 
+from bzrlib.branch import Branch
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
     )
+from zope.interface import alsoProvides
+import zope.publisher.browser
+from zope.security import checker
 
-from bzrlib.branch import Branch
+from canonical.launchpad.webapp.interfaces import IUnloggedException
 from lp.services.log import loglevels
+from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
-from zope.security import checker
 
 
 def add_custom_loglevels():
@@ -46,7 +51,34 @@ def add_custom_loglevels():
 
     # Install our customized Logger that provides easy access to our
     # custom loglevels.
-    logging.setLoggerClass(loglevels.LaunchpadLogger)
+    logging.setLoggerClass(LaunchpadLogger)
+
+    # Fix the root logger, replacing it with an instance of our
+    # customized Logger. The original one is instantiated on import of
+    # the logging module, so our override does not take effect without
+    # this manual effort.
+    old_root = logging.root
+    new_root = LaunchpadLogger('root', loglevels.WARNING)
+
+    # Fix globals.
+    logging.root = new_root
+    logging.Logger.root = new_root
+
+    # Fix manager.
+    manager = logging.Logger.manager
+    manager.root = new_root
+
+    # Fix existing Logger instances.
+    for logger in manager.loggerDict.values():
+        if getattr(logger, 'parent', None) is old_root:
+            logger.parent = new_root
+
+
+def silence_amqplib_logger():
+    """Install the NullHandler on the amqplib logger to silence logs."""
+    amqplib_logger = logging.getLogger('amqplib')
+    amqplib_logger.addHandler(NullHandler())
+    amqplib_logger.propagate = False
 
 
 def silence_bzr_logger():
@@ -92,6 +124,15 @@ def silence_warnings():
         "ignore",
         category=DeprecationWarning,
         module="Crypto")
+    # Filter all deprecation warnings for Zope 3.6, which emanate from
+    # the zope package.
+    filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
+    warnings.filterwarnings(
+        'ignore', filter_pattern, category=DeprecationWarning)
+    # XXX wgrant 2010-03-30 bug=551510:
+    # Also filter apt_pkg warnings, since Lucid's python-apt has a new API.
+    warnings.filterwarnings(
+        'ignore', '.*apt_pkg.*', category=DeprecationWarning)
 
 
 def customize_logger():
@@ -100,9 +141,41 @@ def customize_logger():
     This function is also invoked by the test infrastructure to reset
     logging between tests.
     """
+    silence_amqplib_logger()
     silence_bzr_logger()
     silence_zcml_logger()
     silence_transaction_logger()
+
+
+def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
+    """URL parameter conversion errors shouldn't generate an OOPS report.
+
+    This injects (monkey patches) our wrapper around get_converter so improper
+    use of parameter type converters (like http://...?foo=bar:int) won't
+    generate OOPS reports.
+    """
+    original_get_converter = zope_publisher_browser.get_converter
+
+    def get_converter(*args, **kws):
+        """Get a type converter but turn off OOPS reporting if it fails."""
+        converter = original_get_converter(*args, **kws)
+
+        def wrapped_converter(v):
+            try:
+                return converter(v)
+            except ValueError, e:
+                # Mark the exception as not being OOPS-worthy.
+                alsoProvides(e, IUnloggedException)
+                raise
+
+        # The converter can be None, in which case wrapping it makes no sense,
+        # otherwise it is a function which we wrap.
+        if converter is None:
+            return None
+        else:
+            return wrapped_converter
+
+    zope_publisher_browser.get_converter = get_converter
 
 
 def main(instance_name):
@@ -120,6 +193,7 @@ def main(instance_name):
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
@@ -129,3 +203,4 @@ def main(instance_name):
     checker.BasicTypes[grouper] = checker._iteratorChecker
     silence_warnings()
     customize_logger()
+    customize_get_converter()

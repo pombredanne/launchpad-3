@@ -25,6 +25,11 @@ def sourcepackagerelease_to_questiontarget(sourcepackagerelease):
     return sourcepackagerelease.distrosourcepackage
 
 
+def sourcepackage_to_questiontarget(sourcepackage):
+    """Adapts an ISourcePackage into an IQuestionTarget."""
+    return sourcepackage.distribution_sourcepackage
+
+
 def question_to_faqtarget(question):
     """Adapt an IQuestion into an IFAQTarget.
 

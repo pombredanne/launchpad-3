@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Various functions and classes that are useful across different parts of
@@ -11,20 +11,16 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 from difflib import unified_diff
-import hashlib
 import os
-import random
 import re
 from StringIO import StringIO
 import subprocess
 import tarfile
 import warnings
 
-import gettextpo
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
-import canonical
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
@@ -98,81 +94,10 @@ def backslashreplace(str):
     return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
 
 
-def join_lines(*lines):
-    """Concatenate a list of strings, adding a newline at the end of each."""
-
-    return ''.join([x + '\n' for x in lines])
-
-
 def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""
 
     return tarfile.open('', 'r', StringIO(s))
-
-
-def shortest(sequence):
-    """Return a list with the shortest items in sequence.
-
-    Return an empty list if the sequence is empty.
-    """
-    shortest_list = []
-    shortest_length = None
-
-    for item in list(sequence):
-        new_length = len(item)
-
-        if shortest_length is None:
-            # First item.
-            shortest_list.append(item)
-            shortest_length = new_length
-        elif new_length == shortest_length:
-            # Same length than shortest item found, we append it to the list.
-            shortest_list.append(item)
-        elif min(new_length, shortest_length) != shortest_length:
-            # Shorter than our shortest length found, discard old values.
-            shortest_list = [item]
-            shortest_length = new_length
-
-    return shortest_list
-
-
-def getRosettaBestBinaryPackageName(sequence):
-    """Return the best binary package name from a list.
-
-    It follows the Rosetta policy:
-
-    We don't need a concrete value from binary package name, we use shortest
-    function as a kind of heuristic to choose the shortest binary package
-    name that we suppose will be the more descriptive one for our needs with
-    PO templates. That's why we get always the first element.
-    """
-    return shortest(sequence)[0]
-
-
-def getRosettaBestDomainPath(sequence):
-    """Return the best path for a concrete .pot file from a list of paths.
-
-    It follows the Rosetta policy for this path:
-
-    We don't need a concrete value from domain_paths list, we use shortest
-    function as a kind of heuristic to choose the shortest path if we have
-    more than one, usually, we will have only one element.
-    """
-    return shortest(sequence)[0]
-
-
-def getValidNameFromString(invalid_name):
-    """Return a valid name based on a string.
-
-    A name in launchpad has a set of restrictions that not all strings follow.
-    This function converts any string in another one that follows our name
-    restriction rules.
-
-    To know more about all restrictions, please, look at valid_name function
-    in the database.
-    """
-    # All chars should be lower case, underscores and spaces become dashes.
-    return text_replaced(invalid_name.lower(), {'_': '-', ' ': '-'})
 
 
 def browserLanguages(request):
@@ -201,73 +126,20 @@ def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     return output
 
 
-def emailPeople(person):
-    """Return a set of people to who receive email for this Person.
-
-    If <person> has a preferred email, the set will contain only that
-    person.  If <person> doesn't have a preferred email but is a team,
-    the set will contain the preferred email address of each member of
-    <person>, including indirect members.
-
-    Finally, if <person> doesn't have a preferred email and is not a team,
-    the set will be empty.
-    """
-    pending_people = [person]
-    people = set()
-    seen = set()
-    while len(pending_people) > 0:
-        person = pending_people.pop()
-        if person in seen:
-            continue
-        seen.add(person)
-        if person.preferredemail is not None:
-            people.add(person)
-        elif person.isTeam():
-            pending_people.extend(person.activemembers)
-    return people
-
-
 def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
-    In general, it is better to use emailPeople instead.
+    In general, it is better to use lp.registry.model.person.get_recipients
+    instead.
     """
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
+    # Circular imports force this import.
+    from lp.registry.model.person import get_recipients
     return set(
         str(removeSecurityProxy(mail_person.preferredemail).email)
-        for mail_person in emailPeople(person))
-
-
-replacements = {0: {'.': ' |dot| ',
-                    '@': ' |at| '},
-                1: {'.': ' ! ',
-                    '@': ' {} '},
-                2: {'.': ' , ',
-                    '@': ' % '},
-                3: {'.': ' (!) ',
-                    '@': ' (at) '},
-                4: {'.': ' {dot} ',
-                    '@': ' {at} '},
-                }
-
-
-def obfuscateEmail(emailaddr, idx=None):
-    """Return an obfuscated version of the provided email address.
-
-    Randomly chose a set of replacements for some email address characters and
-    replace them. This will make harder for email harvesters to fetch email
-    address from launchpad.
-
-    >>> obfuscateEmail('foo@bar.com', 0)
-    'foo |at| bar |dot| com'
-    >>> obfuscateEmail('foo.bar@xyz.com.br', 1)
-    'foo ! bar {} xyz ! com ! br'
-    """
-    if idx is None:
-        idx = random.randint(0, len(replacements) - 1)
-    return text_replaced(emailaddr, replacements[idx])
+        for mail_person in get_recipients(person))
 
 
 class ShortListTooBigError(Exception):
@@ -437,16 +309,6 @@ def filenameToContentType(fname):
     return "application/octet-stream"
 
 
-def get_filename_from_message_id(message_id):
-    """Returns a librarian filename based on the email message_id.
-
-    It generates a file name that's not easily guessable.
-    """
-    return '%s.msg' % (
-            canonical.base.base(
-                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
-
-
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails.
 
@@ -469,63 +331,19 @@ def intOrZero(value):
         return 0
 
 
-def positiveIntOrZero(value):
-    """Return 0 if int(value) fails or if int(value) is less than 0.
-
-    Return int(value) otherwise.
-
-    >>> positiveIntOrZero(None)
-    0
-    >>> positiveIntOrZero(-9)
-    0
-    >>> positiveIntOrZero(1)
-    1
-    >>> positiveIntOrZero('-3')
-    0
-    >>> positiveIntOrZero('5')
-    5
-    >>> positiveIntOrZero(3.1415)
-    3
-    """
-    value = intOrZero(value)
-    if value < 0:
-        return 0
-    return value
-
-
 def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
     if app is None:
-        base = os.path.dirname(canonical.launchpad.__file__)
+        base = os.path.dirname(__file__)
         fullpath = os.path.join(base, 'emailtemplates', filename)
     else:
         import lp
         base = os.path.dirname(lp.__file__)
         fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
-
-
-def is_ascii_only(string):
-    """Ensure that the string contains only ASCII characters.
-
-        >>> is_ascii_only(u'ascii only')
-        True
-        >>> is_ascii_only('ascii only')
-        True
-        >>> is_ascii_only('\xf4')
-        False
-        >>> is_ascii_only(u'\xf4')
-        False
-    """
-    try:
-        string.encode('ascii')
-    except UnicodeError:
-        return False
-    else:
-        return True
 
 
 def truncate_text(text, max_length):

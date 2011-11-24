@@ -22,6 +22,7 @@ from storm.locals import (
     Date,
     Int,
     Reference,
+    Store,
     Storm,
     )
 from zope.interface import implements
@@ -34,6 +35,10 @@ from canonical.database.sqlbase import (
     quote_like,
     SQLBase,
     sqlvalues,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
     )
 from lp.soyuz.enums import (
     BinaryPackageFileType,
@@ -84,9 +89,6 @@ class BinaryPackageRelease(SQLBase):
     debug_package = ForeignKey(dbName='debug_package',
                               foreignKey='BinaryPackageRelease')
 
-    files = SQLMultipleJoin('BinaryPackageFile',
-        joinColumn='binarypackagerelease', orderBy="libraryfile")
-
     _user_defined_fields = StringCol(dbName='user_defined_fields')
 
     def __init__(self, *args, **kwargs):
@@ -136,6 +138,11 @@ class BinaryPackageRelease(SQLBase):
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
 
+    @cachedproperty
+    def files(self):
+        return list(
+            Store.of(self).find(BinaryPackageFile, binarypackagerelease=self))
+
     def addFile(self, file):
         """See `IBinaryPackageRelease`."""
         determined_filetype = None
@@ -151,6 +158,7 @@ class BinaryPackageRelease(SQLBase):
             raise AssertionError(
                 'Unsupported file type: %s' % file.filename)
 
+        del get_property_cache(self).files
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
                                  libraryfile=file)

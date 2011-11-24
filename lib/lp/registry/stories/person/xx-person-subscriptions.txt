@@ -69,7 +69,7 @@ He chooses to view the bug about Scofflaw.
     >>> unsub_link.click()
     >>> page_text = extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'nonportlets'))
-    >>> "Unsubscribe me from this bug" in page_text
+    >>> "unsubscribe me from this bug" in page_text
     True
 
 After viewing the +subscribe page Webster decides that he still wants to be
@@ -86,7 +86,7 @@ He chooses to unsubscribe from the bug about Affluenza.
     >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
     ...     % bugB.id).click()
     >>> subscriber_browser.getControl(
-    ...     "Unsubscribe me from this bug").selected = True
+    ...     "unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
     Subscriptions : Webster
@@ -136,11 +136,11 @@ Webster now chooses to unsubscribe team America from the bug about Scofflaw.
     ...     team.id).click()
     >>> print extract_text(find_tags_by_class(
     ...     subscriber_browser.contents, 'value')[0])
-    Subscribe me to this bug
-    Unsubscribe America from this bug
+    subscribe me to this bug, or
+    unsubscribe America from this bug.
 
     >>> subscriber_browser.getControl(
-    ...     'Unsubscribe America from this bug').selected = True
+    ...     'unsubscribe America from this bug').selected = True
     >>> subscriber_browser.getControl('Continue').click()
 
     >>> subscriber_browser.open(
@@ -175,9 +175,9 @@ followed by a link to edit the subscription.
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
     ...     print "--> %s" % modify_link.get("href")
-    mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
+    mozilla-firefox in Ubuntu </ubuntu/+source/mozilla-firefox>
     --> /ubuntu/+source/mozilla-firefox/+subscribe
-    pmount in ubuntu </ubuntu/+source/pmount>
+    pmount in Ubuntu </ubuntu/+source/pmount>
     --> /ubuntu/+source/pmount/+subscribe
 
 The links to modify subscriptions are only shown when the user has
@@ -191,8 +191,8 @@ permission to modify those subscriptions.
     ...     structure_link = subscription.find("a")
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
-    mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
-    pmount in ubuntu </ubuntu/+source/pmount>
+    mozilla-firefox in Ubuntu </ubuntu/+source/mozilla-firefox>
+    pmount in Ubuntu </ubuntu/+source/pmount>
 
 The structural subscriptions page links back to the direct
 subscriptions page.
@@ -235,9 +235,9 @@ subscription filter.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
     >>> show_create_links(admin_browser)
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
     * Create a new filter --> /ubuntu/.../name16/+new-filter
-    pmount in ubuntu
+    pmount in Ubuntu
     * Create a new filter --> /ubuntu/.../name16/+new-filter
 
 If the user does not have the necessary rights to create new bug
@@ -246,9 +246,9 @@ filters the "Create" link is not shown.
     >>> subscriber_browser.open(
     ...     "http://launchpad.dev/~name16/+structural-subscriptions")
     >>> show_create_links(subscriber_browser)
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
     * No create link.
-    pmount in ubuntu
+    pmount in Ubuntu
     * No create link.
 
 
@@ -281,14 +281,17 @@ filters are shown with a message stating that there is no filtering.
     ...             print extract_text(subscription.dl)
 
     >>> show_nigels_subscriptions()
-    Bug mail is not filtered; mail for Nigel about Scofflaw will
-    always be sent.
+    Bug mail for Nigel about Scofflaw is filtered;
+    ...
+    This filter allows all mail through.
+    There are no filter conditions!
+    (edit)
 
 If a bug mail filter exists for a structural subscription it is
 displayed immediately after the subscription.
 
     >>> with person_logged_in(nigel):
-    ...     nigel_bug_filter1 = nigel_subscription.newBugFilter()
+    ...     nigel_bug_filter1 = nigel_subscription.bug_filters.one()
     ...     nigel_bug_filter1.description = u"First"
     ...     nigel_bug_filter1.tags = [u"foo"]
 

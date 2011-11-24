@@ -56,6 +56,26 @@ class TestProductVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [a_product, z_product, self.product], list(result))
 
+    def test_order_by_relevance(self):
+        # When the flag is enabled, the most relevant result is first.
+        bar_product = self.factory.makeProduct(
+            name='foo-bar', displayname='Foo bar', summary='quux')
+        quux_product = self.factory.makeProduct(
+            name='foo-quux', displayname='Foo quux')
+        result = self.vocabulary.search('quux')
+        self.assertEqual(
+            [quux_product, bar_product], list(result))
+
+    def test_exact_match_is_first(self):
+        # When the flag is enabled, an exact name match always wins.
+        the_quux_product = self.factory.makeProduct(
+            name='the-quux', displayname='The quux')
+        quux_product = self.factory.makeProduct(
+            name='quux', displayname='The quux')
+        result = self.vocabulary.search('quux')
+        self.assertEqual(
+            [quux_product, the_quux_product], list(result))
+
     def test_inactive_products_are_excluded(self):
         # Inactive products are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):

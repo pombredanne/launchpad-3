@@ -46,15 +46,31 @@ not maintained outside of a request:
     >>> get_request_statements()
     []
 
-Now begin a request, and issue a number of statements:
-
+Now begin a request, and issue a number of statements.
+We include statements with bind variables to ensure these are logged
+correctly, especially for the case of LIKE which uses % characters.
     >>> set_request_started()
     >>> store.execute('SELECT 1', noresult=True)
     >>> store.execute('SELECT 2', noresult=True)
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> store.execute('SELECT * FROM person where name = ?',
+    ...     [u'fred'], noresult=True)
+    >>> store.execute("SELECT * FROM person where name = '%s foo'",
+    ...     noresult=True)
+    >>> store.execute('SELECT * FROM person where id = ?',
+    ...     [2], noresult=True)
+    >>> store.execute("SELECT * FROM person where name like '%%' || ?",
+    ...     [u'fred'], noresult=True)
+    >>> store.execute("SELECT * FROM person where name like '%d foo'||'%%'",
+    ...     noresult=True)
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
+    SELECT * FROM person where name = u'fred'
+    SELECT * FROM person where name = '%s foo'
+    SELECT * FROM person where id = 2
+    SELECT * FROM person where name like '%%' || u'fred'
+    SELECT * FROM person where name like '%d foo'||'%%'
 
 A timeline is created too:
 
@@ -65,6 +81,11 @@ A timeline is created too:
     ...    print action.detail
     SELECT 1
     SELECT 2
+    SELECT * FROM person where name = u'fred'
+    SELECT * FROM person where name = '%s foo'
+    SELECT * FROM person where id = 2
+    SELECT * FROM person where name like '%%' || u'fred'
+    SELECT * FROM person where name like '%d foo'||'%%'
 
 After we complete the request, the statement log is cleared:
 
@@ -82,7 +103,7 @@ statements.
     >>> store.execute('SELECT 1', noresult=True)
     >>> store.execute('SELECT 2', noresult=True)
     >>> store.execute('SELECT 3', noresult=True)
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 2
     SELECT 3
@@ -98,7 +119,7 @@ that aborted transactions are still in the status "Active".
     >>> transaction.commit()
     >>> store.execute('SELECT 3', noresult=True)
     >>> transaction.abort()
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
@@ -106,6 +127,16 @@ that aborted transactions are still in the status "Active".
     SELECT 3
     Transaction completed, status: Active
     >>> clear_request_started()
+
+While you're not meant to call clear_request_started() without having
+a request in progress, some exception handlers do. We raise a warning and let
+it pass.
+
+    >>> import warnings
+    >>> with warnings.catch_warnings(record=True) as no_request_warning:
+    ...     clear_request_started()
+    >>> print no_request_warning[0].message
+    clear_request_started() called outside of a request
 
 
 Statement Timeout
@@ -307,7 +338,7 @@ The request time limit was exceeded before the statement was issued to
 the database.
 
     >>> get_request_statements()
-    [(0, 0, 'SQL-launchpad-main-master', 'SELECT 2')]
+    [(0, 0, 'SQL-main-master', 'SELECT 2', ...)]
 
 
 When a RequestExpired exception is raised, the current
@@ -383,7 +414,8 @@ If no timeout has been set, then requests will not time out:
     >>> clear_request_started()
 
 
-== Switching Database Users ==
+Switching Database Users
+========================
 
 The Launchpad store uses canonical.config to configure its
 connection.  This can be adjusted by choosing a different database
@@ -392,10 +424,8 @@ config section.  By default we connect as "launchpad"
     >>> print store.execute("select current_user").get_one()[0]
     launchpad_main
 
-    >>> from canonical.config import config, dbconfig
-    >>> config.statistician.dbuser
-    'statistician'
-    >>> dbconfig.setConfigSection('statistician')
+    >>> from canonical.config import dbconfig
+    >>> dbconfig.override(dbuser='statistician')
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
     statistician
@@ -421,9 +451,9 @@ This is not reset at the end of the transaction:
     <BLANKLINE>
     >>> transaction.abort()
 
-So you need to explicitly set the user back:
+So you need to explicitly set the user back to the default:
 
-    >>> dbconfig.setConfigSection('launchpad')
+    >>> dbconfig.override(dbuser=None)
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
     launchpad_main

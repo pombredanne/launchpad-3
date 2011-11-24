@@ -194,8 +194,8 @@ class ArchivePermissionSet:
             if isinstance(component, basestring):
                 component = getUtility(IComponentSet)[component]
             return component
-        except NotFoundError, e:
-            raise ComponentNotFound(e)
+        except NotFoundError:
+            raise ComponentNotFound(component)
 
     def _nameToSourcePackageName(self, sourcepackagename):
         """Helper to convert a possible string name to ISourcePackageName."""
@@ -327,6 +327,15 @@ class ArchivePermissionSet:
                 archive=archive, person=person, component=component,
                 permission=ArchivePermissionType.QUEUE_ADMIN)
 
+    @staticmethod
+    def _remove_permission(permission):
+        if permission is None:
+            # The permission has already been removed, so there's nothing more
+            # to do here.
+            return
+        else:
+            Store.of(permission).remove(permission)
+
     def deletePackageUploader(self, archive, person, sourcepackagename):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
@@ -334,7 +343,7 @@ class ArchivePermissionSet:
             archive=archive, person=person,
             sourcepackagename=sourcepackagename,
             permission=ArchivePermissionType.UPLOAD)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def deleteComponentUploader(self, archive, person, component):
         """See `IArchivePermissionSet`."""
@@ -342,7 +351,7 @@ class ArchivePermissionSet:
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.UPLOAD)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def deleteQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
@@ -350,7 +359,7 @@ class ArchivePermissionSet:
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.QUEUE_ADMIN)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def _nameToPackageset(self, packageset):
         """Helper to convert a possible string name to IPackageset."""
@@ -473,10 +482,7 @@ class ArchivePermissionSet:
             ArchivePermission, archive=archive, person=person,
             packageset=packageset, permission=ArchivePermissionType.UPLOAD,
             explicit=explicit).one()
-
-        if permission is not None:
-            # Permission found, remove it!
-            store.remove(permission)
+        self._remove_permission(permission)
 
     def packagesetsForSourceUploader(
         self, archive, sourcepackagename, person):

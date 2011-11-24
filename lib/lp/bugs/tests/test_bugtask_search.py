@@ -7,36 +7,34 @@ from datetime import (
     datetime,
     timedelta,
     )
-from new import classobj
-import sys
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    Not,
-    )
 import unittest
 
 import pytz
-from zope.component import getUtility
-
 from storm.expr import Join
 from storm.store import Store
+from testtools.matchers import Equals
+from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import (
     all,
     any,
     greater_than,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.model.bugtask import BugTask, BugTaskResultSet
+from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -46,12 +44,19 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+
+
+PRIVATE_BUG_VISIBILITY_FLAG = {
+    'disclosure.private_bug_visibility_rules.enabled': 'on'}
+PRIVATE_BUG_VISIBILITY_CTE_FLAG = {
+    'disclosure.private_bug_visibility_cte.enabled': 'on'}
 
 
 class SearchTestBase:
@@ -70,26 +75,48 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(expected_bugtasks)
         self.assertEqual(expected, search_result)
 
+    def test_aggregate_by_target(self):
+        # BugTaskSet.search supports returning the counts for each target (as
+        # long as only one type of target was selected).
+        if self.group_on is None:
+            # Not a useful/valid permutation.
+            return
+        self.getBugTaskSearchParams(user=None, multitarget=True)
+        # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        user = self.factory.makePerson()
+        expected = {(self.targetToGroup(self.searchtarget),): 3,
+            (self.targetToGroup(self.searchtarget2),): 6}
+        actual = self.bugtask_set.countBugs(
+            user, (self.searchtarget, self.searchtarget2),
+            group_on=self.group_on)
+        self.assertEqual(expected, actual)
+
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
         # target, if only the bug target is passed as a search parameter.
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks)
 
-    def test_private_bug_in_search_result(self):
+    def test_private_bug_in_search_result_anonymous_users(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_unauthorised_users(self):
         # Private bugs are not included in search results for ordinary users.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_subscribers(self):
         # If the user is subscribed to the bug, it is included in the
         # search result.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
@@ -98,17 +125,74 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_admins(self):
         # Private bugs are included in search results for admins.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_assignees(self):
         # Private bugs are included in search results for the assignee.
-        user = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
             bugtask.transitionToAssignee(user)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
+
+    def test_private_bug_in_search_result_pillar_owners(self):
+        # Private, non-security bugs are included in search results for the
+        # pillar owners if the correct feature flag is enabled.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
+
+    def test_private_bug_in_search_result_pillar_owners_cte(self):
+        # Like test_private_bug_in_search_result_pillar_owners, but with
+        # the new CTE-based visibility query.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        flags = dict()
+        flags.update(PRIVATE_BUG_VISIBILITY_FLAG)
+        flags.update(PRIVATE_BUG_VISIBILITY_CTE_FLAG)
+        with FeatureFixture(flags):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -252,12 +336,11 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks[:2])
 
     def setUpFullTextSearchTests(self):
-        # Set text fields indexed by Bug.fti, BugTask.fti or
+        # Set text fields indexed by Bug.fti, or
         # MessageChunk.fti to values we can search for.
         for bugtask, number in zip(self.bugtasks, ('one', 'two', 'three')):
             commenter = self.bugtasks[0].bug.owner
             with person_logged_in(commenter):
-                bugtask.statusexplanation = 'status explanation %s' % number
                 bugtask.bug.title = 'bug title %s' % number
                 bugtask.bug.newMessage(
                     owner=commenter, content='comment %s' % number)
@@ -268,10 +351,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ... by BugTask.fti ...
-        params = self.getBugTaskSearchParams(
-            user=None, searchtext='two explanation')
-        self.assertSearchFinds(params, self.bugtasks[1:2])
         # ...and by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, searchtext='three comment')
@@ -283,10 +362,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ... but not text indexed by BugTask.fti ...
-        params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='two explanation')
-        self.assertSearchFinds(params, [])
         # ..or by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='three comment')
@@ -305,7 +380,6 @@ class SearchTestBase:
         # bugtasks returned for a search for has_no_upstream_bugtask
         # would always be empty.
         if (IDistribution.providedBy(self.searchtarget) or
-            IDistroSeries.providedBy(self.searchtarget) or
             ISourcePackage.providedBy(self.searchtarget) or
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
@@ -313,10 +387,17 @@ class SearchTestBase:
                 expected = [bug.default_bugtask]
             else:
                 bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution)
+                    distribution=self.searchtarget.distribution,
+                    sourcepackagename=self.factory.makeSourcePackageName())
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]
+        elif IDistroSeries.providedBy(self.searchtarget):
+            bug = self.factory.makeBug(
+                distribution=self.searchtarget.distribution)
+            bugtask = self.factory.makeBugTask(
+                bug=bug, target=self.searchtarget)
+            expected = [bugtask]
         else:
             # Bugs without distribution related bugtasks have always at
             # least one product related bugtask, hence a
@@ -402,10 +483,10 @@ class SearchTestBase:
         utc_now = datetime.now(pytz.timezone('UTC'))
         self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now - timedelta(days=1)))
         self.assertSearchFinds(params, self.bugtasks[2:])
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now + timedelta(days=1)))
         self.assertSearchFinds(params, [])
 
     def test_created_since(self):
@@ -443,6 +524,21 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks[:1])
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_blueprints_linked(self):
+        # Search results can be limited to bugs with or without linked
+        # blueprints.
+        with person_logged_in(self.owner):
+            blueprint = self.factory.makeSpecification()
+            blueprint.linkBug(self.bugtasks[0].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITH_BLUEPRINTS))
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        params = self.getBugTaskSearchParams(
+            user=None, linked_blueprints=(
+                BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS))
         self.assertSearchFinds(params, self.bugtasks[1:])
 
     def test_limit_search_to_one_bug(self):
@@ -504,6 +600,110 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None, has_cve=True)
         self.assertSearchFinds(params, self.bugtasks[:1])
 
+    def test_sort_by_milestone_name(self):
+        expected = self.setUpMilestoneSorting()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='milestone_name')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-milestone_name')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_reporter(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='reporter')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.owner.name)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-reporter')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_assignee(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].transitionToAssignee(
+                self.factory.makePerson(name="assignee-1"))
+            self.bugtasks[1].transitionToAssignee(
+                self.factory.makePerson(name="assignee-2"))
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        params = self.getBugTaskSearchParams(user=None, orderby='assignee')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-assignee')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_title(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='title')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.title)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-title')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_tag(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.tags = ['tag-a', 'tag-d']
+            self.bugtasks[1].bug.tags = ['tag-b', 'tag-c']
+        params = self.getBugTaskSearchParams(user=None, orderby='tag')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-tag')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_linked_specification(self):
+        with person_logged_in(self.owner):
+            spec_1 = self.factory.makeSpecification(
+                name='spec-1', owner=self.owner)
+            spec_1.linkBug(self.bugtasks[2].bug)
+            spec_1_1 = self.factory.makeSpecification(
+                name='spec-1-1', owner=self.owner)
+            spec_1_1.linkBug(self.bugtasks[2].bug)
+            spec_2 = self.factory.makeSpecification(
+                name='spec-2', owner=self.owner)
+            spec_2.linkBug(self.bugtasks[1].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='specification')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-specification')
+        self.assertSearchFinds(params, expected)
+
+
+class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DeactivatedProductBugTaskTestCase, self).setUp()
+        self.person = self.factory.makePerson()
+        self.active_product = self.factory.makeProduct()
+        self.inactive_product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=self.active_product,
+            description="Monkeys are bad.")
+        self.active_bugtask = self.factory.makeBugTask(
+            bug=bug,
+            target=self.active_product)
+        self.inactive_bugtask = self.factory.makeBugTask(
+            bug=bug,
+            target=self.inactive_product)
+        with person_logged_in(self.person):
+            self.active_bugtask.transitionToAssignee(self.person)
+            self.inactive_bugtask.transitionToAssignee(self.person)
+        admin = getUtility(IPersonSet).getByEmail('admin@canonical.com')
+        with person_logged_in(admin):
+            self.inactive_product.active = False
+
+    def test_deactivated_listings_not_seen(self):
+        # Someone without permission to see deactiveated projects does
+        # not see bugtasks for deactivated projects.
+        bugtask_set = getUtility(IBugTaskSet)
+        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
+        results = bugtask_set.search(param, _noprejoins=True)
+        self.assertEqual([self.active_bugtask], list(results))
+
 
 class ProductAndDistributionTests:
     """Tests which are useful for distributions and products."""
@@ -543,28 +743,68 @@ class ProjectGroupAndDistributionTests:
 
 
 class BugTargetTestBase:
-    """A base class for the bug target mixin classes."""
+    """A base class for the bug target mixin classes.
 
-    def makeBugTasks(self, bugtarget):
-        self.bugtasks = []
-        with person_logged_in(self.owner):
-            self.bugtasks.append(
-                self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.HIGH
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.TRIAGED, self.owner)
+    :ivar searchtarget: A bug context to search within.
+    :ivar searchtarget2: A sibling bug context for testing cross-context
+        searches. Created on demand when
+        getBugTaskSearchParams(multitarget=True) is called.
+    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are
+        made as for searchtarget.
+    :ivar group_on: The columns to group on when calling countBugs. None
+        if the target being testing is not sensible/implemented for counting
+        bugs. For instance, grouping by project group may be interesting but
+        at the time of writing is not implemented.
+    """
 
-            self.bugtasks.append(
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
+        if bugtasks is None:
+            self.bugtasks = []
+            bugtasks = self.bugtasks
+        if bugtarget is None:
+            bugtarget = self.searchtarget
+        if owner is None:
+            owner = self.owner
+        with person_logged_in(owner):
+            bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.LOW
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.NEW, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.HIGH
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.TRIAGED, owner)
 
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
-            self.bugtasks[-1].importance = BugTaskImportance.CRITICAL
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.LOW
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.NEW, owner)
+
+            bugtasks.append(
+                self.factory.makeBugTask(target=bugtarget))
+            bugtasks[-1].importance = BugTaskImportance.CRITICAL
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, owner)
+
+    def getBugTaskSearchParams(self, multitarget=False, *args, **kw):
+        """Return a BugTaskSearchParams object for the given parameters.
+
+        Also, set the bug target.
+
+        :param multitarget: If True multiple targets are used using any(
+            self.searchtarget, self.searchtarget2).
+        """
+        params = BugTaskSearchParams(*args, **kw)
+        if multitarget and getattr(self, 'searchtarget2', None) is None:
+            self.setUpTarget2()
+        if not multitarget:
+            target = self.searchtarget
+        else:
+            target = any(self.searchtarget, self.searchtarget2)
+        self.setBugParamsTarget(params, target)
+        return params
+
+    def targetToGroup(self, target):
+        """Convert a search target to a group_on result."""
+        return target.id
 
 
 class BugTargetWithBugSuperVisor:
@@ -596,18 +836,21 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(ProductTarget, self).setUp()
+        self.group_on = (BugSummary.product_id,)
         self.searchtarget = self.factory.makeProduct()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProduct()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProduct(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProduct(target)
 
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
@@ -618,24 +861,38 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.searchtarget)
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                product=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                product=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class ProductSeriesTarget(BugTargetTestBase):
     """Use a product series as the bug target."""
 
     def setUp(self):
         super(ProductSeriesTarget, self).setUp()
+        self.group_on = (BugSummary.productseries_id,)
         self.searchtarget = self.factory.makeProductSeries()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProductSeries(
+            product=self.searchtarget.product)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProductSeries(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProductSeries(target)
 
     def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
         # Change the status of another bugtask of the same bug to the
@@ -648,7 +905,6 @@ class ProductSeriesTarget(BugTargetTestBase):
         # product are returned, including bug tasks for the main product
         # of the series. Hence we must set the status for all products
         # in order to avoid a failure of test_upstream_status().
-        bug = bugtask.bug
         for other_task in bugtask.related_tasks:
             other_target = other_task.target
             if IProduct.providedBy(other_target):
@@ -662,6 +918,16 @@ class ProductSeriesTarget(BugTargetTestBase):
         return self._findBugtaskForOtherProduct(
             bugtask, self.searchtarget.product)
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                productseries=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                productseries=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                          ProjectGroupAndDistributionTests):
@@ -669,50 +935,59 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
     def setUp(self):
         super(ProjectGroupTarget, self).setUp()
+        self.group_on = None
         self.searchtarget = self.factory.makeProject()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeProject()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setProject(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setProject(target)
 
-    def makeBugTasks(self):
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
         """Create bug tasks for the search target."""
-        self.bugtasks = []
+        if bugtasks is None:
+            self.bugtasks = []
+            bugtasks = self.bugtasks
+        if bugtarget is None:
+            bugtarget = self.searchtarget
+        if owner is None:
+            owner = self.owner
         self.products = []
-        with person_logged_in(self.owner):
-            product = self.factory.makeProduct(owner=self.owner)
+        with person_logged_in(owner):
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.HIGH
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.TRIAGED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.HIGH
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.TRIAGED, owner)
 
-            product = self.factory.makeProduct(owner=self.owner)
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.LOW
-            self.bugtasks[-1].transitionToStatus(
-            BugTaskStatus.NEW, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.LOW
+            bugtasks[-1].transitionToStatus(
+            BugTaskStatus.NEW, owner)
 
-            product = self.factory.makeProduct(owner=self.owner)
+            product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
             product.project = self.searchtarget
-            self.bugtasks.append(
+            bugtasks.append(
                 self.factory.makeBugTask(target=product))
-            self.bugtasks[-1].importance = BugTaskImportance.CRITICAL
-            self.bugtasks[-1].transitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.owner)
+            bugtasks[-1].importance = BugTaskImportance.CRITICAL
+            bugtasks[-1].transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, owner)
 
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task targets."""
@@ -743,6 +1018,35 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                 subscriber, subscribed_by=subscriber)
         return subscriber
 
+    def test_disable_targetnames_search(self):
+        # searching in the target name is contentious and arguably a bug. To
+        # permit incremental changes we allow it to be disabled via a feature
+        # flag.
+        with person_logged_in(self.owner):
+            product1 = self.factory.makeProduct(name='product-foo',
+                owner=self.owner, project=self.searchtarget)
+            product2 = self.factory.makeProduct(name='product-bar',
+                owner=self.owner, project=self.searchtarget)
+            bug1 = self.factory.makeBug(product=product1)
+            bug1.default_bugtask.updateTargetNameCache()
+            self.factory.makeBug(product=product2)
+        params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
+        # With no flag, we find the first bug.
+        self.assertSearchFinds(params, [bug1.default_bugtask])
+        with FeatureFixture({'malone.disable_targetnamesearch': u'on'}):
+            # With a flag set, no bugs are found.
+            self.assertSearchFinds(params, [])
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                product=self.bugtasks[1].target, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                product=self.bugtasks[2].target, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class MilestoneTarget(BugTargetTestBase):
     """Use a milestone as the bug target."""
@@ -750,29 +1054,52 @@ class MilestoneTarget(BugTargetTestBase):
     def setUp(self):
         super(MilestoneTarget, self).setUp()
         self.product = self.factory.makeProduct()
+        self.group_on = (BugSummary.milestone_id,)
         self.searchtarget = self.factory.makeMilestone(product=self.product)
         self.owner = self.product.owner
-        self.makeBugTasks(self.product)
+        self.makeBugTasks(bugtarget=self.product)
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeMilestone(product=self.product)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.product,
+            bugtasks=self.bugtasks2, owner=self.product.owner,
+            searchtarget=self.searchtarget2)
+        self.makeBugTasks(bugtarget=self.product,
+            bugtasks=self.bugtasks2, owner=self.product.owner,
+            searchtarget=self.searchtarget2)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(milestone=self.searchtarget, *args, **kw)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.milestone = target
 
-    def makeBugTasks(self, bugtarget):
+    def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None,
+        searchtarget=None):
         """Create bug tasks for a product and assign them to a milestone."""
-        super(MilestoneTarget, self).makeBugTasks(bugtarget)
-        with person_logged_in(self.owner):
-            for bugtask in self.bugtasks:
-                bugtask.transitionToMilestone(self.searchtarget, self.owner)
+        super(MilestoneTarget, self).makeBugTasks(bugtarget=bugtarget,
+            bugtasks=bugtasks, owner=owner)
+        if bugtasks is None:
+            bugtasks = self.bugtasks
+        if owner is None:
+            owner = self.owner
+        if searchtarget is None:
+            searchtarget = self.searchtarget
+        with person_logged_in(owner):
+            for bugtask in bugtasks:
+                bugtask.transitionToMilestone(searchtarget, owner)
 
     def findBugtaskForOtherProduct(self, bugtask):
         # Return the bugtask for the product that not related to the
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.product)
+
+    def setUpMilestoneSorting(self):
+        # Setup for a somewhat pointless test: All bugtasks are already
+        # assigned to same milestone. This means essentially that the
+        # search result should be ordered by the secondary sort order,
+        # BugTask.importance.
+        # Note that reversing the sort direction of milestone does not
+        # affect the sort direction of the bug ID.
+        return sorted(self.bugtasks, key=lambda bugtask: bugtask.importance)
 
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
@@ -782,18 +1109,21 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(DistributionTarget, self).setUp()
+        self.group_on = (BugSummary.distribution_id,)
         self.searchtarget = self.factory.makeDistribution()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistribution()
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setDistribution(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setDistribution(target)
 
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
@@ -811,24 +1141,48 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                 subscriber, subscribed_by=subscriber)
         return subscriber
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class DistroseriesTarget(BugTargetTestBase):
     """Use a distro series as the bug target."""
 
     def setUp(self):
         super(DistroseriesTarget, self).setUp()
+        self.group_on = (BugSummary.distroseries_id,)
         self.searchtarget = self.factory.makeDistroSeries()
         self.owner = self.searchtarget.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistroSeries(
+            distribution=self.searchtarget.distribution)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setDistroSeries(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setDistroSeries(target)
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
 
 
 class SourcePackageTarget(BugTargetTestBase):
@@ -836,18 +1190,24 @@ class SourcePackageTarget(BugTargetTestBase):
 
     def setUp(self):
         super(SourcePackageTarget, self).setUp()
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeSourcePackage()
         self.owner = self.searchtarget.distroseries.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeSourcePackage(
+            distroseries=self.searchtarget.distroseries)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distroseries.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distroseries.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setSourcePackage(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setSourcePackage(target)
 
     def subscribeToTarget(self, subscriber):
         # Subscribe the given person to the search target.
@@ -857,6 +1217,19 @@ class SourcePackageTarget(BugTargetTestBase):
             self.searchtarget.distroseries.addSubscription(
                 subscriber, subscribed_by=subscriber)
 
+    def targetToGroup(self, target):
+        return target.sourcepackagename.id
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class DistributionSourcePackageTarget(BugTargetTestBase,
                                       BugTargetWithBugSuperVisor):
@@ -864,24 +1237,43 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
 
     def setUp(self):
         super(DistributionSourcePackageTarget, self).setUp()
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeDistributionSourcePackage()
         self.owner = self.searchtarget.distribution.owner
-        self.makeBugTasks(self.searchtarget)
+        self.makeBugTasks()
 
-    def getBugTaskSearchParams(self, *args, **kw):
-        """Return a BugTaskSearchParams object for the given parameters.
+    def setUpTarget2(self):
+        self.searchtarget2 = self.factory.makeDistributionSourcePackage(
+            distribution=self.searchtarget.distribution)
+        self.bugtasks2 = []
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distribution.owner)
+        self.makeBugTasks(bugtarget=self.searchtarget2,
+            bugtasks=self.bugtasks2,
+            owner=self.searchtarget2.distribution.owner)
 
-        Also, set the bug target.
-        """
-        params = BugTaskSearchParams(*args, **kw)
-        params.setSourcePackage(self.searchtarget)
-        return params
+    def setBugParamsTarget(self, params, target):
+        params.setSourcePackage(target)
 
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
             self.searchtarget.distribution.setBugSupervisor(
                 supervisor, self.owner)
+
+    def targetToGroup(self, target):
+        return target.sourcepackagename.id
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
 
 
 bug_targets_mixins = (
@@ -922,9 +1314,6 @@ class MultipleParams:
 class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
-    def setUp(self):
-        super(PreloadBugtaskTargets, self).setUp()
-
     def runSearch(self, params, *args, **kw):
         """Run BugTaskSet.search() and preload bugtask target objects."""
         return list(self.bugtask_set.search(
@@ -956,15 +1345,15 @@ class PreloadBugtaskTargets(MultipleParams):
             found_tasks = self.runSearch(
                 params,
                 prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
+            # More than one query may have been performed
+            search_count = recorder.count
+            # Accessing the owner does not trigger more queries.
             found_tasks[0].owner
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+            self.assertThat(recorder, HasQueryCount(Equals(search_count)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
     """Do not preload bug targets during a BugTaskSet.search() query."""
-
-    def setUp(self):
-        super(NoPreloadBugtaskTargets, self).setUp()
 
     def runSearch(self, params, *args):
         """Run BugTaskSet.search() without preloading bugtask targets."""
@@ -977,9 +1366,6 @@ class NoPreloadBugtaskTargets(MultipleParams):
 class QueryBugIDs:
     """Search bug IDs."""
 
-    def setUp(self):
-        super(QueryBugIDs, self).setUp()
-
     def runSearch(self, params, *args):
         """Run BugTaskSet.searchBugIds()."""
         return list(self.bugtask_set.searchBugIds(params))
@@ -988,83 +1374,23 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
-class TestCachingAssignees(TestCaseWithFactory):
-    """Searching bug tasks should pre-cache the bugtask assignees."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestCachingAssignees, self).setUp()
-        self.owner = self.factory.makePerson(name="bug-owner")
-        with person_logged_in(self.owner):
-            # Create some bugs with assigned bugtasks.
-            self.bug = self.factory.makeBug(
-                owner=self.owner)
-            self.bug.default_bugtask.transitionToAssignee(
-                self.factory.makePerson())
-
-            for i in xrange(9):
-                bugtask = self.factory.makeBugTask(
-                    bug=self.bug)
-                bugtask.transitionToAssignee(
-                    self.factory.makePerson())
-            self.bug.setPrivate(True, self.owner)
-
-    def _get_bug_tasks(self):
-        """Get the bugtasks for a bug.
-
-        This method is used rather than Bug.bugtasks since the later does
-        prejoining which would spoil the test.
-        """
-        store = Store.of(self.bug)
-        return store.find(
-            BugTask, BugTask.bug == self.bug)
-
-    def test_no_precaching(self):
-        bugtasks = self._get_bug_tasks()
-        Store.of(self.bug).invalidate()
-        with person_logged_in(self.owner):
-            with StormStatementRecorder() as recorder:
-                # Access the assignees to trigger a query.
-                names = [bugtask.assignee.name for bugtask in bugtasks]
-                # With no caching, the number of queries is roughly twice the
-                # number of bugtasks.
-                query_count_floor = len(names) * 2
-                self.assertThat(
-                    recorder, HasQueryCount(Not(LessThan(query_count_floor))))
-
-    def test_precaching(self):
-        bugtasks = self._get_bug_tasks()
-        Store.of(self.bug).invalidate()
-        with person_logged_in(self.owner):
-            with StormStatementRecorder() as recorder:
-                bugtasks = BugTaskResultSet(bugtasks)
-                # Access the assignees to trigger a query if not properly
-                # cached.
-                names = [bugtask.assignee.name for bugtask in bugtasks]
-                # With caching the number of queries is two, one for the
-                # bugtask and one for all of the assignees at once.
-                self.assertThat(recorder, HasQueryCount(Equals(2)))
-
-
 def test_suite():
-    module = sys.modules[__name__]
+    suite = unittest.TestSuite()
+    loader = unittest.TestLoader()
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
                 bug_target_search_type_class.__name__,
                 target_mixin.__name__)
+            class_bases = (
+                target_mixin, bug_target_search_type_class,
+                SearchTestBase, TestCaseWithFactory)
             # Dynamically build a test class from the target mixin class,
             # from the search type mixin class, from the mixin class
             # having all tests and from a unit test base class.
-            test_class = classobj(
-                class_name,
-                (target_mixin, bug_target_search_type_class, SearchTestBase,
-                 TestCaseWithFactory),
-                {})
-            # Add the new unit test class to the module.
-            module.__dict__[class_name] = test_class
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+            test_class = type(class_name, class_bases, {})
+            # Add the new unit test class to the suite.
+            suite.addTest(loader.loadTestsFromTestCase(test_class))
+    suite.addTest(loader.loadTestsFromName(__name__))
     return suite

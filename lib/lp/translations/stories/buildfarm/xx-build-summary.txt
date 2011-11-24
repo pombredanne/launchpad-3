@@ -10,8 +10,7 @@ Setup
 Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
     >>> from lp.app.enums import ServiceUsage
@@ -158,5 +157,5 @@ build history.
     Build history for ...
     1 ... 1 of 1 result
     ...
-    Translation template build
-    Build started ... and finished ... taking five minutes
+    Translation template build for lp://dev/qblark
+    Build started ... and finished ... taking 5 minutes

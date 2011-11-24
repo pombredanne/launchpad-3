@@ -1,4 +1,5 @@
-= Answer Tracker Email Interface =
+Answer Tracker Email Interface
+==============================
 
 The Answer Tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is post new messages on the
@@ -30,7 +31,7 @@ AnswerTrackerHandler.
     # Define a helper function to send email to the Answer Tracker handler.
     >>> from lp.answers.mail.handler import AnswerTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> handler = AnswerTrackerHandler()
     >>> def send_question_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
@@ -79,7 +80,8 @@ can be found:
     >>> comment_msgid is None
     True
 
-== Incoming Email and Workflow ==
+Incoming Email and Workflow
+---------------------------
 
 With the way the Answer Tracker workflow is modelled (see
 answer-tracker-workflow.txt for the details), adding a message will
@@ -106,8 +108,8 @@ possibilities for the user.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
+    >>> import transaction
     >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -117,7 +119,7 @@ possibilities for the user.
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
     >>> question_id = question.id
-    >>> commit()
+    >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
     # We need to refetch the question, since a new transaction was started.
@@ -127,17 +129,19 @@ possibilities for the user.
     # Define an helper to change the question status easily.
     >>> def setQuestionStatus(question, new_status):
     ...     login('foo.bar@canonical.com')
-    ...     msg = question.setStatus(foo_bar, new_status, 'Status Change',
+    ...     question.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 
-== Message From the Question Owner ==
+Message From the Question Owner
+-------------------------------
 
 When the owner sends a message on the question, the message is
 interpretated in three different manners based on the current question
 state.
 
-=== Open and Needs Information ===
+Open and Needs Information
+..........................
 
 In the Open and Needs Information states, we assume the message provides
 more information on the problem.
@@ -161,7 +165,7 @@ For example, from the Open state:
 
 And from the Needs information state:
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_question_email(
@@ -180,7 +184,8 @@ own message. And if that was the case, it is easy for the owner to
 correct our bad decision, since the question will stay on his
 list of open questions.
 
-=== Answered and Expired ===
+Answered and Expired
+....................
 
 When the question is in the Answered or Expired states, we assume that
 the email is reopening the question with more information.
@@ -223,7 +228,8 @@ explaining that the owner solved his problem. Again, to minimize
 confusion, the outoing notification contain a footer explaining what
 will happen if one reply to the message.
 
-=== Solved and Invalid ===
+Solved and Invalid
+..................
 
 When the question is in the Solved or Invalid state, we interpret the
 message as a comment.
@@ -262,7 +268,8 @@ That is the only possibility on an Invalid question. From the 'Invalid'
 state, there is no normal transition. The only possibility is that an
 admin comes to change the status of the question.
 
-=== Message From Another User ===
+Message From Another User
+.........................
 
 It is simpler when a user other than the owner sends an email. When
 the question is in the Open or Needs information state, there are only
@@ -315,7 +322,8 @@ Answered example:
     Answer
 
 
-=== Solved, Invalid and Expired ===
+Solved, Invalid and Expired
+...........................
 
 When another user than the owner sends a message to a question
 in the Solved, Invalid or Expired states, the only possible
@@ -355,9 +363,11 @@ interpretation is that it is a comment.
     True
     >>> print message.action.title
     Comment
+    >>> transaction.abort()
 
 
-=== Answers linked to FAQ questions ===
+Answers linked to FAQ questions
+...............................
 
 Answers may also be linked to FAQ questions.
 
@@ -369,7 +379,7 @@ Answers may also be linked to FAQ questions.
     ...     no_priv, 'Why everyone think this is weird.',
     ...     "That's an easy one. It's because it is!")
     >>> removeSecurityProxy(question).faq = faq
-    >>> commit()
+    >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('no-priv@canonical.com')
@@ -387,7 +397,8 @@ Answers may also be linked to FAQ questions.
     Answer
 
 
-== AnswerTrackerHandler Integration ==
+AnswerTrackerHandler Integration
+--------------------------------
 
 The general mail processor delegates all emails to the
 config.answertracker.email_domain to the AnswerTrackerHandler.

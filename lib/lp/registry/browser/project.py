@@ -74,7 +74,10 @@ from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.registry.browser import BaseRdfView
+from lp.registry.browser import (
+    add_subscribe_link,
+    BaseRdfView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -87,7 +90,9 @@ from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet
@@ -270,20 +275,20 @@ class IProjectGroupActionMenu(Interface):
     """Marker interface for views that use ProjectActionMenu."""
 
 
-class ProjectActionMenu(ProjectAdminMenuMixin, NavigationMenu):
+class ProjectActionMenu(ProjectAdminMenuMixin,
+                        StructuralSubscriptionMenuMixin,
+                        NavigationMenu):
 
     usedfor = IProjectGroupActionMenu
     facet = 'overview'
     title = 'Action menu'
-    links = ('subscribe', 'edit', 'administer')
 
-    # XXX: salgado, bug=412178, 2009-08-10: This should be shown in the +index
-    # page of the project's bugs facet, but that would require too much work
-    # and I just want to convert this page to 3.0, so I'll leave it here for
-    # now.
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
+    @cachedproperty
+    def links(self):
+        links = []
+        add_subscribe_link(links)
+        links.extend(['edit', 'administer'])
+        return links
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -323,23 +328,34 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+addquestion', text, icon='add')
 
 
-class ProjectBugsMenu(ApplicationMenu):
+class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
+                      ApplicationMenu):
 
     usedfor = IProjectGroup
     facet = 'bugs'
-    links = ['new', 'subscribe']
+
+    @cachedproperty
+    def links(self):
+        links = ['new']
+        add_subscribe_link(links)
+        return links
 
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectGroupActionMenu)
+
+    def initialize(self):
+        super(ProjectView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
+    @property
+    def page_title(self):
+        return '%s in Launchpad' % self.context.displayname
 
     @cachedproperty
     def has_many_projects(self):

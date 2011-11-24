@@ -4,13 +4,25 @@
 __metaclass__ = type
 
 
-import unittest
+from zope.schema.interfaces import (
+    TooLong,
+    TooShort,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.bugs.browser.bugtarget import FileBugInlineFormView
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.browser.bugtarget import (
+    FileBugInlineFormView,
+    FileBugViewBase,
+    )
+from lp.bugs.interfaces.bug import IBugAddForm
+from lp.bugs.publisher import BugsLayer
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -20,7 +32,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTargetFileBugConfirmationMessage, self).setUp()
@@ -244,7 +256,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            ["Thank you for your bug report."],
+            ['<p class="last">Thank you for your bug report.</p>'],
             [notification.message
              for notification in view.request.response.notifications])
 
@@ -254,7 +266,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         view = create_initialized_view(product, name='+filebug')
         view.submit_bug_action.success(form_data)
         self.assertEqual(
-            [u"We really appreciate your bug report"],
+            [u'<p class="last">We really appreciate your bug report</p>'],
             [notification.message
              for notification in view.request.response.notifications])
 
@@ -273,8 +285,16 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
             product, name='+filebug', principal=user)
         html = view.render()
         self.assertIsNot(None, find_tag_by_id(html, 'filebug-search-form'))
-        # The main bug filing form is not shown.
-        self.assertIs(None, find_tag_by_id(html, 'filebug-form'))
+        # The main bug filing form is rendered but hidden inside an invisible
+        # filebug-container.
+        main_content = find_main_content(html)
+        filebug_form = main_content.find(id='filebug-form')
+        self.assertIsNot(None, filebug_form)
+        filebug_form_container = filebug_form.findParents(
+            id='filebug-form-container')[0]
+        class_attrs = [item.strip()
+                       for item in filebug_form_container['class'].split(" ")]
+        self.assertTrue('hidden' in class_attrs)
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for
@@ -294,11 +314,115 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIs(None, find_tag_by_id(html, 'filebug-search-form'))
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTargetFileBugConfirmationMessage))
-    return suite
+class TestFileBugViewBase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    class FileBugTestView(FileBugViewBase):
+        """A simple subclass."""
+        schema = IBugAddForm
+
+        def showFileBugForm(self):
+            # Disable redirects on validation failure.
+            pass
+
+    def setUp(self):
+        super(TestFileBugViewBase, self).setUp()
+        self.target = self.factory.makeProduct()
+        login_person(self.target.owner)
+        self.target.official_malone = True
+
+    def get_form(self, title='Test title', comment='Test comment'):
+        return {
+            'field.title': title,
+            'field.comment': comment,
+            'field.actions.submit_bug': 'Submit Bug Request',
+            }
+
+    def create_initialized_view(self, form=None):
+        """Create and initialize the class without adaption."""
+        request = LaunchpadTestRequest(form=form, method='POST')
+        view = self.FileBugTestView(self.target, request)
+        view.initialize()
+        return view
+
+    def test_submit_comment_empty_error(self):
+        # The comment cannot be an empty string.
+        form = self.get_form(comment='')
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'Provide details about the issue.', view.getFieldError('comment'))
+
+    def test_submit_comment_whitespace_only_error(self):
+        # The comment cannot be a whitespace only string.
+        form = self.get_form(comment=' ')
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(2, len(view.errors))
+        self.assertIsInstance(view.errors[0].errors, TooShort)
+        self.assertEqual(
+            'Provide details about the issue.', view.errors[1])
+
+    def test_submit_comment_too_large_error(self):
+        # The comment cannot exceed the max length of 50000.
+        comment = 'x' * 50001
+        form = self.get_form(comment=comment)
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(2, len(view.errors))
+        self.assertIsInstance(view.errors[0].errors, TooLong)
+        message_start = 'The description is too long'
+        self.assertTrue(
+            view.getFieldError('comment').startswith(message_start))
+
+    def test_submit_comment_max(self):
+        # The comment can be as large as 50000.
+        form = self.get_form(comment='x' * 50000)
+        view = self.create_initialized_view(form=form)
+        self.assertEqual(0, len(view.errors))
+        self.assertTrue(view.added_bug is not None)
 
 
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
+class TestFileBugReportingGuidelines(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_filebug_reporting_details(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        product.bug_reporting_guidelines = "Include bug details"
+        view = create_initialized_view(
+            product, '+filebug-reporting-guidelines')
+        expected_guidelines = [{
+            "source": product.displayname, "content": u"Include bug details",
+            }]
+        self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
+
+
+class TestFileBugSourcePackage(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_filebug_works_on_official_package_branch(self):
+        # It should be possible to file a bug against a source package
+        # when there is an official package branch.
+        user = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage('my-package')
+        self.factory.makeRelatedBranchesForSourcePackage(
+            sourcepackage=sourcepackage)
+        removeSecurityProxy(sourcepackage.distribution).official_malone = True
+        login_person(user)
+
+        view = create_initialized_view(
+            context=sourcepackage.distribution, name='+filebug',
+            form={
+                'field.title': 'A bug',
+                'field.comment': 'A comment',
+                'field.bugtarget.distribution': (
+                    sourcepackage.distribution.name),
+                'field.packagename': 'my-package',
+                'field.actions.submit_bug': 'Submit Bug Request',
+            }, layer=BugsLayer, principal=user)
+        msg = "\n".join([
+            notification.message
+            for notification in view.request.response.notifications])
+        self.assertIn("Thank you for your bug report.", msg)

@@ -11,6 +11,7 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <authorizations module=".security" />
 
     <!-- PackageCloner -->
 
@@ -89,6 +90,10 @@
         class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
+        <!-- changelog needs to be updated when unembargoing -->
+        <require
+            permission="launchpad.Edit"
+            set_attributes="changelog"/>
     </class>
     <facet
         facet="overview">
@@ -162,6 +167,8 @@
                 custom_file_urls
                 date_created
                 sourcepackagerelease
+                component_name
+                concrete_package_copy_job
                 contains_source
                 contains_build
                 contains_translation
@@ -173,8 +180,12 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components
-                isAutoSyncUpload"/>
+                package_copy_job
+                package_copy_job_id
+                package_name
+                package_version
+                section_name
+                components"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -366,6 +377,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <securedutility
+        class="lp.soyuz.model.processor.ProcessorSet"
+        provides="lp.soyuz.interfaces.processor.IProcessorSet">
+        <allow
+            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
+    </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -389,8 +406,15 @@
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="description displayname publish status"/>
+        <!--
+           NOTE: The 'private' permission controls who can turn a public
+           archive into a private one, and vice versa. The logic that says this
+           requires launchpad.Commercial permissions is duplicated in
+           IArchive.validatePPA.
+          -->
         <require
             permission="launchpad.Commercial"
+	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             commercial enabled_restricted_families
                             external_dependencies private
@@ -447,31 +471,7 @@
         class="lp.soyuz.model.archivepermission.ArchivePermissionSet"
         provides="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet">
         <allow
-            attributes="
-                checkAuthenticated
-                componentsForUploader
-                uploadersForComponent
-                packagesForUploader
-                uploadersForPackage
-                queueAdminsForComponent
-                componentsForQueueAdmin
-                permissionsForPerson
-                uploadersForPackageset
-                packagesetsForUploader
-                packagesetsForSource
-                packagesetsForSourceUploader
-                isSourceUploadAllowed
-                newPackageUploader
-                newComponentUploader
-                newQueueAdmin
-                deletePackageUploader
-                deleteComponentUploader
-                deleteQueueAdmin"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                newPackagesetUploader
-                deletePackagesetUploader"/>
+            interface="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet"/>
     </securedutility>
 
     <!-- BinaryPackageBuild -->
@@ -514,12 +514,6 @@
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
-    <adapter
-        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
-        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
-        factory="lp.soyuz.model.binarypackagebuild.get_binary_build_for_build_farm_job"
-        name="PACKAGEBUILD"
-        permission="zope.Public"/>
 
     <!-- BinaryPackageBuildSet -->
 
@@ -528,6 +522,12 @@
         provides="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet">
         <allow
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet"/>
+    </securedutility>
+    <securedutility
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+        name="PACKAGEBUILD">
+        <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
@@ -800,17 +800,10 @@
     <securedutility
         class="lp.soyuz.model.packageset.PackagesetSet"
         provides="lp.soyuz.interfaces.packageset.IPackagesetSet">
-        <allow
-            attributes="
-                __getitem__
-                get
-                getByName
-                getByOwner
-                setsIncludingSource"/>
+        <allow interface=".interfaces.packageset.IPackagesetSet" />
         <require
             permission="launchpad.Edit"
-            attributes="
-                new"/>
+            interface=".interfaces.packageset.IPackagesetSetEdit" />
     </securedutility>
 
     <!-- PackagesetGroup -->
@@ -889,27 +882,144 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-    <!-- InitialiseDistroSeriesJobSource -->
+    <!-- InitializeDistroSeriesJobSource -->
     <securedutility
-      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
-      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+      component="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+    <class class="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-    <!-- SyncPackageJobSource -->
+    <!-- DistroSeriesDifferenceJobSource -->
     <securedutility
-      component="lp.soyuz.model.syncpackagejob.SyncPackageJob"
-      provides="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource"/>
+      component="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob"
+      provides="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.syncpackagejob.SyncPackageJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJob" />
+    <class class="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
+
+    <!-- PackageCopyJobSource -->
+    <securedutility
+        component=".model.packagecopyjob.PackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+    </securedutility>
+    <securedutility
+        component=".model.packagecopyjob.PlainPackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
+    </securedutility>
+
+    <!-- PackageCopyJob -->
+    <class class=".model.packagecopyjob.PackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+    </class>
+
+    <!-- PlainPackageCopyJob -->
+    <class class=".model.packagecopyjob.PlainPackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic" />
+      <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+    </class>
+
+    <!-- PackageCopyPolicy -->
+    <class class=".adapters.copypolicy.InsecureCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <class class=".adapters.copypolicy.MassSyncCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <adapter
+      for="lazr.enum.DBItem"
+      provides="lp.soyuz.interfaces.copypolicy.ICopyPolicy"
+      factory="lp.soyuz.adapters.copypolicy.get_icopypolicy_for_packagecopypolicy"/>
+
+    <!-- PackageCopyRequestSet -->
+    <securedutility
+        class="lp.soyuz.model.packagecopyrequest.PackageCopyRequestSet"
+        provides="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet" />
+    </securedutility>
+
+
+    <!-- PackageCopyRequest -->
+    <class class="lp.soyuz.model.packagecopyrequest.PackageCopyRequest">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"
+        />
+    </class>
+
+    <!-- PackageRelationship -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationship">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationship"/>
+    </class>
+
+    <!-- PackageRelationshipSet -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationshipSet">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"/>
+    </class>
+
+   <!-- Overrides -->
+   <class class="lp.soyuz.adapters.overrides.SourceOverride">
+        <allow interface="lp.soyuz.adapters.overrides.ISourceOverride" />
+   </class>
+   <class class="lp.soyuz.adapters.overrides.BinaryOverride">
+        <allow interface="lp.soyuz.adapters.overrides.IBinaryOverride" />
+   </class>
+
+   <!-- OverridePolicy -->
+   <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
+        <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+   </class>
+
+    <!-- BinaryPackagePath -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
+    </class>
+
+    <!-- BinaryPackagePathSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
+    </securedutility>
+
+    <!-- BinaryPackageReleaseContents -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
+    </class>
+
+    <!-- BinaryPackageReleaseContentsSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
+        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 

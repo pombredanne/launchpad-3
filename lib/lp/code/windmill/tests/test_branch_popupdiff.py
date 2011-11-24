@@ -4,24 +4,17 @@
 """Test for the popup diff."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill
 
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
-from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person,
-    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
-from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import (
     login_person,
     WindmillTestCase,
     )
+from lp.testing.windmill.constants import PAGE_LOAD
 
 
 POPUP_DIFF = (
@@ -46,6 +39,7 @@ BRANCH_SEARCCH_RESULT = (
     u'//ul[@class="yui3-picker-results"]//span[@class="yui3-picker-result-title"]')
 
 
+#XXX: Should be re-enabled for Selenium2.
 #class TestPopupOnBranchPage(WindmillTestCase):
 #    """Test the popup diff."""
 #
@@ -124,11 +118,8 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        windmill_login_person(objs['eric'], "test", client)
-
-        start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(
+            '/bugs/%d' % bug.id, objs['eric'])
         # Sleep for a bit to make sure that the JS onload has had time to
         # execute.
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
@@ -142,7 +133,3 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.forElement(xpath=BRANCH_SEARCCH_RESULT)
         client.click(xpath=BRANCH_SEARCCH_RESULT)
         client.waits.forElement(xpath=POPUP_DIFF)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from textwrap import dedent
 import transaction
-import unittest
 
 from testtools import run_test_with
 from testtools.deferredruntest import (
@@ -21,7 +20,7 @@ from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -50,7 +49,7 @@ from lp.testing import (
 
 class TestRecipeBuilder(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
@@ -253,11 +252,11 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
-    def test_getById(self):
+    def test_getByID(self):
         job = self.makeJob()
         transaction.commit()
         self.assertEquals(
-            job.build, SourcePackageRecipeBuild.getById(job.build.id))
+            job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
     @run_test_with(AsynchronousDeferredRunTest)
     def test_dispatchBuildToSlave(self):
@@ -305,7 +304,3 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

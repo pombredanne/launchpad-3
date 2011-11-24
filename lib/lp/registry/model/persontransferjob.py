@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -11,9 +11,10 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from sqlobject import SQLObjectNotFound
-from storm.base import Storm
-from storm.expr import And
+from storm.expr import (
+    And,
+    Or,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -27,36 +28,48 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
+    IPersonMergeJob,
+    IPersonMergeJobSource,
     IPersonTransferJob,
     IPersonTransferJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
 
 
-class PersonTransferJob(Storm):
+class PersonTransferJob(StormBase):
     """Base class for team membership and person merge jobs."""
 
     implements(IPersonTransferJob)
@@ -120,17 +133,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
-
-    def __repr__(self):
-        return (
-            '<%(job_type)s branch job (%(id)s) for %(minor_person)s '
-            'as part of %(major_person)s. status=%(status)s>' % {
-                'job_type': self.context.job_type.name,
-                'id': self.context.id,
-                'minor_person': self.minor_person.name,
-                'major_person': self.major_person.name,
-                'status': self.job.status,
-                })
 
     @classmethod
     def create(cls, minor_person, major_person, metadata):
@@ -296,9 +298,13 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             # Use the default template and subject.
             pass
 
-        if len(admin_emails) != 0:
+        # Must have someone to mail, and be a non-open team (because open
+        # teams are unrestricted, notifications on join/ leave do not help the
+        # admins.
+        if (len(admin_emails) != 0 and
+            self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
             admin_template = get_email_template(
-                "%s-bulk.txt" % template_name)
+                "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -314,7 +320,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
-            self.member_template = get_email_template(template)
+            self.member_template = get_email_template(
+                template, app='registry')
             for address in self.member_email:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -322,3 +329,120 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                     self.member_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
         log.debug('MembershipNotificationJob sent email')
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} about "
+            "~{self.minor_person.name} in ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
+
+
+class PersonMergeJob(PersonTransferJobDerived):
+    """A Job that merges one person or team into another."""
+
+    implements(IPersonMergeJob)
+    classProvides(IPersonMergeJobSource)
+
+    class_job_type = PersonTransferJobType.MERGE
+
+    @classmethod
+    def create(cls, from_person, to_person, reviewer=None, delete=False):
+        """See `IPersonMergeJobSource`."""
+        if (from_person.is_merge_pending or
+            (not delete and to_person.is_merge_pending)):
+            return None
+        if from_person.is_team:
+            metadata = {'reviewer': reviewer.id}
+        else:
+            metadata = {}
+        metadata['delete'] = bool(delete)
+        if metadata['delete']:
+            # Ideally not needed, but the DB column is not-null at the moment
+            # and this minor bit of friction isn't worth changing that over.
+            to_person = getUtility(ILaunchpadCelebrities).registry_experts
+        return super(PersonMergeJob, cls).create(
+            minor_person=from_person, major_person=to_person,
+            metadata=metadata)
+
+    @classmethod
+    def find(cls, from_person=None, to_person=None, any_person=False):
+        """See `IPersonMergeJobSource`."""
+        conditions = [
+            PersonTransferJob.job_type == cls.class_job_type,
+            PersonTransferJob.job_id == Job.id,
+            Job._status.is_in(Job.PENDING_STATUSES)]
+        arg_conditions = []
+        if from_person is not None:
+            arg_conditions.append(
+                PersonTransferJob.minor_person == from_person)
+        if to_person is not None:
+            arg_conditions.append(
+                PersonTransferJob.major_person == to_person)
+        if any_person and from_person is not None and to_person is not None:
+            arg_conditions = [Or(*arg_conditions)]
+        conditions.extend(arg_conditions)
+        return DecoratedResultSet(
+            IStore(PersonTransferJob).find(
+                PersonTransferJob, *conditions), cls)
+
+    @property
+    def from_person(self):
+        """See `IPersonMergeJob`."""
+        return self.minor_person
+
+    @property
+    def to_person(self):
+        """See `IPersonMergeJob`."""
+        return self.major_person
+
+    @property
+    def reviewer(self):
+        if 'reviewer' in self.metadata:
+            return getUtility(IPersonSet).get(self.metadata['reviewer'])
+        else:
+            return None
+
+    @property
+    def log_name(self):
+        return self.__class__.__name__
+
+    def getErrorRecipients(self):
+        """See `IPersonMergeJob`."""
+        if self.to_person.is_team:
+            return self.to_person.getTeamAdminsEmailAddresses()
+        else:
+            return [format_address_for_person(self.to_person)]
+
+    def run(self):
+        """Perform the merge."""
+        from_person_name = self.from_person.name
+        to_person_name = self.to_person.name
+
+        from canonical.launchpad.scripts import log
+        personset = getUtility(IPersonSet)
+        if self.metadata.get('delete', False):
+            log.debug(
+                "%s is about to delete ~%s", self.log_name,
+                from_person_name)
+            personset.delete(
+                from_person=self.from_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has deleted ~%s", self.log_name,
+                from_person_name)
+        else:
+            log.debug(
+                "%s is about to merge ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
+            personset.merge(
+                from_person=self.from_person, to_person=self.to_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has merged ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} to merge "
+            "~{self.from_person.name} into ~{self.to_person.name}; "
+            "status={self.job.status}>").format(self=self)

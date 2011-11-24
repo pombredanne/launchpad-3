@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -48,6 +48,7 @@ class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
         BugField(
             title=_("Bug #"),
             required=True, readonly=True))
+    branch_id = Int(title=_("Branch ID"), required=True, readonly=True)
     branch = exported(
         ReferenceChoice(
             title=_("Branch"), schema=IBranch,
@@ -75,11 +76,14 @@ class IBugBranchSet(Interface):
         Return None if there is no such link.
         """
 
-    def getBugBranchesForBranches(branches, user):
-        """Return a sequence of IBugBranch instances associated with
-        the given branches.
+    def getBranchesWithVisibleBugs(branches, user):
+        """Find which of `branches` are for bugs that `user` can see.
 
-        Only return instances that are visible to the user.
+        :param branches: A sequence of `Branch`es to limit the search
+            to.
+        :return: A result set of `Branch` ids: a subset of the ids
+            found in `branches`, but limited to branches that are
+            visible to `user`.
         """
 
     def getBugBranchesForBugTasks(tasks):

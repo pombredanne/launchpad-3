@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -21,16 +21,16 @@ import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.diff import show_diff_trees
-from bzrlib.errors import NoSuchFile
+from bzrlib.errors import (
+    NoSuchFile,
+    NotBranchError,
+    )
 from bzrlib.log import (
     log_formatter,
     show_log,
     )
 from bzrlib.revision import NULL_REVISION
-from bzrlib.revisionspec import (
-    RevisionInfo,
-    RevisionSpec,
-    )
+from bzrlib.revisionspec import RevisionInfo
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from lazr.delegates import delegates
@@ -41,6 +41,7 @@ from lazr.enum import (
 import simplejson
 from sqlobject import (
     ForeignKey,
+    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
@@ -54,11 +55,11 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -75,8 +76,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     )
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob,
-    IBranchDiffJobSource,
     IBranchJob,
     IBranchScanJob,
     IBranchScanJobSource,
@@ -93,7 +92,6 @@ from lp.code.interfaces.branchjob import (
 from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
@@ -102,9 +100,11 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -170,6 +170,7 @@ class BranchJobType(DBEnumeratedType):
 
         This job scans a branch for new revisions.
         """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -250,6 +251,18 @@ class BranchJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
+    @classmethod
+    def get(cls, key):
+        """Return the instance of this class whose key is supplied.
+
+        :raises: SQLObjectNotFound
+        """
+        instance = IStore(BranchJob).get(BranchJob, key)
+        if instance is None or instance.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No occurrence of %s has key %s' % (cls.__name__, key))
+        return cls(instance)
+
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
@@ -260,49 +273,10 @@ class BranchJobDerived(BaseRunnableJob):
             vars.append(('branch_name', self.context.branch.unique_name))
         return vars
 
-
-class BranchDiffJob(BranchJobDerived):
-    """A Job that calculates the a diff related to a Branch."""
-
-    implements(IBranchDiffJob)
-    classProvides(IBranchDiffJobSource)
-
-    @classmethod
-    def create(cls, branch, from_revision_spec, to_revision_spec):
-        """See `IBranchDiffJobSource`."""
-        metadata = cls.getMetadata(from_revision_spec, to_revision_spec)
-        branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
-        return cls(branch_job)
-
-    @staticmethod
-    def getMetadata(from_revision_spec, to_revision_spec):
-        return {
-            'from_revision_spec': from_revision_spec,
-            'to_revision_spec': to_revision_spec,
-        }
-
-    @property
-    def from_revision_spec(self):
-        return self.metadata['from_revision_spec']
-
-    @property
-    def to_revision_spec(self):
-        return self.metadata['to_revision_spec']
-
-    def _get_revision_id(self, bzr_branch, spec_string):
-        spec = RevisionSpec.from_string(spec_string)
-        return spec.as_revision_id(bzr_branch)
-
-    def run(self):
-        """See IBranchDiffJob."""
-        bzr_branch = self.branch.getBzrBranch()
-        from_revision_id = self._get_revision_id(
-            bzr_branch, self.from_revision_spec)
-        to_revision_id = self._get_revision_id(
-            bzr_branch, self.to_revision_spec)
-        static_diff = StaticDiff.acquire(
-            from_revision_id, to_revision_id, bzr_branch.repository)
-        return static_diff
+    def getErrorRecipients(self):
+        if self.requester is None:
+            return []
+        return [format_address_for_person(self.requester)]
 
 
 class BranchScanJob(BranchJobDerived):
@@ -312,6 +286,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    memory_limit = 2 * (1024 ** 3)
     server = None
 
     @classmethod
@@ -345,14 +320,17 @@ class BranchUpgradeJob(BranchJobDerived):
     classProvides(IBranchUpgradeJobSource)
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
+    user_error_types = (NotBranchError,)
+
+    def getOperationDescription(self):
+        return 'upgrading a branch'
+
     @classmethod
-    def create(cls, branch):
+    def create(cls, branch, requester):
         """See `IBranchUpgradeJobSource`."""
-        if not branch.needs_upgrading:
-            raise AssertionError('Branch does not need upgrading.')
-        if branch.upgrade_pending:
-            raise AssertionError('Branch already has upgrade pending.')
-        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        branch.checkUpgrade()
+        branch_job = BranchJob(
+            branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
         return cls(branch_job)
 
     @staticmethod
@@ -365,7 +343,7 @@ class BranchUpgradeJob(BranchJobDerived):
         yield
         server.stop_server()
 
-    def run(self):
+    def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
         upgrade_branch_path = tempfile.mkdtemp()
@@ -376,10 +354,13 @@ class BranchUpgradeJob(BranchJobDerived):
                 self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
+            transaction.commit()
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
-            # Perform the upgrade.
-            upgrade(upgrade_branch.base)
+            # No transactions are open so the DB connection won't be killed.
+            with TransactionFreeOperation():
+                # Perform the upgrade.
+                upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -416,8 +397,8 @@ class BranchUpgradeJob(BranchJobDerived):
             shutil.rmtree(upgrade_branch_path)
 
 
-class RevisionMailJob(BranchDiffJob):
-    """A Job that calculates the a diff related to a Branch."""
+class RevisionMailJob(BranchJobDerived):
+    """A Job that sends a mail for a scan of a Branch."""
 
     implements(IRevisionMailJob)
 
@@ -426,41 +407,24 @@ class RevisionMailJob(BranchDiffJob):
     class_job_type = BranchJobType.REVISION_MAIL
 
     @classmethod
-    def create(
-        cls, branch, revno, from_address, body, perform_diff, subject):
+    def create(cls, branch, revno, from_address, body, subject):
         """See `IRevisionMailJobSource`."""
         metadata = {
             'revno': revno,
             'from_address': from_address,
             'body': body,
-            'perform_diff': perform_diff,
             'subject': subject,
         }
-        if isinstance(revno, int) and revno > 0:
-            from_revision_spec = str(revno - 1)
-            to_revision_spec = str(revno)
-        else:
-            from_revision_spec = None
-            to_revision_spec = None
-        metadata.update(BranchDiffJob.getMetadata(from_revision_spec,
-                        to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return cls(branch_job)
 
     @property
     def revno(self):
-        revno = self.metadata['revno']
-        if isinstance(revno, int):
-            revno = long(revno)
-        return revno
+        return self.metadata['revno']
 
     @property
     def from_address(self):
         return str(self.metadata['from_address'])
-
-    @property
-    def perform_diff(self):
-        return self.metadata['perform_diff']
 
     @property
     def body(self):
@@ -472,15 +436,9 @@ class RevisionMailJob(BranchDiffJob):
 
     def getMailer(self):
         """Return a BranchMailer for this job."""
-        if self.perform_diff and self.to_revision_spec is not None:
-            diff = BranchDiffJob.run(self)
-            transaction.commit()
-            diff_text = diff.diff.text
-        else:
-            diff_text = None
         return BranchMailer.forRevision(
             self.branch, self.revno, self.from_address, self.body,
-            diff_text, self.subject)
+            None, self.subject)
 
     def run(self):
         """See `IRevisionMailJob`."""
@@ -941,7 +899,7 @@ class RosettaUploadJob(BranchJobDerived):
                 file_names, changed_files, uploader = iter_info
                 for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
-                        continue # Skip empty files
+                        continue  # Skip empty files
                     entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)

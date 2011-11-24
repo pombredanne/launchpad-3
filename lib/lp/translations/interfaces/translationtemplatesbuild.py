@@ -10,10 +10,12 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
-from zope.interface import Interface
 
 from canonical.launchpad import _
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    ISpecificBuildFarmJobSource,
+    )
 from lp.code.interfaces.branch import IBranch
 
 
@@ -29,7 +31,7 @@ class ITranslationTemplatesBuild(IBuildFarmJob):
         required=True, readonly=True, schema=IBranch)
 
 
-class ITranslationTemplatesBuildSource(Interface):
+class ITranslationTemplatesBuildSource(ISpecificBuildFarmJobSource):
     """Utility for `ITranslationTemplatesBuild`."""
 
     def create(build_farm_job, branch):
@@ -37,13 +39,3 @@ class ITranslationTemplatesBuildSource(Interface):
 
     def findByBranch(branch, store=None):
         """Find `ITranslationTemplatesBuild`s for `branch`."""
-
-    def get(build_id, store=None):
-        """Find `ITranslationTemplatesBuild`s by id.
-
-        :param build_id: Numerical id to look for.
-        :param store: Optional database store to look in.
-        """
-
-    def getByBuildFarmJob(buildfarmjob_id, store=None):
-        """Find `ITranslationTemplatesBuild`s by `BuildFarmJob` id."""

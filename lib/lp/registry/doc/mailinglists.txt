@@ -501,7 +501,7 @@ A list that has been approved, or is being constructed cannot be purged.
     >>> naked_list = removeSecurityProxy(list_six)
     >>> naked_list.status = MailingListStatus.APPROVED
     >>> transaction.commit()
-    >>> logout()
+    >>> login(ANONYMOUS)
     >>> print list_six.status.name
     APPROVED
     >>> list_six.purge()

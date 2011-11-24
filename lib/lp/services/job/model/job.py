@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -21,12 +21,19 @@ from storm.expr import (
     Or,
     Select,
     )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -68,7 +75,12 @@ class Job(SQLBase):
 
     attempt_count = IntCol(default=0)
 
-    # List of the valid target states from a given state.
+    max_retries = IntCol(default=0)
+
+    requester_id = Int(name='requester', allow_none=True)
+    requester = Reference(requester_id, 'Person.id')
+
+    # Mapping of valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
             (JobStatus.RUNNING,
@@ -76,12 +88,19 @@ class Job(SQLBase):
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
+             JobStatus.SUSPENDED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
-    }
+        }
+
+    # Set of all states where the job could eventually complete.
+    PENDING_STATUSES = frozenset(
+        (JobStatus.WAITING,
+         JobStatus.RUNNING,
+         JobStatus.SUSPENDED))
 
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
@@ -89,6 +108,30 @@ class Job(SQLBase):
         self._status = status
 
     status = property(lambda x: x._status)
+
+    @property
+    def is_pending(self):
+        """See `IJob`."""
+        return self.status in self.PENDING_STATUSES
+
+    @classmethod
+    def createMultiple(self, store, num_jobs, requester=None):
+        """Create multiple `Job`s at once.
+
+        :param store: `Store` to ceate the jobs in.
+        :param num_jobs: Number of `Job`s to create.
+        :param request: The `IPerson` requesting the jobs.
+        :return: An iterable of `Job.id` values for the new jobs.
+        """
+        job_contents = [
+            "(%s, %s)" % (
+                quote(JobStatus.WAITING), quote(requester))] * num_jobs
+        result = store.execute("""
+            INSERT INTO Job (status, requester)
+            VALUES %s
+            RETURNING id
+            """ % ", ".join(job_contents))
+        return [job_id for job_id, in result]
 
     def acquireLease(self, duration=300):
         """See `IJob`."""
@@ -106,7 +149,7 @@ class Job(SQLBase):
         already expired, return 0.
         """
         expiry = timegm(self.lease_expires.timetuple())
-        return max(0,  expiry - time.time())
+        return max(0, expiry - time.time())
 
     def start(self):
         """See `IJob`."""
@@ -139,6 +182,7 @@ class Job(SQLBase):
         if self.status is not JobStatus.SUSPENDED:
             raise InvalidTransition(self._status, JobStatus.WAITING)
         self._set_status(JobStatus.WAITING)
+        self.lease_expires = None
 
 
 Job.ready_jobs = Select(

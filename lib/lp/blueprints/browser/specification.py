@@ -15,27 +15,26 @@ __all__ = [
     'NewSpecificationFromSprintView',
     'SpecificationActionMenu',
     'SpecificationContextMenu',
-    'SpecificationNavigation',
-    'SpecificationView',
-    'SpecificationSimpleView',
     'SpecificationEditMilestoneView',
     'SpecificationEditPeopleView',
     'SpecificationEditPriorityView',
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
-    'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
+    'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
+    'SpecificationNavigation',
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
+    'SpecificationSetView',
+    'SpecificationSimpleView',
     'SpecificationSprintAddView',
-    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
-    'SpecificationSetView',
+    'SpecificationView',
     ]
 
 from operator import attrgetter
@@ -45,6 +44,12 @@ from subprocess import (
     Popen,
     )
 
+from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
+from zope import component
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
@@ -54,8 +59,14 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import Fields
-from zope.interface import Interface
-from zope.schema import Choice
+from zope.interface import (
+    implementer,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -63,7 +74,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -78,6 +88,7 @@ from canonical.launchpad.webapp.menu import (
     Link,
     NavigationMenu,
     )
+from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -85,24 +96,97 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    EnumChoiceWidget,
+    InlinePersonEditPickerWidget,
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    format_link,
+    )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
+    )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
-    INewSpecification,
-    INewSpecificationProjectTarget,
-    INewSpecificationSeriesGoal,
-    INewSpecificationSprint,
-    INewSpecificationTarget,
     ISpecification,
     ISpecificationSet,
     )
-from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
+
+
+class INewSpecification(Interface):
+    """A schema for a new specification."""
+
+    use_template(ISpecification, include=[
+        'name',
+        'title',
+        'specurl',
+        'summary',
+        'assignee',
+        'drafter',
+        'approver',
+        ])
+
+    definition_status = Choice(
+        title=_('Definition Status'),
+        vocabulary=NewSpecificationDefinitionStatus,
+        default=NewSpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+
+class INewSpecificationProjectTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
+    """
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True, vocabulary='ProjectProducts')
+
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("The sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
+    """
+    use_template(ISpecification, include=['target'])
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -328,7 +412,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     links = ['edit', 'people', 'status', 'priority',
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
-             'subscribeanother',
+             'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
@@ -379,7 +463,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         text = 'Change status'
         return Link('+status', text, icon='edit')
 
-    def subscribeanother(self):
+    def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
@@ -388,15 +472,14 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         """Return the 'Edit Subscription' Link."""
         user = self.user
         if user is None:
-            text = 'Edit subscription'
-            icon = 'edit'
-        elif self.context.isSubscribed(user):
-            text = 'Unsubscribe'
-            icon = 'remove'
+            return Link('+subscribe', 'Edit subscription', icon='edit')
+
+        if self.context.isSubscribed(user):
+            return Link(
+                '+subscription/%s' % user.name,
+                'Update subscription', icon='edit')
         else:
-            text = 'Subscribe'
-            icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+            return Link('+subscribe', 'Subscribe', icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
@@ -454,13 +537,6 @@ class SpecificationSimpleView(LaunchpadView):
             return []
         return list(self.context.getFeedbackRequests(self.user))
 
-    @property
-    def subscription(self):
-        """whether the current user has a subscription to the spec."""
-        if self.user is None:
-            return None
-        return self.context.subscription(self.user)
-
     @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
@@ -472,8 +548,7 @@ class SpecificationSimpleView(LaunchpadView):
 
     @cachedproperty
     def bug_links(self):
-        return [bug_link for bug_link in self.context.bug_links
-                if check_permission('launchpad.View', bug_link.bug)]
+        return self.context.getLinkedBugTasks(self.user)
 
 
 class SpecificationView(SpecificationSimpleView):
@@ -494,48 +569,122 @@ class SpecificationView(SpecificationSimpleView):
         if not self.user:
             return
 
-        request = self.request
-        if request.method == 'POST':
-            # establish if a subscription form was posted.
-            sub = request.form.get('subscribe')
-            upd = request.form.get('update')
-            unsub = request.form.get('unsubscribe')
-            essential = request.form.get('essential') == 'yes'
-            if sub is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append(
-                    "You have subscribed to this blueprint.")
-            elif upd is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append('Your subscription has been updated.')
-            elif unsub is not None:
-                self.context.unsubscribe(self.user)
-                self.notices.append(
-                    "You have unsubscribed from this blueprint.")
-
         if self.feedbackrequests:
             msg = "You have %d feedback request(s) on this blueprint."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
 
-
-class SpecificationSubscriptionView(SpecificationView):
+    @property
+    def approver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, ISpecification['approver'],
+            format_link(self.context.approver),
+            header='Change approver', edit_view='+people',
+            step_title='Select a new approver')
 
     @property
-    def label(self):
-        if self.subscription is not None:
-            return "Modify subscription"
-        return "Subscribe to blueprint"
+    def drafter_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, ISpecification['drafter'],
+            format_link(self.context.drafter),
+            header='Change drafter', edit_view='+people',
+            step_title='Select a new drafter')
+
+    @property
+    def assignee_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, ISpecification['assignee'],
+            format_link(self.context.assignee),
+            header='Change assignee', edit_view='+people',
+            step_title='Select a new assignee')
+
+    @property
+    def definition_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['definition_status'],
+            header='Change definition status to', edit_view='+status',
+            edit_title='Change definition status',
+            css_class_prefix='specstatus')
+
+    @property
+    def implementation_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['implementation_status'],
+            header='Change implementation status to', edit_view='+status',
+            edit_title='Change implementation status',
+            css_class_prefix='specdelivery')
+
+    @property
+    def priority_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['priority'],
+            header='Change priority to', edit_view='+priority',
+            edit_title='Change priority',
+            css_class_prefix='specpriority')
+
+    @property
+    def title_widget(self):
+        field = ISpecification['title']
+        title = "Edit the blueprint title"
+        return TextLineEditorWidget(self.context, field, title, 'h1')
+
+    @property
+    def summary_widget(self):
+        """The summary as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['summary'], title="")
+
+    @property
+    def whiteboard_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['whiteboard'], title="Whiteboard",
+            edit_view='+whiteboard', edit_title='Edit whiteboard',
+            hide_empty=False)
+
+    @property
+    def direction_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISpecification['direction_approved'],
+            tag='span',
+            false_text='Needs approval',
+            true_text='Approved',
+            header='Change approval of basic direction')
+
+
+class SpecificationEditSchema(ISpecification):
+    """Provide overrides for the implementaion and definition status."""
+
+    definition_status = Choice(
+        title=_('Definition Status'), required=True,
+        vocabulary=SpecificationDefinitionStatus,
+        default=SpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+    implementation_status = Choice(
+        title=_("Implementation Status"), required=True,
+        default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary=SpecificationImplementationStatus,
+        description=_(
+            "The state of progress being made on the actual "
+            "implementation or delivery of this feature."))
 
 
 class SpecificationEditView(LaunchpadEditFormView):
 
-    schema = ISpecification
+    schema = SpecificationEditSchema
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
     custom_widget('specurl', TextWidget, width=60)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {SpecificationEditSchema: self.context}
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -840,6 +989,7 @@ class SpecGraph:
         transitively.
         """
         get_related_specs_fn = attrgetter('dependencies')
+
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
@@ -847,6 +997,7 @@ class SpecGraph:
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
         get_related_specs_fn = attrgetter('blocked_specs')
+
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
@@ -920,7 +1071,7 @@ class SpecGraph:
             size='9.2,9',  # Width fits of 2 col layout, 1024x768.
             ratio='compress',
             ranksep=0.25,
-            nodesep=0.01 # Separation between nodes
+            nodesep=0.01  # Separation between nodes
             )
 
         # Global node and edge attributes.
@@ -1237,3 +1388,33 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def starter_xhtml_representation(context, field, request):
+    """Render the starter as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        starter = context.starter
+        if starter is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_started)
+        return "%s %s" % (
+            format_link(starter), date_formatter.displaydate())
+    return render
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def completer_xhtml_representation(context, field, request):
+    """Render the completer as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        completer = context.completer
+        if completer is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_completed)
+        return "%s %s" % (
+            format_link(completer), date_formatter.displaydate())
+    return render

@@ -20,10 +20,10 @@
     <p tal:define="mirror_count view/mirror_count"
        tal:condition="mirror_count">
       <span tal:condition="python: mirror_count == 1">
-        There is <strong class="registry-stat">1</strong> mirror</span>
+        There is <strong>1</strong> mirror</span>
       <span tal:condition="python: mirror_count != 1">
         There are
-        <strong class="registry-stat" tal:content="mirror_count" />
+        <strong tal:content="mirror_count" />
         mirrors
       </span>
       registered for <tal:context replace="context/title" />.

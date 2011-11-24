@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
@@ -9,7 +9,6 @@ __all__ = [
     'LibrarianServerFixture',
     ]
 
-import atexit
 import os
 import shutil
 import tempfile
@@ -24,11 +23,11 @@ from fixtures import (
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import (
-    get_pid_from_file,
     TacException,
     TacTestSetup,
     )
 from canonical.librarian.storage import _relFileLocation
+from lp.services.osutils import get_pid_from_file
 
 
 class LibrarianServerFixture(TacTestSetup):
@@ -216,7 +215,7 @@ class LibrarianServerFixture(TacTestSetup):
     @property
     def logfile(self):
         # Store the log in the server root; if its wanted after a test, that
-        # test can use addDetail to grab the log and include it in its 
+        # test can use addDetail to grab the log and include it in its
         # error.
         try:
             return os.path.join(self.root, 'librarian.log')
@@ -228,6 +227,11 @@ class LibrarianServerFixture(TacTestSetup):
     def getLogChunks(self):
         """Get a list with the contents of the librarian log in it."""
         return open(self.logfile, 'rb').readlines()
+
+    def reset(self):
+        """Reset the librarian to a consistent initial state."""
+        self.clear()
+        self.truncateLog()
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):

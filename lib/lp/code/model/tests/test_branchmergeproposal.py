@@ -1,9 +1,7 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
-
-from __future__ import with_statement
 
 """Tests for BranchMergeProposals."""
 
@@ -14,12 +12,10 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
@@ -28,12 +24,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_secret_test_key,
-    syncUpdate,
-    )
+from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -50,6 +42,7 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     BadStateTransition,
+    BranchMergeProposalExists,
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -82,12 +75,16 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.messages.interfaces.message import IMessageJob
 from lp.testing import (
-    ANONYMOUS,
+    ExpectedException,
+    launchpadlib_for,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
+    ws_object,
     )
 from lp.testing.factory import (
     GPGSigningContext,
@@ -939,8 +936,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        removeSecurityProxy(bmp.source_branch).private = True
-        removeSecurityProxy(bmp.target_branch).private = True
+        removeSecurityProxy(bmp.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp.target_branch).explicitly_private = True
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertFalse(bob in recipients)
@@ -1046,9 +1043,11 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             product = self.factory.makeProduct(name=product_name)
+        stacked_on_branch = self.factory.makeProductBranch(
+            product=product, owner=owner, registrant=registrant)
         branch = self.factory.makeProductBranch(
             product=product, owner=owner, registrant=registrant,
-            name=branch_name)
+            name=branch_name, stacked_on=stacked_on_branch)
         if registrant is None:
             registrant = owner
         bmp = branch.addLandingTarget(
@@ -1167,7 +1166,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        removeSecurityProxy(proposal.source_branch).explicitly_private = True
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1205,8 +1204,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        # Mark the source branch private by making it's stacked on branch
+        # private.
+        removeSecurityProxy(
+            proposal.source_branch.stacked_on).explicitly_private = True
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.
@@ -1248,29 +1249,45 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def test_related_bugs_includes_source_bugs(self):
-        """related_bugs includes bugs linked to the source branch."""
+    def test_related_bugtasks_includes_source_bugtasks(self):
+        """related_bugtasks includes bugtasks linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
         source_branch = bmp.source_branch
         bug = self.factory.makeBug()
         source_branch.linkBug(bug, bmp.registrant)
         self.assertEqual(
-            list(source_branch.linked_bugs), list(bmp.related_bugs))
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugs_excludes_target_bugs(self):
-        """related_bugs ignores bugs linked to the source branch."""
+    def test_related_bugtasks_excludes_target_bugs(self):
+        """related_bugtasks ignores bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugs_excludes_mutual_bugs(self):
-        """related_bugs ignores bugs linked to both branches."""
+    def test_related_bugtasks_excludes_mutual_bugs(self):
+        """related_bugtasks ignores bugs linked to both branches."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_private_bugs(self):
+        """related_bugtasks ignores private bugs for non-authorised users."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            private_bug = self.factory.makeBug(private=True, owner=person)
+            bmp.source_branch.linkBug(private_bug, person)
+        self.assertEqual(
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
+        all_bugtasks = list(bug.bugtasks)
+        all_bugtasks.extend(private_bug.bugtasks)
+        self.assertEqual(
+            all_bugtasks, list(bmp.getRelatedBugTasks(person)))
 
 
 class TestNotifyModified(TestCaseWithFactory):
@@ -1615,7 +1632,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmitting a proposal with no reviewers should work."""
         bmp = make_merge_proposal_without_reviewers(self.factory)
         with person_logged_in(bmp.registrant):
-            bmp2 = bmp.resubmit(bmp.registrant)
+            bmp.resubmit(bmp.registrant)
 
     def test_resubmit_changes_branches(self):
         """Resubmit changes branches, if specified."""
@@ -1642,9 +1659,41 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmit breaks link, if specified."""
         original = self.factory.makeBranchMergeProposal()
         self.useContext(person_logged_in(original.registrant))
-        revised = original.resubmit(
+        original.resubmit(
             original.registrant, break_link=True)
         self.assertIs(None, original.superseded_by)
+
+    def test_resubmit_with_active_retains_state(self):
+        """Resubmit does not change proposal if an active proposal exists."""
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal(
+                source_branch=first_mp.source_branch,
+                target_branch=first_mp.target_branch)
+            expected_exc = ExpectedException(
+                BranchMergeProposalExists, 'There is already a branch merge'
+                ' proposal registered for branch .* to land on .* that is'
+                ' still active.')
+            with expected_exc:
+                first_mp.resubmit(first_mp.registrant)
+            self.assertEqual(
+                second_mp, expected_exc.caught_exc.existing_proposal)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
+
+    def test_resubmit_on_inactive_retains_state_new_branches(self):
+        """Resubmit with branches doesn't change proposal."""
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal()
+            with ExpectedException(BranchMergeProposalExists, ''):
+                first_mp.resubmit(
+                    first_mp.registrant, second_mp.source_branch,
+                    second_mp.target_branch)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
 
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):
@@ -1938,5 +1987,64 @@ class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
         self.assertEqual([diff2, diff1], result)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getUnlandedSourceBranchRevisions(self):
+        # Revisions in the source branch but not in the target are shown
+        # as unlanded.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=5)
+        r1 = bmp.source_branch.getBranchRevision(sequence=1)
+        initial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
+        self.assertEquals(5, len(initial_revisions))
+        self.assertIn(r1, initial_revisions)
+        # If we push one of the revisions into the target, it disappears
+        # from the unlanded list.
+        bmp.target_branch.createBranchRevision(1, r1.revision)
+        partial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
+        self.assertEquals(4, len(partial_revisions))
+        self.assertNotIn(r1, partial_revisions)
+
+
+class TestWebservice(WebServiceTestCase):
+    """Tests for the webservice."""
+
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
+        mp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for(
+            'test', mp.registrant,
+            service_root=self.layer.appserver_root_url('api'))
+
+        with person_logged_in(mp.registrant):
+            mp.markAsMerged(merged_revno=123)
+            transaction.commit()
+            target = ws_object(launchpad, mp.target_branch)
+            mp = ws_object(launchpad, mp)
+        self.assertEqual([mp], list(target.getMergeProposals(
+            status=['Merged'], merged_revnos=[123])))
+
+    def test_getRelatedBugTasks(self):
+        """Test the getRelatedBugTasks API."""
+        db_bmp = self.factory.makeBranchMergeProposal()
+        db_bug = self.factory.makeBug()
+        db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
+        self.assertEqual(
+            [bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_setStatus_invalid_transition(self):
+        """Emit BadRequest when an invalid transition is requested."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(bmp.registrant):
+            bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+        with ExpectedException(
+            BadRequest,
+            '(.|\n)*Invalid state transition for merge proposal(.|\n)*'):
+            ws_bmp.setStatus(status='Approved')

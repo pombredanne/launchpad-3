@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -45,17 +45,19 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from canonical.launchpad.interfaces.validation import validate_url
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
+from lp.app.validators.url import validate_url
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
     )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.milestone import (
@@ -63,13 +65,13 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
-    )
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
     )
 from lp.services.fields import (
     ContentNameField,
@@ -131,15 +133,13 @@ class IProductSeriesPublic(
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
     IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
-    # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
-    # interfaces, as soon as SQLobject allows using the object directly
-    # instead of using object.id.
     id = Int(title=_('ID'))
 
     product = exported(
         ReferenceChoice(title=_('Project'), required=True,
-            vocabulary='Product', schema=Interface), # really IProduct
+            vocabulary='Product', schema=Interface),  # really IProduct
         exported_as='project')
+    productID = Attribute('The product ID.')
 
     status = exported(
         Choice(
@@ -237,12 +237,12 @@ class IProductSeriesPublic(
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
-    translations_autoimport_mode = Choice(
+    translations_autoimport_mode = exported(Choice(
         title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "
-                      "source code branch."))
+                      "source code branch.")), as_of="devel")
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),
@@ -275,6 +275,10 @@ class IProductSeriesPublic(
         distroseries. This will use a Packaging record if one exists, but
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
+
+    def getUbuntuTranslationFocusPackage():
+        """Return the SourcePackage that packages this project in Ubuntu's
+        translation focus or current series or any series, in that order."""
 
     def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,

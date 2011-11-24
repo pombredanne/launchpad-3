@@ -13,7 +13,6 @@ from unittest import (
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import syncUpdate
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.testing.faketransaction import FakeTransaction
@@ -33,7 +32,6 @@ class TestCopying(TestCase):
 
         sid.hide_all_translations = True
         sid.defer_translation_imports = True
-        syncUpdate(sid)
         copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertTrue(sid.hide_all_translations)
@@ -41,7 +39,6 @@ class TestCopying(TestCase):
 
         sid.hide_all_translations = True
         sid.defer_translation_imports = False
-        syncUpdate(sid)
         copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertTrue(sid.hide_all_translations)
@@ -49,7 +46,6 @@ class TestCopying(TestCase):
 
         sid.hide_all_translations = False
         sid.defer_translation_imports = True
-        syncUpdate(sid)
         copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
@@ -57,7 +53,6 @@ class TestCopying(TestCase):
 
         sid.hide_all_translations = False
         sid.defer_translation_imports = False
-        syncUpdate(sid)
         copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)

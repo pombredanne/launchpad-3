@@ -43,14 +43,14 @@ series.
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     distroseries=ubuntutest.getSeries('breezy-autotest'))
-    >>> earliest_series = factory.makeDistroRelease(
+    >>> earliest_series = factory.makeDistroSeries(
     ...     distribution=ubuntutest, version='1.1', name='earliest')
     >>> eel_main_src_hist = publisher.getPubSource(
     ...     sourcename="eel", archive=ubuntutest.main_archive,
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     distroseries=earliest_series)
-    >>> latest_series = factory.makeDistroRelease(
+    >>> latest_series = factory.makeDistroSeries(
     ...     distribution=ubuntutest, version='10.04', name='latest')
     >>> eel_main_src_hist = publisher.getPubSource(
     ...     sourcename="eel", archive=ubuntutest.main_archive,
@@ -132,26 +132,18 @@ package.
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
     >>> from lp.registry.model.karma import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> from lp.testing.dbuser import dbuser
     >>> soyuz_category = KarmaCategory.byName('soyuz')
     >>> sourcepackagerelease = gedit_nightly_src_breezy.sourcepackagerelease
     >>> gedit_name = sourcepackagerelease.sourcepackagename
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
-    >>> transaction.commit()
-
-    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
-    # test api call to switchDbUser that works for non-zopeless layers.
-    # When bug 396419 is fixed, we can instead use
-    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> reconnect_stores('karmacacheupdater')
-    >>> from lp.registry.model.karma import KarmaTotalCache
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_beta_owner_id, karma_total=200)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_nightly_owner_id, karma_total=201)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
+    >>> with dbuser('karma'):
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_beta_owner_id, karma_total=200)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_nightly_owner_id, karma_total=201)
 
     # Because our connection has been closed during the reconnect, we
     # need to get the distro and source package again.

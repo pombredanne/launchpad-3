@@ -144,6 +144,9 @@
       <tal:retry define="link context/menu:context/retry"
                  condition="link/enabled"
                  replace="structure link/fmt:link" />
+      <tal:cancel define="link context/menu:context/cancel"
+                 condition="link/enabled"
+                 replace="structure link/fmt:link" />
     </p>
 
     <ul>
@@ -241,9 +244,9 @@
            tal:content="binpkg/displayname">foopkg 1.2-3</a>
       </li>
       <li tal:condition="not: linkify_binaries"
-          tal:repeat="binpkg context/binarypackages">
+          tal:repeat="package_title view/binarypackagetitles">
         <span class="sprite package-binary"
-              tal:content="binpkg/title">foopkg-1.2-3</span>
+              tal:content="package_title">foopkg-1.2-3</span>
       </li>
     </ul>
   </metal:macro>

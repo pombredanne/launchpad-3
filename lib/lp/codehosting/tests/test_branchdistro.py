@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for making new source package branches just after a distro release.
@@ -15,7 +15,6 @@ from subprocess import (
     STDOUT,
     )
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -39,8 +38,8 @@ from lp.codehosting.branchdistro import (
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import (
-    FakeLogger,
     BufferLogger,
+    FakeLogger,
     )
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
@@ -124,11 +123,13 @@ class TestDistroBrancher(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.useBzrBranches(direct_database=True)
 
-    def makeOfficialPackageBranch(self, distroseries=None):
+    def makeOfficialPackageBranch(self, distroseries=None,
+                                  make_revisions=True):
         """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
-        self.factory.makeRevisionsForBranch(db_branch, count=1)
+        if make_revisions:
+            self.factory.makeRevisionsForBranch(db_branch, count=1)
 
         transaction.commit()
 
@@ -136,8 +137,9 @@ class TestDistroBrancher(TestCaseWithFactory):
             tree_location=self.factory.getUniqueString(), db_branch=db_branch)
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('')
+        if make_revisions:
+            with override_environ(BZR_EMAIL='me@example.com'):
+                tree.commit('')
 
         return db_branch
 
@@ -148,9 +150,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         `assertLogMessages` below.
         """
         if distroseries is None:
-            distroseries = self.factory.makeDistroRelease()
+            distroseries = self.factory.makeDistroSeries()
         self._log_file = StringIO()
-        new_distroseries = self.factory.makeDistroRelease(
+        new_distroseries = self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
         transaction.commit()
         self.layer.switchDbUser('branch-distro')
@@ -187,13 +189,13 @@ class TestDistroBrancher(TestCaseWithFactory):
         # distroseries passed are not from the same distribution.
         self.assertRaises(
             AssertionError, DistroBrancher, None,
-            self.factory.makeDistroRelease(),
-            self.factory.makeDistroRelease())
+            self.factory.makeDistroSeries(),
+            self.factory.makeDistroSeries())
 
     def test_DistroBrancher_same_distroseries_check(self):
         # DistroBrancher.__init__ raises AssertionError if passed the same
         # distroseries twice.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
             AssertionError, DistroBrancher, None, distroseries, distroseries)
 
@@ -201,9 +203,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         # DistroBrancher.fromNames constructs a DistroBrancher from the names
         # of a distribution and two distroseries within it.
         distribution = self.factory.makeDistribution()
-        distroseries1 = self.factory.makeDistroRelease(
+        distroseries1 = self.factory.makeDistroSeries(
             distribution=distribution)
-        distroseries2 = self.factory.makeDistroRelease(
+        distroseries2 = self.factory.makeDistroSeries(
             distribution=distribution)
         brancher = DistroBrancher.fromNames(
             None, distribution.name, distroseries1.name, distroseries2.name)
@@ -297,6 +299,12 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .* is not an official branch$',
              '^WARNING Skipping branch$'])
 
+    def test_makeOnewNewBranch_empty_branch(self):
+        # Branches with no commits work.
+        db_branch = self.makeOfficialPackageBranch(make_revisions=False)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+
     def test_makeNewBranches(self):
         # makeNewBranches calls makeOneNewBranch for each official branch in
         # the old distroseries.
@@ -304,7 +312,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch2 = self.makeOfficialPackageBranch(
             distroseries=db_branch.distroseries)
 
-        new_distroseries = self.factory.makeDistroRelease(
+        new_distroseries = self.factory.makeDistroSeries(
             distribution=db_branch.distribution)
 
         brancher = DistroBrancher(
@@ -634,8 +642,3 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertEqual(
             textwrap.dedent(expected), output)
         self.assertEqual(1, returncode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

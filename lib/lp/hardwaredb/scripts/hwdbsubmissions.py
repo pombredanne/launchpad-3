@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse Hardware Database submissions.
@@ -11,13 +11,15 @@ __metaclass__ = type
 __all__ = [
            'SubmissionParser',
            'process_pending_submissions',
+           'ProcessingLoopForPendingSubmissions',
+           'ProcessingLoopForReprocessingBadSubmissions',
           ]
-
 
 import bz2
 from cStringIO import StringIO
 
-
+#XXX: Given the version of python we know we're running on now,
+# is the try/except here necessary?
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
@@ -32,6 +34,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr.xml import RelaxNGValidator
 
@@ -39,14 +42,25 @@ from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from lp.hardwaredb.interfaces.hwdb import (
-    HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
-    IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
-    IHWVendorNameSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    HWBus,
+    HWSubmissionProcessingStatus,
+    IHWDeviceDriverLinkSet,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    IHWVendorNameSet,
+    )
+from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.services.scripts.base import disable_oops_handler
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -60,6 +74,15 @@ _time_regex = re.compile(r"""
         | Z)?$
     """,
     re.VERBOSE)
+
+_broken_comment_nodes_re = re.compile('(<comment>.*?</comment>)', re.DOTALL)
+_missing_udev_node_data = re.compile(
+    '<info command="udevadm info --export-db">(.*?)</info>', re.DOTALL)
+_missing_dmi_node_data = re.compile(
+    r'<info command="grep -r \. /sys/class/dmi/id/ 2&gt;/dev/null">(.*?)'
+    '</info>', re.DOTALL)
+_udev_node_exists = re.compile('<hardware>.*?<udev>.*?</hardware>', re.DOTALL)
+_dmi_node_exists = re.compile('<hardware>.*?<dmi>.*?</hardware>', re.DOTALL)
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 UDEV_ROOT_PATH = '/devices/LNXSYSTM:00'
@@ -106,10 +129,11 @@ UDEV_USB_PRODUCT_RE = re.compile(
 UDEV_USB_TYPE_RE = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
 SYSFS_SCSI_DEVICE_ATTRIBUTES = set(('vendor', 'model', 'type'))
 
+
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, record_warnings=True):
         if logger is None:
             logger = getLogger()
         self.logger = logger
@@ -125,14 +149,21 @@ class SubmissionParser(object):
         self._setMainSectionParsers()
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
+        self.record_warnings = record_warnings
 
-    def _logError(self, message, submission_key):
+    def _logError(self, message, submission_key, create_oops=True):
         """Log `message` for an error in submission submission_key`."""
-        self.logger.error(
-            'Parsing submission %s: %s' % (submission_key, message))
+        msg = 'Parsing submission %s: %s' % (submission_key, message)
+        if not create_oops:
+            with disable_oops_handler(self.logger):
+                self.logger.error(msg)
+        else:
+            self.logger.error(msg)
 
     def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
+        if not self.record_warnings:
+            return
         if warning_id is None:
             issue_warning = True
         elif warning_id not in self._logged_warnings:
@@ -144,12 +175,50 @@ class SubmissionParser(object):
             self.logger.warning(
                 'Parsing submission %s: %s' % (self.submission_key, message))
 
+    def fixFrequentErrors(self, submission):
+        """Fixes for frequent formal errors in the submissions.
+        """
+        # A considerable number of reports for Lucid has ESC characters
+        # in comment nodes. We don't need the comment nodes at all, so
+        # we can simply empty them.
+        submission = _broken_comment_nodes_re.sub('<comment/>', submission)
+
+        # Submissions from Natty don't have the nodes <dmi> and <udev>
+        # as children of the <hardware> node. Fortunately, they provide
+        # this data in
+        #
+        #    <context>
+        #        <info command="grep -r . /sys/class/dmi/id/ 2&gt;/dev/null">
+        #        ...
+        #        </info>
+        #        <info command="udevadm info --export-db">
+        #        ...
+        #        </info>
+        #    </context>
+        #
+        # We can try to find the two relevant <info> nodes inside <context>
+        # and move their content into the proper subnodes of <hardware>.
+        if _udev_node_exists.search(submission) is None:
+            mo = _missing_udev_node_data.search(submission)
+            if mo is not None:
+                missing_data = mo.group(1)
+                missing_data = '<udev>%s</udev>\n</hardware>' % missing_data
+                submission = submission.replace('</hardware>', missing_data)
+        if _dmi_node_exists.search(submission) is None:
+            mo = _missing_dmi_node_data.search(submission)
+            if mo is not None:
+                missing_data = mo.group(1)
+                missing_data = '<dmi>%s</dmi>\n</hardware>' % missing_data
+                submission = submission.replace('</hardware>', missing_data)
+        return submission
+
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
 
         :return: an `lxml.etree` instance representation of a valid
             submission or None for invalid submissions.
         """
+        submission = self.fixFrequentErrors(submission)
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
         except SyntaxError, error_value:
@@ -172,7 +241,8 @@ class SubmissionParser(object):
         if not validator.validate(submission):
             self._logError(
                 'Relax NG validation failed.\n%s' % validator.error_log,
-                submission_key)
+                submission_key,
+                create_oops=False)
             return None
         return submission_doc
 
@@ -336,7 +406,6 @@ class SubmissionParser(object):
 
         :return: (name, (value, type)) of a property.
         """
-        property_name = property_node.get('name')
         return (property_node.get('name'),
                 self._getValueAndType(property_node))
 
@@ -665,7 +734,13 @@ class SubmissionParser(object):
                  where the values are the parsing results of _parseHAL,
                  _parseProcessors, _parseAliases.
         """
-        hardware_data = {}
+        # Submissions from checkbox for Lucid, Maverick and Natty
+        # unfortunately do not contain a <sysfs-attributes> node.
+        # A default value here allows us to mark these submissions.
+        # See also bug 835103.
+        hardware_data = {
+            'sysfs-attributes': None,
+            }
         for node in hardware_node.getchildren():
             parser = self._parse_hardware_section[node.tag]
             result = parser(node)
@@ -929,7 +1004,7 @@ class SubmissionParser(object):
                  the content.
         """
         self.submission_key = submission_key
-        submission_doc  = self._getValidatedEtree(submission, submission_key)
+        submission_doc = self._getValidatedEtree(submission, submission_key)
         if submission_doc is None:
             return None
 
@@ -1313,6 +1388,13 @@ class SubmissionParser(object):
         should have a corresponding sysfs node, and this node should
         define the attributes 'vendor', 'model', 'type'.
         """
+        # Broken submissions from Lucid, Maverick and Natty. We'll have
+        # to deal with incomplete data for SCSI devices in this case if
+        # we don't want to drop the entire submission, so just pretend
+        # that things are fine.
+        # See also bug 835103.
+        if sysfs_data is None:
+            return True
         for device in udev_data:
             subsystem = device['E'].get('SUBSYSTEM')
             if subsystem != 'scsi':
@@ -1441,13 +1523,19 @@ class SubmissionParser(object):
         dmi_data = parsed_data['hardware']['dmi']
         for udev_data in parsed_data['hardware']['udev']:
             device_path = udev_data['P']
+            if sysfs_data is not None:
+                sysfs_data_for_device = sysfs_data.get(device_path)
+            else:
+                # broken Lucid, Maverick and Natty submissions.
+                # See also bug 835103.
+                sysfs_data_for_device = None
             if device_path == UDEV_ROOT_PATH:
                 device = UdevDevice(
-                    self, udev_data, sysfs_data=sysfs_data.get(device_path),
+                    self, udev_data, sysfs_data=sysfs_data_for_device,
                     dmi_data=dmi_data)
             else:
                 device = UdevDevice(
-                    self, udev_data, sysfs_data=sysfs_data.get(device_path))
+                    self, udev_data, sysfs_data=sysfs_data_for_device)
             self.devices[device_path] = device
 
         # The parent-child relations are derived from the path names of
@@ -1477,7 +1565,7 @@ class SubmissionParser(object):
                     'Invalid device path name: %r' % path_name,
                     self.submission_key)
                 return False
-            for parent_path in path_names[path_index+1:]:
+            for parent_path in path_names[path_index + 1:]:
                 if path_name.startswith(parent_path):
                     self.devices[parent_path].addChild(
                         self.devices[path_name])
@@ -1605,7 +1693,7 @@ class BaseDevice:
         0: HWBus.SCSI,
         1: HWBus.IDE,
         2: HWBus.FLOPPY,
-        3: HWBus.IPI, # Intelligent Peripheral Interface
+        3: HWBus.IPI,  # Intelligent Peripheral Interface.
         5: HWBus.ATA,
         6: HWBus.SATA,
         7: HWBus.SAS,
@@ -2716,6 +2804,13 @@ class UdevDevice(BaseDevice):
         # udev sets the property SUBSYSTEM to "scsi" for a number of
         # different nodes: SCSI hosts, SCSI targets and SCSI devices.
         # They are distiguished by the property DEVTYPE.
+
+        # Hack for broken submissions from Lucid, Maverick and Natty:
+        # If we don't have sysfs information, pretend that no SCSI
+        # related node corresponds to a real device.
+        # See also bug 835103.
+        if self.sysfs is None:
+            return False
         properties = self.udev['E']
         return (properties.get('SUBSYSTEM') == 'scsi' and
                 properties.get('DEVTYPE') == 'scsi_device')
@@ -2727,7 +2822,6 @@ class UdevDevice(BaseDevice):
             # SubmissionParser.checkUdevScsiProperties() ensures that
             # each SCSI device has a record in self.sysfs and that
             # the attribute 'vendor' exists.
-            path = self.udev['P']
             return self.sysfs['vendor']
         else:
             return None
@@ -2739,7 +2833,6 @@ class UdevDevice(BaseDevice):
             # SubmissionParser.checkUdevScsiProperties() ensures that
             # each SCSI device has a record in self.sysfs and that
             # the attribute 'model' exists.
-            path = self.udev['P']
             return self.sysfs['model']
         else:
             return None
@@ -2884,12 +2977,12 @@ class UdevDevice(BaseDevice):
         return self.udev['id']
 
 
-class ProcessingLoop(object):
+class ProcessingLoopBase(object):
     """An `ITunableLoop` for processing HWDB submissions."""
 
     implements(ITunableLoop)
 
-    def __init__(self, transaction, logger, max_submissions):
+    def __init__(self, transaction, logger, max_submissions, record_warnings):
         self.transaction = transaction
         self.logger = logger
         self.max_submissions = max_submissions
@@ -2897,6 +2990,7 @@ class ProcessingLoop(object):
         self.invalid_submissions = 0
         self.finished = False
         self.janitor = getUtility(ILaunchpadCelebrities).janitor
+        self.record_warnings = record_warnings
 
     def _validateSubmission(self, submission):
         submission.status = HWSubmissionProcessingStatus.PROCESSED
@@ -2919,16 +3013,16 @@ class ProcessingLoop(object):
         error_utility.raising(info, request)
         self.logger.error('%s (%s)' % (error_explanation, request.oopsid))
 
+    def getUnprocessedSubmissions(self, chunk_size):
+        raise NotImplementedError
+
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
         # which can lead to unexpected results. Since it is also used as
         # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
-        submissions = getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED,
-            user=self.janitor
-            )[:chunk_size]
+        submissions = self.getUnprocessedSubmissions(chunk_size)
         # Listify the submissions, since we'll have to loop over each
         # one anyway. This saves a COUNT query for getting the number of
         # submissions
@@ -2945,7 +3039,7 @@ class ProcessingLoop(object):
         # loop.
         for submission in submissions:
             try:
-                parser = SubmissionParser(self.logger)
+                parser = SubmissionParser(self.logger, self.record_warnings)
                 success = parser.processSubmission(submission)
                 if success:
                     self._validateSubmission(submission)
@@ -2954,7 +3048,7 @@ class ProcessingLoop(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
-            except LibrarianServerError, error:
+            except LibrarianServerError:
                 # LibrarianServerError is raised when the server could
                 # not be reaches for 30 minutes.
                 #
@@ -2973,7 +3067,7 @@ class ProcessingLoop(object):
                     'Could not reach the Librarian while processing HWDB '
                     'submission %s' % submission.submission_key)
                 raise
-            except Exception, error:
+            except Exception:
                 self.transaction.abort()
                 self.reportOops(
                     'Exception while processing HWDB submission %s'
@@ -2984,6 +3078,7 @@ class ProcessingLoop(object):
                 # further submissions in this batch raise an exception.
                 self.transaction.commit()
 
+            self.start = submission.id + 1
             if self.max_submissions is not None:
                 if self.max_submissions <= (
                     self.valid_submissions + self.invalid_submissions):
@@ -2991,13 +3086,44 @@ class ProcessingLoop(object):
                     break
         self.transaction.commit()
 
-def process_pending_submissions(transaction, logger, max_submissions=None):
+
+class ProcessingLoopForPendingSubmissions(ProcessingLoopBase):
+
+    def getUnprocessedSubmissions(self, chunk_size):
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
+        submissions = list(submissions)
+        return submissions
+
+
+class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
+
+    def __init__(self, start, transaction, logger,
+                 max_submissions, record_warnings):
+        super(ProcessingLoopForReprocessingBadSubmissions, self).__init__(
+            transaction, logger, max_submissions, record_warnings)
+        self.start = start
+
+    def getUnprocessedSubmissions(self, chunk_size):
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.INVALID, user=self.janitor)
+        submissions = removeSecurityProxy(submissions).find(
+            HWSubmission.id >= self.start)
+        submissions = list(submissions[:chunk_size])
+        return submissions
+
+
+def process_pending_submissions(transaction, logger, max_submissions=None,
+                                record_warnings=True):
     """Process pending submissions.
 
     Parse pending submissions, store extracted data in HWDB tables and
     mark them as either PROCESSED or INVALID.
     """
-    loop = ProcessingLoop(transaction, logger, max_submissions)
+    loop = ProcessingLoopForPendingSubmissions(
+        transaction, logger, max_submissions, record_warnings)
     # It is hard to predict how long it will take to parse a submission.
     # we don't want to last a DB transaction too long but we also
     # don't want to commit more often than necessary. The LoopTuner
@@ -3009,3 +3135,27 @@ def process_pending_submissions(transaction, logger, max_submissions=None):
     logger.info(
         'Processed %i valid and %i invalid HWDB submissions'
         % (loop.valid_submissions, loop.invalid_submissions))
+
+
+def reprocess_invalid_submissions(start, transaction, logger,
+                                  max_submissions=None, record_warnings=True):
+    """Reprocess invalid submissions.
+
+    Parse submissions that have been marked as invalid. A newer
+    variant of the parser might be able to process them.
+    """
+    loop = ProcessingLoopForReprocessingBadSubmissions(
+        start, transaction, logger, max_submissions, record_warnings)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
+    loop_tuner.run()
+    logger.info(
+        'Processed %i valid and %i invalid HWDB submissions'
+        % (loop.valid_submissions, loop.invalid_submissions))
+    logger.info('last processed: %i' % loop.start)
+    return loop.start

@@ -10,8 +10,8 @@ and BugWatch instances with which to work.
     >>> from canonical.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -21,19 +21,15 @@ and BugWatch instances with which to work.
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_owner=False))
-
-    >>> bug_watch = bug.addWatch(bug_tracker, '123456', sample_person)
-
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     sample_person = getUtility(IPersonSet).getByEmail(
+    ...         'test@canonical.com')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(
+    ...         CreateBugParams(sample_person, "Yet another test bug",
+    ...             "Yet another test description.",
+    ...             subscribe_owner=False))
+    ...     bug_watch = bug.addWatch(bug_tracker, '123456', sample_person)
 
 The ISupportsCommentImport interface defines the methods that external
 bug trackers which support comment imports must provide. This interface
@@ -164,7 +160,7 @@ invalid.
     when importing comments for Bugzilla *TESTING* #123456.
 
 If the poster's e-mail is already registered in Launchpad, the comment
-is associated with the existing account.
+is associated with the existing person.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv.preferredemail is not None
@@ -182,6 +178,23 @@ is associated with the existing account.
 
     >>> bug.messages[-1].owner.name
     u'no-priv'
+
+This also works if the address is associated with an Account, but not a
+Person. This should only happen when the user has logged into ShipIt but
+not Launchpad. A new Person is created.
+
+    >>> account = factory.makeAccount(email="account-only@example.com")
+    >>> external_bugtracker.poster_tuple = (
+    ...     'Account Only', 'account-only@example.com')
+    >>> external_bugtracker.remote_comments['account-only-comment'] = (
+    ...     "Account-only comment.")
+    >>> bugwatch_updater.importBugComments()
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'account-only'
+    >>> bug.messages[-1].owner.account == account
+    True
 
 It's also possible for Launchpad to create Persons from remote
 bugtracker users when the remote bugtracker doesn't specify an email
@@ -245,8 +258,11 @@ The method IBugWatch.hasComment() can be used to check whether a comment
 has been linked to a bug watch. If we create an example comment without
 linking it to the bug watch this method will, of course, return False.
 
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> message = getUtility(IMessageSet).fromText(
-    ...     "Example Message", "With example content for you to read.")
+    ...     "Example Message", "With example content for you to read.",
+    ...     owner=janitor)
 
     >>> comment_id = 'a-comment'
 
@@ -288,23 +304,18 @@ getImportedBugMessages(). Messages that are linked to the bug watch but
 don't have a remote_comment_id are comments waiting to be pushed to the
 remote tracker and will not be returned by getImportedBugMessages()
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_watch2 = factory.makeBugWatch('42')
-    >>> bug_watch2.bug.newMessage(
-    ...     owner=bug_watch2.bug.owner, subject='None',
-    ...     content='Imported comment', bugwatch=bug_watch2,
-    ...     remote_comment_id='test')
-    <Message at ...>
-    >>> bug_watch2.bug.newMessage(
-    ...     owner=bug_watch2.bug.owner, subject='None',
-    ...     content='Native comment')
-    <Message at ...>
-    >>> bug_watch2.bug.newMessage(
-    ...     owner=bug_watch2.bug.owner, subject='None',
-    ...     content='Pushable comment', bugwatch=bug_watch2)
-    <Message at ...>
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     bug_watch2 = factory.makeBugWatch('42')
+    ...     ignore = bug_watch2.bug.newMessage(
+    ...         owner=bug_watch2.bug.owner, subject='None',
+    ...         content='Imported comment', bugwatch=bug_watch2,
+    ...         remote_comment_id='test')
+    ...     ignore = bug_watch2.bug.newMessage(
+    ...         owner=bug_watch2.bug.owner, subject='None',
+    ...         content='Native comment')
+    ...     ignore = bug_watch2.bug.newMessage(
+    ...         owner=bug_watch2.bug.owner, subject='None',
+    ...         content='Pushable comment', bugwatch=bug_watch2)
 
     >>> for bug_message in bug_watch2.getImportedBugMessages():
     ...     print bug_message.message.text_contents
@@ -323,18 +334,16 @@ DebBugs database.
 We can demonstrate this by creating two messages with the same message
 ID.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> message_one = getUtility(IMessageSet).fromText(
-    ...     "Example Message", "With example content for you to read.")
-    >>> message_two = getUtility(IMessageSet).fromText(
-    ...     "Example Message", "With example content for you to read.",
-    ...     rfc822msgid=message_one.rfc822msgid)
+    >>> with lp_dbuser():
+    ...     message_one = getUtility(IMessageSet).fromText(
+    ...         "Example Message", "With example content for you to read.",
+    ...         owner=janitor)
+    ...     message_two = getUtility(IMessageSet).fromText(
+    ...         "Example Message", "With example content for you to read.",
+    ...         rfc822msgid=message_one.rfc822msgid, owner=janitor)
 
     >>> message_one.rfc822msgid == message_two.rfc822msgid
     True
-
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 We will use message_one to represent a message which was sent directly
 to Launchpad. Since it was a comment on a bug, we link it to that bug.
@@ -384,16 +393,14 @@ import process.
 We'll create a bug watch and add a listener to check for Karma events.
 
     >>> from lp.testing.karma import KarmaAssignedEventListener
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_watch = factory.makeBugWatch('123456')
-    >>> karma_helper = KarmaAssignedEventListener()
-    >>> karma_helper.register_listener()
+    >>> with lp_dbuser():
+    ...     bug_watch = factory.makeBugWatch('123456')
+    ...     karma_helper = KarmaAssignedEventListener()
+    ...     karma_helper.register_listener()
 
 Importing a comment with a CVE reference will produce a CVE link in
 Launchpad but will result in no Karma records being created.
 
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> external_bugtracker.remote_comments = {
     ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
     >>> bugwatch_updater = make_bug_watch_updater(
@@ -451,14 +458,12 @@ comments.
     ...     old_notifications.update(new_notifications)
     ...     return new_notifications
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> now = datetime(2008, 9, 12, 15, 30, 45, tzinfo=pytz.timezone('UTC'))
-    >>> test_bug = factory.makeBug(date_created=now)
-    >>> bug_watch = factory.makeBugWatch('42', bug=test_bug)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     test_bug = factory.makeBug(date_created=now)
+    ...     bug_watch = factory.makeBugWatch('42', bug=test_bug)
 
     >>> get_new_notifications(bug_watch.bug)
     [...]

@@ -3,9 +3,17 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.browser.person import TeamOverviewMenu
+from lp.registry.browser.team import TeamOverviewMenu
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -39,7 +47,7 @@ class TestTeamMenu(TestCaseWithFactory):
         self.assertEqual('Create a mailing list', link.text)
 
     def test_TeamOverviewMenu_check_menu_links_with_mailing(self):
-        mailing_list = self.factory.makeMailingList(
+        self.factory.makeMailingList(
             self.team, self.team.teamowner)
         menu = TeamOverviewMenu(self.team)
         self.assertEqual(True, check_menu_links(menu))
@@ -136,6 +144,18 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             "You can't add a team that doesn't have any active members.",
             view.errors[0])
 
+    def test_no_TeamMembershipTransitionError(self):
+        # Attempting to add a team never triggers a
+        # TeamMembershipTransitionError
+        member_team = self.factory.makeTeam()
+        self.team.addMember(member_team, self.team.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team)
+        for status in TeamMembershipStatus.items:
+            removeSecurityProxy(tm).status = status
+            view = create_initialized_view(self.team, "+addmember")
+            view.add_action.success(data={'newmember': member_team})
+
 
 class TestTeamIndexView(TestCaseWithFactory):
 
@@ -149,3 +169,17 @@ class TestTeamIndexView(TestCaseWithFactory):
     def test_add_member_step_title(self):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
+
+    def test_is_merge_pending(self):
+        target_team = self.factory.makeTeam()
+        job_source = getUtility(IPersonMergeJobSource)
+        job_source.create(
+            from_person=self.team, to_person=target_team,
+            reviewer=target_team.teamowner)
+        view = create_initialized_view(self.team, name="+index")
+        notifications = view.request.response.notifications
+        message = (
+            'Test Team is queued to be be merged or deleted '
+            'in a few minutes.')
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(message, notifications[0].message)

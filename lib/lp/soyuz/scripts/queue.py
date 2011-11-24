@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -24,8 +24,8 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -79,9 +79,8 @@ class QueueAction:
 
     def __init__(self, distribution_name, suite_name, queue, terms,
                  component_name, section_name, priority_name,
-                 announcelist, display, no_mail=True, exact_match=False,
-                 log=None):
-        """Initialises passed variables. """
+                 display, no_mail=True, exact_match=False, log=None):
+        """Initializes passed variables. """
         self.terms = terms
         # Some actions have addtional commands at the start of the terms
         # so allow them to state that here by specifiying the start index.
@@ -94,7 +93,6 @@ class QueueAction:
         self.no_mail = no_mail
         self.distribution_name = distribution_name
         self.suite_name = suite_name
-        self.announcelist = announcelist
         self.default_sender = "%s <%s>" % (
             config.uploader.default_sender_name,
             config.uploader.default_sender_address)
@@ -112,7 +110,7 @@ class QueueAction:
             pocket=self.pocket)
 
     def setDefaultContext(self):
-        """Set default distribuiton, distroseries, announcelist."""
+        """Set default distribuiton, distroseries."""
         # if not found defaults to 'ubuntu'
 
         # Avoid circular imports.
@@ -122,7 +120,7 @@ class QueueAction:
         distroset = getUtility(IDistributionSet)
         try:
             self.distribution = distroset[self.distribution_name]
-        except NotFoundError, info:
+        except NotFoundError:
             self.distribution = distroset['ubuntu']
 
         if self.suite_name:
@@ -131,17 +129,14 @@ class QueueAction:
             try:
                 self.distroseries, self.pocket = (
                     self.distribution.getDistroSeriesAndPocket(
-                    self.suite_name))
-            except NotFoundError, info:
+                        self.suite_name))
+            except NotFoundError:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
                                           self.suite_name))
         else:
             self.distroseries = self.distribution.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
-
-        if not self.announcelist:
-            self.announcelist = self.distroseries.changeslist
 
     def initialize(self):
         """Builds a list of affected records based on the filter argument."""
@@ -199,9 +194,10 @@ class QueueAction:
                     term, version = term.strip().split('/')
 
                 # Expand SQLObject results.
-                for item in self.distroseries.getQueueItems(
+                queue_items = self.distroseries.getPackageUploads(
                     status=self.queue, name=term, version=version,
-                    exact_match=self.exact_match, pocket=self.pocket):
+                    exact_match=self.exact_match, pocket=self.pocket)
+                for item in queue_items:
                     if item not in self.items:
                         self.items.append(item)
                 self.package_names.append(term)
@@ -239,32 +235,50 @@ class QueueAction:
         self.display(self.__doc__)
         raise QueueActionError(extended_info)
 
+    def _makeTag(self, queue_item):
+        """Compose an upload type tag for `queue_item`.
+
+        A source upload without binaries is tagged as "S-".
+        A binary upload without source is tagged as "-B."
+        An upload with both source and binaries is tagged as "SB".
+        An upload with a package copy job is tagged as "X-".
+        """
+        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
+        # are necessary simply to keep the format legaxy.
+        # We may discuss a more reasonable output format later
+        # and avoid extra boring code. The IDRQ.displayname should
+        # do should be enough.
+        if queue_item.package_copy_job is not None:
+            return "X-"
+
+        source_tag = {
+            True: 'S',
+            False: '-',
+        }
+        binary_tag = {
+            True: 'B',
+            False: '-',
+        }
+        return (
+            source_tag[bool(queue_item.contains_source)] +
+            binary_tag[bool(queue_item.contains_build)])
+
     def displayItem(self, queue_item):
         """Display one line summary of the queue item provided."""
-        source_tag = '-'
-        build_tag = '-'
+        tag = self._makeTag(queue_item)
         displayname = queue_item.displayname
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
             queue_item.date_created).approximateduration()
 
-        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
-        # are necessary simply to keep the format legaxy.
-        # We may discuss a more reasonable output format later
-        # and avoid extra boring code. The IDRQ.displayname should
-        # do should be enough.
-        if queue_item.contains_source:
-            source_tag = 'S'
         if queue_item.contains_build:
-            build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
 
-        self.display("%8d | %s%s | %s | %s | %s" %
-                     (queue_item.id, source_tag, build_tag,
-                      displayname.ljust(20)[:20], version.ljust(20)[:20],
-                      age))
+        self.display("%8d | %s | %s | %s | %s" %
+                     (queue_item.id, tag, displayname.ljust(20)[:20],
+                     version.ljust(20)[:20], age))
 
     def displayInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.
@@ -272,11 +286,14 @@ class QueueAction:
         Optionally pass a binarypackagename via 'only' argument to display
         only exact matches within the selected build queue items.
         """
-        for source in queue_item.sources:
-            spr = source.sourcepackagerelease
-            self.display("\t | * %s/%s Component: %s Section: %s"
-                         % (spr.sourcepackagename.name, spr.version,
-                            spr.component.name, spr.section.name))
+        if queue_item.package_copy_job or not queue_item.sources.is_empty():
+            self.display(
+                "\t | * %s/%s Component: %s Section: %s" % (
+                    queue_item.package_name,
+                    queue_item.package_version,
+                    queue_item.component_name,
+                    queue_item.section_name,
+                    ))
 
         for queue_build in queue_item.builds:
             for bpr in queue_build.build.binarypackages:
@@ -483,8 +500,7 @@ class QueueActionAccept(QueueAction):
             self.display('Accepting %s' % queue_item.displayname)
             try:
                 queue_item.acceptFromQueue(
-                    announce_list=self.announcelist, logger=self.log,
-                    dry_run=self.no_mail)
+                    logger=self.log, dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be accepted due to %s'
                              % (queue_item.displayname, info))
@@ -522,8 +538,7 @@ class QueueActionOverride(QueueAction):
 
     def __init__(self, distribution_name, suite_name, queue, terms,
                  component_name, section_name, priority_name,
-                 announcelist, display, no_mail=True, exact_match=False,
-                 log=None):
+                 display, no_mail=True, exact_match=False, log=None):
         """Constructor for QueueActionOverride."""
 
         # This exists so that self.terms_start_index can be set as this action
@@ -532,8 +547,8 @@ class QueueActionOverride(QueueAction):
         # over-ride.
         QueueAction.__init__(self, distribution_name, suite_name, queue,
                              terms, component_name, section_name,
-                             priority_name, announcelist, display,
-                             no_mail=True, exact_match=False, log=log)
+                             priority_name, display, no_mail=True,
+                             exact_match=False, log=log)
         self.terms_start_index = 1
         self.overrides_performed = 0
 
@@ -546,7 +561,7 @@ class QueueActionOverride(QueueAction):
         # ("source" or "binary").
         try:
             override_stanza = self.terms[0]
-        except IndexError, info:
+        except IndexError:
             self.displayUsage('Missing override_stanza.')
             return
 
@@ -576,11 +591,15 @@ class QueueActionOverride(QueueAction):
         for queue_item in self.items:
             # We delegate to the queue_item itself to override any/all
             # of its sources.
-            if queue_item.contains_source:
+            if queue_item.contains_source or queue_item.package_copy_job:
+                if queue_item.sourcepackagerelease:
+                    old_component = queue_item.sourcepackagerelease.component
+                else:
+                    old_component = getUtility(IComponentSet)[
+                        queue_item.package_copy_job.component_name]
                 queue_item.overrideSource(
                     component, section, [
-                        component,
-                        queue_item.sourcepackagerelease.component])
+                        component, old_component])
                 self.overrides_performed += 1
             self.displayInfo(queue_item)
 
@@ -665,12 +684,11 @@ class CommandRunner:
     """A wrapper for queue_action classes."""
 
     def __init__(self, queue, distribution_name, suite_name,
-                 announcelist, no_mail, component_name, section_name,
-                 priority_name, display=default_display, log=None):
+                 no_mail, component_name, section_name, priority_name,
+                 display=default_display, log=None):
         self.queue = queue
         self.distribution_name = distribution_name
         self.suite_name = suite_name
-        self.announcelist = announcelist
         self.no_mail = no_mail
         self.component_name = component_name
         self.section_name = section_name
@@ -685,7 +703,7 @@ class CommandRunner:
         # check syntax, abort process if anything gets wrong
         try:
             action = terms[0]
-            arguments = terms[1:]
+            arguments = [unicode(term) for term in terms[1:]]
         except IndexError:
             raise CommandRunnerError('Invalid sentence, use help.')
 
@@ -701,7 +719,6 @@ class CommandRunner:
             queue_action = queue_action_class(
                 distribution_name=self.distribution_name,
                 suite_name=self.suite_name,
-                announcelist=self.announcelist,
                 queue=self.queue,
                 no_mail=self.no_mail,
                 display=self.display,

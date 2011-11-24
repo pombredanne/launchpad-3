@@ -24,7 +24,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
@@ -34,11 +33,7 @@ from lp.app.errors import (
     NameLookupFailed,
     NotFoundError,
     )
-from lp.code.bzr import (
-    BranchFormat,
-    ControlFormat,
-    RepositoryFormat,
-    )
+from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationException,
@@ -47,6 +42,7 @@ from lp.code.errors import (
     NoLinkedBranch,
     UnknownBranchTypeError,
     )
+from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
@@ -59,6 +55,8 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     ICodehostingAPI,
@@ -66,6 +64,10 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_SERVICES,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -74,6 +76,7 @@ from lp.registry.interfaces.product import (
     InvalidProductName,
     NoSuchProduct,
     )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split
 
@@ -192,6 +195,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 target = IBranchTarget(context)
                 namespace = target.getNamespace(requester)
                 branch_name = namespace.findUnusedName('trunk')
+
                 def link_func(new_branch):
                     link = ICanHasLinkedBranch(context)
                     link.setBranch(new_branch, requester)
@@ -221,6 +225,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             except NoSuchProduct, e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
+            except NoSuchSourcePackageName as e:
+                try:
+                    getUtility(ISourcePackageNameSet).new(e.name)
+                except InvalidName:
+                    return faults.InvalidSourcePackageName(e.name)
+                return self.createBranch(login_id, branch_path)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))
             try:
@@ -272,22 +282,20 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if branch is None:
                 return faults.NoBranchWithID(branch_id)
 
-            control_format = ControlFormat.get_enum(control_string)
-            branch_format = BranchFormat.get_enum(branch_string)
-            repository_format = RepositoryFormat.get_enum(repository_string)
-
             if requester == LAUNCHPAD_SERVICES:
                 branch = removeSecurityProxy(branch)
 
-            branch.branchChanged(
-                stacked_on_location, last_revision_id, control_format,
-                branch_format, repository_format)
+            info = get_db_branch_info(
+                stacked_on_location, last_revision_id, control_string,
+                branch_string, repository_string)
+            branch.branchChanged(**info)
 
             return True
 
         return run_with_login(login_id, branch_changed)
 
-    def _serializeBranch(self, requester, branch, trailing_path):
+    def _serializeBranch(self, requester, branch, trailing_path,
+                         force_readonly=False):
         if requester == LAUNCHPAD_SERVICES:
             branch = removeSecurityProxy(branch)
         try:
@@ -296,10 +304,13 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             raise faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
+        if force_readonly:
+            writable = False
+        else:
+            writable = self._canWriteToBranch(requester, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch_id,
-             'writable': self._canWriteToBranch(requester, branch)},
+            {'id': branch_id, 'writable': writable},
             trailing_path)
 
     def _serializeControlDirectory(self, requester, product_path,
@@ -315,13 +326,32 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         if default_branch is None:
             return
         try:
-            unique_name = default_branch.unique_name
+            path = branch_id_alias(default_branch)
         except Unauthorized:
             return
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
+
+    def _translateBranchIdAlias(self, requester, path):
+        # If the path isn't a branch id alias, nothing more to do.
+        stripped_path = unescape(path.strip('/'))
+        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return None
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            raise faults.PathTranslationError(path)
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            raise faults.PathTranslationError(path)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return self._serializeBranch(requester, branch, trailing, True)
 
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
@@ -329,6 +359,9 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
+            branch = self._translateBranchIdAlias(requester, path)
+            if branch is not None:
+                return branch
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
                 first = unescape(first)

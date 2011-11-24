@@ -28,7 +28,7 @@ That interface allows the codehosting SSH server to find information
 about users.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> authserver= xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/authserver',
     ...     transport=XMLRPCTestTransport())

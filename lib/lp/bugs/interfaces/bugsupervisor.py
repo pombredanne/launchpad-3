@@ -16,6 +16,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     REQUEST_USER,
     )
@@ -32,13 +33,9 @@ class IHasBugSupervisor(Interface):
         title=_("Bug Supervisor"),
         description=_(
             "The Launchpad id of the person or team (preferred) responsible "
-            "for bug management.  The bug supervisor will be subscribed to "
-            "all bugs and will receive email about all activity on all bugs "
-            "for this project, so that should be a factor in your decision.  "
-            "The bug supervisor will also have access to all private bugs."),
-
-
-
+            "for bug management. Mail about all bug activity will be sent to "
+            "the supervisor by default. The bug supervisor can change the "
+            "bug mail rules to limit the volume of email."),
         required=False, vocabulary='ValidPersonOrTeam', readonly=True))
 
     @mutator_for(bug_supervisor)
@@ -46,5 +43,6 @@ class IHasBugSupervisor(Interface):
     @operation_parameters(
         bug_supervisor=copy_field(bug_supervisor))
     @export_write_operation()
+    @operation_for_version('beta')
     def setBugSupervisor(bug_supervisor, user):
         """Set the bug contact and create a bug subscription."""

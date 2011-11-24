@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
@@ -24,8 +24,11 @@ from zope.component import (
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc import faults
+from lp.app.validators import (
+    LaunchpadValidationError,
+    )
+from lp.app.validators.name import valid_name
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -37,6 +40,8 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
@@ -49,6 +54,7 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
+from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
@@ -190,6 +196,14 @@ class FakeSourcePackage:
 
     def setBranch(self, pocket, branch, registrant):
         self.distroseries._linked_branches[self, pocket] = branch
+
+
+class SourcePackageNameSet(ObjectSet):
+
+    def new(self, name_string):
+        if not valid_name(name_string):
+            raise InvalidName(name_string)
+        return self._add(FakeSourcePackageName(name_string))
 
 
 @adapter(FakeSourcePackage)
@@ -444,23 +458,19 @@ class FakeObjectFactory(ObjectFactory):
         self._distribution_set._add(distro)
         return distro
 
-    def makeDistroRelease(self):
+    def makeDistroSeries(self):
         distro = self.makeDistribution()
         distroseries_name = self.getUniqueString()
         distroseries = FakeDistroSeries(distroseries_name, distro)
         self._distroseries_set._add(distroseries)
         return distroseries
 
-    makeDistroSeries = makeDistroRelease
-
     def makeSourcePackageName(self):
-        sourcepackagename = FakeSourcePackageName(self.getUniqueString())
-        self._sourcepackagename_set._add(sourcepackagename)
-        return sourcepackagename
+        return self._sourcepackagename_set.new(self.getUniqueString())
 
     def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            distroseries = self.makeDistroSeries()
         if sourcepackagename is None:
             sourcepackagename = self.makeSourcePackageName()
         package = FakeSourcePackage(sourcepackagename, distroseries)
@@ -659,9 +669,12 @@ class FakeCodehosting:
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                raise faults.NotFound(
-                    "No such source package: '%s'."
-                    % (data['sourcepackagename'],))
+                try:
+                    sourcepackagename = self._sourcepackagename_set.new(
+                        data['sourcepackagename'])
+                except InvalidName:
+                    raise faults.InvalidSourcePackageName(
+                        data['sourcepackagename'])
             sourcepackage = self._factory.makeSourcePackage(
                 distroseries, sourcepackagename)
         else:
@@ -801,26 +814,52 @@ class FakeCodehosting:
             return
         if not self._canRead(requester, default_branch):
             return
+        path = branch_id_alias(default_branch)
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
-    def _serializeBranch(self, requester_id, branch, trailing_path):
+    def _serializeBranch(self, requester_id, branch, trailing_path,
+                         force_readonly=False):
         if not self._canRead(requester_id, branch):
             return faults.PermissionDenied()
         elif branch.branch_type == BranchType.REMOTE:
             return None
+        if force_readonly:
+            writable = False
         else:
-            return (
-                BRANCH_TRANSPORT,
-                {'id': branch.id,
-                 'writable': self._canWrite(requester_id, branch),
-                 }, trailing_path)
+            writable = self._canWrite(requester_id, branch)
+        return (
+            BRANCH_TRANSPORT,
+            {'id': branch.id, 'writable': writable},
+            trailing_path)
+
+    def _translateBranchIdAlias(self, requester, path):
+        # If the path isn't a branch id alias, nothing more to do.
+        stripped_path = unescape(path.strip('/'))
+        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return None
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return faults.PathTranslationError(path)
+        branch = self._branch_set.get(branch_id)
+        if branch is None:
+            return faults.PathTranslationError(path)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return self._serializeBranch(requester, branch, trailing, True)
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
+        branch = self._translateBranchIdAlias(requester_id, path)
+        if branch is not None:
+            return branch
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')
@@ -831,7 +870,8 @@ class FakeCodehosting:
                 if product:
                     branch = product.development_focus.branch
                 else:
-                    branch = self._branch_set._find(unique_name=component_name)
+                    branch = self._branch_set._find(
+                        unique_name=component_name)
             else:
                 branch = self._branch_set._find(unique_name=first)
             if branch is not None:
@@ -863,7 +903,7 @@ class InMemoryFrontend:
         self._product_set = ObjectSet()
         self._distribution_set = ObjectSet()
         self._distroseries_set = ObjectSet()
-        self._sourcepackagename_set = ObjectSet()
+        self._sourcepackagename_set = SourcePackageNameSet()
         self._factory = FakeObjectFactory(
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,

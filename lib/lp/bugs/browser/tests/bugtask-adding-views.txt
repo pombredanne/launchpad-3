@@ -125,6 +125,9 @@ be chosen manually, and the user may choose to link the package to the
 project..
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_thunderbird.sourcepackagename)
     >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
     >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
 
@@ -213,7 +216,7 @@ be created:
     >>> form['field.product'] = u'evolution'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -259,7 +262,7 @@ watch.
     >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
     >>> print add_task_view.notifications
     []
     >>> add_task_view.next_url is not None
@@ -321,7 +324,7 @@ linked to the new bug watch.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -344,7 +347,7 @@ and the bug watch will be added without any confirmation needed:
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> print add_task_view.notifications
     []
@@ -362,7 +365,7 @@ and the bug watch will be added without any confirmation needed:
     bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
-attributes got initialised to Unknown. The bugtask will be synced with
+attributes got initialized to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
@@ -387,7 +390,7 @@ another bug links to the same bug.
     >>> add_task_view = get_and_setup_view(
     ...     bug_five_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+bug/5'
@@ -436,7 +439,7 @@ package will be converted to the corresponding source package.
     ...     'field.sourcepackagename': u'mozilla-firefox-data'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
     >>> add_task_view.errors
     []
 
@@ -555,22 +558,23 @@ project in question.
 IAddBugTaskForm Interface Definition
 ====================================
 
-IAddBugTaskForm, which is used as the schema for the views tested above, has
-some attributes which are identical to those of IUpstreamBugTask and
-IDistroBugTask. However, we must ensure that IAddBugTask defines its own
-attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
-since doing so has produced OOPSes (bug 129406).
+IAddBugTaskForm, which is used as the schema for the views tested above,
+has some attributes which are identical to those of IBugTask However, we
+must ensure that IAddBugTask defines its own attributes rather than
+borrowing those of IBugTask, since doing so has produced OOPSes (bug
+129406).
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     IAddBugTaskForm, IDistroBugTask, IUpstreamBugTask)
-    >>> IAddBugTaskForm['product'] is IUpstreamBugTask['product']
+    ...     IAddBugTaskForm,
+    ...     IBugTask,
+    ...     )
+    >>> IAddBugTaskForm['product'] is IBugTask['product']
     False
 
-    >>> IAddBugTaskForm['distribution'] is IDistroBugTask['distribution']
+    >>> IAddBugTaskForm['distribution'] is IBugTask['distribution']
     False
 
-    >>> (IAddBugTaskForm['sourcepackagename'] is
-    ...     IDistroBugTask['sourcepackagename'])
+    >>> IAddBugTaskForm['sourcepackagename'] is IBugTask['sourcepackagename']
     False
 
 

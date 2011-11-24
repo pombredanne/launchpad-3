@@ -32,8 +32,6 @@ __all__ = [
     'ISSHKey',
     'ISourcePackage',
     'ISourcePackageName',
-    'IStructuralSubscription',
-    'IStructuralSubscriptionTarget',
     'ITeam',
     'ITeamMembership',
     'ITimelineProductSeries',
@@ -96,10 +94,6 @@ from lp.registry.interfaces.projectgroup import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.ssh import ISSHKey
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular

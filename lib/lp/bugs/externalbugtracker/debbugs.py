@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Debbugs ExternalBugTracker utility."""
@@ -24,8 +24,6 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -35,7 +33,6 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     UnknownRemoteStatusError,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -47,6 +44,9 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.bugs.scripts import debbugs
+from lp.services.database.isolation import ensure_no_transaction
+from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -107,7 +107,6 @@ class DebBugs(ExternalBugTracker):
         # trust it being correct.
         return datetime.now(pytz.timezone('UTC'))
 
-
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
 
@@ -137,7 +136,6 @@ class DebBugs(ExternalBugTracker):
             raise UnknownRemoteStatusError(remote_status)
 
         status = parts[0]
-        severity = parts[1]
         tags = parts[2:]
 
         # For the moment we convert only the status, not the severity.

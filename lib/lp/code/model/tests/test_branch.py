@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
@@ -20,6 +19,7 @@ from pytz import UTC
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -27,7 +27,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
@@ -35,7 +34,8 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
@@ -57,14 +57,17 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
     CannotDeleteBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -80,6 +83,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -94,7 +98,6 @@ from lp.code.model.branch import (
     update_trigger_modified_fields,
     )
 from lp.code.model.branchjob import (
-    BranchDiffJob,
     BranchJob,
     BranchJobType,
     ReclaimBranchSpaceJob,
@@ -108,10 +111,13 @@ from lp.code.model.codeimport import (
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
-from lp.codehosting.bzrutils import UnsafeUrlSeen
+from lp.codehosting.safe_open import BadUrl
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
+from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -147,6 +153,7 @@ class TestCodeImport(TestCase):
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
+        clear_property_cache(branch)
         self.assertEqual(None, branch.code_import)
 
 
@@ -177,6 +184,16 @@ class TestBranchChanged(TestCaseWithFactory):
         login_person(branch.owner)
         branch.branchChanged(
             stacked_on.unique_name, '', *self.arbitrary_formats)
+        self.assertEqual(stacked_on, branch.stacked_on)
+
+    def test_branchChanged_sets_stacked_on_branch_id_alias(self):
+        # branchChanged sets the stacked_on attribute based on the id of the
+        # branch if it is valid.
+        branch = self.factory.makeAnyBranch()
+        stacked_on = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        stacked_on_location = branch_id_alias(stacked_on)
+        branch.branchChanged(stacked_on_location, '', *self.arbitrary_formats)
         self.assertEqual(stacked_on, branch.stacked_on)
 
     def test_branchChanged_unsets_stacked_on(self):
@@ -574,12 +591,30 @@ class TestBranchUpgrade(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         self.assertFalse(branch.needs_upgrading)
 
+    def test_checkUpgrade_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        with ExpectedException(
+            AlreadyLatestFormat,
+            'Branch lp://dev/~person-name.*junk/branch.* is in the latest'
+            ' format, so it cannot be upgraded.'):
+            branch.checkUpgrade()
+
     def test_needsUpgrade_mirrored_branch(self):
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
             branch_format=BranchFormat.BZR_BRANCH_6,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertFalse(branch.needs_upgrading)
+
+    def test_checkUpgrade_mirrored_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        with ExpectedException(
+            CannotUpgradeNonHosted,
+            'Cannot upgrade non-hosted branch %s' % branch.bzr_identity):
+            branch.checkUpgrade()
 
     def test_needsUpgrade_remote_branch(self):
         branch = self.factory.makeBranch(
@@ -605,9 +640,23 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
         self.assertFalse(branch.needs_upgrading)
+
+    def test_checkUpgrade_already_requested(self):
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade(branch.owner)
+        with ExpectedException(
+            UpgradePending,
+            'An upgrade is already in progress for branch'
+            ' lp://dev/~person-name.*junk/branch.*.'):
+            branch.checkUpgrade()
 
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
@@ -626,6 +675,17 @@ class TestBranchUpgrade(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
+
+    def test_checkUpgrade_branch_format_upgrade_not_needed(self):
+        # If a branch is up-to-date, checkUpgrade raises AlreadyLatestFormat
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        with ExpectedException(
+            AlreadyLatestFormat,
+            'Branch lp://dev/~person-name.*junk/branch.* is in the latest'
+            ' format, so it cannot be upgraded.'):
+            branch.checkUpgrade()
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
@@ -670,7 +730,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        job = removeSecurityProxy(branch.requestUpgrade())
+        job = removeSecurityProxy(branch.requestUpgrade(branch.owner))
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
@@ -679,26 +739,27 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
-        # AssertionError.
+        # AlreadyLatestFormat.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        self.assertRaises(AssertionError, branch.requestUpgrade)
+        self.assertRaises(
+            AlreadyLatestFormat, branch.requestUpgrade, branch.owner)
 
     def test_requestUpgrade_upgrade_pending(self):
         # If there is a pending upgrade already requested, requestUpgrade
-        # raises an AssertionError.
+        # raises an UpgradePending.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
-        self.assertRaises(AssertionError, branch.requestUpgrade)
+        self.assertRaises(UpgradePending, branch.requestUpgrade, branch.owner)
 
     def test_upgradePending(self):
         # If there is a BranchUpgradeJob pending for the branch, return True.
@@ -707,7 +768,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
         self.assertTrue(branch.upgrade_pending)
 
@@ -725,7 +786,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch_job = removeSecurityProxy(branch.requestUpgrade())
+        branch_job = removeSecurityProxy(branch.requestUpgrade(branch.owner))
         branch_job.job.start()
         branch_job.job.complete()
 
@@ -802,8 +863,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -835,8 +895,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.BACKPORTS)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -867,8 +926,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sp)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sp.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -898,8 +956,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -1010,8 +1067,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         pocket = PackagePublishingPocket.BACKPORTS
         linked_branch = ICanHasLinkedBranch(
             branch.sourcepackage.getSuiteSourcePackage(pocket))
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = branch.sourcepackage.distribution.owner
         login_person(registrant)
         linked_branch.setBranch(branch, registrant)
         logout()
@@ -1026,8 +1082,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(
             sourcepackage=distro_package.development_version)
         linked_branch = ICanHasLinkedBranch(distro_package)
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             linked_branch.setBranch, branch, registrant)
@@ -1084,6 +1139,12 @@ class TestBranchDeletion(TestCaseWithFactory):
             branch.canBeDeleted(), True,
             "A branch that has a import is deletable.")
 
+    def test_accessPolicyArtifactDoesntDisableDeletion(self):
+        """A branch referenced by an AccessPolicyArtifact can be deleted."""
+        artifact = self.factory.makeAccessPolicyArtifact(self.branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertEqual(True, self.branch.canBeDeleted())
+
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
@@ -1100,7 +1161,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         spec = getUtility(ISpecificationSet).new(
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
+            definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
@@ -1174,8 +1235,9 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_relatedBranchJobsDeleted(self):
         # A branch with an associated branch job will delete those jobs.
-        branch = self.factory.makeAnyBranch()
-        BranchDiffJob.create(branch, 'from-spec', 'to-spec')
+        branch = self.factory.makeBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        removeSecurityProxy(branch).requestUpgrade(branch.owner)
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
@@ -1216,6 +1278,17 @@ class TestBranchDeletion(TestCaseWithFactory):
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
         self.assertNotEqual([], list(other_buildqueue))
+
+    def test_AccessPolicyArtifact_deleted(self):
+        # Any AccessPolicyArtifact referencing the branch is removed.
+        branch = self.factory.makeAnyBranch()
+        artifact = self.factory.makeAccessPolicyArtifact(branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertIsNot(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
+        branch.destroySelf()
+        self.assertIs(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -1420,15 +1493,12 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
-        series_set = getUtility(IFindOfficialBranchLinks)
-        [link] = list(series_set.findForBranch(branch))
+            pocket, branch, package.distribution.owner)
         self.assertEqual(
-            {link: ('alter',
+            {package: ('alter',
                     _('Branch is officially linked to a source package.'))},
             branch.deletionRequirements())
 
@@ -1439,11 +1509,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         self.assertEqual(False, branch.canBeDeleted())
         branch.destroySelf(break_references=True)
         self.assertIs(None, package.getBranch(pocket))
@@ -1460,7 +1529,6 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1492,11 +1560,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         ClearOfficialPackageBranch(link)()
@@ -1526,7 +1593,6 @@ class TestBranchDeletionConsequences(TestCase):
         """DeleteCodeImport.__call__ must delete the CodeImport."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1729,6 +1795,18 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         votes = set((vote.reviewer, vote.review_type) for vote in bmp.votes)
         self.assertEqual(
             set([(person1, 'review1'), (person2, 'review2')]), votes)
+
+
+class TestLandingCandidates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch(self):
+        """landing_candidates works for private branches."""
+        branch = self.factory.makeBranch(private=True)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            self.assertContentEqual([mp], branch.landing_candidates)
 
 
 class BranchDateLastModified(TestCaseWithFactory):
@@ -2167,6 +2245,37 @@ class TestPendingWrites(TestCaseWithFactory):
         self.assertEqual(True, branch.pending_writes)
 
 
+class TestBranchPrivacy(TestCaseWithFactory):
+    """Tests for branch privacy."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_public_stacked_on_private_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
+        self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertFalse(branch.explicitly_private)
+
+    def test_private_stacked_on_public_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=False)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
+
+    def test_personal_branches_for_private_teams_are_private(self):
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makePersonalBranch(owner=team)
+        self.assertTrue(branch.private)
+
+
 class TestBranchSetPrivate(TestCaseWithFactory):
     """Test IBranch.setPrivate."""
 
@@ -2182,6 +2291,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
+        self.assertFalse(branch.explicitly_private)
 
     def test_public_to_private_allowed(self):
         # If there is a privacy policy allowing the branch owner to have
@@ -2191,6 +2302,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
@@ -2209,6 +2322,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         admins = getUtility(ILaunchpadCelebrities).admin
         branch.setPrivate(True, admins.teamowner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
@@ -2216,6 +2331,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
@@ -2223,6 +2340,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(private=True)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
+        self.assertFalse(branch.explicitly_private)
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
@@ -2492,20 +2611,6 @@ class TestBranchSetOwner(TestCaseWithFactory):
         branch.setOwner(person, admin)
         self.assertEqual(person, branch.owner)
 
-    def test_bazaar_experts_can_set_any_team_or_person(self):
-        # A bazaar expert can set the branch to be owned by any team or
-        # person.
-        branch = self.factory.makeAnyBranch()
-        team = self.factory.makeTeam()
-        # To get a random administrator, choose the admin team owner.
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        login_person(experts)
-        branch.setOwner(team, experts)
-        self.assertEqual(team, branch.owner)
-        person = self.factory.makePerson()
-        branch.setOwner(person, experts)
-        self.assertEqual(person, branch.owner)
-
 
 class TestBranchSetTarget(TestCaseWithFactory):
     """Tests for IBranch.setTarget."""
@@ -2640,7 +2745,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new], branch_revisions)
 
     def test_end_date(self):
@@ -2654,7 +2759,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         add_revision_to_branch(
             self.factory, branch, end_date + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch, end_date)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([in_range], branch_revisions)
 
     def test_newest_first(self):
@@ -2666,7 +2771,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=False)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
     def test_oldest_first(self):
@@ -2678,7 +2783,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=True)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([old, new], branch_revisions)
 
     def test_only_mainline_revisions(self):
@@ -2693,12 +2798,12 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=3))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
 
 class TestGetBzrBranch(TestCaseWithFactory):
-    """Tests for `IBranch.safe_open`."""
+    """Tests for `IBranch.getBzrBranch`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -2734,7 +2839,7 @@ class TestGetBzrBranch(TestCaseWithFactory):
         branch = BzrDir.create_branch_convenience('local')
         db_stacked, stacked_tree = self.create_branch_and_tree()
         stacked_tree.branch.set_stacked_on_url(branch.base)
-        self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
+        self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
 class TestMergeQueue(TestCaseWithFactory):
@@ -2787,9 +2892,7 @@ class TestWebservice(TestCaseWithFactory):
             db_queue = self.factory.makeBranchMergeQueue()
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
-
-        configuration = simplejson.dumps({'test': 'make check'})
+                service_root=self.layer.appserver_root_url('api'))
 
         branch = ws_object(launchpad, db_branch)
         queue = ws_object(launchpad, db_queue)
@@ -2804,7 +2907,7 @@ class TestWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2814,20 +2917,3 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
-
-    def test_getMergeProposals_with_merged_revnos(self):
-        """Specifying merged revnos selects the correct merge proposal."""
-        mp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for('test', mp.registrant,
-            service_root="http://api.launchpad.dev:8085")
-        with person_logged_in(mp.registrant):
-            mp.markAsMerged(merged_revno=123)
-            transaction.commit()
-            target = ws_object(launchpad, mp.target_branch)
-            mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

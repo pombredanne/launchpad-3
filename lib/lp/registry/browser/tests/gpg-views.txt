@@ -7,9 +7,9 @@ This tests GPG-related pages of an IPerson.
 
 Set up the key server:
 
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> z = ZecaTestSetup()
-  >>> z.setUp()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> tac = KeyServerTac()
+  >>> tac.setUp()
 
 Grab the sample user:
 
@@ -135,5 +135,4 @@ In some unknown way, the action sent to the form can be None (see bug 520476).
      ...
     UnexpectedFormData: Action not permitted: None
 
-Tear down the key server.
-    >>> z.tearDown()
+    >>> tac.tearDown()

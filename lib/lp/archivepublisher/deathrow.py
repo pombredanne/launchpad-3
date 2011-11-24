@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -14,16 +14,12 @@ import pytz
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.archivepublisher.config import (
-    getPubConfig,
-    LucilleConfigError,
-    )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.utils import process_in_batches
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
+    inactive_publishing_status,
     ISourcePackagePublishingHistory,
     MissingSymlinkInPool,
     NotInPool,
@@ -40,12 +36,8 @@ def getDeathRow(archive, log, pool_root_override):
          the one provided by the publishing-configuration, it will be only
          used for PRIMARY archives.
     """
-    log.debug("Grab Lucille config.")
-    try:
-        pubconf = getPubConfig(archive)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
+    log.debug("Grab publisher config.")
+    pubconf = getPubConfig(archive)
 
     if (pool_root_override is not None and
         archive.purpose == ArchivePurpose.PRIMARY):
@@ -72,6 +64,7 @@ class DeathRow:
     removal in the publisher tables, and if they are no longer referenced
     by other packages.
     """
+
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
         self.diskpool = diskpool
@@ -127,7 +120,7 @@ class DeathRow:
                   spph.archive = %s AND
                   spph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
-                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+                        inactive_publishing_status), orderBy="id")
         self.logger.debug("%d Sources" % sources.count())
 
         binaries = BinaryPackagePublishingHistory.select("""
@@ -142,7 +135,7 @@ class DeathRow:
                   bpph.archive = %s AND
                   bpph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
-                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+                        inactive_publishing_status), orderBy="id")
         self.logger.debug("%d Binaries" % binaries.count())
 
         return (sources, binaries)
@@ -196,7 +189,7 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if pub.status not in ELIGIBLE_DOMINATION_STATES:
+            if pub.status not in inactive_publishing_status:
                 return False
             # Deny removal if any reference wasn't dominated yet.
             if pub.scheduleddeletiondate is None:
@@ -215,6 +208,12 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            BinaryPackagePublishingHistory,
+            SourcePackagePublishingHistory,
+            )
+
         bytes = 0
         condemned_files = set()
         condemned_records = set()
@@ -265,25 +264,10 @@ class DeathRow:
                 condemned_records.add(pub_file.publishing_record)
 
         # Check source and binary publishing records.
-        def check_source(pub_record):
-            # Avoid circular imports.
-            from lp.soyuz.model.publishing import (
-                SourcePackagePublishingHistory)
+        for pub_record in condemned_source_files:
             checkPubRecord(pub_record, SourcePackagePublishingHistory)
-
-        process_in_batches(
-            condemned_source_files, check_source, self.logger,
-            minimum_chunk_size=500)
-
-        def check_binary(pub_record):
-            # Avoid circular imports.
-            from lp.soyuz.model.publishing import (
-                BinaryPackagePublishingHistory)
+        for pub_record in condemned_binary_files:
             checkPubRecord(pub_record, BinaryPackagePublishingHistory)
-
-        process_in_batches(
-            condemned_binary_files, check_binary, self.logger,
-            minimum_chunk_size=500)
 
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
@@ -315,4 +299,3 @@ class DeathRow:
                           len(condemned_records))
         for record in condemned_records:
             record.dateremoved = UTC_NOW
-

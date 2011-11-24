@@ -87,7 +87,7 @@ class BazaarApplicationView(LaunchpadView):
     @cachedproperty
     def short_product_tag_cloud(self):
         """Show a preview of the product tag cloud."""
-        return BazaarProductView().products(
+        return BazaarProductView(None, None).products(
             num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
@@ -150,7 +150,7 @@ class BazaarProjectsRedirect(LaunchpadView):
         self.request.response.redirect(redirect_url, status=301)
 
 
-class BazaarProductView:
+class BazaarProductView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
 
     def _make_distribution_map(self, values, percentile_map):

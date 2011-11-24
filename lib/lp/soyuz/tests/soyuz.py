@@ -18,7 +18,6 @@ from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.ftests import (
     import_public_test_keys,
-    syncUpdate,
     )
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -31,6 +30,7 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.sampledata import (
     BUILDD_ADMIN_USERNAME,
     CHROOT_LIBRARYFILEALIAS,
@@ -104,7 +104,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 
@@ -129,7 +128,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 
@@ -156,17 +154,13 @@ class TestPackageDiffsBase(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
-        self.layer.alterConnection(dbuser=LAUNCHPAD_DBUSER_NAME)
+        with dbuser(LAUNCHPAD_DBUSER_NAME):
+            fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
+            ubuntu = getUtility(IDistributionSet).getByName(
+                UBUNTU_DISTRIBUTION_NAME)
+            warty = ubuntu.getSeries(WARTY_DISTROSERIES_NAME)
+            warty[I386_ARCHITECTURE_NAME].addOrUpdateChroot(fake_chroot)
 
-        fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
-        ubuntu = getUtility(IDistributionSet).getByName(
-            UBUNTU_DISTRIBUTION_NAME)
-        warty = ubuntu.getSeries(WARTY_DISTROSERIES_NAME)
-        warty[I386_ARCHITECTURE_NAME].addOrUpdateChroot(fake_chroot)
-
-        self.layer.txn.commit()
-
-        self.layer.alterConnection(dbuser=self.dbuser)
         self.packager = self.uploadTestPackages()
         self.layer.txn.commit()
 

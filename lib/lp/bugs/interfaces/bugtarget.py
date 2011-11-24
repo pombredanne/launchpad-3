@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -18,7 +18,9 @@ __all__ = [
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
+    'ISeriesBugTarget',
     ]
+
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
@@ -28,6 +30,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_removed_in_version,
     operation_returns_collection_of,
@@ -35,7 +38,6 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -52,6 +54,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
     IBugTask,
@@ -59,7 +62,8 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.services.fields import Tag
 
-search_tasks_params_for_api_1_0 = {
+
+search_tasks_params_common = {
     "order_by": List(
         title=_('List of fields by which the results are ordered.'),
         value_type=Text(),
@@ -80,7 +84,6 @@ search_tasks_params_for_api_1_0 = {
     "tags": copy_field(IBugTaskSearch['tag']),
     "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
-    "omit_targeted": copy_field(IBugTaskSearch['omit_targeted']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
     "milestone_assignment": copy_field(
         IBugTaskSearch['milestone_assignment']),
@@ -172,9 +175,21 @@ search_tasks_params_for_api_1_0 = {
             "date."),
         required=False),
     }
-search_tasks_params_for_api_devel = search_tasks_params_for_api_1_0.copy()
-search_tasks_params_for_api_devel["omit_targeted"] = copy_field(
-    IBugTaskSearch['omit_targeted'], default=False)
+
+search_tasks_params_for_api_default = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted']))
+
+search_tasks_params_for_api_devel = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted'], default=False),
+    linked_blueprints=Choice(
+        title=_(
+            u"Search for bugs that are linked to blueprints or for "
+            u"bugs that are not linked to blueprints."),
+        vocabulary=BugBlueprintSearch, required=False))
 
 
 class IHasBugs(Interface):
@@ -203,16 +218,21 @@ class IHasBugs(Interface):
     has_bugtasks = Attribute(
         "True if a BugTask has ever been reported for this target.")
 
+    # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+    #
+    # Pop the *default* version (decorators are run last to first).
     @operation_removed_in_version('devel')
-
+    #
+    # searchTasks default API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(**search_tasks_params_for_api_1_0)
+    @operation_parameters(**search_tasks_params_for_api_default)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+    @operation_for_version('beta')
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,
@@ -232,8 +252,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    structural_subscriber=None, modified_since=None,
-                    created_since=None, prejoins=[]):
+                    linked_blueprints=None, structural_subscriber=None,
+                    modified_since=None, created_since=None, prejoins=[]):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -252,13 +272,14 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug to True.
         """
 
-    def getBugCounts(user, statuses=None):
-        """Return a dict with the number of bugs in each possible status.
+    def getBugTaskWeightFunction():
+        """Return a function that is used to weight the bug tasks.
 
-            :user: Only bugs the user has permission to view will be
-                   counted.
-            :statuses: Only bugs with these statuses will be counted. If
-                       None, all statuses will be included.
+        The function should take a bug task as a parameter and return
+        an OrderedBugTask.
+
+        The ordered bug tasks are used to choose the most relevant bug task
+        for any particular context.
         """
 
 
@@ -274,6 +295,8 @@ class IBugTarget(IHasBugs):
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
+
+    pillar = Attribute("The pillar containing this target.")
 
     bug_reporting_guidelines = exported(
         Text(
@@ -374,13 +397,18 @@ class IHasOfficialBugTags(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
-    def getUsedBugTagsWithOpenCounts(user):
+    def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
+        :param user: The user who wants the report.
+        :param tag_limit: The number of tags to return (excludes those found
+            by matching include_tags). If 0 then all tags are returned. If
+            non-zero then the most frequently used tags are returned.
+        :param include_tags: A list of string tags to return irrespective of
+            usage. Tags in this list that have no open bugs are returned with
+            a count of 0. May be None if there are tags to require inclusion
+            of.
+        :return: A dict from tag -> count.
         """
 
     def _getOfficialTagClause():
@@ -400,12 +428,14 @@ class IOfficialBugTagTargetRestricted(Interface):
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
@@ -427,5 +457,12 @@ class IOfficialBugTag(Interface):
     target = Object(
         title=u'The target of this bug tag.',
         schema=IOfficialBugTagTarget,
-        description=
-            u'The distribution or product having this official bug tag.')
+        description=(
+            u'The distribution or product having this official bug tag.'))
+
+
+class ISeriesBugTarget(Interface):
+    """An `IBugTarget` which is a series."""
+
+    bugtarget_parent = Attribute(
+        "Non-series parent of this series bug target.")

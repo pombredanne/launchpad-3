@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions to help with translation templates."""
@@ -12,7 +12,7 @@ __all__ = [
 
 import os
 
-from canonical.launchpad.validators.name import sanitize_name
+from lp.app.validators.name import sanitize_name
 
 
 GENERIC_TEMPLATE_NAMES = [
@@ -26,7 +26,7 @@ GENERIC_TEMPLATE_DIRS = [
     ]
 
 
-def make_domain(path):
+def make_domain(path, default=''):
     """Generate the translation domain name from the path of the template
     file.
 
@@ -40,9 +40,9 @@ def make_domain(path):
         return domain
     dname1, dname2 = os.path.split(dname)
     if dname2 not in GENERIC_TEMPLATE_DIRS:
-        return dname2
+        return dname2 or default
     rest, domain = os.path.split(dname1)
-    return domain
+    return domain or default
 
 
 def make_name(domain):
@@ -50,7 +50,6 @@ def make_name(domain):
     return sanitize_name(domain.replace('_', '-').lower())
 
 
-def make_name_from_path(path):
+def make_name_from_path(path, default=''):
     """Make a template name from a file path."""
-    return make_name(make_domain(path))
-
+    return make_name(make_domain(path, default=default))

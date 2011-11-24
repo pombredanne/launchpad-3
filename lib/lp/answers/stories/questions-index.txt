@@ -26,13 +26,13 @@ It shows the 5 latest questions asked:
     ...     anon_browser.contents, 'latest-questions-asked')
     >>> print latest_questions_asked.first('h2').renderContents()
     Latest questions asked
-    >>> for row in latest_questions_asked.fetch('tr', 'lesser'):
+    >>> for row in latest_questions_asked.fetch('li'):
     ...     row.first('a').renderContents()
-    'Problemas de Impress\xc3\xa3o no Firefox'
-    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
-    'Continue playing after shutdown'
-    'Installation failed'
-    'Firefox loses focus and gets stuck'
+    '...: Problemas de Impress\xc3\xa3o no Firefox'
+    '...: Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+    '...: Continue playing after shutdown'
+    '...: Installation failed'
+    '...: Firefox loses focus and gets stuck'
 
 As well as the 5 latest questions solved:
 
@@ -40,9 +40,9 @@ As well as the 5 latest questions solved:
     ...     anon_browser.contents, 'latest-questions-solved')
     >>> print latest_questions_solved.first('h2').renderContents()
     Latest questions solved
-    >>> for row in latest_questions_solved.fetch('tr', 'lesser'):
+    >>> for row in latest_questions_solved.fetch('li'):
     ...     row.first('a').renderContents()
-    'mailto: problem in webpage'
+    '...: mailto: problem in webpage'
 
 The application footer also contains a sample of stats for the application:
 

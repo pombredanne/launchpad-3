@@ -43,10 +43,10 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.model.faq import (
     FAQ,
@@ -66,23 +66,28 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     OfficialBugTag,
     )
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
     )
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_or_closed_team,
+    validate_public_person,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import (
@@ -101,9 +106,6 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
@@ -119,15 +121,16 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
 
-    implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+    implements(
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
+        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_or_closed_team, notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -170,6 +173,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     max_bug_heat = Int()
 
     @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Project Group"
+
+    @property
     def products(self):
         return Product.selectBy(
             project=self, active=True, orderBy='displayname')
@@ -196,14 +204,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         return store.using(*origin).find(
             Product,
             Product.project == self.id,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 
     def has_translatable(self):
@@ -343,17 +347,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IHasBugs`."""
-        if not self.products:
-            return []
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         product_ids = [product.id for product in self.products]
-        return get_bug_tags_open_count(
-            BugTask.productID.is_in(product_ids), user)
-
-    def _getBugTaskContextClause(self):
-        """See `HasBugsBase`."""
-        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+        if not product_ids:
+            return False
+        return BugSummary.product_id.is_in(product_ids)
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

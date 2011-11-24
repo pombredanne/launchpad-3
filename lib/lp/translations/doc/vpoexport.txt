@@ -116,8 +116,8 @@ between the two templates.
 
     >>> potmsgset1 = factory.makePOTMsgSet(trunk_template, '1', sequence=1)
     >>> potmsgset2 = factory.makePOTMsgSet(trunk_template, '2', sequence=2)
-    >>> potmsgset1.setSequence(stable_template, 1)
-    >>> potmsgset2.setSequence(stable_template, 2)
+    >>> item = potmsgset1.setSequence(stable_template, 1)
+    >>> item = potmsgset2.setSequence(stable_template, 2)
 
 The templates are translated to Dutch.
 

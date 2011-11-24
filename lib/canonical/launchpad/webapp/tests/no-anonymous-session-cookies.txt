@@ -21,8 +21,8 @@ Now let's log in and show that the session cookie is set.
     >>> browser.open('%s/+login' % root_url)
 
     # On a browser with JS support, this page would've been automatically
-    # submitted (thanks to the onload handler), but testbrowser doesn't support
-    # JS, so we have to submit the form manually.
+    # submitted (thanks to the onload handler), but testbrowser doesn't
+    # support JS, so we have to submit the form manually.
     >>> print browser.contents
     <html>...<body onload="document.forms[0].submit();"...
     >>> browser.getControl('Continue').click()
@@ -31,7 +31,7 @@ Now let's log in and show that the session cookie is set.
     ...     fill_login_form_and_submit)
     >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
-    name16...
+    Foo Bar (name16) ...
 
     # Open a page again so that we see the cookie for a launchpad.dev request
     # and not a testopenid.dev request (as above).

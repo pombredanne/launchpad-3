@@ -6,14 +6,12 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-from canonical.launchpad.windmill.testing import (
+from lp.registry.windmill.testing import RegistryWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 VISIBLE_PICKER_OVERLAY = (
@@ -27,12 +25,10 @@ class TesPersonPickerWidget(WindmillTestCase):
     suite_name = 'PersonPickerWidget'
 
     def test_person_picker_widget(self):
-        client = self.client
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        """XXX: this should all move to test_picker.js"""
 
-        client.open(url=u'%s/people/+requestmerge'
-                    % RegistryWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            '/people/+requestmerge', user=lpuser.SAMPLE_PERSON)
         client.waits.forElement(id=u'show-widget-field-dupe_person',
                                 timeout=constants.FOR_ELEMENT)
 
@@ -53,7 +49,3 @@ class TesPersonPickerWidget(WindmillTestCase):
         client.asserts.assertProperty(
             xpath=u'//input[@name="field.dupe_person"]',
             validator='value|salgado')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

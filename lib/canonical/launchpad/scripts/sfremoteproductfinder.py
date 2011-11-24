@@ -17,12 +17,12 @@ from urllib2 import (
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp import (
     urlappend,
     urlsplit,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
 
 

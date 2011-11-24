@@ -25,7 +25,9 @@ from canonical.librarian import web as fatweb
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
-dbconfig.setConfigSection('librarian')
+dbconfig.override(
+    dbuser=config.librarian.dbuser,
+    isolation_level=config.librarian.isolation_level)
 execute_zcml_for_scripts()
 
 if os.environ.get('LP_TEST_INSTANCE'):
@@ -63,7 +65,7 @@ def setUpListener(uploadPort, webPort, restricted):
     librarian_storage = storage.LibrarianStorage(
         path, db.Library(restricted=restricted))
     upload_factory = FileUploadFactory(librarian_storage)
-    strports.service(str(uploadPort), upload_factory).setServiceParent(
+    strports.service("tcp:%d" % uploadPort, upload_factory).setServiceParent(
         librarianService)
     root = fatweb.LibraryFileResource(
         librarian_storage, upstreamHost, upstreamPort)
@@ -71,7 +73,8 @@ def setUpListener(uploadPort, webPort, restricted):
     root.putChild('robots.txt', fatweb.robotsTxt)
     site = server.Site(root)
     site.displayTracebacks = False
-    strports.service(str(webPort), site).setServiceParent(librarianService)
+    strports.service("tcp:%d" % webPort, site).setServiceParent(
+        librarianService)
 
 if os.environ.get('LP_TEST_INSTANCE'):
     # Running in ephemeral mode: allocate ports on demand.

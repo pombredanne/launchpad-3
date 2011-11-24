@@ -81,6 +81,7 @@ from lp.code.interfaces.revision import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.person import ValidPersonCache
 
 
 class Revision(SQLBase):
@@ -92,8 +93,9 @@ class Revision(SQLBase):
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
 
-    revision_author = ForeignKey(
-        dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
+    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
+
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
@@ -160,7 +162,7 @@ class Revision(SQLBase):
             self.id == BranchRevision.revision_id,
             BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.private))
+            query = And(query, Not(Branch.transitively_private))
         if not allow_junk:
             query = And(
                 query,
@@ -343,7 +345,7 @@ class RevisionSet:
         # author per revision, so we use the first on the assumption that
         # this is the primary author.
         try:
-            author = bzr_revision.get_apparent_authors()[0]
+            author = authors[0]
         except IndexError:
             author = None
         return self.new(
@@ -430,7 +432,6 @@ class RevisionSet:
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
-        from lp.registry.model.person import ValidPersonCache
 
         store = IStore(Revision)
         results_with_dupes = store.find(
@@ -477,7 +478,7 @@ class RevisionSet:
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.private)))
+                Not(Branch.transitively_private)))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
@@ -496,7 +497,7 @@ class RevisionSet:
             ]
 
         conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.private))
+                         Not(Branch.transitively_private))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)

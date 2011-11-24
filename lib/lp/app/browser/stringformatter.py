@@ -1,14 +1,19 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
+from base64 import urlsafe_b64encode
+
 
 __metaclass__ = type
 __all__ = [
     'add_word_breaks',
     'break_long_words',
     'escape',
+    'extract_bug_numbers',
+    'extract_email_addresses',
     'FormattersAPI',
+    'linkify_bug_numbers',
     're_substitute',
     'split_paragraphs',
     ]
@@ -30,6 +35,10 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.utils import (
+    re_email_address,
+    obfuscate_email,
+    )
 
 
 def escape(text, quote=True):
@@ -119,7 +128,7 @@ def next_word_chunk(word, pos, minlen, maxlen):
         if nchars >= maxlen:
             # stop if we've reached the maximum chunk size
             break
-        if nchars >= minlen and not word[endpos-1].isalnum():
+        if nchars >= minlen and not word[endpos - 1].isalnum():
             # stop if we've reached the minimum chunk size and the last
             # character wasn't alphanumeric.
             break
@@ -169,6 +178,74 @@ def break_long_words(text):
     return break_text_pat.sub(replace, text)
 
 
+def extract_bug_numbers(text):
+    '''Unique bug numbers matching the "LP: #n(, #n)*" pattern in the text.'''
+    # FormattersAPI._linkify_substitution requires a match object
+    # that has named groups "bug" and "bugnum".  The matching text for
+    # the "bug" group is used as the link text and "bugnum" forms part
+    # of the URL for the link to the bug. Example:
+    #   >>> bm.groupdict( )
+    #   {'bugnum': '400686', 'bug': '#400686'}
+
+    # We need to match bug numbers of the form:
+    # LP: #1, #2, #3
+    #  #4, #5
+    # over multiple lines.
+    #
+    # Writing a single catch-all regex for this has proved rather hard
+    # so I am taking the strategy of matching  LP:(group) first, and
+    # feeding the result into another regex to pull out the bug and
+    # bugnum groups.
+    unique_bug_matches = dict()
+
+    line_matches = re.finditer(
+        'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', text,
+        re.DOTALL | re.IGNORECASE)
+
+    for line_match in line_matches:
+        bug_matches = re.finditer(
+            '\s*((?P<bug>#(?P<bugnum>\d+)),?\s*)',
+            line_match.group('buglist'))
+
+        for bug_match in bug_matches:
+            bugnum = bug_match.group('bugnum')
+            if bugnum in unique_bug_matches:
+                # We got this bug already, ignore it.
+                continue
+            unique_bug_matches[bugnum] = bug_match
+
+    return unique_bug_matches
+
+
+def linkify_bug_numbers(text):
+    """Linkify to a bug if LP: #number appears in the (changelog) text."""
+    unique_bug_matches = extract_bug_numbers(text)
+    for bug_match in unique_bug_matches.values():
+        replace_text = bug_match.group('bug')
+        if replace_text is not None:
+            # XXX julian 2008-01-10
+            # Note that re.sub would be far more efficient to use
+            # instead of string.replace() but this requires a regex
+            # that matches everything in one go.  We're also at danger
+            # of replacing the wrong thing if string.replace() finds
+            # other matching substrings.  So for example in the
+            # string:
+            # "LP: #9, #999"
+            # replacing #9 with some HTML would also interfere with
+            # #999.  The liklihood of this happening is very, very
+            # small, however.
+            text = text.replace(
+                replace_text,
+                FormattersAPI._linkify_substitution(bug_match))
+    return text
+
+
+def extract_email_addresses(text):
+    '''Unique email addresses in the text.'''
+    matches = re.finditer(re_email_address, text)
+    return list(set([match.group() for match in matches]))
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -207,7 +284,8 @@ class FormattersAPI:
         # linkify to the general bug url.
         url = '/bugs/%s' % bugnum
         # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+        return '<a href="%s" class="bug-link">%s</a>%s' % (
+            url, text, trailers)
 
     @staticmethod
     def _handle_parens_in_trailers(url, trailers):
@@ -216,7 +294,7 @@ class FormattersAPI:
         If there are opening parens in the url that are matched by closing
         parens at the start of the trailer, those closing parens should be
         part of the url."""
-        assert trailers != '', ( "Trailers must not be an empty string.")
+        assert trailers != '', ("Trailers must not be an empty string.")
         opencount = url.count('(')
         closedcount = url.count(')')
         missing = opencount - closedcount
@@ -289,12 +367,13 @@ class FormattersAPI:
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
             if not FormattersAPI._linkify_url_should_be_ignored(url):
-                link_string = ('<a rel="nofollow" '
-                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
-                                    'url': cgi.escape(url, quote=True),
-                                    'linked_text': add_word_breaks(cgi.escape(url)),
-                                    'trailers': cgi.escape(trailers)
-                                    })
+                link_string = (
+                    '<a rel="nofollow" '
+                    'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                        'url': cgi.escape(url, quote=True),
+                        'linked_text': add_word_breaks(cgi.escape(url)),
+                        'trailers': cgi.escape(trailers)
+                        })
                 return link_string
             else:
                 return full_url
@@ -316,7 +395,7 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-            url = root_url + match.group('oopscode')
+            url = root_url + "OOPS-" + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
@@ -481,8 +560,8 @@ class FormattersAPI:
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
-        \boops\s*-?\s*
-        (?P<oopscode> \d* [a-z]+ \d+)
+        \boops\s*-\s*
+        (?P<oopscode> \w+)
       ) |
       (?P<lpbranchurl>
         \blp:(?:///|/)?
@@ -497,7 +576,8 @@ class FormattersAPI:
     # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self, linkify_text=True, linkify_substitution=None):
+    def text_to_html(self, linkify_text=True, linkify_substitution=None,
+                     last_paragraph_class=None):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -509,12 +589,16 @@ class FormattersAPI:
         #    second does not begin with white space.
         # 3. Use <br /> to split logical lines within a paragraph.
         output = []
-        first_para = True
-        for para in split_paragraphs(self._stringtoformat):
-            if not first_para:
+        paras = list(split_paragraphs(self._stringtoformat))
+        last_paragraph_index = len(paras) - 1
+        for index, para in enumerate(paras):
+            if index > 0:
                 output.append('\n')
-            first_para = False
-            output.append('<p>')
+            css_class = ''
+            if last_paragraph_class and index == last_paragraph_index:
+                css_class = ' class="%s"' % last_paragraph_class
+            output.append('<p%s>' % css_class)
+
             first_line = True
             for line in para:
                 if not first_line:
@@ -699,25 +783,6 @@ class FormattersAPI:
             output.append(line)
         return '\n'.join(output)
 
-    # This is a regular expression that matches email address embedded in
-    # text. It is not RFC 2821 compliant, nor does it need to be. This
-    # expression strives to identify probable email addresses so that they
-    # can be obfuscated when viewed by unauthenticated users. See
-    # http://www.email-unlimited.com/stuff/email_address_validator.htm
-
-    # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-    # (regardless of RFC 2821) because they conflict with other systems.
-    # See https://lists.ubuntu.com
-    #     /mailman/private/launchpad-reviews/2007-June/006081.html
-
-    # This verson of the re is more than 5x faster that the orginal
-    # version used in ftest/test_tales.testObfuscateEmail.
-    _re_email = re.compile(r"""
-        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
-        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
-        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)              # ' <- font-lock turd
-
     def obfuscate_email(self):
         """Obfuscate an email address if there's no authenticated user.
 
@@ -736,11 +801,17 @@ class FormattersAPI:
         """
         if getUtility(ILaunchBag).user is not None:
             return self._stringtoformat
-        text = self._re_email.sub(
-            r'<email address hidden>', self._stringtoformat)
-        text = text.replace(
-            "<<email address hidden>>", "<email address hidden>")
-        return text
+        return obfuscate_email(self._stringtoformat)
+
+    def strip_email(self):
+        """Strip out things that may be email.
+
+        This is a variation on obfuscate_email for when we are generating a
+        snipped for page metadata: we don't want to waste space spelling out
+        "<email address hidden>", and we do want to strip addresses even for
+        logged-in users in case they use the summary in a sharing tool.
+        """
+        return obfuscate_email(self._stringtoformat, replacement="...")
 
     def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
@@ -754,7 +825,7 @@ class FormattersAPI:
         """
         text = self._stringtoformat
 
-        matches = re.finditer(self._re_email, text)
+        matches = re.finditer(re_email_address, text)
         for match in matches:
             address = match.group()
             person = None
@@ -786,7 +857,7 @@ class FormattersAPI:
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
-            return '%s...' % self._stringtoformat[:maxlength-3]
+            return '%s...' % self._stringtoformat[:maxlength - 3]
         else:
             return self._stringtoformat
 
@@ -812,7 +883,7 @@ class FormattersAPI:
         header_next = False
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
-            result.append('<td class="line-no">%s</td>' % (row+1))
+            result.append('<td class="line-no">%s</td>' % (row + 1))
             if line.startswith('==='):
                 css_class = 'diff-file text'
                 header_next = True
@@ -845,13 +916,26 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
-    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_]+')
+    _zope_css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_\.]+')
 
     def css_id(self, prefix=None):
+        """Return a CSS compliant id."""
+        return self._css_id(self._css_id_strip_pattern, prefix)
+
+    def zope_css_id(self, prefix=None):
+        """Return a CSS compliant id compatible with zope's form fields.
+
+        The strip pattern allows ids which contain periods which is required
+        for compatibility with zope form fields.
+        """
+        return self._css_id(self._zope_css_id_strip_pattern, prefix)
+
+    def _css_id(self, strip_pattern, prefix=None):
         """Return a CSS compliant id.
 
-        The id may contain letters, numbers, and hyphens. The first
-        character must be a letter. Unsupported characters are converted
+        The id may contain letters, numbers, hyphens and underscores. The
+        first character must be a letter. Unsupported characters are converted
         to hyphens. Multiple characters are replaced by a single hyphen. The
         letter 'j' will start the id if the string's first character is not a
         letter.
@@ -863,8 +947,25 @@ class FormattersAPI:
             raw_text = prefix + self._stringtoformat
         else:
             raw_text = self._stringtoformat
-        id_ = self._css_id_strip_pattern.sub('-', raw_text)
-        if id_[0] in '-0123456789':
+        id_ = strip_pattern.sub('-', raw_text)
+
+        # If any characters are converted to a hyphen, we cannot be 100%
+        # assured of a unique id unless we take further action. Note that we
+        # use the _zope_css_id_strip_pattern for the check because ids with
+        # periods are still in common usage.
+        if self._zope_css_id_strip_pattern.search(raw_text):
+            # We need to ensure that the id is always guaranteed to be unique,
+            # hence we append URL-safe base 64 encoding of the name. However
+            # we also have to strip off any padding characters ("=") because
+            # Python's URL-safe base 64 encoding includes those and they
+            # aren't allowed in IDs either.
+            unique_suffix = urlsafe_b64encode(raw_text)
+            # Ensure we put a '-' between the id and base 64 encoding.
+            if id_[-1] != '-':
+                id_ += '-'
+            id_ += unique_suffix.replace('=', '')
+
+        if id_[0] in '-_0123456789':
             # 'j' is least common starting character in technical usage;
             # engineers love 'z', 'q', and 'y'.
             return 'j' + id_
@@ -900,6 +1001,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'strip-email':
+            return self.strip_email()
         elif name == 'linkify-email':
             return self.linkify_email()
         elif name == 'shorten':
@@ -921,6 +1024,11 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'zope-css-id':
+            if len(furtherPath) > 0:
+                return self.zope_css_id(furtherPath.pop())
+            else:
+                return self.zope_css_id()
         elif name == 'oops-id':
             return self.oops_id()
         else:

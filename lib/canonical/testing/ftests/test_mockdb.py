@@ -95,7 +95,6 @@ class MockDbTestCase(unittest.TestCase):
                     dbconfig.rw_main_master, config.launchpad.dbuser)
         if self.mode == 'direct':
             con = psycopg2.connect(connection_string)
-            #con = canonical.ftests.pgsql._org_connect(connection_string)
         else:
             con = self.script.connect(psycopg2.connect, connection_string)
         self.connections.append(con)
@@ -336,7 +335,7 @@ class MockDbTestCase(unittest.TestCase):
             con = self.connect()
             con.close()
             if mode == 'direct':
-                # canonical.ftests.pgsql's ConnectionWrapper
+                # lp.testing.pgsql's ConnectionWrapper
                 # swallows exceptions in Rollback, which is wrong
                 # but will likely need to stay until we switch to Storm.
                 con.rollback()
@@ -545,9 +544,3 @@ class MockDbTestCase(unittest.TestCase):
             # Now the results are exhausted, fetchall() should return an
             # empty list.
             self.failUnlessEqual(cur.fetchall(), [])
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(MockDbTestCase))
-    return suite

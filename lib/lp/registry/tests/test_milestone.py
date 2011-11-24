@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from operator import attrgetter
 import unittest
 
 from zope.component import getUtility
@@ -52,6 +53,17 @@ class MilestoneTest(unittest.TestCase):
         milestone_set = getUtility(IMilestoneSet)
         self.assertEqual(milestone_set.get(1).id, 1)
         self.assertRaises(NotFoundError, milestone_set.get, 100000)
+
+    def testMilestoneSetGetIDs(self):
+        """Test of MilestoneSet.getByIds()"""
+        milestone_set = getUtility(IMilestoneSet)
+        milestones = milestone_set.getByIds([1,3])
+        ids = sorted(map(attrgetter('id'), milestones))
+        self.assertEqual([1, 3], ids)
+
+    def testMilestoneSetGetByIDs_ignores_missing(self):
+        milestone_set = getUtility(IMilestoneSet)
+        self.assertEqual([], list(milestone_set.getByIds([100000])))
 
     def testMilestoneSetGetByNameAndProduct(self):
         """Test of MilestoneSet.getByNameAndProduct()"""

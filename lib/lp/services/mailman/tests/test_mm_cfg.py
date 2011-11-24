@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+import os
 
 from Mailman import (
     mm_cfg,
@@ -84,6 +85,15 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         self.assertEqual(host, mm_cfg.SMTPHOST)
         self.assertEqual(int(port), mm_cfg.SMTPPORT)
 
+    def test_smtp_max_config(self):
+        # Mailman SMTP max limits are configured from the LP config.
+        self.assertEqual(
+            config.mailman.smtp_max_rcpts,
+            mm_cfg.SMTP_MAX_RCPTS)
+        self.assertEqual(
+            config.mailman.smtp_max_sesions_per_connection,
+            mm_cfg.SMTP_MAX_SESSIONS_PER_CONNECTION)
+
     def test_xmlrpc_server(self):
         # Launchpad's smtp config values.
         self.assertEqual(
@@ -138,27 +148,48 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         self.assertTrue('-add' in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertTrue('-spammode' in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertTrue('-umask 022'in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
-            '-dbfile'
-            '/var/tmp/mailman/archives/private/%(listname)s.mbox/mhonarc.db',
-           mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
-            '-outdit /var/tmp/mailman/mhonarc/%(listname)s',
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-dbfile /var/tmp'
+            '/mailman/archives/private/%\(listname\)s.mbox/mhonarc.db',
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
-            '-definevar ML-NAME=%(listname)s',
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-outdir /var/tmp/mailman/mhonarc/%\(listname\)s',
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
-            '-rcfile var/tmp/mailman/data/lp-mhonarc-common.mrc',
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-definevar ML-NAME=%\(listname\)s',
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-rcfile /var/tmp/mailman/data/lp-mhonarc-common.mrc',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             '-stderr /var/tmp/mailman/logs/mhonarc',
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        self.assertTrue(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             '-stdout /var/tmp/mailman/logs/mhonarc',
             mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertEqual(
             mm_cfg.PRIVATE_EXTERNAL_ARCHIVER, mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+
+
+class TestMHonArchMRC(TestCase):
+    """Test the archive configuration."""
+
+    layer = FunctionalLayer
+
+    def test_html_disabled(self):
+        # HTML messages are ignored because of CVE-2010-4524.
+        mrc_path = os.path.join(
+            config.root, 'lib', 'lp', 'services', 'mailman', 'monkeypatches',
+            'lp-mhonarc-common.mrc')
+        with open(mrc_path) as mrc_file:
+            self.mrc = mrc_file.read()
+        mime_excs = (
+            '<MIMEExcs> '
+            'text/html '
+            'text/x-html '
+            '</MIMEExcs> ')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            mime_excs, self.mrc)
 
 
 class TestSiteTemplates(TestCase):

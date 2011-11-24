@@ -79,7 +79,7 @@ class CodeReviewCommentMailer(BMPMailer):
             code_review_comment, recipients,
             code_review_comment.message.rfc822msgid)
 
-    def _getSubject(self, email):
+    def _getSubject(self, email, recipient):
         """Don't do any string template insertions on subjects."""
         return self.code_review_comment.message.subject
 
@@ -92,12 +92,12 @@ class CodeReviewCommentMailer(BMPMailer):
                 vote_tag = ''
             else:
                 vote_tag = ' ' + self.code_review_comment.vote_tag
-            self.body_prefix = 'Review: %s%s\n' % (
+            self.body_prefix = 'Review: %s%s\n\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         self.body_main = self.message.text_contents
         self.proposal_url = canonical_url(self.merge_proposal)
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         """Return the complete body to use for this email.
 
         If there was a vote, we prefix "Review: " to the message.

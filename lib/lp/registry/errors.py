@@ -8,6 +8,7 @@ __all__ = [
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
+    'InvalidName',
     'JoinNotAllowed',
     'MirrorNotOfficial',
     'MirrorHasNoHTTPURL',
@@ -15,6 +16,7 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
+    'OpenTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
@@ -25,47 +27,54 @@ __all__ = [
 
 import httplib
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 from zope.schema.interfaces import ConstraintNotSatisfied
 from zope.security.interfaces import Unauthorized
 
 from lp.app.errors import NameLookupFailed
 
 
+@error_status(httplib.FORBIDDEN)
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
-    webservice_error(httplib.FORBIDDEN)
 
 
+@error_status(httplib.FORBIDDEN)
+class OpenTeamLinkageError(ValueError):
+    """An attempt was made to link an open team to something."""
+
+
+@error_status(httplib.CONFLICT)
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
-    webservice_error(httplib.CONFLICT)
+
+
+class InvalidName(Exception):
+    """The name given for a person is not valid."""
 
 
 class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such distribution series"
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotChangeMembershipSilently(Unauthorized):
     """User not permitted to change membership status silently.
 
     Raised when a user tries to change someone's membership silently, and is
     not a Launchpad Administrator.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
 class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
-    webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such source package"
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotTransitionToCountryMirror(Exception):
     """Root exception for transitions to country mirrors."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
@@ -100,22 +109,22 @@ class MirrorNotProbed(CannotTransitionToCountryMirror):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class DeleteSubscriptionError(Exception):
     """Delete Subscription Error.
 
     Raised when an error occurred trying to delete a
     structural subscription."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotSubscribePerson(Exception):
     """User does not have permission to subscribe the person or team."""
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.BAD_REQUEST)
 class DistroSeriesDifferenceError(Exception):
     """Raised when package diffs cannot be created for a difference."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class NotADerivedSeriesError(Exception):
@@ -125,15 +134,16 @@ class NotADerivedSeriesError(Exception):
     non-derived series - that is, a distroseries with a null Parent."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class TeamMembershipTransitionError(ValueError):
     """Indicates something has gone wrong with the transtiion.
 
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
     """
-    webservice_error(httplib.BAD_REQUEST)
 
 
+@error_status(httplib.BAD_REQUEST)
 class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
     """The team cannot have the specified TeamSubscriptionPolicy.
 
@@ -141,7 +151,6 @@ class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
     this team from setting a specific policy. The error can also be
     raised if the team has an active PPA.
     """
-    webservice_error(httplib.BAD_REQUEST)
 
     _default_message = "Team Subscription Policy Error"
 
@@ -158,12 +167,11 @@ class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
         return self.message
 
 
+@error_status(httplib.BAD_REQUEST)
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
+@error_status(httplib.BAD_REQUEST)
 class PPACreationError(Exception):
     """Raised when there is an issue creating a new PPA."""
-
-    webservice_error(httplib.BAD_REQUEST)

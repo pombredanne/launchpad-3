@@ -1,11 +1,11 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handle incoming Blueprints email."""
 
 __metaclass__ = type
 __all__ = [
-    "SpecificationHandler",
+    "BlueprintHandler",
     ]
 
 import re
@@ -15,14 +15,28 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.mail import IMailHandler
-from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.services.mail.helpers import get_main_body
+from lp.services.mail.interfaces import IMailHandler
 from lp.services.mail.sendmail import sendmail
 
 
-class SpecificationHandler:
+MOIN_URL_RE = re.compile(r'(https?://[^ \r\n]+)')
+
+
+def get_spec_url_from_moin_mail(moin_text):
+    """Extract a specification URL from Moin change notification."""
+    if not isinstance(moin_text, basestring):
+        return None
+    match = MOIN_URL_RE.search(moin_text)
+    if match:
+        return match.group(1)
+    else:
+        return None
+
+
+class BlueprintHandler:
     """Handles emails sent to specs.launchpad.net."""
 
     implements(IMailHandler)
@@ -56,6 +70,11 @@ class SpecificationHandler:
         else:
             return getUtility(ISpecificationSet).getByURL(url)
 
+    def get_spec_url_from_email(self, signed_msg):
+        """Return the first url found in the email body."""
+        mail_body = get_main_body(signed_msg)
+        return get_spec_url_from_moin_mail(mail_body)
+
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._spec_changes_address.match(to_addr)
@@ -82,8 +101,7 @@ class SpecificationHandler:
         # sender.
         del signed_msg['Sender']
 
-        mail_body = signed_msg.get_payload(decode=True)
-        spec_url = get_spec_url_from_moin_mail(mail_body)
+        spec_url = self.get_spec_url_from_email(signed_msg)
         if spec_url is not None:
             if log is not None:
                 log.debug('Found a spec URL: %s' % spec_url)

@@ -11,7 +11,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing import (
     LaunchpadZopelessLayer,
@@ -21,6 +20,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -246,7 +246,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         message.addTranslation(0, u'')
 
         potmsgset = self.factory.makePOTMsgSet(
-            potemplate = importer.potemplate, sequence=50)
+            potemplate=importer.potemplate, sequence=50)
         translation = importer.storeTranslationsInDatabase(
             message, potmsgset)
         # No TranslationMessage is created.
@@ -316,13 +316,13 @@ class FileImporterTestCase(TestCaseWithFactory):
             NUMBER_OF_TEST_MESSAGES,
             "FileImporter.__init__ did not parse the template file "
             "correctly.")
-        # Test if POTFileImporter gets initialised correctly.
+        # Test if POTFileImporter gets initialized correctly.
         self.failUnless(pot_importer.potemplate is not None,
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(pot_importer.pofile is None or
             pot_importer.pofile.language == "en",
             "POTFileImporter referenced an IPOFile which was not English.")
-        # Test if POFileImporter gets initialised correctly.
+        # Test if POFileImporter gets initialized correctly.
         self.failUnless(po_importer.potemplate is not None,
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(po_importer.pofile is not None,
@@ -566,7 +566,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
     def test_not_raises_OutdatedTranslationError_on_upstream_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
-            importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+            POFileImporter(queue_entry, GettextPOImporter(), None)
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised.")
 
@@ -574,16 +574,13 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         queue_entry = self._make_queue_entry(True)
         pofile = queue_entry.pofile
         old_raw_header = pofile.header
-        importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+        POFileImporter(queue_entry, GettextPOImporter(), None)
         self.assertEqual(old_raw_header, pofile.header)
 
 
 class FileImporterSharingTest(TestCaseWithFactory):
     """Class test for the sharing operation of the FileImporter base class."""
     layer = LaunchpadZopelessLayer
-
-    UPSTREAM = 0
-    UBUNTU = 1
 
     POFILE = dedent("""\
         msgid ""
@@ -612,18 +609,15 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def _makeImportEntry(self, side, by_maintainer=False, uploader=None,
                          no_upstream=False):
-        if side == self.UPSTREAM:
+        if side == TranslationSide.UPSTREAM:
             potemplate = self.upstream_template
         else:
             # Create a template in a source package.
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
-            ubuntu.translation_focus = distroseries
-            sourcepackagename = self.factory.makeSourcePackageName()
             potemplate = self.factory.makePOTemplate(
-                distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                name=self.upstream_template.name)
+                name=self.upstream_template.name, side=side)
+            distroseries = potemplate.distroseries
+            sourcepackagename = potemplate.sourcepackagename
+            distroseries.distribution.translation_focus = distroseries
             if not no_upstream:
                 # Link the source package to the upstream series to
                 # enable sharing.
@@ -657,7 +651,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_makeImportEntry_templates_are_sharing(self):
         # Sharing between upstream and Ubuntu was set up correctly.
-        entry = self._makeImportEntry(self.UBUNTU)
+        entry = self._makeImportEntry(TranslationSide.UBUNTU)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
                 distribution=entry.distroseries.distribution,
                 sourcepackagename=entry.sourcepackagename)
@@ -667,7 +661,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_share_with_other_side_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
-        entry = self._makeImportEntry(self.UPSTREAM)
+        entry = self._makeImportEntry(TranslationSide.UPSTREAM)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
@@ -676,7 +670,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_share_with_other_side_ubuntu(self):
         # An ubuntu queue entry will not be shared with upstream.
-        entry = self._makeImportEntry(self.UBUNTU)
+        entry = self._makeImportEntry(TranslationSide.UBUNTU)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(
@@ -685,7 +679,8 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_share_with_other_side_ubuntu_no_upstream(self):
         # An ubuntu queue entry cannot share with a non-existent upstream.
-        entry = self._makeImportEntry(self.UBUNTU, no_upstream=True)
+        entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, no_upstream=True)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(
@@ -696,9 +691,74 @@ class FileImporterSharingTest(TestCaseWithFactory):
         # If the uploader in ubuntu has rights on upstream as well, the
         # translations are shared.
         entry = self._makeImportEntry(
-            self.UBUNTU, uploader=self.translator.translator)
+            TranslationSide.UBUNTU, uploader=self.translator.translator)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
             importer.share_with_other_side,
             "Ubuntu import should share with upstream.")
+
+    def test_is_upstream_import_on_sourcepackage_none(self):
+        # To do an upstream import on a sourcepackage, three conditions must
+        # be met.
+        # - It has to be on a sourcepackage.
+        # - The by_maintainer flag must be set on the queue entry.
+        # - There must be no matching template in the upstream project or
+        #   even no upstream project at all.
+        # This case meets none of them.
+        entry = self._makeImportEntry(
+            TranslationSide.UPSTREAM, uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_by_maintainer(self):
+        # This entry is by_maintainer.
+        entry = self._makeImportEntry(
+            TranslationSide.UPSTREAM, by_maintainer=True,
+            uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_upstream_template(self):
+        # This entry is for a sourcepackage with an upstream potemplate.
+        entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_upstream_any_template(self):
+        # Actually any upstream potemplate will disallow upstream imports.
+
+        # Use _makeImportEntry to create upstream template and packaging
+        # link.
+        unused_entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, uploader=self.translator.translator)
+
+        sourcepackagename = unused_entry.sourcepackagename
+        distroseries = unused_entry.distroseries
+        other_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        entry = self.factory.makeTranslationImportQueueEntry(
+            potemplate=other_potemplate, by_maintainer=True,
+            uploader=self.translator.translator, content=self.POFILE)
+        entry.potemplate = other_potemplate
+        entry.pofile = self.factory.makePOFile(potemplate=other_potemplate)
+        transaction.commit()
+
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+
+        self.assertFalse(importer.is_upstream_import_on_sourcepackage)
+
+    def test_is_upstream_import_on_sourcepackage_ok(self):
+        # This entry qualifies.
+        entry = self._makeImportEntry(
+            TranslationSide.UBUNTU, by_maintainer=True, no_upstream=True,
+            uploader=self.translator.translator)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertTrue(importer.is_upstream_import_on_sourcepackage)

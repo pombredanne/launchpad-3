@@ -5,12 +5,9 @@
 
 """Test the request_daily_builds script"""
 
-import unittest
-
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
@@ -28,14 +25,14 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         pack_branch = self.factory.makePackageBranch()
         pack_recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True, branches=[pack_branch])
-        self.assertEqual(0, prod_recipe.getPendingBuilds().count())
-        self.assertEqual(0, pack_recipe.getPendingBuilds().count())
+        self.assertEqual(0, prod_recipe.pending_builds.count())
+        self.assertEqual(0, pack_recipe.pending_builds.count())
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/request_daily_builds.py', [])
         self.assertIn('Requested 2 daily builds.', stderr)
-        self.assertEqual(1, prod_recipe.getPendingBuilds().count())
-        self.assertEqual(1, pack_recipe.getPendingBuilds().count())
+        self.assertEqual(1, prod_recipe.pending_builds.count())
+        self.assertEqual(1, pack_recipe.pending_builds.count())
         self.assertFalse(prod_recipe.is_stale)
         self.assertFalse(pack_recipe.is_stale)
 
@@ -47,13 +44,9 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/request_daily_builds.py', [])
-        self.assertEqual(0, recipe.getPendingBuilds().count())
+        self.assertEqual(0, recipe.pending_builds.count())
         self.assertIn('Requested 0 daily builds.', stderr)
-        utility = ErrorReportingUtility()
-        utility.configure('request_daily_builds')
-        oops = utility.getLastOopsReport()
-        self.assertIn('NonPPABuildRequest', oops.tb_text)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.oops_capture.sync()
+        self.assertEqual('NonPPABuildRequest', self.oopses[0]['type'])
+        self.assertEqual(
+            1, len(self.oopses), "Too many OOPSes: %r" % (self.oopses,))

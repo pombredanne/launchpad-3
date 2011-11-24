@@ -55,7 +55,7 @@ No Priv decides, what the heck, let's contact Salgado after all.
     # Capture the date of the last contact for later.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.database.message import UserToUserEmail
+    >>> from lp.services.messages.model.message import UserToUserEmail
     >>> from lazr.config import as_timedelta
     >>> from storm.locals import Store
     >>> first_contact = Store.of(no_priv).find(

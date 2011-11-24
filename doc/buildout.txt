@@ -457,16 +457,19 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     include or ignore the uncommitted distributions, it will refuse to start
     an instance.
 
-6.  Commit the changes (``cd download-cache``, ``bzr up``,
+6. Check old versions in the download-cache.  If you are sure that they are
+   not in use any more, *anywhere*, then remove them to save checkout space.
+   More explicitly, check with the LOSAs to see if they are in use in
+   production and send an email to launchpad-dev@lists.launchpad.net before
+   deleting anything if you are unsure.
+
+7.  Commit the changes (``cd download-cache``, ``bzr up``,
     ``bzr commit -m 'Add lazr.foom 1.1.2 and depdendencies to the download
     cache'``) to the shared download cache when you are sure it is what you
     want.
 
-You should only add packages to the download-cache.
-
 *Never* modify a package in the download-cache.
 
-Only remove a package if you have explicit permission to do so.
 
 Upgrade a Package
 =================
@@ -577,6 +580,15 @@ project with a name like this: ``lazr.restful-0.9.1DEV-20090512.tar.gz``.
 See the setuptools documentation for more information about `the egg_info
 command`_.
 
+It is also possible that setup.py does not support the egg_info command and
+it is sufficient to just run the sdist command. It adds the current revision
+of the bzr branch to the version number::
+
+    python setup.py sdist
+
+For instance, this might produce a distribution for the ``testtools``
+project with a name like this: ``testtools-0.9.12-r228.tar.gz``.
+
 .. _FeedValidator: http://feedvalidator.org/
 
 .. _`other answers`: http://pypi.python.org/pypi/zc.buildoutsftp
@@ -599,7 +611,7 @@ paths as well, so we can use a checkout of any code we like, with changes
 being picked up instantly without us having to create a distribution.
 
 To do this add the extra paths to the ``develop`` key in the ``[buildout]``
-section of ``buildout.cfg"::
+section of ``buildout.cfg``::
 
     [buildout]
     develop = .

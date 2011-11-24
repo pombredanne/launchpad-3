@@ -173,7 +173,7 @@ project administrators.
     is_permitted: ...redacted
     license_approved: ...redacted
     license_info: None
-    license_reviewed: ...redacted
+    project_reviewed: ...redacted
     licenses: []
     logo: <lazr.restfulclient.resource.HostedFile object...>
     name: firefox
@@ -204,7 +204,7 @@ allows the previously redacted attributes to be seen.
     >>> print lp_mark.me.name
     mark
     >>> firefox = lp_mark.projects['firefox']
-    >>> print firefox.license_reviewed
+    >>> print firefox.project_reviewed
     False
 
 In Launchpad project names may not have uppercase letters in their

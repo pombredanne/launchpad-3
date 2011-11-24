@@ -11,7 +11,10 @@ __all__ = [
     'IPersonNotificationSet',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Datetime,
     Object,
@@ -37,6 +40,11 @@ class IPersonNotification(Interface):
     date_created = Datetime(title=_("Date created"))
     body = Text(title=_("Notification body."))
     subject = TextLine(title=_("Notification subject."))
+
+    can_send = Attribute("Can the notification be sent?")
+
+    to_addresses = Attribute(
+        "The list of addresses to send the notification to.")
 
     def destroySelf():
         """Delete this notification."""

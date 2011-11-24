@@ -25,7 +25,6 @@ import fixtures
 import os
 import types
 
-from StringIO import StringIO
 import xmlrpclib
 
 from testtools.content import Content
@@ -34,7 +33,7 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
-from canonical.buildd.tests.harness import BuilddSlaveTestSetup
+from lpbuildd.tests.harness import BuilddSlaveTestSetup
 
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -48,10 +47,8 @@ from lp.buildmaster.model.builder import (
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
-from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
-fix_bug_2518()
 
 def make_publisher():
     """Make a Soyuz test publisher."""
@@ -112,7 +109,7 @@ class MockBuilder:
 class OkSlave:
     """An idle mock slave that prints information about itself.
 
-    The architecture tag can be customised during initialisation."""
+    The architecture tag can be customised during initialization."""
 
     def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
         self.call_log = []
@@ -239,11 +236,11 @@ class AbortedSlave(OkSlave):
     """A mock slave that looks like it's aborted."""
 
     def clean(self):
-        self.call_log.append('status')
+        self.call_log.append('clean')
         return defer.succeed(None)
 
     def status(self):
-        self.call_log.append('clean')
+        self.call_log.append('status')
         return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
 
 

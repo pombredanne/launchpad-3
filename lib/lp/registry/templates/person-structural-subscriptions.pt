@@ -23,7 +23,7 @@
       <div class="yui-g">
         <div class="portlet" id="structural-subscriptions">
 
-          <ul tal:condition="structural_subscriptions">
+          <ul tal:condition="python:not structural_subscriptions.is_empty()">
             <li tal:repeat="subscription structural_subscriptions"
                 style="margin: 1em 0em; padding: 1em; border: 1px solid #ddd;">
               <span tal:replace="structure subscription/target/fmt:link" />
@@ -74,7 +74,7 @@
             </li>
           </ul>
 
-          <p tal:condition="not: structural_subscriptions">
+          <p tal:condition="python: structural_subscriptions.is_empty()">
             <tal:person content="context/fmt:displayname" /> does not
             have any structural subscriptions.
           </p>

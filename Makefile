@@ -16,10 +16,26 @@ HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
-JSFLAGS=
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
-LAZR_BUILT_JS_ROOT=lazr-js/build
+
+ifeq ($(LPCONFIG), development)
+JS_BUILD := raw
+else
+JS_BUILD := min
+endif
+
+define JS_LP_PATHS
+lib -path 'lib/lp/*/javascript/*' \
+! -path '*/tests/*' ! -path '*/testing/*' \
+! -path 'lib/lp/services/*'
+endef
+
+JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
+JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
+JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
 
@@ -28,7 +44,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -42,11 +58,10 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -64,27 +79,21 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
-	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
+	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
+# Used to generate HTML developer documentation for Launchpad.
+doc:
+	$(MAKE) -C doc/ html
+
 # Run by PQM.
-check_merge: $(BUILDOUT_BIN)
-	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
-check_db_merge: $(PY)
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
-
-check_schema: build
-	${PY} utilities/check-db-revision.py
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
@@ -92,22 +101,7 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-jscheck: build
-	# Run all JavaScript integration tests.  The test runner takes care of
-	# setting up the test environment.
-	@echo
-	@echo "Running the JavaScript integration test suite"
-	@echo
-	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
-
-jscheck_functest: build
-    # Run the old functest Windmill integration tests.  The test runner
-    # takes care of setting up the test environment.
-	@echo
-	@echo "Running Windmill funtest integration test suite"
-	@echo
-	bin/jstest
+	bzr status --no-pending
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -121,6 +115,9 @@ lint: ${PY}
 lint-verbose: ${PY}
 	@bash ./bin/lint.sh -v
 
+logs:
+	mkdir logs
+
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
@@ -130,7 +127,7 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build
+inplace: build logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
@@ -138,41 +135,7 @@ inplace: build
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-build: compile apidoc jsbuild css_combine
-
-css_combine: sprite_css bin/combine-css
-	${SHHH} bin/combine-css
-
-sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
-
-${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
-	${SHHH} bin/sprite-util create-css
-
-sprite_image:
-	${SHHH} bin/sprite-util create-image
-
-# We absolutely do not want to include the lazr.testing module and
-# its jsTestDriver test harness modifications in the lazr.js and
-# launchpad.js roll-up files.  They fiddle with built-in functions!
-# See Bug 482340.
-jsbuild_lazr: bin/jsbuild
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
-	-c $(LAZR_BUILT_JS_ROOT)/yui
-
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
-	${SHHH} bin/jsbuild \
-		$(JSFLAGS) \
-		-n launchpad \
-		-s lib/canonical/launchpad/javascript \
-		-b $(LP_BUILT_JS_ROOT) \
-		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
-		lib/canonical/launchpad/icing/lazr/build/lazr.js
-
-eggs:
-	# Usually this is linked via link-external-sourcecode, but in
-	# deployment we create this ourselves.
-	mkdir eggs
+build: compile apidoc jsbuild css_combine sprite_image
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
@@ -185,6 +148,43 @@ else
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
 endif
+
+css_combine: sprite_css bin/combine-css
+	${SHHH} bin/combine-css
+
+sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
+
+${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
+		${ICING}/icon-sprites.positioning
+	${SHHH} bin/sprite-util create-css
+
+sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
+
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+		${ICING}/sprite.css.in
+	${SHHH} bin/sprite-util create-image
+
+jsbuild_widget_css: bin/jsbuild
+	${SHHH} bin/jsbuild \
+	    --srcdir lib/lp/app/javascript \
+	    --builddir $(LP_BUILT_JS_ROOT)
+
+$(JS_LP): jsbuild_widget_css
+
+$(JS_OUT): $(JS_ALL)
+ifeq ($(JS_BUILD), min)
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+else
+	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
+endif
+
+jsbuild: $(PY) $(JS_OUT)
+
+eggs:
+	# Usually this is linked via link-external-sourcecode, but in
+	# deployment we create this ourselves.
+	mkdir eggs
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -230,14 +230,11 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-# bin/compile_templates is responsible for building all chameleon templates,
-# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -255,20 +252,26 @@ merge-proposal-jobs:
 	# Handle merge proposal email jobs.
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: check_schema inplace stop
-	$(RM) logs/thread*.request
-	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
+run: build inplace stop
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
-start-gdb: check_schema inplace stop support_files
-	$(RM) logs/thread*.request
+run-testapp: LPCONFIG=testrunner-appserver
+run-testapp: build inplace stop
+	LPCONFIG=$(LPCONFIG) INTERACTIVE_TESTS=1 bin/run-testapp \
+	-r memcached -i $(LPCONFIG)
+
+run.gdb:
+	echo 'run' > run.gdb
+
+start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop
-	$(RM) logs/thread*.request
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
-	    -i $(LPCONFIG)
+run_all: build inplace stop
+	bin/run \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
+	 -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -279,8 +282,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop
-	$(RM) logs/thread*.request
+run_codehosting: build inplace stop
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -345,7 +347,7 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) $(JS_OUT)
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
 clean_buildout:
@@ -355,8 +357,12 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
-clean: clean_js clean_buildout
+clean_logs:
+	$(RM) logs/thread*.request
+
+clean: clean_js clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -367,18 +373,16 @@ clean: clean_js clean_buildout
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
-	    -name '*.pt.py' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
-	$(RM) -rf lib/canonical/launchpad/icing/build/*
-	$(RM) -rf $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
+	$(RM) -r $(LP_BUILT_JS_ROOT)/*
+	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -r $(APIDOC_DIR)
+	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -rf \
+	$(RM) -r \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
@@ -390,11 +394,12 @@ clean: clean_js clean_buildout
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/zeca
+			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
-	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
-	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
+	if [ -w /var/tmp/launchpad_mailqueue ]; then \
+		$(RM) -r /var/tmp/launchpad_mailqueue; \
+	fi
 
 
 realclean: clean
@@ -424,7 +429,9 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
-	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		configs/development/local-launchpad-apache > \
+		/etc/apache2/sites-available/local-launchpad
 	cp configs/development/local-vostok-apache \
 		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
@@ -449,33 +456,6 @@ ID: compile
 	# idutils ID file
 	bin/tags -i
 
-lp.sfood:
-	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
-	-I lib/contrib -I lib/canonical/not-used lib/canonical \
-	lib/lp 2>/dev/null | grep -v contrib/ \
-	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell > lp.sfood.tmp
-	mv lp.sfood.tmp lp.sfood
-
-
-lp-clustered.sfood: lp.sfood lp-sfood-packages
-	# Cluster the import dependency graph
-	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
-	mv lp-clustered.sfood.tmp lp-clustered.sfood
-
-
-lp-clustered.dot: lp-clustered.sfood
-	# Build the visual graph
-	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
-	mv lp-clustered.dot.tmp lp-clustered.dot
-
-
-lp-clustered.svg: lp-clustered.dot
-	# Render to svg
-	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
-	mv lp-clustered.svg.tmp lp-clustered.svg
-
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS =
 
@@ -485,10 +465,11 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
-	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check check_merge schema default launchpad.pot \
-	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
-	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
-	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor
+.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check check	\
+	check_config check_mailman clean clean_buildout clean_js	\
+	clean_logs compile css_combine debug default doc ftest_build	\
+	ftest_inplace hosted_branches jsbuild jsbuild_widget_css	\
+	launchpad.pot pagetests pull_branches pydoctor realclean	\
+	reload-apache run run-testapp runner scan_branches schema	\
+	sprite_css sprite_image start stop sync_branches TAGS tags	\
+	test_build test_inplace zcmldocs

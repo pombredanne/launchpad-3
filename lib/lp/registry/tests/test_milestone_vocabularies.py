@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 
@@ -122,6 +119,9 @@ class TestMilestoneVocabulary(TestCase):
         debian = getUtility(IDistributionSet).getByName('debian')
         distro_sourcepackage = factory.makeDistributionSourcePackage(
             distribution=debian)
+        factory.makeSourcePackagePublishingHistory(
+            distroseries=debian.currentseries,
+            sourcepackagename=distro_sourcepackage.sourcepackagename)
         bugtask = factory.makeBugTask(target=distro_sourcepackage)
         vocabulary = MilestoneVocabulary(bugtask)
         self.assertEqual(
@@ -160,7 +160,3 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

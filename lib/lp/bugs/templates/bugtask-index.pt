@@ -12,12 +12,25 @@
               tal:content="view/available_official_tags_js" />
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                  'lp.code.branchmergeproposal.diff', function(Y) {
+                  'lp.bugs.subscribers',
+                  'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+                  function(Y) {
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
-        });
+            Y.on('domready', function() {
+                Y.lp.bugs.bugtask_index.setup_bugtask_table();
+                LP.cache.comment_context = LP.cache.bug;
+                Y.lp.comments.hide.setup_hide_controls();
+                var sl = new Y.lp.bugs.subscribers.createBugSubscribersLoader({
+                    container_box: '#other-bug-subscribers',
+                    subscribers_details_view:
+                        '/+bug-portlet-subscribers-details',
+                    subscribe_someone_else_link: '.menu-link-addsubscriber'
+                });
+            });
+         });
       </script>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
@@ -27,12 +40,31 @@
         .bug-branch-summary dd { font-size: 85% }
         a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
+      <style type="text/css">
+        .yui3-overlay .value label  {
+          /* It normally makes sense for form labels to be bold, but since
+          this form consists only of radio buttons, there's nothing but labels
+          so we just get wall-to-wall bold. */
+          font-weight: normal !important;
+        }
+      </style>
     </metal:block>
 
     <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href string:${context/target/fmt:url}/+filebug"
+               class="sprite bugs">
+              Report a bug
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/bug/@@+portlet-privacy" />
       <div tal:replace="structure context/bug/@@+portlet-actions" />
       <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+      <div tal:replace="structure context/bug/@@+portlet-subscription" />
       <div tal:replace="structure context/bug/@@+portlet-subscribers" />
       <div tal:replace="structure context/bug/@@+portlet-questions" />
       <div tal:replace="structure context/bug/@@+portlet-specs" />
@@ -58,7 +90,6 @@
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
-      <tal:block condition="view/reportBugInContext" />
 
       <p class="informational message"
          tal:condition="view/notices"
@@ -93,29 +124,25 @@
         <tal:heat replace="structure view/bug_heat_html" />
       </div>
 
-      <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
-
+      <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-portal" />
       <div id="maincontentsub">
         <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
-      <div class="report">
+      <div itemprop="mainContentOfPage" class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description" class="lazr-multiline-edit"
-          tal:content="structure view/bug_description_html"
-          />
+        <tal:widget replace="structure view/bug_description_html"/>
 
         <div style="margin:-20px 0 20px 5px" class="clearfix">
-          <span tal:condition="view/wasDescriptionModified" class="discreet"
+          <span tal:condition="view/wasDescriptionModified"
           >See <a href="comments/0">original description</a></span>
         </div>
 
           <div id="bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (context.bug.tags and
-                                               'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (context.bug.tags and
+                                             'tags-show' or 'tags-hide')">
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
@@ -128,8 +155,8 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 15em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
+                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
+                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
                   LPS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
@@ -140,7 +167,7 @@
                       // that user doesn't click the trigger and navigates to the
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
-                      if (LP.client.links['me'] !== undefined) {
+                      if (LP.links['me'] !== undefined) {
                           Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
@@ -154,20 +181,19 @@
                   });
               </script>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
-                      id="edit-tags-ok" style="display: none"
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
+                      id="edit-tags-ok"
                       type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
-                      id="edit-tags-cancel" style="display: none"
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
+                      id="edit-tags-cancel"
                       type="button">Cancel</button>
            </form>
            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
              <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (not(context.bug.tags) and
-                                              'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (not(context.bug.tags) and
+                                             'tags-show' or 'tags-hide')">
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
@@ -215,11 +241,7 @@
           <tal:is-comment
               define="comment comment_or_activity/comment|nothing"
               condition="comment">
-            <tal:comment-box condition="python: (
-                                       view.user_is_admin or
-                                       comment.visible)"
-                             replace="structure comment/@@+box">
-            </tal:comment-box>
+            <tal:comment-box replace="structure comment/@@+box" />
           </tal:is-comment>
 
           <tal:is-activity
@@ -249,54 +271,8 @@
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
-            <div tal:define="comment_form nocall:context/@@+addcomment-form;
-                 dummy comment_form/initialize"
-                 id="add-comment-form">
-              <div
-                  tal:condition="context/bug/duplicateof"
-                  class="warning message"
-                  id="warning-comment-on-duplicate">
-                  Remember, this bug report is a duplicate of
-                    <a href="#" tal:attributes="href
-                      context/bug/duplicateof/fmt:url">bug #<span
-                      tal:replace="context/bug/duplicateof/id">42</span></a>.
-                  Comment here only if you think the duplicate status is wrong.
-              </div>
-              <h2>Add comment</h2>
-              <form action="+addcomment"
-                    method="post"
-                    enctype="multipart/form-data"
-                    accept-charset="UTF-8">
-                <tal:comment-input
-                  replace="structure comment_form/widgets/comment" />
-                <div class="actions"
-                  tal:content="structure
-                  comment_form/actions/field.actions.save/render" />
-              </form>
-              <tal:comment condition="nothing">
-                <!-- If javascript is enabled, hide the Save Changes button.
-                It will be replaced later by an "Add comment" link,
-                which does commenting inline. The reason for hiding the
-                button is that it's kind of ugly having it transformed
-                into a link. Better to hide it and have it appear after
-                a while. At some point we should be able to hook up
-                inline commenting earlier than in the on-load handler,
-                which would make this hack not needed. -->
-              </tal:comment>
-              <script type="text/javascript">
-                var button = document.getElementById('field.actions.save');
-                button.style.display = 'none';
-              </script>
-              <script type="text/javascript">
-                LPS.use('lp.app.comment', function(Y) {
-                    var comment = new Y.lp.app.comment.Comment();
-                    comment.render();
-                });
-              </script>
-            </div>
-            <tal:attachment-link
-                define="add_attachment_link context_menu/addcomment"
-                replace="structure add_attachment_link/render" />
+            <metal:comment-form
+                metal:use-macro="context/@@bugcomment-macros/comment-form" />
           </tal:logged-in>
 
           <tal:not-logged-in condition="not: view/user">
@@ -308,42 +284,31 @@
         </tal:comment-list-complete>
         <tal:comment-list-truncated
             tal:condition="view/visible_comments_truncated_for_display">
-          <div class="informational message">
+          <div class="informational message comments-hidden-message" >
             Displaying first <span
-            tal:replace="view/visible_oldest_comments_for_display/count:len">23</span>
+            tal:replace="view/visible_initial_comments">23</span>
             and last <span
-            tal:replace="view/visible_recent_comments_for_display/count:len">32</span>
+            tal:replace="view/visible_recent_comments">32</span>
             comments.
             <tal:what-next
                 define="view_all_href
                         string:${context/fmt:url}?comments=all">
-              <a href="#" tal:attributes="href view_all_href">
+              <a class="show-comments-link"
+                  href="#" tal:attributes="href view_all_href">
                 View all <span
-                tal:replace="view/visible_comments/count:len" />
+                tal:replace="view/total_comments" />
                 comments</a> or <a href="#" tal:attributes="href
                 view_all_href">add a comment</a>.
             </tal:what-next>
           </div>
+            <tal:logged-in condition="view/user">
+              <div id="add-comment-form-container" class="hidden">
+                <metal:comment-form
+                    metal:use-macro="context/@@bugcomment-macros/comment-form" />
+              </div>
+            </tal:logged-in>
         </tal:comment-list-truncated>
       </tal:comments>
-
-      <div class="related">
-        <h2>What next?</h2>
-        <ul>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+filebug"
-                >Report another bug</a>
-            about <tal:context replace="context/target/displayname" />
-          </li>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+bugs"
-                >List open bugs</a>
-            for <tal:context replace="context/target/displayname" />
-          </li>
-        </ul>
-      </div>
 
       </div><!-- class="top-portlet" -->
         </div><!-- id="nonportlets"-->

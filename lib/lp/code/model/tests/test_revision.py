@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
@@ -10,10 +10,7 @@ from datetime import (
     timedelta,
     )
 import time
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 import psycopg2
 import pytz
@@ -28,7 +25,6 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -43,6 +39,7 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
+from lp.scripts.garbo import RevisionAuthorEmailLinker
 from lp.services.log.logger import DevNullLogger
 from lp.testing import (
     TestCaseWithFactory,
@@ -306,15 +303,15 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # Only public branches are returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b2).private = True
+        removeSecurityProxy(b2).explicitly_private = True
         self.assertEqual(b1, self.revision.getBranch())
 
     def testAllowPrivateReturnsPrivateBranch(self):
         # If the allow_private flag is set, then private branches can be
         # returned if they are the best match.
-        b1 = self.makeBranchWithRevision(1)
+        self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b2).private = True
+        removeSecurityProxy(b2).explicitly_private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testAllowPrivateCanReturnPublic(self):
@@ -322,7 +319,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # the branches.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b1).private = True
+        removeSecurityProxy(b1).explicitly_private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testGetBranchNotJunk(self):
@@ -430,7 +427,7 @@ class RevisionTestMixin:
         rev1 = self._makeRevision()
         b = self._makeBranch()
         b.createBranchRevision(1, rev1)
-        removeSecurityProxy(b).private = True
+        removeSecurityProxy(b).explicitly_private = True
         self.assertEqual([], self._getRevisions())
 
     def testRevisionDateRange(self):
@@ -445,7 +442,7 @@ class RevisionTestMixin:
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
         self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
-        self.assertEqual([rev2],  self._getRevisions(day_limit))
+        self.assertEqual([rev2], self._getRevisions(day_limit))
 
 
 class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,
@@ -506,7 +503,7 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev1], self._getRevisions())
 
 
@@ -529,7 +526,7 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev1], self._getRevisions())
 
     def testProjectRevisions(self):
@@ -537,7 +534,7 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
         another_product = self.factory.makeProduct(project=self.project)
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch(product=another_product)
-        rev3 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev2, rev1], self._getRevisions())
 
 
@@ -556,18 +553,17 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
     def testRevisionAuthorMatchesRevision(self):
         # The revision author returned with the revision is the same as the
         # author for the revision.
-        rev1 = self._makeRevisionInBranch(product=self.product)
+        self._makeRevisionInBranch(product=self.product)
         results = self._getRecentRevisions()
-        self.assertEqual(1, len(results))
-        revision, revision_author = results[0]
+        [(revision, revision_author)] = results
         self.assertEqual(revision.revision_author, revision_author)
 
     def testRevisionsMustBeInABranchOfProduct(self):
         # The revisions returned revision must be in a branch for the product.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
-        self.assertEqual([(rev1, rev1.revision_author)],
-                         self._getRecentRevisions())
+        self._makeRevisionInBranch()
+        self.assertEqual(
+            [(rev1, rev1.revision_author)], self._getRecentRevisions())
 
     def testRevisionsMustBeInActiveBranches(self):
         # The revisions returned revision must be in a branch for the product.
@@ -639,8 +635,7 @@ class TestTipRevisionsForBranches(TestCase):
         self._breakTransaction()
         self.assertEqual(1, len(revisions))
         revision = revisions[0]
-        self.assertEqual(self.branches[0].last_scanned_id,
-                         revision.revision_id)
+        self.assertEqual(last_scanned_id, revision.revision_id)
         # By accessing to the revision_author we can confirm that the
         # revision author has in fact been retrieved already.
         revision_author = revision.revision_author
@@ -824,6 +819,18 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
         self.assertTrue(branch.private)
         self.assertTrue(cached.private)
 
+    def test_revisions_for_transitive_private_branch_marked_private(self):
+        # If the branch is stacked on a private branch, then the revisions in
+        # the cache will be marked private too.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertTrue(branch.private)
+        self.assertTrue(cached.private)
+
     def test_product_branch_revisions(self):
         # The revision cache knows the product for revisions in product
         # branches.
@@ -900,6 +907,26 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
         # But the privacy flags are different.
         self.assertNotEqual(rev1.private, rev2.private)
 
+    def test_existing_transitive_private_revisions_with_public_branch(self):
+        # If a revision is in both public and private branches, there is a
+        # revision cache row for both public and private. A branch is private
+        # if it is stacked on a private branch.
+        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            stacked_on=stacked_on_branch)
+        public_branch = self.factory.makeAnyBranch(private=False)
+        revision = self.factory.makeRevision()
+        private_branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(private_branch)
+        public_branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(public_branch)
+        [rev1, rev2] = self._getRevisionCache()
+        # Both revisions point to the same underlying revision.
+        self.assertEqual(rev1.revision, revision)
+        self.assertEqual(rev2.revision, revision)
+        # But the privacy flags are different.
+        self.assertNotEqual(rev1.private, rev2.private)
+
 
 class TestPruneRevisionCache(RevisionCacheTestCase):
     """Tests for RevisionSet.pruneRevisionCache."""
@@ -929,7 +956,3 @@ class TestPruneRevisionCache(RevisionCacheTestCase):
             self.store.add(cache)
         RevisionSet.pruneRevisionCache(1)
         self.assertEqual(3, len(self._getRevisionCache()))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

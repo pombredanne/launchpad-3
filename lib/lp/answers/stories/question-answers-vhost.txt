@@ -1,42 +1,47 @@
-= Answers Default Pages =
+Answers Default Pages
+=====================
 
 The answers.launchpad.net domain is used for the Answer Tracker
 application. When visiting objects on that virtual host, the default
 selected facet is the Answers facet.
 
-== Product ==
+
+Product
+-------
 
     >>> anon_browser.open('http://answers.launchpad.dev/firefox')
     >>> print anon_browser.title
     Questions : Mozilla Firefox
 
-== Distribution ==
+
+Distribution
+------------
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print anon_browser.title
     Questions : Ubuntu
 
-== Soure Package ==
+
+Distribution Source Package
+---------------------------
 
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> print anon_browser.title
     Questions : ...mozilla-firefox... package : Ubuntu
 
-    >>> anon_browser.open(
-    ...     'http://answers.launchpad.dev'
-    ...     '/ubuntu/hoary/+source/mozilla-firefox')
-    >>> print anon_browser.title
-    Questions : ...mozilla-firefox... source package : Hoary (5.04) : Ubuntu
 
-== ProjectGroup ==
+ProjectGroup
+------------
 
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/mozilla')
     >>> print anon_browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
-== Person ==
+
+Person
+------
 
     >>> anon_browser.open('http://answers.launchpad.dev/~name16')
     >>> print anon_browser.title

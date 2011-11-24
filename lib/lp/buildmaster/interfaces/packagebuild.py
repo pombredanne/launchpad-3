@@ -37,10 +37,6 @@ class IPackageBuild(IBuildFarmJob):
 
     id = Attribute('The package build ID.')
 
-    url_id = Attribute(
-        'A unique identifier for accessing the builds. '
-        'Used for the canonical_url generation.')
-
     archive = exported(
         Reference(
             title=_('Archive'), schema=IArchive,

@@ -11,7 +11,7 @@ import os
 from canonical.testing import layers
 from lp.services.features import (
     getFeatureFlag,
-    per_thread,
+    install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
@@ -72,6 +72,40 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(dict(beta_user=False, default=True),
             control.usedScopes())
 
+    def test_currentScope(self):
+        # currentScope() returns the scope of the matching rule with
+        # the highest priority rule
+        self.populateStore()
+        # If only one scope matches, its name is returned.
+        control, call_log = self.makeControllerInScopes(['default'])
+        self.assertEqual('default', control.currentScope('ui.icing'))
+        # If two scopes match, the one with the higer priority is returned.
+        control, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
+        self.assertEqual('beta_user', control.currentScope('ui.icing'))
+
+    def test_currentScope__undefined_feature(self):
+        # currentScope() returns None for a non-existent flaeture flag.
+        self.populateStore()
+        control, call_log = self.makeControllerInScopes(['default'])
+        self.assertIs(None, control.currentScope('undefined_feature'))
+
+    def test_defaultFlagValue(self):
+        # defaultFlagValue() returns the default value of a flag even if
+        # another scopewith a higher priority matches.
+        self.populateStore()
+        control, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
+        self.assertEqual('3.0', control.defaultFlagValue('ui.icing'))
+
+    def test_defaultFlagValue__undefined_feature(self):
+        # defaultFlagValue() returns None if no default scope is defined
+        # for a feature.
+        self.populateStore()
+        control, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
+        self.assertIs(None, control.defaultFlagValue('undefined_feature'))
+
     def test_getAllFlags(self):
         # can fetch all the active flags, and it gives back only the
         # highest-priority settings.  this may be expensive and shouldn't
@@ -115,19 +149,20 @@ class TestFeatureFlags(TestCase):
     def test_threadGetFlag(self):
         self.populateStore()
         # the start-of-request handler will do something like this:
-        per_thread.features, call_log = self.makeControllerInScopes(
+        controller, call_log = self.makeControllerInScopes(
             ['default', 'beta_user'])
+        install_feature_controller(controller)
         try:
             # then application code can simply ask without needing a context
             # object
             self.assertEqual(u'4.0', getFeatureFlag('ui.icing'))
         finally:
-            per_thread.features = None
+            install_feature_controller(None)
 
     def test_threadGetFlagNoContext(self):
         # If there is no context, please don't crash. workaround for the root
         # cause in bug 631884.
-        per_thread.features = None
+        install_feature_controller(None)
         self.assertEqual(None, getFeatureFlag('ui.icing'))
 
     def testLazyScopeLookup(self):
@@ -164,6 +199,7 @@ class TestFeatureFlags(TestCase):
 
 test_rules_list = [
     (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'normal_user', 500, u'5.0'),
     ('ui.icing', 'beta_user', 300, u'4.0'),
     ('ui.icing', 'default', 100, u'3.0'),
     ]
@@ -186,6 +222,7 @@ class TestStormFeatureRuleSource(TestCase):
         self.assertEquals(
             """\
 %s\tbeta_user\t100\t%s
+ui.icing\tnormal_user\t500\t5.0
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
 """ % (notification_name, notification_value),

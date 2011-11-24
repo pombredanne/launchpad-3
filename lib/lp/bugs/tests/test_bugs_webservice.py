@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -9,12 +9,15 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from lazr.restfulclient.errors import (
+    BadRequest,
+    HTTPError,
+    )
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import (
     Equals,
     LessThan,
-    MatchesAny,
     )
 from zope.component import getMultiAdapter
 
@@ -31,17 +34,50 @@ from canonical.testing.layers import (
     )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    launchpadlib_for,
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,
     )
-from lp.testing._webservice import QueryCollector
+
+
+class TestBugConstraints(TestCaseWithFactory):
+    """Test constrainsts on bug inputs over the API."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugConstraints, self).setUp()
+        product = self.factory.makeProduct(name='foo')
+        bug = self.factory.makeBug(product=product)
+        lp = launchpadlib_for('testing', product.owner)
+        self.bug = lp.bugs[bug.id]
+
+    def _update_bug(self, nick):
+        self.bug.name = nick
+        self.bug.lp_save()
+
+    def test_numeric_nicknames_fail(self):
+        self.assertRaises(
+            HTTPError,
+            self._update_bug,
+            '1.1')
+
+    def test_non_numeric_nicknames_pass(self):
+        self._update_bug('bunny')
+        self.assertEqual('bunny', self.bug.name)
 
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -73,7 +109,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
         self.assertEqual(
             self.findBugDescription(response),
             u'<p>Useless bugs are useless. '
-            'See <a href="/bugs/%d">Bug %d</a>.</p>' % (
+            'See <a href="/bugs/%d" class="bug-link">Bug %d</a>.</p>' % (
             self.bug_one.id, self.bug_one.id))
 
     def test_PATCH_xhtml_representation(self):
@@ -92,7 +128,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
         self.assertEqual(
             self.findBugDescription(response),
-            u'<p>See <a href="/bugs/%d">bug %d</a></p>' % (
+            u'<p>See <a href="/bugs/%d" class="bug-link">bug %d</a></p>' % (
             self.bug_one.id, self.bug_one.id))
 
 
@@ -159,7 +195,6 @@ class TestBugScaling(TestCaseWithFactory):
         store = Store.of(self.bug)
         self.factory.makeBugAttachment(self.bug)
         self.factory.makeBugAttachment(self.bug)
-        person = self.factory.makePerson()
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
@@ -170,7 +205,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(22)))
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
@@ -195,7 +230,6 @@ class TestBugScaling(TestCaseWithFactory):
         self.factory.makeBugComment(bug)
         self.factory.makeBugComment(bug)
         self.factory.makeBugComment(bug)
-        person = self.factory.makePerson()
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
@@ -206,7 +240,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(22)))
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
@@ -232,21 +266,21 @@ class TestBugMessages(TestCaseWithFactory):
         self.message2 = self.factory.makeMessage(parent=self.message1)
         # Only link message2 to the bug.
         self.bug.linkMessage(self.message2)
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+        self.webservice = launchpadlib_for('launchpad-library', 'salgado')
 
     def test_messages(self):
         # When one of the messages on a bug is linked to a parent that
-        # isn't linked to the bug, the webservice should still return
-        # the correct collection link for the bug's messages.
-        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
-        self.failUnlessEqual(response.status, 200)
+        # isn't linked to the bug, the webservice should still include
+        # that message in the bug's associated messages.
+        bug = self.webservice.load(api_url(self.bug))
+        messages = bug.messages
+        latest_message = [message for message in messages][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message.subject)
+
         # The parent_link for the latest message should be None
         # because the parent is not a member of this bug's messages
         # collection itself.
-        latest_message = response.jsonBody()['entries'][-1]
-        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
-        self.failUnlessEqual(None, latest_message['parent_link'])
+        self.failUnlessEqual(None, latest_message.parent)
 
 
 class TestPostBugWithLargeCollections(TestCaseWithFactory):
@@ -270,7 +304,8 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         # bug subscriptions and (un)affected users.
         for field_name in (
             'subscriptions', 'users_affected', 'users_unaffected',
-            'users_affected_with_dupes', 'messages'):
+            'users_affected_with_dupes', 'messages', 'attachments',
+            'activity'):
             self.failUnless(
                 IDoNotSnapshot.providedBy(IBug[field_name]),
                 'IBug.%s should not be included in snapshots, see bug 507642.'
@@ -279,19 +314,51 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
     def test_many_subscribers(self):
         # Many subscriptions do not cause an OOPS for IBug POSTs.
         bug = self.factory.makeBug()
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+
         real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+
+        webservice = launchpadlib_for('test', 'salgado')
         try:
             login(ADMIN_EMAIL)
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePerson()
                 bug.subscribe(person, person)
             logout()
-            response = webservice.named_post(
-                '/bugs/%d' % bug.id, 'subscribe',
-                person='http://api.launchpad.dev/beta/~name12')
-            self.failUnlessEqual(200, response.status)
+            lp_bug = webservice.load(api_url(bug))
+
+            # Adding one more subscriber through the web service
+            # doesn't cause an OOPS.
+            person_to_subscribe = webservice.load('/~name12')
+            lp_bug.subscribe(person=person_to_subscribe)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
+
+
+class TestErrorHandling(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+
+        launchpad = launchpadlib_for('test', bug.owner)
+        lp_bug = launchpad.load(api_url(bug))
+        self.assertRaises(
+            BadRequest, lp_bug.addTask, target=api_url(product))
+
+    def test_add_invalid_bugtask_to_private_bug_gives_bad_request(self):
+        # Test we get an error when we attempt to invalidly add a bug task to
+        # a private bug. In this case, we cannot mark a private bug as
+        # affecting more than one project.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=owner)
+        product = self.factory.makeProduct()
+
+        login_person(owner)
+        launchpad = launchpadlib_for('test', owner)
+        lp_bug = launchpad.load(api_url(bug))
+        self.assertRaises(
+            BadRequest, lp_bug.addTask, target=api_url(product))

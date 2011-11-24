@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,F0401
@@ -27,8 +27,8 @@ from storm.expr import (
     LeftJoin,
     Or,
     Select,
+    SQL,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -58,6 +58,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
+    BranchMergeProposalExists,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,
     )
@@ -183,17 +184,15 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.private or self.target_branch.private or
+            self.source_branch.transitively_private or
+            self.target_branch.transitively_private or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.private))
+             self.prerequisite_branch.transitively_private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
-
-    review_diff = ForeignKey(
-        foreignKey='StaticDiff', notNull=False, default=None)
 
     @property
     def next_preview_diff_job(self):
@@ -236,14 +235,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
@@ -558,6 +558,11 @@ class BranchMergeProposal(SQLBase):
         if target_branch is None:
             target_branch = self.target_branch
         # DEFAULT instead of None, because None is a valid value.
+        proposals = BranchMergeProposalGetter.activeProposalsForBranches(
+            source_branch, target_branch)
+        for proposal in proposals:
+            if proposal is not self:
+                raise BranchMergeProposalExists(proposal)
         if prerequisite_branch is DEFAULT:
             prerequisite_branch = self.prerequisite_branch
         if description is None:
@@ -646,19 +651,21 @@ class BranchMergeProposal(SQLBase):
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
         store = Store.of(self)
-        SourceRevision = ClassAlias(BranchRevision)
-        TargetRevision = ClassAlias(BranchRevision)
-        target_join = LeftJoin(
-            TargetRevision, And(
-                TargetRevision.revision_id == SourceRevision.revision_id,
-                TargetRevision.branch_id == self.target_branch.id))
-        origin = [SourceRevision, target_join]
-        result = store.using(*origin).find(
-            SourceRevision,
-            SourceRevision.branch_id == self.source_branch.id,
-            SourceRevision.sequence != None,
-            TargetRevision.id == None)
-        return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
+        source = SQL("""source AS (SELECT BranchRevision.branch,
+            BranchRevision.revision, Branchrevision.sequence FROM
+            BranchRevision WHERE BranchRevision.branch = %s and
+            BranchRevision.sequence IS NOT NULL ORDER BY BranchRevision.branch
+            DESC, BranchRevision.sequence DESC
+            LIMIT 10)""" % self.source_branch.id)
+        where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
+            BranchRevision AS target where target.branch = %s and
+            BranchRevision.revision = target.revision)""" %
+            self.target_branch.id)
+        using = SQL("""source as BranchRevision""")
+        revisions = store.with_(source).using(using).find(
+            BranchRevision, where)
+        return list(revisions.order_by(
+            Desc(BranchRevision.sequence)).config(limit=10))
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
@@ -686,7 +693,7 @@ class BranchMergeProposal(SQLBase):
 
         # Until these are moved into the lp module, import here to avoid
         # circular dependencies from canonical.launchpad.database.__init__.py
-        from canonical.launchpad.database.message import Message, MessageChunk
+        from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
@@ -879,10 +886,10 @@ class BranchMergeProposal(SQLBase):
         entries.extend(
             ((revision.date_created, branch_revision.sequence),
                 branch_revision)
-            for branch_revision, revision, revision_author in revisions)
+            for branch_revision, revision in revisions)
         entries.sort()
         current_group = []
-        for date, entry in entries:
+        for sortkey, entry in entries:
             if IBranchRevision.providedBy(entry):
                 current_group.append(entry)
             else:

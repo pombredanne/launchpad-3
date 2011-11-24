@@ -1,31 +1,33 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+import bz2
 from datetime import (
     datetime,
     timedelta,
     )
+import os
+import pickle
 import re
 import subprocess
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestLoader
 
+from fixtures import TempDir
 import pytz
+from testtools.content import text_content
+from testtools.matchers import Equals
+import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
     flush_database_caches,
     flush_database_updates,
     sqlvalues,
-    )
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
@@ -34,9 +36,14 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPersonSet,
+    TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.teammembership import (
@@ -45,16 +52,73 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.model.teammembership import (
+    find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
-from lp.testing import TestCaseWithFactory
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation_circular,
+    check_teamparticipation_consistency,
+    check_teamparticipation_self,
+    ConsistencyError,
+    fetch_team_participation_info,
+    )
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    login,
+    login_celebrity,
+    login_person,
+    person_logged_in,
+    StormStatementRecorder,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import dbuser
+from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 
 
-class TestTeamMembershipSet(TestCase):
+class TestTeamMembershipSetScripts(TestCaseWithFactory):
+    """Separate Testcase to separate out examples required dbuser switches.
+
+    This uses the LaunchpadZoplelessLayer to provide layer.switchDbUser
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test_handleMembershipsExpiringToday_permissions(self):
+        # Create two teams, a control team and and a team to be the control's
+        # administrator.
+        adminteam = self.factory.makeTeam()
+        adminteam.setContactAddress(None)
+        team = self.factory.makeTeam(owner=adminteam)
+        with person_logged_in(team.teamowner):
+            team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+            team.defaultrenewalperiod = 10
+
+        # Create a person to be in the control team.
+        person = self.factory.makePerson()
+        team.addMember(person, team.teamowner)
+        membershipset = getUtility(ITeamMembershipSet)
+        teammembership = membershipset.getByPersonAndTeam(person, team)
+
+        # Set expiration time to now
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(teammembership).dateexpires = now
+
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        with dbuser(config.expiredmembershipsflagger.dbuser):
+            membershipset.handleMembershipsExpiringToday(janitor)
+        self.assertEqual(
+            teammembership.status, TeamMembershipStatus.APPROVED)
+
+
+class TestTeamMembershipSet(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TestTeamMembershipSet, self).setUp()
         login('test@canonical.com')
         self.membershipset = getUtility(ITeamMembershipSet)
         self.personset = getUtility(IPersonSet)
@@ -136,7 +200,6 @@ class TestTeamMembershipSet(TestCase):
         # manually because otherwise we would only be allowed to set an
         # expiration date in the future.
         now = datetime.now(pytz.UTC)
-        from zope.security.proxy import removeSecurityProxy
         sample_person_on_motu = removeSecurityProxy(
             self.membershipset.getByPersonAndTeam(sample_person, motu))
         sample_person_on_motu.dateexpires = now
@@ -148,7 +211,6 @@ class TestTeamMembershipSet(TestCase):
             sample_person_on_ubuntu_dev.status, TeamMembershipStatus.APPROVED)
         self.assertEqual(
             sample_person_on_motu.status, TeamMembershipStatus.APPROVED)
-
         self.membershipset.handleMembershipsExpiringToday(foobar)
         flush_database_caches()
 
@@ -160,6 +222,24 @@ class TestTeamMembershipSet(TestCase):
         self.assertEqual(
             sample_person_on_motu.status, TeamMembershipStatus.EXPIRED)
         self.failIf(sample_person.inTeam(motu))
+
+    def test_deactivateActiveMemberships(self):
+        superteam = self.factory.makeTeam(name='super')
+        targetteam = self.factory.makeTeam(name='target')
+        member = self.factory.makePerson()
+        login_celebrity('admin')
+        targetteam.join(superteam, targetteam.teamowner)
+        targetteam.addMember(member, targetteam.teamowner)
+        targetteam.teamowner.join(superteam, targetteam.teamowner)
+        self.membershipset.deactivateActiveMemberships(
+            targetteam, comment='test', reviewer=targetteam.teamowner)
+        membership = self.membershipset.getByPersonAndTeam(member, targetteam)
+        self.assertEqual('test', membership.last_change_comment)
+        self.assertEqual(targetteam.teamowner, membership.last_changed_by)
+        self.assertEqual([], list(targetteam.allmembers))
+        self.assertEqual(
+            [superteam], list(targetteam.teamowner.teams_participated_in))
+        self.assertEqual([], list(member.teams_participated_in))
 
 
 class TeamParticipationTestCase(TestCaseWithFactory):
@@ -187,6 +267,53 @@ class TeamParticipationTestCase(TestCaseWithFactory):
 
     def getTeamParticipationCount(self):
         return IStore(TeamParticipation).find(TeamParticipation).count()
+
+
+class TestTeamParticipationQuery(TeamParticipationTestCase):
+    """A test case for teammembership.test_find_team_participations."""
+
+    def test_find_team_participations(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual([self.team1, self.team2], people_teams.keys())
+        self.assertContentEqual([self.team1], people_teams[self.team1])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_limited_teams(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.foo_bar, self.team2]
+        teams = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual(
+            [self.foo_bar, self.team2], people_teams.keys())
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.foo_bar])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_no_query(self):
+        # Check that no database query is made unless necessary.
+        people = [self.foo_bar, self.team2]
+        teams = [self.foo_bar]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertContentEqual([self.foo_bar], people_teams.keys())
+        self.assertContentEqual([self.foo_bar], people_teams[self.foo_bar])
 
 
 class TestTeamParticipationHierarchy(TeamParticipationTestCase):
@@ -243,7 +370,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
     def testRemovingLeafTeam(self):
@@ -261,7 +388,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
 
@@ -321,7 +448,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -338,7 +465,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
 
@@ -440,7 +567,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
         self.assertEqual(
-            previous_count-3,
+            previous_count - 3,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -457,8 +584,33 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'team2', 'team3', 'team4'], self.team6)
         self.assertEqual(
-            previous_count-10,
+            previous_count - 10,
             self.getTeamParticipationCount())
+
+    def testTeam3_deactivateActiveMemberships(self):
+        # Removing all the members of team2 will not remove memberships
+        # to super teams from other paths.
+        non_member = self.factory.makePerson()
+        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
+        previous_count = self.getTeamParticipationCount()
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            self.team3, 'gone', self.foo_bar)
+        self.assertEqual([], list(self.team3.allmembers))
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            [], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
 
 
 class TestTeamMembership(TestCaseWithFactory):
@@ -479,7 +631,7 @@ class TestTeamMembership(TestCaseWithFactory):
         """
         login('test@canonical.com')
         person = self.factory.makePerson()
-        login_person(person) # Now login with the future owner of the teams.
+        login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
             person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
         teamB = self.factory.makeTeam(
@@ -740,6 +892,62 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
             TeamMembershipStatus.INVITATION_DECLINED, self.team2.teamowner)
         self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
 
+    def test_declined_member_can_be_invited(self):
+        # A team can re-invite a declined member.
+        self.team2.addMember(
+            self.team1, self.no_priv, status=TeamMembershipStatus.PROPOSED,
+            force_team_add=True)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        tm.setStatus(
+            TeamMembershipStatus.DECLINED, self.team1.teamowner)
+        tm.setStatus(
+            TeamMembershipStatus.INVITED, self.team1.teamowner)
+        self.assertEqual(TeamMembershipStatus.INVITED, tm.status)
+
+    def test_add_approved(self):
+        # Adding an approved team is a no-op.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        with person_logged_in(member_team.teamowner):
+            member_team.acceptInvitationToBeMemberOf(self.team1, 'alright')
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
+        self.team1.addMember(
+            member_team, member_team.teamowner)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
+
+    def test_add_admin(self):
+        # Adding an admin team is a no-op.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner,
+            status=TeamMembershipStatus.ADMIN, force_team_add=True)
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.ADMIN, tm.status)
+        self.team1.addMember(
+            member_team, member_team.teamowner)
+        self.assertEqual(TeamMembershipStatus.ADMIN, tm.status)
+
+    def test_implicit_approval(self):
+        # Inviting a proposed person is an implicit approval.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner,
+            status=TeamMembershipStatus.PROPOSED, force_team_add=True)
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
+
     def test_retractTeamMembership_invited(self):
         # A team can retract a membership invitation.
         self.team2.addMember(self.team1, self.no_priv)
@@ -775,22 +983,97 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
 
 
-class TestCheckTeamParticipationScript(TestCase):
+class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
+    """Test the behaviour of sendExpirationWarningEmail()."""
     layer = DatabaseFunctionalLayer
 
-    def _runScript(self, expected_returncode=0):
+    def setUp(self):
+        super(TestTeamMembershipSendExpirationWarningEmail, self).setUp()
+        self.member = self.factory.makePerson(name='green')
+        self.team = self.factory.makeTeam(name='red')
+        login_person(self.team.teamowner)
+        self.team.addMember(self.member, self.team.teamowner)
+        self.tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.member, self.team)
+        pop_notifications()
+
+    def test_error_raised_when_no_expiration(self):
+        # An exception is raised if the membership does not have an
+        # expiration date.
+        self.assertEqual(None, self.tm.dateexpires)
+        message = 'green in team red has no membership expiration date.'
+        self.assertRaisesWithContent(
+            AssertionError, message, self.tm.sendExpirationWarningEmail)
+
+    def test_error_raised_for_team_with_automatic_renewal(self):
+        # An exception is raised if the team's TeamMembershipRenewalPolicy
+        # is AUTOMATIC.
+        self.team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+        self.team.defaultrenewalperiod = 365
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = tomorrow
+        message = (
+            'Team red with automatic renewals should not send '
+            'expiration warnings.')
+        self.assertRaisesWithContent(
+            AssertionError, message, self.tm.sendExpirationWarningEmail)
+
+    def test_message_sent_for_future_expiration(self):
+        # An email is sent to the user whose membership will expire.
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = tomorrow
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        message = notifications[0]
+        self.assertEqual(
+            'Your membership in red is about to expire', message['subject'])
+        self.assertEqual(
+            self.member.preferredemail.email, message['to'])
+
+    def test_no_message_sent_for_expired_memberships(self):
+        # Members whose membership has expired do not get a message.
+        yesterday = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = yesterday
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
+
+    def test_no_message_sent_for_non_active_users(self):
+        # Non-active users do not get an expiration message.
+        with person_logged_in(self.member):
+            self.member.deactivateAccount('Goodbye.')
+        IStore(self.member).flush()
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(self.tm).dateexpires = now + timedelta(days=1)
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
+
+
+class TestCheckTeamParticipationScript(TestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def _runScript(self, *args):
+        cmd = ["cronscripts/check-teamparticipation.py"]
+        cmd.extend(args)
         process = subprocess.Popen(
-            'cronscripts/check-teamparticipation.py', shell=True,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(process.returncode, expected_returncode, (out, err))
-        return out, err
+        out, err = process.communicate()
+        if out != "":
+            self.addDetail("stdout", text_content(out))
+        if err != "":
+            self.addDetail("stderr", text_content(err))
+        return process.poll(), out, err
 
     def test_no_output_if_no_invalid_entries(self):
         """No output if there's no invalid teamparticipation entries."""
-        out, err = self._runScript()
-        self.assertEqual((out, err), ('', ''))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
+        self.assertEqual(0, len(err))
 
     def test_report_invalid_teamparticipation_entries(self):
         """The script reports missing/spurious TeamParticipation entries.
@@ -828,20 +1111,17 @@ class TestCheckTeamParticipationScript(TestCase):
                         LIMIT 1),
                     %s);
             """ % sqlvalues(TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
 
-        out, err = self._runScript()
-        self.assertEqual(out, '', (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
         self.failUnless(
-            re.search('missing TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('spurious TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('spurious TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err),
-            (out, err))
+            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -871,12 +1151,92 @@ class TestCheckTeamParticipationScript(TestCase):
                 TeamParticipation (person, team)
                 VALUES (9997, 9998);
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
-        out, err = self._runScript(expected_returncode=1)
-        self.assertEqual(out, '', (out, err))
-        self.failUnless(
-            re.search('Circular references found', err), (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(1, code)
+        self.assertEqual(0, len(out))
+        self.failUnless(re.search('Circular references found', err))
+
+    def test_report_spurious_participants_of_people(self):
+        """The script reports spurious participants of people.
+
+        Teams can have multiple participants, but only the person should be a
+        paricipant of him/herself.
+        """
+        # Create two new people and make both participate in the first.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6969, 'bobby', 'Dazzler', 1);
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6970, 'nobby', 'Jazzler', 1);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (6970, 6969);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertEqual(
+            [ConsistencyError("spurious", 6969, [6970])],
+            errors)
+
+    def test_load_and_save_team_participation(self):
+        """The script can load and save participation info."""
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        info = fetch_team_participation_info(logger)
+        tempdir = self.useFixture(TempDir()).path
+        filename_in = os.path.join(tempdir, "info.in")
+        filename_out = os.path.join(tempdir, "info.out")
+        fout = bz2.BZ2File(filename_in, "w")
+        try:
+            pickle.dump(info, fout, pickle.HIGHEST_PROTOCOL)
+        finally:
+            fout.close()
+        code, out, err = self._runScript(
+            "--load-participation-info", filename_in,
+            "--save-participation-info", filename_out)
+        self.assertEqual(0, code)
+        fin = bz2.BZ2File(filename_out, "r")
+        try:
+            saved_info = pickle.load(fin)
+        finally:
+            fin.close()
+        self.assertEqual(info, saved_info)
+
+
+class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_queries(self):
+        """The script does not overly tax the database.
+
+        The whole check_teamparticipation() run executes a constant low number
+        of queries.
+        """
+        # Create a deeply nested team and member structure.
+        team = self.factory.makeTeam()
+        for num in xrange(10):
+            another_team = self.factory.makeTeam()
+            another_person = self.factory.makePerson()
+            with person_logged_in(team.teamowner):
+                team.addMember(another_team, team.teamowner)
+                team.addMember(another_person, team.teamowner)
+            team = another_team
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        with StormStatementRecorder() as recorder:
+            check_teamparticipation_self(logger)
+            check_teamparticipation_circular(logger)
+            check_teamparticipation_consistency(
+                logger, fetch_team_participation_info(logger))
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 def test_suite():

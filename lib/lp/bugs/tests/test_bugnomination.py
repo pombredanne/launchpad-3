@@ -1,16 +1,34 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug nominations."""
 
 __metaclass__ = type
 
+from itertools import izip
+import re
+
+from testtools.content import Content, UTF8_TEXT
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    Not,
+    )
+
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import (
     login,
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class CanBeNominatedForTestMixin:
@@ -74,13 +92,13 @@ class TestBugCanBeNominatedForDistroSeries(
     """Test IBug.canBeNominated for IDistroSeries nominations."""
 
     def setUpTarget(self):
-        self.series = self.factory.makeDistroRelease()
+        self.series = self.factory.makeDistroSeries()
         # The factory can't create a distro bug directly.
         self.bug = self.factory.makeBug()
         self.bug.addTask(self.eric, self.series.distribution)
         self.milestone = self.factory.makeMilestone(
             distribution=self.series.distribution)
-        self.random_series = self.factory.makeDistroRelease()
+        self.random_series = self.factory.makeDistroSeries()
 
     def test_not_canBeNominatedFor_source_package(self):
         # A bug may not be nominated directly for a source package. The
@@ -94,8 +112,173 @@ class TestBugCanBeNominatedForDistroSeries(
         # to a series of that distribution.
         sp_bug = self.factory.makeBug()
         spn = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.series, sourcepackagename=spn)
 
         self.assertFalse(sp_bug.canBeNominatedFor(self.series))
         sp_bug.addTask(
             self.eric, self.series.distribution.getSourcePackage(spn))
         self.assertTrue(sp_bug.canBeNominatedFor(self.series))
+
+
+class TestCanApprove(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_normal_user_cannot_approve(self):
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries())
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+
+    def test_driver_can_approve(self):
+        product = self.factory.makeProduct(driver=self.factory.makePerson())
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries(product=product))
+        self.assertTrue(nomination.canApprove(product.driver))
+
+    def publishSource(self, series, sourcepackagename, component):
+        return self.factory.makeSourcePackagePublishingHistory(
+            archive=series.main_archive,
+            distroseries=series,
+            sourcepackagename=sourcepackagename,
+            component=component,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_component_uploader_can_approve(self):
+        # A component uploader can approve a nomination for a package in
+        # that component, but not those in other components
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        with celebrity_logged_in('admin'):
+            perm = series.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
+            other_perm = series.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
+
+        # Publish the package in one of the uploaders' components. The
+        # uploader for the other component cannot approve the nomination.
+        self.publishSource(series, package_name, perm.component)
+        self.assertFalse(nomination.canApprove(other_perm.person))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_any_component_uploader_can_approve_for_no_package(self):
+        # An uploader for any component can approve a nomination without
+        # a package.
+        series = self.factory.makeDistroSeries()
+        with celebrity_logged_in('admin'):
+            perm = series.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
+        nomination = self.factory.makeBugNomination(target=series)
+
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_package_uploader_can_approve(self):
+        # A package uploader can approve a nomination for that package,
+        # but not others.
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        with celebrity_logged_in('admin'):
+            perm = series.main_archive.newPackageUploader(
+                self.factory.makePerson(), package_name)
+            other_perm = series.main_archive.newPackageUploader(
+                self.factory.makePerson(),
+                self.factory.makeSourcePackageName())
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
+
+        self.assertFalse(nomination.canApprove(other_perm.person))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_packageset_uploader_can_approve(self):
+        # A packageset uploader can approve a nomination for anything in
+        # that packageset.
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        ps = self.factory.makePackageset(
+            distroseries=series, packages=[package_name])
+        with celebrity_logged_in('admin'):
+            perm = series.main_archive.newPackagesetUploader(
+                self.factory.makePerson(), ps)
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
+
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_any_uploader_can_approve(self):
+        # If there are multiple tasks for a distribution, an uploader to
+        # any of the involved packages or components can approve the
+        # nomination.
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        comp_package_name = self.factory.makeSourcePackageName()
+        with celebrity_logged_in('admin'):
+            package_perm = series.main_archive.newPackageUploader(
+                self.factory.makePerson(), package_name)
+            comp_perm = series.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
+        self.factory.makeBugTask(
+            bug=nomination.bug,
+            target=series.distribution.getSourcePackage(comp_package_name))
+
+        self.publishSource(series, package_name, comp_perm.component)
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(package_perm.person))
+        self.assertTrue(nomination.canApprove(comp_perm.person))
+
+
+class TestApprovePerformance(TestCaseWithFactory):
+    """Test the performance of `BugNomination.approve`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def check_heat_queries(self, nomination):
+        self.assertFalse(nomination.isApproved())
+        # Statement patterns we're looking for:
+        pattern = "^(SELECT Bug.heat|UPDATE .* max_bug_heat)"
+        matcher = re.compile(pattern , re.DOTALL | re.I).match
+        queries_heat = lambda statement: matcher(statement) is not None
+        with person_logged_in(nomination.target.owner):
+            flush_database_updates()
+            with StormStatementRecorder(queries_heat) as recorder:
+                nomination.approve(nomination.target.owner)
+        # Post-process the recorder to only have heat-related statements.
+        recorder.query_data = [
+            data for statement, data in izip(
+                recorder.statements, recorder.query_data)
+            if queries_heat(statement)]
+        self.addDetail(
+            "query_data", Content(UTF8_TEXT, lambda: [str(recorder)]))
+        # If there isn't at least one update to max_bug_heat it may mean that
+        # this test is no longer relevant.
+        self.assertThat(recorder, HasQueryCount(Not(Equals(0))))
+        # At present there are two updates to max_bug_heat because
+        # recalculateBugHeatCache is called twice, and, even though it is
+        # lazily evaluated, there are both explicit and implicit flushes in
+        # bugtask subscriber code.
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
+    def test_heat_queries_for_productseries(self):
+        # The number of heat-related queries when approving a product series
+        # nomination is as low as reasonably possible.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(product=series.product)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)
+
+    def test_heat_queries_for_distroseries(self):
+        # The number of heat-related queries when approving a distro series
+        # nomination is as low as reasonably possible.
+        series = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=series.distribution)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)

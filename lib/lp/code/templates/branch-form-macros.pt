@@ -5,7 +5,7 @@
 
 <metal:add-branch define-macro="add-branch-content">
 
-  <div id="branch-unique-name-div" style="display:none">
+  <div id="branch-unique-name-div" class="hidden">
     The resulting location of the branch will be:
     <strong><span id="branch-unique-name"></span></strong> (<a href="/+help/register-branch.html" target="help">Do you need to register?</a>)
   </div>
@@ -17,20 +17,6 @@
 
 <script type="text/javascript">
 //<![CDATA[
-function update_branch_url()
-{
-  var branch_type_field = document.getElementsByName('field.branch_type')
-  var form = branch_type_field[0].form;
-  var branch_type = 'None';
-  for (var i = 0; i < branch_type_field.length; i++) {
-    if (branch_type_field[i].checked) {
-      branch_type = branch_type_field[i].value;
-      break;
-    }
-  }
-  updateField(form['field.url'], branch_type != 'HOSTED');
-}
-
 function update_branch_unique_name()
 {
   var unique_name = document.getElementById("branch-unique-name")
@@ -43,44 +29,16 @@ function update_branch_unique_name()
   unique_name.innerHTML = branch_name
 }
 
-function populate_branch_name_from_url()
-{
-   url_field = document.getElementById('field.url');
-   var url_text = trim(url_field.value);
-   // strip of any trailing slashes
-   url_text = url_text.replace(/\/+$/, '')
-   if (url_text != url_field.value) {
-      url_field.value = url_text;
-   }
-   var name_field = document.getElementById('field.name');
-   if (name_field.value == '')
-   {
-      // parse the value of the url field
-      url_bits = url_text.split('/');
-      if (url_bits.length > 2) {
-         // attempt at not barfing on something completely invalid
-         last_bit = url_bits[url_bits.length - 1];
-         name_field.value = last_bit;
-      }
-   }
-}
-
 function hookUpBranchFieldFunctions()
 {
   connect('field.owner', 'onkeyup', update_branch_unique_name);
   connect('field.owner', 'onchange', update_branch_unique_name);
   connect('field.name', 'onkeyup', update_branch_unique_name);
-  connect('field.branch_type.0', 'onclick', update_branch_url);
-  connect('field.branch_type.1', 'onclick', update_branch_url);
-  connect('field.branch_type.2', 'onclick', update_branch_url);
   update_branch_unique_name();
-  connect('field.url', 'onchange', populate_branch_name_from_url);
-  connect('field.url', 'onblur', populate_branch_name_from_url);
   document.getElementById("branch-unique-name-div").style.display = "block";
 }
 
 registerLaunchpadFunction(hookUpBranchFieldFunctions);
-registerLaunchpadFunction(update_branch_url);
 
 //]]>
 </script>

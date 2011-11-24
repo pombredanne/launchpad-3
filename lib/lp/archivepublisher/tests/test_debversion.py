@@ -86,8 +86,7 @@ class VersionTests(unittest.TestCase):
 
     def testEpochNonInteger(self):
         """Version should fail with non-integral epoch."""
-        v = Version("1.0:1")
-        self.assertEquals("1.0:1", v.upstream_version)
+        self.assertRaises(VersionError, Version, "1.0:1")
 
     def testEpochNonNegative(self):
         """Version should fail with a negative epoch."""

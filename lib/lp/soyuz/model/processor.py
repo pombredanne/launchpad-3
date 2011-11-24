@@ -25,6 +25,8 @@ from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
     IProcessorFamilySet,
+    IProcessorSet,
+    ProcessorNotFound,
     )
 
 
@@ -40,6 +42,24 @@ class Processor(SQLBase):
 
     def __repr__(self):
         return "<Processor %r>" % self.title
+
+
+class ProcessorSet:
+    """See `IProcessorSet`."""
+    implements(IProcessorSet)
+
+    def getByName(self, name):
+        """See `IProcessorSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        processor = store.find(Processor, Processor.name == name).one()
+        if processor is None:
+            raise ProcessorNotFound(name)
+        return processor
+
+    def getAll(self):
+        """See `IProcessorSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(Processor)
 
 
 class ProcessorFamily(SQLBase):
@@ -64,6 +84,7 @@ class ProcessorFamily(SQLBase):
 
 class ProcessorFamilySet:
     implements(IProcessorFamilySet)
+
     def getByName(self, name):
         """Please see `IProcessorFamilySet`."""
         # Please note that ProcessorFamily.name is unique i.e. the database

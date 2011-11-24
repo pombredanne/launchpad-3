@@ -197,7 +197,7 @@ the URL for the branch's canonical location.
     >>> print extract_text(get_branch_management_portlet())
     Only Sample Person can upload to this branch.
     If you are Sample Person please log in for upload directions.
-    View the branch content
+    Browse the code
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information
@@ -398,6 +398,30 @@ The stacked-on information appears in the branch summary:
 
     >>> browser.getLink(stacked_on_name).url == stacked_on_url
     True
+
+If the stacked-on branch is private, then a branch is also considered private
+even if it is not explicitly marked as such.
+
+The stacked branch is initially public:
+
+    >>> browser.open(url)
+    >>> content = find_tag_by_id(browser.contents, 'document')
+    >>> print extract_text(find_tag_by_id(content, 'privacy'))
+    This branch is public
+
+We mark the stacked-on branch as private:
+
+    >>> admin_browser.open(stacked_on_url)
+    >>> admin_browser.getLink('Change branch details').click()
+    >>> admin_browser.getControl('Keep branch confidential').selected = True
+    >>> admin_browser.getControl('Change Branch').click()
+
+Now the stacked branch is private:
+
+    >>> admin_browser.open(url)
+    >>> content = find_tag_by_id(admin_browser.contents, 'document')
+    >>> print extract_text(find_tag_by_id(content, 'privacy'))
+    This branch is private because it is stacked on a private branch.
 
 
 Navigation Context

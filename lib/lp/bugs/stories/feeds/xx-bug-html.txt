@@ -74,7 +74,7 @@ as the latest bugs feed for a product.
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
     >>> browser.title
-    'Bugs in the Mozilla Project'
+    'Bugs in The Mozilla Project'
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 

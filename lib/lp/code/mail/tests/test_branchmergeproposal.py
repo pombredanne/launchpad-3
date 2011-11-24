@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -6,7 +6,6 @@
 from difflib import unified_diff
 import operator
 from textwrap import dedent
-from unittest import TestLoader
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -147,13 +146,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """If there are related bugs, include 'Related bugs'."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         bug = self.factory.makeBug(title='I am a bug')
+        bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         expected = (
             'Related bugs:\n'
-            '  #%d I am a bug\n'
-            '  %s\n' % (bug.id, canonical_url(bug)))
+            '  %s\n'
+            '  %s\n' % (bugtask.title, canonical_url(bugtask)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_without_bugs(self):
@@ -183,6 +183,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         reviewer = self.factory.makePerson(name='review-person')
         bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bug = self.factory.makeBug(title='I am a bug')
+        bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
@@ -191,11 +192,73 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             '\nRequested reviews:'
             '\n  Review-person (review-person)'
             '\nRelated bugs:'
-            '\n  #%d I am a bug'
+            '\n  %s'
             '\n  %s\n'
             '\nFor more details, see:\n'
             '%s'
-            '\n--' % (bug.id, canonical_url(bug), canonical_url(bmp)))
+            '\n--' % (bugtask.title, canonical_url(bugtask),
+                      canonical_url(bmp)))
+        self.assertIn(expected, ctrl.body)
+
+    def test_forCreation_with_review_request_and_private_bug(self):
+        """Correctly format list of reviewers and bug info.
+
+        Private bugs should not be listed in the email unless authorised.
+        """
+        reviewer = self.factory.makePerson(name='review-person')
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
+
+        # Create and subscribe the owner of the private bug
+        private_bug_owner = self.factory.makePerson(email="owner@example.com")
+        bmp.source_branch.subscribe(private_bug_owner,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL, private_bug_owner)
+
+        # Create and link the bugs to the branch
+        bug = self.factory.makeBug(title='I am a bug')
+        bugtask = bug.default_bugtask
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        private_bug = self.factory.makeBug(
+            title='I am a private bug',
+            owner=private_bug_owner,
+            private=True)
+        private_bugtask = private_bug.default_bugtask
+        with person_logged_in(private_bug_owner):
+            bmp.source_branch.linkBug(private_bug, bmp.registrant)
+
+        # Set up the mailer
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+
+        # A non authorised email recipient doesn't see the private bug.
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        expected = (
+            '\nRequested reviews:'
+            '\n  Review-person (review-person)'
+            '\nRelated bugs:'
+            '\n  %s'
+            '\n  %s\n'
+            '\nFor more details, see:\n'
+            '%s'
+            '\n--' % (bugtask.title, canonical_url(bugtask),
+                      canonical_url(bmp)))
+        self.assertIn(expected, ctrl.body)
+
+        # An authorised email recipient does see the private bug.
+        ctrl = mailer.generateEmail('owner@example.com', private_bug_owner)
+        expected = (
+            '\nRequested reviews:'
+            '\n  Review-person (review-person)'
+            '\nRelated bugs:'
+            '\n  %s'
+            '\n  %s'
+            '\n  %s'
+            '\n  %s\n'
+            '\nFor more details, see:\n'
+            '%s'
+            '\n--' % (bugtask.title, canonical_url(bugtask),
+                      private_bugtask.title, canonical_url(private_bugtask),
+                      canonical_url(bmp)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
@@ -214,8 +277,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             bmp.registrant, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, bmp.registrant)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        ctrl = mailer.generateEmail(bmp.registrant,
-                                    bmp.registrant.preferredemail.email)
+        ctrl = mailer.generateEmail(bmp.registrant.preferredemail.email,
+                                    bmp.registrant)
         reviewer = request.recipient
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
@@ -227,8 +290,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         CodeReviewVoteReference(
             branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        ctrl = mailer.generateEmail(subscriber,
-                                    subscriber.preferredemail.email)
+        ctrl = mailer.generateEmail(subscriber.preferredemail.email,
+                                    subscriber)
         reviewer = bmp.target_branch.owner
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
@@ -239,8 +302,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         request.recipient.hide_email_addresses = True
         bmp = request.merge_proposal
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        ctrl = mailer.generateEmail(request.recipient,
-                                    request.recipient.preferredemail.email)
+        ctrl = mailer.generateEmail(request.recipient.preferredemail.email,
+                                    request.recipient)
         self.assertEqual([bmp.address], ctrl.to_addrs)
 
     def test_RecordMessageId(self):
@@ -284,7 +347,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text, attachment.get_payload(decode=True))
@@ -310,7 +374,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))
@@ -339,6 +404,20 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         merge_proposal, person = self.makeProposalWithSubscriber()
         old_merge_proposal = Snapshot(
             merge_proposal, providing=providedBy(merge_proposal))
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        merge_proposal_modified(merge_proposal, event)
+        self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
+
+    def test_no_job_created_if_only_preview_diff_changed(self):
+        """Ensure None is returned if only the preview diff has changed."""
+        merge_proposal, person = self.makeProposalWithSubscriber()
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
+        merge_proposal.updatePreviewDiff(
+            ''.join(unified_diff('', 'Fake diff')),
+            unicode(self.factory.getUniqueString('revid')),
+            unicode(self.factory.getUniqueString('revid')))
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
         merge_proposal_modified(merge_proposal, event)
@@ -607,7 +686,3 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         expected_email = '%s <%s>' % (
             candidate.displayname, candidate.preferredemail.email)
         self.assertEmailHeadersEqual(expected_email, mails[0]['To'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

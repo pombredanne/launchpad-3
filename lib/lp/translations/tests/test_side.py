@@ -85,7 +85,7 @@ class TraitsScenario:
         """
         template = self._makeTemplate()
         pofile = self.factory.makePOFile('nl', template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         translationmessage = potmsgset.submitSuggestion(
             pofile, self.factory.makePerson(),
             {0: self.factory.getUniqueString()})

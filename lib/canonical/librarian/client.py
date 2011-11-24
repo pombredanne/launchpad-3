@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,30 +14,45 @@ __all__ = [
 
 
 import hashlib
-import re
+from select import select
 import socket
-import time
+from socket import (
+    SOCK_STREAM,
+    AF_INET,
+    )
 import threading
+import time
 import urllib
 import urllib2
-
-from select import select
-from socket import SOCK_STREAM, AF_INET
 from urlparse import (
-    urlparse,
     urljoin,
+    urlparse,
     urlunparse,
     )
 
+from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config, dbconfig
-from canonical.database.sqlbase import cursor
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.postgresql import ConnectionString
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
-from canonical.lazr.utils import get_current_browser_request
+    DownloadFailed,
+    ILibrarianClient,
+    IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    LibrarianServerError,
+    UploadFailed,
+    )
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
@@ -93,9 +108,10 @@ class FileUploadClient:
             response = self.state.f.readline().strip()
             raise UploadFailed('Server said: ' + response)
 
-    def _sendLine(self, line):
+    def _sendLine(self, line, check_for_error_responses=True):
         self.state.f.write(line + '\r\n')
-        self._checkError()
+        if check_for_error_responses:
+            self._checkError()
 
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
@@ -139,15 +155,15 @@ class FileUploadClient:
             # Get the name of the database the client is using, so that
             # the server can check that the client is using the same
             # database as the server.
-            cur = cursor()
-            databaseName = self._getDatabaseName(cur)
+            store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+            databaseName = self._getDatabaseName(store)
 
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
-            cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
-            contentID = cur.fetchone()[0]
-            cur.execute("SELECT nextval('libraryfilealias_id_seq')")
-            aliasID = cur.fetchone()[0]
+            contentID = store.execute(
+                "SELECT nextval('libraryfilecontent_id_seq')").get_one()[0]
+            aliasID = store.execute(
+                "SELECT nextval('libraryfilealias_id_seq')").get_one()[0]
 
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
@@ -160,8 +176,11 @@ class FileUploadClient:
             if debugID is not None:
                 self._sendHeader('Debug-ID', debugID)
 
-            # Send blank line
-            self._sendLine('')
+            # Send blank line. Do not check for a response from the
+            # server when no data will be sent. Otherwise
+            # _checkError() might consume the "200" response which
+            # is supposed to be read below in this method.
+            self._sendLine('', check_for_error_responses=(size > 0))
 
             # Prepare to the upload the file
             shaDigester = hashlib.sha1()
@@ -171,7 +190,7 @@ class FileUploadClient:
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
-            for chunk in iter(lambda: file.read(1024*64), ''):
+            for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
                 shaDigester.update(chunk)
@@ -205,10 +224,8 @@ class FileUploadClient:
         finally:
             self._close()
 
-    def _getDatabaseName(self, cur):
-        cur.execute("SELECT current_database();")
-        databaseName = cur.fetchone()[0]
-        return databaseName
+    def _getDatabaseName(self, store):
+        return store.execute("SELECT current_database();").get_one()[0]
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""
@@ -222,9 +239,10 @@ class FileUploadClient:
         try:
             # Use dbconfig.rw_main_master directly here because it doesn't
             # make sense to try and use ro_main_master (which might be
-            # returned if we use dbconfig.main_master).
-            database_name = re.search(
-                r"dbname=(\S*)", dbconfig.rw_main_master).group(1)
+            # returned if we use dbconfig.main_master). Note we can't
+            # use database introspection, as not all clients using this
+            # method have database access.
+            database_name = ConnectionString(dbconfig.rw_main_master).dbname
             self._sendLine('STORE %d %s' % (size, name))
             self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
@@ -241,7 +259,7 @@ class FileUploadClient:
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
-            for chunk in iter(lambda: file.read(1024*64), ''):
+            for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
 
@@ -510,9 +528,12 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
         return config.librarian.download_url
 
     @property
-    def _internal_download_url(self): # used by _getURLForDownload
-        return 'http://%s:%s/' % (config.librarian.download_host,
-                                  config.librarian.download_port)
+    def _internal_download_url(self):
+        """Used by `_getURLForDownload`."""
+        return 'http://%s:%s/' % (
+            config.librarian.download_host,
+            config.librarian.download_port,
+            )
 
 
 class RestrictedLibrarianClient(LibrarianClient):
@@ -534,6 +555,9 @@ class RestrictedLibrarianClient(LibrarianClient):
         return config.librarian.restricted_download_url
 
     @property
-    def _internal_download_url(self): # used by _getURLForDownload
-        return 'http://%s:%s/' % (config.librarian.restricted_download_host,
-                                  config.librarian.restricted_download_port)
+    def _internal_download_url(self):
+        """Used by `_getURLForDownload`."""
+        return 'http://%s:%s/' % (
+            config.librarian.restricted_download_host,
+            config.librarian.restricted_download_port,
+            )

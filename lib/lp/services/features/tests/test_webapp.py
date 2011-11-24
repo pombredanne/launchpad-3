@@ -24,8 +24,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_normal(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', 'foo:bar')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', 'foo:bar')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertTrue(scopes.lookup('pageid:foo'))
         self.assertTrue(scopes.lookup('pageid:foo:bar'))
@@ -33,8 +33,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_collection(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing:#type')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing:#type')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertTrue(scopes.lookup('pageid:scoped'))
         self.assertTrue(scopes.lookup('pageid:scoped:thing'))
@@ -43,8 +43,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_empty(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', '')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', '')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
         self.assertFalse(scopes.lookup('pageid:foo:bar'))
@@ -73,6 +73,12 @@ class TestScopesFromRequest(TestCase):
         # There is no such key in the config, so this returns False.
         self.assertFalse(scopes.lookup('server.pink'))
 
+    def test_unknown_scope(self):
+        # Asking about an unknown scope is not an error.
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        scopes.lookup('not-a-real-scope')
+
 
 class TestDBScopes(TestCaseWithFactory):
 
@@ -81,7 +87,7 @@ class TestDBScopes(TestCaseWithFactory):
     def test_team_scope_outside_team(self):
         request = LaunchpadTestRequest()
         scopes = webapp.ScopesFromRequest(request)
-        self.factory.loginAsAnyone()
+        self.factory.loginAsAnyone(request)
         self.assertFalse(scopes.lookup('team:nonexistent'))
 
     def test_team_scope_in_team(self):
@@ -89,5 +95,5 @@ class TestDBScopes(TestCaseWithFactory):
         scopes = webapp.ScopesFromRequest(request)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(members=[member])
-        login_as(member)
+        login_as(member, request)
         self.assertTrue(scopes.lookup('team:%s' % team.name))

@@ -176,3 +176,72 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         vocab = self.getVocabularyForSpec(spec)
         term = vocab.getTermByToken(canonical_url(candidate))
         self.assertEqual(term.token, canonical_url(candidate))
+
+    def test_searchForTerms_ordering_different_targets_by_name(self):
+        # If the searched for specs are on different targets, the ordering is
+        # by name.
+        spec = self.factory.makeSpecification()
+        foo_b = self.factory.makeSpecification(name='foo-b')
+        foo_a = self.factory.makeSpecification(name='foo-a')
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms('foo')
+        self.assertEqual(2, len(results))
+        found = [item.value for item in results]
+        self.assertEqual([foo_a, foo_b], found)
+
+    def test_searchForTerms_ordering_same_product_first(self):
+        # Specs on the same product are returned first.
+        widget = self.factory.makeProduct()
+        spec = self.factory.makeSpecification(product=widget)
+        foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
+        foo_a = self.factory.makeSpecification(name='foo-a')
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms('foo')
+        self.assertEqual(2, len(results))
+        found = [item.value for item in results]
+        self.assertEqual([foo_b, foo_a], found)
+
+    def test_searchForTerms_ordering_same_productseries_first(self):
+        # Specs on the same product series are returned before the same
+        # products, and those before others.
+        widget = self.factory.makeProduct()
+        spec = self.factory.makeSpecification(product=widget)
+        spec.proposeGoal(widget.development_focus, widget.owner)
+        foo_c = self.factory.makeSpecification(name='foo-c', product=widget)
+        foo_c.proposeGoal(widget.development_focus, widget.owner)
+        foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
+        foo_a = self.factory.makeSpecification(name='foo-a')
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms('foo')
+        self.assertEqual(3, len(results))
+        found = [item.value for item in results]
+        self.assertEqual([foo_c, foo_b, foo_a], found)
+
+    def test_searchForTerms_ordering_same_distribution_first(self):
+        # Specs on the same distribution are returned first.
+        mint = self.factory.makeDistribution()
+        spec = self.factory.makeSpecification(distribution=mint)
+        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        foo_a = self.factory.makeSpecification(name='foo-a')
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms('foo')
+        self.assertEqual(2, len(results))
+        found = [item.value for item in results]
+        self.assertEqual([foo_b, foo_a], found)
+
+    def test_searchForTerms_ordering_same_distroseries_first(self):
+        # Specs on the same distroseries are returned before the same
+        # distribution, and those before others.
+        mint = self.factory.makeDistribution()
+        next = self.factory.makeDistroSeries(mint)
+        spec = self.factory.makeSpecification(distribution=mint)
+        spec.proposeGoal(next, mint.owner)
+        foo_c = self.factory.makeSpecification(name='foo-c', distribution=mint)
+        foo_c.proposeGoal(next, mint.owner)
+        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        foo_a = self.factory.makeSpecification(name='foo-a')
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms('foo')
+        self.assertEqual(3, len(results))
+        found = [item.value for item in results]
+        self.assertEqual([foo_c, foo_b, foo_a], found)

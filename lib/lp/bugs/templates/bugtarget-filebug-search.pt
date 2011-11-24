@@ -9,10 +9,6 @@
     <script type="text/javascript"
             tal:condition="devmode"
             tal:content="string:var yui_base='${yui}';"></script>
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
 
     <script type="text/javascript"
             tal:condition="context/enable_bugfiling_duplicate_search">
@@ -109,7 +105,16 @@
                       </p>
                     </td>
                     <td style="text-align: left;">
-                      <input tal:replace="structure view/actions/field.actions.search/render" />
+                      <tal:not_project_group
+                          tal:define="widget nocall:view/widgets/product|nothing"
+                          tal:condition="not:widget">
+                                    <input tal:replace="structure view/actions/field.actions.search/render" />
+                      </tal:not_project_group>
+                      <tal:project_group
+                          tal:define="widget nocall:view/widgets/product|nothing"
+                          tal:condition="widget">
+                                    <input tal:replace="structure view/actions/field.actions.projectgroupsearch/render" />
+                      </tal:project_group>
                       <span id="spinner" style="text-align: center" class="unseen">
                         <img src="/@@/spinner" />
                       </span>
@@ -129,10 +134,18 @@
 
         <div id="possible-duplicates" style="text-align: left;">
         </div>
-        <div id="filebug-form-container" style="display: none;">
-        </div>
-
-        <p style="display: none">
+        <tal:not_project_group
+            tal:define="widget nocall:view/widgets/product|nothing"
+            tal:condition="not:widget">
+          <div tal:condition="context/enable_bugfiling_duplicate_search"
+               id="filebug-form-container" class="transparent hidden">
+            <tal:filebug-form define="launchpad_form_id string:filebug-form">
+              <metal:display-similar-bugs
+                  use-macro="context/@@+filebug-macros/inline-filebug-form" />
+            </tal:filebug-form>
+          </div>
+        </tal:not_project_group>
+        <p class="hidden">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"

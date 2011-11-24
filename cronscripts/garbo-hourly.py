@@ -13,10 +13,11 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
+
 from lp.scripts.garbo import HourlyDatabaseGarbageCollector
+
 
 if __name__ == '__main__':
     script = HourlyDatabaseGarbageCollector()
     script.continue_on_failure = True
     script.lock_and_run()
-

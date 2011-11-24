@@ -12,6 +12,38 @@
     .binary-build .indent {
       padding-left: 2em;
     }
+    div#edit-recipe_text, div#edit-description {
+      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin: 1em 0;
+    }
+    div#edit-recipe_text.yui3-editable_text-content,
+    div#edit-description.yui3-editable_text-content {
+      margin-top: -15px;
+    }
+    .build-informational,
+    .build-error {
+        background: #d4e8ff url('/+icing/blue-fade-to-grey');
+        border: solid #666;
+        border-width: 1px 2px 2px 1px;
+        color: black;
+        padding: 5px 5px 5px 5px;
+        margin-right: 40px
+    }
+    .build-informational::before {
+        padding-right: 5px;
+        content: url('/@@/info');
+    }
+    .build-error::before {
+        padding-right: 5px;
+        content: url('/@@/error');
+    }
+    .popup-build-informational {
+        color: black;
+    }
+    .popup-build-informational::before {
+        padding-right: 5px;
+        content: url('/@@/info');
+    }
   </style>
 </metal:block>
 
@@ -31,12 +63,18 @@
   <div tal:replace="structure context/@@+global-actions" />
 </metal:side>
 
+<metal:heading fill-slot="heading">
+  <h1 tal:replace="structure view/name_widget">
+    recipe name
+  </h1>
+</metal:heading>
+
 <div metal:fill-slot="main">
   <div class="yui-g first">
     <div class="yui-u first">
       <div class="portlet">
-        <h2>Description</h2>
-        <tal:description replace="context/description" />
+        <h2 class="lazr-multiline-edit-header">Description</h2>
+        <tal:description replace="structure view/description_widget"/>
       </div>
     </div>
     <div class="yui-u">
@@ -44,18 +82,34 @@
         <h2>Recipe information</h2>
         <div class="two-column-list">
           <dl id="build_daily">
-            <dt>Build schedule:</dt>
-            <dd tal:condition="context/build_daily">
-              Built daily
-            </dd>
-            <dd tal:condition="not:context/build_daily">
-              Built on request
+            <dt>Build schedule:
+              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+                &nbsp;<span class="invisible-link">Tag help</span>
+              </a>
+            </dt>
+            <dd tal:content="structure view/daily_build_widget"/>
+            <dd
+              tal:define="link context/menu:context/request_daily_build"
+              tal:condition="link/enabled"
+              >
+              <noscript>
+                <form action="+request-daily-build"
+                      method="post"
+                      id="request-daily-build-form">
+                    <input type="submit" name="field.actions.build"
+                        id="field.actions.build" value="Build now" />
+                </form>
+              </noscript>
+              <a id="request-daily-build"
+                 class="sprite source-package-recipe js-action unseen"
+                 tal:attributes="href link/url"
+                 tal:content="link/text"/>
             </dd>
           </dl>
 
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd tal:content="structure context/owner/fmt:link" />
+            <dd tal:content="structure view/person_picker"/>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
@@ -67,110 +121,60 @@
           </dl>
           <dl id="daily_build_archive">
             <dt>Daily build archive:</dt>
-            <dd tal:content="structure context/daily_build_archive/fmt:link"
-                tal:condition="context/daily_build_archive">
-            </dd>
-            <dd tal:condition="not: context/daily_build_archive">None</dd>
+            <dd tal:content="structure view/archive_picker"/>
           </dl>
-
-          <dl id="distros">
-            <dt>Distribution series:</dt>
-            <dd>
-              <ul>
-                  <li tal:repeat="curseries context/distroseries"
-                      tal:content="structure curseries/fmt:link" />
-              </ul>
-            </dd>
+          <dl id="distroseries">
+            <tal:distroseries tal:replace="structure view/distroseries_widget"/>
           </dl>
         </div>
       </div>
     </div>
   </div>
+
   <div class="yui-g">
-    <div class="portlet">
-      <h2>Latest builds</h2>
-        <table class="listing" style='margin-bottom: 1em;'>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>When complete</th>
-              <th>Distribution series</th>
-              <th>Archive</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tal:recipe-builds repeat="build view/builds">
-              <tal:build-view define="buildview nocall:build/@@+index">
-            <tr>
-              <td>
-                <span tal:replace="structure build/image:icon" />
-                <a tal:content="buildview/status"
-                   tal:attributes="href build/fmt:url"></a>
-              </td>
-              <td>
-                <tal:date replace="buildview/date/fmt:displaydate" />
-                <tal:estimate condition="buildview/estimate">
-                  (estimated)
-                </tal:estimate>
-
-                <tal:build-log define="file build/log"
-                               tal:condition="file">
-                  <a class="sprite download"
-                     tal:attributes="href build/log_url">buildlog</a>
-                  (<span tal:replace="file/content/filesize/fmt:bytes" />)
-                </tal:build-log>
-              </td>
-              <td>
-                <tal:distro
-                replace="structure build/distroseries/fmt:link:mainsite" />
-              </td>
-              <td>
-                <tal:archive replace="structure build/archive/fmt:link"/>
-              </td>
-            </tr>
-            <tal:binary-builds repeat="binary buildview/binary_builds">
-              <tr tal:define="binaryview nocall:binary/@@+index"
-                  class="binary-build">
-                <td class="indent">
-                  <span tal:replace="structure binary/image:icon"/>
-                  <a tal:content="binary/source_package_release/title"
-                     tal:attributes="href binary/fmt:url">package - version</a>
-                </td>
-                <td>
-                  <tal:date replace="binaryview/date/fmt:displaydate" />
-                  <tal:estimate condition="binaryview/estimate">
-                    (estimated)
-                  </tal:estimate>
-
-                  <tal:build-log define="file binary/log"
-                                 tal:condition="file">
-                    <a class="sprite download"
-                       tal:attributes="href binary/log_url">buildlog</a>
-                    (<span tal:replace="file/content/filesize/fmt:bytes" />)
-                  </tal:build-log>
-                </td>
-                <td class="indent">
-                  <a class="sprite distribution"
-                     tal:define="archseries binary/distro_arch_series"
-                     tal:attributes="href archseries/fmt:url"
-                     tal:content="archseries/architecturetag">i386</a>
-                </td>
-              </tr>
-            </tal:binary-builds>
-            </tal:build-view>
-            </tal:recipe-builds>
-          </tbody>
-        </table>
-        <p tal:condition="not: view/builds">
-          This recipe has not been built yet.
-        </p>
-        <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
-      </div>
-      <div class='portlet'>
-        <h2>Recipe contents</h2>
-        <pre tal:content="context/recipe_text" />
-      </div>
-    </div>
+    <div id="builds-target" tal:content="structure context/@@+builds" />
   </div>
+  <div
+    tal:define="link context/menu:context/request_builds"
+    tal:condition="link/enabled"
+    >
+    <a id="request-builds"
+       class="sprite add"
+       tal:attributes="href link/url"
+       tal:content="link/text" />
+  </div>
+  <div class='portlet'>
+    <h2>Recipe contents</h2>
+    <tal:widget replace="structure view/recipe_text_widget"/>
+  </div>
+
+  <script type="text/javascript">
+    LPS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
+
+        Y.on('lp:context:deb_version_template:changed', function(e) {
+            Y.lp.ui.update_field('#debian-version dd', e.new_value);
+        });
+        Y.on('lp:context:base_branch_link:changed', function(e) {
+            Y.lp.ui.update_field('#base-branch dd', e.new_value_html);
+        });
+
+        if(Y.UA.ie) {
+            return;
+        }
+        Y.on('load', function() {
+            var logged_in = LP.links['me'] !== undefined;
+            if (logged_in) {
+                build_now_link = Y.one('#request-daily-build');
+                if( build_now_link != null ) {
+                  build_now_link.removeClass('unseen');
+                  Y.lp.code.requestbuild_overlay.connect_requestdailybuild();
+                }
+                Y.lp.code.requestbuild_overlay.connect_requestbuilds();
+
+            }
+        }, window);
+      });
+    </script>
+</div>
 </body>
 </html>

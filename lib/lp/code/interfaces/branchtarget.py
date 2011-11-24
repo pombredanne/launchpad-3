@@ -26,7 +26,6 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.enums import BranchType
 
 
@@ -142,4 +141,34 @@ class IBranchTarget(Interface):
             use registrant.
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
+        """
+
+    def getRelatedSeriesBranchInfo(parent_branch, limit_results=None):
+        """Find development branch info related to this parent branch.
+
+        The result is a list of tuples:
+            (branch, product_series)
+        where:
+            branch: the related branch.
+            product_series: the product series associated with the branch.
+
+        The development focus is first in the list.
+
+        :param parent_branch: `IBranch` we are finding related branches for.
+        :param limit_results: if not None, limit the number of results to the
+            specified value.
+        """
+
+    def getRelatedPackageBranchInfo(parent_branch, limit_results=None):
+        """Find package branch info related to this parent branch.
+
+        The result is a list of tuples:
+            (branch, distro_series)
+        where:
+            branch: the related branch.
+            distro_series: the distro series associated with the branch.
+
+        :param parent_branch: `IBranch` we are finding related branches for.
+        :param limit_results: if not None, limit the number of results to the
+            specified value.
         """

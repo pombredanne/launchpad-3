@@ -115,6 +115,7 @@ time goes on.
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
+    explicitly_private: False
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_mirror_attempt: None
@@ -130,6 +131,7 @@ time goes on.
     owner_link: u'.../~eric'
     private: False
     project_link: u'.../fooix'
+    recipes_collection_link: u'http://.../~eric/fooix/trunk/recipes'
     registrant_link: u'.../~eric'
     repository_format: None
     resource_type_link: u'.../#branch'
@@ -142,8 +144,8 @@ time goes on.
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
-
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.
@@ -259,14 +261,17 @@ the named operation 'setPrivate'.
     >>> response = webservice.named_post(
     ...     branch_url, 'setPrivate', api_version='beta', private=True)
     >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['explicitly_private']
+    True
     >>> print branch['private']
     True
 
 In subsequent versions, 'setPrivate' is gone; you have to set the
-'private' field directly.
+'explicitly_private' field directly.
 
     >>> print webservice.named_post(
-    ...     branch_url, 'setPrivate', api_version='devel', private=True)
+    ...     branch_url, 'setPrivate', api_version='devel',
+    ...     explicitly_private=True)
     HTTP/1.1 400 Bad Request
     ...
     No such operation: setPrivate
@@ -282,7 +287,7 @@ delete them.
     >>> print deletable
     False
 
-    Deleting only works on branches that do not have anything else 
+    Deleting only works on branches that do not have anything else
     depending on them.
 
     >>> response = webservice.delete('/~eric/fooix/feature-branch')

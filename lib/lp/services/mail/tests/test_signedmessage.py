@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the SignedMessage class."""
@@ -13,7 +13,6 @@ from email.Utils import (
     make_msgid,
     )
 from textwrap import dedent
-import unittest
 
 import gpgme
 from zope.component import getUtility
@@ -23,14 +22,14 @@ from canonical.launchpad.ftests import (
     import_secret_test_key,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.mail import signed_message_from_string
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.incoming import (
     authenticateEmail,
     canonicalise_line_endings,
     )
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 
@@ -103,8 +102,8 @@ class TestSignedMessage(TestCaseWithFactory):
         # signature.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         body = (
-            'A message with trailing spaces.   \n'+
-            'And tabs\t\t\n'+
+            'A message with trailing spaces.   \n'
+            'And tabs\t\t\n'
             'Also mixed. \t ')
         msg = self._get_clearsigned_for_person(sender, body)
         principle = authenticateEmail(msg)
@@ -166,7 +165,3 @@ class TestSignedMessage(TestCaseWithFactory):
         self.assertEqual(sender, principle.person)
         self.assertFalse(
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

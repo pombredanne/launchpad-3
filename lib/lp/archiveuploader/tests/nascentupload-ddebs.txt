@@ -39,12 +39,12 @@ it is in the queue awaiting overrides and acceptance.
 We don't really care where the source ends up, so we just accept the
 default overrides. It is now pending publication.
 
-    >>> src.queue_root.acceptFromQueue("announce@example.com")
+    >>> src.queue_root.acceptFromQueue()
     >>> print src.queue_root.status.name
     DONE
 
-    >>> [src_pub] = src.queue_root.archive.getPublishedSources(
-    ...     name='debug', version='1.0-1', exact_match=True)
+    >>> src_pub = src.queue_root.archive.getPublishedSources(
+    ...     name='debug', version='1.0-1', exact_match=True).one()
 
     >>> print src_pub.displayname, src_pub.status.name
     debug 1.0-1 in hoary PENDING
@@ -91,7 +91,7 @@ We override the binary to main/devel, and accept it into the archive.
 
     >>> bin.queue_root.overrideBinaries(main, devel, None, [main, universe])
     True
-    >>> bin.queue_root.acceptFromQueue('announce@example.com')
+    >>> bin.queue_root.acceptFromQueue()
 
     >>> print bin.queue_root.status.name
     ACCEPTED

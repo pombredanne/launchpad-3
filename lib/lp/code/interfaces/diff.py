@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,8 +11,6 @@ __all__ = [
     'IDiff',
     'IIncrementalDiff',
     'IPreviewDiff',
-    'IStaticDiff',
-    'IStaticDiffSource',
     ]
 
 from lazr.restful.declarations import (
@@ -24,6 +22,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Bytes,
+    Dict,
     Int,
     Text,
     TextLine,
@@ -53,7 +52,7 @@ class IDiff(Interface):
         Int(title=_('The number of lines in this diff.'), readonly=True))
 
     diffstat = exported(
-        Text(title=_('Statistics about this diff'), readonly=True))
+        Dict(title=_('Statistics about this diff'), readonly=True))
 
     added_lines_count = exported(
         Int(title=_('The number of lines added in this diff.'),
@@ -81,40 +80,6 @@ class IIncrementalDiff(Interface):
         IRevision, readonly=True, title=_('The new revision of the diff.'))
 
 
-class IStaticDiff(Interface):
-    """A diff with a fixed value, i.e. between two revisions."""
-
-    from_revision_id = exported(TextLine(readonly=True))
-
-    to_revision_id = exported(TextLine(readonly=True))
-
-    diff = exported(
-        Reference(IDiff, title=_('The Diff object.'), readonly=True))
-
-    def destroySelf():
-        """Destroy this object."""
-
-
-class IStaticDiffSource(Interface):
-    """Component that can acquire StaticDiffs."""
-
-    def acquire(from_revision_id, to_revision_id, repository, filename=None):
-        """Get or create a StaticDiff."""
-
-    def acquireFromText(from_revision_id, to_revision_id, text,
-                        filename=None):
-        """Get or create a StaticDiff from a string.
-
-        If a StaticDiff exists for this revision_id pair, the text is ignored.
-
-        :param from_revision_id: The id of the old revision.
-        :param to_revision_id: The id of the new revision.
-        :param text: The text of the diff, as bytes.
-        :param filename: The filename to store for the diff.  Randomly
-            generated if not supplied.
-        """
-
-
 class IPreviewDiff(IDiff):
     """A diff generated to show actual diff between two branches.
 
@@ -122,7 +87,7 @@ class IPreviewDiff(IDiff):
     trying to determine the effective changes of landing the source branch on
     the target branch.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     source_revision_id = exported(
         TextLine(

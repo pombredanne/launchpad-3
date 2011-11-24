@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -26,6 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
+    'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
@@ -42,7 +43,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -90,12 +90,7 @@ from canonical.launchpad.browser.multistep import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -117,19 +112,6 @@ from canonical.launchpad.webapp.interfaces import (
     UnsafeFormGetSubmissionError,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
-    LaunchpadRadioWidget,
-    )
-from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import PersonPickerWidget
-from canonical.widgets.product import (
-    GhostWidget,
-    LicenseWidget,
-    ProductNameWidget,
-    )
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -143,10 +125,28 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.product import (
+    GhostWidget,
+    LicenseWidget,
+    ProductNameWidget,
+    )
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -154,10 +154,18 @@ from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
     get_buglisting_search_filter_url,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.registry.browser import BaseRdfView
+from lp.registry.browser import (
+    add_subscribe_link,
+    BaseRdfView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -169,10 +177,6 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -191,6 +195,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -336,7 +344,8 @@ class ProductLicenseMixin:
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
-        template = helpers.get_email_template('product-other-license.txt')
+        template = helpers.get_email_template(
+            'product-other-license.txt', app='registry')
         message = template % substitutions
         simple_sendmail(
             from_address, user_address,
@@ -577,7 +586,12 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'review_license', 'administer']
+        add_subscribe_link(links)
+        return links
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
@@ -672,15 +686,19 @@ class ProductBugsMenu(PillarBugsMenu,
 
     usedfor = IProduct
     facet = 'bugs'
-    links = (
-        'filebug',
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'subscribe',
-        'configure_bugtracker',
-        )
     configurable_bugtracker = True
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'filebug',
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            ]
+        add_subscribe_link(links)
+        links.append('configure_bugtracker')
+        return links
 
 
 class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
@@ -817,6 +835,11 @@ class DecoratedSeries:
         else:
             # This is normal presentation.
             return ''
+
+    @cachedproperty
+    def packagings(self):
+        """Convert packagings to list to prevent multiple evaluations."""
+        return list(self.series.packagings)
 
 
 class SeriesWithReleases(DecoratedSeries):
@@ -982,29 +1005,32 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.form = request.form_ng
 
     def initialize(self):
+        super(ProductView, self).initialize()
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, 'title',
-            canonical_url(self.context, view_name='+edit'),
-            id="product-title", title="Edit this title")
+            product, title_field, title, 'h1')
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
         if self.context.programminglang is None:
-            additional_arguments = dict(
+            additional_arguments.update(dict(
                 default_text='Not yet specified',
                 initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, 'programminglang',
-            canonical_url(self.context, view_name='+edit'),
-            id='programminglang', title='Edit programming languages',
-            tag='span', public_attribute='programming_language',
-            accept_empty=True,
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
+    @property
+    def page_title(self):
+        return '%s in Launchpad' % self.context.displayname
 
     @property
     def show_license_status(self):
@@ -1109,6 +1135,64 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
 
+    @cachedproperty
+    def show_license_info(self):
+        """Should the view show the extra license information."""
+        return (
+            License.OTHER_OPEN_SOURCE in self.context.licenses
+            or License.OTHER_PROPRIETARY in self.context.licenses)
+
+    @cachedproperty
+    def is_proprietary(self):
+        """Is the project proprietary."""
+        return License.OTHER_PROPRIETARY in self.context.licenses
+
+    @property
+    def active_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['active'],
+            content_box_id='%s-edit-active' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Deactivated',
+            true_text='Active',
+            header='Is this project active and usable by the community?')
+
+    @property
+    def project_reviewed_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['project_reviewed'],
+            content_box_id='%s-edit-project-reviewed' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unreviewed',
+            true_text='Reviewed',
+            header='Have you reviewed the project?')
+
+    @property
+    def license_approved_widget(self):
+        licenses = list(self.context.licenses)
+        if License.OTHER_PROPRIETARY in licenses:
+            return 'Commercial subscription required'
+        elif [License.DONT_KNOW] == licenses or [] == licenses:
+            return 'License required'
+        return BooleanChoiceWidget(
+            self.context, IProduct['license_approved'],
+            content_box_id='%s-edit-license-approved' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unapproved',
+            true_text='Approved',
+            header='Does the license qualifiy the project for free hosting?')
+
+
+class ProductPurchaseSubscriptionView(ProductView):
+    """View the instructions to purchase a commercial subscription."""
+    page_title = 'Purchase subscription'
+
 
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
@@ -1119,8 +1203,9 @@ class ProductPackagesView(LaunchpadView):
     @cachedproperty
     def series_batch(self):
         """A batch of series that are active or have packages."""
-        return BatchNavigator(
-            self.context.active_or_packaged_series, self.request)
+        decorated_series = DecoratedResultSet(
+            self.context.active_or_packaged_series, DecoratedSeries)
+        return BatchNavigator(decorated_series, self.request)
 
     @property
     def distro_packaging(self):
@@ -1132,18 +1217,8 @@ class ProductPackagesView(LaunchpadView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        # First get a list of all relevant packagings.
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # We sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order.
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-
         distros = {}
-        for packaging in all_packagings:
+        for packaging in self.context.packagings:
             distribution = packaging.distroseries.distribution
             if distribution.name in distros:
                 distro = distros[distribution.name]
@@ -1215,8 +1290,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
-                description = """<a href="%s">%s</a>""" % (
-                    item_url, escape(package.name))
+                description = structured(
+                    '<a href="%s">%s</a>', item_url, package.name)
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
         # Add an option to represent the user's decision to choose a
@@ -1604,7 +1679,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
-        "license_reviewed",
+        "project_reviewed",
         "license_approved",
         "active",
         "private_bugs",
@@ -1789,15 +1864,15 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
 
     schema = IProductReviewSearch
     label = 'Review projects'
+    page_title = label
 
     full_row_field_names = [
         'search_text',
         'active',
-        'license_reviewed',
+        'project_reviewed',
         'license_approved',
-        'license_info_is_empty',
         'licenses',
-        'has_zero_licenses',
+        'has_subscription',
         ]
 
     side_by_side_field_names = [
@@ -1811,13 +1886,11 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         orientation='vertical')
     custom_widget('active', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
-    custom_widget('license_reviewed', LaunchpadRadioWidget,
+    custom_widget('project_reviewed', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('has_zero_licenses', LaunchpadRadioWidget,
+    custom_widget('has_subscription', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
@@ -1843,21 +1916,25 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         """Return all widgets that span all columns."""
         return (self.widgets[name] for name in self.full_row_field_names)
 
+    @property
+    def initial_values(self):
+        """See `ILaunchpadFormView`."""
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        return search_params
+
     def forReviewBatched(self):
         """Return a `BatchNavigator` to review the matching projects."""
         # Calling _validate populates the data dictionary as a side-effect
         # of validation.
         data = {}
         self._validate(None, data)
-        # Get default values from the schema since the form defaults
-        # aren't available until the search button is pressed.
-        search_params = {}
-        for name in self.schema:
-            search_params[name] = self.schema[name].default
+        search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=100)
+                              self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

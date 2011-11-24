@@ -22,9 +22,9 @@
     <script type="text/javascript">
       LPS.use('base', 'node', 'event', function(Y) {
         Y.on('domready', function(e) {
-          Y.get('#sort-button').setStyle('display', 'none');
-          Y.get('#orderby').on('change', function(e) {
-             Y.get('#sort').submit();
+          Y.one('#sort-button').setStyle('display', 'none');
+          Y.one('#orderby').on('change', function(e) {
+             Y.one('#sort').submit();
            });
         });
       });
@@ -75,7 +75,7 @@
                              age python:view.patchAge(patch)"
                  tal:attributes="id string:patch-cell-${repeat/patch_task/index}">
                    <a tal:attributes="href python:view.proxiedUrlForLibraryFile(patch)"
-                      tal:content="age/fmt:approximateduration/use-digits"></a>
+                      tal:content="age/fmt:approximateduration"></a>
                <div class="popupTitle"
                     tal:attributes="id string:patch-popup-${repeat/patch_task/index};">
                  <p tal:define="submitter patch/message/owner">
@@ -91,12 +91,12 @@
                    Y.on('domready', function(e) {
                      var cell_id = '#patch-cell-${repeat/patch_task/index}';
                      var target_id = '#patch-popup-${repeat/patch_task/index}';
-                     var elt = Y.get(cell_id);
+                     var elt = Y.one(cell_id);
                      elt.on('mouseover', function(e) {
-                        Y.get(target_id).setStyle('display', 'block');
+                        Y.one(target_id).setStyle('display', 'block');
                       });
                      elt.on('mouseout', function(e) {
-                        Y.get(target_id).setStyle('display', 'none');
+                        Y.one(target_id).setStyle('display', 'none');
                       });
                    });
                  });"/>

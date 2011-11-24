@@ -47,13 +47,19 @@ class ExpireBugTasks(LaunchpadCronScript):
             # Avoid circular import.
             from lp.registry.interfaces.distribution import IDistributionSet
             target = getUtility(IDistributionSet).getByName('ubuntu')
-        janitor = BugJanitor(
-            log=self.logger, target=target, limit=self.options.limit)
-        janitor.expireBugTasks(self.txn)
+        try:
+            janitor = BugJanitor(
+                log=self.logger, target=target, limit=self.options.limit)
+            janitor.expireBugTasks(self.txn)
+        except Exception:
+            # We use a catchall here because we don't know (and don't care)
+            # about the particular error--we'll just log it to as an Oops.
+            self.logger.error(
+                'An error occured trying to expire bugtasks.', exc_info=1)
+            raise
 
 
 if __name__ == '__main__':
     script = ExpireBugTasks(
         'expire-bugtasks', dbuser=config.malone.expiration_dbuser)
     script.lock_and_run()
-

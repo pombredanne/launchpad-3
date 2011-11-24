@@ -81,7 +81,7 @@ sprint.  If we add them as an attendee, then they will be available:
     >>> time_starts = datetime(2005, 10, 8, 7, 0, 0, tzinfo=timezone('UTC'))
     >>> time_ends = datetime(2005, 11, 17, 20, 0, 0, tzinfo=timezone('UTC'))
     >>> ubz.attend(sampleperson, time_starts, time_ends, True)
-    <SprintAttendance at ...>
+    <...SprintAttendance ...>
 
     >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
     >>> view.initialize()

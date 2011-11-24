@@ -23,7 +23,7 @@
      tal:attributes="
        href string:${branch/fmt:url}/+bug/${bug/id}/+delete;
        id string:bugbranch-${bug_branch/id}-delete;">
-    <img src="/@@/remove"/>
+    <img src="/@@/remove" alt="Remove"/>
   </a>
   <div tal:repeat="proposal view/merge_proposals" class="reviews">
     <tal:merge-fragment tal:replace="structure proposal/@@+summary-fragment"/>

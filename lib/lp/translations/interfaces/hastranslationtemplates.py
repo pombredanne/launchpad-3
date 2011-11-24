@@ -10,6 +10,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_read_operation,
+    operation_for_version,
     operation_returns_collection_of,
     )
 from zope.interface import Interface
@@ -32,6 +33,14 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    has_obsolete_translation_templates = Bool(
+        title=_("Does this object have obsolete translation templates?"),
+        readonly=True)
+
+    has_sharing_translation_templates = Bool(
+        title=_("Does this object have sharing translation templates?"),
+        readonly=True)
+
     has_translation_files = Bool(
         title=_("Does this object have translation files?"),
         readonly=True)
@@ -43,15 +52,19 @@ class IHasTranslationTemplates(Interface):
         translation target that implements this interface.
         """
 
+    def getSharingPartner():
+        """Return the object on the other side of the packaging link.
+
+        Return the object that is sharing translations with this one on the
+        other side of a packaging link. It must also implement this interface.
+        """
+
     def getCurrentTemplatesCollection():
         """Return `TranslationTemplatesCollection` of current templates.
 
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
+        A translation template is considered active when
+        `IPOTemplate`.iscurrent flag is set to True.
         """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
@@ -60,12 +73,9 @@ class IHasTranslationTemplates(Interface):
             than the full `POTemplate`.  Used to save time on retrieving
             and deserializing the objects from the database.
 
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
+        A translation template is considered active when
+        `IPOTemplate`.iscurrent is set to True.
         """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationFiles(just_ids=False):
         """Return an iterator over all active translation files.
@@ -74,16 +84,9 @@ class IHasTranslationTemplates(Interface):
         active translation template.
         """
 
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
     @export_read_operation()
     @operation_returns_collection_of(Interface)
+    @operation_for_version('beta')
     def getTranslationTemplates():
         """Return an iterator over all its translation templates.
 
@@ -91,6 +94,9 @@ class IHasTranslationTemplates(Interface):
 
         :return: A sequence of `IPOTemplate`.
         """
+
+    def getTranslationTemplateByName(name):
+        """Return the template with the given name or None."""
 
     def getTranslationTemplateFormats():
         """A list of native formats for all current translation templates.

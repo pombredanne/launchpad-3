@@ -71,8 +71,6 @@ Policies can think about distroseriess...
   >>> buildd_policy.setDistroSeriesAndPocket("hoary")
   >>> print buildd_policy.distroseries.name
   hoary
-  >>> print buildd_policy.announcelist
-  hoary-changes@ubuntu.com
 
 Policies can make decisions based on whether or not they want to
 approve an upload automatically (I.E. move it straight to ACCEPTED

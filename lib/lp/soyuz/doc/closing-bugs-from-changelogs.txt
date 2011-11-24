@@ -1,16 +1,17 @@
-= Closing bugs from changelogs =
+Closing bugs from changelogs
+============================
 
 When a package is uploaded to a distribution, a bug number can be
 specified in the Launchpad-bugs-fixed header of the changes file.
 
-The bug is closed at package acceptance time.  When process-accepted.py
-runs it calls lp.soyuz.scripts.processaccepted.close_bugs(),
-which will attempt to close bugs mentioned in the aforementioned header if
-they are open and valid bugs.  It will not close bugs for uploads to PPAs
-or to the main distribution's "proposed" pocket.
+The bug is closed at package acceptance time.  After processing queue items,
+process-accepted.py attempts to close any open, valid bugs named in the
+aforementioned header.  It will not close bugs for uploads to PPAs or to the
+main distribution's "proposed" pocket.
 
-This document describes the call to close_bugs in detail and then finally
-demonstrates that process-accepted.py calls close_bugs.
+All this is done by the function close_bugs_for_queue_item.  This document
+describes the function in detail and demonstrates that process-accepted.py
+calls it.
 
     >>> changes_template = """
     ... Format: 1.7
@@ -47,7 +48,7 @@ uploaded to.
 First, let's define a helper function that adds a PackageUpload record
 using the changes file template (changes_template) above with the
 Launchpad-bugs-fixed header.  This is required so that we have some data
-for close_bugs to operate on.
+for close_bugs_for_queue_item to operate on.
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> def add_package_upload(
@@ -65,7 +66,7 @@ for close_bugs to operate on.
     ...         pocket=pocket,
     ...         changesfilename='%s.changes' % source_release.name,
     ...         changesfilecontent=changes)
-    ...     source_queue = queue_item.addSource(source_release)
+    ...     queue_item.addSource(source_release)
     ...     return queue_item
 
 Throughout this document we'll now create PackageUpload records for various
@@ -79,7 +80,7 @@ Now we can make a bug and a package upload for pmount.
 
     >>> pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
 
-    >>> queue_item_id = add_package_upload(pmount_release, pmount_bug_id).id
+    >>> queue_item = add_package_upload(pmount_release, pmount_bug_id)
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
@@ -87,9 +88,9 @@ Now we can make a bug and a package upload for pmount.
     >>> commit()
 
 Right after the queue items have been processed by the publishing
-scripts, close_bugs() is called with a list of queue item ids that have
-been published. Passing a queue item with a Launchpad-bugs-fixed header
-will close the specified bug.
+scripts, close_bugs_for_queue_item() is called with the id of each queue item
+that has been published. Passing a queue item with a Launchpad-bugs-fixed
+header will close the specified bug.
 
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> from lp.bugs.interfaces.bug import IBugSet
@@ -102,8 +103,8 @@ will close the specified bug.
     >>> print_single_task_status(pmount_bug_id)
     'NEW'
 
-    >>> from lp.soyuz.scripts.processaccepted import close_bugs
-    >>> close_bugs([queue_item_id])
+    >>> from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+    >>> close_bugs_for_queue_item(queue_item)
 
     >>> print_single_task_status(pmount_bug_id)
     'FIXRELEASED'
@@ -176,7 +177,7 @@ packages are synced from Debian.
     'FIXRELEASED'
     >>> number_of_old_notifications = notifications.count()
 
-    >>> close_bugs([queue_item_id])
+    >>> close_bugs_for_queue_item(queue_item)
 
     >>> notifications = BugNotification.select(orderBy='id')
     >>> new_notifications = notifications[number_of_old_notifications:]
@@ -186,16 +187,16 @@ packages are synced from Debian.
 
 
 Let's define another helper function that will compare a bug status,
-call close_bugs() and then check the status again.
+call close_bugs_for_queue_item() and then check the status again.
 
-    >>> def close_bugs_and_check_status(bug_id_list, queue_item_id):
-    ...     """Call close_bugs and report status before and after closing."""
+    >>> def close_bugs_and_check_status(bug_id_list, queue_item):
+    ...     """Close bugs, reporting status before and after."""
     ...     print "Before:"
     ...     for bug_id in bug_id_list:
     ...         print print_single_task_status(bug_id)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    ...     close_bugs([queue_item_id])
+    ...     close_bugs_for_queue_item(queue_item)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...     print "After:"
@@ -205,43 +206,43 @@ call close_bugs() and then check the status again.
 
 Uploads to pocket PROPOSED should not close bugs, see bug #125279 for
 further information.  Here we upload a package, cdrkit, to the proposed pocket
-for the ubuntu distro.  The bug status before and after calling close_bugs
-is "NEW".
+for the ubuntu distro.  The bug status before and after calling
+close_bugs_for_queue_item is "NEW".
 
     >>> cdrkit_ubuntu = ubuntu.getSourcePackage('cdrkit')
     >>> cdrkit_release = cdrkit_ubuntu.currentrelease.sourcepackagerelease
 
     >>> cdrkit_bug_id = cdrkit_ubuntu.createBug(bug_params).id
 
-    >>> queue_item_id = add_package_upload(
+    >>> queue_item = add_package_upload(
     ...     cdrkit_release, cdrkit_bug_id,
-    ...     pocket=PackagePublishingPocket.PROPOSED).id
+    ...     pocket=PackagePublishingPocket.PROPOSED)
 
-    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item_id)
+    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item)
     Before: NEW
     After: NEW
 
 Similarly, uploads to the backports pocket will not close bugs. (See bug
 #295621).
 
-    >>> queue_item_id = add_package_upload(
+    >>> queue_item = add_package_upload(
     ...     cdrkit_release, cdrkit_bug_id,
-    ...     pocket=PackagePublishingPocket.BACKPORTS).id
+    ...     pocket=PackagePublishingPocket.BACKPORTS)
 
-    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item_id)
+    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item)
     Before: NEW
     After: NEW
 
 Uploads to PPAs will not close bugs (see bug #137767).  Here we upload a
 package, cdrkit, to cprov's PPA.  The bug status before and after calling
-close_bugs is "NEW".
+close_bugs_for_queue_item is "NEW".
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> arbitrary_ppa = getUtility(IPersonSet).getByName('cprov').archive
-    >>> queue_item_id = add_package_upload(
-    ...     cdrkit_release, cdrkit_bug_id, archive=arbitrary_ppa).id
+    >>> queue_item = add_package_upload(
+    ...     cdrkit_release, cdrkit_bug_id, archive=arbitrary_ppa)
 
-    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item_id)
+    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item)
     Before: NEW
     After: NEW
 
@@ -263,7 +264,7 @@ processed.
     ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
     >>> unused = delayed_copy.addSource(cdrkit_release)
 
-    >>> close_bugs_and_check_status([cdrkit_bug_id], delayed_copy.id)
+    >>> close_bugs_and_check_status([cdrkit_bug_id], delayed_copy)
     Before: NEW
     After: FIXRELEASED
 
@@ -277,14 +278,15 @@ header, each will be marked as Fix Released. If a nonexistent bug,
     >>> fixing_text = "%d 666 %d" % (
     ...     pmount_bug_id, another_pmount_bug_id)
 
-    >>> queue_item_id = add_package_upload(pmount_release, fixing_text).id
+    >>> queue_item = add_package_upload(pmount_release, fixing_text)
     >>> bug_list = [pmount_bug_id, another_pmount_bug_id]
-    >>> close_bugs_and_check_status(bug_list, queue_item_id)
+    >>> close_bugs_and_check_status(bug_list, queue_item)
     Before: NEW NEW
     After: FIXRELEASED FIXRELEASED
 
 
-== process-accepted.py ==
+process-accepted.py
+-------------------
 
 The closing of bugs are done in process-accepted.py, right after the
 queue items have been processed.

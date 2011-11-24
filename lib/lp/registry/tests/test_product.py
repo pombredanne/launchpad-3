@@ -5,13 +5,17 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import unittest
 
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
+from testtools.matchers import MatchesAll
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -20,10 +24,26 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.product import (
     IProduct,
     License,
+    )
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -33,9 +53,20 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
+    TestCase,
     TestCaseWithFactory,
+    WebServiceTestCase,
+    )
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    Provides,
+    )
+from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes,
     )
 
 
@@ -43,6 +74,31 @@ class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # Products are really called Projects
+        product = self.factory.makeProduct()
+        self.assertEqual("Project", product.pillar_category)
+
+    def test_implements_interfaces(self):
+        # Product fully implements its interfaces.
+        product = removeSecurityProxy(self.factory.makeProduct())
+        expected_interfaces = [
+            IProduct,
+            IBugSummaryDimension,
+            IFAQTarget,
+            IHasBugHeat,
+            IHasBugSupervisor,
+            IHasCustomLanguageCodes,
+            IHasIcon,
+            IHasLogo,
+            IHasMugshot,
+            IHasOOPSReferences,
+            ILaunchpadUsage,
+            IServiceUsage,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(product, provides_all)
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -95,7 +151,7 @@ class TestProduct(TestCaseWithFactory):
         # milestones should be included.
         product = self.factory.makeProduct(name='foo')
         for i in range(25):
-            milestone_list = self.factory.makeMilestone(
+            self.factory.makeMilestone(
                 product=product,
                 productseries=product.development_focus,
                 name=str(i))
@@ -178,8 +234,36 @@ class TestProduct(TestCaseWithFactory):
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
 
+    def test_owner_cannot_be_open_team(self):
+        """Product owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                owner=open_team)
 
-class TestProductFiles(unittest.TestCase):
+    def test_owner_can_be_closed_team(self):
+        """Product owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(owner=closed_team)
+
+    def test_security_contact_cannot_be_open_team(self):
+        """Product security contacts cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                security_contact=open_team)
+
+    def test_security_contact_can_be_closed_team(self):
+        """Product security contacts can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(security_contact=closed_team)
+
+
+class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
 
     layer = LaunchpadFunctionalLayer
@@ -199,7 +283,7 @@ class TestProductFiles(unittest.TestCase):
             foo_file, 'text/plain', filename)
         firefox_owner.getControl(name='field.signature').add_file(
             foo_signature, 'text/plain', '%s.asc' % filename)
-        firefox_owner.getControl('Description').value="Foo installer"
+        firefox_owner.getControl('Description').value = "Foo installer"
         firefox_owner.getControl(name="field.contenttype").displayValue = \
            ["Installer file"]
         firefox_owner.getControl("Upload").click()
@@ -233,21 +317,20 @@ class TestProductFiles(unittest.TestCase):
         self.assertEqual(a_element.contents[0].strip(), u'sig')
 
 
-class ProductAttributeCacheTestCase(unittest.TestCase):
+class ProductAttributeCacheTestCase(TestCase):
     """Cached attributes must be cleared at the end of a transaction."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(ProductAttributeCacheTestCase, self).setUp()
         self.product = Product.selectOneBy(name='tomcat')
 
     def testLicensesCache(self):
         """License cache should be cleared automatically."""
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
-        product_license = ProductLicense(
-            product=self.product, license=License.PYTHON)
-        syncUpdate(product_license)
+        ProductLicense(product=self.product, license=License.PYTHON)
         # Cache doesn't see new value.
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
@@ -257,9 +340,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         transaction.abort()
-        product_license = ProductLicense(
-            product=self.product, license=License.MIT)
-        syncUpdate(product_license)
+        ProductLicense(product=self.product, license=License.MIT)
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
@@ -267,7 +348,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
         now = datetime.datetime.now(pytz.UTC)
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -275,8 +356,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='foo',
             whiteboard='bar')
-        # Cache does not see the change to the database.
-        syncUpdate(subscription)
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
@@ -288,7 +367,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 
         # Cache is cleared again.
         transaction.abort()
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -296,7 +375,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='new',
             whiteboard='')
-        syncUpdate(subscription)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
@@ -304,29 +382,30 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
-    """A TestCase for product snapshots."""
+    """Test product snapshots.
 
-    layer = DatabaseFunctionalLayer
+    Some attributes of a product should not be included in snapshots,
+    typically because they are either too costly to fetch unless there's
+    a real need, or because they get too big and trigger a shortlist
+    overflow error.
+
+    To stop an attribute from being snapshotted, wrap its declaration in
+    the interface in `doNotSnapshot`.
+    """
+
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
         self.product = self.factory.makeProduct(name="shamwow")
 
-    def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
-
-        Wrap an export with 'doNotSnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(self.product, providing=IProduct)
+    def test_excluded_from_snapshot(self):
         omitted = [
             'series',
+            'recipes',
             'releases',
             ]
-        for attribute in omitted:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "Snapshot should not include %s." % attribute)
+        self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):
@@ -354,5 +433,80 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             self.product.bug_supervisor.name))
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestProductTranslations(TestCaseWithFactory):
+    """A TestCase for accessing product translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Product attributes
+        # related to translations.
+        product = self.factory.makeProduct()
+        new_series = self.factory.makeProductSeries(product=product)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            product.translations_usage = ServiceUsage.LAUNCHPAD
+            product.translation_focus = new_series
+            product.translationgroup = group
+            product.translationpermission = TranslationPermission.CLOSED
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_translations_usage(self):
+        """The translations_usage field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translations_usage = ServiceUsage.EXTERNAL.title
+        ws_product.lp_save()
+
+    def test_translationpermission(self):
+        """The translationpermission field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translationpermission = TranslationPermission.CLOSED.title
+        ws_product.lp_save()
+
+    def test_translationgroup(self):
+        """The translationgroup field should be writable."""
+        product = self.factory.makeProduct()
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_group = self.wsObject(group)
+        ws_product.translationgroup = ws_group
+        ws_product.lp_save()
+
+    def test_oops_references_matching_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        question = self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = question.product
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid.upper()],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_product(self):
+        # The product layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

@@ -1,18 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IBranchLookup implementation."""
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.uri import URI
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -25,6 +22,10 @@ from lp.code.interfaces.branchlookup import (
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -38,6 +39,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -117,6 +119,60 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         result = self.branch_set.getIdAndTrailingPath(
             '/' + branch.unique_name + '/' + path)
         self.assertEqual((branch.id, '/' + path), result)
+
+    def test_branch_id_alias(self):
+        # The prefix by itself returns no branch, and no path.
+        path = BRANCH_ID_ALIAS_PREFIX
+        result = self.branch_set.getIdAndTrailingPath('/' + path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_not_int(self):
+        # The prefix followed by a non-integer returns no branch and no path.
+        path = BRANCH_ID_ALIAS_PREFIX + '/foo'
+        result = self.branch_set.getIdAndTrailingPath('/' + path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_private(self):
+        # Private branches are not found at all (this is for anonymous access)
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_transitive_private(self):
+        # Transitively private branches are not found at all
+        # (this is for anonymous access)
+        owner = self.factory.makePerson()
+        private_branch = self.factory.makeAnyBranch(
+            owner=owner, private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_public(self):
+        # Public branches can be accessed.
+        branch = self.factory.makeAnyBranch()
+        path = branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_branch_id_alias_public_slash(self):
+        # A trailing slash is returned as the extra path.
+        branch = self.factory.makeAnyBranch()
+        path = '%s/' % branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, '/'), result)
+
+    def test_branch_id_alias_public_with_path(self):
+        # All the path after the number is returned as the trailing path.
+        branch = self.factory.makeAnyBranch()
+        path = '%s/foo' % branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, '/foo'), result)
 
 
 class TestGetByPath(TestCaseWithFactory):
@@ -203,7 +259,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             owner, distroseries=distroseries,
@@ -213,7 +269,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_missing_suffixed_package_branch(self):
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             owner, distroseries=distroseries,
@@ -449,7 +505,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_no_such_sourcepackagename(self):
         # `traverse` raises `NoSuchSourcePackageName` if the package in
         # distro/series/package doesn't exist.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         path = '%s/%s/doesntexist' % (
             distroseries.distribution.name, distroseries.name)
         self.assertRaises(
@@ -491,6 +547,15 @@ class TestGetByLPPath(TestCaseWithFactory):
         # If the unique name refers to an invisible branch, getByLPPath raises
         # NoSuchBranch, just as if the branch weren't there at all.
         branch = self.factory.makeAnyBranch(private=True)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
+    def test_transitive_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
         path = removeSecurityProxy(branch).unique_name
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, path)
@@ -544,8 +609,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
@@ -578,6 +642,17 @@ class TestGetByLPPath(TestCaseWithFactory):
         # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
         # weren't there at all.
         branch = self.factory.makeProductBranch(private=True)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.branch = branch
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+
+    def test_transitive_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        private_branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(stacked_on=private_branch)
         product = removeSecurityProxy(branch).product
         removeSecurityProxy(product).development_focus.branch = branch
         self.assertRaises(
@@ -643,7 +718,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # linked branch but is followed by extra path segments, then we return
         # the linked branch but chop off the extra segments. We might want to
         # change this behaviour in future.
-        branch= self.factory.makeBranch()
+        branch = self.factory.makeBranch()
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
@@ -656,17 +731,10 @@ class TestGetByLPPath(TestCaseWithFactory):
         # change this behaviour in future.
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(package.distribution.owner):
+            package.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

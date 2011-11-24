@@ -1,35 +1,46 @@
-= Librarian Access =
+Librarian Access
+================
 
-The librarian is a file storage service for launchpad. Conceptually similar to
-other file storage API's like S3, it is used to store binary or large content -
-bug attachments, package builds, images and so on.
+The librarian is a file storage service for launchpad. Conceptually
+similar to other file storage API's like S3, it is used to store binary
+or large content - bug attachments, package builds, images and so on.
 
-Content in the librarian can be exposed at different urls. To expose some
-content use a LibraryFileAlias. Private content is supported as well - for that
-tokens are added to permit access for a limited time by a client - each time a
-client attempts to dereference a private LibraryFileAlias a token is emitted.
+Content in the librarian can be exposed at different urls. To expose
+some content use a LibraryFileAlias. Private content is supported as
+well - for that tokens are added to permit access for a limited time by
+a client - each time a client attempts to dereference a private
+LibraryFileAlias a token is emitted.
 
-= Deployment notes =
 
-(These may seem a bit out of place - they are, but they need to be written down
-somewhere, and the deployment choices inform the implementation choices).
+Deployment notes
+================
 
-The basics are simple: The librarian talks to clients. However restricted file
-access makes things a little more complex. As the librarian itself doesn't do
-SSL processing, and we want restricted files to be kept confidential the
-librarian will need a hint from the SSL front end that SSL was in fact used.
-The semi standard header Front-End-Https can be used for this if we filter it
-in incoming requests from clients.
+(These may seem a bit out of place - they are, but they need to be
+written down somewhere, and the deployment choices inform the
+implementation choices).
 
-== setUp ==
+The basics are simple: The librarian talks to clients. However
+restricted file access makes things a little more complex. As the
+librarian itself doesn't do SSL processing, and we want restricted files
+to be kept confidential the librarian will need a hint from the SSL
+front end that SSL was in fact used. The semi standard header Front-End-
+Https can be used for this if we filter it in incoming requests from
+clients.
 
-   >>> from canonical.database.sqlbase import session_store
-   >>> from canonical.launchpad.database.librarian import TimeLimitedToken
 
-== High Level ==
+setUp
+-----
+
+    >>> from canonical.database.sqlbase import session_store
+    >>> from canonical.launchpad.database.librarian import TimeLimitedToken
+
+
+High Level
+----------
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> data = 'This is some data'
 
 We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
@@ -42,6 +53,7 @@ This name is a mouthful, but is consistent with the rest of our naming.
     ...     )
     >>> alias.mimetype
     u'text/plain'
+
     >>> alias.filename
     u'text.txt'
 
@@ -51,6 +63,7 @@ because of this should probably never be used.
 
     >>> alias.expires == NEVER_EXPIRES
     True
+
     >>> alias = lfas.create(
     ...     'text.txt', len(data), StringIO(data), 'text/plain')
 
@@ -66,7 +79,8 @@ date_created attribute.
     >>> alias.date_created
     datetime.datetime(...)
 
-We can retrieve the LibraryFileAlias we just created using its ID or sha1.
+We can retrieve the LibraryFileAlias we just created using its ID or
+sha1.
 
     >>> org_alias_id = alias.id
     >>> alias = lfas[org_alias_id]
@@ -86,18 +100,19 @@ We can get its URL too
     ...     ) is not None
     True
 
-Librarian also serves the same file through https, we use this for branding
-and similar inline-presented objects which would trigger security warnings on
-https pages otherwise.
+Librarian also serves the same file through https, we use this for
+branding and similar inline-presented objects which would trigger
+security warnings on https pages otherwise.
 
     >>> re.search(r'^https://.+/\d+/text.txt$', alias.https_url) is not None
     True
 
-And we even have a convenient method which returns either the http URL or the
-https one, depending on a config value.
+And we even have a convenient method which returns either the http URL
+or the https one, depending on a config value.
 
     >>> config.vhosts.use_https
     False
+
     >>> re.search(
     ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
     ...     alias.getURL()
@@ -122,8 +137,7 @@ header in the request to 'http', even when 'use_https' is True.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'GET',
-    ...              'HTTP_X_SCHEME' : 'http' })
+    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'http'})
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]
@@ -133,8 +147,7 @@ When the incoming scheme is 'https' then the redirect scheme is
 unaffected.
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'GET',
-    ...              'HTTP_X_SCHEME' : 'https' })
+    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'https'})
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]
@@ -160,6 +173,7 @@ files.
     >>> alias.open()
     >>> alias.read()
     'This is some data'
+
     >>> alias.close()
 
 We can also read it in chunks.
@@ -167,10 +181,13 @@ We can also read it in chunks.
     >>> alias.open()
     >>> alias.read(2)
     'Th'
+
     >>> alias.read(6)
     'is is '
+
     >>> alias.read()
     'some data'
+
     >>> alias.close()
 
 If you don't want to read the file in chunks you can neglect to call
@@ -179,9 +196,9 @@ open() and close().
     >>> alias.read()
     'This is some data'
 
-Each alias also has an expiry date associated with it, the default of None
-meaning the file will expire a few days after nothing references it any
-more:
+Each alias also has an expiry date associated with it, the default of
+None meaning the file will expire a few days after nothing references it
+any more:
 
     >>> alias.expires is None
     True
@@ -193,10 +210,11 @@ tolerated and will not result in exceptions being raised.
     >>> alias.close()
 
 
-== Low Level ==
+Low Level
+---------
 
-We can also use the ILibrarianClient Utility directly to store and access
-files in the Librarian.
+We can also use the ILibrarianClient Utility directly to store and
+access files in the Librarian.
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
@@ -207,24 +225,24 @@ files in the Librarian.
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
     'This is some data'
+
     >>> url = client.getURLForAlias(aid)
     >>> re.search(
     ...     r'^%s\d+/text.txt$' % config.librarian.download_url, url
     ...     ) is not None
     True
 
-When secure=True, the returned url has the id as part of the domain name and
-the protocol is https:
+When secure=True, the returned url has the id as part of the domain name
+and the protocol is https:
 
     >>> expected = r'^https://i%d\..+:\d+/%d/text.txt$' % (aid, aid)
     >>> found = client.getURLForAlias(aid, secure=True)
     >>> re.search(expected, found) is not None
     True
 
-
 Librarian reads are logged in the request timeline.
 
-    >>> from canonical.lazr.utils import get_current_browser_request
+    >>> from lazr.restful.utils import get_current_browser_request
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
     >>> request = get_current_browser_request()
     >>> timeline = get_request_timeline(request)
@@ -232,27 +250,30 @@ Librarian reads are logged in the request timeline.
     >>> action = timeline.actions[-1]
     >>> action.category
     'librarian-connection'
+
     >>> action.detail.endswith('/text.txt')
     True
+
     >>> _unused = f.read()
     >>> action = timeline.actions[-1]
     >>> action.category
     'librarian-read'
+
     >>> action.detail.endswith('/text.txt')
     True
 
-At this level we can also reverse the transactional semantics by using the
-remoteAddFile instead of the addFile method. In this case, the database
-rows are added by the Librarian, which means that the file is downloadable
-immediately and will exist even if the client transaction rolls back.
-However, the records in the database will not be visible to the client
-until it begins a new transaction.
+At this level we can also reverse the transactional semantics by using
+the remoteAddFile instead of the addFile method. In this case, the
+database rows are added by the Librarian, which means that the file is
+downloadable immediately and will exist even if the client transaction
+rolls back. However, the records in the database will not be visible to
+the client until it begins a new transaction.
 
     >>> url = client.remoteAddFile(
-    ...     'text.txt', len(data), StringIO(data), 'text/plain'
-    ...     )
+    ...     'text.txt', len(data), StringIO(data), 'text/plain')
     >>> print url
     http://.../text.txt
+
     >>> from urllib2 import urlopen
     >>> urlopen(url).read()
     'This is some data'
@@ -269,14 +290,13 @@ You can also set the expiry date on the file this way too:
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',
-    ...     expires=datetime(2005,9,1,12,0,0, tzinfo=utc)
-    ...     )
+    ...     expires=datetime(2005,9,1,12,0,0, tzinfo=utc))
     >>> transaction.abort()
 
-To check the expiry is set, we need to extract the alias id from the URL.
-remoteAddFile deliberatly returns the URL instead of the alias id because,
-except for test cases, the URL is the only thing useful (because the
-client can't see the database records yet).
+To check the expiry is set, we need to extract the alias id from the
+URL. remoteAddFile deliberatly returns the URL instead of the alias id
+because, except for test cases, the URL is the only thing useful
+(because the client can't see the database records yet).
 
     >>> import re
     >>> match = re.search('/(\d+)/', url)
@@ -286,7 +306,8 @@ client can't see the database records yet).
     2005-09-01T12:00:00+00:00
 
 
-== Restricted Librarian ==
+Restricted Librarian
+--------------------
 
 Some files should not be generally available publicly. If you know the
 URL, any file can be retrieved directly from the librarian. For this
@@ -312,17 +333,49 @@ attribute set.
     >>> file_alias.restricted
     True
 
-    >>> print file_alias.http_url
-    http://.../private.txt
-    >>> file_alias.http_url.startswith(
-    ...     config.librarian.restricted_download_url)
-    True
-
     >>> transaction.commit()
     >>> file_alias.open()
     >>> print file_alias.read()
     This is private data.
+
     >>> file_alias.close()
+
+Restricted files are accessible with HTTP on a private domain.
+
+    >>> print file_alias.http_url
+    http://.../private.txt
+
+    >>> file_alias.http_url.startswith(
+    ...     config.librarian.restricted_download_url)
+    True
+
+They can also be accessed externally using a time-limited token appended
+to their private_url. Possession of a token is sufficient to grant
+access to a file, regardless of who is logged in. getURL can be asked to
+provide such a token.
+
+    >>> token_url = file_alias.getURL(include_token=True)
+    >>> print token_url
+    https://i...restricted.../private.txt?token=...
+
+    >>> token_url.startswith('https://i%d.restricted.' % file_alias.id)
+    True
+
+    >>> private_path = TimeLimitedToken.url_to_token_path(
+    ...        file_alias.private_url)
+    >>> token_url.endswith(session_store().find(
+    ...     TimeLimitedToken, path=private_path).any().token)
+    True
+
+LibraryFileAliasView doesn't work on restricted files. This is a
+temporary measure until we're sure no restricted files leak into the
+traversal hierarchy.
+
+    >>> view = getMultiAdapter((file_alias, request), name='+index')
+    >>> view.initialize()
+    Traceback (most recent call last):
+    ...
+    AssertionError
 
 If you try to retrieve this file through the standard ILibrarianClient,
 you'll get a DownloadFailed error.
@@ -372,6 +425,7 @@ also fails:
     >>> file_alias = getUtility(ILibraryFileAliasSet)[public_file_id]
     >>> file_alias.restricted
     False
+
     >>> transaction.commit()
 
     >>> restricted_client.getURLForAlias(public_file_id)
@@ -392,6 +446,7 @@ file:
     ...     StringIO(private_content), 'text/plain')
     >>> print url
     http://.../another-private.txt
+
     >>> url.startswith(config.librarian.restricted_download_url)
     True
 
@@ -426,15 +481,16 @@ But on the restricted server, this will work:
     >>> result = result.splitlines()
     >>> print result[0]
     3
+
     >>> sorted(file_path.split('/')[1] for file_path in result[1:])
-    ['another-private.txt',
-     'private.txt',
-     'yet-another-private.txt']
+    ['another-private.txt', 'private.txt', 'yet-another-private.txt']
 
 
-== Odds and Sods ==
+Odds and Sods
+-------------
 
-An UploadFailed will be raised if you try to create a file with no content
+An UploadFailed will be raised if you try to create a file with no
+content
 
     >>> client.addFile('test.txt', 0, StringIO('hello'), 'text/plain')
     Traceback (most recent call last):
@@ -443,15 +499,15 @@ An UploadFailed will be raised if you try to create a file with no content
 
 If you really want a zero length file you can do it:
 
-    >>> aid = client.addFile('test.txt', 0, StringIO(''), 'text/plain',
-    ...     allow_zero_length=True)
+    >>> aid = client.addFile(
+    ...     'test.txt', 0, StringIO(''), 'text/plain', allow_zero_length=True)
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
     ''
 
-An AssertionError will be raised if the number of bytes that could be read
-from the file don't match the declared size.
+An AssertionError will be raised if the number of bytes that could be
+read from the file don't match the declared size.
 
     >>> client.addFile('test.txt', 42, StringIO(''), 'text/plain')
     Traceback (most recent call last):
@@ -460,65 +516,73 @@ from the file don't match the declared size.
 
 Filenames with spaces in them work.
 
-    >>> aid = client.addFile('hot dog', len(data), StringIO(data), 'text/plain')
+    >>> aid = client.addFile(
+    ...     'hot dog', len(data), StringIO(data), 'text/plain')
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
     'This is some data'
+
     >>> url = client.getURLForAlias(aid)
     >>> re.search(r'/\d+/hot%20dog$', url) is not None
     True
 
-Unicode file names work.  Note that the filename in the resulting URL
-is encoded as UTF-8.
+Unicode file names work.  Note that the filename in the resulting URL is
+encoded as UTF-8.
 
-    >>> aid = client.addFile(u'Yow\N{INTERROBANG}', len(data), StringIO(data),
-    ...                      'text/plain')
+    >>> aid = client.addFile(
+    ...     u'Yow\N{INTERROBANG}', len(data), StringIO(data), 'text/plain')
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
     'This is some data'
+
     >>> url = client.getURLForAlias(aid)
     >>> re.search(r'/\d+/Yow%E2%80%BD$', url) is not None
     True
 
 Files will get garbage collected on production systems as per
-LibrarianGarbageCollection. If you request the URL of a deleted file, you
-will be given None
+LibrarianGarbageCollection. If you request the URL of a deleted file,
+you will be given None
 
     >>> alias = lfas[36]
     >>> alias.deleted
     True
+
     >>> alias.http_url is None
     True
+
     >>> alias.https_url is None
     True
+
     >>> alias.getURL() is None
     True
+
     >>> client.getURLForAlias(alias.id) is None
     True
 
 
-== Default View ==
+Default View
+------------
 
-A librarian file has a default view that should redirect to the download URL.
+A librarian file has a default view that should redirect to the download
+URL.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(
-    ...     'text2.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
-    ...     )
+    ...     'text2.txt', len(data), StringIO(data), 'text/plain',
+    ...     NEVER_EXPIRES)
     >>> transaction.commit()
-    >>> lfa_view = getMultiAdapter((alias,req), name='+index')
+    >>> lfa_view = getMultiAdapter((alias, req), name='+index')
     >>> lfa_view.initialize()
-    >>> lfa_url = lfa_view.context.getURL()
-    >>> url = alias.getURL()
-    >>> lfa_url == url
+    >>> req.response.getHeader("Location") == alias.getURL()
     True
 
 
-== File views setup ==
+File views setup
+----------------
 
 We need some files to test different ways of accessing them.
 
@@ -536,14 +600,14 @@ We need some files to test different ways of accessing them.
 
     # Create a new LibraryFileAlias not referencing any LibraryFileContent
     # record. Such records are considered as being deleted.
+
     >>> from canonical.launchpad.database.librarian import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> deleted_file = LibraryFileAlias(
-    ...     content=None, filename='deleted.txt',
-    ...     mimetype='text/plain')
+    ...     content=None, filename='deleted.txt', mimetype='text/plain')
     >>> ignore = store.add(deleted_file)
 
 Commit the just-created files.
@@ -557,230 +621,11 @@ Commit the just-created files.
 
 Clear out existing tokens.
 
-   >>> _ = session_store().find(TimeLimitedToken).remove()
-
-== RedirectPerhapsWithTokenLibraryFileAliasView ==
-
-This is the eventual name of StreamOrRedirectLibraryFileAliasView once we have
-migrated over to the token based approach. For now the code for the two things
-is interleaved: zope's registration system is too static to permit doing it
-cleanly with separate classes.
-
-To enable the behaviour we want to test while its controlled by a feature flag,
-we must enable a feature flag for it:
-
-    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> ignore = getFeatureStore().add(FeatureFlag(
-    ...     scope=u'default', flag=u'publicrestrictedlibrarian', value=u'on',
-    ...     priority=1))
-    >>> transaction.commit()
-
-This special view allows granting access to restricted `LibraryFileAlias`
-objects on the launchpadlibrarian. All requests get redirected, restricted
-files have an access token allocated.
-
-This view implements `IBrowserPublisher` which allows us to use it in
-traversals.
-
-    >>> from canonical.launchpad.browser.librarian import (
-    ...     RedirectPerhapsWithTokenLibraryFileAliasView)
-
-    >>> empty_request = LaunchpadTestRequest()
-
-XXX bug=631884 we have to establish the flags object manually for testing.
-
-    >>> from lp.services.features import per_thread
-    >>> from lp.services.features.flags import FeatureController
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
-
-    >>> restricted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     restricted_file, empty_request)
-
-    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
-    >>> verifyObject(IBrowserPublisher, restricted_view)
-    True
-
-When the context file is a restricted `LibraryFileAlias`, traversal causes an
-access token to be allocated and a redirection to https on a unique domain to
-be issued.
-
-    >>> view, extra = restricted_view.browserDefault(empty_request)
-    >>> print view
-    <...RedirectionView...>
-    >>> view.target
-    'https://...restricted.txt?token=...'
-    >>> private_path = TimeLimitedToken.url_to_token_path(
-    ...     restricted_file.private_url)
-    >>> view.target.endswith(session_store().find(TimeLimitedToken,
-    ...     path=private_path).any().token)
-    True
-    
-The domain for the target starts with the id of the LibraryFileAlias.
-
-    >>> view.target.startswith('https://i%d.restricted.' % restricted_file.id)
-    True
-
-Otherwise, no token is allocated and a redirection is issued to the http url.
-
-    >>> public_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     public_file, empty_request)
-    >>> verifyObject(IBrowserPublisher, public_view)
-    True
-    >>> view, extra = public_view.browserDefault(empty_request)
-    >>> print view
-    <...RedirectionView ...>
-    >>> view.target == public_file.http_url
-    True
-    >>> view.target
-    'http://.../public.txt'
-
-Deleted files cannot be handled by the view and it raises an appropriate
-AssertionError when it gets traversed.
-
-    >>> deleted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     deleted_file, empty_request)
-
-    >>> view, extra = deleted_view.browserDefault(empty_request)
-    Traceback (most recent call last):
-    ...
-    AssertionError: MixedFileAliasView can not operate on deleted librarian
-    files, since their URL is undefined.
+    >>> _ = session_store().find(TimeLimitedToken).remove()
 
 
-As RedirectPerhapsWithTokenLibraryFileAliasView is
-StreamOrRedirectLibraryFileAliasView influence by a feature flag, until the
-proxy code is removed, we must remove the feature to test the old behaviour.
-
-    >>> ignore = getFeatureStore().find(FeatureFlag,
-    ...     FeatureFlag.flag==u'publicrestrictedlibrarian').remove()
-    >>> transaction.commit()
-
-Because the flags code aggressively caches, we have to do a small dance to 
-convince it a new request has started too.
-
-    >>> empty_request = LaunchpadTestRequest()
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
-
-== StreamOrRedirectLibraryFileAliasView ==
-
-This special view allows call sites to stream restricted `LibraryFileAlias`
-contents directly from launchpad instances.
-
-This view  implements `IBrowserPublisher` which allows us to use it in
-traversals.
-
-    >>> from canonical.launchpad.browser.librarian import (
-    ...     StreamOrRedirectLibraryFileAliasView)
-
-    >>> empty_request = LaunchpadTestRequest()
-    >>> restricted_view = StreamOrRedirectLibraryFileAliasView(
-    ...     restricted_file, empty_request)
-
-    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
-    >>> verifyObject(IBrowserPublisher, restricted_view)
-    True
-
-When the context file is a restricted `LibraryFileAlias`, the
-traversal chain is finished with the view object itself.
-
-    >>> view, extra = restricted_view.browserDefault(empty_request)
-    >>> if view != restricted_view:
-    ...     print view
-    >>> view == restricted_view
-    True
-
-The zope publishing system will then call that view and receive an open
-file containig the content to be streamed, as documented in
-lib/zope/publisher/httpresults.txt. This approach minimises the memory
-usage when streaming huge files.
-
-    >>> result = view()
-    >>> print result
-    <open file '<fdopen>', mode 'w+b' ...>
-
-    >>> result.seek(0)
-    >>> print result.read()
-    RESTRICTED
-
-`StreamOrRedirectLibraryFileAliasView` ignores the system http_proxy
-configuration and is still able to access the restricted file even if
-a invalid proxy address is set.
-
-This approach was adopted because all launchpad machines are
-configured to use the same proxy, originally for external
-access. Openning the restricted librarian for the proxy host would be
-too permissive and that's why we only allow direct access from the
-app-servers.
-
-Let's configure a broken proxy and refresh the default urllib2 opener
-to follow it.
-
-    >>> import os
-    >>> import urllib2
-    >>> os.environ['http_proxy'] = 'http://foo.bar:1234'
-    >>> urllib2.install_opener(urllib2.build_opener())
-
-The file can be reached by `StreamOrRedirectLibraryFileAliasView`.
-
-    >>> result = view()
-    >>> result.seek(0)
-    >>> print result.read()
-    RESTRICTED
-
-But is unreachable in the test scope, due to the broken proxy
-settings.
-
-    >>> print os.environ['http_proxy']
-    http://foo.bar:1234
-
-    # AaronBentley 2009-02-13 bug=329140
-    # This causes a spurious test failure on systems that use wildcard DNS.
-    #>>> print restricted_file.read()
-    Traceback (most recent call last):
-    ...
-    URLError: <urlopen error (-2, 'Name or service not known')>
-
-Let's remove the broken proxy settings to avoid compromising other
-tests.
-
-    >>> del os.environ['http_proxy']
-    >>> urllib2.install_opener(urllib2.build_opener())
-
-When the context given to `StreamOrRedirectLibraryFileAliasView` is a
-public `LibraryFileAlias` the traversal chain is extended with a
-`RedirectionView` pointing to its public librarian url.
-
-    >>> public_view = StreamOrRedirectLibraryFileAliasView(
-    ...     public_file, empty_request)
-
-    >>> verifyObject(IBrowserPublisher, public_view)
-    True
-
-    >>> view, extra = public_view.browserDefault(empty_request)
-
-    >>> print view
-    <...RedirectionView ...>
-
-    >>> view.target == public_file.http_url
-    True
-
-Files in this condition cannot be handled by the view and it raises an
-appropriate AssertionError when it gets traversed.
-
-    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
-    ...     deleted_file, empty_request)
-
-    >>> view, extra = deleted_view.browserDefault(empty_request)
-    Traceback (most recent call last):
-    ...
-    AssertionError: MixedFileAliasView can not operate on deleted librarian
-    files, since their URL is undefined.
-
-
-== LibraryFileAliasMD5View ==
+LibraryFileAliasMD5View
+-----------------------
 
 The MD5 summary for a file can be downloaded. The text file contains the
 hash and file name.
@@ -793,24 +638,27 @@ hash and file name.
     text/plain
 
 
-== Download counts ==
+Download counts
+---------------
 
 The download counts for librarian files are stored in the
-LibraryFileDownloadCount table, broken down by day and country, but there's
-also a 'hits' attribute on ILibraryFileAlias, which holds the total number of
-times that file has been downloaded.
+LibraryFileDownloadCount table, broken down by day and country, but
+there's also a 'hits' attribute on ILibraryFileAlias, which holds the
+total number of times that file has been downloaded.
 
 The count starts at 0, and cannot be changed directly.
 
     >>> public_file.hits
     0
+
     >>> public_file.hits = 10
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ...
 
-To change that, we have to use the updateDownloadCount() method, which takes
-care of creating/updating the necessary LibraryFileDownloadCount entries.
+To change that, we have to use the updateDownloadCount() method, which
+takes care of creating/updating the necessary LibraryFileDownloadCount
+entries.
 
     >>> from lp.services.worlddata.interfaces.country import ICountrySet
     >>> country_set = getUtility(ICountrySet)
@@ -820,11 +668,11 @@ care of creating/updating the necessary LibraryFileDownloadCount entries.
     >>> public_file.hits
     1
 
-This was the first hit for that file from Brazil on 2006 November first, so a
-new LibraryFileDownloadCount was created.
+This was the first hit for that file from Brazil on 2006 November first,
+so a new LibraryFileDownloadCount was created.
 
     >>> from canonical.launchpad.database.librarian import (
-    ...     LibraryFileDownloadCount)
+    ...        LibraryFileDownloadCount)
     >>> from storm.locals import Store
     >>> store = Store.of(public_file)
     >>> brazil_entry = store.find(
@@ -833,8 +681,8 @@ new LibraryFileDownloadCount was created.
     >>> brazil_entry.count
     1
 
-Below we simulate a hit from Japan on that same day, which will also create a
-new LibraryFileDownloadCount.
+Below we simulate a hit from Japan on that same day, which will also
+create a new LibraryFileDownloadCount.
 
     >>> japan = country_set['JP']
     >>> public_file.updateDownloadCount(november_1st_2006, japan, count=3)
@@ -847,33 +695,39 @@ new LibraryFileDownloadCount.
     >>> japan_entry.count
     3
 
-If there's another hit from Brazil on the same day, the existing entry will be
-updated.
+If there's another hit from Brazil on the same day, the existing entry
+will be updated.
 
     >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=2)
     >>> public_file.hits
     6
+
     >>> brazil_entry.count
     3
 
-If the hit happened on a different day, a separate entry would be created.
+If the hit happened on a different day, a separate entry would be
+created.
 
     >>> november_2nd_2006 = date(2006, 11, 2)
     >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
     >>> public_file.hits
     16
+
     >>> brazil_entry2 = store.find(
     ...     LibraryFileDownloadCount, libraryfilealias=public_file,
     ...     country=brazil, day=november_2nd_2006).one()
     >>> brazil_entry2.count
     10
+
     >>> last_downloaded_date = november_2nd_2006
 
 
-== Time to last download ==
+Time to last download
+---------------------
 
-The .last_downloaded property gives us the time delta from today to the day
-that file was last downloaded, or None if it's never been downloaded.
+The .last_downloaded property gives us the time delta from today to the
+day that file was last downloaded, or None if it's never been
+downloaded.
 
     >>> today = datetime.now(utc).date()
     >>> public_file.last_downloaded == today - last_downloaded_date

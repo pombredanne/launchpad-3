@@ -19,7 +19,6 @@ from zope.schema import (
     List,
     Object,
     Text,
-    TextLine,
     )
 
 from canonical.launchpad import _
@@ -114,6 +113,10 @@ class ITranslationMessage(Interface):
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
 
+    sequence = Int(
+        title=_("Sequence of a message in the PO file browser_pofile."),
+        readonly=True, required=False)
+
     potemplate = Object(
         title=_("The template this translation is in"),
         readonly=False, required=False, schema=IPOTemplate)
@@ -124,7 +127,7 @@ class ITranslationMessage(Interface):
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
-        readonly=True, required=True, schema=IPOTMsgSet)
+        readonly=False, required=True, schema=IPOTMsgSet)
 
     date_created = Datetime(
         title=_("The date we saw this translation first"),
@@ -261,12 +264,30 @@ class ITranslationMessage(Interface):
         It must not be referenced by any other object.
         """
 
+    def clone(potmsgset):
+        """Create a copy of this message associated with a different MsgSet.
+
+        potemplate of the clone is always None.  Aside from this, all values
+        should be the same.
+        """
+
     def approve(pofile, reviewer, share_with_other_side=False,
                 lock_timestamp=None):
         """Approve this suggestion, making it a current translation."""
 
     def approveAsDiverged(pofile, reviewer, lock_timestamp=None):
         """Approve this suggestion, as a diverged translation."""
+
+    def acceptFromImport(pofile, share_with_other_side=False,
+                         lock_timestamp=None):
+        """Accept a suggestion coming from a translation import."""
+
+    def acceptFromUpstreamImportOnPackage(pofile, lock_timestamp=None):
+        """Accept a suggestion coming from a translation import.
+
+        This method allows to mark a translation as being current in
+        upstream even though there is no upstream template.
+        """
 
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):
@@ -288,20 +309,6 @@ class ITranslationMessage(Interface):
         :param reviewer: the person who reviewed the message.
         :param timestamp: optional timestamp indicating when the review
             happened.  Defaults to "now."
-        """
-
-    def makeCurrentUbuntu(new_value=True):
-        """Set the `is_current_ubuntu` flag.
-
-        If setting to True, clears the flag on any competing
-        TranslationMessages.
-        """
-
-    def makeCurrentUpstream(new_value=True):
-        """Set the `is_current_upstream` flag.
-
-        If setting to True, clears the flag on any competing
-        TranslationMessages.
         """
 
 

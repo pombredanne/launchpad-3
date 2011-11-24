@@ -2,6 +2,8 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
+  itemscope=""
+  itemtype="http://schema.org/UserComments"
   tal:define="comment context;
               remote_bug_comment_class
               python: comment.bugwatch and 'remoteBugComment' or '';
@@ -17,12 +19,15 @@
         <tr>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
-            <span tal:attributes="title comment/datecreated/fmt:datetime"
-                  tal:content="comment/datecreated/fmt:displaydate">
-              7 minutes ago
-              </span>:
+            <time
+              itemprop="commentTime"
+              tal:attributes="title comment/datecreated/fmt:datetime;
+                datetime comment/datecreated/fmt:isodate"
+              tal:content="comment/datecreated/fmt:displaydate">
+                7 minutes ago
+            </time>:
               <a tal:attributes="href comment/fmt:url"
                  tal:condition="comment/display_title">
                 <strong tal:content="comment/title" />
@@ -34,7 +39,7 @@
             <a tal:attributes="href comment/bugwatch/url"
                tal:content="comment/bugwatch/title" />,
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
                   tal:content="comment/datecreated/fmt:displaydate">
@@ -46,8 +51,9 @@
               </a>
           </td>
           <td class="bug-comment-index">
-            <a tal:attributes="href comment/fmt:url"
-               tal:content="string: #${comment/index}" />
+	  <a itemprop="url"
+	     tal:attributes="href comment/fmt:url"
+             tal:content="string: #${comment/index}" />
           </td>
         </tr>
       </tbody>
@@ -61,6 +67,7 @@
         <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
             tal:content="attachment/title"
             class="sprite download-icon">foo.txt</a>
+        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
@@ -71,13 +78,14 @@
       <li tal:repeat="attachment comment/patches" class="download-attachment">
         <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
            tal:content="attachment/title" class="sprite haspatch-icon">foo.txt</a>
+        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 
-    <div class="bug-comment"
+    <div class="bug-comment" itemprop="commentText"
       tal:content="structure
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.
@@ -87,6 +95,14 @@
     </p>
   </div>
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
+    <a tal:attributes="id string:mark-spam-${context/index};"
+       tal:condition="view/show_spam_controls"
+       class="js-action sprite edit mark-spam" href="#">
+       <tal:not-spam condition="not: context/visible"
+       >Unhide comment</tal:not-spam>
+       <tal:spam condition="context/visible"
+       >Hide comment</tal:spam>
+    </a>
     <tal:activity
         define="activity_list comment/activity"
         condition="comment/activity">

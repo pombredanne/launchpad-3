@@ -12,11 +12,33 @@
   <metal:block fill-slot="head_epilogue">
     <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
           name="robots" content="noindex,nofollow" />
+    <tal:uses_launchpad_bugtracker
+       condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+        LPS.use('lp.registry.structural_subscription', function(Y) {
+            var module = Y.lp.registry.structural_subscription;
+            Y.on('domready', function() {
+              module.setup({content_box: "#structural-subscription-content-box"});
+            });
+        });
+      </script>
+    </tal:uses_launchpad_bugtracker>
     <style type="text/css">
-      p#more-hot-bugs {float:right; margin-top:7px;}
+      p#more-hot-bugs {
+          float:right;
+          margin-top:7px;
+          }
+      .force-ellipsis:before {
+          width: 21em;
+          content: '\2026';
+          position: absolute;
+          margin-left: 19.5em;
+          width: 1em;
+          }
     </style>
-  </metal:block>
+</metal:block>
   <body>
+
     <tal:side metal:fill-slot="side"
               condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <div id="involvement" class="portlet">
@@ -155,7 +177,7 @@
         </table>
         <p id="more-hot-bugs"
            tal:condition="view/hot_bugs_info/has_more_bugs">
-          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">Show all bugs by heat</a>
+          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&amp;field.status%3Alist=NEW&amp;field.status%3Alist=INCOMPLETE_WITH_RESPONSE&amp;field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&amp;field.status%3Alist=CONFIRMED&amp;field.status%3Alist=TRIAGED&amp;field.status%3Alist=INPROGRESS&amp;field.status%3Alist=FIXCOMMITTED&amp;field.omit_dupes=on">Show all bugs by heat</a>
         </p>
       </div>
 
@@ -166,6 +188,10 @@
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
+      </div>
+
     </tal:uses_launchpad_bugtracker>
 
     <p id="no-malone"

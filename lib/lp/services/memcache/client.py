@@ -36,7 +36,11 @@ class TimelineRecordingClient(memcache.Client):
 
     @property
     def _enabled(self):
-        return features.getFeatureFlag('memcache') != 'disabled'
+        configured_value = features.getFeatureFlag('memcache')
+        if configured_value is None:
+            return True
+        else:
+            return configured_value
 
     def get(self, key):
         if not self._enabled:

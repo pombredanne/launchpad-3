@@ -11,7 +11,6 @@ __metaclass__ = type
 __all__ = [
     'get_bzr_path',
     'get_BZR_PLUGIN_PATH_for_subprocess',
-    'iter_list_chunks',
     'load_optional_plugin',
     ]
 
@@ -23,15 +22,6 @@ from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config
-
-
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
-
-    I'm amazed this isn't in itertools (mwhudson).
-    """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
 
 
 def get_bzr_path():
@@ -74,20 +64,19 @@ load_plugins([_get_bzr_plugins_path()])
 def load_optional_plugin(plugin_name):
     """Load the plugin named `plugin_name` from optionalbzrplugins/."""
     from bzrlib import plugins
-    optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
+    optional_plugin_dir = os.path.join(config.root, 'bzrplugins/optional')
     if optional_plugin_dir not in plugins.__path__:
         plugins.__path__.append(optional_plugin_dir)
     __import__("bzrlib.plugins.%s" % plugin_name)
 
 
-def remove_hook(self, hook):
-    """Remove the hook from the HookPoint"""
-    self._callbacks.remove(hook)
-    for name, value in self._callback_names.iteritems():
-        if value is hook:
-            del self._callback_names[name]
+def load_bundled_plugin(plugin_name):
+    """Load a plugin bundled with Bazaar."""
+    from bzrlib.plugin import get_core_plugin_path
+    from bzrlib import plugins
+    if get_core_plugin_path() not in plugins.__path__:
+        plugins.__path__.append(get_core_plugin_path())
+    __import__("bzrlib.plugins.%s" % plugin_name)
 
 
-# Monkeypatch: Branch.hooks is a list in bzr 1.13, so it supports remove.
-# It is a HookPoint in bzr 1.14, so add HookPoint.remove.
-hooks.HookPoint.remove = remove_hook
+load_bundled_plugin("weave_fmt")

@@ -65,9 +65,6 @@ hostnames=$(cat <<EOF
     ubuntu-openid.launchpad.dev
     ppa.launchpad.dev
     private-ppa.launchpad.dev
-    shipit.edubuntu.dev
-    shipit.kubuntu.dev
-    shipit.ubuntu.dev
     testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
@@ -98,12 +95,12 @@ fi
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'universe' component in /etc/apt/source.list'"
+    echo "Please enable the 'universe' component in /etc/apt/sources.list'"
     exit 1
 fi
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'multiverse' component in /etc/apt/source.list'"
+    echo "Please enable the 'multiverse' component in /etc/apt/sources.list'"
     exit 1
 fi
 
@@ -132,7 +129,7 @@ for key in $REQUIRED_PPA_KEYS; do
    sudo apt-key list | grep -q $key
    if [ $? -ne 0 ]; then
      echo "Retrieving key $key."
-     gpg --keyserver keyserver.ubuntu.com --recv-keys $key
+     gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys $key
      if [ $? -ne 0 ]; then
        echo "Could not retrieve key $key."
        exit 1

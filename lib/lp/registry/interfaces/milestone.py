@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
     rename_parameters_as,
@@ -48,16 +49,16 @@ from canonical.launchpad import _
 from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     )
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.services.fields import (
     ContentNameField,
     FormattableDate,
@@ -181,6 +182,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
     @export_factory_operation(
         IProductRelease,
         ['datereleased', 'changelog', 'release_notes'])
+    @operation_for_version('beta')
     def createProductRelease(owner, datereleased,
                              changelog=None, release_notes=None):
         """Create a new ProductRelease.
@@ -203,6 +205,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
 
     @export_destructor_operation()
     @export_operation_as('delete')
+    @operation_for_version('beta')
     def destroySelf():
         """Delete this milestone.
 
@@ -228,6 +231,9 @@ class IMilestoneSet(Interface):
         If the milestone with that ID is not found, a
         NotFoundError will be raised.
         """
+
+    def getByIds(milestoneids):
+        """Get the milestones for milestoneids."""
 
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
@@ -276,6 +282,7 @@ class ICanGetMilestonesDirectly(Interface):
         name=TextLine(title=_("Name"), required=True))
     @operation_returns_entry(IMilestone)
     @export_read_operation()
+    @operation_for_version('beta')
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

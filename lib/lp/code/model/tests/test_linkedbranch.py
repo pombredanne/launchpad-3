@@ -8,10 +8,8 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch,
@@ -21,6 +19,7 @@ from lp.code.interfaces.linkedbranch import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -104,12 +103,10 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
         # for the pocket of that source package.
         branch = self.factory.makeAnyBranch()
         suite_sourcepackage = self.factory.makeSuiteSourcePackage()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
-        run_with_login(
-            registrant,
-            suite_sourcepackage.sourcepackage.setBranch,
-            suite_sourcepackage.pocket, branch, registrant)
+        registrant = suite_sourcepackage.distribution.owner
+        with person_logged_in(registrant):
+            suite_sourcepackage.sourcepackage.setBranch(
+                suite_sourcepackage.pocket, branch, registrant)
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
 
@@ -118,8 +115,7 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
         # source package.
         branch = self.factory.makeAnyBranch()
         suite_sourcepackage = self.factory.makeSuiteSourcePackage()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             ICanHasLinkedBranch(suite_sourcepackage).setBranch,
@@ -151,11 +147,9 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         dev_sourcepackage = sourcepackage.development_version
         pocket = PackagePublishingPocket.RELEASE
 
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
-        run_with_login(
-            ubuntu_branches.teamowner,
-            dev_sourcepackage.setBranch, pocket, branch, registrant)
+        registrant = sourcepackage.distribution.owner
+        with person_logged_in(registrant):
+            dev_sourcepackage.setBranch(pocket, branch, registrant)
 
         distribution_sourcepackage = sourcepackage.distribution_sourcepackage
         self.assertEqual(
@@ -175,8 +169,7 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         distribution_sourcepackage = sourcepackage.distribution_sourcepackage
 
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             ICanHasLinkedBranch(distribution_sourcepackage).setBranch,
@@ -190,8 +183,7 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         distribution_sourcepackage = (
             self.factory.makeDistributionSourcePackage())
         linked_branch = ICanHasLinkedBranch(distribution_sourcepackage)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distribution_sourcepackage.distribution.owner
         self.assertRaises(
             NoSuchDistroSeries,
             linked_branch.setBranch, self.factory.makeAnyBranch(), registrant)

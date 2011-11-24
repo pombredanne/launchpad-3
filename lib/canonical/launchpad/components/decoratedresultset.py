@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -11,7 +11,11 @@ __all__ = [
 from lazr.delegates import delegates
 from storm import Undef
 from storm.zope.interfaces import IResultSet
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 
 class DecoratedResultSet(object):
@@ -37,11 +41,17 @@ class DecoratedResultSet(object):
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
                  slice_info=False):
         """
+        Wrap `result_set` in a decorator.
+
+        The decorator will act as a result set where a result row `self[x]`
+        is really `result_decorator(result_set[x])`.
+
         :param result_set: The original result set to be decorated.
-        :param result_decorator: The method with which individual results
-            will be passed through before being returned.
+        :param result_decorator: A transformation function that individual
+            results will be passed through.
         :param pre_iter_hook: The method to be called (with the 'result_set')
-            immediately before iteration starts.
+            immediately before iteration starts. The return value of the hook
+            is ignored.
         :param slice_info: If True pass information about the slice parameters
             to the result_decorator and pre_iter_hook. any() and similar
             methods will cause None to be supplied.
@@ -161,6 +171,28 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.order_by(*args, **kwargs)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook,
+            self.slice_info)
+
+    def get_plain_result_set(self):
+        """Return the plain Storm result set."""
+        if zope_isinstance(self.result_set, DecoratedResultSet):
+            return self.result_set.get_plain_result_set()
+        else:
+            return self.result_set
+
+    def find(self, *args, **kwargs):
+        """See `IResultSet`.
+
+        :return: The decorated version of the returned result set.
+        """
+        naked_result_set = removeSecurityProxy(self.result_set)
+        if naked_result_set is not self.result_set:
+            naked_new_result_set = naked_result_set.find(*args, **kwargs)
+            new_result_set = ProxyFactory(naked_new_result_set)
+        else:
+            new_result_set = self.result_set.find(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
             self.slice_info)

@@ -3,8 +3,6 @@
 
 """Tests for Bug subscription-related email tests."""
 
-from unittest import TestLoader
-
 import transaction
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -63,7 +61,3 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
             person_subscribed, person_subscribing)
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 0)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

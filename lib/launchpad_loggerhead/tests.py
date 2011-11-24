@@ -1,19 +1,27 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
+import cStringIO
+import errno
+import logging
 import urllib
+import socket
+import re
 
 import lazr.uri
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import install_opener, uninstall_opener
 import wsgi_intercept.zope_testbrowser
+from paste import httpserver
 from paste.httpexceptions import HTTPExceptionHandler
+import zope.event
 
 from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
-from launchpad_loggerhead.app import RootApp
+from launchpad_loggerhead.app import (
+    RootApp,
+    )
 from launchpad_loggerhead.session import SessionHandler
 from lp.testing import TestCase
 
@@ -140,7 +148,3 @@ class TestLogout(TestCase):
         self.assertEqual(self.browser.url, dummy_root + '+logout')
         self.assertEqual(self.browser.contents,
                          'This is a dummy destination.\n')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

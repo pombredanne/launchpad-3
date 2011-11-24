@@ -1,10 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-__all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
-           'BugAlsoAffectsProductWithProductCreationView']
+__all__ = [
+    'BugAlsoAffectsProductMetaView',
+    'BugAlsoAffectsDistroMetaView',
+    'BugAlsoAffectsProductWithProductCreationView'
+    ]
 
 import cgi
 from textwrap import dedent
@@ -14,12 +17,10 @@ from lazr.enum import (
     Item,
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import (
-    MissingInputError,
-    WidgetsError,
-    )
+from zope.app.form.interfaces import MissingInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -34,25 +35,20 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_new_distrotask,
-    )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SearchForUpstreamPopupWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.email import email_validator
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.bugs.browser.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget,
     )
@@ -62,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm,
+    IllegalTarget,
     valid_remote_bug_url,
     )
 from lp.bugs.interfaces.bugtracker import (
@@ -72,6 +69,10 @@ from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
+    )
+from lp.bugs.model.bugtask import (
+    validate_new_target,
+    validate_target,
     )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -84,6 +85,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 
@@ -157,8 +159,8 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
         upstream = bugtask.target.upstream_product
         if upstream is not None:
             try:
-                valid_upstreamtask(bugtask.bug, upstream)
-            except WidgetsError:
+                validate_target(bugtask.bug, upstream)
+            except IllegalTarget:
                 # There is already a task for the upstream.
                 pass
             else:
@@ -173,10 +175,9 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     def validateStep(self, data):
         if data.get('product'):
             try:
-                valid_upstreamtask(self.context.bug, data.get('product'))
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('product', error.snippet())
+                validate_target(self.context.bug, data.get('product'))
+            except IllegalTarget as e:
+                self.setFieldError('product', e[0])
             return
 
         entered_product = self.request.form.get(self.widgets['product'].name)
@@ -355,6 +356,17 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
 
+    def setUpFields(self):
+        super(DistroBugTaskCreationStep, self).setUpFields()
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            new_sourcepackagename = copy_field(
+                IAddBugTaskForm['sourcepackagename'],
+                vocabulary='DistributionSourcePackage')
+            self.form_fields += form.Fields(new_sourcepackagename)
+
     @property
     def initial_values(self):
         """Return the initial values for the view's fields."""
@@ -393,7 +405,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                          cgi.escape(target.displayname),
                          confirm_button))))
             return None
-
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
 
@@ -419,22 +430,28 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             self.widgets['sourcepackagename'].name)
         if sourcepackagename is None and entered_package:
             # The entered package doesn't exist.
-            filebug_url = "%s/+filebug" % canonical_url(
-                getUtility(ILaunchpadCelebrities).launchpad)
-            self.setFieldError(
-                'sourcepackagename',
-                structured(
-                'There is no package in %s named "%s". If it should'
-                ' be here, <a href="%s">report this as a bug</a>.',
-                distribution.displayname,
-                entered_package,
-                filebug_url))
+            if distribution.has_published_binaries:
+                binary_tracking = ''
+            else:
+                binary_tracking = structured(
+                    ' Launchpad does not track binary package names '
+                    'in %s.', distribution.displayname)
+            error = structured(
+                'There is no package in %s named "%s".%s',
+                distribution.displayname, entered_package,
+                binary_tracking)
+            self.setFieldError('sourcepackagename', error)
         else:
             try:
-                validate_new_distrotask(
-                    self.context.bug, distribution, sourcepackagename)
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', error.snippet())
+                target = distribution
+                if sourcepackagename:
+                    target = target.getSourcePackage(sourcepackagename)
+                validate_new_target(self.context.bug, target)
+            except IllegalTarget as e:
+                if sourcepackagename:
+                    self.setFieldError('sourcepackagename', e[0])
+                else:
+                    self.setFieldError('distribution', e[0])
 
         super(DistroBugTaskCreationStep, self).validateStep(data)
 
@@ -659,13 +676,13 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
 
         if not target.bugtracker:
             return None
-        else:
-            bug = self.context.bug
-            title = bug.title
-            description = u"Originally reported at:\n  %s\n\n%s" % (
-                canonical_url(bug), bug.description)
-            return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product, title, description)
+
+        bug = self.context.bug
+        title = bug.title
+        description = u"Originally reported at:\n  %s\n\n%s" % (
+            canonical_url(bug), bug.description)
+        return target.bugtracker.getBugFilingAndSearchLinks(
+            target.remote_product, title, description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):
@@ -768,10 +785,10 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # Use a local import as we don't want removeSecurityProxy used
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
-            name_matches = getUtility(IProductSet).search(
-                self.request.form.get('field.name'))
-            products = bugtracker.products.intersect(
-                removeSecurityProxy(name_matches))
+            name_matches = removeSecurityProxy(
+                getUtility(IProductSet).search_sqlobject(
+                self.request.form.get('field.name')))
+            products = bugtracker.products.intersect(name_matches)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:
@@ -812,10 +829,9 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
         self._validate(action, data)
         project = data.get('existing_product')
         try:
-            valid_upstreamtask(self.context.bug, project)
-        except WidgetsError, errors:
-            for error in errors:
-                self.setFieldError('existing_product', error.snippet())
+            validate_target(self.context.bug, project)
+        except IllegalTarget as e:
+            self.setFieldError('existing_product', e[0])
 
     @action('Use Existing Project', name='use_existing_product',
             validator=validate_existing_product)

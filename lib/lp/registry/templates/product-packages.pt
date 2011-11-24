@@ -136,9 +136,11 @@
               >Apache</a>
           </td>
           <td>
-            <span tal:condition="pkging/sourcepackage/currentrelease"
-                    tal:replace="pkging/sourcepackage/currentrelease/version"
-                    >2.3.4-1</span>
+            <span
+                tal:define="currentrelease pkging/sourcepackage/currentrelease"
+                tal:condition="currentrelease"
+                tal:replace="currentrelease/version"
+                >2.3.4-1</span>
           </td>
           <td>
             <a tal:replace="structure pkging/productseries/fmt:link" />

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Translation files."""
@@ -21,6 +21,7 @@ import os.path
 import re
 import urllib
 
+from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
@@ -37,7 +38,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -343,10 +343,11 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
                 else:
                     groups.append(_(u"%s assigned by %s") % (
                         translator.translator.displayname, group.title))
+
             # There are at most two translation groups, so just using 'and'
             # is fine here.
-            statement = (_(u"This translation is managed by ") +
-                         _(u" and ").join(groups))+"."
+            statement = _(u"This translation is managed by %s.") % (
+                u" and ".join(groups))
         else:
             statement = _(u"No translation group has been assigned.")
         return statement
@@ -395,7 +396,8 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
@@ -725,8 +727,8 @@ class POFileUploadView(POFileView):
             'should be imported, it will be reviewed manually by an '
             'administrator in the coming few days.  You can track '
             'your upload\'s status in the '
-            '<a href="%s/+imports">Translation Import Queue</a>' %(
-            canonical_url(self.context.potemplate.translationtarget))))
+            '<a href="%s/+imports">Translation Import Queue</a>',
+            canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileBatchNavigator(BatchNavigator):
@@ -793,7 +795,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
@@ -986,6 +989,26 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
     def translations_order(self):
         return ' '.join(self._messages_html_id())
 
+    @property
+    def is_upstream_pofile(self):
+        potemplate = self.context.potemplate
+        return potemplate.translation_side == TranslationSide.UPSTREAM
+
+    def is_sharing(self):
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        return potemplate is not None
+
+    @property
+    def sharing_pofile(self):
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        if potemplate is None:
+            return None
+        pofile = potemplate.getPOFileByLang(self.context.language.code)
+        if pofile is None:
+            pofile = potemplate.getDummyPOFile(
+                self.context.language, check_for_existing=False)
+        return pofile
+
 
 class POExportView(BaseExportView):
 
@@ -1014,6 +1037,11 @@ class POExportView(BaseExportView):
 
     @property
     def has_pochanged_option(self):
+        is_ubuntu = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UBUNTU)
+        if is_ubuntu:
+            return True
         other_side_pofile = self.context.getOtherSidePOFile()
         return other_side_pofile is not None
 

@@ -10,7 +10,7 @@
 
     <class class="canonical.launchpad.components.decoratedresultset.DecoratedResultSet">
         <allow interface="storm.zope.interfaces.IResultSet" />
-        <allow attributes="__getslice__" />
+        <allow attributes="__getslice__ get_plain_result_set" />
     </class>
 
 </configure>

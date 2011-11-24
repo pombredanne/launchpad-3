@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug notification building code."""
@@ -20,8 +20,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.mail import format_address
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import format_address
 
 
 def format_rfc2822_date(date):
@@ -151,7 +151,7 @@ class BugNotificationBuilder:
                         event_creator.name)))
 
     def build(self, from_address, to_address, body, subject, email_date,
-              rationale=None, references=None, message_id=None):
+              rationale=None, references=None, message_id=None, filters=None):
         """Construct the notification.
 
         :param from_address: The From address of the notification.
@@ -191,5 +191,10 @@ class BugNotificationBuilder:
 
         if rationale is not None:
             message.add_header('X-Launchpad-Message-Rationale', rationale)
+
+        if filters is not None:
+            for filter in filters:
+                message.add_header(
+                    'X-Launchpad-Subscription', filter)
 
         return message

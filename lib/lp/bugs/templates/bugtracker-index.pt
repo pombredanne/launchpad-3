@@ -39,7 +39,12 @@
         <div tal:replace="structure context/@@+portlet-projects" />
       </div>
     </div>
-    <div class="yui-u" tal:condition="context/watches">
+    <div class="yui-u"
+      tal:condition="features/bugs.bugtracker_components.enabled">
+      <div tal:replace="structure context/@@+portlet-components" />
+    </div>
+    <div class="yui-u"
+      tal:condition="context/watches">
       <div tal:replace="structure context/@@+portlet-watches" />
     </div>
   </div>

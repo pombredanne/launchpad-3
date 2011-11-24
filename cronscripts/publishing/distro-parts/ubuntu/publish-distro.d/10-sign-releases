@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+# The calling script may set GNUPGHOME to a value set up by Launchpad's
+# script machinery.  In production, we have a dedicated directory set up
+# for this.
+GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+
+if ! test -d "$GNUPGHOME"
+then
+	echo "There is no $GNUPGHOME; not signing Release files."
+	exit 0
+fi
+
+RELEASE_FILES=`find $DISTSROOT -maxdepth 2 -name Release`
+DIST_UPGRADER_TARBALLS=`
+	find $DISTSROOT/*/*/dist-upgrader* -name "*.tar.gz" || true`
+
+for CANDIDATE in $RELEASE_FILES $DIST_UPGRADER_TARBALLS
+do
+    if [ ! -f "$CANDIDATE.gpg" ] || [ "$CANDIDATE" -nt "$CANDIDATE.gpg" ]
+    then
+        echo "$(date -R): (re-)signing $CANDIDATE"
+        gpg --yes --detach-sign --armor -o "$CANDIDATE.gpg" \
+            --sign "$CANDIDATE"
+    else
+        echo "$(date -R): Not re-signing $CANDIDATE"
+    fi
+done

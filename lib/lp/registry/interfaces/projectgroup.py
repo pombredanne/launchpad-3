@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -43,15 +43,13 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugtarget import (
@@ -59,6 +57,9 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy,
     )
@@ -73,9 +74,10 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
     )
 from lp.services.fields import (
     IconImageUpload,
@@ -129,9 +131,10 @@ class IProjectGroupPublic(
         PublicPersonChoice(
             title=_('Maintainer'),
             required=True,
-            vocabulary='ValidOwner',
-            description=_("Project group owner. Must be either a "
-                          "Launchpad Person or Team.")))
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project group information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -321,9 +324,10 @@ class IProjectGroupPublic(
         """Get all products that can be edited by user."""
 
     def translatables():
-        """Return an iterator over products that have resources translatables.
+        """Return an iterator over products that are translatable in LP.
 
-        It also should have IProduct.official_rosetta flag set.
+        Only products with IProduct.translations_usage set to
+        ServiceUsage.LAUNCHPAD are considered translatable.
         """
 
     def has_translatable():
@@ -375,7 +379,7 @@ class IProjectGroupSet(Interface):
         If the project can't be found a NotFoundError will be raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the project with the given name, ignoring inactive projects
         if ignore_inactive is True.
 

@@ -1,10 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import random
-import unittest
+import testtools
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.components.tokens import (
@@ -16,17 +16,19 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
-class Test_create_token(unittest.TestCase):
+class Test_create_token(testtools.TestCase):
 
     def test_length(self):
         token = create_token(99)
         self.assertEquals(len(token), 99)
 
 
-class Test_create_unique_token_for_table(unittest.TestCase):
+class Test_create_unique_token_for_table(testtools.TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_token_uniqueness(self):
+        orig_state = random.getstate()
+        self.addCleanup(lambda: random.setstate(orig_state))
         # Calling create_unique_token_for_table() twice with the same
         # random.seed() will generate two identical tokens, as the token was
         # never inserted in the table.
@@ -44,7 +46,3 @@ class Test_create_unique_token_for_table(unittest.TestCase):
         random.seed(0)
         token3 = create_unique_token_for_table(99, LoginToken.token)
         self.assertNotEquals(token1, token3)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

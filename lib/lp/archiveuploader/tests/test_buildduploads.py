@@ -18,6 +18,9 @@ from lp.soyuz.enums import (
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
+from lp.archiveuploader.uploadprocessor import (
+    UploadHandler,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import IPublishingSet
@@ -76,6 +79,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
         self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+        self.build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
@@ -96,9 +101,10 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
     def _uploadSource(self):
         """Upload and Accept (if necessary) the base source."""
         self._prepareUpload(self.source_dir)
-        self.uploadprocessor.processChangesFile(
-            os.path.join(self.queue_folder, "incoming", self.source_dir),
-            self.source_changesfile)
+        fsroot = os.path.join(self.queue_folder, "incoming")
+        handler = UploadHandler.forProcessor(
+            self.uploadprocessor, fsroot, self.source_dir)
+        handler.processChangesFile(self.source_changesfile)
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
@@ -119,10 +125,12 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         Return the IBuild attached to upload.
         """
         self._prepareUpload(self.binary_dir)
-        self.uploadprocessor.processChangesFile(
-            os.path.join(self.queue_folder, "incoming", self.binary_dir),
-            self.getBinaryChangesfileFor(archtag), build=build)
-        queue_item = self.uploadprocessor.last_processed_upload.queue_root
+        fsroot = os.path.join(self.queue_folder, "incoming")
+        handler = UploadHandler.forProcessor(
+            self.build_uploadprocessor, fsroot, self.binary_dir, build=build)
+        handler.processChangesFile(self.getBinaryChangesfileFor(archtag))
+        last_processed = self.build_uploadprocessor.last_processed_upload
+        queue_item = last_processed.queue_root
         self.assertTrue(
             queue_item is not None,
             "Binary Upload Failed\nGot: %s" % self.log.getLogBuffer())
@@ -172,12 +180,14 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         TestStagedBinaryUploadBase.setupBreezy(self)
         from lp.soyuz.model.processor import (
             Processor, ProcessorFamily)
+        self.switchToAdmin()
         ppc_family = ProcessorFamily.selectOneBy(name='powerpc')
         ppc_proc = Processor(
             name='powerpc', title='PowerPC', description='not yet',
             family=ppc_family)
         breezy_ppc = self.breezy.newArch(
             'powerpc', ppc_family, True, self.breezy.owner)
+        self.switchToUploader()
 
     def setUp(self):
         """Setup environment for binary uploads.
@@ -206,11 +216,13 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
     def _publishBuildQueueItem(self, queue_item):
         """Publish build part of the given queue item."""
+        self.switchToAdmin()
         queue_item.setAccepted()
         pubrec = queue_item.builds[0].publish(self.log)[0]
         pubrec.status = PackagePublishingStatus.PUBLISHED
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
+        self.switchToUploader()
 
     def _setupUploadProcessorForBuild(self):
         """Setup an UploadProcessor instance for a given buildd context."""
@@ -240,7 +252,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual('FULLYBUILT', build_used.status.name)
 
         # Force immediate publication.
-        queue_item = self.uploadprocessor.last_processed_upload.queue_root
+        last_processed = self.build_uploadprocessor.last_processed_upload
+        queue_item = last_processed.queue_root
         self._publishBuildQueueItem(queue_item)
 
         # Upload powerpc binary

@@ -148,7 +148,7 @@ archive as well as some new PPAs.
     ...                                distribution=ubuntutest)
 
 The 'ppa_disabled' archive added below will be disabled at the end of this
-set-up block. 
+set-up block.
 It will thus not be listed in the "...other untrusted versions of..." portlet.
 
     >>> ppa_disabled = factory.makeArchive(name="disabled",
@@ -176,27 +176,18 @@ It will thus not be listed in the "...other untrusted versions of..." portlet.
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
     >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> from lp.testing.dbuser import dbuser
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> ppa_disabled_owner_id = ppa_disabled.owner.id
     >>> ppa_disabled.disable()
-    >>> transaction.commit()
-
-    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
-    # test api call to switchDbUser that works for non-zopeless layers.
-    # When bug 396419 is fixed, we can instead use
-    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> reconnect_stores('karmacacheupdater')
-    >>> from zope.component import getUtility
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_beta_owner_id, karma_total=200)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_nightly_owner_id, karma_total=201)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_disabled_owner_id, karma_total=202)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
+    >>> with dbuser('karma'):
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_beta_owner_id, karma_total=200)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_nightly_owner_id, karma_total=201)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_disabled_owner_id, karma_total=202)
 
     >>> logout()
 
@@ -257,7 +248,7 @@ javascript enabled, the information is shown in-place.
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
     <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-    <img style... src="/@@/treeCollapsed" alt="Show details" title="Show details" id="pub26-arrow" />
+      &nbsp;
     </a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
@@ -322,7 +313,7 @@ linked.
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
     Upstream connections
-    the Mozilla Project...
+    The Mozilla Project...
     Mozilla Firefox...
     trunk...
     The Mozilla Firefox web browser...
@@ -342,6 +333,7 @@ menu, and a "Subscribers" portlet.
     View full publishing history
     View full change log
     Subscribe to bug mail
+    Edit bug mail
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'involvement'))

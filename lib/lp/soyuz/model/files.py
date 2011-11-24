@@ -19,7 +19,12 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.database.bulk import load_related
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile,
@@ -61,8 +66,13 @@ class BinaryPackageFileSet:
             clauseTables=["PackageUpload", "PackageUploadBuild",
                           "BinaryPackageBuild", "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
-                      "libraryfile", "libraryfile.content",
                       "binarypackagerelease.binarypackagename"])
+
+    def loadLibraryFiles(self, binary_files):
+        """See `IBinaryPackageFileSet`."""
+        lfas = load_related(LibraryFileAlias, binary_files, ['libraryfileID'])
+        load_related(LibraryFileContent, lfas, ['contentID'])
+        return lfas
 
 
 class SourceFileMixin:

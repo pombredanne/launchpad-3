@@ -135,10 +135,6 @@ class PackageCloner:
         sources_published = archive.getPublishedSources(
             distroseries=distroseries, status=active_publishing_status)
 
-        def get_spn(pub):
-            """Return the source package name for a publishing record."""
-            return pub.sourcepackagerelease.sourcepackagename.name
-
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures)
@@ -175,7 +171,16 @@ class PackageCloner:
         @type sourcepackagenames: Iterable
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        query = '''
+        use_names = (sourcepackagenames and len(sourcepackagenames) > 0)
+        clause_tables = "FROM BinaryPackagePublishingHistory AS bpph"
+        if use_names:
+            clause_tables += """,
+                BinaryPackageRelease AS bpr,
+                BinaryPackageBuild AS bpb,
+                SourcePackageRelease AS spr,
+                SourcePackageName AS spn
+                """
+        query = """
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
@@ -184,29 +189,28 @@ class PackageCloner:
                    bpph.status, bpph.component, bpph.section, bpph.priority,
                    %s as archive, %s as datecreated, %s as datepublished,
                    %s as pocket
-            FROM BinaryPackagePublishingHistory AS bpph
+            """ % sqlvalues(
+                destination_das, destination.archive, UTC_NOW, UTC_NOW,
+                destination.pocket)
+        query += clause_tables
+        query += """
             WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
             AND
                 bpph.pocket = %s and bpph.archive = %s
-            ''' % sqlvalues(
-                destination_das, destination.archive, UTC_NOW, UTC_NOW,
-                destination.pocket, origin_das,
+            """ % sqlvalues(
+                origin_das,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive)
 
-        if sourcepackagenames and len(sourcepackagenames) > 0:
-            query += '''AND bpph.binarypackagerelease IN (
-                            SELECT bpr.id
-                            FROM BinaryPackageRelease AS bpr,
-                            BinaryPackageBuild as bpb,
-                            SourcePackageRelease as spr,
-                            SourcePackageName as spn
-                            WHERE bpb.id = bpr.build AND
-                            bpb.source_package_release = spr.id
-                            AND spr.sourcepackagename = spn.id
-                            AND spn.name IN %s)''' % sqlvalues(
-                                sourcepackagenames)
+        if use_names:
+            query += """
+                AND bpph.binarypackagerelease = bpr.id
+                AND bpb.id = bpr.build
+                AND bpb.source_package_release = spr.id
+                AND spr.sourcepackagename = spn.id
+                AND spn.name IN %s
+            """ % sqlvalues(sourcepackagenames)
 
         store.execute(query)
 
@@ -288,8 +292,7 @@ class PackageCloner:
                 secsrc.sourcepackagerelease = spr.id AND
                 spr.sourcepackagename = spn.id AND
                 spn.name = mcd.sourcepackagename AND
-                debversion_sort_key(spr.version) >
-                debversion_sort_key(mcd.t_version)
+                spr.version > mcd.t_version
         """ % sqlvalues(
                 origin.archive,
                 PackagePublishingStatus.PENDING,
@@ -357,7 +360,7 @@ class PackageCloner:
                 -- will be copied.
                 s_sspph integer,
                 s_sourcepackagerelease integer,
-                s_version text,
+                s_version debversion,
                 s_status integer,
                 s_component integer,
                 s_section integer,
@@ -365,7 +368,7 @@ class PackageCloner:
                 -- pending packages.
                 t_sspph integer,
                 t_sourcepackagerelease integer,
-                t_version text,
+                t_version debversion,
                 -- Whether a target package became obsolete due to a more
                 -- recent source package.
                 obsoleted boolean DEFAULT false NOT NULL,

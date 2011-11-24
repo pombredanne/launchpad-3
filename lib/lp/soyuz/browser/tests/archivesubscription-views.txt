@@ -318,7 +318,7 @@ Just deactivate the new token again for the remaining tests.
 This view displays a single subscription of a person, as well as the
 corresponding token information.
 
-The view includes a label to denifen its main heading.
+The view includes a label to define its main heading.
 
     >>> from lp.soyuz.browser.archivesubscription import (
     ...     PersonalArchiveSubscription)
@@ -331,11 +331,6 @@ The view includes a label to denifen its main heading.
 Initially the subscription does not have an active token:
 
     >>> print view.active_token
-    None
-
-Therefore, it will not return a sources_list_entry either:
-
-    >>> print view.sources_list_entries
     None
 
 But if 'activate' is posted, the view will generate a new token and

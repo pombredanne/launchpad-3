@@ -1,21 +1,27 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
+from optparse import OptionValueError
+from testtools.matchers import LessThan
+import transaction
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
+    PackageUploadStatus,
     )
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.scripts.processaccepted import (
     get_bugs_from_changes_file,
     ProcessAccepted,
@@ -61,37 +67,36 @@ class TestProcessAccepted(TestCaseWithFactory):
     def test_robustness(self):
         """Test that a broken package doesn't block the publication of other
         packages."""
-        # Attempt to upload one source to a supported series
+        # Attempt to upload one source to a supported series.
         # The record is created first and then the status of the series
         # is changed from DEVELOPMENT to SUPPORTED, otherwise it's impossible
-        # to create the record
+        # to create the record.
         distroseries = self.factory.makeDistroSeries(distribution=self.distro)
-        broken_source = self.createWaitingAcceptancePackage(
+        # This creates a broken publication.
+        self.createWaitingAcceptancePackage(
             distroseries=distroseries, sourcename="notaccepted")
         distroseries.status = SeriesStatus.SUPPORTED
-        # Also upload some other things
+        # Also upload some other things.
         other_distroseries = self.factory.makeDistroSeries(
             distribution=self.distro)
-        other_source = self.createWaitingAcceptancePackage(
-            distroseries=other_distroseries)
+        self.createWaitingAcceptancePackage(distroseries=other_distroseries)
         script = self.getScript([])
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         script.main()
 
-        # The other source should be published now
+        # The other source should be published now.
         published_main = self.distro.main_archive.getPublishedSources(
             name=self.test_package_name)
         self.assertEqual(published_main.count(), 1)
 
-        # And an oops should be filed for the first
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        expected_error = "error-explanation=Failure processing queue_item"
-        self.assertTrue(expected_error in error_text)
+        # And an oops should be filed for the first.
+        self.assertEqual(1, len(self.oopses))
+        error_report = self.oopses[0]
+        expected_error = "Failure processing queue_item"
+        self.assertStartsWith(
+                error_report['req_vars']['error-explanation'],
+                expected_error)
 
     def test_accept_copy_archives(self):
         """Test that publications in a copy archive are accepted properly."""
@@ -102,8 +107,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         copy_source = self.createWaitingAcceptancePackage(
             archive=copy_archive, distroseries=distroseries)
         # Also upload some stuff in the main archive.
-        main_source = self.createWaitingAcceptancePackage(
-            distroseries=distroseries)
+        self.createWaitingAcceptancePackage(distroseries=distroseries)
 
         # Before accepting, the package should not be published at all.
         published_copy = copy_archive.getPublishedSources(
@@ -125,11 +129,98 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 0)
 
         # Check the copy archive source was accepted.
-        [published_copy] = copy_archive.getPublishedSources(
-            name=self.test_package_name)
+        published_copy = copy_archive.getPublishedSources(
+            name=self.test_package_name).one()
         self.assertEqual(
             published_copy.status, PackagePublishingStatus.PENDING)
         self.assertEqual(copy_source, published_copy.sourcepackagerelease)
+
+    def test_commits_after_each_item(self):
+        # Test that the script commits after each item, not just at the end.
+        uploads = [
+            self.createWaitingAcceptancePackage(
+                distroseries=self.factory.makeDistroSeries(
+                    distribution=self.distro),
+                sourcename='source%d' % i)
+            for i in range(3)]
+
+        class UploadCheckingSynchronizer:
+
+            commit_count = 0
+
+            def beforeCompletion(inner_self, txn):
+                pass
+
+            def afterCompletion(inner_self, txn):
+                if txn.status != 'Committed':
+                    return
+                inner_self.commit_count += 1
+                done_count = len([
+                    upload for upload in uploads
+                    if upload.package_upload.status ==
+                        PackageUploadStatus.DONE])
+                self.assertEqual(
+                    min(len(uploads), inner_self.commit_count),
+                    done_count)
+
+        script = self.getScript([])
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
+        synch = UploadCheckingSynchronizer()
+        transaction.manager.registerSynch(synch)
+        script.main()
+        self.assertThat(len(uploads), LessThan(synch.commit_count))
+
+    def test_non_dry_run_commits_work(self):
+        upload = self.factory.makeSourcePackageUpload(
+            distroseries=self.factory.makeDistroSeries(
+                distribution=self.distro))
+        upload_id = upload.id
+        self.getScript([]).main()
+        self.layer.txn.abort()
+        self.assertEqual(
+            upload, IStore(PackageUpload).get(PackageUpload, upload_id))
+
+    def test_dry_run_aborts_work(self):
+        upload = self.factory.makeSourcePackageUpload(
+            distroseries=self.factory.makeDistroSeries(
+                distribution=self.distro))
+        upload_id = upload.id
+        self.getScript(['--dry-run']).main()
+        self.assertEqual(
+            None, IStore(PackageUpload).get(PackageUpload, upload_id))
+
+    def test_validateArguments_requires_distro_by_default(self):
+        self.assertRaises(
+            OptionValueError, ProcessAccepted(test_args=[]).validateArguments)
+
+    def test_validateArguments_requires_no_distro_for_derived_run(self):
+        ProcessAccepted(test_args=['--derived']).validateArguments()
+        # The test is that this does not raise an exception.
+        pass
+
+    def test_validateArguments_does_not_accept_distro_for_derived_run(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=['--derived', distro.name])
+        self.assertRaises(OptionValueError, script.validateArguments)
+
+    def test_findTargetDistros_finds_named_distro(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=[distro.name])
+        self.assertContentEqual([distro], script.findTargetDistros())
+
+    def test_findNamedDistro_raises_error_if_not_found(self):
+        nonexistent_distro = self.factory.getUniqueString()
+        script = ProcessAccepted(test_args=[nonexistent_distro])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            script.findNamedDistro, nonexistent_distro)
+
+    def test_findTargetDistros_for_derived_finds_derived_distro(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        script = ProcessAccepted(test_args=['--derived'])
+        self.assertIn(
+            dsp.derived_series.distribution, script.findTargetDistros())
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):

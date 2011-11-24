@@ -16,6 +16,8 @@ __all__ = [
 
 import re
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -24,7 +26,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -96,7 +97,7 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
                 self.setFieldError(
                     'language_code',
                     structured(
-                        "There already is a custom language code '%s'." %
+                        "There already is a custom language code '%s'.",
                             self.language_code))
                 return
         else:

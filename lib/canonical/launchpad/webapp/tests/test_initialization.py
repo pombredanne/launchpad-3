@@ -5,8 +5,6 @@
 
 As found in canonical.launchpad.webapp.initialization.py."""
 
-import unittest
-
 from zope.component import getSiteManager
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IBrowserRequest
@@ -57,8 +55,3 @@ class TestURLNamespace(TestCase):
                 pass
             else:
                 self.assertNotEqual(factory, not_the_namespace_factory)
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite

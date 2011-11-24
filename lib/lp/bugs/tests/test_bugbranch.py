@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug-branch linking from the bugs side."""
@@ -32,46 +32,103 @@ class TestBugBranchSet(TestCaseWithFactory):
         # BugBranchSet objects provide IBugBranchSet.
         self.assertProvides(BugBranchSet(), IBugBranchSet)
 
-    def test_getBugBranchesForBranches_no_branches(self):
+    def test_getBranchesWithVisibleBugs_no_branches(self):
         bug_branches = getUtility(IBugBranchSet)
-        links = bug_branches.getBugBranchesForBranches(
+        links = bug_branches.getBranchesWithVisibleBugs(
             [], self.factory.makePerson())
         self.assertEqual([], list(links))
 
-    def test_getBugBranchesForBranches(self):
-        # IBugBranchSet.getBugBranchesForBranches returns all of the BugBranch
-        # objects associated with the given branches.
+    def test_getBranchesWithVisibleBugs_finds_branches_with_public_bugs(self):
+        # IBugBranchSet.getBranchesWithVisibleBugs returns all of the
+        # Branch ids associated with the given branches that have bugs
+        # visible to the current user.  Those trivially include ones
+        # for non-private bugs.
         branch_1 = self.factory.makeBranch()
         branch_2 = self.factory.makeBranch()
         bug_a = self.factory.makeBug()
         bug_b = self.factory.makeBug()
         self.factory.loginAsAnyone()
-        link_1 = bug_a.linkBranch(branch_1, self.factory.makePerson())
-        link_2 = bug_a.linkBranch(branch_2, self.factory.makePerson())
-        link_3 = bug_b.linkBranch(branch_2, self.factory.makePerson())
-        self.assertEqual(
-            set([link_1, link_2, link_3]),
-            set(getUtility(IBugBranchSet).getBugBranchesForBranches(
-                [branch_1, branch_2], self.factory.makePerson())))
+        bug_a.linkBranch(branch_1, self.factory.makePerson())
+        bug_a.linkBranch(branch_2, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [branch_1.id, branch_2.id],
+            utility.getBranchesWithVisibleBugs(
+                [branch_1, branch_2], self.factory.makePerson()))
 
-    def test_getBugBranchesForBranches_respects_bug_privacy(self):
-        # IBugBranchSet.getBugBranchesForBranches returns only the BugBranch
-        # objects that are visible by the user who is asking for them.
+    def test_getBranchesWithVisibleBugs_shows_public_bugs_to_anon(self):
+        # getBranchesWithVisibleBugs shows public bugs to anyone,
+        # including anonymous users.
+        branch = self.factory.makeBranch()
+        bug = self.factory.makeBug(private=False)
+        with celebrity_logged_in('admin'):
+            bug.linkBranch(branch, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [branch.id], utility.getBranchesWithVisibleBugs([branch], None))
+
+    def test_getBranchesWithVisibleBugs_ignores_duplicate_bugbranches(self):
+        # getBranchesWithVisibleBugs reports a branch only once even if
+        # it's linked to the same bug multiple times.
         branch = self.factory.makeBranch()
         user = self.factory.makePerson()
-        public_bug = self.factory.makeBug()
-        private_visible_bug = self.factory.makeBug(private=True)
-        private_invisible_bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug()
+        self.factory.loginAsAnyone()
+        bug.linkBranch(branch, user)
+        bug.linkBranch(branch, user)
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
+
+    def test_getBranchesWithVisibleBugs_ignores_extra_bugs(self):
+        # getBranchesWithVisibleBugs reports a branch only once even if
+        # it's liked to multiple bugs.
+        branch = self.factory.makeBranch()
+        user = self.factory.makePerson()
         with celebrity_logged_in('admin'):
-            public_bug.linkBranch(branch, user)
-            private_visible_bug.subscribe(user, user)
-            private_visible_bug.linkBranch(branch, user)
-            private_invisible_bug.linkBranch(branch, user)
-        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            [branch], user)
-        self.assertEqual(
-            set([public_bug, private_visible_bug]),
-            set([link.bug for link in bug_branches]))
+            self.factory.makeBug().linkBranch(branch, user)
+            self.factory.makeBug().linkBranch(branch, user)
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
+
+    def test_getBranchesWithVisibleBugs_hides_private_bugs_from_anon(self):
+        # getBranchesWithVisibleBugs does not show private bugs to users
+        # who aren't logged in.
+        branch = self.factory.makeBranch()
+        bug = self.factory.makeBug(private=True)
+        with celebrity_logged_in('admin'):
+            bug.linkBranch(branch, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [], utility.getBranchesWithVisibleBugs([branch], None))
+
+    def test_getBranchesWithVisibleBugs_hides_private_bugs_from_joe(self):
+        # getBranchesWithVisibleBugs does not show private bugs to
+        # arbitrary logged-in users (such as Average Joe, or J. Random
+        # Hacker).
+        branch = self.factory.makeBranch()
+        bug = self.factory.makeBug(private=True)
+        with celebrity_logged_in('admin'):
+            bug.linkBranch(branch, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [],
+            utility.getBranchesWithVisibleBugs(
+                [branch], self.factory.makePerson()))
+
+    def test_getBranchesWithVisibleBugs_shows_private_bugs_to_sub(self):
+        # getBranchesWithVisibleBugs will show private bugs to their
+        # subscribers.
+        branch = self.factory.makeBranch()
+        bug = self.factory.makeBug(private=True)
+        user = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            bug.subscribe(user, self.factory.makePerson())
+            bug.linkBranch(branch, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        self.assertContentEqual(
+            [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
 
     def test_getBugBranchesForBugTasks(self):
         # IBugBranchSet.getBugBranchesForBugTasks returns all of the BugBranch

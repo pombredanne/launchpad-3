@@ -103,13 +103,13 @@ Queries with invalid parameter values return a 400 error.
     ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=WRONG')
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: u'WRONG' is not a valid vendor ID for PCI
+    u'WRONG' is not a valid vendor ID for PCI
 
     >>> print webservice.get(
     ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=0x1234&product_id=BAD')
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: u'BAD' is not a valid product ID for PCI
+    u'BAD' is not a valid product ID for PCI
 
 Single device records can be accessed too.
 
@@ -132,7 +132,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/1000000')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -140,7 +140,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 HWDevice.drivers returns the list of drivers associtaed with this device.
@@ -392,7 +392,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/1000000')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -400,7 +400,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Once we've got a driver, we can search for submissions associated with it.
@@ -549,11 +549,7 @@ submission.
     >>> print webservice.get('/+hwdb/+submission/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Traceback (most recent call last):
-    ...
-    NotFound: Object: <...systemhomes.HWDBApplication object at ...>,
-    name: u'nonsense'
-    <BLANKLINE>
+    Object: <...systemhomes.HWDBApplication object at ...>, name: u'nonsense'
 
 Submissions which mention a specific device can be retrieved by
 using the getSubmissions operation.
@@ -682,8 +678,6 @@ But we can't supply both distribution and distroseries.
     HTTP/1.1 400 Bad Request
     ...
     Only one of `distribution` or `distroseries` can be present.
-    ...
-    <BLANKLINE>
 
 We can query for submissions from a particular user.
 
@@ -715,6 +709,100 @@ We can get all of a user's hardware submissions by retrieving their
     ...
     submission_key: u'sample-submission'
     ...
+
+
+=== Searching for submissions ===
+
+Alternatively, we can also search for hardware submissions by user:
+
+    >>> owner = webservice.getAbsoluteUrl('/~name12')
+    >>> submissions = webservice.get(
+    ...     '/+hwdb?ws.op=search&owner=%s' % owner).jsonBody()
+    >>> print submissions['total_size']
+    2
+
+    >>> owner = webservice.getAbsoluteUrl('/~name20')
+    >>> submissions = webservice.get(
+    ...     '/+hwdb?ws.op=search&owner=%s' % owner).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by device:
+
+    >>> device = webservice.getAbsoluteUrl('/+hwdb/+device/1')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', device=device).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by driver:
+
+    >>> driver = webservice.getAbsoluteUrl('/+hwdb/+driver/1')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', driver=driver).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by distribution:
+
+    >>> ubuntu_url = webservice.getAbsoluteUrl('/ubuntu')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distribution=ubuntu_url).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> debian_url = webservice.getAbsoluteUrl('/debian')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distribution=debian_url).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by distroseries:
+
+    >>> hoary_url = webservice.getAbsoluteUrl('/ubuntu/hoary')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distroseries=hoary_url).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> warty_url = webservice.getAbsoluteUrl('/ubuntu/warty')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distroseries=warty_url).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by architecture:
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', architecture='i386').jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by date created:
+
+    >>> date_created = u'2007-09-11T00:00:00+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_before=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_after=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by date submitted:
+
+    >>> date_submitted = u'2007-09-11T15:23:45.653316+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_before=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_after=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
 
 
 === Submission Devices ===
@@ -782,7 +870,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/1000000')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -790,7 +878,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Known vendor IDs for a given bus can be queried with
@@ -865,8 +953,7 @@ specifying neither leads to an error.
     >>> print webservice.named_get('/+hwdb', 'numDevicesInSubmissions')
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
-    <BLANKLINE>
+    Specify (bus, vendor_id, product_id) or driver_name.
 
 We can additionally pass a reference to a distribution...
 
@@ -995,7 +1082,7 @@ If neither a device nor a driver is specified, an error is returned.
     ...     '/+hwdb', 'numSubmissionsWithDevice')
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+    Specify (bus, vendor_id, product_id) or driver_name.
 
 The count can be limited to a distribution...
 
@@ -1111,7 +1198,7 @@ Specifying neiher a device nor a driver leads to an error.
     >>> print webservice.named_get('/+hwdb', 'numOwnersOfDevice')
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+    Specify (bus, vendor_id, product_id) or driver_name.
 
 Additionally, a package_name can be passed...
 
@@ -1304,7 +1391,7 @@ A 400 error is returned, if neither a device nor a driver name is specified.
     ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs', bug_ids=[1])
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+    Specify (bus, vendor_id, product_id) or driver_name.
 
 If one of the parameters bus, vendor_id, product_id is specified, all of
 them have to be specified.
@@ -1314,8 +1401,7 @@ them have to be specified.
     ...     bus='IDE', bug_ids=[1])
     HTTP/1.1 400 Bad Request
     ...
-    ParameterError: Either specify bus, vendor_id and product_id or none of
-    them.
+    Either specify bus, vendor_id and product_id or none of them.
 
 For a given bug, we can get a list of devices by device owner.
 The result is a tuple of (owner_name, bus_name, vendor_id, product_id).

@@ -71,7 +71,7 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         self.assertFalse(view.context.private)
 
     def test_set_private_without_buildd_secret(self):
-        """If a PPA is marked private but no buildd secret is specified, 
+        """If a PPA is marked private but no buildd secret is specified,
         one will be generated."""
         view = self.initialize_admin_view(private=True, buildd_secret='')
         self.assertEqual(0, len(view.errors))
@@ -101,3 +101,50 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
             'This archive already has published sources. '
             'It is not possible to switch the privacy.',
             view.errors[0])
+
+    def test_can_leave_restricted_families_unchecked(self):
+        # We should be able to leave restricted families unchecked and
+        # still submit the form. (see bug 888083)
+        self.factory.makeProcessorFamily(restricted=True)
+        self.factory.makeProcessorFamily(restricted=True)
+        form = {
+            "field.enabled": "on",
+            'field.private': 'off',
+            "field.require_virtualized": "off",
+            'field.enabled_restricted_families': [],
+            'field.actions.save': 'Save',
+            }
+
+        view = ArchiveAdminView(
+            self.ppa, LaunchpadTestRequest(method="POST", form=form))
+        view.initialize()
+
+        self.assertEqual(
+           None, view.widget_errors.get('enabled_restricted_families'))
+
+    def test_cannot_change_enabled_restricted_families(self):
+        # If require_virtualized is False, enabled_restricted_families
+        # cannot be changed.
+        pf1 = self.factory.makeProcessorFamily(restricted=True)
+        method = 'POST'
+        form = {
+            'field.enabled': 'on',
+            'field.require_virtualized': '',
+            'field.enabled_restricted_families': [pf1.name],
+            'field.actions.save': 'Save',
+            }
+
+        view = ArchiveAdminView(self.ppa, LaunchpadTestRequest(
+            method=method, form=form))
+        view.initialize()
+
+        error_msg = (
+            u'Main archives can not be restricted to certain '
+            'architectures unless they are set to build on '
+            'virtualized builders.')
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('enabled_restricted_families'))
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('require_virtualized'))

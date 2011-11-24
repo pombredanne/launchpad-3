@@ -14,7 +14,6 @@ __all__ = [
 from StringIO import StringIO
 
 from sqlobject import (
-    AND,
     ForeignKey,
     SQLMultipleJoin,
     StringCol,
@@ -35,6 +34,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -243,12 +243,21 @@ class ProductReleaseSet(object):
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""
-        query = AND(ProductRelease.q.version==version,
-                    ProductRelease.q.productseriesID==productseries.id)
-        productrelease = ProductRelease.selectOne(query)
-        if productrelease is None:
-            return default
-        return productrelease
+        # Local import of Milestone to avoid circular imports.
+        from lp.registry.model.milestone import Milestone
+        store = IStore(productseries)
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it.
+        result = store.find(
+            (ProductRelease, Milestone),
+            Milestone.productseries == productseries,
+            ProductRelease.milestone == Milestone.id,
+            Milestone.name == version)
+        found = result.one()
+        if found is None:
+            return None
+        product_release, milestone = found
+        return product_release
 
     def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""

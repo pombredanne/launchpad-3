@@ -10,14 +10,13 @@ Apply all outstanding schema patches to an existing launchpad database
 __metaclass__ = type
 
 # pylint: disable-msg=W0403
-import _pythonpath # Sort PYTHONPATH
+import _pythonpath  # Sort PYTHONPATH
 
 from cStringIO import StringIO
 import glob
 import os.path
 from optparse import OptionParser
 import re
-import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
@@ -31,7 +30,7 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 
 def main():
-    con = connect(options.dbuser)
+    con = connect()
     patches = get_patchlist(con)
 
     if replication.helpers.slony_installed(con):
@@ -40,7 +39,7 @@ def main():
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
-        con = connect(options.dbuser)
+        con = connect()
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
@@ -101,7 +100,7 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
 
 def to_seconds(td):
     """Convert a timedelta to seconds."""
-    return td.days * (24*60*60) + td.seconds + td.microseconds/1000000.0
+    return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
 
 
 def report_patch_times(con, todays_patches):
@@ -173,13 +172,13 @@ def apply_patches_replicated():
 
     # Get an autocommit connection. We use autocommit so we don't have to
     # worry about blocking locks needed by Slony-I.
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     # We use three slonik scripts to apply our DB patches.
     # The first script applies the DB patches to all nodes.
 
     # First make sure the cluster is synced.
-    log.info("Waiting for cluster to sync.")
+    log.info("Waiting for cluster to sync, pre-update.")
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
@@ -187,18 +186,15 @@ def apply_patches_replicated():
     # Start a transaction block.
     print >> outf, "try {"
 
+    sql_to_run = []
+
     def run_sql(script):
         if os.path.isabs(script):
             full_path = script
         else:
             full_path = os.path.abspath(os.path.join(SCHEMA_DIR, script))
         assert os.path.exists(full_path), "%s doesn't exist." % full_path
-        print >> outf, dedent("""\
-            execute script (
-                set id = @lpmain_set, event node = @master_node,
-                filename='%s'
-                );
-            """ % full_path)
+        sql_to_run.append(full_path)
 
     # We are going to generate some temporary files using
     # NamedTempoararyFile. Store them here so we can control when
@@ -237,6 +233,22 @@ def apply_patches_replicated():
     combined_script.flush()
     run_sql(combined_script.name)
 
+    # Now combine all the written SQL (probably trusted.sql and
+    # patch*.sql) into one big file, which we execute with a single
+    # slonik execute_script statement to avoid multiple syncs.
+    single = NamedTemporaryFile(prefix='single', suffix='.sql')
+    for path in sql_to_run:
+        print >> single, open(path, 'r').read()
+        print >> single, ""
+    single.flush()
+
+    print >> outf, dedent("""\
+        execute script (
+            set id = @lpmain_set, event node = @master_node,
+            filename='%s'
+            );
+        """ % single.name)
+
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
         }
@@ -247,8 +259,11 @@ def apply_patches_replicated():
         """)
 
     # Execute the script with slonik.
+    log.info("slonik(1) schema upgrade script generated. Invoking.")
     if not replication.helpers.execute_slonik(outf.getvalue()):
         log.fatal("Aborting.")
+        raise SystemExit(4)
+    log.info("slonik(1) schema upgrade script completed.")
 
     # Cleanup our temporary files - they applied successfully.
     for temporary_file in temporary_files:
@@ -256,6 +271,7 @@ def apply_patches_replicated():
     del temporary_files
 
     # Wait for replication to sync.
+    log.info("Waiting for patches to apply to slaves and cluster to sync.")
     replication.helpers.sync(timeout=0)
 
     # The db patches have now been applied to all nodes, and we are now
@@ -348,31 +364,76 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Subscribing holding set to @node%d_node.';
                 subscribe set (
-                    id=@holding_set,
-                    provider=@master_node, receiver=@node%d_node, forward=yes);
+                    id=@holding_set, provider=@master_node,
+                    receiver=@node%d_node, forward=yes);
+                wait for event (
+                    origin=@master_node, confirmed=all,
+                    wait on=@master_node, timeout=0);
                 echo 'Waiting for sync';
                 sync (id=@master_node);
                 wait for event (
                     origin=@master_node, confirmed=ALL,
-                    wait on=@master_node, timeout=0
-                    );
+                    wait on=@master_node, timeout=0);
                 """ % (slave_node.node_id, slave_node.node_id))
 
         print >> outf, dedent("""\
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set, add id=@holding_set, origin=@master_node
-                );
+                id=@lpmain_set, add id=@holding_set, origin=@master_node);
             """)
 
         # Execute the script and sync.
+        log.info(
+            "Generated slonik(1) script to replicate new objects. Invoking.")
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
+        log.info(
+            "slonik(1) script to replicate new objects completed.")
+        log.info("Waiting for sync.")
         replication.helpers.sync(timeout=0)
+    else:
+        log.info("No new tables or sequences to replicate.")
 
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
     # we rename them into the ToDrop namespace.
+    #
+    # First, remove all todrop.* sequences from replication.
+    cur.execute("""
+        SELECT seq_nspname, seq_relname, seq_id from %s
+        WHERE seq_nspname='todrop'
+        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
+    seqs_to_unreplicate = set(
+        (fqn(nspname, relname), tab_id)
+        for nspname, relname, tab_id in cur.fetchall())
+    if seqs_to_unreplicate:
+        log.info("Unreplicating sequences: %s" % ', '.join(
+            name for name, id in seqs_to_unreplicate))
+        # Generate a slonik script to remove sequences from the
+        # replication set.
+        sk = StringIO()
+        print >> sk, "try {"
+        for seq_name, seq_id in seqs_to_unreplicate:
+            if seq_id is not None:
+                print >> sk, dedent("""\
+                    echo 'Removing %s from replication';
+                    set drop sequence (origin=@master_node, id=%d);
+                    """ % (seq_name, seq_id))
+        print >> sk, dedent("""\
+            }
+            on error {
+                echo 'Failed to unreplicate sequences. Aborting.';
+                exit 1;
+                }
+            """)
+        log.info(
+            "Generated slonik(1) script to unreplicate sequences. Invoking.")
+        if not replication.helpers.execute_slonik(sk.getvalue()):
+            log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+
+    # Generate a slonik script to remove tables from the replication set,
+    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     cur.execute("""
         SELECT nspname, relname, tab_id
         FROM pg_class
@@ -383,9 +444,6 @@ def apply_patches_replicated():
     tabs_to_drop = set(
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
-
-    # Generate a slonik script to remove tables from the replication set,
-    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(
             name for name, id in tabs_to_drop))
@@ -411,12 +469,14 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop tables. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
-    # Now drop sequences. We don't do this at the same time as the tables,
-    # as most sequences will be dropped implicitly with the table drop.
+    # Now drop any remaining sequences. Most sequences will be dropped
+    # implicitly with the table drop.
     cur.execute("""
         SELECT nspname, relname, seq_id
         FROM pg_class
@@ -455,8 +515,11 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop sequences. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+    log.info("Waiting for final sync.")
     replication.helpers.sync(timeout=0)
 
 
@@ -475,11 +538,11 @@ def get_patchlist(con):
         m = re.search('patch-(\d+)-(\d+)-(\d).sql$', patch_file)
         if m is None:
             log.fatal('Invalid patch filename %s' % repr(patch_file))
-            sys.exit(1)
+            raise SystemExit(1)
 
         major, minor, patch = [int(i) for i in m.groups()]
         if (major, minor, patch) in dbpatches:
-            continue # This patch has already been applied
+            continue  # This patch has already been applied
         log.debug("Found patch %d.%d.%d -- %s" % (
             major, minor, patch, patch_file
             ))
@@ -504,7 +567,7 @@ def apply_patch(con, major, minor, patch, patch_file):
     if (major, minor, patch) not in applied_patches(con):
         log.fatal("%s failed to update LaunchpadDatabaseRevision correctly"
                 % patch_file)
-        sys.exit(2)
+        raise SystemExit(2)
 
     # Commit changes if we allow partial updates.
     if options.commit and options.partial:
@@ -523,7 +586,7 @@ def apply_other(con, script, no_commit=False):
         # environment.
         log.fatal(
             "Last non-whitespace character of %s must be a semicolon", script)
-        sys.exit(3)
+        raise SystemExit(3)
     cur.execute(sql)
 
     if not no_commit and options.commit and options.partial:
@@ -544,7 +607,7 @@ if __name__ == '__main__':
             action="store_false", help="Don't actually commit changes"
             )
     parser.add_option(
-            "-p", "--partial", dest="partial", default=False,
+            "--partial", dest="partial", default=False,
             action="store_true",
             help="Commit after applying each patch",
             )

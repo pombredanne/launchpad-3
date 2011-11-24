@@ -189,7 +189,3 @@ class Hose_LimitWalk(unittest.TestCase):
         self.assertEqual(sorted(unmatched),
                          ['/foo/1.0/foo-1.0.tar.gz',
                           '/foo/1.0/source/foo-2.0.tar.gz'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

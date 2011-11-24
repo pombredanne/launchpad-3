@@ -37,9 +37,9 @@ from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -328,9 +328,9 @@ class BugImporter:
             self.createAttachments(bug, msg, commentnode)
 
         # set up bug
-        bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
-        bug.setSecurityRelated(
-            get_value(bugnode, 'security_related') == 'True')
+        private = get_value(bugnode, 'private') == 'True'
+        security_related = get_value(bugnode, 'security_related') == 'True'
+        bug.setPrivacyAndSecurityRelated(private, security_related, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:

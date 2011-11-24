@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the choice of "translations to review" for a user."""
@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from pytz import timezone
 import transaction
@@ -62,7 +61,7 @@ class ReviewTestMixin:
             self.productseries = None
             self.product = None
             self.distroseries = removeSecurityProxy(
-                self.factory.makeDistroRelease())
+                self.factory.makeDistroSeries())
             self.distribution = self.distroseries.distribution
             self.distribution.translation_focus = self.distroseries
             self.sourcepackagename = self.factory.makeSourcePackageName()
@@ -78,7 +77,7 @@ class ReviewTestMixin:
         self.pofile = removeSecurityProxy(self.factory.makePOFile(
             potemplate=self.potemplate, language_code='nl'))
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.potemplate, singular='hi', sequence=1)
+            potemplate=self.potemplate, singular='hi')
         self.translation = self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile,
             translator=self.person, translations=['bi'],
@@ -174,6 +173,13 @@ class TestReviewableProductTranslationFiles(TestCaseWithFactory,
         super(TestReviewableProductTranslationFiles, self).setUp()
         ReviewTestMixin.setUpMixin(self, for_product=True)
 
+    def test_getReviewableTranslationFiles_project_deactivated(self):
+        # Deactive project are excluded from the list.
+        from lp.testing import celebrity_logged_in
+        with celebrity_logged_in('admin'):
+            self.product.active = False
+        self.assertEqual([], self._getReviewables())
+
 
 class TestReviewableDistroTranslationFiles(TestCaseWithFactory,
                                            ReviewTestMixin,
@@ -250,7 +256,3 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # Translations without unreviewed suggestions are ignored.
         other_pofile = self._makeOtherPOFile(with_unreviewed=False)
         self.assertFalse(other_pofile in self._suggestReviewables())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

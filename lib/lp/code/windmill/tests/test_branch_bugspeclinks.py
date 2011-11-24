@@ -6,13 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-import windmill
-
-from canonical.launchpad.windmill.testing import lpuser
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 class TestBranchBugLinks(WindmillTestCase):
@@ -38,13 +34,9 @@ class TestBranchBugLinks(WindmillTestCase):
 
     def test_inline_branch_bug_link_unlink(self):
         """Link a bug from the branch page."""
-        client = self.client
 
-        lpuser.FOO_BAR.ensure_login(client)
-
-        start_url = (
-            windmill.settings['TEST_URL'] + '~mark/firefox/release--0.9.1')
-        client.open(url=start_url)
+        client, start_url = self.getClientFor(
+            '/~mark/firefox/release--0.9.1', lpuser.FOO_BAR)
         client.waits.forElement(id=u'linkbug', timeout=u'10000')
 
         self.link_bug_and_assert_success(client, u'1')
@@ -59,7 +51,3 @@ class TestBranchBugLinks(WindmillTestCase):
         self.unlink_bug_and_assert_success(client, u'2')
         client.asserts.assertText(id=u'linkbug',
             validator=u'Link to a bug report')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

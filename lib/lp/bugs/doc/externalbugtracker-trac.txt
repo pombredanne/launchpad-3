@@ -33,7 +33,7 @@ to validate the token.
 
     >>> import urllib2
     >>> class TracHavingLPPlugin401(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 401, "Unauthorized", None, None)
@@ -60,13 +60,13 @@ not include a "trac_auth" cookie.
     >>> from urllib import addinfourl
 
     >>> class TracReturning200ForPageNotFound(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(StringIO('')), url)
 
     >>> class TracHavingLPPlugin200(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(
@@ -99,11 +99,26 @@ the external bug tracker that groks the plugin is selected:
 If a 404 is returned, the normal Trac instance is returned.
 
     >>> class TracNotHavingLPPlugin(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 404, "Not found", None, None)
     >>> trac = TracNotHavingLPPlugin('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
+In the event that a connection error is returned, we return a normal Trac
+instance. It will deal with the connection error later, if the situation
+persists.
+
+    >>> class TracWithConnectionError(Trac):
+    ...     def urlopen(self, url, data=None):
+    ...         print url
+    ...         raise urllib2.URLError("Connection timed out")
+    >>> trac = TracWithConnectionError('http://example.com/')
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check
 
@@ -167,7 +182,7 @@ working network connection.
     >>> sorted(trac.bugs.keys())
     [1]
 
-If we initialise with a different set of keys we overwrite the first set:
+If we initialize with a different set of keys we overwrite the first set:
 
     >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
     >>> sorted(trac.bugs.keys())
@@ -284,8 +299,7 @@ First, we create some bug watches to test with:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',

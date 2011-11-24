@@ -114,6 +114,14 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
+    @property
+    def sequence(self):
+        if self.browser_pofile:
+            pofile = self.browser_pofile
+            return self.potmsgset.getSequence(pofile.potemplate)
+        else:
+            return 0
+
     def markReviewed(self, reviewer, timestamp=None):
         """See `ITranslationMessage`."""
         if timestamp is None:
@@ -172,6 +180,14 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         raise NotImplementedError()
 
+    def acceptFromImport(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
+    def acceptFromUpstreamImportOnPackage(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
@@ -185,18 +201,13 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return [None] * TranslationConstants.MAX_PLURAL_FORMS
 
+    def clone(self, potmsgset):
+        raise NotImplementedError()
+
     def destroySelf(self):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
         return
-
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_upstream = new_value
 
     def getSharedEquivalent(self):
         """See `ITranslationMessage`."""
@@ -351,6 +362,19 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return self.potmsgset.approveAsDiverged(
             pofile, self, reviewer, lock_timestamp=lock_timestamp)
 
+    def acceptFromImport(self, pofile, share_with_other_side=False,
+                         lock_timestamp=None):
+        """See `ITranslationMessage`."""
+        self.potmsgset.acceptFromImport(
+            pofile, self, share_with_other_side=share_with_other_side,
+            lock_timestamp=lock_timestamp)
+
+    def acceptFromUpstreamImportOnPackage(self, pofile,
+                                          lock_timestamp=None):
+        """See `ITranslationMessage`."""
+        self.potmsgset.acceptFromUpstreamImportOnPackage(
+            pofile, self, lock_timestamp=lock_timestamp)
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         from lp.translations.model.pofile import POFile
@@ -472,35 +496,20 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         return twins.order_by(TranslationMessage.id).first()
 
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_ubuntu = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getImportedTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_upstream = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_upstream = new_value
+    def clone(self, potmsgset):
+        clone = TranslationMessage(
+            potmsgset=potmsgset, submitter=self.submitter, origin=self.origin,
+            language=self.language, date_created=self.date_created,
+            reviewer=self.reviewer, date_reviewed=self.date_reviewed,
+            msgstr0=self.msgstr0, msgstr1=self.msgstr1,
+            msgstr2=self.msgstr2, msgstr3=self.msgstr3,
+            msgstr4=self.msgstr4, msgstr5=self.msgstr5,
+            comment=self.comment, validation_status=self.validation_status,
+            is_current_ubuntu=self.is_current_ubuntu,
+            is_current_upstream=self.is_current_upstream,
+            was_obsolete_in_last_import=self.was_obsolete_in_last_import,
+            )
+        return clone
 
 
 class TranslationMessageSet:

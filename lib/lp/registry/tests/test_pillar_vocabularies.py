@@ -18,7 +18,7 @@ from lp.testing import (
 
 
 class TestPillarVocabularyBase(TestCaseWithFactory):
-    """Test that the ProductVocabulary behaves as expected."""
+    """Test that the PillarVocabularyBase behaves as expected."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -28,13 +28,26 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
         self.project_group = self.factory.makeProject(name='apple-snark')
 
-    def test_toTerm(self):
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            PillarVocabularyBase.ALL_FILTER],
+            self.vocabulary.supportedFilters()
+        )
+
+    def test_Product_toTerm(self):
         # Product terms are composed of title, name, and the object.
         term = self.vocabulary.toTerm(self.product)
-        title = '%s (Product)' % self.product.title
-        self.assertEqual(title, term.title)
+        self.assertEqual(self.product.title, term.title)
         self.assertEqual(self.product.name, term.token)
         self.assertEqual(self.product, term.value)
+
+    def test_ProjectGroup_toTerm(self):
+        # ProductGroup terms are composed of title, name, and the object.
+        term = self.vocabulary.toTerm(self.project_group)
+        self.assertEqual(self.project_group.title, term.title)
+        self.assertEqual(self.project_group.name, term.token)
+        self.assertEqual(self.project_group, term.value)
 
     def test_getTermByToken(self):
         # Tokens are case insentive because the product name is lowercase.
@@ -47,15 +60,39 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
             LookupError,
             self.vocabulary.getTermByToken, 'does-notexist')
 
-    def test_order_by_name(self):
-        # Results are ordered by name.
+    def test_ordering(self):
+        # Results are ordered by rank, with exact matches first.
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
         self.assertEqual(
             [self.project_group, self.product, self.distribution], result)
 
 
-class TestDistributionOrProductVocabulary(TestCaseWithFactory):
+class VocabFilterMixin:
+
+    def _test_distribution_filter(self):
+        # Only distributions should be included in the search results.
+        terms = self.vocabulary.searchForTerms('snark', vocab_filter='DISTRO')
+        result = [term.value for term in terms]
+        self.assertEqual([self.distribution], result)
+
+    def _test_project_filter(self):
+        # Only projects should be included in the search results.
+        terms = self.vocabulary.searchForTerms(
+            'snark', vocab_filter='PROJECT')
+        result = [term.value for term in terms]
+        self.assertEqual([self.product], result)
+
+    def _test_projectgroup_filter(self):
+        # Only project groups should be included in the search results.
+        terms = self.vocabulary.searchForTerms(
+            'snark', vocab_filter='PROJECTGROUP')
+        result = [term.value for term in terms]
+        self.assertEqual([self.project_group], result)
+
+
+class TestDistributionOrProductVocabulary(TestCaseWithFactory,
+                                          VocabFilterMixin):
     """Test that the ProductVocabulary behaves as expected."""
     layer = DatabaseFunctionalLayer
 
@@ -64,6 +101,22 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.vocabulary = DistributionOrProductVocabulary()
         self.product = self.factory.makeProduct(name='orchid-snark')
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
+
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            DistributionOrProductVocabulary.ALL_FILTER,
+            DistributionOrProductVocabulary.PROJECT_FILTER,
+            DistributionOrProductVocabulary.DISTRO_FILTER,
+            ],
+            self.vocabulary.supportedFilters()
+        )
+
+    def test_project_filter(self):
+        self._test_project_filter()
+
+    def test_distribution_filter(self):
+        self._test_distribution_filter()
 
     def test_inactive_products_are_excluded(self):
         # Inactive product are not in the vocabulary.
@@ -83,7 +136,8 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.assertFalse(project_group in self.vocabulary)
 
 
-class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
+class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory,
+                                                        VocabFilterMixin):
     """Test for DistributionOrProductOrProjectGroupVocabulary."""
     layer = DatabaseFunctionalLayer
 
@@ -93,6 +147,26 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
         self.product = self.factory.makeProduct(name='orchid-snark')
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
         self.project_group = self.factory.makeProject(name='apple-snark')
+
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            DistributionOrProductOrProjectGroupVocabulary.ALL_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.PROJECT_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.PROJECTGROUP_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.DISTRO_FILTER,
+            ],
+            self.vocabulary.supportedFilters()
+        )
+
+    def test_project_filter(self):
+        self._test_project_filter()
+
+    def test_projectgroup_filter(self):
+        self._test_projectgroup_filter()
+
+    def test_distribution_filter(self):
+        self._test_distribution_filter()
 
     def test_contains_all_pillars_active(self):
         # All active products, project groups and distributions are included.

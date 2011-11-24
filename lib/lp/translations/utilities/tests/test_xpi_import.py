@@ -9,8 +9,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.enums import RosettaImportStatus
@@ -363,7 +363,3 @@ class XpiTestCase(unittest.TestCase):
         self.assertEqual(msgids, [
             ('firststring', 'First translatable string'),
             ('secondstring', 'Second translatable string')])
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

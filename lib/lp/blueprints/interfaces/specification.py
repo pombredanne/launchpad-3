@@ -8,11 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'INewSpecification',
-    'INewSpecificationSeriesGoal',
-    'INewSpecificationSprint',
-    'INewSpecificationTarget',
-    'INewSpecificationProjectTarget',
     'ISpecification',
     'ISpecificationPublic',
     'ISpecificationSet',
@@ -21,15 +16,21 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    exported,
+    call_with,
     export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
-
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -45,8 +46,10 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
@@ -54,14 +57,18 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     )
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
@@ -117,7 +124,7 @@ class SpecNameField(ContentNameField):
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by another blueprint.")
+    errormessage = _('%s is already registered by <a href=\"%s\">%s</a>.')
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -128,11 +135,16 @@ class SpecURLField(TextLine):
 
         specification = getUtility(ISpecificationSet).getByURL(specurl)
         if specification is not None:
-            raise LaunchpadValidationError(self.errormessage % specurl)
+            specification_url = canonical_url(specification)
+            raise LaunchpadValidationError(
+                    structured(self.errormessage, specurl, specification_url,
+                        specification.title))
 
 
-class INewSpecification(Interface):
-    """A schema for a new specification."""
+class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+    """Specification's public attributes and methods."""
+
+    id = Int(title=_("Database ID"), required=True, readonly=True)
 
     name = exported(
         SpecNameField(
@@ -141,54 +153,56 @@ class INewSpecification(Interface):
                 "May contain lower-case letters, numbers, and dashes. "
                 "It will be used in the specification url. "
                 "Examples: mozilla-type-ahead-find, postgres-smart-serial.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     title = exported(
         Title(
             title=_('Title'), required=True, description=_(
                 "Describe the feature as clearly as possible in up to 70 "
                 "characters. This title is displayed in every feature "
                 "list or report.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     specurl = exported(
         SpecURLField(
             title=_('Specification URL'), required=False,
             description=_(
                 "The URL of the specification. This is usually a wiki page."),
             constraint=valid_webref),
-        ('devel', dict(exported=True, exported_as='specification_url')),
-        exported=False)
+        exported_as="specification_url",
+        as_of="devel",
+        )
     summary = exported(
         Summary(
             title=_('Summary'), required=True, description=_(
                 "A single-paragraph description of the feature. "
                 "This will also be displayed in most feature listings.")),
-        ('devel', dict(exported=True)), exported=False)
-    # XXX: salgado, 2010-11-25, bug=680880: We need a method for changing the
-    # definition_status because when that happens we may need to call
-    # updateLifecycleStatus().
+        as_of="devel")
+
     definition_status = exported(
         Choice(
-            title=_('Definition Status'),
+            title=_('Definition Status'), readonly=True,
             vocabulary=SpecificationDefinitionStatus,
             default=SpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        as_of="devel")
+
     assignee = exported(
         PublicPersonChoice(
             title=_('Assignee'), required=False,
             description=_(
                 "The person responsible for implementing the feature."),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
+    assigneeID = Attribute('db assignee value')
     drafter = exported(
         PublicPersonChoice(
             title=_('Drafter'), required=False,
             description=_(
                     "The person responsible for drafting the specification."),
                 vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
+    drafterID = Attribute('db drafter value')
     approver = exported(
         PublicPersonChoice(
             title=_('Approver'), required=False,
@@ -196,47 +210,31 @@ class INewSpecification(Interface):
                 "The person responsible for approving the specification, "
                 "and for reviewing the code when it's ready to be landed."),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
+    approverID = Attribute('db approver value')
 
+    priority = exported(
+        Choice(
+            title=_('Priority'), vocabulary=SpecificationPriority,
+            default=SpecificationPriority.UNDEFINED, required=True),
+        as_of="devel")
+    datecreated = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True),
+        as_of="devel",
+        exported_as="date_created",
+        )
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
 
-class INewSpecificationProjectTarget(Interface):
-    """A mixin schema for a new specification.
+    product = Choice(title=_('Project'), required=False,
+                     vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+                          vocabulary='Distribution')
 
-    Requires the user to specify a product from a given project.
-    """
-    target = Choice(title=_("For"),
-                    description=_("The project for which this "
-                                  "proposal is being made."),
-                    required=True, vocabulary='ProjectProducts')
-
-
-class INewSpecificationSeriesGoal(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification as a series goal.
-    """
-    goal = Bool(title=_('Propose for series goal'),
-                description=_("Check this to indicate that you wish to "
-                              "propose this blueprint as a series goal."),
-                required=True, default=False)
-
-
-class INewSpecificationSprint(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification for discussion at a sprint.
-    """
-    sprint = Choice(title=_("Propose for sprint"),
-                    description=_("The sprint to which agenda this "
-                                  "blueprint is being suggested."),
-                    required=False, vocabulary='FutureSprint')
-
-
-class INewSpecificationTarget(Interface):
-    """A mixin schema for a new specification.
-
-    Requires the user to specify a distribution or a product as a target.
-    """
     # Exported as readonly for simplicity, but could be exported as read-write
     # using setTarget() as the mutator.
     target = exported(
@@ -245,57 +243,9 @@ class INewSpecificationTarget(Interface):
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
-
-
-class ISpecificationEditRestricted(Interface):
-    """Specification's attributes and methods protected with launchpad.Edit.
-    """
-
-    def setTarget(target):
-        """Set this specification's target.
-
-        :param target: an IProduct or IDistribution.
-        """
-
-    def retarget(target):
-        """Move the spec to the given target.
-
-        The new target must be an IProduct or IDistribution.
-        """
-
-
-class ISpecificationPublic(
-        INewSpecification, INewSpecificationTarget, IHasOwner,
-        IHasLinkedBranches):
-    """Specification's public attributes and methods."""
-
-    # TomBerger 2007-06-20: 'id' is required for
-    #      SQLObject to be able to assign a security-proxied
-    #      specification to an attribute of another SQL object
-    #      referencing it.
-    id = Int(title=_("Database ID"), required=True, readonly=True)
-
-    priority = exported(
-        Choice(
-            title=_('Priority'), vocabulary=SpecificationPriority,
-            default=SpecificationPriority.UNDEFINED, required=True),
-        ('devel', dict(exported=True)), exported=False)
-    datecreated = exported(
-        Datetime(
-            title=_('Date Created'), required=True, readonly=True),
-        ('devel', dict(exported=True, exported_as='date_created')),
-        exported=False)
-    owner = exported(
-        PublicPersonChoice(
-            title=_('Owner'), required=True, readonly=True,
-            vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
-
-    product = Choice(title=_('Project'), required=False,
-                     vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-                          vocabulary='Distribution')
+        as_of="devel",
+        readonly=True,
+        )
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -318,7 +268,7 @@ class ISpecificationPublic(
                 "The milestone in which we would like this feature to be "
                 "delivered."),
             schema=IMilestone),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     # nomination to a series for release management
     # XXX: It'd be nice to export goal as read-only, but it's tricky because
@@ -343,12 +293,15 @@ class ISpecificationPublic(
              description=_(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
-        ('devel', dict(exported=True)), exported=False)
-    direction_approved = Bool(title=_('Basic direction approved?'),
-        required=False, default=False, description=_("Check this to "
-        "indicate that the drafter and assignee have satisfied the "
-        "approver that they are headed in the right basic direction "
-        "with this specification."))
+        as_of="devel")
+    direction_approved = exported(
+        Bool(title=_('Basic direction approved?'),
+             required=True, default=False,
+             description=_(
+                "Check this to indicate that the drafter and assignee "
+                "have satisfied the approver that they are headed in "
+                "the right basic direction with this specification.")),
+        as_of="devel")
     man_days = Int(title=_("Estimated Developer Days"),
         required=False, default=None, description=_("An estimate of the "
         "number of developer days it will take to implement this feature. "
@@ -356,13 +309,13 @@ class ISpecificationPublic(
         "in the number."))
     implementation_status = exported(
         Choice(
-            title=_("Implementation Status"), required=True,
+            title=_("Implementation Status"), required=True, readonly=True,
             default=SpecificationImplementationStatus.UNKNOWN,
             vocabulary=SpecificationImplementationStatus,
             description=_(
                 "The state of progress being made on the actual "
                 "implementation or delivery of this feature.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        as_of="devel")
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -371,16 +324,38 @@ class ISpecificationPublic(
         "status to Superseded."))
 
     # lifecycle
-    starter = Attribute('The person who first set the state of the '
-        'spec to the values that we consider mark it as started.')
-    date_started = Attribute('The date when this spec was marked '
-        'started.')
-    completer = Attribute('The person who finally set the state of the '
-        'spec to the values that we consider mark it as complete.')
-    date_completed = Attribute('The date when this spec was marked '
-        'complete. Note that complete also includes "obsolete" and '
-        'superseded. Essentially, it is the state where no more work '
-        'will be done on the feature.')
+    starter = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+                'The person who first set the state of the '
+                'spec to the values that we consider mark it as started.'),
+            vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+    date_started = exported(
+        Datetime(
+            title=_('Date Started'), required=False, readonly=True,
+            description=_('The date when this spec was marked started.')),
+        as_of="devel")
+
+    completer = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+            'The person who finally set the state of the '
+            'spec to the values that we consider mark it as complete.'),
+            vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+
+    date_completed = exported(
+        Datetime(
+            title=_('Date Completed'), required=False, readonly=True,
+            description=_(
+                'The date when this spec was marked '
+                'complete. Note that complete also includes "obsolete" and '
+                'superseded. Essentially, it is the state where no more work '
+                'will be done on the feature.')),
+        as_of="devel")
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -393,38 +368,56 @@ class ISpecificationPublic(
             title=_('Specs on which this one depends.'),
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    linked_branches = Attribute(
-        'The entries that link the branches to the spec.')
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this spec, usually "
+            "branches on which this spec is being implemented."),
+            value_type=Reference(schema=Interface),  # ISpecificationBranch
+            readonly=True),
+        as_of="devel")
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
         'and requires no implementation.')
-    is_complete = Attribute('Is True if this spec is already completely '
-        'implemented. Note that it is True for informational specs, since '
-        'they describe general functionality rather than specific '
-        'code to be written. It is also true of obsolete and superseded '
-        'specs, since there is no longer any need to schedule work for '
-        'them.')
+    is_complete = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if this spec is already completely implemented. '
+                'Note that it is True for informational specs, since '
+                'they describe general functionality rather than specific '
+                'code to be written. It is also true of obsolete and '
+                'superseded specs, since there is no longer any need '
+                'to schedule work for them.')),
+        as_of="devel")
+
     is_incomplete = Attribute('Is True if this work still needs to '
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
-    is_started = Attribute('Is True if the spec is in a state which '
-        'we consider to be "started". This looks at the delivery '
-        'attribute, and also considers informational specs to be '
-        'started when they are approved.')
+    is_started = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if the spec is in a state which '
+                'we consider to be "started". This looks at the delivery '
+                'attribute, and also considers informational specs to be '
+                'started when they are approved.')),
+        as_of="devel")
 
-    lifecycle_status = Choice(
-        title=_('Lifecycle Status'),
-        vocabulary=SpecificationLifecycleStatus,
-        default=SpecificationLifecycleStatus.NOTSTARTED,
-        readonly=True)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Lifecycle Status'),
+            vocabulary=SpecificationLifecycleStatus,
+            default=SpecificationLifecycleStatus.NOTSTARTED,
+            readonly=True),
+        as_of="devel")
 
     def validateMove(target):
         """Check that the specification can be moved to the target."""
@@ -483,10 +476,22 @@ class ISpecificationPublic(
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person, essential=False):
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True),
+        essential=copy_field(
+            ISpecificationSubscription['essential'], required=False))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def subscribe(person, subscribed_by=None, essential=False):
         """Subscribe this person to the feature specification."""
 
-    def unsubscribe(person):
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unsubscribe(person, unsubscribed_by):
         """Remove the person's subscription to this spec."""
 
     def getSubscriptionByName(name):
@@ -529,12 +534,79 @@ class ISpecificationPublic(
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
+    def getLinkedBugTasks(user):
+        """Return the bug tasks that are relevant to this blueprint.
+
+        When multiple tasks are on a bug, if one of the tasks is for the
+        target, then only that task is returned. Otherwise the default
+        bug task is returned.
+
+        :param user: The user doing the search.
+        """
+
+
+class ISpecificationEditRestricted(Interface):
+    """Specification's attributes and methods protected with launchpad.Edit.
+    """
+
+    @mutator_for(ISpecificationPublic['definition_status'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        definition_status=copy_field(
+            ISpecificationPublic['definition_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setDefinitionStatus(definition_status, user):
+        """Mutator for definition_status that calls updateLifeCycle."""
+
+    @mutator_for(ISpecificationPublic['implementation_status'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        implementation_status=copy_field(
+            ISpecificationPublic['implementation_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setImplementationStatus(implementation_status, user):
+        """Mutator for implementation_status that calls updateLifeCycle."""
+
+    def setTarget(target):
+        """Set this specification's target.
+
+        :param target: an IProduct or IDistribution.
+        """
+
+    def retarget(target):
+        """Move the spec to the given target.
+
+        The new target must be an IProduct or IDistribution.
+        """
+
 
 class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
                      IBugLinkTarget):
     """A Specification."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
+
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def linkBug(bug):
+        """Link a bug to this specification.
+
+        :param bug: IBug to link.
+        """
+
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unlinkBug(bug):
+        """Unlink a bug to this specification.
+
+        :param bug: IBug to unlink.
+        """
 
 
 class ISpecificationSet(IHasSpecifications):

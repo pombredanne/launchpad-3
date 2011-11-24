@@ -258,11 +258,11 @@ bug #1 affects more than one Ubuntu package.
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
-
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     bug=bug_one, owner=no_privs,
-    ...     distribution=ubuntu,
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
     ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
+
+    >>> getUtility(IBugTaskSet).createTask(bug_one, no_privs, ubuntu_tbird)
     <BugTask ...>
 
     >>> tasks = sorted(
@@ -349,131 +349,6 @@ no problems.
     >>> ubuntu_warty.driver = None
 
 
-=== Permissions to approve a nomination ===
-
-Since approving a nomination can affect release planning, not everyone
-is allowed to do it. For large projects, like distributions, it's not
-suitable to restrict approving nominations to only release managers,
-instead anyone that can upload a package may approve a nomination.  The
-package upload permission system is a bit complex. Someone can be
-allowed to either upload a single source package, or all packages in a
-component, or all packages in a packageset.
-
-    >>> from lp.soyuz.interfaces.archivepermission import (
-    ...     IArchivePermissionSet)
-    >>> from lp.soyuz.model.component import Component
-    >>> permission_set = getUtility(IArchivePermissionSet)
-    >>> main = Component.byName('main')
-    >>> main_uploader = factory.makePerson()
-    >>> permission_set.newComponentUploader(
-    ...     ubuntu.main_archive, main_uploader, main)
-    <ArchivePermission at ...>
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
-    >>> evolution_uploader = factory.makePerson()
-    >>> getUtility(IArchivePermissionSet).newPackageUploader(
-    ...     ubuntu.main_archive, evolution_uploader,
-    ...     ubuntu_evolution.sourcepackagename)
-    <ArchivePermission at ...>
-    >>> ubuntu_cnews = ubuntu.getSourcePackage('cnews')
-    >>> cnews_uploader = factory.makePerson()
-    >>> getUtility(IArchivePermissionSet).newPackageUploader(
-    ...     ubuntu.main_archive, cnews_uploader,
-    ...     ubuntu_cnews.sourcepackagename)
-    <ArchivePermission at ...>
-
-For a bug nominated to a package from the 'main' component in Ubuntu,
-people that are allowed to upload to 'main' are allowed to approve the
-nomination.
-
-    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
-    >>> main_bugtask = factory.makeBugTask(target=ubuntu_evolution)
-    >>> main_bug = main_bugtask.bug
-    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
-    >>> hoary_evolution = ubuntu_hoary.getSourcePackage('evolution')
-    >>> hoary_evolution.latest_published_component.name
-    u'main'
-    >>> nominator = factory.makePerson()
-    >>> hoary_main_nomination = main_bug.addNomination(
-    ...     nominator, ubuntu_hoary)
-
-    >>> hoary_main_nomination.canApprove(nominator)
-    False
-    >>> hoary_main_nomination.canApprove(main_uploader)
-    True
-
-People that have been granted rights to upload that specific package are
-also allowed.
-
-    >>> hoary_main_nomination.canApprove(evolution_uploader)
-    True
-    >>> hoary_main_nomination.canApprove(cnews_uploader)
-    False
-
-Only uploaders to the relevant component are allowed to approve it. For
-example, people who are allowed only to upload to 'universe' may not
-approve 'main' nominations.
-
-    >>> universe_uploader = factory.makePerson()
-    >>> universe = Component.byName('universe')
-    >>> permission_set.newComponentUploader(
-    ...     ubuntu.main_archive, universe_uploader, universe)
-    <ArchivePermission at ...>
-
-    >>> hoary_main_nomination.canApprove(universe_uploader)
-    False
-
-If the bug is targeted to source packages in more than one component,
-anyone that can upload to any of the components or packages may approve
-the nomination. This is because a nomination is tied to a release only,
-not to source packages.
-
-    >>> hoary_cnews = ubuntu_hoary.getSourcePackage('cnews')
-    >>> hoary_cnews.latest_published_component.name
-    u'universe'
-    >>> universe_task = factory.makeBugTask(
-    ...     bug=main_bug, target=hoary_cnews)
-    >>> hoary_main_nomination.canApprove(universe_uploader)
-    True
-    >>> hoary_main_nomination.canApprove(main_uploader)
-    True
-    >>> hoary_main_nomination.canApprove(evolution_uploader)
-    True
-    >>> hoary_main_nomination.canApprove(cnews_uploader)
-    True
-
-Drivers may approve nominations as well.
-
-    >>> hoary_driver = factory.makePerson()
-    >>> ubuntu_hoary.driver = hoary_driver
-    >>> hoary_main_nomination.canApprove(hoary_driver)
-    True
-
-    >>> ubuntu_driver = factory.makePerson()
-    >>> ubuntu.driver = ubuntu_driver
-    >>> hoary_main_nomination.canApprove(ubuntu_driver)
-    True
-
-If a bug isn't targeted to a specific source package, any component
-uploader can approve a nomination.
-
-    >>> ubuntu_bugtask = factory.makeBugTask(target=ubuntu)
-    >>> bug = ubuntu_bugtask.bug
-    >>> hoary_nomination = bug.addNomination(nominator, ubuntu_hoary)
-    >>> hoary_nomination.canApprove(nominator)
-    False
-
-    >>> hoary_nomination.canApprove(main_uploader)
-    True
-    >>> hoary_nomination.canApprove(universe_uploader)
-    True
-    >>> hoary_nomination.canApprove(evolution_uploader)
-    False
-    >>> hoary_nomination.canApprove(cnews_uploader)
-    False
-
-
 == Declining a nomination ==
 
 Declining a nomination simply sets its status to DECLINED. No tasks are
@@ -531,10 +406,8 @@ automatically.
 
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> getUtility(IBugTaskSet).createTask(
-    ...     bug=bug_one, owner=no_privs,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
-    <BugTask at ...>
+    ...     bug_one, no_privs, ubuntu_evolution)
+    <BugTask ...>
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -567,8 +440,8 @@ be acceptable.
     >>> thunderbird_grumpy.bugtargetname
     u'thunderbird (Ubuntu Grumpy)'
 
-    >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
-    >>> thunderbird_grumpy.sourcepackagename = ubuntu_pmount.sourcepackagename
+    >>> thunderbird_grumpy.transitionToTarget(
+    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'))
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -595,7 +468,7 @@ The same is done if the distribution task's source package is changed.
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> pmount_ubuntu.sourcepackagename = ubuntu_thunderbird.sourcepackagename
+    >>> pmount_ubuntu.transitionToTarget(ubuntu_thunderbird)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -658,7 +531,7 @@ to demonstrate.
     >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu_edgy = factory.makeDistroRelease(
+    >>> ubuntu_edgy = factory.makeDistroSeries(
     ...     distribution=ubuntu, version='6.10',
     ...     status=SeriesStatus.OBSOLETE)
     >>> login("no-priv@canonical.com")

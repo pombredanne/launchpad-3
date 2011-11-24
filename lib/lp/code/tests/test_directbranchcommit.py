@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 
+from testtools.testcase import ExpectedException
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.code.errors import StaleLastMirrored
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
@@ -114,12 +116,13 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         # Merge parents cannot be specified for initial commit, so do an
         # empty commit.
         self.tree.commit('foo', committer='foo@bar', rev_id='foo')
+        self.db_branch.last_mirrored_id = 'foo'
         committer = DirectBranchCommit(
             self.db_branch, merge_parents=['parent-1', 'parent-2'])
         committer.last_scanned_id = (
             committer.bzrbranch.last_revision())
         committer.writeFile('file.txt', 'contents')
-        revision_id = committer.commit('')
+        committer.commit('')
         branch_revision_id = committer.bzrbranch.last_revision()
         branch_revision = committer.bzrbranch.repository.get_revision(
             branch_revision_id)
@@ -269,7 +272,7 @@ class TestGetDir(DirectBranchCommitTestCase, TestCaseWithFactory):
     def test_getDir_creates_dir_in_existing_dir(self):
         # _getDir creates directories inside ones that already existed
         # in a previously committed version of the branch.
-        existing_id = self.committer._getDir('po')
+        self.committer._getDir('po')
         self._setUpCommitter()
         new_dir_id = self.committer._getDir('po/main/files')
         self.assertTrue('po/main' in self.committer.path_ids)
@@ -323,3 +326,20 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
         committer = DirectBranchCommit(branch)
         self.addCleanup(committer.unlock)
         self.assertIn('noreply', committer.getBzrCommitterID())
+
+
+class TestStaleLastMirroredID(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_raises_StaleLastMirrored(self):
+        """Raise if the on-disk revision doesn't match last-mirrored."""
+        self.useBzrBranches(direct_database=True)
+        bzr_id = self.factory.getUniqueString()
+        db_branch, tree = self.create_branch_and_tree()
+        tree.commit('unchanged', committer='jrandom@example.com')
+        with ExpectedException(StaleLastMirrored, '.*'):
+            committer = DirectBranchCommit(
+                db_branch, committer_id=bzr_id)
+            self.addCleanup(committer.unlock)
+            committer.commit('')

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Prod the master mirrors to propagate the update.
+
+MASTERMIRRORS="archive.syncproxy.ubuntu.com wahoo scandium"
+echo "$(date -R): Triggering master mirrors..."
+
+for HOST in $MASTERMIRRORS
+do
+    echo "$(date -R): Triggering $HOST:"
+    ssh archvsync@$HOST
+done
+
+echo "$(date -R): Master mirror triggers completed."

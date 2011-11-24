@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Event subscribers for branch merge proposals."""
@@ -9,7 +9,7 @@ __metaclass__ = type
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
@@ -59,7 +59,7 @@ def merge_proposal_modified(merge_proposal, event):
             return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
-    delta = BranchMergeProposalDelta.construct(
+    delta = BranchMergeProposalNoPreviewDiffDelta.construct(
         event.object_before_modification, merge_proposal)
     if delta is None:
         return
@@ -76,4 +76,3 @@ def review_requested(vote_reference, event):
     bmp_status = vote_reference.branch_merge_proposal.queue_status
     if bmp_status != BranchMergeProposalStatus.WORK_IN_PROGRESS:
         getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
-

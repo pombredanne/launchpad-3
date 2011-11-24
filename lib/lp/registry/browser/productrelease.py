@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,10 +15,10 @@ __all__ = [
     'ProductReleaseView',
     ]
 
-import cgi
 import mimetypes
 
 from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
     TextAreaWidget,
@@ -43,14 +43,13 @@ from canonical.launchpad.webapp import (
     Navigation,
     stepthrough,
     )
-from canonical.lazr.utils import smartquote
-from canonical.widgets import DateTimeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateTimeWidget
 from lp.registry.browser import (
     BaseRdfView,
     MilestoneOverlayMixin,
@@ -135,8 +134,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
         # should not be targeted to a milestone in the past.
         if data.get('keep_milestone_active') is False:
             milestone.active = False
-            milestone_link = '<a href="%s">%s milestone</a>' % (
-                canonical_url(milestone), cgi.escape(milestone.name))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 

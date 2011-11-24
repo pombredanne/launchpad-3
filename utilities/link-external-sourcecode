@@ -1,13 +1,27 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2011 Canonical Ltd. This software is licensed under the GNU
+# Affero General Public License version 3 (see the file LICENSE).
 
 import optparse
-
-from os import curdir, listdir, sep, symlink, unlink
-from os.path import abspath, basename, exists, islink, join, realpath
-from sys import stderr, stdout
+from os import (
+    curdir,
+    listdir,
+    symlink,
+    unlink,
+    )
+from os.path import (
+    abspath,
+    basename,
+    exists,
+    islink,
+    join,
+    relpath,
+    )
+from sys import (
+    stderr,
+    stdout,
+    )
 from urllib import unquote
 from urlparse import urlparse
 
@@ -17,7 +31,6 @@ from bzrlib.trace import enable_default_logging
 enable_default_logging()
 from bzrlib.branch import Branch
 from bzrlib.plugin import load_plugins
-
 load_plugins()
 
 
@@ -66,8 +79,7 @@ def link(source, destination):
             '  Error linking %s: %s\n' % (basename(destination), error))
     else:
         if options.verbose:
-            stdout.write('%s -> %s\n' % (
-                    sep.join(destination.rsplit(sep, 3)[-3:]), source))
+            stdout.write('%s -> %s\n' % (relpath(destination), source))
 
 
 if __name__ == '__main__':
@@ -119,15 +131,15 @@ if __name__ == '__main__':
             "Parent branch not specified, and could not be discovered.")
 
     missing_files = gen_missing_files(
-        realpath(join(options.parent, 'sourcecode')),
+        abspath(join(options.parent, 'sourcecode')),
         abspath(join(options.target, 'sourcecode')))
 
     for source, destination in missing_files:
         link(source, destination)
 
-    for folder_name in ('eggs', 'download-cache'):
-        source = join(options.parent, folder_name)
-        destination = join(options.target, folder_name)
+    for folder_name in ('download-cache', 'eggs', 'yui'):
+        source = abspath(join(options.parent, folder_name))
+        destination = abspath(join(options.target, folder_name))
         if not exists(destination):
             if not exists(source):
                 stderr.write(

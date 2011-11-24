@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Buildd cronscript classes """
@@ -15,7 +15,6 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
-from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -25,6 +24,7 @@ from lp.services.scripts.base import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
+
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
@@ -78,6 +78,7 @@ class QueueBuilder(LaunchpadCronScript):
         # our methods.
         class _FakeZTM:
             """A fake transaction manager."""
+
             def commit(self):
                 pass
 
@@ -146,16 +147,12 @@ class QueueBuilder(LaunchpadCronScript):
         self.logger.info(
             "Found %d source(s) published." % sources_published.count())
 
-        def process_source(pubrec):
+        for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures_available,
                 pas_verify=pas_verify, logger=self.logger)
             if len(builds) > 0:
                 self.txn.commit()
-
-        process_in_batches(
-            sources_published, process_source, self.logger,
-            minimum_chunk_size=1000)
 
     def addMissingBuildQueueEntries(self, archseries):
         """Create missing Buildd Jobs. """

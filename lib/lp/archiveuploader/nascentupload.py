@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -41,15 +41,12 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
 PARTNER_COMPONENT_NAME = 'partner'
-
-
-class FatalUploadError(Exception):
-    """A fatal error occurred processing the upload; processing aborted."""
 
 
 class EarlyReturnUploadError(Exception):
@@ -113,23 +110,14 @@ class NascentUpload:
     def from_changesfile_path(cls, changesfile_path, policy, logger):
         """Create a NascentUpload from the given changesfile path.
 
-        May raise FatalUploadError due to unrecoverable problems building
+        May raise UploadError due to unrecoverable problems building
         the ChangesFile object.
 
         :param changesfile_path: path to the changesfile to be uploaded.
         :param policy: the upload policy to be used.
         :param logger: the logger to be used.
         """
-        try:
-            changesfile = ChangesFile(changesfile_path, policy, logger)
-        except UploadError, e:
-            # We can't run reject() because unfortunately we don't have
-            # the address of the uploader to notify -- we broke in that
-            # exact step.
-            # XXX cprov 2007-03-26: we should really be emailing this
-            # rejection to the archive admins. For now, this will end
-            # up in the script log.
-            raise FatalUploadError(str(e))
+        changesfile = ChangesFile(changesfile_path, policy, logger)
         return cls(changesfile, policy, logger)
 
     def process(self, build=None):
@@ -153,7 +141,7 @@ class NascentUpload:
         self.run_and_reject_on_error(self.changes.checkFileName)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distroseries
+        # we depend on an already initialized policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_reject_on_error(self.changes.processAddresses)
 
@@ -190,6 +178,7 @@ class NascentUpload:
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
+            self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -377,9 +366,23 @@ class NascentUpload:
                 "Orphaned debug packages: %s" % ', '.join(
                     '%s %s (%s)' % d for d in unmatched_ddebs))
 
+    def _overrideDDEBSs(self):
+        """Make sure that any DDEBs in the upload have the same overrides
+        as their counterpart DEBs.  This method needs to be called *after*
+        _matchDDEBS.
+
+        This is required so that domination can supersede both files in
+        lockstep.
+        """
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                if uploaded_file.deb_file is not None:
+                    self._overrideBinaryFile(uploaded_file,
+                                             uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #
+
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -388,9 +391,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject("".join(error.args).encode("utf8"))
+            self.reject("".join(error.args))
         except UploadWarning, error:
-            self.warn("".join(error.args).encode("utf8"))
+            self.warn("".join(error.args))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -410,9 +413,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject("".join(error.args).encode("utf8"))
+                self.reject("".join(error.args))
             elif isinstance(error, UploadWarning):
-                self.warn("".join(error.args).encode("utf8"))
+                self.warn("".join(error.args))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -566,8 +569,10 @@ class NascentUpload:
             candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
-            if candidates:
+            try:
                 return candidates[0]
+            except IndexError:
+                pass
 
         return None
 
@@ -707,7 +712,9 @@ class NascentUpload:
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,
             override.pocket.name))
+        self._overrideBinaryFile(uploaded_file, override)
 
+    def _overrideBinaryFile(self, uploaded_file, override):
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to
@@ -718,15 +725,7 @@ class NascentUpload:
     def processUnknownFile(self, uploaded_file):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
-        Newly-uploaded files have a default set of overrides to be applied.
-        This reduces the amount of work that archive admins have to do
-        since they override the majority of new uploads with the same
-        values.  The rules for overriding are: (See bug #120052)
-            'contrib' -> 'multiverse'
-            'non-free' -> 'multiverse'
-            everything else -> 'universe'
-        This mainly relates to Debian syncs, where the default component
-        is 'main' but should not be in main for Ubuntu.
+        Here we use the override policy defined in UnknownOverridePolicy.
 
         In the case of a PPA, files are not touched.  They are always
         overridden to 'main' at publishing time, though.
@@ -749,14 +748,10 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
-        component_override_map = {
-            'contrib': 'multiverse',
-            'non-free': 'multiverse',
-            }
-
         # Apply the component override and default to universe.
-        uploaded_file.component_name = component_override_map.get(
-            uploaded_file.component_name, 'universe')
+        component_name_override = UnknownOverridePolicy.getComponentOverride(
+            uploaded_file.component_name)
+        uploaded_file.component_name = component_name_override
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
@@ -770,7 +765,7 @@ class NascentUpload:
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
-                    %(uploaded_file.package, uploaded_file.version))
+                    % (uploaded_file.package, uploaded_file.version))
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
@@ -790,8 +785,11 @@ class NascentUpload:
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
-                    %(uploaded_file.package, uploaded_file.version,
-                      uploaded_file.architecture))
+                    % (
+                        uploaded_file.package,
+                        uploaded_file.version,
+                        uploaded_file.architecture,
+                        ))
                 try:
                     ancestry = self.getBinaryAncestry(uploaded_file)
                 except NotFoundError:
@@ -853,7 +851,6 @@ class NascentUpload:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
                     summary_text=self.warning_message,
-                    announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
                 changes_file_object.close()
@@ -891,7 +888,7 @@ class NascentUpload:
             return
 
         # We need to check that the queue_root object has been fully
-        # initialised first, because policy checks or even a code exception
+        # initialized first, because policy checks or even a code exception
         # may have caused us to bail out early and not create one.  If it
         # doesn't exist then we can create a dummy one that contains just
         # enough context to be able to generate a rejection email.  Nothing
@@ -925,14 +922,14 @@ class NascentUpload:
             distroseries = getUtility(
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
-                PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distroseries.main_archive,
-                self.changes.signingkey)
+                PackagePublishingPocket.RELEASE,
+                distroseries.main_archive, self.changes.filename,
+                self.changes.raw_content, signing_key=self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(
-                self.policy.pocket, self.changes.filename,
-                self.changes.filecontents, self.policy.archive,
-                self.changes.signingkey)
+                self.policy.pocket, self.policy.archive,
+                self.changes.filename, self.changes.raw_content,
+                signing_key=self.changes.signingkey)
 
     #
     # Inserting stuff in the database

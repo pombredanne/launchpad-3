@@ -56,7 +56,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
 
     def test_uses_translations_current_templates(self):
         # If there is a current template, it is marked as using translations.
-        template = self.createTranslationTemplate("current")
+        self.createTranslationTemplate("current")
         self.assertTrue(self.view.uses_translations)
 
     def test_getDefaultFormat(self):
@@ -148,7 +148,6 @@ class TestProductSeries(BaseExportViewMixin):
     def setUp(self):
         super(TestProductSeries, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -166,7 +165,6 @@ class TestSourcePackage(BaseExportViewMixin):
     def setUp(self):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
         self.view = SourcePackageTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -178,7 +176,6 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
     def setUp(self):
         super(TestPOExportQueueStatusDescriptions, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -201,7 +198,7 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
 
         backlog = timedelta(hours=2)
         self.assertEqual(
-            "The backlog is approximately two hours.",
+            "The backlog is approximately 2 hours.",
             self.view.describeBacklog(backlog).strip())
 
     def test_export_queue_status(self):

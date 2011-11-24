@@ -5,12 +5,8 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -28,6 +24,7 @@ from lp.code.model.branchtarget import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -53,7 +50,7 @@ class BaseBranchTargetTests:
         # branches related to the branch target.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
         branch = self.makeBranchForTarget()
-        branches = self.target.collection.getBranches()
+        branches = self.target.collection.getBranches(eager_load=False)
         self.assertEqual([branch], list(branches))
 
     def test_retargetBranch_packageBranch(self):
@@ -133,12 +130,11 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             sourcepackage=development_package)
         removeSecurityProxy(default_branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            development_package.setBranch,
-            PackagePublishingPocket.RELEASE, default_branch,
-            ubuntu_branches.teamowner)
+        registrant = development_package.distribution.owner
+        with person_logged_in(registrant):
+            development_package.setBranch(
+                PackagePublishingPocket.RELEASE, default_branch,
+                registrant)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
     def test_supports_merge_proposals(self):
@@ -196,12 +192,10 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertIs(None, self.target.default_merge_target)
         # Now create and link a branch.
         branch = self.factory.makePackageBranch(sourcepackage=self.original)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            self.original.setBranch,
-            PackagePublishingPocket.RELEASE, branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(self.original.distribution.owner):
+            self.original.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                self.original.distribution.owner)
         self.assertEqual(branch, self.target.default_merge_target)
 
     def test_supports_code_imports(self):
@@ -220,6 +214,30 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
 
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -452,6 +470,42 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
 
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_limit(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info[:2],
+            self.target.getRelatedSeriesBranchInfo(branch, 2))
+        self.assertEqual(
+            related_package_branches[:2],
+            self.target.getRelatedPackageBranchInfo(branch, 2))
+
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
     """Only certain branches are allowed to be default stacked-on branches."""
@@ -525,7 +579,3 @@ class TestPrimaryContext(TestCaseWithFactory):
     def test_product_branch(self):
         branch = self.factory.makeProductBranch()
         self.assertEqual(branch.target, IPrimaryContext(branch))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

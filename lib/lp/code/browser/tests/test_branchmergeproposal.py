@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -14,18 +14,27 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import unittest
 
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
-from soupmatchers import HTMLContains, Tag
-from testtools.matchers import Not
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import (
+    MatchesRegex,
+    Not,
+    )
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.message import MessageSet
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -49,20 +58,18 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.model.diff import (
-    PreviewDiff,
-    StaticDiff,
-    )
+from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
     login_person,
-    set_feature_flag,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -585,15 +592,44 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
     def test_resubmit_action_break_link(self):
         """Enabling break_link prevents linking the old and new proposals."""
         view = self.createView()
+        new_proposal = self.resubmitDefault(view, break_link=True)
+        self.assertIs(None, new_proposal.supersedes)
+
+    @staticmethod
+    def resubmitDefault(view, break_link=False, prerequisite_branch=None):
         context = view.context
-        new_proposal = view.resubmit_action.success(
+        if prerequisite_branch is None:
+            prerequisite_branch = context.prerequisite_branch
+        return view.resubmit_action.success(
             {'source_branch': context.source_branch,
              'target_branch': context.target_branch,
-             'prerequisite_branch': context.prerequisite_branch,
+             'prerequisite_branch': prerequisite_branch,
              'description': None,
-             'break_link': True,
+             'break_link': break_link,
             })
-        self.assertIs(None, new_proposal.supersedes)
+
+    def test_resubmit_existing(self):
+        """Resubmitting a proposal when another is active is a user error."""
+        view = self.createView()
+        first_bmp = view.context
+        with person_logged_in(first_bmp.target_branch.owner):
+            first_bmp.resubmit(first_bmp.registrant)
+        self.resubmitDefault(view)
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex('Cannot resubmit because'
+            ' <a href=.*>a similar merge proposal</a> is already active.'))
+        self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
+
+    def test_resubmit_same_target_prerequisite(self):
+        """User error if same branch is target and prerequisite."""
+        view = self.createView()
+        first_bmp = view.context
+        self.resubmitDefault(
+            view, prerequisite_branch=first_bmp.target_branch)
+        self.assertEqual(
+            view.errors,
+            ['Target and prerequisite branches must be different.'])
 
 
 class TestResubmitBrowser(BrowserTestCase):
@@ -657,6 +693,15 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
+    def test_claim_no_oops(self):
+        """"An invalid attempt to claim a review should not oops."""
+        review = self.factory.makeCodeReviewVoteReference()
+        view = create_initialized_view(review.branch_merge_proposal, '+index')
+        view.claim_action.success({'review_id': review.id})
+        self.assertEqual(
+            ['Cannot claim non-team reviews.'],
+            [n.message for n in view.request.response.notifications])
+
     def test_preview_diff_text_with_no_diff(self):
         """preview_diff_text should be None if context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
@@ -682,43 +727,11 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
 
-    def addReviewDiff(self):
-        review_diff_bytes = ''.join(unified_diff('', 'review'))
-        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
-        self.bmp.review_diff = review_diff
-        return review_diff
-
-    def addBothDiffs(self):
-        self.addReviewDiff()
-        preview_diff_bytes = ''.join(unified_diff('', 'preview'))
-        return self.setPreviewDiff(preview_diff_bytes)
-
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
         return preview_diff
-
-    def test_preview_diff_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(preview_diff, view.preview_diff)
-
-    def test_preview_diff_uses_review_diff(self):
-        """The review diff will be used if there is no preview."""
-        review_diff = self.addReviewDiff()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(review_diff.diff,
-                         view.preview_diff)
-
-    def test_review_diff_text_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        transaction.commit()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(
-            preview_diff.text, view.preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
@@ -726,7 +739,18 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual([], view.linked_bugs)
+        self.assertEqual([], view.linked_bugtasks)
+
+    def test_linked_bugs_excludes_private_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        private_bug = self.factory.makeBug(owner=person, private=True)
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        with person_logged_in(person):
+            self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([bug.default_bugtask], view.linked_bugtasks)
 
     def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
@@ -768,8 +792,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         revision_date = review_date + timedelta(days=1)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
-        revision = add_revision_to_branch(
-            self.factory, bmp.source_branch, revision_date)
+        add_revision_to_branch(self.factory, bmp.source_branch, revision_date)
 
         view = create_initialized_view(bmp, '+index')
         new_revisions = view.conversation.comments[0]
@@ -800,6 +823,42 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         with person_logged_in(bmp.source_branch.owner):
             bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
         self.assertTrue(view.pending_diff)
+
+    def test_subscribe_to_merge_proposal_events_flag_disabled(self):
+        # If the longpoll.merge_proposals.enabled flag is not enabled the user
+        # is *not* subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertNotIn("longpoll", cache.objects)
+        self.assertNotIn("merge_proposal_event_key", cache.objects)
+
+    def test_subscribe_to_merge_proposal_events_flag_enabled(self):
+        # If the longpoll.merge_proposals.enabled flag is enabled the user is
+        # subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertIn("longpoll", cache.objects)
+        self.assertIn("merge_proposal_event_key", cache.objects)
+
+    def test_description_is_meta_description(self):
+        description = (
+            "I'd like to make the bmp description appear as the meta "
+            "description: this does that "
+            + "abcdef " * 300)
+        bmp = self.factory.makeBranchMergeProposal(
+            description=description)
+        browser = self.getUserBrowser(
+            canonical_url(bmp, rootsite='code'))
+        expected_meta = Tag(
+            'meta description',
+            'meta', attrs=dict(
+                name='description',
+                content=description[:497] + '...'))
+        self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
@@ -985,7 +1044,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         parent = add_revision_to_branch(self.factory, source_branch,
             self.factory.getUniqueDate()).revision
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
-            date_created = self.factory.getUniqueDate(),
+            date_created=self.factory.getUniqueDate(),
             source_branch=source_branch)
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
@@ -1021,7 +1080,7 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).private = True
+        removeSecurityProxy(bmp2.source_branch).explicitly_private = True
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 
@@ -1032,12 +1091,8 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
             date_created=(
                 datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
         bmp2 = self.factory.makeBranchMergeProposal(
-            target_branch = bmp1.target_branch,
+            target_branch=bmp1.target_branch,
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
             [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

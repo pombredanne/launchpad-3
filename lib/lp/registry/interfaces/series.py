@@ -24,8 +24,8 @@ from lazr.restful.fields import (
 from zope.schema import Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasDrivers
 from lp.services.fields import (
     PublicPersonChoice,
     Summary,

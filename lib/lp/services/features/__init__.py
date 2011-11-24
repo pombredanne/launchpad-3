@@ -116,14 +116,26 @@ flag in the thread default controller.
 
 To simply check a boolean::
 
-    if features.getFeatureFlag('soyuz.derived-series-ui.enabled'):
+    if features.getFeatureFlag('soyuz.derived_series_ui.enabled'):
         ...
 
 and if you want to use the value ::
 
-     value = features.getFeatureFlag('soyuz.derived-series-ui.enabled')
+     value = features.getFeatureFlag('soyuz.derived_series_ui.enabled')
      if value:
         print value
+
+Checking flags without access to the database
+=============================================
+
+Feature flags can also be checked without access to the database by making use
+of the 'getFeatureFlag' XML-RPC method.
+
+    server_proxy = xmlrpclib.ServerProxy(
+        config.launchpad.feature_flags_endpoint, allow_none=True)
+    if server_proxy.getFeatureFlag(
+        'codehosting.use_forking_server', ['user:' + user_name]):
+        pass
 
 Debugging feature usage
 =======================
@@ -171,9 +183,12 @@ import threading
 
 
 __all__ = [
+    'currentScope',
+    'defaultFlagValue',
     'get_relevant_feature_controller',
     'getFeatureFlag',
-    'per_thread',
+    'install_feature_controller',
+    'make_script_feature_controller',
     ]
 
 
@@ -185,8 +200,13 @@ when starting a web request.
 """
 
 
+def install_feature_controller(controller):
+    """Install a `FeatureController` on this thread."""
+    per_thread.features = controller
+
+
 def get_relevant_feature_controller():
-    """Get a FeatureController for this thread."""
+    """Get a `FeatureController` for this thread."""
 
     # The noncommittal name "relevant" is because this function may change to
     # look things up from the current request or some other mechanism in
@@ -202,3 +222,35 @@ def getFeatureFlag(flag):
     if features is None:
         return None
     return features.getFlag(flag)
+
+
+def currentScope(flag):
+    """Get the current scope of the flag for this thread's scopes."""
+    # Workaround for bug 631884 - features have two homes, threads and
+    # requests.
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.currentScope(flag)
+
+
+def defaultFlagValue(flag):
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.defaultFlagValue(flag)
+
+
+def make_script_feature_controller(script_name):
+    """Create a `FeatureController` for the named script.
+
+    You can then install this feature controller using
+    `install_feature_controller`.
+    """
+    # Avoid circular import.
+    from lp.services.features.flags import FeatureController
+    from lp.services.features.rulesource import StormFeatureRuleSource
+    from lp.services.features.scopes import ScopesForScript
+
+    return FeatureController(
+        ScopesForScript(script_name).lookup, StormFeatureRuleSource())

@@ -9,7 +9,8 @@ that deal with new package request with a certain tag.
 
     >>> user_browser.open(
     ...    'http://bugs.launchpad.dev/ubuntu/+filebug?field.tags=new-package')
-    >>> user_browser.getControl('Summary').value = 'Please package CoolApp'
+    >>> user_browser.getControl('Summary', index=0).value = (
+    ...    'Please package CoolApp')
     >>> user_browser.getControl('Continue').click()
 
 On the next page, possible duplicates are displayed as ususal. No

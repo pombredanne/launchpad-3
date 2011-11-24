@@ -145,7 +145,7 @@ A person's homepage also lists Karma information:
 
     >>> browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(find_tag_by_id(browser.contents, 'karma'))
-    Karma: 130
+    Karma: 130 Karma help
 
 Negative Ubuntu Code of Conduct signatory status is only displayed for
 yourself; others won't see it:

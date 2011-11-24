@@ -21,7 +21,6 @@ from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -39,10 +38,12 @@ class DistroSeriesBinaryPackage:
 
     implements(IDistroSeriesBinaryPackage)
 
-    def __init__(self, distroseries, binarypackagename, cache=None):
+    default = object()
+
+    def __init__(self, distroseries, binarypackagename, cache=default):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
-        if cache is not None:
+        if cache is not self.default:
             get_property_cache(self).cache = cache
 
     @property
@@ -64,14 +65,16 @@ class DistroSeriesBinaryPackage:
     @cachedproperty
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         store = Store.of(self.distroseries)
         archive_ids = (
             self.distroseries.distribution.all_distro_archive_ids)
         result = store.find(
             DistroSeriesPackageCache,
-            DistroSeriesPackageCache.distroseries==self.distroseries,
+            DistroSeriesPackageCache.distroseries == self.distroseries,
             DistroSeriesPackageCache.archiveID.is_in(archive_ids),
-            (DistroSeriesPackageCache.binarypackagename==
+            (DistroSeriesPackageCache.binarypackagename ==
                 self.binarypackagename))
         return result.any()
 

@@ -5,11 +5,10 @@ import os
 from StringIO import StringIO
 import tarfile
 from textwrap import dedent
-import unittest
 
 from bzrlib.bzrdir import BzrDir
 
-from canonical.buildd.pottery.intltool import (
+from lpbuildd.pottery.intltool import (
     check_potfiles_in,
     ConfigFile,
     find_intltool_dirs,
@@ -543,9 +542,3 @@ class TestConfigFile(TestCase):
         # A quote that's only on one end doesn't get stripped.
         configfile = self._makeConfigFile('')
         self.assertEqual('"foo', configfile._stripQuotes('"foo'))
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

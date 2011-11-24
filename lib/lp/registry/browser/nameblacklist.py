@@ -73,7 +73,7 @@ class NameBlacklistEditView(NameBlacklistValidationMixin,
     """View for editing a blacklist expression."""
 
     schema = INameBlacklist
-    field_names = ['regexp', 'comment']
+    field_names = ['regexp', 'admin', 'comment']
     label = "Edit a blacklist expression"
     page_title = label
 
@@ -88,7 +88,7 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
     """View for adding a blacklist expression."""
 
     schema = INameBlacklist
-    field_names = ['regexp', 'comment']
+    field_names = ['regexp', 'admin', 'comment']
     label = "Add a new blacklist expression"
     page_title = label
 
@@ -107,6 +107,7 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
         name_blacklist_set.create(
             regexp=data['regexp'],
             comment=data['comment'],
+            admin=data['admin'],
             )
         self.request.response.addInfoNotification(
             'Regular expression "%s" has been added to the name blacklist.'

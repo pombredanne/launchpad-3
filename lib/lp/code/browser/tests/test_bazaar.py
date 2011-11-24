@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -34,10 +32,11 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         return getattr(view, attribute)
 
     def test_recently_registered(self):
-        # Create a branches that is stacked on a private branch that the
+        # Create a some private branches (stacked and unstacked) that the
         # logged in user would not normally see.
         private_branch = self.factory.makeAnyBranch(private=True)
-        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        self.factory.makeAnyBranch(stacked_on=private_branch)
+        branch = self.factory.makeAnyBranch()
         recent_branches = self.getViewBranches('recently_registered_branches')
         self.assertEqual(branch, recent_branches[0])
         self.assertTrue(check_permission('launchpad.View', branch))
@@ -50,10 +49,13 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         branch.updateScannedDetails(revision, 1)
 
     def test_recently_changed(self):
-        # Create a recently changed branch that is stacked on a private branch
-        # that the logged in user would not normally see.
+        # Create a some private branches (stacked and unstacked) that the
+        # logged in user would not normally see.
         private_branch = self.factory.makeAnyBranch(private=True)
-        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        stacked_private_branch = self.factory.makeAnyBranch(
+            stacked_on=private_branch)
+        branch = self.factory.makeAnyBranch()
+        self.makeBranchScanned(stacked_private_branch)
         self.makeBranchScanned(branch)
         recent_branches = self.getViewBranches('recently_changed_branches')
         self.assertEqual(branch, recent_branches[0])
@@ -67,15 +69,14 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         # A new code import needs a real user as the sender for the outgoing
         # email.
         login_person(self.factory.makePerson())
+        private_code_import = self.factory.makeCodeImport()
+        stacked_private_branch = private_code_import.branch
+        naked_branch = removeSecurityProxy(stacked_private_branch)
+        naked_branch.stacked_on = private_branch
         code_import = self.factory.makeCodeImport()
         branch = code_import.branch
-        removeSecurityProxy(branch).stacked_on = private_branch
+        self.makeBranchScanned(stacked_private_branch)
         self.makeBranchScanned(branch)
         recent_branches = self.getViewBranches('recently_imported_branches')
         self.assertEqual(branch, recent_branches[0])
         self.assertTrue(check_permission('launchpad.View', branch))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

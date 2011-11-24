@@ -158,8 +158,8 @@ default the latest five are returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
+    Bazaar
     Derby
-    Launchpad Translations
     Mega Money Maker
     Obsolete Junk
     Redfish
@@ -171,7 +171,7 @@ returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
-    Launchpad Translations
+    Derby
     Mega Money Maker
     Obsolete Junk
 
@@ -371,7 +371,7 @@ When creating a product, a default product series is created for it:
 
 A product's licenses is now being tracked. Previously registered products
 may not have a license set, so an empty tuple is valid. If the licenses
-or license_info attributes are changed, the license_reviewed is reset
+or license_info attributes are changed, the project_reviewed is reset
 to false.
 
     >>> login('admin@canonical.com')
@@ -379,15 +379,15 @@ to false.
     True
     >>> product.licenses
     (<...License.GNU_GPL_V2...>,)
-    >>> product.license_reviewed = True
+    >>> product.project_reviewed = True
     >>> product.licenses = (License.GNU_GPL_V2, License.GNU_LGPL_V2_1)
     >>> product.licenses
     (<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>)
-    >>> product.license_reviewed
+    >>> product.project_reviewed
     False
-    >>> product.license_reviewed = True
+    >>> product.project_reviewed = True
     >>> product.license_info = 'foo'
-    >>> product.license_reviewed
+    >>> product.project_reviewed
     False
 
 This series is set as the development focus for the product:
@@ -585,8 +585,6 @@ the number of products returned.
 Only active products are returned.
 
     >>> evo.active = False
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(firefox)
     >>> for product in productset.getProductsWithBranches():
     ...     print product.name
     firefox

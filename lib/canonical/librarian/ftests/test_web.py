@@ -11,6 +11,7 @@ from urllib2 import (
     )
 from urlparse import urlparse
 
+from lazr.uri import URI
 import pytz
 from storm.expr import SQL
 import transaction
@@ -37,6 +38,12 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+
+
+def uri_path_replace(url, old, new):
+    """Replace a substring of a URL's path."""
+    parsed = URI(url)
+    return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
 class LibrarianWebTestCase(unittest.TestCase):
@@ -149,11 +156,13 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(aid)
         self.assertEqual(urlopen(url).read(), 'sample')
 
-        old_url = url.replace(str(aid), '42/%d' % aid)
+        old_url = uri_path_replace(url, str(aid), '42/%d' % aid)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
-        # If the content id is not an integer, a 404 is raised
-        old_url = url.replace(str(aid), 'foo/%d' % aid)
+        # If the content and alias IDs are not integers, a 404 is raised
+        old_url = uri_path_replace(url, str(aid), 'foo/%d' % aid)
+        self.require404(old_url)
+        old_url = uri_path_replace(url, str(aid), '%d/foo' % aid)
         self.require404(old_url)
 
     def test_404(self):
@@ -166,11 +175,13 @@ class LibrarianWebTestCase(unittest.TestCase):
 
         # Change the aliasid and assert we get a 404
         self.failUnless(str(aid) in url)
-        self.require404(url.replace(str(aid), str(aid+1)))
+        bad_id_url = uri_path_replace(url, str(aid), str(aid+1))
+        self.require404(bad_id_url)
 
         # Change the filename and assert we get a 404
-        self.failUnless(str(filename) in url)
-        self.require404(url.replace(filename, 'different.txt'))
+        self.failUnless(filename in url)
+        bad_name_url = uri_path_replace(url, filename, 'different.txt')
+        self.require404(bad_name_url)
 
     def test_duplicateuploads(self):
         client = LibrarianClient()

@@ -7,10 +7,7 @@ __metaclass__ = type
 __all__ = [
     'create_view',
     'create_initialized_view',
-    'YUITestFileView',
     ]
-
-import os
 
 from zope.component import (
     getMultiAdapter,
@@ -21,15 +18,14 @@ from zope.security.management import (
     newInteraction,
     )
 
-from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessAuthUtility,
     )
 from canonical.launchpad.webapp.publisher import layer_for_rootsite
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lazr import ExportedFolder
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
@@ -47,7 +43,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param principal: The principal for the request, default to the
         unauthenticated principal.
     :param query_string: The query string for the request.
-    :patam cookie: The HTTP_COOKIE value for the request.
+    :param cookie: The HTTP_COOKIE value for the request.
     :param request: Use this request instead of creating a new one.
     :param path_info: The PATH_INFO value for the request.
     :param current_request: If True, the request will be set as the current
@@ -86,7 +82,7 @@ def create_initialized_view(context, name, form=None, layer=None,
                             server_url=None, method=None, principal=None,
                             query_string=None, cookie=None, request=None,
                             path_info='/', rootsite=None,
-                            current_request=False):
+                            current_request=False, **kwargs):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -96,13 +92,12 @@ def create_initialized_view(context, name, form=None, layer=None,
     view = create_view(
         context, name, form, layer, server_url, method, principal,
         query_string, cookie, request, path_info, rootsite=rootsite,
-        current_request=current_request)
+        current_request=current_request, **kwargs)
     view.initialize()
     return view
 
 
-class YUITestFileView(ExportedFolder):
-    """Export the lib directory where the test assets reside."""
-
-    folder = os.path.join(config.root, 'lib/')
-    export_subdirectories = True
+def create_webservice_error_view(error):
+    """Return a view of the error with a webservice request."""
+    request = WebServiceTestRequest()
+    return getMultiAdapter((error, request), name='index.html')

@@ -122,6 +122,10 @@
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_product"/>
   <adapter
+      for="lp.registry.interfaces.personproduct.IPersonProduct"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_person_product"/>
+  <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
@@ -241,13 +245,12 @@
                     date_created
                     date_review_requested
                     date_reviewed
-                    review_diff
                     next_preview_diff_job
                     preview_diff
                     getIncrementalDiffs
                     votes
                     all_comments
-                    related_bugs
+                    getRelatedBugTasks
                     revision_end_date
                     isMergable
                     getComment
@@ -263,7 +266,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff prerequisite_branch"
+                        root_message_id prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus
@@ -287,7 +290,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
+    <allow interface="lp.services.messages.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility
@@ -394,19 +397,8 @@
   <class
       class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranch">
     <allow interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
-    <require
-        permission="launchpad.Edit"
-        set_schema="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
   </class>
 
-  <securedutility
-     class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
-     provides="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks">
-    <allow interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-    <require
-       permission="launchpad.Edit"
-       interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-  </securedutility>
   <securedutility
      class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
      provides="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks">
@@ -663,10 +655,6 @@
   <class class="lp.code.model.branchjob.BranchJob">
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
-  <class class="lp.code.model.branchjob.BranchDiffJob">
-    <allow interface="lp.code.interfaces.branchjob.IBranchDiffJob"/>
-    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
-  </class>
   <class class="lp.code.model.branchjob.RevisionMailJob">
     <allow interface="lp.code.interfaces.branchjob.IRevisionMailJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
@@ -683,11 +671,6 @@
     <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
-  <securedutility
-      component="lp.code.model.branchjob.BranchDiffJob"
-      provides="lp.code.interfaces.branchjob.IBranchDiffJobSource">
-    <allow interface="lp.code.interfaces.branchjob.IBranchDiffJobSource"/>
-  </securedutility>
   <securedutility
       component="lp.code.model.branchjob.RevisionMailJob"
       provides="lp.code.interfaces.branchjob.IRevisionMailJobSource">
@@ -876,6 +859,7 @@
   </securedutility>
   <class class="lp.code.model.branchjob.BranchScanJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob" />
   </class>
 
   <!-- Linked branches -->
@@ -895,20 +879,11 @@
     <allow interface="lp.code.interfaces.diff.IDiff" />
     <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
   </class>
-  <class class="lp.code.model.diff.StaticDiff">
-    <allow interface="lp.code.interfaces.diff.IStaticDiff" />
-  </class>
   <class class="lp.code.model.diff.PreviewDiff">
     <require
         permission="launchpad.View"
         interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
-  <securedutility
-      component="lp.code.model.diff.StaticDiff"
-      provides="lp.code.interfaces.diff.IStaticDiffSource" >
-    <allow
-      interface="lp.code.interfaces.diff.IStaticDiffSource" />
-  </securedutility>
 
   <!-- SourcePackageRecipe -->
 
@@ -931,6 +906,13 @@
      component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild"
      provides="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildSource">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildSource"/>
+  </securedutility>
+
+  <securedutility
+     component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild"
+     provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+     name="RECIPEBRANCHBUILD">
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
   </securedutility>
 
   <class
@@ -985,17 +967,19 @@
     <allow attributes="as_tuple recipe_branch nest_path" />
   </class>
 
+  <subscriber
+    for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+    handler="lp.code.model.sourcepackagerecipe.recipe_modified"/>
+
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
 
   <webservice:register module="lp.code.interfaces.webservice" />
-    <adapter
-        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
-        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
-        factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
-        name="RECIPEBRANCHBUILD"
-        permission="zope.Public"/>
+
+  <adapter
+    factory="lp.code.browser.sourcepackagerecipe.distroseries_renderer"
+    name="distroseries"/>
 
   <!-- RecipeBuildRecordSet and related classes-->
 
@@ -1007,7 +991,8 @@
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
     <allow attributes="sourcepackagename recipeowner recipe archive
-                        most_recent_build_time distro_source_package"/>
+                        most_recent_build_time distro_source_package
+                        recipe_name recipe_url"/>
   </class>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">

@@ -178,7 +178,7 @@ Status
 
 The searchQuestions() method can also filter questions by status.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> for t in target.searchQuestions(status=QuestionStatus.OPEN):
     ...     print t.title
     Another question
@@ -216,7 +216,7 @@ QuestionSort.  Previously, we saw the NEWEST_FIRST and RELEVANCY sort order.
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionSort
+    >>> from lp.answers.enums import QuestionSort
     >>> for t in target.searchQuestions(search_text='new',
     ...                                 sort=QuestionSort.OLDEST_FIRST):
     ...     print t.title
@@ -385,7 +385,7 @@ You add an answer contact by using the addAnswerContact() method.  This
 is only available to registered users.
 
     >>> name18 = getUtility(IPersonSet).getByName('name18')
-    >>> target.addAnswerContact(name18)
+    >>> target.addAnswerContact(name18, name18)
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -394,7 +394,7 @@ This method returns True when the contact was added the list and False when it
 was already on the list.
 
     >>> login('no-priv@canonical.com')
-    >>> target.addAnswerContact(name18)
+    >>> target.addAnswerContact(name18, name18)
     True
     >>> people = [p.name for p in target.answer_contacts]
     >>> len(people)
@@ -406,7 +406,7 @@ was already on the list.
     1
     >>> print people[0]
     name18
-    >>> target.addAnswerContact(name18)
+    >>> target.addAnswerContact(name18, name18)
     False
 
 An answer contact must have at least one language among his preferred
@@ -415,28 +415,28 @@ languages.
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> len(sample_person.languages)
     0
-    >>> target.addAnswerContact(sample_person)
+    >>> target.addAnswerContact(sample_person, sample_person)
     Traceback (most recent call last):
       ...
-    AssertionError: An Answer Contact must speak a language...
+    AddAnswerContactError: An answer contact must speak a language...
 
 Answer contacts can be removed by using the removeAnswerContact() method.
 Like its counterpart, it returns True when the answer contact was removed and
 False when the person wasn't on the answer contact list.
 
-    >>> target.removeAnswerContact(name18)
+    >>> target.removeAnswerContact(name18, name18)
     True
     >>> list(target.answer_contacts)
     []
     >>> list(target.direct_answer_contacts)
     []
-    >>> target.removeAnswerContact(name18)
+    >>> target.removeAnswerContact(name18, name18)
     False
 
 Only registered users can remove an answer contact.
 
     >>> login(ANONYMOUS)
-    >>> target.removeAnswerContact(name18)
+    >>> target.removeAnswerContact(name18, name18)
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -465,7 +465,7 @@ support when there are no answer contacts.
     ca
     en
     es
-    >>> target.addAnswerContact(carlos)
+    >>> target.addAnswerContact(carlos, carlos)
     True
 
 While daf has en_GB as one of his preferred languages...
@@ -477,7 +477,7 @@ While daf has en_GB as one of his preferred languages...
     en_GB
     ja
     cy
-    >>> target.addAnswerContact(daf)
+    >>> target.addAnswerContact(daf, daf)
     True
 
 ...en_GB is not included in the target's supported languages, because all

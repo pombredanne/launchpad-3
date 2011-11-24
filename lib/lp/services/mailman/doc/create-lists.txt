@@ -21,7 +21,7 @@ No Privileges Person applies for a mailing list for her new team, by
 navigating to a page from the team home page.
 
     >>> browser.getLink('Create a mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
 
 No further action is required for Mailman to create the mailing list.  No
 Privileges Person just has to wait a little while for the mailing list to get

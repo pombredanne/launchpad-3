@@ -47,7 +47,7 @@
     <view
         for="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.launchpad.browser.LaunchpadRootNavigation"
+        factory="lp.app.browser.launchpad.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
@@ -82,7 +82,7 @@
     <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+apidoc"
-      class="canonical.launchpad.browser.launchpad.LaunchpadAPIDocFolder"
+      class="lp.app.browser.launchpad.LaunchpadAPIDocFolder"
       attribute="__call__"
       permission="zope.Public"
       />

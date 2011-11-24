@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import tempfile
-import unittest
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory
@@ -51,7 +50,7 @@ class TestSFTPServer(TestCase):
         test_file = open(file_name, 'r')
         self.assertEqual(test_file.read(), "This is a test")
         test_file.close()
-        self.assertEqual(os.stat(file_name).st_mode, 0100654)
+        self.assertEqual(os.stat(file_name).st_mode, 0100644)
         dir_name = os.path.join(self.sftp_server._current_upload, 'bar/foo')
         os.makedirs(dir_name)
         upload_file = self.sftp_server.openFile('bar/foo', None, None)
@@ -59,6 +58,3 @@ class TestSFTPServer(TestCase):
             FileIsADirectory,
             "File is a directory: '%s'" % dir_name,
             upload_file.writeChunk, 0, "This is a test")
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

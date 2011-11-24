@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
+import urllib
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -63,7 +63,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
             if previously_worked_on:
                 if languages is not None:
-                    sequence = counter+1
+                    sequence = counter + 1
                 else:
                     sequence = 1
                 potmsgset = self.factory.makePOTMsgSet(
@@ -177,6 +177,32 @@ class TestPersonTranslationView(TestCaseWithFactory):
             ]
         self.assertEqual(
             set(expected_links), set(item['link'] for item in targets))
+
+    def test_recent_translation_activity(self):
+        # the recent_activity property lists the most recent translation
+        # targets the person has worked on, for active projects only.
+        self._makeReviewer()
+
+        # make a translation record for an inactive project (will be excluded)
+        [pofile] = self._makePOFiles(1, previously_worked_on=True)
+        removeSecurityProxy(pofile.potemplate.product).active = False
+
+        # and make one which has not been worked on (will be excluded)
+        self._makePOFiles(1, previously_worked_on=False)
+
+        pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
+
+        # the expected results
+        person_name = urllib.urlencode({'person': self.view.context.name})
+        expected_links = [
+            (pofile.potemplate.translationtarget.title,
+            canonical_url(pofile, view_name="+filter") + "?%s" % person_name)
+            for pofile in pofiles_worked_on[:10]]
+
+        recent_activity = self.view.recent_activity
+        self.assertContentEqual(
+            expected_links,
+            ((item.title, item.url) for item in recent_activity))
 
     def test_top_p_n_p_to_review_caps_existing_involvement(self):
         # top_projects_and_packages will return at most 9 POFiles that
@@ -396,7 +422,3 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # languages.
         self.view.context.removeLanguage(self.language)
         self.assertTrue(self.view.requires_preferred_languages)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

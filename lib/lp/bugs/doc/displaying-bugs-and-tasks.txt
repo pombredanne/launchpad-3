@@ -16,7 +16,7 @@ Let's use a few examples to demonstrate:
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
   >>> from lp.bugs.interfaces.bugtask import BugTaskImportance, IBugTaskSet
-  >>> from canonical.launchpad.ftests import (
+  >>> from lp.testing import (
   ...     login,
   ...     test_tales,
   ...     )
@@ -150,17 +150,6 @@ Let's see some examples of how this works:
   >>> render_bugtask_status(test_task)
   u'Fix released, assigned to ...Foo Bar...'
 
-This code also works for null bug tasks:
-
-  >>> from lp.bugs.model.bug import Bug
-  >>> from lp.bugs.model.bugtask import NullBugTask
-  >>> from lp.registry.model.product import Product
-  >>> bug_one = Bug.get(1)
-  >>> netapplet = Product.selectOneBy(name="netapplet")
-  >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
-  >>> render_bugtask_status(null_bugtask)
-  u'Not reported in netapplet'
-
 Lastly, some cleanup:
 
   >>> test_task.transitionToStatus(
@@ -206,9 +195,3 @@ statuselsewhere value is affected:
 
   >>> related_task.transitionToStatus(
   ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
-
-Null tasks are also supported:
-
-  >>> render_bugtask_status_elsewhere(null_bugtask)
-  'filed in 3 other places'
-

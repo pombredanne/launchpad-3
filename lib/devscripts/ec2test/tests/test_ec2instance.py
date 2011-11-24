@@ -6,7 +6,7 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from lp.testing.fakemethod import FakeMethod
 
@@ -67,10 +67,12 @@ class TestEC2Instance(TestCase):
         from_scratch = None
         user_key = None
         login = None
+        region = None
 
         instance = EC2Instance(
             session_name, image, instance_type, demo_networks, account,
-            from_scratch, user_key, login)
+            from_scratch, user_key, login,
+            region)
 
         instance.shutdown = FakeMethod()
         instance._report_traceback = FakeMethod()
@@ -137,7 +139,3 @@ class TestEC2Instance(TestCase):
         self._runInstance(instance, runnee=runnee, headless=True)
 
         self.assertEqual(1, instance.shutdown.call_count)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

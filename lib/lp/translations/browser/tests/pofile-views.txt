@@ -23,7 +23,7 @@ All the tests will be submitted as coming from the No Privilege person.
 
     >>> login('no-priv@canonical.com')
 
-Now it's time to test the initialisation of the view class.
+Now it's time to test the initialization of the view class.
 
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
@@ -241,7 +241,7 @@ their POTMsgSets' sequence numbers.
 Also, we get redirected to the next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10'
+    'http://127.0.0.1?memo=10&start=10'
 
 The messsage's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset
@@ -259,7 +259,7 @@ their sequence is 0.
 
     >>> from lp.translations.model.potmsgset import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
-    >>> potmsgset.setSequence(pofile_es.potemplate, 0)
+    >>> item = potmsgset.setSequence(pofile_es.potemplate, 0)
     >>> potmsgset.getSequence(pofile_es.potemplate)
     0
     >>> form = {

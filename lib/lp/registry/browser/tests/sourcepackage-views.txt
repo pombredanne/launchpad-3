@@ -9,8 +9,8 @@ Edit packaging view
     ...     name='crazy', product=product)
     >>> distribution = factory.makeDistribution(
     ...     name='youbuntu', displayname='Youbuntu')
-    >>> distroseries = factory.makeDistroRelease(name='busy',
-    ...     distribution=distribution)
+    >>> distroseries = factory.makeDistroSeries(
+    ...     name='busy', distribution=distribution)
     >>> sourcepackagename = factory.makeSourcePackageName(name='bonkers')
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
@@ -267,8 +267,8 @@ If the view's package has no productseries set then has_bugtracker is False.
     >>> product = factory.makeProduct(name='stinky', displayname='Stinky')
     >>> productseries = factory.makeProductSeries(
     ...     name='stinkyseries', product=product)
-    >>> distroseries = factory.makeDistroRelease(name='wonky',
-    ...     distribution=distribution)
+    >>> distroseries = factory.makeDistroSeries(
+    ...     name='wonky', distribution=distribution)
     >>> sourcepackagename = factory.makeSourcePackageName(
     ...     name='stinkypackage')
     >>> package = factory.makeSourcePackage(
@@ -353,16 +353,30 @@ to the project series.
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/wonky/+source/stinkypackage
 
+    >>> user = package.packaging.owner
+    >>> login_person(user)
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> view = create_initialized_view(
-    ...     package, name='+remove-packaging', form=form,
-    ...     principal=product.owner)
+    ...     package, name='+remove-packaging', form=form, principal=user)
     >>> view.errors
     []
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Removed upstream association between Stinky stinkyseries series and Wonky.
+
+If somebody attempts to remove this packaging link a second time,
+they get a message telling them that the link has already been
+deleted.
+
+    >>> view = create_initialized_view(
+    ...     package, name='+remove-packaging', form=form, principal=user)
+    >>> view.errors
+    []
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    The packaging link has already been deleted.
 
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> print extract_text(find_tag_by_id(view.render(), 'no-upstreams'))

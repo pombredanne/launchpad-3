@@ -100,24 +100,8 @@ and Answers.
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Answers - not linked
     Main heading: ?alsa-utils? source package in Hoary
-
-(XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
-Ubuntu Hoary".)
-
-    >>> anon_browser.open(
-    ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package > Questions
-    Tabs:
-    * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Blueprints - not linked
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers (selected) - not linked
-    Main heading: Questions for alsa-utils in Ubuntu Hoary
 
 
 == Distribution series source package release ==
@@ -138,7 +122,7 @@ series source package.
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Answers - not linked
     Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in
         The Hoary Hedgehog Release
 

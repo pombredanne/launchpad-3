@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translation access and sharing policy."""
@@ -8,11 +8,18 @@ __all__ = [
     'ITranslationPolicy',
     ]
 
+from lazr.restful.declarations import (
+    exported,
+    )
+from lazr.restful.fields import (
+    ReferenceChoice,
+    )
 from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
 from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.translationgroup import ITranslationGroup
 
 
 class ITranslationPolicy(Interface):
@@ -32,20 +39,21 @@ class ITranslationPolicy(Interface):
     user: translation team and translation policy.
     """
 
-    translationgroup = Choice(
+    translationgroup = exported(ReferenceChoice(
         title = _("Translation group"),
         description = _("The translation group that helps review "
             " translations for this project or distribution. The group's "
             " role depends on the permissions policy selected below."),
         required=False,
-        vocabulary='TranslationGroup')
+        vocabulary='TranslationGroup',
+        schema=ITranslationGroup), as_of="devel")
 
-    translationpermission = Choice(
+    translationpermission = exported(Choice(
         title=_("Translation permissions policy"),
         description=_("The policy this project or distribution uses to "
             " balance openness and control for their translations."),
         required=True,
-        vocabulary=TranslationPermission)
+        vocabulary=TranslationPermission), as_of="devel")
 
     def getTranslationGroups():
         """List all applicable translation groups.

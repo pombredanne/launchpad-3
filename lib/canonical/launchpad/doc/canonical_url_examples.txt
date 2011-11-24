@@ -9,8 +9,7 @@ are what we expect them to be for various example objects.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
 The examples are divided into sections by theme.  Each section starts with
@@ -189,7 +188,7 @@ An IBug.
     >>> canonical_url(getUtility(IBugSet).get(1))
     u'http://bugs.launchpad.dev/bugs/1'
 
-An IUpstreamBugTask.
+An IBugTask on a product.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
     u'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -199,43 +198,42 @@ An IMessage on a bug.
     >>> canonical_url(getUtility(IBugSet).get(1).messages[0])
     u'http://bugs.launchpad.dev/firefox/+bug/1/comments/0'
 
-(But messages not related to bug, don't have such a URL.)
+An IMessage on a question.
 
     >>> canonical_url(getUtility(IQuestionSet).get(6).messages[0])
-    Traceback (most recent call last):
-      ...
-    NoCanonicalUrl: ...
+    u'http://answers.launchpad.dev/firefox/+question/6/messages/1'
 
-An IDistroBugTask.
+An IBugTask on a distribution source package.
 
     >>> distro_task = getUtility(IBugTaskSet).get(4)
     >>> canonical_url(distro_task)
     u'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
-An IDistroBugTask without a sourcepackage.
+An IBugTask on a distribution without a sourcepackage.
 
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> temp_spname = distro_task.sourcepackagename
-    >>> distro_task.sourcepackagename = None
+    >>> temp_target = distro_task.target
+    >>> distro_task.transitionToTarget(distro_task.target.distribution)
     >>> canonical_url(distro_task)
     u'http://bugs.launchpad.dev/debian/+bug/1'
-    >>> distro_task.sourcepackagename = temp_spname
+    >>> distro_task.transitionToTarget(temp_target)
 
-An IDistroSeriesBugTask.
+An IBugTask on a distribution series source package.
 
     >>> distro_series_task = getUtility(IBugTaskSet).get(16)
     >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
-An IDistroSeriesBugTask without a sourcepackage.
+An IBugTask on a distribution series without a sourcepackage.
 
-    >>> temp_spname = distro_series_task.sourcepackagename
-    >>> distro_series_task.sourcepackagename = None
+    >>> temp_target = distro_series_task.target
+    >>> distro_series_task.transitionToTarget(
+    ...     distro_series_task.target.distroseries)
     >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+bug/5'
-    >>> distro_series_task.sourcepackagename = temp_spname
+    >>> distro_series_task.transitionToTarget(temp_target)
 
 A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
 to ensure that at least one person has the perms to edit it while it's set
@@ -287,7 +285,7 @@ An IBugNomination.
     >>> from lp.bugs.interfaces.bugnomination import IBugNominationSet
     >>> bug_nomination = getUtility(IBugNominationSet).get(1)
     >>> canonical_url(bug_nomination)
-    u'http://launchpad.dev/bugs/1/nominations/1'
+    u'http://bugs.launchpad.dev/bugs/1/nominations/1'
 
 
 == Remote Bug Trackers and Remote Bugs ==

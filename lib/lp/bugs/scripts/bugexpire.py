@@ -17,12 +17,12 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     endInteraction,
     setupInteraction,
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
@@ -97,10 +97,9 @@ class BugJanitor:
                     owner=self.janitor,
                     subject=bugtask.bug.followup_subject(),
                     content=content)
-                bugtask.statusexplanation = content
                 notify(ObjectModifiedEvent(
                     bugtask, bugtask_before_modification,
-                    ['status', 'statusexplanation'], user=self.janitor))
+                    ['status'], user=self.janitor))
                 # XXX sinzui 2007-08-02 bug=29744:
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of

@@ -10,7 +10,7 @@
    "test merging foo-bar-bug-12345 into db-devel").
 
  * `LaunchpadTester` knows how to actually run the tests and gather the
-   results. It uses `SummaryResult` and `FlagFallStream` to do so.
+   results. It uses `SummaryResult` to do so.
 
  * `WebTestLogger` knows how to display the results to the user, and is given
    the responsibility of handling the results that `LaunchpadTester` gathers.
@@ -34,18 +34,21 @@ import textwrap
 import time
 import traceback
 import unittest
-
 from xml.sax.saxutils import escape
 
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.errors
-import bzrlib.workingtree
-
 from bzrlib.email_message import EmailMessage
+import bzrlib.errors
 from bzrlib.smtp_connection import SMTPConnection
-
+import bzrlib.workingtree
+import simplejson
 import subunit
+from testtools import MultiTestResult
+
+# We need to be able to unpickle objects from bzr-pqm, so make sure we
+# can import it.
+bzrlib.plugin.load_plugins()
 
 
 class NonZeroExitCode(Exception):
@@ -94,34 +97,19 @@ class SummaryResult(unittest.TestResult):
         self.stream.flush()
 
 
-class FlagFallStream:
-    """Wrapper around a stream that only starts forwarding after a flagfall.
-    """
+class FailureUpdateResult(unittest.TestResult):
 
-    def __init__(self, stream, flag):
-        """Construct a `FlagFallStream` that wraps 'stream'.
+    def __init__(self, logger):
+        super(FailureUpdateResult, self).__init__()
+        self._logger = logger
 
-        :param stream: A stream, a file-like object.
-        :param flag: A string that needs to be written to this stream before
-            we start forwarding the output.
-        """
-        self._stream = stream
-        self._flag = flag
-        self._flag_fallen = False
+    def addError(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addError(*args, **kwargs)
+        self._logger.got_failure()
 
-    def write(self, bytes):
-        if self._flag_fallen:
-            self._stream.write(bytes)
-        else:
-            index = bytes.find(self._flag)
-            if index == -1:
-                return
-            else:
-                self._stream.write(bytes[index:])
-                self._flag_fallen = True
-
-    def flush(self):
-        self._stream.flush()
+    def addFailure(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addFailure(*args, **kwargs)
+        self._logger.got_failure()
 
 
 class EC2Runner:
@@ -184,6 +172,9 @@ class EC2Runner:
             self._daemonize()
 
         time.sleep(self.SHUTDOWN_DELAY)
+
+        # Cancel the running shutdown.
+        subprocess.call(['sudo', 'shutdown', '-c'])
 
         # We'll only get here if --postmortem didn't kill us.  This is our
         # fail-safe shutdown, in case the user got disconnected or suffered
@@ -293,15 +284,20 @@ class LaunchpadTester:
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
         summary_stream = logger.get_summary_stream()
-        result = SummaryResult(summary_stream)
+        summary_result = SummaryResult(summary_stream)
+        result = MultiTestResult(
+            summary_result,
+            FailureUpdateResult(logger))
         subunit_server = subunit.TestProtocolServer(result, summary_stream)
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
             summary_stream.flush()
-        return result
+        return summary_result
 
 
+# XXX: Publish a JSON file that includes the relevant details from this
+# request.
 class Request:
     """A request to have a branch tested and maybe landed."""
 
@@ -433,9 +429,6 @@ class Request:
         we're just running tests for a trunk branch without merging return
         '$TRUNK_NICK'.
         """
-        # XXX: JonathanLange 2010-08-17: Not actually used yet. I think it
-        # would be a great thing to have in the subject of the emails we
-        # receive.
         source = self.get_source_details()
         if not source:
             return '%s r%s' % (self.get_nick(), self.get_revno())
@@ -532,7 +525,11 @@ class Request:
 
 
 class WebTestLogger:
-    """Logs test output to disk and a simple web page."""
+    """Logs test output to disk and a simple web page.
+
+    :ivar successful: Whether the logger has received only successful input up
+        until now.
+    """
 
     def __init__(self, full_log_filename, summary_filename, index_filename,
                  request, echo_to_stdout):
@@ -556,11 +553,14 @@ class WebTestLogger:
         self._full_log_filename = full_log_filename
         self._summary_filename = summary_filename
         self._index_filename = index_filename
+        self._info_json = os.path.join(
+            os.path.dirname(index_filename), 'info.json')
         self._request = request
         self._echo_to_stdout = echo_to_stdout
         # Actually set by prepare(), but setting to a dummy value to make
         # testing easier.
         self._start_time = datetime.datetime.utcnow()
+        self.successful = True
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
@@ -628,6 +628,11 @@ class WebTestLogger:
             if e.errno == errno.ENOENT:
                 return ''
 
+    def got_failure(self):
+        """Called when we receive word that a test has failed."""
+        self.successful = False
+        self._dump_json()
+
     def got_result(self, result):
         """The tests are done and the results are known."""
         self._end_time = datetime.datetime.utcnow()
@@ -666,12 +671,21 @@ class WebTestLogger:
         """Write to the summary and full log file with a newline."""
         self._write(msg + '\n')
 
+    def _dump_json(self):
+        fd = open(self._info_json, 'w')
+        simplejson.dump(
+            {'description': self._request.get_merge_description(),
+             'failed-yet': not self.successful,
+             }, fd)
+        fd.close()
+
     def prepare(self):
         """Prepares the log files on disk.
 
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
+        self._dump_json()
         # XXX: JonathanLange 2010-07-18: Mostly untested.
         log = self.write_line
 

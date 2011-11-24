@@ -6,7 +6,6 @@ __metaclass__ = object
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
 from storm.locals import (
     Int,
@@ -28,6 +27,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.database.stormbase import StormBase
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
     IArchiveJob,
@@ -36,7 +36,7 @@ from lp.soyuz.interfaces.archivejob import (
 from lp.soyuz.model.archive import Archive
 
 
-class ArchiveJob(Storm):
+class ArchiveJob(StormBase):
     """Base class for jobs related to Archives."""
 
     implements(IArchiveJob)
@@ -133,7 +133,7 @@ class ArchiveJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('archive_id', self.context.archive.id),
             ('archive_job_id', self.context.id),

@@ -6,19 +6,15 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
-import windmill
 
-from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT,
-    PAGE_LOAD,
-    SLEEP,
-    )
-from canonical.launchpad.windmill.testing.lpuser import login_person
+from storm.store import Store
+
+from lp.code.enums import BranchLifecycleStatus
+from lp.code.model.branch import Branch
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill.constants import FOR_ELEMENT
 
 
 class TestBranchStatus(WindmillTestCase):
@@ -35,39 +31,23 @@ class TestBranchStatus(WindmillTestCase):
         branch = self.factory.makeBranch(owner=eric)
         transaction.commit()
 
-        client = self.client
-
-        start_url = (
-            windmill.settings['TEST_URL'] + branch.unique_name)
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(eric, "test", client)
-
+        client, start_url = self.getClientFor(branch, user=eric)
         # Click on the element containing the branch status.
+        client.click(id=u'edit-lifecycle_status')
         client.waits.forElement(
-            id=u'branch-details-status-value', timeout=PAGE_LOAD)
-        client.click(id=u'branch-details-status-value')
-        client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
-
-        # Change the status to experimental.
+            classname=u'yui3-ichoicelist-content', timeout=FOR_ELEMENT)
         client.click(link=u'Experimental')
-        client.waits.sleep(milliseconds=SLEEP)
-
-        client.asserts.assertText(
-            xpath=u'//span[@id="branch-details-status-value"]/span',
-            validator=u'Experimental')
-
-        # Reload the page and make sure the change sticks.
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
-            xpath=u'//span[@id="branch-details-status-value"]/span',
+            jquery=u'("div#edit-lifecycle_status a.editicon.sprite.edit")',
             timeout=FOR_ELEMENT)
-        client.asserts.assertText(
-            xpath=u'//span[@id="branch-details-status-value"]/span',
-            validator=u'Experimental')
+        client.asserts.assertTextIn(
+            id=u'edit-lifecycle_status', validator=u'Experimental')
+        client.asserts.assertNode(
+            jquery=u'("div#edit-lifecycle_status span.value.branchstatusEXPERIMENTAL")')
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        transaction.commit()
+        freshly_fetched_branch = Store.of(branch).find(
+            Branch, Branch.id == branch.id).one()
+        self.assertEqual(
+            BranchLifecycleStatus.EXPERIMENTAL,
+            freshly_fetched_branch.lifecycle_status)

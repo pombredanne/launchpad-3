@@ -7,8 +7,7 @@ SQLObject we need to use to be sure we have the right information. Seems
 like SQLObjects are not persistent between transactions.
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.karma import IKarmaActionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.enums import RosettaImportStatus
@@ -222,15 +221,12 @@ to make sure it's stored properly.
 
 Tell the PO file to import from the file data it has.  The user has rights
 to edit translations directly, so his suggestion is approved directly.
-Even when the user is also a reviwer, he should not get karma for reviewing
-or approving his own translations. IOW, he'll only get karma for submitting
-his suggestion.
+No karma is awarded for this action.
 
     >>> potemplate = POTemplate.get(1)
     >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> (subject, message) = pofile.importFromQueue(entry)
-    Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
 
 Let's try the case when a file is uploaded, but no translation is changed.
@@ -370,6 +366,7 @@ description.
     >>> login('test@canonical.com')
     >>> form = {
     ...     u'field.owner': u'test@canonical.com',
+    ...     u'field.name': u'test',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',
     ...     u'field.actions.change': u'Change'}

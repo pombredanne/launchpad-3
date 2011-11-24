@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login_person,
     logout,
@@ -152,8 +153,12 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         # Verify that a member of an owning team who is not an admin of
         # the bug supervisor team or security_contact team can change bug
         # reporting guidelines.
-        owning_team = self.factory.makeTeam(owner=self.owner)
-        bug_team = self.factory.makeTeam(owner=self.owner)
+        owning_team = self.factory.makeTeam(
+            owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        bug_team = self.factory.makeTeam(
+            owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         weak_owner = self.factory.makePerson()
         login_person(self.owner)
         owning_team.addMember(weak_owner, self.owner)

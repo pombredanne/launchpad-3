@@ -1,90 +1,95 @@
 Derive Distributions
 --------------------
 
-Using the DistroSeries.deriveDistroSeries() function, we can call it with the
-parent distroseries. We can call it with the distroseries already created,
-or it can create it for the user.
+DistroSeries.initDerivedDistroSeries() allows us to derive one distroseries
+from others.
+
 
 Set Up
-------
+======
 
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> login(ADMIN_EMAIL)
-    >>> soyuz = factory.makeTeam(name='soyuz-team')
-    >>> parent = factory.makeDistroSeries()
-    >>> child = factory.makeDistroSeries(name='child1', parent_series=parent)
-    >>> other = factory.makeDistroSeries()
-    >>> distribution = factory.makeDistribution(name='deribuntu', owner=soyuz)
-    >>> version = "%s.0" % factory.getUniqueInteger()
-    >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> soyuz_webservice = webservice_for_person(
-    ...     soyuz.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> login(ADMIN_EMAIL)
+
+    >>> soyuz_team = factory.makeTeam(
+    ...     name='soyuz-team',
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+    >>> parent_series = factory.makeDistroSeries(name="parentseries")
+    >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)
+    >>> removeSecurityProxy(parent_series).nominatedarchindep = arch
+    >>> child_series = factory.makeDistroSeries(name='child1')
+    >>> child_series_with_parent = factory.makeDistroSeries(
+    ...     name='child-with-parent')
+    >>> child_series.driver = soyuz_team
+    >>> child_series_with_parent.driver = soyuz_team
+    >>> parent_series.driver = soyuz_team
+    >>> dsp = factory.makeDistroSeriesParent(
+    ...     derived_series=child_series_with_parent,
+    ...     parent_series=parent_series)
+    >>> other_series = factory.makeDistroSeries(name="otherseries")
+    >>> other_series.driver = soyuz_team
+
+    >>> distribution = factory.makeDistribution(
+    ...     name='deribuntu', owner=soyuz_team)
+    >>> version = "%s.0" % factory.getUniqueInteger()
+
+    >>> logout()
+
+    >>> soyuz_team_webservice = webservice_for_person(
+    ...     soyuz_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+
 
 Calling
--------
+=======
 
-We can't call .deriveDistroSeries() with a distroseries that isn't the
-child's parent
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
 
-    >>> series_url = '/%s/%s' % (parent.parent.name, parent.name)
-    >>> other_series_url = '/%s/%s' % (
-    ...    other.parent.name, other.name)
-    >>> child_name = child.name
-    >>> series = webservice.get(series_url).jsonBody()
-    >>> other_series = webservice.get(other_series_url).jsonBody()
-    >>> derived = soyuz_webservice.named_post(
-    ...     other_series['self_link'], 'deriveDistroSeries', {},
-    ...     name=child_name, rebuild=False)
-    >>> print derived
+    >>> def ws_object(webservice, obj):
+    ...     api_request = WebServiceTestRequest(
+    ...         SERVER_URL=webservice.getAbsoluteUrl(""))
+    ...     obj_url = canonical_url(obj, request=api_request)
+    ...     return webservice.get(obj_url).jsonBody()
+
+We can't call .initDerivedDistroSeries() on a distroseries that already
+has a parent series.
+
+    >>> ws_child_series_with_parent = ws_object(
+    ...     soyuz_team_webservice, child_series_with_parent)
+
+    >>> print soyuz_team_webservice.named_post(
+    ...     ws_child_series_with_parent['self_link'],
+    ...     'initDerivedDistroSeries', parents=[str(other_series.id)],
+    ...     rebuild=False)
     HTTP/1.1 400 Bad Request
-    Status: 400 Bad Request
     ...
-    <BLANKLINE>
-    DistroSeries ... parent series isn't ...
-    <BLANKLINE>
-    ...
+    DistroSeries ... already has parent series.
 
 If we call it correctly, it works.
 
-    >>> derived = soyuz_webservice.named_post(
-    ...     series['self_link'], 'deriveDistroSeries', {},
-    ...     name=child_name, rebuild=False)
-    >>> print derived
+    >>> ws_child_series = ws_object(soyuz_team_webservice, child_series)
+
+    >>> print soyuz_team_webservice.named_post(
+    ...     ws_child_series['self_link'], 'initDerivedDistroSeries',
+    ...     parents=[str(parent_series.id)],
+    ...     rebuild=False)
     HTTP/1.1 200 Ok
-    Status: 200 Ok
-    ...
-    <BLANKLINE>
     ...
 
-If we call it with all of the arguments, it also works.
-
-    >>> deribuntu = webservice.get('/deribuntu').jsonBody()
-    >>> text = 'The Second Child'
-    >>> derived = soyuz_webservice.named_post(
-    ...     series['self_link'], 'deriveDistroSeries', {},
-    ...     name='child2', displayname=text, title=text, summary=text,
-    ...     description=text, version=version,
-    ...     distribution=deribuntu['self_link'], architectures=('i386',),
-    ...     packagesets=('test1',), rebuild=False)
-    >>> print derived
-    HTTP/1.1 200 Ok
-    Status: 200 Ok
-    ...
-    <BLANKLINE>
-    ...
-
-And we can verify both jobs exists.
+And we can verify that the job has been created.
 
     >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
-    ...     IInitialiseDistroSeriesJobSource)
+    ...     IInitializeDistroSeriesJobSource)
     >>> login(ADMIN_EMAIL)
     >>> jobs = sorted(
-    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady(),
+    ...     getUtility(IInitializeDistroSeriesJobSource).iterReady(),
     ...     key=lambda x: x.distroseries.name)
     >>> for job in jobs:
     ...     print job.distroseries.name
     child1
-    child2

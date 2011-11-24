@@ -1,4 +1,5 @@
-= Bug report index page =
+Bug report index page
+=====================
 
 The bug index is the main page of a bug report. It contains all sorts of
 interesting things related to fixing a problem: the bug description,
@@ -17,7 +18,8 @@ The breadcrumbs and other navigation include a link to the bug itself.
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
-    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) -
+      http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
@@ -105,27 +107,16 @@ including the latest release if it is a distribution package.
     Assigned: 2005-01-17
     ...
 
-The bug page ends with links to report another bug, and to list open
-bugs.
+The bug page includes a link to report another bug.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> related = find_tags_by_class(user_browser.contents, 'related')[0]
-    >>> print extract_text(related)
-    What next?...
-    >>> print user_browser.getLink('Report another bug').url
+    >>> print user_browser.getLink('Report a bug').url
     http://bugs.launchpad.dev/firefox/+filebug
-    >>> print user_browser.getLink('List open bugs').url
-    http://bugs.launchpad.dev/firefox/+bugs
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1')
-    >>> related = find_tags_by_class(user_browser.contents, 'related')[0]
-    >>> print extract_text(related)
-    What next?...
-    >>> print user_browser.getLink('Report another bug').url
+    >>> print user_browser.getLink('Report a bug').url
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
-    >>> print user_browser.getLink('List open bugs').url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bugs
 
 There's also a link on the page that will take the user to the "Add
 attachment or patch" page, for use when JavaScript isn't available.
@@ -134,7 +125,8 @@ attachment or patch" page, for use when JavaScript isn't available.
     http://bugs.launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
 
 
-== Navigatig to a bug in the wrong context ==
+Navigating to a bug in the wrong context
+----------------------------------------
 
 If we navigate to a bug in a context in which it doesn't exist, we are
 redirected to the default context.
@@ -144,7 +136,8 @@ redirected to the default context.
     http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
-== Bugs with many tasks ==
+Bugs with many tasks
+--------------------
 
 Some bugs have many bug tasks, which causes the Javascript initialization
 code for them take too long. As a last resort optimization we disable that
@@ -158,11 +151,11 @@ initialization code if there's more than 10 bug tasks.
     >>> bug_url = canonical_url(bug)
     >>> logout()
 
-On the bug page, for every bug task there's one coresponding init script.
-    
+On the bug page, for every bug task there's one expander.
+
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     1
 
 We add four more tasks.
@@ -172,14 +165,14 @@ We add four more tasks.
     ...     _ = bug.addTask(bug.owner, factory.makeProduct())
     >>> logout()
 
-And the init script appears five times.
+And the expander appears five times.
 
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     5
 
-But on pages with more than ten bug tasks, we don't include the init scripts
+But on pages with more than ten bug tasks, we don't include the expander
 at all.
 
     >>> login('foo.bar@canonical.com')
@@ -189,6 +182,6 @@ at all.
 
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     0
 

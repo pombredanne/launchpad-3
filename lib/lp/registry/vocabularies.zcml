@@ -30,6 +30,30 @@
 
 
   <securedutility
+      name="DistroSeriesDerivation"
+      component=".vocabularies.DistroSeriesDerivationVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".vocabularies.DistroSeriesDerivationVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
+      name="DistroSeriesDifferences"
+      component=".vocabularies.DistroSeriesDifferencesVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".vocabularies.DistroSeriesDifferencesVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="FeaturedProject"
     component="lp.registry.vocabularies.FeaturedProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
@@ -254,6 +278,17 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+  <securedutility
+    name="UserTeamsParticipationPlusSelfSimpleDisplay"
+    component="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="AllUserTeamsParticipation"
@@ -320,6 +355,17 @@
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
+  <securedutility
+    name="ValidPillarOwner"
+    component="lp.registry.vocabularies.ValidPersonOrClosedTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.ValidPersonOrClosedTeamVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="ValidTeam"
@@ -416,4 +462,52 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
   </class>
 
+  <securedutility
+    name="DistributionSourcePackage"
+    component="lp.registry.vocabularies.DistributionSourcePackageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+    <class
+        class="canonical.launchpad.webapp.vocabulary.VocabularyFilterAll">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterProject">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterProjectGroup">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterDistribution">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterPerson">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterTeam">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
 </configure>

@@ -248,12 +248,10 @@ Mozilla series 1.0.
 If a specification is assigned to series 1.0, it appears in
 mozilla_1_0_series.all_specifications.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> filter = [SpecificationFilter.INFORMATIONAL]
     >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
     >>> series_1_0 = firefox.getSeries('1.0')
     >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
-    >>> syncUpdate(extension_manager_upgrades)
     >>> for spec in mozilla_series_1_0.all_specifications:
     ...     print spec.name
     extension-manager-upgrades
@@ -275,7 +273,6 @@ If all existing specifications are assigned to the 1.0 series,...
 
     >>> for spec in mozilla.all_specifications:
     ...     spec.proposeGoal(series_1_0, no_priv)
-    ...     syncUpdate(spec)
 
 we have the save five incomplete specs in the series 1.0 as we have for the
 project itself.
@@ -304,7 +301,6 @@ Inactive products are excluded from the series listings.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.active = False
-    >>> syncUpdate(firefox)
     >>> filter = [SpecificationFilter.INCOMPLETE]
     >>> mozilla_series_1_0.specifications(filter=filter).count()
     0
@@ -312,7 +308,6 @@ Inactive products are excluded from the series listings.
 Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
-    >>> syncUpdate(firefox)
 
 We can get all the specifications via the all_specifications property,
 and all valid specifications via the valid_specifications property:

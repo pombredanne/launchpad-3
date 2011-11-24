@@ -10,13 +10,13 @@
 
   <div metal:fill-slot="main">
 
-    <div tal:condition="not: features/code.branchmergequeue">
+    <div tal:condition="not: request/features/code.branchmergequeue">
         <em>
          No merge queues
         </em>
     </div>
 
-    <div tal:condition="features/code.branchmergequeue">
+    <div tal:condition="request/features/code.branchmergequeue">
 
         <tal:has-queues condition="view/mergequeue_count">
 

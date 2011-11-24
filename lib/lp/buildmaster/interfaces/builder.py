@@ -27,15 +27,19 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     operation_returns_entry,
+    operation_returns_collection_of,
+    operation_for_version,
     )
-
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
     Bool,
-    Choice,
     Field,
     Int,
     Text,
@@ -43,9 +47,10 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.url import builder_url_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
@@ -107,10 +112,12 @@ class IBuilder(IHasOwner):
 
     id = Attribute("Builder identifier")
 
-    processor = Choice(
+    processor = exported(ReferenceChoice(
         title=_('Processor'), required=True, vocabulary='Processor',
+        schema=IProcessor,
         description=_('Build Slave Processor, used to identify '
-                      'which jobs can be built by this device.'))
+                      'which jobs can be built by this device.')),
+        as_of='devel', readonly=True)
 
     owner = exported(PersonChoice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
@@ -129,7 +136,8 @@ class IBuilder(IHasOwner):
 
     title = exported(Title(
         title=_('Title'), required=True,
-        description=_('The builder slave title. Should be just a few words.')))
+        description=_(
+            'The builder slave title. Should be just a few words.')))
 
     description = exported(Description(
         title=_('Description'), required=False,
@@ -200,8 +208,8 @@ class IBuilder(IHasOwner):
         :param file_sha1: The file's sha1, which is how the file is addressed
             in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
             will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian file
-            alias.
+        :param filename: The name of the file to be given to the librarian
+            file alias.
         :param private: True if the build is for a private archive.
         :return: A Deferred that calls back with a librarian file alias.
         """
@@ -239,14 +247,14 @@ class IBuilder(IHasOwner):
 
     def updateStatus(logger=None):
         """Update the builder's status by probing it.
-        
+
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """
 
     def cleanSlave():
         """Clean any temporary files from the slave.
-        
+
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """
@@ -386,26 +394,34 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all active configured builders."""
 
-    def getBuildersByArch(arch):
-        """Return all configured builders for a given DistroArchSeries."""
-
+    @export_read_operation()
+    @operation_for_version('devel')
     def getBuildQueueSizes():
         """Return the number of pending builds for each processor.
 
         :return: a dict of tuples with the queue size and duration for
-            each processor and virtualisation. For example:
-            {
-                'virt': {
-                            '386': (1, datetime.timedelta(0, 60)),
-                            'amd64': (2, datetime.timedelta(0, 30)),
-                        },
-                'nonvirt':...
-            }
+            each processor and virtualisation. For example::
+
+                {
+                    'virt': {
+                                '386': (1, datetime.timedelta(0, 60)),
+                                'amd64': (2, datetime.timedelta(0, 30)),
+                            },
+                    'nonvirt':...
+                }
 
             The tuple contains the size of the queue, as an integer,
             and the sum of the jobs 'estimated_duration' in queue,
             as a timedelta or None for empty queues.
         """
 
+    @operation_parameters(
+        processor=Reference(
+            title=_("Processor"), required=True, schema=IProcessor),
+        virtualized=Bool(
+            title=_("Virtualized"), required=False, default=True))
+    @operation_returns_collection_of(IBuilder)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

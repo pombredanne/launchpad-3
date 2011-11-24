@@ -16,14 +16,30 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.services.propertycache import cachedproperty
+
+
+def bug_notification_level_description_mapping(displayname):
+    return {
+        BugNotificationLevel.LIFECYCLE: (
+            "%s is fixed or re-opened." % displayname).capitalize(),
+        BugNotificationLevel.METADATA: (
+            "Any change is made to %s, other than a new "
+            "comment being added." % displayname),
+        BugNotificationLevel.COMMENTS: (
+            "A change is made or a new comment is added to %s."
+            % displayname),
+        }
 
 
 class BugSubscriptionFilterView(LaunchpadView):
@@ -41,7 +57,7 @@ class BugSubscriptionFilterView(LaunchpadView):
 
     @property
     def description(self):
-        """Return the bug filter description.
+        """Return the bug subscription filter description.
 
         Leading and trailing whitespace is trimmed. If the description is not
         set the empty string is returned.
@@ -49,10 +65,21 @@ class BugSubscriptionFilterView(LaunchpadView):
         description = self.context.description
         return u"" if description is None else description.strip()
 
+    # At the moment, we never filter everything.
+    # We could turn it into a property and check more later--
+    # in particular, if no importances are checked, or no statuses.
+    filters_everything = False
+
     @property
     def conditions(self):
-        """Descriptions of the bug filter's conditions."""
+        """Descriptions of the bug subscription filter's conditions."""
         conditions = []
+        bug_notification_level = self.context.bug_notification_level
+        if bug_notification_level < BugNotificationLevel.COMMENTS:
+            mapping = bug_notification_level_description_mapping(
+                'the bug')
+            conditions.append(
+                mapping[bug_notification_level].lower()[:-1])
         statuses = self.context.statuses
         if len(statuses) > 0:
             conditions.append(
@@ -74,7 +101,8 @@ class BugSubscriptionFilterView(LaunchpadView):
         return conditions
 
 
-class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView):
+class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
+                                        AdvancedSubscriptionMixin):
     """Base class for edit or create views of `IBugSubscriptionFilter`."""
 
     schema = IBugSubscriptionFilter
@@ -90,6 +118,24 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView):
     custom_widget("statuses", LabeledMultiCheckBoxWidget)
     custom_widget("importances", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
+
+    target = None # Define in concrete subclass to be the target of the
+    # structural subscription that we are modifying.
+
+    # This is used by the AdvancedSubscriptionMixin.
+    current_user_subscription = None
+
+    @cachedproperty
+    def _bug_notification_level_descriptions(self):
+        return bug_notification_level_description_mapping(
+            'a bug in %s' % self.target.displayname)
+
+    def setUpFields(self):
+        """Set up fields for form.
+
+        Overrides the usual implementation to also set up bug notification."""
+        super(BugSubscriptionFilterEditViewBase, self).setUpFields()
+        self._setUpBugNotificationLevelField()
 
     @property
     def next_url(self):
@@ -119,6 +165,15 @@ class BugSubscriptionFilterEditView(
         """Delete the bug filter."""
         self.context.delete()
 
+    @property
+    def current_user_subscription(self):
+        """Return an object that has the value for bug_notification_level."""
+        return self.context
+
+    @property
+    def target(self):
+        return self.context.structural_subscription.target
+
 
 class BugSubscriptionFilterCreateView(
     BugSubscriptionFilterEditViewBase):
@@ -138,3 +193,7 @@ class BugSubscriptionFilterCreateView(
         """Create a new bug filter with the form data."""
         bug_filter = self.context.newBugFilter()
         self.updateContextFromData(data, context=bug_filter)
+
+    @property
+    def target(self):
+        return self.context.target

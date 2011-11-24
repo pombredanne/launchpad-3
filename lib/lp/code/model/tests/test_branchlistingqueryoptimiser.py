@@ -5,14 +5,11 @@
 
 __metaclass__ = type
 
-
-from unittest import TestLoader
-
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
 from lp.code.model.branchlistingqueryoptimiser import (
@@ -160,7 +157,3 @@ class TestGetOfficialSourcePackageLinksForBranches(TestCaseWithFactory):
         # Nor does getting the path or displayname.
         self.assertStatementCount(0, getattr, sp, "displayname")
         self.assertStatementCount(0, getattr, sp, "path")
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

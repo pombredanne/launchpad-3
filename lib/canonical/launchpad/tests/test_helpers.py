@@ -2,18 +2,16 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
+from textwrap import dedent
 import unittest
 
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
-from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
@@ -70,39 +68,23 @@ def make_test_tarball_2():
     '# Test PO file.\n'
     '''
 
-    pot = helpers.join_lines(
-        '# Test POT file.',
-        'msgid "foo"',
-        'msgstr ""',
-        ),
+    pot = dedent("""
+        # Test POT file.
+        msgid "foo"
+        msgstr ""
+        """).strip()
 
-    po = helpers.join_lines(
-        '# Test PO file.',
-        'msgid "foo"',
-        'msgstr "bar"',
-        )
+    po = dedent("""
+        # Test PO file.
+        msgid "foo"
+        msgstr "bar"
+        """).strip()
 
     return LaunchpadWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,
     })
-
-
-def test_join_lines():
-    r"""
-    >>> helpers.join_lines('foo', 'bar', 'baz')
-    'foo\nbar\nbaz\n'
-    """
-
-
-def test_shortest():
-    """
-    >>> helpers.shortest(['xyzzy', 'foo', 'blah'])
-    ['foo']
-    >>> helpers.shortest(['xyzzy', 'foo', 'bar'])
-    ['foo', 'bar']
-    """
 
 
 class DummyLanguage:
@@ -298,41 +280,10 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual(text, helpers.truncate_text(text, len(text)))
 
 
-class TestEmailPeople(unittest.TestCase):
-    """Tests for emailPeople"""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-
-    def test_emailPeopleIndirect(self):
-        """Ensure emailPeople uses indirect memberships."""
-        owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.factory.makeTeam(owner)
-        super_team = self.factory.makeTeam(team)
-        recipients = helpers.emailPeople(super_team)
-        self.assertEqual(set([owner]), recipients)
-
-    def test_emailPeopleTeam(self):
-        """Ensure emailPeople uses teams with preferredemail."""
-        owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.factory.makeTeam(owner, email='team@bar.com')
-        super_team = self.factory.makeTeam(team)
-        recipients = helpers.emailPeople(super_team)
-        self.assertEqual(set([team]), recipients)
-
-
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
     suite.addTest(DocTestSuite(helpers))
     suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(TruncateTextTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(TestEmailPeople))
     return suite

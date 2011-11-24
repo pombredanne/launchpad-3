@@ -4,29 +4,24 @@ If you have a bug and a target, there's method which makes it easier to
 change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> bug_params = CreateBugParams(
-    ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(bug_params)
-    >>> bug_id = bug.id
 
-    # Set a milestone to ensure that the current db user has enough
-    # privileges to access it.
-    >>> [firefox_task] = bug.bugtasks
-    >>> firefox_task.milestone = firefox.getMilestone('1.0')
-
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     login('no-priv@canonical.com')
+    ...     no_priv = getUtility(IPersonSet).getByName('no-priv')
+    ...     bug_params = CreateBugParams(
+    ...         owner=no_priv, title='Sample bug', comment='This is a sample bug.')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(bug_params)
+    ...     bug_id = bug.id
+    ...     # Set a milestone to ensure that the current db user has enough
+    ...     # privileges to access it.
+    ...     [firefox_task] = bug.bugtasks
+    ...     firefox_task.milestone = firefox.getMilestone('1.0')
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug = getUtility(IBugSet).get(bug_id)
@@ -89,18 +84,14 @@ If the bug is targeted to the product series, the product series bugtask
 is edited.
 
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug = getUtility(IBugSet).get(bug_id)
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     bug, productseries=firefox_trunk, owner=no_priv)
-    <BugTask at ...>
+    >>> with lp_dbuser():
+    ...     bug = getUtility(IBugSet).get(bug_id)
+    ...     no_priv = getUtility(IPersonSet).getByName('no-priv')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     firefox_trunk = firefox.getSeries('trunk')
+    ...     ignore = getUtility(IBugTaskSet).createTask(
+    ...         bug, no_priv, firefox_trunk)
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -138,25 +129,20 @@ updated automatically.
 Setting the status of a distribution or package bugtask work the same as
 for product tasks.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-    # Set a milestone to ensure that the current db user has enough
-    # privileges to access it.
-    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
-
-    # Only owners, experts, or admins can create a milestone.
-    >>> login('foo.bar@canonical.com')
-    >>> feature_freeze = ubuntu_hoary.newMilestone('feature-freeze')
-    >>> login('no-priv@canonical.com')
-    >>> bug = ubuntu.createBug(bug_params)
-    >>> [ubuntu_bugtask] = bug.bugtasks
-    >>> ubuntu_bugtask.milestone = feature_freeze
-    >>> bug_id = bug.id
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     # Set a milestone to ensure that the current db user has enough
+    ...     # privileges to access it.
+    ...     ubuntu_hoary = ubuntu.getSeries('hoary')
+    ...     # Only owners, experts, or admins can create a milestone.
+    ...     login('foo.bar@canonical.com')
+    ...     feature_freeze = ubuntu_hoary.newMilestone('feature-freeze')
+    ...     login('no-priv@canonical.com')
+    ...     bug = ubuntu.createBug(bug_params)
+    ...     [ubuntu_bugtask] = bug.bugtasks
+    ...     ubuntu_bugtask.milestone = feature_freeze
+    ...     bug_id = bug.id
 
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -178,11 +164,11 @@ will be edited.
 If the bug is targeted to a source package, that bugtask is of course
 edited.
 
-    >>> ubuntu_bugtask.sourcepackagename = ubuntu_firefox.sourcepackagename
+    >>> ubuntu_bugtask.transitionToTarget(ubuntu_firefox)
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'INCOMPLETE'
 
@@ -195,7 +181,7 @@ edited.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.CONFIRMED, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'CONFIRMED'
 
@@ -204,7 +190,7 @@ edited.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     hoary_firefox, BugTaskStatus.NEW, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'NEW'
 
@@ -217,18 +203,15 @@ targeted to the non-current series of course.
 
     # Need to be privileged user to target the bug to a series.
     >>> login('foo.bar@canonical.com')
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug = getUtility(IBugSet).get(bug_id)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
-    >>> nomination = bug.addNomination(
-    ...     getUtility(ILaunchBag).user, ubuntu_hoary)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
+    >>> with lp_dbuser():
+    ...     bug = getUtility(IBugSet).get(bug_id)
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu_hoary = ubuntu.getSeries('hoary')
+    ...     nomination = bug.addNomination(
+    ...         getUtility(ILaunchBag).user, ubuntu_hoary)
+    ...     nomination.approve(getUtility(ILaunchBag).user)
     >>> login('no-priv@canonical.com')
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -238,18 +221,15 @@ targeted to the non-current series of course.
     True
 
     >>> login('foo.bar@canonical.com')
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug = getUtility(IBugSet).get(bug_id)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getSeries('warty')
-    >>> nomination = bug.addNomination(
-    ...     getUtility(ILaunchBag).user, ubuntu_warty)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
+    >>> with lp_dbuser():
+    ...     bug = getUtility(IBugSet).get(bug_id)
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu_warty = ubuntu.getSeries('warty')
+    ...     nomination = bug.addNomination(
+    ...         getUtility(ILaunchBag).user, ubuntu_warty)
+    ...     nomination.approve(getUtility(ILaunchBag).user)
     >>> login('no-priv@canonical.com')
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

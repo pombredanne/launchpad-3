@@ -67,16 +67,19 @@ class LaunchpadBranchLander:
         """Get the merge proposal from the branch."""
 
         lp_branch = self.get_lp_branch(branch)
-        proposals = lp_branch.landing_targets
+        proposals = [
+            mp for mp in lp_branch.landing_targets
+            if mp.queue_status in ('Needs review', 'Approved')]
         if len(proposals) == 0:
             raise BzrCommandError(
-                "The public branch has no source merge proposals.  "
+                "The public branch has no open source merge proposals.  "
                 "You must have a merge proposal before attempting to "
                 "land the branch.")
         elif len(proposals) > 1:
             raise BzrCommandError(
-                "The public branch has multiple source merge proposals.  "
-                "You must provide the URL to the one you wish to use.")
+                "The public branch has multiple open source merge "
+                "proposals.  You must provide the URL to the one you wish "
+                "to use.")
         return MergeProposal(proposals[0])
 
 
@@ -139,6 +142,8 @@ class MergeProposal:
                 continue
             reviewers = reviews.setdefault(vote.review_type, [])
             reviewers.append(vote.reviewer)
+        if self.is_approved and not reviews:
+            reviews[None] = [self._mp.reviewer]
         return reviews
 
     def get_bugs(self):
@@ -234,10 +239,6 @@ def get_qa_clause(bugs, no_qa=False, incremental=False, rollback=None):
 def get_email(person):
     """Get the preferred email address for 'person'."""
     email_object = person.preferred_email_address
-    # XXX: JonathanLange 2009-09-24 bug=319432: This raises a very obscure
-    # error when the email address isn't set. e.g. with name12 in the sample
-    # data. e.g. "httplib2.RelativeURIError: Only absolute URIs are allowed.
-    # uri = tag:launchpad.net:2008:redacted".
     return email_object.email
 
 
@@ -249,7 +250,16 @@ def get_bugs_clause(bugs):
     """
     if not bugs:
         return ''
-    return '[bug=%s]' % ','.join(str(bug.id) for bug in bugs)
+    bug_ids = []
+    for bug in bugs:
+        for task in bug.bug_tasks:
+            if (task.bug_target_name == 'launchpad'
+                and task.status not in ['Fix Committed', 'Fix Released']):
+                bug_ids.append(str(bug.id))
+                break
+    if not bug_ids:
+        return ''
+    return '[bug=%s]' % ','.join(bug_ids)
 
 
 def get_reviewer_handle(reviewer):
@@ -303,15 +313,15 @@ def get_reviewer_clause(reviewers):
     if not code_reviewers:
         raise MissingReviewError("Need approved votes in order to land.")
     if ui_reviewers:
-        ui_clause = _comma_separated_names(ui_reviewers)
+        ui_clause = '[ui=%s]' % _comma_separated_names(ui_reviewers)
     else:
-        ui_clause = 'none'
+        ui_clause = ''
     if rc_reviewers:
         rc_clause = (
             '[release-critical=%s]' % _comma_separated_names(rc_reviewers))
     else:
         rc_clause = ''
-    return '%s[r=%s][ui=%s]' % (
+    return '%s[r=%s]%s' % (
         rc_clause, _comma_separated_names(code_reviewers), ui_clause)
 
 

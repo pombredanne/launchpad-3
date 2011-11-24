@@ -7,42 +7,32 @@ __metaclass__ = type
 
 __all__ = [
     'can_be_nominated_for_series',
-    'validate_url',
-    'valid_webref',
-    'valid_branch_url',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distrotask',
-    'validate_new_distrotask',
-    'valid_upstreamtask',
     'valid_password',
     'validate_date_interval',
     ]
 
 from cgi import escape
 from textwrap import dedent
-import urllib
 
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import (
-    IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import NotFoundError
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.cve import valid_cve
+from lp.app.validators.email import valid_email
 
 
 def can_be_nominated_for_series(series):
@@ -60,101 +50,6 @@ def can_be_nominated_for_series(series):
             "series: ${series}", mapping={'series': series_str}))
 
     return True
-
-
-# XXX matsubara 2006-03-15 bug=35077:
-# The validations functions that deals with URLs should be in
-# validators/ and we should have them as separete constraints in trusted.sql.
-def validate_url(url, valid_schemes):
-    """Returns a boolean stating whether 'url' is a valid URL.
-
-       A URL is valid if:
-           - its URL scheme is in the provided 'valid_schemes' list, and
-           - it has a non-empty host name.
-
-       None and an empty string are not valid URLs::
-
-           >>> validate_url(None, [])
-           False
-           >>> validate_url('', [])
-           False
-
-       The valid_schemes list is checked::
-
-           >>> validate_url('http://example.com', ['http'])
-           True
-           >>> validate_url('http://example.com', ['https', 'ftp'])
-           False
-
-       A URL without a host name is not valid:
-
-           >>> validate_url('http://', ['http'])
-           False
-
-      """
-    if not url:
-        return False
-    scheme, host = urllib.splittype(url)
-    if not scheme in valid_schemes:
-        return False
-    if not valid_absolute_url(url):
-        return False
-    return True
-
-
-def valid_webref(web_ref):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_webref('http://example.com')
-    True
-    >>> valid_webref('https://example.com/foo/bar')
-    True
-    >>> valid_webref('ftp://example.com/~ming')
-    True
-    >>> valid_webref('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_webref('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
-        # Allow ftp so valid_webref can be used for download_url, and so
-        # it doesn't lock out weird projects where the site or
-        # screenshots are kept on ftp.
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses either http, https or ftp.""")))
-
-
-def valid_branch_url(branch_url):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_branch_url('http://example.com')
-    True
-    >>> valid_branch_url('https://example.com/foo/bar')
-    True
-    >>> valid_branch_url('ftp://example.com/~ming')
-    True
-    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_branch_url('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 
 def non_duplicate_branch(value):
@@ -195,6 +90,7 @@ def _validate_email(email):
             "${email} isn't a valid email address.",
             mapping={'email': email}))
 
+
 def _check_email_availability(email):
     email_address = getUtility(IEmailAddressSet).getByEmail(email)
     if email_address is not None:
@@ -222,9 +118,6 @@ def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
     """
-    from canonical.launchpad.webapp.publisher import canonical_url
-    from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-
     _validate_email(email)
     _check_email_availability(email)
     return True
@@ -250,97 +143,6 @@ def validate_new_person_email(email):
                              'owner': escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
-
-
-def validate_new_distrotask(bug, distribution, sourcepackagename=None):
-    """Validate a distribution bugtask to be added.
-
-    Make sure that the isn't already a distribution task without a
-    source package, or that such task is added only when the bug doesn't
-    already have any tasks for the distribution.
-
-    The same checks as `validate_distrotask` does are also done.
-    """
-    from canonical.launchpad.helpers import shortlist
-
-    if sourcepackagename:
-        # Ensure that there isn't already a generic task open on the
-        # distribution for this bug, because if there were, that task
-        # should be reassigned to the sourcepackage, rather than a new
-        # task opened.
-        if bug.getBugTask(distribution) is not None:
-            raise LaunchpadValidationError(_(
-                    'This bug is already open on ${distribution} with no '
-                    'package specified. You should fill in a package '
-                    'name for the existing bug.',
-                    mapping={'distribution': distribution.displayname}))
-    else:
-        # Prevent having a task on only the distribution if there's at
-        # least one task already on the distribution, whether or not
-        # that task also has a source package.
-        distribution_tasks_for_bug = [
-            bugtask for bugtask
-            in shortlist(bug.bugtasks, longest_expected=50)
-            if bugtask.distribution == distribution]
-
-        if len(distribution_tasks_for_bug) > 0:
-            raise LaunchpadValidationError(_(
-                    'This bug is already on ${distribution}. Please '
-                    'specify an affected package in which the bug '
-                    'has not yet been reported.',
-                    mapping={'distribution': distribution.displayname}))
-    validate_distrotask(bug, distribution, sourcepackagename)
-
-
-def validate_distrotask(bug, distribution, sourcepackagename=None):
-    """Check if a distribution bugtask already exists for a given bug.
-
-    If validation fails, a LaunchpadValidationError will be raised.
-    """
-    if sourcepackagename is not None and len(distribution.series) > 0:
-        # If the distribution has at least one series, check that the
-        # source package has been published in the distribution.
-        try:
-            distribution.guessPackageNames(sourcepackagename.name)
-        except NotFoundError, e:
-            raise LaunchpadValidationError(e)
-    new_source_package = distribution.getSourcePackage(sourcepackagename)
-    if sourcepackagename is not None and (
-        bug.getBugTask(new_source_package) is not None):
-        # Ensure this distribution/sourcepackage task is unique.
-        raise LaunchpadValidationError(_(
-                'This bug has already been reported on ${source} '
-                '(${distribution}).',
-                mapping={'source': sourcepackagename.name,
-                         'distribution': distribution.name}))
-    elif (sourcepackagename is None and
-          bug.getBugTask(distribution) is not None):
-        # Don't allow two distribution tasks with no source package.
-        raise LaunchpadValidationError(_(
-                'This bug has already been reported on ${distribution}.',
-                 mapping={'distribution': distribution.name}))
-    else:
-        # The bugtask is valid.
-        pass
-
-
-def valid_upstreamtask(bug, product):
-    """Check if a product bugtask already exists for a given bug.
-
-    If it exists, WidgetsError will be raised.
-    """
-    # Local import to avoid circular imports.
-    from lp.bugs.interfaces.bugtask import BugTaskSearchParams
-    errors = []
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(user, bug=bug)
-    if not product.searchTasks(params).is_empty():
-        errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for ${product}',
-            mapping={'product': product.displayname})))
-
-    if errors:
-        raise WidgetsError(errors)
 
 
 def valid_password(password):

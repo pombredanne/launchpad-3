@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface definitions for IHasRecipes."""
@@ -9,14 +9,22 @@ __all__ = [
     ]
 
 
-from zope.interface import (
-    Attribute,
-    Interface,
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import exported
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
     )
+from zope.interface import Interface
+
+from canonical.launchpad import _
 
 
 class IHasRecipes(Interface):
     """An object that has recipes."""
 
-    def getRecipes():
-        """Returns all recipes associated with the object."""
+    recipes = exported(doNotSnapshot(
+        CollectionField(
+            title=_("All recipes associated with the object."),
+            value_type=Reference(schema=Interface),
+            readonly=True)))

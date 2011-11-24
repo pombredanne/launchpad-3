@@ -1,9 +1,10 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
 
 from datetime import timedelta
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -14,6 +15,7 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_read_operation,
@@ -23,7 +25,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -37,7 +38,6 @@ from zope.schema import (
     Datetime,
     Field,
     Int,
-    Object,
     Text,
     TextLine,
     )
@@ -80,13 +80,13 @@ class TranslationImportQueueConflictError(
     conflicts with existing entries."""
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotSetTranslationImportStatus(Unauthorized):
     """User not permitted to change status.
 
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 # Some time spans in days.
@@ -97,6 +97,7 @@ DAYS_IN_HALF_YEAR = 366 / 2
 # Period after which entries with certain statuses are culled from the
 # queue.
 translation_import_queue_entry_age = {
+    RosettaImportStatus.APPROVED: timedelta(days=DAYS_IN_HALF_YEAR),
     RosettaImportStatus.DELETED: timedelta(days=3),
     RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
     RosettaImportStatus.IMPORTED: timedelta(days=3),
@@ -155,14 +156,14 @@ class ITranslationImportQueueEntry(Interface):
         exported_as="date_created")
 
     productseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
             schema=IProductSeries))
 
     distroseries = exported(
-        Object(
+        Reference(
             title=_("Series"),
             required=False,
             readonly=True,
@@ -212,7 +213,7 @@ class ITranslationImportQueueEntry(Interface):
         "True if this entry is to be imported into the Ubuntu distribution.")
 
     sourcepackage = exported(
-        Object(
+        Reference(
             schema=ISourcePackage,
             title=_("The sourcepackage associated with this entry."),
             readonly=True))
@@ -336,7 +337,8 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
@@ -351,6 +353,8 @@ class ITranslationImportQueue(Interface):
         :arg approver_factory: is a factory that can be called to create an
             approver.  The method invokes the approver on any queue entries
             that it creates. If this is None, no approval is performed.
+        :arg only_templates: Flag to indicate that only translation templates
+            in the tarball should be used.
         :return: A tuple of the number of successfully processed files and a
             list of those filenames that could not be processed correctly.
 
@@ -471,7 +475,7 @@ class IEditTranslationImportQueueEntry(Interface):
         description=_(
             "The type of the file being imported."),
         required=True,
-        vocabulary = TranslationFileType)
+        vocabulary=TranslationFileType)
 
     path = TextLine(
         title=_("Path"),

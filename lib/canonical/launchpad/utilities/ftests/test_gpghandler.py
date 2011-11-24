@@ -1,10 +1,23 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
+from calendar import timegm
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from math import floor
+import os
+from time import time
 
-import gpgme
+from pytz import UTC
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from testtools.matchers import (
+    Not,
+    LessThan,
+    )
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -12,16 +25,27 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyDoesNotExistOnServer,
+    GPGKeyTemporarilyNotFoundError,
+    IGPGHandler,
+    )
+from canonical.lazr.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import TestCase
+from lp.testing.keyserver import KeyServerTac
 
 
-class TestImportKeyRing(unittest.TestCase):
+class TestImportKeyRing(TestCase):
     """Tests for keyring imports"""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Get a gpghandler and login"""
+        super(TestImportKeyRing, self).setUp()
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
         self.gpg_handler.resetLocalState()
@@ -32,6 +56,7 @@ class TestImportKeyRing(unittest.TestCase):
         # This should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
         logout()
+        super(TestImportKeyRing, self).tearDown()
 
     def populateKeyring(self):
         for email in keys_for_tests.iter_test_key_emails():
@@ -127,60 +152,56 @@ class TestImportKeyRing(unittest.TestCase):
         """Do we have the expected test keyring files"""
         self.assertEqual(len(list(keys_for_tests.test_keyrings())), 1)
 
-    def testImportKeyRing(self):
-        """Import a sample keyring and check its contents are available."""
-        self.testEmptyGetKeys()
-        importedkeys = set()
-        for ring in keys_for_tests.test_keyrings():
-            keys = self.gpg_handler.importKeyringFile(ring)
-            importedkeys.update(key.fingerprint for key in keys)
+    def testHomeDirectoryJob(self):
+        """Does the job to touch the home work."""
+        gpghandler = getUtility(IGPGHandler)
+        naked_gpghandler = removeSecurityProxy(gpghandler)
 
-        # check that expected keys are in importedkeys set
-        self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
-                        in importedkeys)
-        self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
-                        in importedkeys)
+        # Get a list of all the files in the home directory.
+        files_to_check = [os.path.join(naked_gpghandler.home, f)
+            for f in os.listdir(naked_gpghandler.home)]
+        files_to_check.append(naked_gpghandler.home)
+        self.assertTrue(len(files_to_check) > 1)
 
-        # check that importedkeys are in key ring
-        keyring = set(key.fingerprint
-                      for key in self.gpg_handler.localKeys())
-        self.assertNotEqual(len(keyring), 0)
-        self.assertTrue(importedkeys.issubset(keyring))
+        # Set the last modified times to 12 hours ago
+        nowless12 = (datetime.now(UTC) - timedelta(hours=12)).utctimetuple()
+        lm_time = timegm(nowless12)
+        for fname in files_to_check:
+            os.utime(fname, (lm_time, lm_time))
 
-    def testSetOwnerTrust(self):
-        """Import a key and set the ownertrust."""
-        self.testEmptyGetKeys()
-        for email in keys_for_tests.iter_test_key_emails():
-            pubkey = keys_for_tests.test_pubkey_from_email(email)
-            self.gpg_handler.importPublicKey(pubkey)
+        # Touch the files and re-check the last modified times have been
+        # updated to "now".
+        now = floor(time())
+        gpghandler.touchConfigurationDirectory()
+        for fname in files_to_check:
+            file_time = os.path.getmtime(fname)
+            self.assertThat(
+                file_time, Not(LessThan(now)), fname)
 
-        iterator = self.gpg_handler.localKeys()
-        key = iterator.next()
-        self.assertEqual(key.owner_trust, gpgme.VALIDITY_UNKNOWN)
-        key.setOwnerTrust(gpgme.VALIDITY_FULL)
-        self.assertEqual(key.owner_trust, gpgme.VALIDITY_FULL)
-        other_iterator = self.gpg_handler.localKeys()
-        other_key_instance = other_iterator.next()
-        self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
+    def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
+        # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
+        # when called for a key that does not exist on the key server.
+        self.useFixture(KeyServerTac())
+        gpghandler = getUtility(IGPGHandler)
+        self.assertRaises(
+            GPGKeyDoesNotExistOnServer, gpghandler.retrieveKey,
+            'non-existent-fp')
 
-    def testCheckTrustDb(self):
-        """Test IGPGHandler.checkTrustDb()"""
-        self.testEmptyGetKeys()
-
-        # check trust DB with no keys succeeds
-        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
-
-        # add some keys and check trust DB again
-        for ring in keys_for_tests.test_keyrings():
-            self.gpg_handler.importKeyringFile(ring)
-        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
-
-
+    def test_retrieveKey_raises_GPGKeyTemporarilyNotFoundError_for_timeout(
+        self):
+        # If the keyserver responds too slowly, GPGHandler.retrieveKey()
+        # raises GPGKeyTemporarilyNotFoundError.
+        self.useFixture(KeyServerTac())
+        old_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(lambda: 0.01)
+        try:
+            gpghandler = getUtility(IGPGHandler)
+            self.assertRaises(
+                GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
+                'non-existent-fp')
+            # An OOPS report is generated for the timeout.
+            error_report = self.oopses[-1]
+            self.assertEqual('TimeoutError', error_report['type'])
+            self.assertEqual('timeout exceeded.', error_report['value'])
+        finally:
+            set_default_timeout_function(old_timeout_function)

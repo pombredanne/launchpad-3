@@ -1,0 +1,236 @@
+Foo Bar, an LP admin, is about to make bug #2 private.
+
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+
+When he does so, all currently implicit subscribers will be made
+explicit. There are two implicit subscribers.
+
+    >>> from lp.bugs.tests.bug import (
+    ...     print_also_notified, print_direct_subscribers)
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
+
+    >>> print_direct_subscribers(browser.contents)
+    Steve Alexander (Unsubscribe)
+    >>> print_also_notified(browser.contents)
+    Also notified:
+    Sample Person
+    Ubuntu Team
+
+We current use a feature flag to control who is subscribed when a bug is made
+private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
+Foo Bar is not Cc'd on this bug, but is able to set the bug private
+anyway, because he is an admin.
+
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl("This bug report should be private").selected = (
+    ...     True)
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
+
+
+Subscribers have been updated according to the privacy rules.
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
+    >>> print_direct_subscribers(browser.contents)
+    Mark Shuttleworth (Unsubscribe)
+    Sample Person (Unsubscribe)
+    Steve Alexander (Unsubscribe)
+    Ubuntu Team (Unsubscribe)
+
+    >>> print_also_notified(browser.contents)
+    Also notified:
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
+
+When we go back to the secrecy form, the previously set value is pre-selected.
+
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl("This bug report should be private").selected
+    True
+
+Foo Bar files a security (private) bug on Ubuntu Linux. He gets
+redirected to the bug page.
+
+    >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
+
+Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
+will be subscribed instead.
+
+    >>> browser.getControl(name="field.title", index=0).value = (
+    ...     "a private bug")
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...The maintainer of...Ubuntu...Ubuntu Team...will be notified...
+    ...
+
+    >>> browser.getControl(name="packagename_option").value = ["choose"]
+    >>> browser.getControl(name="field.packagename").value = "evolution"
+    >>> browser.getControl(name="field.comment").value = "secret info"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...Security-related bugs are by default private...
+
+Foo Bar sees the private bug he filed.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
+    >>> print browser.contents.replace(bug_id, "BUG-ID")
+    <!DOCTYPE...
+    ...
+    ...Ubuntu Linux...
+    ...<a...>...BUG-ID...</a>...
+
+Foo Bar and the Ubuntu Team are subscribed to the bug.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> bug = getUtility(IBugSet).get(bug_id)
+
+    >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
+    [u'name16', u'ubuntu-team']
+
+    >>> logout()
+
+Now let's set an Ubuntu security team, and see how the filebug page and
+subscriptions differ.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+securitycontact")
+    >>> browser.getControl("Security Contact").value = "name12"
+    >>> browser.getControl("Change").click()
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
+
+    >>> browser.getControl(name="field.title", index=0).value = (
+    ...     "a private bug")
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...The security contact for...Ubuntu...Sample Person...will be notified...
+    ...
+
+    >>> browser.getControl(name="packagename_option").value = ["choose"]
+    >>> browser.getControl(name="field.packagename").value = "evolution"
+    >>> browser.getControl(name="field.comment").value = "secret info"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
+
+
+Now only the reporter and /security contact/ are subscribed.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> bug = getUtility(IBugSet).get(other_bug_id)
+
+    >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
+    [u'name12', u'name16']
+
+    >>> logout()
+
+
+Anonymous users cannot see private bugs filed on distros, of course!
+
+Not directly.
+
+    >>> anon_browser.open("http://launchpad.dev/bugs/14")
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+And not in bug listings.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
+    >>> "a private bug" not in anon_browser.contents
+    True
+
+A user not subscribed to a private bug will not be able to see the bug.
+
+Neither directly.
+
+    >>> browser = setupBrowser("Basic no-privs@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/bugs/14")
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+Nor in a search listing.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
+    >>> "a private bug" not in browser.contents
+    True
+
+First, some setup. Find out what the latest [private] bug reported on
+Ubuntu evolution is, so we can avoid hardcoding its ID here:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login("foo.bar@canonical.com")
+    >>> launchbag = getUtility(ILaunchBag)
+    >>> evo = getUtility(ISourcePackageNameSet).queryByName("evolution")
+    >>> params = BugTaskSearchParams(user=launchbag.user,
+    ...     sourcepackagename=evo, orderby="-id")
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> latest_evo_task = ubuntu.searchTasks(params)[0]
+    >>> latest_evo_bug = latest_evo_task.bug.id
+    >>> logout()
+
+Unsubscribing from a private bug redirects you to the bug listing (see
+further down for an exception to this rule.) Let's demonstrate by having
+Foo Bar, an admin, subscribe Sample Person to a private bug.
+
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> add_subscriber_url = (
+    ...     "http://launchpad.dev/ubuntu/+source/evolution/+bug/%s"
+    ...     "/+addsubscriber" % latest_evo_bug)
+    >>> browser.open(add_subscriber_url)
+    >>> browser.getControl("Person").value = "name12"
+    >>> browser.getControl("Subscribe user").click()
+    >>> browser.url
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/...'

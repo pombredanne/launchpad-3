@@ -165,9 +165,16 @@
         <xsl:call-template name="resource-uri-doc">
             <xsl:with-param name="url">
                 <xsl:choose>
-                    <xsl:when test="@id = 'has_milestones'
-                                    or @id = 'bug_target'
-                                    or @id = 'has_bugs'">
+                    <xsl:when test="
+                        @id = 'bug_link_target'
+                        or @id = 'bug_target'
+                        or @id = 'has_bugs'
+                        or @id = 'has_milestones'
+                        or @id = 'object_with_translation_imports'
+                        or @id = 'question_target'
+                        or @id = 'specification_target'
+                        or @id = 'structural_subscription_target'
+                        ">
                         <em>depends on the underlying entry</em>
                     </xsl:when>
                     <xsl:otherwise>
@@ -264,9 +271,17 @@
                 <xsl:text>/+build/</xsl:text>
                 <var>&lt;id&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'builder'">
+                <xsl:text>/builders/</xsl:text>
+                <var>&lt;builder.name&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'cve'">
                 <xsl:text>/bugs/cve/</xsl:text>
                 <var>&lt;sequence&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'country'">
+                <xsl:text>/+countries/</xsl:text>
+                <var>&lt;iso3166code2&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'distribution_source_package'">
                 <xsl:text>/</xsl:text>
@@ -294,6 +309,15 @@
                 <xsl:text>/+email/</xsl:text>
                 <var>&lt;email&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'gpg_key'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+gpg-keys/</xsl:text>
+                <var>&lt;keyid&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'hwdb'">
+                <xsl:text>/+hwdb</xsl:text>
+            </xsl:when>
             <xsl:when test="@id = 'h_w_device'">
                 <xsl:text>/+hwdb/+device/</xsl:text>
                 <var>&lt;id&gt;</var>
@@ -317,6 +341,14 @@
             <xsl:when test="@id = 'h_w_vendor_i_d'">
                 <xsl:text>/+hwdb/+hwvendorid/</xsl:text>
                 <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'h_w_driver_name'">
+                <xsl:text>/+hwdb/+drivername/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'h_w_driver_package_name'">
+                <xsl:text>/+hwdb/+driverpackagename/</xsl:text>
+                <var>&lt;package_name&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'jabber_id'">
                 <xsl:text>/</xsl:text>
@@ -360,6 +392,17 @@
                 <xsl:text>/~</xsl:text>
                 <var>&lt;name&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'pillars'">
+                <xsl:text>/pillars</xsl:text>
+            </xsl:when>
+            <xsl:when test="@id = 'processor'">
+                <xsl:text>/+processors/</xsl:text>
+                <var>&lt;processor.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'processor_family'">
+                <xsl:text>/+processor-families/</xsl:text>
+                <var>&lt;processor_family.name&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'product_release'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;product.name&gt;</var>
@@ -398,6 +441,20 @@
                 <xsl:text>/</xsl:text>
                 <var>&lt;name&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'question'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+question/</xsl:text>
+                <var >&lt;question.id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'question_message'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+question/</xsl:text>
+                <var >&lt;question.id&gt;</var>
+                <xsl:text>/messages/</xsl:text>
+                <var >&lt;message.index&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'source_package'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;distribution.name&gt;</var>
@@ -413,6 +470,34 @@
                 <var>&lt;name&gt;</var>
                 <xsl:text>/+sourcepub/</xsl:text>
                 <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'specification'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+spec/</xsl:text>
+                <var >&lt;specification.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'specification_branch'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+spec/</xsl:text>
+                <var >&lt;specification.name&gt;</var>
+                <xsl:text>/+branch/</xsl:text>
+                <var >&lt;branch.unique_name[1:]&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'specification_subscription'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+spec/</xsl:text>
+                <var >&lt;specification.name&gt;</var>
+                <xsl:text>/+subscription/</xsl:text>
+                <var >&lt;person.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'ssh_key'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+ssh-keys/</xsl:text>
+                <var>&lt;keyid&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'team_membership'">
                 <xsl:text>/~</xsl:text>
@@ -430,11 +515,14 @@
                 <xsl:text>/+commercialsubscription/</xsl:text>
                 <var>&lt;commercial_subscription.id&gt;</var>
             </xsl:when>
-            <xsl:otherwise>
-                <xsl:message>Unknown entry URL:
-                    <xsl:value-of select="@id" />
-                </xsl:message>
-            </xsl:otherwise>
+            <!-- XXX: GavinPanella 2011-07-29 bug=735543: A bug exists
+                 to do something more sensible here. For now, no one
+                 cares, so let's shut this up. -->
+            <!-- <xsl:otherwise> -->
+            <!--     <xsl:message>Unknown entry URL: -->
+            <!--         <xsl:value-of select="@id" /> -->
+            <!--     </xsl:message> -->
+            <!-- </xsl:otherwise> -->
         </xsl:choose>
     </xsl:template>
     <!-- We start here. -->
@@ -864,6 +952,12 @@
                     <xsl:apply-templates select="wadl:doc"/>
                     <xsl:apply-templates select="wadl:request"/>
                     <xsl:apply-templates select="wadl:response"/>
+                    <xsl:if test="not(wadl:response)">
+                        <xsl:apply-templates select="wadl:doc//html:th[
+                            node() = 'return:'
+                            ]"/>
+                    </xsl:if>
+                    <xsl:call-template name="error-documentation"/>
                 </xsl:when>
                 <xsl:otherwise>
                     <p><em>Missing documentation.</em></p>
@@ -908,6 +1002,39 @@
                     collection
                 </xsl:if>.
         </p>
+    </xsl:template>
+
+    <!-- Documentation of the custom method return type. -->
+    <xsl:template match="wadl:doc//html:th[node() = 'return:']">
+        <h6>Response (application/json)</h6>
+        <xsl:choose>
+            <xsl:when test="following-sibling::html:td/text()">
+                <p><xsl:apply-templates select="following-sibling::html:td"
+                      mode="copy"/></p>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:apply-templates select="following-sibling::html:td"
+                      mode="copy"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- Documentation of the error raised by the operation. -->
+    <xsl:template name="error-documentation">
+        <xsl:if test="wadl:doc//html:th[node() = 'raise:']">
+            <h6>Errors</h6>
+            <ul>
+                <xsl:apply-templates
+                    select="wadl:doc//html:th[node() = 'raise:']"/>
+            </ul>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="wadl:doc//html:th[node() = 'raise:']">
+        <li>
+            <xsl:apply-templates select="following-sibling::html:td"
+                mode="copy"/>
+        </li>
     </xsl:template>
 
     <!-- Documentation for request parameter. -->
@@ -1032,11 +1159,15 @@
              mode="representation-type"/>
     </xsl:template>
 
-    <!-- Omit docutils parameter lists in methods since they are redundant
-    or misleading with the one we give. -->
+    <!-- Omit docutils parameter table in methods. The parameter names
+         description is either redundant or misleading with the one we
+         give.
+
+         We process the return and raise parameters separately.
+      -->
     <xsl:template match="wadl:method//html:table[
         contains(@class, 'field-list')]"
-        mode="copy"/>
+        mode="copy" />
 
     <!-- Output the mediaType attribute of a representation -->
     <xsl:template match="wadl:representation[@mediaType]"

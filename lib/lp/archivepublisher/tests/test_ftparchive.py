@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -15,11 +15,18 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.log.logger import BufferLogger
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import (
+from lp.archivepublisher.model.ftparchive import (
+    AptFTPArchiveFailure,
     f_touch,
     FTPArchiveHandler,
     )
@@ -279,6 +286,13 @@ class TestFTPArchive(TestCaseWithFactory):
         self._addRepositoryFile('main', 'foo', 'foo_1.dsc')
         self._addRepositoryFile('main', 'foo', 'foo_1_i386.deb')
 
+        # When include_long_descriptions is set, apt.conf has
+        # LongDescription "true" for that series.
+        hoary_test = self._distribution.getSeries('hoary-test')
+        self.assertTrue(hoary_test.include_long_descriptions)
+        breezy_autotest = self._distribution.getSeries('breezy-autotest')
+        breezy_autotest.include_long_descriptions = False
+
         # XXX cprov 2007-03-21: Relying on byte-to-byte configuration file
         # comparing is weak. We should improve this methodology to avoid
         # wasting time on test failures due to irrelevant format changes.
@@ -290,7 +304,7 @@ class TestFTPArchive(TestCaseWithFactory):
         # those kind of tests and avoid to run it when performing 'make
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
-        assert fa.runApt(apt_conf) == 0
+        fa.runApt(apt_conf)
         self._verifyFile("Packages",
             os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
         self._verifyFile("Sources",
@@ -302,10 +316,10 @@ class TestFTPArchive(TestCaseWithFactory):
         # Test that a publisher run now will generate an empty apt
         # config and nothing else.
         apt_conf = fa.generateConfig()
-        assert len(file(apt_conf).readlines()) == 23
+        assert len(file(apt_conf).readlines()) == 24
 
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
-        assert fa.runApt(apt_conf) == 0
+        fa.runApt(apt_conf)
 
     def test_generateConfig_empty_and_careful(self):
         # Generate apt-ftparchive config for an specific empty suite.
@@ -359,7 +373,7 @@ class TestFTPArchive(TestCaseWithFactory):
         self.assertEqual(apt_conf_content, sample_content)
 
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
-        self.assertEqual(fa.runApt(apt_conf), 0)
+        fa.runApt(apt_conf)
         self.assertTrue(os.path.exists(
             os.path.join(self._distsdir, "hoary-test-updates", "main",
                          "binary-i386", "Packages")))
@@ -373,6 +387,84 @@ class TestFTPArchive(TestCaseWithFactory):
         self.assertFalse(os.path.exists(
             os.path.join(self._distsdir, "hoary-test", "main",
                          "source", "Sources")))
+
+
+class TestFTPArchiveRunApt(TestCaseWithFactory):
+    """Test `FTPArchive`'s execution of apt-ftparchive."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makeMatchingDistroArchSeries(self):
+        """Create two `DistroArchSeries` for the same distro and processor."""
+        distro = self.factory.makeDistribution()
+        processor = self.factory.makeProcessor()
+        return (
+            self.factory.makeDistroArchSeries(
+                distroseries=self.factory.makeDistroSeries(distro),
+                processorfamily=processor.family,
+                architecturetag=processor.name)
+            for counter in (1, 2))
+
+    def test_getArchitectureTags_starts_out_empty(self):
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None, self.factory.makeDistribution(),
+            None)
+        self.assertContentEqual([], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_includes_enabled_architectures(self):
+        distroarchseries = self.factory.makeDistroArchSeries()
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            distroarchseries.distroseries.distribution, None)
+        self.assertContentEqual(
+            [distroarchseries.architecturetag], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_considers_all_series(self):
+        distro = self.factory.makeDistribution()
+        affluent_antilope = self.factory.makeDistroSeries(distribution=distro)
+        bilious_baboon = self.factory.makeDistroSeries(distribution=distro)
+        affluent_arch = self.factory.makeDistroArchSeries(
+            distroseries=affluent_antilope)
+        bilious_arch = self.factory.makeDistroArchSeries(
+            distroseries=bilious_baboon)
+        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        self.assertContentEqual(
+            [affluent_arch.architecturetag, bilious_arch.architecturetag],
+            fa._getArchitectureTags())
+
+    def test_getArchitectureTags_ignores_disabled_architectures(self):
+        distroarchseries = self.factory.makeDistroArchSeries()
+        distroarchseries.enabled = False
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            distroarchseries.distroseries.distribution, None)
+        self.assertContentEqual([], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_contains_no_duplicates(self):
+        ominous_okapi, pilfering_puppy = self._makeMatchingDistroArchSeries()
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            ominous_okapi.distroseries.distribution, None)
+        self.assertEqual(1, len(list(fa._getArchitectureTags())))
+        self.assertContentEqual(
+            [ominous_okapi.architecturetag], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_counts_any_architecture_enabled_once(self):
+        manic_mantis, nervous_nit = self._makeMatchingDistroArchSeries()
+        nervous_nit.enabled = False
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            manic_mantis.distroseries.distribution, None)
+        self.assertContentEqual(
+            [manic_mantis.architecturetag], fa._getArchitectureTags())
+
+    def test_runApt_reports_failure(self):
+        # If we sabotage apt-ftparchive, runApt notices that it failed
+        # and raises an exception.
+        distroarchseries = self.factory.makeDistroArchSeries()
+        distro = distroarchseries.distroseries.distribution
+        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        self.assertRaises(AptFTPArchiveFailure, fa.runApt, "bogus-config")
 
 
 class TestFTouch(unittest.TestCase):

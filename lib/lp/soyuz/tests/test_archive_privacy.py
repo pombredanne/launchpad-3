@@ -29,7 +29,6 @@ class TestArchivePrivacy(TestCaseWithFactory):
         super(TestArchivePrivacy, self).setUp()
         self.private_ppa = self.factory.makeArchive(description='Foo')
         login('admin@canonical.com')
-        self.private_ppa.buildd_secret = 'blah'
         self.private_ppa.private = True
         self.joe = self.factory.makePerson(name='joe')
         self.fred = self.factory.makePerson(name='fred')
@@ -59,18 +58,15 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
         super(TestArchivePrivacySwitching, self).setUp()
         self.public_ppa = self.factory.makeArchive()
         self.private_ppa = self.factory.makeArchive()
-        self.private_ppa.buildd_secret = 'blah'
         self.private_ppa.private = True
 
     def make_ppa_private(self, ppa):
         """Helper method to privatise a ppa."""
         ppa.private = True
-        ppa.buildd_secret = "secret"
 
     def make_ppa_public(self, ppa):
         """Helper method to make a PPA public (and use for assertRaises)."""
         ppa.private = False
-        ppa.buildd_secret = ''
 
     def test_switch_privacy_no_pubs_succeeds(self):
         # Changing the privacy is fine if there are no publishing
@@ -94,3 +90,11 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
 
         self.assertRaises(
             CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
+    def test_buildd_secret_was_generated(self):
+        self.make_ppa_private(self.public_ppa)
+        self.assertNotEqual(self.public_ppa.buildd_secret, None)
+
+    def test_discard_buildd_was_discarded(self):
+        self.make_ppa_public(self.private_ppa)
+        self.assertEqual(self.private_ppa.buildd_secret, None)

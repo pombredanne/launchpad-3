@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,16 +22,19 @@ __all__ = [
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    call_with,
     collection_default_content,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -53,17 +56,14 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
-    )
-from canonical.launchpad.validators.name import name_validator
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -73,6 +73,9 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.karma import IKarmaContext
@@ -80,10 +83,12 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
     )
 from lp.services.fields import (
     Description,
@@ -123,17 +128,17 @@ class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
-                  version, parent_series, owner):
+                  version, previous_series, registrant):
         """Creates a new distroseries."""
 
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, IServiceUsage, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -156,7 +161,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -207,8 +212,17 @@ class IDistributionPublic(
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam',
+            description=_("The distro's registrant."), required=True,
+            readonly=True))
     date_created = exported(
         Datetime(title=_('Date created'),
                  description=_("The date this distribution was registered.")))
@@ -263,11 +277,23 @@ class IDistributionPublic(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see _schema_circular_imports.py.
             value_type=Reference(schema=Interface))))
+    derivatives = exported(doNotSnapshot(
+        CollectionField(
+            title=_("This Distribution's derivatives"),
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface))))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
+    package_derivatives_email = TextLine(
+        title=_("Package Derivatives Email Address"),
+        description=_(
+            "The email address to send information about updates to packages "
+            "that are derived from another distribution. The sequence "
+            "{package_name} is replaced with the actual package name."),
+        required=False)
 
     # properties
     currentseries = exported(
@@ -308,7 +334,9 @@ class IDistributionPublic(
 
     all_distro_archives = exported(doNotSnapshot(
         CollectionField(
-            title=_("A sequence of the distribution's non-PPA Archives."),
+            title=_(
+                "A sequence of the distribution's primary, "
+                "partner and debug archives."),
             readonly=True, required=False,
             value_type=Reference(schema=Interface))),
                 # Really IArchive, see _schema_circular_imports.py.
@@ -325,6 +353,11 @@ class IDistributionPublic(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
                       "on disk."),
+        readonly=True, required=False)
+
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
         readonly=True, required=False)
 
     def getArchiveIDList(archive=None):
@@ -371,6 +404,38 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+    # This API is specifically for Ensemble's Principia.  It does not scale
+    # well to distributions of Ubuntu's scale, and is not intended for it.
+    # Therefore, this should probably never be exposed for a webservice
+    # version other than "devel".
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(user=None, since=None):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param: user: If specified, shows the branches visible to that user.
+            if not specified, only branches visible to the anonymous user are
+            shown.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
@@ -438,46 +503,6 @@ class IDistributionPublic(
         :return: list of `IDistroSeries`
         """
 
-    def getSourcePackageCaches(archive=None):
-        """The set of all source package info caches for this distribution.
-
-        If 'archive' is not given it will return all caches stored for the
-        distribution main archives (PRIMARY and PARTNER).
-        """
-
-    def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages.
-
-        Also purges all existing cache records for disabled archives.
-
-        :param archive: target `IArchive`.
-        :param log: the context logger object able to print DEBUG level
-            messages.
-        """
-
-    def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
-        """Update the source package cache.
-
-        Consider every non-REMOVED sourcepackage and entirely skips updates
-        for disabled archives.
-
-        :param archive: target `IArchive`;
-        :param log: logger object for printing debug level information;
-        :param ztm:  transaction used for partial commits, every chunk of
-            'commit_chunk' updates is committed;
-        :param commit_chunk: number of updates before commit, defaults to 500.
-
-        :return the number packages updated done
-        """
-
-    def updateSourcePackageCache(sourcepackagename, archive, log):
-        """Update cached source package details.
-
-        Update cache details for a given ISourcePackageName, including
-        generated binarypackage names, summary and description fti.
-        'log' is required and only prints debug level information.
-        """
-
     @rename_parameters_as(text="source_match")
     @operation_parameters(
         text=TextLine(title=_("Source package name substring match"),
@@ -525,38 +550,21 @@ class IDistributionPublic(
         (a substring of) their binary package names.
         """
 
-    def searchBinaryPackagesFTI(package_name):
-        """Do an FTI search on binary packages.
+    def guessPublishedSourcePackageName(pkgname):
+        """Return the "published" SourcePackageName related to pkgname.
 
-        :param package_name: The binary package name to search for.
-        :return: A result set containing DistributionSourcePackageCache
-            objects for the matching binaries found via an FTI search on
-            DistroSeriesPackageCache.
-        """
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
 
-    def getFileByName(filename, archive=None, source=True, binary=True):
-        """Find and return a LibraryFileAlias for the filename supplied.
+        If there is any official source package branch linked, then that
+        source package name is returned.
 
-        The file returned will be one of those published in the distribution.
+        Otherwise, try to find a published binary package name and then return
+        the source package name from which it comes from.
 
-        If searching both source and binary, and the file is found in the
-        binary packages it'll return that over a file for a source package.
-
-        If 'archive' is not passed the distribution.main_archive is assumed.
-
-        At least one of source and binary must be true.
-
-        Raises NotFoundError if it fails to find the named file.
-        """
-
-    def guessPackageNames(pkgname):
-        """Try and locate source and binary package name objects that
-        are related to the provided name --  which could be either a
-        source or a binary package name. Returns a tuple of
-        (sourcepackagename, binarypackagename) based on the current
-        publishing status of these binary / source packages. Raises
-        NotFoundError if it fails to find any package published with
-        that name in the distribution.
+        :raises NotFoundError: when pkgname doesn't correspond to either a
+            published source or binary package name in this distribution.
         """
 
     def getAllPPAs():
@@ -629,7 +637,7 @@ class IDistributionPublic(
 
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
-    IRootContext, IStructuralSubscriptionTarget):
+    IQuestionTarget, IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution.
 
     Launchpadlib example: retrieving the current version of a package in a
@@ -644,7 +652,7 @@ class IDistribution(
             source_name="apport",
             distro_series=series)[0].source_package_version
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
 
 class IBaseDistribution(IDistribution):
@@ -689,8 +697,24 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
+
+    def getCurrentSourceReleases(distro_to_source_packagenames):
+        """Lookup many distribution source package releases.
+
+        :param distro_to_source_packagenames: A dictionary with
+            its keys being `IDistribution` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
+    def getDerivedDistributions():
+        """Find derived distributions.
+
+        :return: An iterable of all derived distributions (not including
+            Ubuntu, even if it is technically derived from Debian).
+        """
 
 
 class NoSuchDistribution(NameLookupFailed):

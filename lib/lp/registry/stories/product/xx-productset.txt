@@ -18,8 +18,7 @@ A member of the Launchpad registry experts team may successfully access the
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_member = factory.makePerson(
     ...     name='reggie', email='reggie@example.com', password='test')
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -36,79 +35,6 @@ A member of the Launchpad registry experts team may successfully access the
     'http://launchpad.dev/projects/+review-licenses'
     >>> print registry_browser.title
     Review projects...
-
-
-Searching from +review_licenses
-===============================
-
-The search parameters that filter on a boolean value can
-be left unspecified to get results with either value.
-
-    >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
-    ...              'license_info_is_empty'):
-    ...     control = registry_browser.getControl(name='field.%s' % name)
-    ...     for option in control.displayOptions:
-    ...         print option.decode('utf-8').encode('ascii', 'replace'),
-    ...     print
-    ?(do not filter) ?True ?False
-    ?(do not filter) ?True ?False
-    ?(do not filter) ?True ?False
-    ?(do not filter) ?Empty ?Not Empty
-
-The default form values will search for active projects that have not
-been reviewed.
-
-    >>> registry_browser.getControl(name='field.active').value
-    ['True']
-    >>> registry_browser.getControl(name='field.license_reviewed').value
-    ['False']
-    >>> registry_browser.getControl(name='field.licenses').value
-    []
-
-If there are no products that match the search conditions, a warning
-message will be displayed.
-
-    >>> registry_browser.getControl(name='field.active').value = ['False']
-    >>> registry_browser.getControl(name='search').click()
-    >>> find_tags_by_class(registry_browser.contents, 'warning message')
-    [<div...No items found with these search options...
-
-If enough projects are found, the results are paginated. A link
-is provided for each product pointint to its +review-license page.
-
-    >>> registry_browser.getControl(name='field.active').value = ['True']
-    >>> registry_browser.getControl(name='field.licenses').value = []
-    >>> registry_browser.getControl(
-    ...     name='field.license_info_is_empty').value = ['Empty']
-    >>> registry_browser.getControl(name='field.created_before').value = (
-    ...     '2007-01-01')
-    >>> registry_browser.getControl(name='search').click()
-    >>> pagination = find_tags_by_class(registry_browser.contents,
-    ...                                 'batch-navigation-index')
-    >>> text_in_elements = pagination[0].findAll(text=True)
-    >>> print ' '.join(text.strip() for text in text_in_elements)
-    1 ... 14 of 14 results
-    >>> table = find_tag_by_id(registry_browser.contents, 'product-listing')
-    >>> for tr in table.findAll('tr'):
-    ...     td_list = tr.findAll('td')
-    ...     print td_list[5].a
-    <a href="/tomcat/+review-license">Review</a> ...
-
-Now, we can click on the Review link, which will take us to the
-$project/+review-license page. Then clicking on the Change button
-will take us back to the page we came from.
-
-    >>> projects_link = registry_browser.url
-    >>> review_link = registry_browser.getLink(
-    ...     url='/tomcat/+review-license')
-    >>> review_link.text
-    'Review'
-    >>> review_link.click()
-    >>> print registry_browser.url
-    http://launchpad.dev/tomcat/+review-license
-    >>> registry_browser.getControl(name='field.actions.change').click()
-    >>> print registry_browser.url == projects_link
-    True
 
 
 View all projects

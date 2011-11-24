@@ -5,22 +5,22 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
 from uuid import uuid1
 
 import transaction
-import windmill
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget,
-    )
 from lp.code.windmill.testing import CodeWindmillLayer
-from canonical.launchpad.windmill.testing import constants
 from lp.testing import (
     login_person,
     WindmillTestCase,
+    )
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
+from lp.testing.windmill.widgets import (
+    search_and_select_picker_widget,
     )
 
 
@@ -40,14 +40,8 @@ class TestRequestReview(WindmillTestCase):
     def test_inline_request_a_reviewer(self):
         """Request a review."""
 
-        client = self.client
-
-        lpuser.FOO_BAR.ensure_login(client)
-
-        client.open(url=''.join([
-            windmill.settings['TEST_URL'],
-            '~name12/gnome-terminal/klingon/']))
-        client.waits.forPageLoad(timeout=u'10000')
+        client, start_url = self.getClientFor(
+            '/~name12/gnome-terminal/klingon/', lpuser.FOO_BAR)
 
         link = u'//a[@class="menu-link-register_merge sprite add"]'
         client.waits.forElement(xpath=link, timeout=constants.FOR_ELEMENT)
@@ -100,8 +94,7 @@ class TestReviewCommenting(WindmillTestCase):
 
     def test_merge_proposal_commenting(self):
         """Comment on a merge proposal."""
-        client = self.client
-        lpuser.NO_PRIV.ensure_login(client)
+        client, start_url = self.getClientFor('/', lpuser.NO_PRIV)
 
         proposal = self.factory.makeBranchMergeProposal()
         self.open_proposal_page(client, proposal)
@@ -119,8 +112,7 @@ class TestReviewCommenting(WindmillTestCase):
 
     def test_merge_proposal_replying(self):
         """Reply to a review comment."""
-        client = self.client
-        lpuser.NO_PRIV.ensure_login(client)
+        client, start_url = self.getClientFor('/', lpuser.NO_PRIV)
         proposal = self.factory.makeBranchMergeProposal()
         login_person(proposal.registrant)
         proposal.createComment(proposal.registrant, 'hello', 'content')
@@ -139,9 +131,7 @@ class TestReviewCommenting(WindmillTestCase):
 
     def test_merge_proposal_reviewing(self):
         """Comment on a merge proposal."""
-        client = self.client
-        lpuser.NO_PRIV.ensure_login(client)
-
+        client, start_url = self.getClientFor('/', lpuser.NO_PRIV)
         proposal = self.factory.makeBranchMergeProposal()
         self.open_proposal_page(client, proposal)
         client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
@@ -151,7 +141,3 @@ class TestReviewCommenting(WindmillTestCase):
         client.select(id=u'field.vote', val=u'APPROVE')
         client.click(xpath=ADD_COMMENT_BUTTON)
         client.waits.forElement(id=u'review-no-priv', timeout=u'40000')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

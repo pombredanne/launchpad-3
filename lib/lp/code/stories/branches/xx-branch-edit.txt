@@ -22,11 +22,10 @@ owner, Launchpad administrators or members of the Bazaar Experts team.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> link = admin_browser.getLink('Change branch details')
 
-    >>> bazaar_expert_browser = setupBrowser(
-    ...     auth='Basic tim@canonical.com:test')
-    >>> bazaar_expert_browser.open(
+    >>> admin_browser = setupBrowser(auth='Basic admin@canonical.com:test')
+    >>> admin_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> link = bazaar_expert_browser.getLink('Change branch details')
+    >>> link = admin_browser.getLink('Change branch details')
 
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')
@@ -111,7 +110,7 @@ The branch page is displayed with the new status:
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
 
     >>> contents = browser.contents
-    >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
+    >>> status_tag = find_tag_by_id(contents, 'edit-lifecycle_status')
     >>> print extract_text(status_tag)
     Merged
 
@@ -324,14 +323,12 @@ Package branch editing by Uploaders
 Official branches for distro series source packages are editable by
 valid package uploaders.  The normal branch owner vocabulary is the
 editor and the teams that they are a member of.  Official branches may
-well have an owner that is different to the editor, or be a celebrity
-that the editor is not a member of, like ubuntu-branches.
+well have an owner that is different to the editor.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.tests.helpers import make_official_package_branch
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> owner = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> owner = factory.makePerson(
+    ...     name='official-owner', displayname='Jane Doe')
     >>> branch = make_official_package_branch(factory, owner=owner)
     >>> editor = factory.makePerson(
     ...     name='editor', email='editor@example.com', password='test')
@@ -344,21 +341,21 @@ that the editor is not a member of, like ubuntu-branches.
     >>> branch_url = canonical_url(branch)
     >>> logout()
 
-Even though the branch owner, Ubuntu branches in this example, is not
-related to the editor, they stay as the default owner for this branch.
+Even though the branch owner is not related to the editor, they stay as
+the default owner for this branch.
 
     >>> browser = setupBrowser(auth='Basic editor@example.com:test')
     >>> browser.open(branch_url)
     >>> browser.getLink('Change branch details').click()
 
-The owner is still ubuntu-branches.
+The owner is still the original owner.
 
     >>> browser.getControl('Owner').displayValue
-    ['Ubuntu branches (ubuntu-branches)']
+    ['Jane Doe (official-owner)']
 
 But the editor has the option to change the owner to themselves.
 
     >>> browser.getControl('Owner').displayOptions
-    ['Ubuntu branches (ubuntu-branches)', 'Editor (editor)']
+    ['Jane Doe (official-owner)', 'Editor (editor)']
 
 

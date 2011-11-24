@@ -62,6 +62,12 @@
     somewhere in the automated test system that will prevent Windmill from
     executing.
   </tal:comment>
+  <script type="text/javascript">
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
 
@@ -73,12 +79,8 @@
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
     var LPS = YUI({
-      // Don't try to fetch the loader module.
-      bootstrap: false,
       // Don't try to fetch CSS files.
       fetchCSS: false,
-      // Turn off combo loading.
-      combine: false,
       // For paranoia, set a low timeout to not wait on loading a resource.
       timeout: 50
       });
@@ -95,7 +97,6 @@
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-
   <tal:needs_json tal:condition="request/needs_json">
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
@@ -105,26 +106,46 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
+    <script type="text/javascript">
+      LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
+              'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+                'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+                function(Y) {
+          Y.on("domready", function () {
+              if (Y.one(document.body).hasClass('private')) {
+                  Y.lp.app.privacy.setup_privacy_notification();
+                  Y.lp.app.privacy.display_privacy_notification();
+              }
+              Y.lp.app.beta_features.display_beta_notification();
+          });
+      });
+    </script>
+
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'lp', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
+	    Y.lp.app.links.check_valid_lp_links();
+            // Longpolling will only start if
+            // LP.cache.longpoll is populated.
+            // We use Y.later to work around a Safari/Chrome 'feature':
+            // The mouse cursor stays 'busy' until all the requests started during
+            // page load are finished.  Hence we want the long poll request to start
+            // right *after* the page has loaded.
+            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
         }, window);
 
         // Hook up the function that dismisses the help window if we click
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
-    });
 
-    LPS.use('lp.app.links',
-      function(Y) {
-        Y.on('load', function(e) {
-            Y.lp.app.links.check_valid_lp_links();
-        }, window);
+        Y.on('lp:context:web_link:changed', function(e) {
+            window.location = e.new_value;
+        });
     });
   </script>
 </metal:page-javascript>
@@ -148,7 +169,13 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-  </tal:comment>
+    </tal:comment>
+  <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
+
   <link
         type="text/css"
         rel="stylesheet"
@@ -163,18 +190,16 @@
                       links cache/links;
                       objects cache/objects;">
     <script tal:repeat="key links"
-      tal:content="string:LP.client.links['${key}'] =
+      tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
-    <script tal:repeat="key objects"
-      tal:content="string:LP.client.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
-    </script>
   </tal:cache>
-
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.client.cache['context'] =
-                 ${context/webservice:json};">
+  <tal:comment condition="nothing">
+    The id of the script block below is used to determine whether this
+    page is loaded by test_lp_client_integration.js.
+  </tal:comment>
+  <script id="json-cache-script"
+          tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 
@@ -226,7 +251,7 @@
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
-            <input type="submit" value="" class="icon-only sprite search-icon" />
+            <input type="image" src="/@@/search" style="vertical-align:5%" alt="Search Launchpad"/>
           </form>
         </div>
         <metal:site-message
@@ -244,6 +269,14 @@
       <a tal:condition="view/user|nothing"
         href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
+      <a href="http://blog.launchpad.net/"
+	>Blog</a>
+      <tal:careers_link condition="not: features/baselayout.careers_link.disabled">
+	&nbsp;&bull;&nbsp;
+	<a href="http://www.canonical.com/about-canonical/careers"
+		>Careers</a>
+      </tal:careers_link>
+      &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
       <span id="lp-version">
@@ -251,8 +284,8 @@
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
-             >get the code</a>)
+        (<a href="https://dev.launchpad.net/"
+             >Get the code!</a>)
       </span>
     </div>
   </div>

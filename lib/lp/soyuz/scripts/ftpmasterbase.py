@@ -153,12 +153,12 @@ class SoyuzScript(LaunchpadScript):
             pocket=self.location.pocket,
             exact_match=True)
 
-        if not published_sources:
+        try:
+            latest_source = published_sources[0]
+        except IndexError:
             raise SoyuzScriptError(
                 "Could not find source '%s/%s' in %s" % (
                 name, self.options.version, self.location))
-
-        latest_source = published_sources[0]
         self._validatePublishing(latest_source)
         return latest_source
 

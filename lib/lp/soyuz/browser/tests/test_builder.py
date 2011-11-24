@@ -18,7 +18,8 @@ class TestBuildersNavigation(TestCaseWithFactory):
     def test_buildjob_redirects_for_recipe_build(self):
         # /builders/+buildjob/<job id> redirects to the build page.
         build = self.factory.makeSourcePackageRecipeBuild()
-        url = 'http://launchpad.dev/builders/+buildjob/%s' % build.url_id
+        url = 'http://launchpad.dev/builders/+buildjob/%s' % (
+            build.build_farm_job.id)
         context, view, request = test_traverse(url)
         view()
         self.assertEqual(301, request.response.getStatus())
@@ -29,7 +30,8 @@ class TestBuildersNavigation(TestCaseWithFactory):
     def test_buildjob_redirects_for_binary_build(self):
         # /builders/+buildjob/<job id> redirects to the build page.
         build = self.factory.makeBinaryPackageBuild()
-        url = 'http://launchpad.dev/builders/+buildjob/%s' % build.url_id
+        url = 'http://launchpad.dev/builders/+buildjob/%s' % (
+            build.build_farm_job.id)
         context, view, request = test_traverse(url)
         view()
         self.assertEqual(301, request.response.getStatus())

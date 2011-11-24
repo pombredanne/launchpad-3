@@ -28,6 +28,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 special_test_layer = {
     'distribution-views.txt': LaunchpadFunctionalLayer,
     'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
+    'gpg-views.txt': LaunchpadFunctionalLayer,
     'karmacontext-views.txt': LaunchpadFunctionalLayer,
     'mailinglist-message-views.txt': LaunchpadFunctionalLayer,
     'milestone-views.txt': LaunchpadFunctionalLayer,

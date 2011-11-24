@@ -4,13 +4,15 @@
 """Tests for bug duplicate validation."""
 
 from textwrap import dedent
-import unittest
 
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bug import InvalidDuplicateValue
-from lp.testing import TestCaseWithFactory
+from lp.bugs.errors import InvalidDuplicateValue
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
 
 
 class TestDuplicateAttributes(TestCaseWithFactory):
@@ -96,6 +98,66 @@ class TestMoveDuplicates(TestCaseWithFactory):
         self.assertEqual(dupe_one.duplicateof, new_bug)
         self.assertEqual(dupe_two.duplicateof, new_bug)
 
+    def makeBugForDistributionSourcePackage(self, sourcepackage,
+                                            with_random_target):
+        bug = self.factory.makeBug(
+            distribution=sourcepackage.distribution,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        if with_random_target:
+            bug.addTask(
+                self.factory.makePerson(),
+                self.factory.makeDistributionSourcePackage())
+        return bug
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def moveDuplicates(self, number_of_dupes, with_random_target):
+        # Create a bug with the given number of duplicates and
+        # then mark the bug as a duplicate of another bug.
+        # Return the number of SQL statements executed to
+        # update the target's bug heat cache
+        # (IBugTarget.recalculateBugHeatCache())
+        #
+        # We use a distributionsourcepackage as the bug target
+        # because we filter the recorded SQL statements by
+        # string.startswith(...), and the implementation of
+        # DistributionSourcePackage.recalculateBugHeatCache()
+        # is the only one that issues a "SELECT MAX(Bug.heat)..."
+        # query, making it more reliable to detect in the
+        # numerous recorded statements compared with the
+        # statements issued by BugTarget.recalculateBugHeatCache().
+        dsp = self.factory.makeDistributionSourcePackage()
+        master_bug = self.makeBugForDistributionSourcePackage(
+            dsp, with_random_target)
+        for count in xrange(number_of_dupes):
+            dupe = self.makeBugForDistributionSourcePackage(
+                dsp, with_random_target)
+            dupe.markAsDuplicate(master_bug)
+        new_master_bug = self.makeBugForDistributionSourcePackage(
+            dsp, with_random_target)
+        with StormStatementRecorder() as recorder:
+            master_bug.markAsDuplicate(new_master_bug)
+        target_heat_cache_statements = [
+            statement for statement in recorder.statements
+            if statement.startswith(
+                "SELECT MAX(Bug.heat), SUM(Bug.heat), COUNT(Bug.id)")]
+        return len(target_heat_cache_statements)
+
+    def test_move_duplicates_efficient_target_heat_cache_calculation(self):
+        # When bug A is marked as a duplicate of bug B, bug A's
+        # duplicates become duplicates of bug B too. This requires
+        # to set the heat of the duplicates to 0, and to recalculate
+        # the heat cache of each target. Ensure that the heat cache
+        # is computed only once per target.
+        #
+        # The query to retrieve the hottest bug for a target is quite
+        # slow (ca 200 msec) and should be executed exactly once per
+        # target.
+        self.assertEqual(1, self.moveDuplicates(2, with_random_target=False))
+        self.assertEqual(1, self.moveDuplicates(4, with_random_target=False))
+
+        # If each bug has two targets, one of them common, the other
+        # distinct for each bug, we still get one call for each target.
+        # For N duplicates, we have N distinct targets, we have
+        # the targets for the old master bug and for the new master bug,
+        # and one common target, i.e., N+3 targets for N duplicates.
+        self.assertEqual(5, self.moveDuplicates(2, with_random_target=True))
+        self.assertEqual(7, self.moveDuplicates(4, with_random_target=True))

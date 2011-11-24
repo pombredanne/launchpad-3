@@ -62,6 +62,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class UnauthorizedView(SystemErrorView):
@@ -69,10 +70,16 @@ class UnauthorizedView(SystemErrorView):
     response_code = None
 
     forbidden_page = ViewPageTemplateFile(
-        '../templates/launchpad-forbidden.pt')
+        '../../../lp/app/templates/launchpad-forbidden.pt')
 
     read_only_page = ViewPageTemplateFile(
-        '../templates/launchpad-readonlyfailure.pt')
+        '../../../lp/app/templates/launchpad-readonlyfailure.pt')
+
+    def page_title(self):
+        if is_read_only():
+            return super(UnauthorizedView, self).page_title
+        else:
+            return 'Forbidden'
 
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
@@ -85,7 +92,7 @@ class UnauthorizedView(SystemErrorView):
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])
             if lp_permission.access_level != "read":
-                self.request.response.setStatus(503) # Service Unavailable
+                self.request.response.setStatus(503)  # Service Unavailable
                 return self.read_only_page()
 
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -101,7 +108,7 @@ class UnauthorizedView(SystemErrorView):
                 # must ensure that form pages require the same rights
                 # as the pages that process those forms.  So, we should never
                 # need to newly authenticate on a POST.
-                self.request.response.setStatus(500) # Internal Server Error
+                self.request.response.setStatus(500)  # Internal Server Error
                 self.request.response.setHeader('Content-type', 'text/plain')
                 return ('Application error.  Unauthenticated user POSTing to '
                         'page that requires authentication.')
@@ -125,7 +132,7 @@ class UnauthorizedView(SystemErrorView):
             # Maybe render page with a link to the redirection?
             return ''
         else:
-            self.request.response.setStatus(403) # Forbidden
+            self.request.response.setStatus(403)  # Forbidden
             return self.forbidden_page()
 
     def getRedirectURL(self, current_url, query_string):
@@ -195,10 +202,18 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         openid_vhost = config.launchpad.openid_provider_vhost
-        self.openid_request = consumer.begin(
-            allvhosts.configs[openid_vhost].rooturl)
+
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-begin",
+            allvhosts.configs[openid_vhost].rooturl,
+            allow_nested=True)
+        try:
+            self.openid_request = consumer.begin(
+                allvhosts.configs[openid_vhost].rooturl)
+        finally:
+            timeline_action.finish()
         self.openid_request.addExtension(
-            sreg.SRegRequest(optional=['email', 'fullname']))
+            sreg.SRegRequest(required=['email', 'fullname']))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
@@ -260,7 +275,7 @@ class OpenIDCallbackView(OpenIDLogin):
     """
 
     suspended_account_template = ViewPageTemplateFile(
-        '../templates/login-suspended-account.pt')
+        'templates/login-suspended-account.pt')
 
     def _gather_params(self, request):
         params = dict(request.form)
@@ -283,7 +298,12 @@ class OpenIDCallbackView(OpenIDLogin):
         params = self._gather_params(self.request)
         requested_url = self._get_requested_url(self.request)
         consumer = self._getConsumer()
-        self.openid_response = consumer.complete(params, requested_url)
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-complete", '', allow_nested=True)
+        try:
+            self.openid_response = consumer.complete(params, requested_url)
+        finally:
+            timeline_action.finish()
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -400,7 +420,7 @@ class OpenIDCallbackView(OpenIDLogin):
 class OpenIDLoginErrorView(LaunchpadView):
 
     page_title = 'Error logging in'
-    template = ViewPageTemplateFile("../templates/login-error.pt")
+    template = ViewPageTemplateFile("templates/login-error.pt")
 
     def __init__(self, context, request, openid_response):
         super(OpenIDLoginErrorView, self).__init__(context, request)
@@ -417,11 +437,18 @@ class OpenIDLoginErrorView(LaunchpadView):
 class AlreadyLoggedInView(LaunchpadView):
 
     page_title = 'Already logged in'
-    template = ViewPageTemplateFile("../templates/login-already.pt")
+    template = ViewPageTemplateFile("templates/login-already.pt")
 
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
+    # Force a fresh session, per Bug #828638. Any changes to any
+    # existing session made this request will be lost, but that should
+    # not be a problem as authentication must be done before
+    # authorization and authorization before we do any actual work.
+    client_id_manager = getUtility(IClientIdManager)
+    new_client_id = client_id_manager.generateUniqueId()
+    client_id_manager.setRequestId(request, new_client_id)
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
@@ -517,5 +544,5 @@ class FeedsUnauthorizedView(UnauthorizedView):
     def __call__(self):
         assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
             "Feeds user should always be anonymous.")
-        self.request.response.setStatus(403) # Forbidden
+        self.request.response.setStatus(403)  # Forbidden
         return self.forbidden_page()

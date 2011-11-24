@@ -30,6 +30,7 @@ from zope.component import (
 from zope.event import notify
 from zope.interface import implements
 from zope.preference.interfaces import IPreferenceGroup
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
@@ -76,8 +77,7 @@ class PlacelessAuthUtility:
                     # This we treat each request as a separate
                     # login/logout.
                     notify(BasicAuthLoggedInEvent(
-                        request, login, principal
-                        ))
+                        request, login, principal))
                     return principal
 
     def _authenticateUsingCookieAuth(self, request):
@@ -121,10 +121,15 @@ class PlacelessAuthUtility:
         # To avoid confusion (hopefully), basic auth trumps cookie auth
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
-
         # XXX daniels 2004-12-14: allow authentication scheme to be put into
         #     a view; for now, use basic auth by specifying ILoginPassword.
-        credentials = ILoginPassword(request, None)
+        try:
+            credentials = ILoginPassword(request, None)
+        except binascii.Error:
+            # We have probably been sent Basic auth credentials that aren't
+            # encoded properly. That's a client error, so we don't really
+            # care, and we're done.
+            raise Unauthorized("Bad Basic authentication.")
         if credentials is not None and credentials.getLogin() is not None:
             return self._authenticateUsingBasicAuth(credentials, request)
         else:
@@ -190,7 +195,8 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(
+                hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
@@ -335,7 +341,9 @@ class LaunchpadPrincipal:
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
 # we use these dummy adapters here just to make that code not OOPS.
 class TemporaryPrincipalAnnotations(UserDict):
+
     implements(IAnnotations)
+
     adapts(ILaunchpadPrincipal, IPreferenceGroup)
 
     def __init__(self, principal, pref_group):

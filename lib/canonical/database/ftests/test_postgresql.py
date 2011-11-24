@@ -5,7 +5,8 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 
-from canonical.ftests.pgsql import PgTestSetup
+from canonical.testing.layers import BaseLayer
+from lp.testing.pgsql import PgTestSetup
 
 def setUp(test):
 
@@ -63,5 +64,6 @@ def test_suite():
             "canonical.database.postgresql",
             setUp=setUp, tearDown=tearDown
             )
+    suite.layer = BaseLayer
     return suite
 

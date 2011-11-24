@@ -1,4 +1,5 @@
-= File Attachments of the Bug Report =
+File Attachments of the Bug Report
+==================================
 
 File attachments of the bug report itself are displayed in the list of
 comments. Since the text of this comment is already displayed as the
@@ -11,7 +12,7 @@ of bug #11 is:
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_1 = find_tags_by_class(browser.contents, 'boardComment')[0]
     >>> print extract_text(comment_1)
-    Valentina Commissari
+    Valentina Commissari (tsukimi)
     wrote
     on 2007-03-15:
     #1
@@ -21,7 +22,7 @@ If we add an attachment to the bug report...
 
     >>> import StringIO
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
+    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login("test@canonical.com")
@@ -33,8 +34,6 @@ If we add an attachment to the bug report...
     ...     comment=bug_11.initial_message, filename='test.txt',
     ...     is_patch=False, content_type='text/plain',
     ...     description='sample data')
-    >>> syncUpdate(attachment)
-    >>> syncUpdate(bug_11)
     >>> logout()
 
 ...the first displayed comment shows a link to the attachment, but it
@@ -44,7 +43,7 @@ displayed as the bug report).
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_0 = find_tags_by_class(browser.contents, 'boardComment')[0]
     >>> print extract_text(comment_0)
-    Daniel Silverstone
+    Daniel Silverstone (kinnison)
     wrote
     on 2007-03-15:
     #0
@@ -54,8 +53,14 @@ displayed as the bug report).
     >>> link = browser.getLink('sample data')
     >>> print link.url
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
+    >>> edit_link = find_tags_by_class(browser.contents, 'edit sprite')[1]
+    >>> print edit_link
+    <a alt="edit" class="sprite edit"...
+    ...href="/jokosher/+bug/11/+attachment/1"></a>
 
-== Patch attachments are shown before non-patch attachments ==
+
+Patch attachments are shown before non-patch attachments
+--------------------------------------------------------
 
     >>> login("test@canonical.com")
     >>> launchbag.clear()
@@ -64,8 +69,6 @@ displayed as the bug report).
     ...     comment=bug_11.initial_message, filename='patch.txt',
     ...     is_patch=True, content_type='text/plain',
     ...     description='a patch')
-    >>> syncUpdate(patch_attachment)
-    >>> syncUpdate(bug_11)
     >>> logout()
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> print extract_text(browser.contents)
@@ -74,4 +77,4 @@ displayed as the bug report).
     ...a patch...
     ...Bug attachments...
     ...sample data...
-    ... 
+    ...

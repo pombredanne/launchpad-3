@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -19,7 +19,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
@@ -56,19 +55,12 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         distroseries and an new uploadprocessor instance.
         """
         super(TestPPAUploadProcessorBase, self).setUp()
+        self.build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        # Let's make 'name16' person member of 'launchpad-beta-tester'
-        # team only in the context of this test.
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        admin = getUtility(ILaunchpadCelebrities).admin
-        self.name16 = getUtility(IPersonSet).getByName("name16")
-        beta_testers.addMember(self.name16, admin)
-        # Pop the two messages notifying the team modification.
-        stub.test_emails.pop()
-        stub.test_emails.pop()
 
         # create name16 PPA
+        self.name16 = getUtility(IPersonSet).getByName("name16")
         self.name16_ppa = getUtility(IArchiveSet).new(
             owner=self.name16, distribution=self.ubuntu,
             purpose=ArchivePurpose.PPA)
@@ -189,9 +181,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -207,8 +199,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
 
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [pub_bar] = pub_sources
+        pub_bar = self.name16.archive.getPublishedSources(name='bar').one()
 
         self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')
         self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
@@ -338,8 +329,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         _from_addr, _to_addrs, _raw_msg = stub.test_emails.pop()
 
         # The SourcePackageRelease still has a component of universe:
-        pub_sources = self.name16.archive.getPublishedSources(name="bar")
-        [pub_foo] = pub_sources
+        pub_foo = self.name16.archive.getPublishedSources(name="bar").one()
         self.assertEqual(
             pub_foo.sourcepackagerelease.component.name, "universe")
 
@@ -353,17 +343,19 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary_universe", "~name16/ubuntu")
         self.processUpload(
-            self.uploadprocessor, upload_dir, build=build)
+            self.build_uploadprocessor, upload_dir, build=build)
 
         # No mails are sent for successful binary uploads.
         self.assertEqual(len(stub.test_emails), 0,
                          "Unexpected email generated on binary upload.")
 
         # Publish the binary.
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
+        self.switchToAdmin()
         queue_item.realiseUpload()
+        self.switchToUploader()
 
         for binary_package in build.binarypackages:
             self.assertEqual(binary_package.component.name, "universe")
@@ -385,8 +377,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Source publication and build record for breezy-i386
         # distroarchseries were created as expected. The source is ready
         # to receive the binary upload.
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [pub_bar] = pub_sources
+        pub_bar = self.name16.archive.getPublishedSources(name='bar').one()
         self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')
         self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bar.component.name, 'main')
@@ -402,12 +393,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
         self.processUpload(
-            self.uploadprocessor, upload_dir, build=build)
+            self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         # All the files associated with this binary upload must be in the
@@ -437,8 +428,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # Copy source uploaded to name16 PPA to cprov's PPA.
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [name16_pub_bar] = pub_sources
+        name16_pub_bar = self.name16.archive.getPublishedSources(
+            name='bar').one()
         cprov = getUtility(IPersonSet).getByName("cprov")
         cprov_pub_bar = name16_pub_bar.copyTo(
             self.breezy, PackagePublishingPocket.RELEASE, cprov.archive)
@@ -456,12 +447,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~cprov/ubuntu")
         self.processUpload(
-            self.uploadprocessor, upload_dir, build=build_bar_i386)
+            self.build_uploadprocessor, upload_dir, build=build_bar_i386)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=cprov.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=cprov.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
@@ -488,6 +479,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """
         # Create the extra permissions. We're making an extra team and
         # adding it to cprov's upload permission, plus name12.
+        self.switchToAdmin()
         cprov = getUtility(IPersonSet).getByName("cprov")
         email = "contact@example.com"
         name = "Team"
@@ -496,6 +488,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
         cprov.archive.newComponentUploader(team, "main")
+        self.switchToUploader()
 
         # Process the upload.
         upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ppa/ubuntu")
@@ -522,9 +515,11 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
          * The upload is auto-accepted in the overridden target distroseries.
          * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
+        self.switchToAdmin()
         hoary = self.ubuntu['hoary']
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         hoary['i386'].addOrUpdateChroot(fake_chroot)
+        self.switchToUploader()
 
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
@@ -534,9 +529,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = hoary.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = hoary.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -566,9 +561,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=ubuntu_team.archive)
         self.assertEqual(queue_items.count(), 1)
 
         pending_ppas = self.ubuntu.getPendingPublicationPPAs()
@@ -633,8 +628,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # the main archive later where it would be published using the
         # source's component if the standard auto-overrides don't match
         # an existing publication.
-        pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
-        [pub_foocomm] = pub_sources
+        pub_foocomm = self.name16.archive.getPublishedSources(
+            name='foocomm').one()
         self.assertEqual(
             pub_foocomm.sourcepackagerelease.component.name, 'partner')
         self.assertEqual(pub_foocomm.component.name, 'main')
@@ -671,8 +666,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             test_files_dir=test_files_dir)
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        queue_items = self.breezy.getQueueItems(
-            name="debian-installer",
+        queue_items = self.breezy.getPackageUploads(
+            name=u"debian-installer",
             status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
@@ -710,9 +705,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -724,12 +719,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
         self.processUpload(
-            self.uploadprocessor, upload_dir, build=build)
+            self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         # All the files associated with this binary upload must be in the
@@ -751,9 +746,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_component", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
 
         # The upload was accepted despite the fact that it does
         # not have a valid component:
@@ -768,10 +763,11 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir, build=build)
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        self.processUpload(
+            self.build_uploadprocessor, upload_dir, build=build)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
 
         # The binary is accepted despite the fact that it does not have
         # a valid component:
@@ -803,7 +799,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
 
         # Remove breezy/i386 PPA support.
+        self.switchToAdmin()
         self.breezy['i386'].supports_virtualized = False
+        self.switchToUploader()
         self.layer.commit()
 
         # Next version can't be accepted because it can't be built.
@@ -880,9 +878,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.NEW)
 
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
@@ -894,8 +892,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         system.
         """
         try:
-            self.ubuntu.getFileByName(
-                'bar_1.0.orig.tar.gz', source=True, binary=False)
+            self.ubuntu.main_archive.getFileByName('bar_1.0.orig.tar.gz')
         except NotFoundError:
             self.fail('bar_1.0.orig.tar.gz is not yet published.')
 
@@ -936,12 +933,14 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     def testNoPublishingOverrides(self):
         """Make sure publishing overrides are not applied for PPA uploads."""
         # Create a fake "bar" package and publish it in section "web".
+        self.switchToAdmin()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         publisher.getPubSource(
             sourcename="bar", version="1.0-1", section="web",
             archive=self.name16_ppa, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
+        self.switchToUploader()
 
         # Now upload bar 1.0-3, which has section "devel".
         # (I am using this version because it's got a .orig required for
@@ -1030,16 +1029,16 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # errors.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different '
-            'contents. See more information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different contents. See more '
-            'information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'Files specified in DSC are broken or missing, skipping package '
-            'unpack verification.')
+            u'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different '
+            u'contents. See more information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different contents. See more '
+            u'information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'Files specified in DSC are broken or missing, skipping package '
+            u'unpack verification.')
 
         # Also, the email generated should be sane.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -1122,9 +1121,11 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # Delete the published file.
-        [bar_src] = self.name16.archive.getPublishedSources(name="bar")
+        self.switchToAdmin()
+        bar_src = self.name16.archive.getPublishedSources(name="bar").one()
         bar_src.requestDeletion(self.name16)
         bar_src.dateremoved = UTC_NOW
+        self.switchToUploader()
         self.layer.txn.commit()
 
         # bar_1.0-3 contains an orig file of the same version with
@@ -1146,9 +1147,11 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         """
         # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
         # sources.
+        self.switchToAdmin()
         self.options.context = 'absolutely-anything'
         getUtility(ISourcePackageFormatSelectionSet).add(
             self.breezy, SourcePackageFormat.FORMAT_3_0_QUILT)
+        self.switchToUploader()
 
         # First upload a complete 3.0 (quilt) source to the primary
         # archive.
@@ -1159,9 +1162,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.NEW)
 
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
@@ -1196,6 +1199,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         record, then switchDbUser as 'librariangc' and update the size of the
         source file to the given value.
         """
+        self.switchToAdmin()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         pub_src = publisher.getPubSource(
@@ -1211,7 +1215,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # IArchive.estimated_size.
         content.filesize = size - 1024
         self.layer.commit()
-        self.layer.switchDbUser('uploader')
+        self.switchToUploader()
 
         # Re-initialize uploadprocessor since it depends on the new
         # transaction reset by switchDbUser.
@@ -1298,12 +1302,12 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
 
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
         self.processUpload(
-            self.uploadprocessor, upload_dir, build=build)
+            self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted, and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testArchiveBinarySize(self):
@@ -1312,6 +1316,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The binary size for an archive should only take into account one
         occurrence of arch-independent files published in multiple locations.
         """
+        self.switchToAdmin()
+
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
         publisher = SoyuzTestPublisher()
@@ -1332,6 +1338,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+
+        self.switchToUploader()
 
         # The result is 54 without the bug fix (see bug 180983).
         size = self.name16.archive.binaries_size

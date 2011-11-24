@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,7 +6,6 @@ __metaclass__ = type
 from zope.interface.verify import verifyObject
 
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -26,13 +25,23 @@ class HasTranslationTemplatesTestMixin:
         # in different series ('devel' and 'stable').
         super(HasTranslationTemplatesTestMixin, self).setUp()
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         """Attaches a template to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
-    def createTranslationFile(self, name, priority=0):
+    def createTranslationFile(self, name=None, priority=0):
         """Attaches a pofile to appropriate container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createPackaging(self):
+        """Creates a packaging link for the container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createSharingTranslationTemplate(self):
+        """Attaches a template to the sharing partner of the container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
@@ -93,7 +102,7 @@ class HasTranslationTemplatesTestMixin:
         # If template is not current, nothing is returned even if
         # there are POFiles attached to it.
         template1.iscurrent = False
-        pofile = self.factory.makePOFile('sr', potemplate=template1)
+        self.factory.makePOFile('sr', potemplate=template1)
         current_translations = list(
             self.container.getCurrentTranslationFiles())
         self.assertEquals([], current_translations)
@@ -140,28 +149,67 @@ class HasTranslationTemplatesTestMixin:
             set([pofile_sr.id, pofile_es.id]),
             current_translations_ids)
 
-    def test_has_current_translation_templates(self):
+    def test_has_current_translation_templates__no_template(self):
         # A series without templates has no current templates.
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__current_template(self):
         # A series with a current template has current templates.
-        first_template = self.createTranslationTemplate("first")
+        self.createTranslationTemplate()
         self.assertTrue(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__noncurrent_template(self):
         # A series with only non-current templates has no current
         # templates.
-        first_template.iscurrent = False
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__two_templates(self):
         # A series with current and non-current templates has current
         # templates.
-        second_template = self.createTranslationTemplate("second")
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
+        self.createTranslationTemplate()
         self.assertTrue(self.container.has_current_translation_templates)
 
-        # A product or distribution that doesn't use Launchpad for
-        # translations has no current templates.
-        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
-        self.assertFalse(self.container.has_current_translation_templates)
+    def test_has_obsolete_translation_templates__no_templates(self):
+        # A series without templates has no obsolete templates.
+        self.assertFalse(self.container.has_obsolete_translation_templates)
+
+    def test_has_obsolete_translation_templates__current_template(self):
+        # A series with a current template has no obsolete templates either.
+        self.createTranslationTemplate()
+        self.assertFalse(self.container.has_obsolete_translation_templates)
+
+    def test_has_obsolete_translation_templates__noncurrent_template(self):
+        # A series with only non-current templates has obsolete templates.
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
+        self.assertTrue(self.container.has_obsolete_translation_templates)
+
+    def test_has_obsolete_translation_templates__two_templates(self):
+        # A series with current and non-current templates has obsolete
+        # templates.
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
+        self.createTranslationTemplate()
+        self.assertTrue(self.container.has_obsolete_translation_templates)
+
+    def test_has_sharing_translation_templates__no_link(self):
+        # Without a packaging link, no sharing templates are found.
+        self.assertFalse(self.container.has_sharing_translation_templates)
+
+    def test_has_sharing_translation_templates__no_templates(self):
+        # Without templates on the other side, no sharing templates are found.
+        self.createPackaging()
+        self.assertFalse(self.container.has_sharing_translation_templates)
+
+    def test_has_sharing_translation_templates__templates(self):
+        # Without templates on the other side, no sharing templates are found.
+        self.createPackaging()
+        self.createSharingTranslationTemplate()
+        self.assertTrue(self.container.has_sharing_translation_templates)
 
     def test_has_translation_files(self):
         # has_translations_files should only return true if the object has
@@ -169,6 +217,23 @@ class HasTranslationTemplatesTestMixin:
         self.assertFalse(self.container.has_translation_files)
         self.createTranslationFile("one")
         self.assertTrue(self.container.has_translation_files)
+
+    def test_getTranslationTemplateByName(self):
+        template_name = self.factory.getUniqueString()
+        # A series without templates does not find the template.
+        self.assertEqual(
+            None, self.container.getTranslationTemplateByName(template_name))
+
+        # A template with a different name is not found.
+        self.createTranslationTemplate(self.factory.getUniqueString())
+        self.assertEqual(
+            None, self.container.getTranslationTemplateByName(template_name))
+
+        # Only the template with the correct name is returned.
+        template = self.createTranslationTemplate(template_name)
+        self.assertEqual(
+            template,
+            self.container.getTranslationTemplateByName(template_name))
 
     def test_getTranslationTemplateFormats(self):
         # Check that translation_template_formats works properly.
@@ -210,7 +275,7 @@ class TestProductSeriesHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         potemplate = self.factory.makePOTemplate(
             name=name, productseries=self.container)
         potemplate.priority = priority
@@ -223,18 +288,25 @@ class TestProductSeriesHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        self.packaging = self.factory.makePackagingLink(
+            productseries=self.container, in_ubuntu=True)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.packaging.sourcepackage)
+
     def setUp(self):
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.product_or_distro = self.container.product
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSourcePackageHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         potemplate = self.factory.makePOTemplate(
             name=name, distroseries=self.container.distroseries,
             sourcepackagename=self.container.sourcepackagename)
@@ -248,18 +320,25 @@ class TestSourcePackageHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        self.packaging = self.factory.makePackagingLink(
+            sourcepackage=self.container)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.packaging.productseries)
+
     def setUp(self):
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=self.container)
         potemplate = self.factory.makePOTemplate(
@@ -275,8 +354,23 @@ class TestDistroSeriesHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.container)
+        self.packaging = self.factory.makePackagingLink(
+            sourcepackage=sourcepackage)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.packaging.productseries)
+
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
-        self.container = self.factory.makeDistroRelease()
-        self.product_or_distro = self.container.distribution
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
+        self.container = self.factory.makeDistroSeries()
+
+    def test_has_sharing_translation_templates__templates(self):
+        # This attribute is always False for DistroSeries
+        self.createPackaging()
+        self.createSharingTranslationTemplate()
+        self.assertFalse(self.container.has_sharing_translation_templates)

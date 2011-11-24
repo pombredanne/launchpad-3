@@ -42,26 +42,15 @@
     facet="overview"
     permission="zope.Public"
     for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
-    class="canonical.launchpad.browser.LibraryFileAliasView"
+    class="canonical.launchpad.browser.librarian.LibraryFileAliasView"
     />
 
   <browser:page
     name="+md5"
     permission="zope.Public"
     for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
-    class="canonical.launchpad.browser.LibraryFileAliasMD5View"
+    class="canonical.launchpad.browser.librarian.LibraryFileAliasMD5View"
     />
-
-  <!-- StreamOrRedirectLibraryFileAliasView -->
-  <class class="canonical.launchpad.browser.librarian.StreamOrRedirectLibraryFileAliasView">
-    <allow attributes="__call__" />
-    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
-  </class>
-
-  <class class="canonical.launchpad.browser.librarian.SafeStreamOrRedirectLibraryFileAliasView">
-    <allow attributes="__call__" />
-    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
-  </class>
 
   <adapter
     factory="canonical.launchpad.database.librarian.LibraryFileAliasWithParent"

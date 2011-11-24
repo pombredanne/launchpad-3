@@ -83,18 +83,18 @@ class ILibraryFileAlias(Interface):
     https_url = Attribute(_("The https URL to this file"))
     private_url = Attribute(_("The secure URL to this file (private files)"))
 
-    def getURL():
+    def getURL(secure=True, include_token=False):
         """Return this file's http or https URL.
 
         If the file is a restricted file, the private_url will be returned,
         which is on https and uses unique domains per file alias.
 
-        The generated URL will be https if the use_https config variable is
-        set, in order to prevent warnings about insecure objects from
-        happening in some browsers (this is used for, e.g., branding).
-
-        If config.launchpad.virtual_host.use_https is set, then return the
-        https URL. Otherwise return the http URL.
+        :param secure: generate HTTPS URLs if the use_https config variable
+            is set, in order to prevent warnings about insecure objects
+            from happening in some browsers (this is used for, e.g.,
+            branding).
+        :param include_token: create a time-limited token and include it in
+            the URL to authorise access to restricted files.
         """
 
     def open(timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):

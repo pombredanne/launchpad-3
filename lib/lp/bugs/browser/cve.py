@@ -16,11 +16,11 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
     GetitemNavigation,
+    LaunchpadView,
     Link,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -28,6 +28,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.validators.cve import valid_cve
 from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
@@ -122,11 +123,10 @@ class CveUnlinkView(CveLinkView):
     heading = 'Remove links to bug reports'
 
 
-class CveSetView:
+class CveSetView(LaunchpadView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(CveSetView, self).__init__(context, request)
         self.notices = []
         self.results = None
         self.text = self.request.form.get('text', None)

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -25,11 +25,6 @@
 
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
-
-    <class class="lp.bugs.model.bugtask.BugTaskResultSet">
-        <allow interface="storm.zope.interfaces.IResultSet" />
-        <allow attributes="__getslice__" />
-    </class>
 
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
@@ -61,9 +56,6 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
@@ -153,15 +145,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtrackerperson.IBugTrackerPerson"/>
     </class>
-    <class
-        class="lp.bugs.model.packagebugsupervisor.PackageBugSupervisor">
-        <allow
-            attributes="
-                id
-                distribution
-                sourcepackagename
-                bug_supervisor"/>
-    </class>
 
     <!-- CveReference -->
 
@@ -176,6 +159,10 @@
     <facet
         facet="bugs">
 
+      <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
+        <allow attributes="rank id task"/>
+      </class>
+
         <!-- IBugTask -->
 
         <class
@@ -183,6 +170,7 @@
             <allow
                 attributes="
                     id
+                    assigneeID
                     bug
                     bugID
                     target
@@ -197,15 +185,21 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    distributionID
+                    distroseriesID
+                    milestoneID
+                    productID
                     productseriesID
+                    sourcepackagenameID
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
-                    userCanEditImportance
-                    userCanEditMilestone
+                    maybeConfirm
+                    userHasPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require
@@ -219,8 +213,8 @@
                     distribution
                     distroseries
                     milestone
+                    _status
                     status
-                    statusexplanation
                     importance
                     assignee
                     bugwatch
@@ -239,7 +233,11 @@
                     conjoined_slave
                     subscribe
                     getConjoinedMaster
-                    findSimilarBugs"/>
+                    findSimilarBugs
+                    getContributorInfo"/>
+            <require
+                permission="launchpad.Delete"
+                interface="lp.bugs.interfaces.bugtask.IBugTaskDelete"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -250,17 +248,32 @@
                     transitionToStatus
                     transitionToAssignee
                     transitionToMilestone
-                    transitionToTarget"/>
+                    transitionToTarget
+                    validateTransitionToTarget
+                    "/>
 
-            <!-- XXX Brad Bollenbach 2006-09-29
-
-    bug=63000:
-                                The permission checking for milestone and importance is further
-                                restricted in the browser view code (BugTaskEditView). -->
-
+            <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+                 The permission checking for milestone and importance
+                 is further restricted in the browser view code
+                 (BugTaskEditView).
+            -->
             <require
                 permission="launchpad.Edit"
-                set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
+                set_attributes="
+                    age
+                    bugwatch
+                    datecreated
+                    importance
+                    milestone
+                    owner
+                    related_tasks
+                    setImportanceFromDebbugs
+                    setStatusFromDebbugs
+                    statusdisplayhtml
+                    statuselsewhere
+                    targetname
+                    title
+                    "/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -289,16 +302,18 @@
             factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
             permission="zope.Public"/>
 
-        <!-- NullBugTask -->
-
+        <!-- BugTaskSearchParams -->
         <class
-            class="lp.bugs.model.bugtask.NullBugTask">
+            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            <allow
+                attributes="
+                    setTarget
+                    "/>
             <require
-                permission="launchpad.View"
-                interface="lp.bugs.interfaces.bugtask.IBugTask"/>
-            <require
-                permission="launchpad.Edit"
-                set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
+                permission="zope.Public"
+                set_attributes="
+                    resolved_upstream
+                    "/>
         </class>
 
         <!-- BugTaskSet -->
@@ -370,6 +385,7 @@
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentForDistroSourcePackageName
                     getRemoteComponentGroup
                     has_lp_plugin
                     id
@@ -604,8 +620,8 @@
         <allow
             interface="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
         <require
-            permission="zope.Public"
-            set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
+            permission="launchpad.Edit"
+            set_attributes="bug_notification_level" />
     </class>
 
     <!-- BugSubscriptionFilter -->
@@ -613,10 +629,87 @@
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsPublic"/>
       <require
           permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
+    <!-- BugMute -->
+    <class
+        class=".model.bug.BugMute">
+      <allow
+          interface=".interfaces.bug.IBugMute"/>
+    </class>
+
+    <!-- BugSubscriptionFilterMute -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute" />
+    </class>
+
+
+    <!-- BugSubscriptionInfo -->
+
+    <class class=".model.bug.BugSubscriptionInfo">
+      <!-- Instance variables -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              bug
+              level
+              " />
+      <!-- Properties -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              all_assignees
+              all_pillar_owners_without_bug_supervisors
+              also_notified_subscribers
+              direct_subscriptions
+              duplicate_only_subscriptions
+              duplicate_subscriptions
+              indirect_subscribers
+              structural_subscriptions
+              " />
+    </class>
+
+    <!-- PersonSubscriptionInfo -->
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptions">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
     </class>
 
     <facet
@@ -640,19 +733,23 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getActivityForDateRange
                     getBugTask
                     getDirectSubscribers
+                    getDirectSubscribersWithDetails
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    getNullBugTask
                     is_complete
+                    maybeConfirmBugtasks
                     official_tags
                     who_made_private
                     date_made_private
                     userCanView
+                    userCanSetCommentVisibility
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
+                    shouldConfirmBugtasks
                     heat
                     heat_last_updated
                     has_patches
@@ -678,6 +775,7 @@
                     activity
                     initial_message
                     linked_branches
+                    getVisibleLinkedBranches
                     watches
                     has_cves
                     cves
@@ -694,13 +792,15 @@
                     hasBranch
                     security_related
                     tags
-                    getMessageChunks
+                    getMessagesForView
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
+                    getSubscriptionInfo
                     indexed_messages
+                    _indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor
@@ -718,17 +818,19 @@
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
+                    other_users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
                     addAttachment
                     addChange
-                    addChangeNotification
                     addCommentNotification
                     addNomination
                     addTask
@@ -744,15 +846,19 @@
                     linkMessage
                     markAsDuplicate
                     markUserAffected
+                    mute
                     newMessage
                     removeWatch
+                    setCommentVisibility
                     setPrivate
                     setSecurityRelated
+                    setPrivacyAndSecurityRelated
                     setStatus
                     subscribe
                     unlinkBranch
                     unlinkCVE
                     unlinkHWSubmission
+                    unmute
                     unsubscribe
                     unsubscribeFromDupes
                     updateHeat"
@@ -777,7 +883,6 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
         </class>
@@ -817,7 +922,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible"/>
+            set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -851,6 +956,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status
@@ -874,9 +980,6 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
@@ -979,6 +1082,9 @@
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>
     <subscriber
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="lp.bugs.subscribers.bugactivity.notify_bugtask_deleted"/>
+    <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_created"/>
     <subscriber
@@ -1000,6 +1106,9 @@
         <require
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.bugnotification.IBugNotification"/>
+	<require
+	    permission="launchpad.Edit"
+            attributes="destroySelf" />
     </class>
     <class
         class="lp.bugs.model.bugnotification.BugNotificationRecipient">
@@ -1010,6 +1119,10 @@
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+        <!-- BugNotificationRecipients provides the following
+             attributes/methods in addition. -->
+        <allow
+            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
@@ -1047,14 +1160,49 @@
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
 
-  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
-    <allow attributes="
-        bug
-        getReason
-        mail_header
-        recipient"/>
-  </class>
+    <!-- StructuralSubscription -->
 
+    <class
+        class="lp.bugs.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
+        <require
+            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
+            permission="zope.Public" />
+        <require
+            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
+            permission="launchpad.Edit" />
+    </class>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
+
+  <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
+  <securedutility
+    name="UsesBugsDistribution"
+    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 </configure>

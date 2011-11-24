@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -15,19 +15,26 @@ __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
 __all__ = [
+    'DEBUG2',
+    'DEBUG3',
+    'DEBUG4',
+    'DEBUG5',
+    'DEBUG6',
+    'DEBUG7',
+    'DEBUG8',
+    'DEBUG9',
+    'dummy_logger_options',
+    'LaunchpadFormatter',
     'log',
     'logger',
     'logger_options',
     'OopsHandler',
-    'LaunchpadFormatter',
-    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
     ]
 
 
+from contextlib import contextmanager
 from cStringIO import StringIO
 from datetime import (
-    datetime,
     timedelta,
     )
 import hashlib
@@ -38,12 +45,11 @@ import os.path
 import re
 import sys
 import time
-import traceback
+from traceback import format_exception_only
 
-from pytz import utc
 from zope.component import getUtility
+from zope.exceptions.log import Formatter
 
-from canonical.base import base
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
@@ -54,7 +60,10 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.services.log import loglevels
-
+from lp.services.utils import (
+    compress_hash,
+    utc_now,
+    )
 
 # Reexport our custom loglevels for old callsites. These callsites
 # should be importing the symbols from lp.services.log.loglevels
@@ -81,17 +90,17 @@ class OopsHandler(logging.Handler):
     def emit(self, record):
         """Emit a record as an OOPS."""
         try:
+            info = record.exc_info
+            if info is None:
+                info = sys.exc_info()
             msg = record.getMessage()
-            # Warnings and less are informational OOPS reports.
-            informational = (record.levelno <= logging.WARN)
             with globalErrorUtility.oopsMessage(msg):
-                globalErrorUtility._raising(
-                    sys.exc_info(), self.request, informational=informational)
+                globalErrorUtility.raising(info, self.request)
         except Exception:
             self.handleError(record)
 
 
-class LaunchpadFormatter(logging.Formatter):
+class LaunchpadFormatter(Formatter):
     """logging.Formatter encoding our preferred output format."""
 
     def __init__(self, fmt=None, datefmt=None):
@@ -104,7 +113,8 @@ class LaunchpadFormatter(logging.Formatter):
         if datefmt is None:
             datefmt = "%Y-%m-%d %H:%M:%S"
         logging.Formatter.__init__(self, fmt, datefmt)
-        self.converter = time.gmtime # Output should be UTC
+        # Output should be UTC.
+        self.converter = time.gmtime
 
 
 class LibrarianFormatter(LaunchpadFormatter):
@@ -124,7 +134,7 @@ class LibrarianFormatter(LaunchpadFormatter):
         Returns the URL, or the formatted exception if the Librarian is
         not available.
         """
-        traceback = logging.Formatter.formatException(self, ei)
+        traceback = LaunchpadFormatter.formatException(self, ei)
         # Uncomment this line to stop exception storage in the librarian.
         # Useful for debugging tests.
         # return traceback
@@ -141,10 +151,9 @@ class LibrarianFormatter(LaunchpadFormatter):
         if not exception_string:
             exception_string = ei[0].__name__
 
-        expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
+        expiry = utc_now() + timedelta(days=90)
         try:
-            filename = base(long(
-                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
+            filename = compress_hash(hashlib.sha1(traceback)) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),
@@ -158,7 +167,74 @@ class LibrarianFormatter(LaunchpadFormatter):
             # information, we can stuff our own problems in there too.
             return '%s\n\nException raised in formatter:\n%s\n' % (
                     traceback,
-                    logging.Formatter.formatException(self, sys.exc_info()))
+                    LaunchpadFormatter.formatException(self, sys.exc_info()))
+
+
+class LogLevelNudger:
+    """Callable to adjust the global log level.
+
+    Use instances as callbacks for `optparse`.
+    """
+
+    def __init__(self, default, increment=True):
+        """Initialize nudger to increment or decrement log level.
+
+        :param default: Default starting level.
+        :param increment: Whether to increase the log level (as when
+            handling the --verbose option).  If not, will decrease
+            instead (as with the --quiet option).
+        """
+        self.default = default
+        self.increment = increment
+
+    def getIncrement(self, current_level):
+        """Figure out how much to increment the log level.
+
+        Increment is negative when decreasing log level, of course.
+        """
+        if self.increment:
+            if current_level < 10:
+                return 1
+            else:
+                return 10
+        else:
+            if current_level <= 10:
+                return -1
+            else:
+                return -10
+
+    def __call__(self, option, opt_str, value, parser):
+        """Callback for `optparse` to handle --verbose or --quiet option."""
+        current_level = getattr(parser.values, 'loglevel', self.default)
+        increment = self.getIncrement(current_level)
+        parser.values.loglevel = current_level + increment
+        parser.values.verbose = (parser.values.loglevel < self.default)
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
+
+
+def define_verbosity_options(parser, default, verbose_callback,
+                             quiet_callback):
+    """Define the -v and -q options on `parser`."""
+    # Only one of these specifies dest and default.  That's because
+    # that's enough to make the parser create the option value; there's
+    # no need for the other option to specify them as well.
+    parser.add_option(
+        "-v", "--verbose", dest="loglevel", default=default,
+        action="callback", callback=verbose_callback,
+        help="Increase stderr verbosity. May be specified multiple times.")
+    parser.add_option(
+        "-q", "--quiet", action="callback", callback=quiet_callback,
+        help="Decrease stderr verbosity. May be specified multiple times.")
+
+
+def do_nothing(*args, **kwargs):
+    """Do absolutely nothing."""
+
+
+def dummy_logger_options(parser):
+    """Add dummy --verbose and --quiet options to `parser`."""
+    define_verbosity_options(parser, None, do_nothing, do_nothing)
 
 
 def logger_options(parser, default=logging.INFO):
@@ -212,35 +288,9 @@ def logger_options(parser, default=logging.INFO):
     # Undocumented use of the optparse module
     parser.defaults['verbose'] = False
 
-    def inc_loglevel(option, opt_str, value, parser):
-        current_level = getattr(parser.values, 'loglevel', default)
-        if current_level < 10:
-            inc = 1
-        else:
-            inc = 10
-        parser.values.loglevel = current_level + inc
-        parser.values.verbose = (parser.values.loglevel < default)
-        # Reset the global log.
-        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
-
-    def dec_loglevel(option, opt_str, value, parser):
-        current_level = getattr(parser.values, 'loglevel', default)
-        if current_level <= 10:
-            dec = 1
-        else:
-            dec = 10
-        parser.values.loglevel = current_level - dec
-        parser.values.verbose = (parser.values.loglevel < default)
-        # Reset the global log.
-        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
-
-    parser.add_option(
-        "-v", "--verbose", dest="loglevel", default=default,
-        action="callback", callback=dec_loglevel,
-        help="Increase stderr verbosity. May be specified multiple times.")
-    parser.add_option(
-        "-q", "--quiet", action="callback", callback=inc_loglevel,
-        help="Decrease stderr verbosity. May be specified multiple times.")
+    define_verbosity_options(
+        parser, default,
+        LogLevelNudger(default, False), LogLevelNudger(default, True))
 
     debug_levels = ', '.join([
         v for k, v in sorted(logging._levelNames.items(), reverse=True)
@@ -405,10 +455,19 @@ class _LogWrapper:
         else:
             return setattr(self._log, key, value)
 
+    @contextmanager
+    def use(self, log):
+        """Temporarily use a different `log`."""
+        self._log, log = log, self._log
+        try:
+            yield
+        finally:
+            self._log = log
+
     def shortException(self, msg, *args):
         """Like Logger.exception, but does not print a traceback."""
         exctype, value = sys.exc_info()[:2]
-        report = ''.join(traceback.format_exception_only(exctype, value))
+        report = ''.join(format_exception_only(exctype, value))
         # _log.error interpolates msg, so we need to escape % chars
         msg += '\n' + report.rstrip('\n').replace('%', '%%')
         self._log.error(msg, *args)

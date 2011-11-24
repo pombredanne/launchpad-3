@@ -39,13 +39,14 @@ from canonical.launchpad.ftests.event import TestEventListener
 from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.answers.interfaces.question import (
-    InvalidQuestionStateError,
-    IQuestion,
-    )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
+    )
+from lp.answers.errors import (
+    InvalidQuestionStateError,
+    NotQuestionOwnerError,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -361,7 +362,7 @@ class RequestInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
     def test_requestInfoFromOwnerIsInvalid(self):
         """Test that the question owner cannot use requestInfo."""
         self.assertRaises(
-            AssertionError, self.question.requestInfo,
+            NotQuestionOwnerError, self.question.requestInfo,
                 self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
 
     def test_requestInfoFromInvalidStates(self):
@@ -695,7 +696,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         question1_answer = self.question.giveAnswer(
             self.answerer, 'Really, just do it!')
         question2 = self.ubuntu.newQuestion(self.owner, 'Help 2', 'Help me!')
-        question2_answer = question2.giveAnswer(self.answerer, 'Do that!')
+        question2.giveAnswer(self.answerer, 'Do that!')
         answerRefused = False
         try:
             question2.confirmAnswer('That worked!', answer=question1_answer)
@@ -866,7 +867,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Reject user must be an answer contact, (or admin, or product owner).
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.ubuntu.addAnswerContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
         login_person(self.answerer)
         self._testInvalidTransition(
             valid_statuses, self.question.reject,
@@ -880,7 +881,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         login_person(self.answerer)
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.ubuntu.addAnswerContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
         valid_statuses = [status for status in QuestionStatus.items
                           if status.name != 'INVALID']
 
@@ -919,19 +920,26 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
 
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.question.target.addAnswerContact(self.answerer)
-        clear_cache() # clear authorization cache for check_permission
-        # this is a test to prove that the getattr succeeds
-        getattr(self.question, 'reject')
-
+        self.question.target.addAnswerContact(self.answerer, self.answerer)
+        # clear authorization cache for check_permission
+        clear_cache()
+        self.assertTrue(
+            getattr(self.question, 'reject'),
+            "Answer contact cannot reject question.")
         login_person(self.admin)
-        # this is a test to prove that the getattr succeeds
-        getattr(self.question, 'reject')
+        self.assertTrue(
+            getattr(self.question, 'reject'),
+            "Admin cannot reject question.")
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    def testRejectPermission_indirect_answer_contact(self):
+        # Indirect answer contacts (for a distribution) can reject
+        # distribuiton source package questions.
+        login_person(self.admin)
+        dsp = self.ubuntu.getSourcePackage('mozilla-firefox')
+        self.question.target = dsp
+        login_person(self.answerer)
+        self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
+        self.assertTrue(
+            getattr(self.question, 'reject'),
+            "Answer contact cannot reject question.")

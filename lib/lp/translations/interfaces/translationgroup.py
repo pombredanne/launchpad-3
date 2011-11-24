@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -10,8 +10,20 @@ __metaclass__ = type
 __all__ = [
     'ITranslationGroup',
     'ITranslationGroupSet',
+    'TranslationPermission',
     ]
 
+from lazr.restful.declarations import (
+    collection_default_content,
+    exported,
+    export_as_webservice_entry,
+    export_as_webservice_collection,
+    export_read_operation,
+    export_operation_as,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -23,7 +35,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PublicPersonChoice,
@@ -37,25 +49,32 @@ from lp.translations.enums import TranslationPermission
 class ITranslationGroup(IHasOwner):
     """A TranslationGroup."""
 
+    export_as_webservice_entry(
+        singular_name='translation_group', plural_name='translation_groups')
+
     id = Int(
             title=_('Translation Group ID'), required=True, readonly=True,
             )
-    name = TextLine(
+    name = exported(
+        TextLine(
             title=_('Name'), required=True,
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             gnome-translation-project, ubuntu-translators."""),
-            constraint=name_validator,
-            )
-    title = Title(
+            constraint=name_validator),
+        as_of="devel"
+        )
+    title = exported(
+        Title(
             title=_('Title'), required=True,
             description=_("""Title of this Translation Group.
             This title is displayed at the top of the Translation Group
             page and in lists or reports of translation groups.  Do not
             add "translation group" to this title, or it will be shown
             double.
-            """),
-            )
+            """),),
+        as_of="devel"
+        )
     summary = Summary(
             title=_('Summary'), required=True,
             description=_("""A single-paragraph description of the
@@ -148,10 +167,24 @@ class ITranslationGroup(IHasOwner):
 class ITranslationGroupSet(Interface):
     """A container for translation groups."""
 
+    export_as_webservice_collection(ITranslationGroup)
+
     title = Attribute('Title')
 
-    def __getitem__(key):
+    @operation_parameters(
+        name=TextLine(title=_("Name of the translation group"),))
+    @operation_returns_entry(ITranslationGroup)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getByName(name):
         """Get a translation group by name."""
+
+    def __getitem__(name):
+        """Get a translation group by name."""
+
+    @collection_default_content()
+    def _get():
+        """Return a collection of all entries."""
 
     def __iter__():
         """Iterate through the translation groups in this set."""

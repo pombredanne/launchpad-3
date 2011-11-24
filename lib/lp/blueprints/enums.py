@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'NewSpecificationDefinitionStatus',
     'SpecificationDefinitionStatus',
     'SpecificationFilter',
     'SpecificationGoalStatus',
@@ -21,6 +22,7 @@ from lazr.enum import (
     DBItem,
     EnumeratedType,
     Item,
+    use_template,
     )
 
 
@@ -431,6 +433,22 @@ class SpecificationDefinitionStatus(DBEnumeratedType):
         The specification has been obsoleted, probably because it was decided
         against. People should not put any effort into implementing it.
         """)
+
+
+class NewSpecificationDefinitionStatus(DBEnumeratedType):
+    """The Initial status of a Specification.
+
+    The initial status to define the feature and get approval for the
+    implementation plan.
+    """
+    use_template(SpecificationDefinitionStatus, include=(
+        'NEW',
+        'DISCUSSION',
+        'DRAFT',
+        'PENDINGREVIEW',
+        'PENDINGAPPROVAL',
+        'APPROVED',
+        ))
 
 
 class SpecificationGoalStatus(DBEnumeratedType):

@@ -166,8 +166,8 @@ It is possible to keep a log of the memory profile of the application. That's
 useful to try to figure out what requests are causing the memory usage of the
 server to increase.
 
-This is not blessed for production use at this time: the implementation
-relies on lib/canonical/mem.py, which as of this writing warns in its
+This is not blessed for production use at this time: the implementation relies
+on lib/lp/services/profile/mem.py, which as of this writing warns in its
 docstring that "[n]one of this should be in day-to-day use."  We should
 document the source of these concerns and evaluate them before using it in
 production.  Staging may be more acceptable.

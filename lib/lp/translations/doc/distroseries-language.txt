@@ -89,16 +89,14 @@ listing.
 
 This is the one obsolete template.
 
-    >>> for potemplate in hoary.getObsoleteTranslationTemplates():
-    ...     print potemplate.name
-    disabled-template
+    >>> potemplate = hoary.getTranslationTemplateByName('disabled-template')
+    >>> print potemplate.iscurrent
+    False
 
 Also, we can see that the template has an Spanish translation that
-hoary_spanish.pofiles is hidding as expected.
+hoary_spanish.pofiles is hiding as expected.
 
-    >>> for potemplate in hoary.getTranslationTemplates():
-    ...     if potemplate.name == 'disabled-template':
-    ...         print potemplate.getPOFileByLang('es').title
+    >>> print potemplate.getPOFileByLang('es').title
     Spanish (es) translation of disabled-template in Ubuntu Hoary package
     "evolution"
 

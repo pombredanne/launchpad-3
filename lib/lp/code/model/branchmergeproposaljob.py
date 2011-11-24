@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -20,7 +20,6 @@ __all__ = [
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'GenerateIncrementalDiffJob',
-    'MergeProposalCreatedJob',
     'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
@@ -42,7 +41,6 @@ from lazr.enum import (
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import (
     And,
     Desc,
@@ -63,11 +61,6 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import (
-    MessageJob,
-    MessageJobAction,
-    )
-from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -77,7 +70,12 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchHasPendingWrites,
+    UpdatePreviewDiffNotReady,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
@@ -107,10 +105,19 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.messages.model.message import (
+    MessageJob,
+    MessageJobAction,
+    )
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -155,7 +162,7 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         This job generates an incremental diff for a merge proposal.""")
 
 
-class BranchMergeProposalJob(Storm):
+class BranchMergeProposalJob(StormBase):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)
@@ -187,7 +194,7 @@ class BranchMergeProposalJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        Storm.__init__(self)
+        super(BranchMergeProposalJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.branch_merge_proposal = branch_merge_proposal
@@ -286,8 +293,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 # or if it is hosted but pending a mirror.
                 Branch.revision_count > 0,
                 Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)
-                ))
+                   Branch.branch_type != BranchType.HOSTED)))
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
@@ -326,10 +332,6 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.target_branch.bzr_identity))
 
 
-class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
-
-
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
@@ -344,6 +346,10 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
+    retry_error_types = (BranchHasPendingWrites, )
+
+    max_retries = 20
+
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
@@ -354,7 +360,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             raise UpdatePreviewDiffNotReady(
                 'The target branch has no revisions.')
         if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
+            raise BranchHasPendingWrites(
                 'The source branch has pending writes.')
 
     @staticmethod
@@ -375,7 +381,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
-        self.branch_merge_proposal.preview_diff = preview
+        with BranchMergeProposalDelta.monitor(
+            self.branch_merge_proposal):
+            self.branch_merge_proposal.preview_diff = preview
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')
@@ -667,7 +675,7 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         revision_set = getUtility(IRevisionSet)
         old_revision = revision_set.getByRevisionId(self.old_revision_id)
         new_revision = revision_set.getByRevisionId(self.new_revision_id)
-        diff = self.branch_merge_proposal.generateIncrementalDiff(
+        self.branch_merge_proposal.generateIncrementalDiff(
             old_revision, new_revision)
 
     @classmethod
@@ -737,7 +745,7 @@ class BranchMergeProposalJobFactory:
         return job_class(bmp_job)
 
 
-class BranchMergeProposalJobSource:
+class BranchMergeProposalJobSource(BaseRunnableJobSource):
     """Provide a job source for all merge proposal jobs.
 
     Only one job for any particular merge proposal is returned.
@@ -810,7 +818,7 @@ class BranchMergeProposalJobSource:
             if IUpdatePreviewDiffJob.providedBy(derived_job):
                 try:
                     derived_job.checkReady()
-                except UpdatePreviewDiffNotReady:
+                except (UpdatePreviewDiffNotReady, BranchHasPendingWrites):
                     # If the job was created under 15 minutes ago wait a bit.
                     minutes = (
                         config.codehosting.update_preview_diff_ready_timeout)

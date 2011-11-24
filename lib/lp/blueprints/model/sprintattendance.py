@@ -7,30 +7,39 @@ __metaclass__ = type
 
 __all__ = ['SprintAttendance']
 
-from sqlobject import (
-    BoolCol,
-    ForeignKey,
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    Store,
     )
 from zope.interface import implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.stormbase import StormBase
 
 
-class SprintAttendance(SQLBase):
+class SprintAttendance(StormBase):
     """A record of the attendance of a person at a sprint."""
 
     implements(ISprintAttendance)
 
-    _table = 'SprintAttendance'
+    __storm_table__ = 'SprintAttendance'
 
-    sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
-        notNull=True)
-    attendee = ForeignKey(
-        dbName='attendee', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+    id = Int(primary=True)
+
+    sprint_id = Int(name='sprint')
+    sprint = Reference(sprint_id, 'Sprint.id')
+
+    attendeeID = Int(name='attendee', validator=validate_public_person)
+    attendee = Reference(attendeeID, 'Person.id')
+
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
-    is_physical = BoolCol(dbName='is_physical', notNull=True, default=True)
+    is_physical = Bool(default=True)
+
+    def __init__(self, sprint, attendee):
+        self.sprint = sprint
+        self.attendee = attendee

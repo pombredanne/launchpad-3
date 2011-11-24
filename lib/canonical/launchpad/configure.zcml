@@ -12,8 +12,6 @@
 
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
-  <include file="links.zcml" />
-  <include package="canonical.launchpad.validators" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
@@ -28,6 +26,7 @@
   <include package="lp.coop.answersbugs" />
   <include package="lp.code" />
   <include package="lp.soyuz" />
+  <include package="lp.services.webservice" />
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
@@ -78,12 +77,12 @@
   <i18n:registerTranslations directory="locales" />
 
   <browser:navigation
-      module="canonical.launchpad.browser"
+      module="lp.app.browser.launchpad"
       classes="LaunchpadRootNavigation"
       />
 
   <browser:navigation
-      module="canonical.launchpad.browser"
+      module="lp.app.browser.launchpad"
       classes="LaunchpadRootNavigation"
       layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
       />

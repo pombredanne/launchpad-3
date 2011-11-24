@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The command classes for the 'ec2' utility."""
@@ -6,25 +6,35 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime, timedelta
 import os
 import pdb
 import socket
-import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
-from bzrlib.errors import BzrCommandError
+from bzrlib.errors import (
+    BzrCommandError,
+    ConnectionError,
+    NoSuchFile,
+    )
 from bzrlib.help import help_commands
 from bzrlib.option import (
     ListOption,
     Option,
     )
+from bzrlib.transport import get_transport
+from bzrlib.trace import is_verbose
+from pytz import UTC
+import simplejson
+
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES,
     DEFAULT_INSTANCE_TYPE,
+    DEFAULT_REGION,
     EC2Instance,
     )
 from devscripts.ec2test.session import EC2SessionName
@@ -72,15 +82,9 @@ machine_id_option = Option(
           'recent one with an approved owner.'))
 
 
-def _convert_instance_type(arg):
-    """Ensure that `arg` is acceptable as an instance type."""
-    if arg not in AVAILABLE_INSTANCE_TYPES:
-        raise BzrCommandError('Unknown instance type %r' % arg)
-    return arg
-
-
 instance_type_option = Option(
-    'instance', short_name='i', type=_convert_instance_type,
+    'instance', short_name='i',
+    type=str,
     param_name='instance_type',
     help=('The AWS instance type on which to base this run. '
           'Available options are %r. Defaults to `%s`.' %
@@ -121,6 +125,14 @@ attached_option = Option(
           "and --file."))
 
 
+region_option = Option(
+    'region',
+    type=str,
+    help=("Name of the AWS region in which to run the instance.  "
+        "Must be the same as the region holding the image file. "
+        "For example, 'us-west-1'."))
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -145,6 +157,12 @@ def filename_type(filename):
         raise BzrCommandError(
             'you do not have permission to write %s' % (filename,))
     return filename
+
+
+def set_trace_if(enable_debugger=False):
+    """If `enable_debugger` is True, drop into the debugger."""
+    if enable_debugger:
+        pdb.set_trace()
 
 
 class EC2Command(Command):
@@ -205,6 +223,7 @@ class cmd_test(EC2Command):
         trunk_option,
         machine_id_option,
         instance_type_option,
+        region_option,
         Option(
             'file', short_name='f', type=filename_type,
             help=('Store abridged test results in FILE.')),
@@ -271,9 +290,9 @@ class cmd_test(EC2Command):
             noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             attached=False, debug=False, open_browser=False,
+            region=None,
             include_download_cache_changes=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -300,8 +319,8 @@ class cmd_test(EC2Command):
                 "supported")
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
-        instance = EC2Instance.make(
-            session_name, instance_type, machine)
+        instance = EC2Instance.make(session_name, instance_type, machine,
+            region=region)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -322,6 +341,9 @@ class cmd_land(EC2Command):
 
     takes_options = [
         debug_option,
+        instance_type_option,
+        region_option,
+        machine_id_option,
         Option('dry-run', help="Just print the equivalent ec2 test command."),
         Option('print-commit', help="Print the full commit message."),
         Option(
@@ -372,7 +394,9 @@ class cmd_land(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
             no_qa=False, incremental=False, rollback=None, print_commit=False,
-            force=False, attached=False):
+            force=False, attached=False,
+            region=DEFAULT_REGION,
+            ):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -387,8 +411,7 @@ class cmd_land(EC2Command):
                 "wide because this will break the rest of Launchpad.\n\n"
                 "***************************************************\n")
             raise
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
@@ -447,15 +470,33 @@ class cmd_land(EC2Command):
             print commit_message
             return
 
+        emails = mp.get_stakeholder_emails()
+
+        target_branch_name = mp.target_branch.split('/')[-1]
+        branches = [('launchpad', target_branch_name)]
+
         landing_command = self._get_landing_command(
             mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails(), attached)
+            emails, attached)
+
         if dry_run:
             print landing_command
-        else:
-            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
-            # directly, rather than spawning a subprocess.
-            return subprocess.call(landing_command)
+            return
+
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        instance = EC2Instance.make(
+            session_name, instance_type, machine, region=region)
+
+        runner = EC2TestRunner(
+            mp.source_branch, email=emails,
+            headless=(not attached),
+            branches=branches, pqm_message=commit_message,
+            instance=instance,
+            launchpad_login=instance._launchpad_login,
+            test_options=DEFAULT_TEST_OPTIONS,
+            timeout=480)
+
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -472,6 +513,7 @@ class cmd_demo(EC2Command):
         postmortem_option,
         debug_option,
         include_download_cache_changes_option,
+        region_option,
         ListOption(
             'demo', type=str,
             help="Allow this netmask to connect to the instance."),
@@ -482,8 +524,7 @@ class cmd_demo(EC2Command):
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -541,6 +582,7 @@ class cmd_update_image(EC2Command):
         instance_type_option,
         postmortem_option,
         debug_option,
+        region_option,
         ListOption(
             'extra-update-image-command', type=str,
             help=('Run this command (with an ssh agent) on the image before '
@@ -557,9 +599,9 @@ class cmd_update_image(EC2Command):
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
+            region=None,
             public=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
 
         if extra_update_image_command is None:
             extra_update_image_command = []
@@ -568,20 +610,17 @@ class cmd_update_image(EC2Command):
         # fresh Ubuntu images and cause havoc if the locales they refer to are
         # not available. We kill them here to ease bootstrapping, then we
         # later modify the image to prevent sshd from accepting them.
-        os.environ.pop("LANG", None)
-        os.environ.pop("LC_ALL", None)
-
-        credentials = EC2Credentials.load_from_file()
+        for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
+            os.environ.pop(variable, None)
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
-            credentials=credentials)
-        instance.check_bundling_prerequisites(
-            ami_name, credentials)
+            region=region)
+        instance.check_bundling_prerequisites(ami_name)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, credentials, public)
+            extra_update_image_command, ami_name, instance._credentials, public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials, public):
@@ -605,6 +644,8 @@ class cmd_update_image(EC2Command):
         """
         # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform('sudo apt-get -qqy update')
+        user_connection.perform('sudo apt-get -qqy upgrade')
         user_connection.perform(
             'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
         user_connection.perform(
@@ -639,17 +680,152 @@ class cmd_images(EC2Command):
     The first in the list is the default image.
     """
 
-    def run(self):
-        credentials = EC2Credentials.load_from_file()
+    takes_options = [
+        region_option,
+        ]
+
+    def run(self, region=None):
         session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
         account = credentials.connect(session_name)
-        format = "%5s  %-12s  %-12s  %s\n"
-        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
+        format = "%5s  %-12s  %-12s  %-12s %s\n"
+        self.outf.write(
+            format % ("Rev", "AMI", "Owner ID", "Owner", "Description"))
         for revision, images in account.find_images():
             for image in images:
                 self.outf.write(format % (
-                        revision, image.id, image.ownerId,
-                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
+                    revision, image.id, image.ownerId,
+                    VALID_AMI_OWNERS.get(image.ownerId, "unknown"),
+                    image.description or ''))
+
+
+class cmd_kill(EC2Command):
+    """Kill one or more running EC2 instances.
+
+    You can get the instance id from 'ec2 list'.
+    """
+
+    takes_options = [
+        region_option,
+        ]
+    takes_args = ['instance_id*']
+
+    def run(self, instance_id_list, region=None):
+        credentials = EC2Credentials.load_from_file(region_name=region)
+        account = credentials.connect('ec2 kill')
+        self.outf.write("killing %d instances: " % len(instance_id_list,))
+        account.conn.terminate_instances(instance_id_list)
+        self.outf.write("done\n")
+
+
+class cmd_list(EC2Command):
+    """List all your current EC2 test runs.
+
+    If an instance is publishing an 'info.json' file with 'description' and
+    'failed-yet' fields, this command will list that instance, whether it has
+    failed the test run and how long it has been up for.
+
+    [FAILED] means that the has been a failing test. [OK] means that the test
+    run has had no failures yet, it's not a guarantee of a successful run.
+    """
+
+    aliases = ["ls"]
+
+    takes_options = [
+        region_option,
+        Option('show-urls',
+               help="Include more information about each instance"),
+        Option('all', short_name='a',
+               help="Show all instances, not just ones with ec2test data."),
+        ]
+
+    def iter_instances(self, account):
+        """Iterate through all instances in 'account'."""
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                yield instance
+
+    def get_uptime(self, instance):
+        """How long has 'instance' been running?"""
+        expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
+        launch_time = datetime.strptime(instance.launch_time, expected_format)
+        delta = (
+            datetime.utcnow().replace(tzinfo=UTC)
+            - launch_time.replace(tzinfo=UTC))
+        return timedelta(delta.days, delta.seconds)  # Round it.
+
+    def get_http_url(self, instance):
+        hostname = instance.public_dns_name
+        if not hostname:
+            return
+        return 'http://%s/' % (hostname,)
+
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        url = self.get_http_url(instance)
+        if url is None:
+            return
+        try:
+            json = get_transport(url).get_bytes('info.json')
+        except (ConnectionError, NoSuchFile):
+            # Probably not an ec2test instance, or not ready yet.
+            return None
+        return simplejson.loads(json)
+
+    def format_instance(self, instance, data, verbose):
+        """Format 'instance' for display.
+
+        :param instance: The EC2 instance to display.
+        :param data: Launchpad-specific data.
+        :param verbose: Whether we want verbose output.
+        """
+        description = instance.id
+        uptime = self.get_uptime(instance)
+        if instance.state != 'running':
+            current_status = instance.state
+        else:
+            if data is None:
+                current_status = 'unknown '
+            else:
+                description = data['description']
+                if data['failed-yet']:
+                    current_status = '[FAILED]'
+                else:
+                    current_status = '[OK]    '
+        output = '%-40s  %-10s (up for %s) %10s' % (description, current_status, uptime,
+            instance.id)
+        if verbose:
+            url = self.get_http_url(instance)
+            if url is None:
+                url = "No web service"
+            output += '\n  %s' % (url,)
+            if instance.state_reason:
+                output += '\n  transition reason: %s' % instance.state_reason.get(
+                    'message', '')
+        return output
+
+    def format_summary(self, by_state):
+        return ', '.join(
+            ': '.join((state, str(num)))
+            for (state, num) in sorted(list(by_state.items())))
+
+    def run(self, show_urls=False, all=False, region=None):
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        credentials = EC2Credentials.load_from_file(region_name=region)
+        account = credentials.connect(session_name)
+        instances = list(self.iter_instances(account))
+        if len(instances) == 0:
+            print "No instances running."
+            return
+
+        by_state = {}
+        for instance in instances:
+            by_state[instance.state] = by_state.get(instance.state, 0) + 1
+            data = self.get_ec2test_info(instance)
+            if data is None and not all:
+                continue
+            print self.format_instance(instance, data, verbose=(show_urls or is_verbose()))
+        print 'Summary: %s' % (self.format_summary(by_state),)
 
 
 class cmd_help(EC2Command):

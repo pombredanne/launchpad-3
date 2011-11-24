@@ -87,7 +87,6 @@ bug got submitted correctly:
     >>> process_email(submit_mail)
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.ftests import sync
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -193,6 +192,21 @@ package:
 
 It's possible to file a bug on more than product/package at once:
 
+    # Make sane data to play this test.
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -216,7 +230,6 @@ It's possible to file a bug on more than product/package at once:
     firefox
     evolution (Debian)
     mozilla-firefox (Debian)
-
 
 If the subject is folded (i.e spans more than one line), it will be
 unfolded before the bug subject is assigned.
@@ -261,7 +274,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
@@ -317,6 +330,52 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
+The email handler requires that a bug be specified to be changed. If no
+bug is specified, no edits occur and a message is sent to the user telling
+them what happened.
+
+    >>> edit_mail = """From: test@canonical.com
+    ... To: edit@malone-domain
+    ... Date: Fri Jun 17 10:10:23 BST 2005
+    ... Subject: Not important
+    ...
+    ...     summary "Even nicer summary"
+    ... """
+
+    >>> process_email(edit_mail)
+    >>> commit()
+
+This time, neither bug four or five were updated.
+
+    >>> print bug_four.title
+    Changed summary
+    >>> print bug_five.title
+    Nicer summary
+
+And the person sending the email has received an error message.
+
+    >>> def print_latest_email():
+    ...     commit()
+    ...     if not stub.test_emails:
+    ...         raise AssertionError("No emails queued!")
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     sent_msg = email.message_from_string(raw_message)
+    ...     error_mail, original_mail = sent_msg.get_payload()
+    ...     print "Subject: %s" % sent_msg['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The message you sent included commands to modify a bug,
+    but no bug was specified. Please supply a bug before the command
+    to modify it.
+    <BLANKLINE>
+    ...
 
 GPG signing and adding comments
 -------------------------------
@@ -337,7 +396,9 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+    >>> from lp.services.mail.interfaces import (
+    ...     IWeaklyAuthenticatedPrincipal,
+    ...     )
     >>> from zope.interface import directlyProvides, directlyProvidedBy
     >>> from zope.security.management import queryInteraction
 
@@ -383,17 +444,6 @@ changes was made to the bug, and the comment wasn't added.
 And an error message was sent to the Sample Person, telling him what's
 wrong.
 
-    >>> def print_latest_email():
-    ...     commit()
-    ...     if not stub.test_emails:
-    ...         raise AssertionError("No emails queued!")
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     sent_msg = email.message_from_string(raw_message)
-    ...     error_mail, original_mail = sent_msg.get_payload()
-    ...     print "Subject: %s" % sent_msg['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -486,7 +536,6 @@ to edit bug 4:
     ...         msg, msg['To'],
     ...         )
     ...     commit()
-    ...     sync(bug)
 
     >>> def submit_commands(bug, *commands):
     ...     msg = construct_command_email(bug, *commands)
@@ -742,10 +791,11 @@ unsubscribed. Examples:
 If the user sending the email does not have permission to perform
 the unsubscribe request, an error message wil be sent.
 
+    >>> login(sampledata.NO_PRIVILEGE_EMAIL)
     >>> submit_commands(bug_four, 'unsubscribe mark')
     >>> print_latest_email()
     Subject: Submit Request Failure
-    To: test@canonical.com
+    To: no-priv@canonical.com
     <BLANKLINE>
     ...
     You do not have permission to unsubcribe Mark Shuttleworth.
@@ -1079,11 +1129,9 @@ A milestone can be assigned to the current task.
     >>> print firefox_task.milestone
     None
     >>> submit_commands(bug_four, 'milestone 1.0')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone.name
     1.0
     >>> submit_commands(bug_four, 'milestone -')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone
     None
 
@@ -1118,7 +1166,6 @@ permissions also elicits an error message:
     >>> print bug.bugtasks[0].milestone
     None
     >>> submit_commands(bug, 'milestone 1.0')
-    >>> sync(bug.bugtasks[0])
     >>> print bug.bugtasks[0].milestone
     None
     >>> print_latest_email()
@@ -1156,7 +1203,6 @@ Like the web UI, we can assign a bug to nobody.
     >>> submit_commands(
     ...     bug_four, 'affects debian',
     ...     'assignee nobody')
-    >>> sync(debian_task)
     >>> debian_task.assignee is None
     True
 
@@ -1235,23 +1281,19 @@ Targeting an existing nomination won't create another nomination.
 If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     # The script's default user doesn't have permission to change the driver.
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail(
-    ...     sampledata.USER_EMAIL)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> login(sampledata.USER_EMAIL)
-    >>> sync(bug)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = getUtility(IPersonSet).getByEmail(
+    ...         sampledata.USER_EMAIL)
 
-Now a new bugtask for the series will be create directly.
+    >>> login(sampledata.USER_EMAIL)
+
+Now a new bugtask for the series will be created directly.
 
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
@@ -1294,13 +1336,11 @@ task, and the series specific task.
 As with the example with no source package above; if the user isn't a
 driver of the series, only a nomination will be created.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = None
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = None
+
     >>> login(sampledata.USER_EMAIL)
 
     >>> bug = new_firefox_bug()
@@ -1398,22 +1438,17 @@ Restricted bug statuses
 
 Bug supervisors can set some restricted statuses:
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(email_user, email_user)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> sync(bug_four)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
+
     >>> login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
-    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Won't Fix
 
     >>> submit_commands(bug_four, 'status expired')
-    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Expired
 
@@ -1422,12 +1457,10 @@ Everyone else gets an explanatory error message:
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(None, None)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(None, None)
+
     >>> login('no-priv@canonical.com')
 
     >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
@@ -1670,18 +1703,16 @@ The user is a package bug supervisor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
-    >>> mozilla_package = ubuntu.getSourcePackage(mozilla_name)
-    >>> mozilla_package.addBugSubscription(helge, helge)
-    <StructuralSubscription ...>
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     moz_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    ...     helge = getUtility(IPersonSet).getByName('kreutzm')
+    ...     mozilla_package = ubuntu.getSourcePackage(moz_name)
+    ...     ignore = mozilla_package.addBugSubscription(helge, helge)
 
     >>> login('kreutzm@itp.uni-hannover.de')
 
@@ -1780,7 +1811,7 @@ signing the mail:
     >>> login(sampledata.USER_EMAIL)
     >>> simulate_receiving_untrusted_mail()
 
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
     >>> import email.Utils
     >>> msg['Message-Id'] = email.Utils.make_msgid()
@@ -1990,7 +2021,7 @@ Let's take a closer look at send_process_error_notification(), which is
 used to send the error messages. It needs the message that caused the
 error, so let's create one.
 
-    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    >>> test_msg = email.message_from_string("""From: foo.bar@canonical.com
     ... To: bugs@launchpad.net
     ... Message-Id: <original@msg>
     ... Subject: Original Message Subject
@@ -2007,7 +2038,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
-    ...     msg, failing_command=['foo bar'])
+    ...     test_msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -2059,6 +2090,24 @@ error to happen.
     >>> print msg.get_payload(decode=True)
     Original message body.
 
+Sometimes the original error was caused by the original message being
+too large.  In that case we cannot really return the entire original
+message as our outgoing message will be too big.  So, we can truncate
+the original message.
+
+    >>> max_return_size = len(str(test_msg)) / 2
+    >>> send_process_error_notification(
+    ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
+    ...     test_msg, failing_command=['foo bar'],
+    ...     max_return_size=max_return_size)
+    >>> commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> msg = original_msg.get_payload()[0]
+    >>> # Fudge due to new line added to the payload.
+    >>> len(str(msg)) <= (max_return_size + 1)
+    True
 
 Error handling
 --------------
@@ -2298,7 +2347,7 @@ Only mail coming from verified Launchpad users is answered.
 The help text is taken from the Launchpad help wiki as raw text, and
 transformed to be a bit more readable as a plain text document.
 
-    >>> from canonical.launchpad.mail.helpers import reformat_wiki_text
+    >>> from lp.services.mail.helpers import reformat_wiki_text
     >>> wiki_text = """
     ... = Sample Wiki Text =
     ... # A comment line
@@ -2931,16 +2980,13 @@ set the datecreated field of the bug's initial message (see bug
     ...     msg=initial_bug_message, datecreated=creation_date))
     >>> commit()
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
-    >>> bug_watch = bug_with_watch.addWatch(
-    ...     bug_tracker, '12345', getUtility(ILaunchpadCelebrities).janitor)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    ...     bug_watch = bug_with_watch.addWatch(
+    ...         bug_tracker,
+    ...         '12345',
+    ...         getUtility(ILaunchpadCelebrities).janitor)
 
 Someone comments on the remote bug and that bug is imported into
 Launchpad. We'll simulate this locally rather than using the bug

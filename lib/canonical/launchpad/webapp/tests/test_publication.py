@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import logging
 import sys
-import unittest
 
 from contrib.oauth import (
     OAuthRequest,
@@ -20,13 +19,11 @@ from storm.database import (
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import (
-    directlyProvides,
-    noLongerProvides,
+from zope.interface import directlyProvides
+from zope.publisher.interfaces import (
+    NotFound,
+    Retry,
     )
-from zope.publisher.interfaces import Retry
-from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.config import dbconfig
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -151,14 +148,14 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_no_mode_changes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         self.publication.beforeTraversal(self.request)
 
         # Since the mode didn't change, the stores were left in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         # With the store's connection being the same as before.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -173,8 +170,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_changing_modes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         try:
             touch_read_only_file()
@@ -187,8 +184,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
-        self.assertNotIn('launchpad-main-master', self.zstorm_stores)
-        self.assertNotIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertNotIn('main-master', self.zstorm_stores)
+        self.assertNotIn('main-slave', self.zstorm_stores)
 
         # If they're needed again, they'll be re-created by ZStorm, and when
         # that happens they will point to the read-only databases.
@@ -245,7 +242,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Create a lone account followed by an account-with-person just to
         # make sure in the second one the ID of the account and the person are
         # different.
-        dummy_account = self.factory.makeAccount('Personless account')
+        self.factory.makeAccount('Personless account')
         person = self.factory.makePerson()
         self.failIfEqual(person.id, person.account.id)
 
@@ -273,9 +270,6 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.failIf(principal is None)
 
     def test_disconnect_logs_oops(self):
-        error_reporting_utility = getUtility(IErrorReportingUtility)
-        last_oops = error_reporting_utility.getLastOopsReport()
-
         # Ensure that OOPS reports are generated for database
         # disconnections, as per Bug #373837.
         request = LaunchpadTestRequest()
@@ -289,26 +283,17 @@ class TestWebServicePublication(TestCaseWithFactory):
                 publication.handleException,
                 None, request, sys.exc_info(), True)
         dbadapter.clear_request_started()
-        next_oops = error_reporting_utility.getLastOopsReport()
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
 
         # Ensure the OOPS mentions the correct exception
-        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
-            "next_oops was %r" % next_oops)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
-
-        # Ensure that it is different to the last logged OOPS.
-        self.assertNotEqual(repr(last_oops), repr(next_oops))
+        self.assertEqual(oops['type'], "DisconnectionError")
 
     def test_store_disconnected_after_request_handled_logs_oops(self):
         # Bug #504291 was that a Store was being left in a disconnected
         # state after a request, causing subsequent requests handled by that
         # thread to fail. We detect this state in endRequest and log an
         # OOPS to help track down the trigger.
-        error_reporting_utility = getUtility(IErrorReportingUtility)
-        last_oops = error_reporting_utility.getLastOopsReport()
-
         request = LaunchpadTestRequest()
         publication = WebServicePublication(None)
         dbadapter.set_request_started()
@@ -320,20 +305,15 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Invoke the endRequest hook.
         publication.endRequest(request, None)
 
-        next_oops = error_reporting_utility.getLastOopsReport()
-
-        # Ensure that it is different to the last logged OOPS.
-        self.assertNotEqual(repr(last_oops), repr(next_oops))
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
 
         # Ensure the OOPS mentions the correct exception
-        self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
+        self.assertStartsWith(oops['value'], "Bug #504291")
 
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)
-        store.find(EmailAddress).first() # Confirms Store is working.
+        store.find(EmailAddress).first()  # Confirms Store is working.
 
     def test_is_browser(self):
         # No User-Agent: header.
@@ -401,7 +381,7 @@ class TestBlockingOffsitePosts(TestCase):
         maybe_block_offsite_form_post(FakeNonBrowserRequest)
 
     def test_onsite_posts(self):
-        # Other than the explicit execptions, all POSTs have to come from a
+        # Other than the explicit exceptions, all POSTs have to come from a
         # known LP virtual host.
         for hostname in allvhosts.hostnames:
             referer = 'http://' + hostname + '/foo'
@@ -411,7 +391,7 @@ class TestBlockingOffsitePosts(TestCase):
             maybe_block_offsite_form_post(request)
 
     def test_offsite_posts(self):
-        # If a post comes from an unknown host an execption is raised.
+        # If a post comes from an unknown host an exception is raised.
         disallowed_hosts = ['example.com', 'not-subdomain.launchpad.net']
         for hostname in disallowed_hosts:
             referer = 'http://' + hostname + '/foo'
@@ -429,7 +409,6 @@ class TestBlockingOffsitePosts(TestCase):
         self.assertRaises(
             OffsiteFormPostError, maybe_block_offsite_form_post, request)
 
-
     def test_openid_callback_with_query_string(self):
         # An OpenId provider (OP) may post to the +openid-callback URL with a
         # query string and without a referer.  These posts need to be allowed.
@@ -440,6 +419,32 @@ class TestBlockingOffsitePosts(TestCase):
         maybe_block_offsite_form_post(request)
 
 
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite
+class TestEncodedReferer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_not_found(self):
+        # No oopses are reported when accessing the referer while rendering
+        # the page.
+        browser = self.getUserBrowser()
+        browser.addHeader('Referer', '/whut\xe7foo')
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/missing')
+        self.assertEqual(0, len(self.oopses))
+
+
+class TestUnicodePath(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_ascii_url(self):
+        # No oopses are reported when accessing the URL while rendering the
+        # page.
+        browser = self.getUserBrowser()
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/%ED%B4%B5')
+        self.assertEqual(0, len(self.oopses))

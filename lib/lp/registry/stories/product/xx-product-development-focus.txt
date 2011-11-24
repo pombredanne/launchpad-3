@@ -97,7 +97,7 @@ The owner is taken back to the project page.
     Development focus:
     trunk series Change details
     lp://dev/fooix Change branch
-    View the branch content
+    Browse the code
 
 
 Projects with development focus branches
@@ -114,11 +114,11 @@ branch.
     Development focus:
     trunk series
     lp://dev/fooix
-    View the branch content
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      View the branch content
+      Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
@@ -126,7 +126,7 @@ branch.
     Development focus:
     trunk series     Change details
     lp://dev/fooix   Change branch
-    View the branch content
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       <span class="invisible-link">Change details</span>
@@ -135,7 +135,7 @@ branch.
       <span class="invisible-link">Change branch</span>
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
-      View the branch content
+      Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
 
@@ -147,7 +147,7 @@ appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(branch).private = True
+    >>> removeSecurityProxy(branch).explicitly_private = True
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
@@ -162,7 +162,7 @@ appears as if there is no series branch set.
     Development focus:
     trunk series     Change details
     lp://dev/fooix   Change branch
-    View the branch content
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       <span class="invisible-link">Change details</span>
@@ -171,5 +171,5 @@ appears as if there is no series branch set.
       <span class="invisible-link">Change branch</span>
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
-      View the branch content
+      Browse the code
         (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)

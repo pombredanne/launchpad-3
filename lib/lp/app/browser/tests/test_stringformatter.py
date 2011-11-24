@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the string TALES formatter."""
@@ -15,7 +15,10 @@ from canonical.config import config
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.stringformatter import (
+    FormattersAPI,
+    linkify_bug_numbers,
+    )
 from lp.testing import TestCase
 
 
@@ -107,6 +110,7 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
 class TestLinkifyingBugs(TestCase):
 
     def test_regular_bug_case_works(self):
@@ -116,9 +120,12 @@ class TestLinkifyingBugs(TestCase):
             "bug number 34434",
             ]
         expected_html = [
-            '<p><a href="/bugs/34434">bug 34434</a></p>',
-            '<p><a href="/bugs/34434">bugnumber 34434</a></p>',
-            '<p><a href="/bugs/34434">bug number 34434</a></p>',
+            '<p><a href="/bugs/34434" '
+                'class="bug-link">bug 34434</a></p>',
+            '<p><a href="/bugs/34434" '
+                'class="bug-link">bugnumber 34434</a></p>',
+            '<p><a href="/bugs/34434" '
+                'class="bug-link">bug number 34434</a></p>',
             ]
         self.assertEqual(
             expected_html,
@@ -140,6 +147,12 @@ class TestLinkifyingBugs(TestCase):
         self.assertEqual(
             expected_html,
             [FormattersAPI(text).text_to_html() for text in test_strings])
+
+    def test_explicit_bug_linkification(self):
+        text = 'LP: #10'
+        self.assertEqual(
+            'LP: <a href="/bugs/10" class="bug-link">#10</a>',
+            linkify_bug_numbers(text))
 
 
 class TestLinkifyingProtocols(TestCase):
@@ -194,7 +207,7 @@ class TestLinkifyingProtocols(TestCase):
             ('<p><a rel="nofollow" '
              'href="http://example.com/path_(with_parens">'
              'http://<wbr></wbr>example.<wbr></wbr>com'
-             '/path_<wbr></wbr>(with_parens</a></p>'),           
+             '/path_<wbr></wbr>(with_parens</a></p>'),
             ]
 
         self.assertEqual(
@@ -264,9 +277,17 @@ class TestLinkifyingProtocols(TestCase):
         self.assertEqual(expected_html, html)
 
 
+class TestLastParagraphClass(TestCase):
+
+    def test_last_paragraph_class(self):
+        self.assertEqual(
+            '<p>Foo</p>\n<p class="last">Bar</p>',
+            FormattersAPI("Foo\n\nBar").text_to_html(
+                last_paragraph_class="last"))
+
+
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
-    layer = DatabaseFunctionalLayer
 
     def test_emptyString(self):
         # An empty string gives an empty string.

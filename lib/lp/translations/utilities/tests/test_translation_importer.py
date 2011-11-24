@@ -8,6 +8,7 @@ __metaclass__ = type
 import transaction
 
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import Provides
 from lp.translations.enums import RosettaImportStatus
@@ -23,8 +24,32 @@ from lp.translations.utilities.translation_common_format import (
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
+    POFileImporter,
+    POTFileImporter,
     TranslationImporter,
     )
+
+
+class FakeImportQueueEntry:
+    by_maintainer = True
+    format = TranslationFileFormat.PO
+    content = None
+
+    def __init__(self, potemplate, pofile=None):
+        self.importer = potemplate.owner
+        self.potemplate = potemplate
+        self.pofile = pofile
+
+
+class FakeTranslationFile:
+    header = None
+
+
+class FakeParser:
+    uses_source_string_msgids = False
+
+    def parse(self, entry):
+        return FakeTranslationFile()
 
 
 class TranslationImporterTestCase(TestCaseWithFactory):
@@ -234,12 +259,43 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         """ % potmsgset2.msgid_singular.msgid
 
         entry = self.factory.makeTranslationImportQueueEntry(
-            'foo.po', potemplate=template,
+            'foo.po', potemplate=template, pofile=pofile,
             status=RosettaImportStatus.APPROVED, content=text)
-        entry.pofile = pofile
-        entry.status = RosettaImportStatus.APPROVED
         transaction.commit()
 
         self.assertTrue(existing_translation.is_current_upstream)
         TranslationImporter().importFile(entry)
         self.assertTrue(existing_translation.is_current_upstream)
+
+    def test_template_importMessage_updates_file_references(self):
+        # Importing a template message updates the filereferences on an
+        # existing POTMsgSet.
+        template = self.factory.makePOTemplate()
+        potmsgset = self.factory.makePOTMsgSet(potemplate=template)
+        old_file_references = self.factory.getUniqueString()
+        new_file_references = self.factory.getUniqueString()
+        potmsgset.filereferences = old_file_references
+        message = TranslationMessageData()
+        message.msgid_singular = potmsgset.singular_text
+        message.file_references = new_file_references
+        queue_entry = FakeImportQueueEntry(template)
+        importer = POTFileImporter(queue_entry, FakeParser(), DevNullLogger())
+        importer.importMessage(message)
+        self.assertEqual(new_file_references, potmsgset.filereferences)
+
+    def test_translation_importMessage_does_not_update_file_references(self):
+        # Importing a translation message does not update the
+        # filereferences on an existing POTMsgSet.  (It used to, which
+        # is what caused bug 715854).
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(potemplate=pofile.potemplate)
+        old_file_references = self.factory.getUniqueString()
+        new_file_references = self.factory.getUniqueString()
+        potmsgset.filereferences = old_file_references
+        message = TranslationMessageData()
+        message.msgid_singular = potmsgset.singular_text
+        message.file_references = new_file_references
+        queue_entry = FakeImportQueueEntry(pofile.potemplate, pofile)
+        importer = POFileImporter(queue_entry, FakeParser(), DevNullLogger())
+        importer.importMessage(message)
+        self.assertEqual(old_file_references, potmsgset.filereferences)

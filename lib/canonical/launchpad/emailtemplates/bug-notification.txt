@@ -1,8 +1,0 @@
-%(content)s
-
--- 
-%(notification_rationale)s
-%(bug_url)s
-
-Title:
-%(bug_title)s

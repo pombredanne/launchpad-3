@@ -9,326 +9,28 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-  <!-- Error pages -->
-  <!-- System Errors -->
-  <browser:page
-      for="zope.interface.common.interfaces.IException"
-      name="index.html"
-      template="../templates/oops.pt"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
-      />
-
-  <!-- Unauthorized -->
-  <browser:page
-      for="zope.exceptions.IUnauthorized"
-      name="index.html"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.login.UnauthorizedView"
-      attribute="__call__"
-      />
-
-  <!-- NotFound -->
-  <browser:page
-      for="zope.publisher.interfaces.NotFound"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-notfound.pt"
-      class="canonical.launchpad.webapp.error.NotFoundView"
-      />
-
-  <!-- Gone -->
-  <browser:page
-      for="lp.app.errors.GoneError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-gone.pt"
-      class="canonical.launchpad.webapp.error.GoneView"
-      />
-
-  <!-- RequestExpired -->
-  <browser:page
-      for="canonical.database.interfaces.IRequestExpired"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.RequestExpiredView"
-      />
-
-  <!-- TimeoutError -->
-  <browser:page
-      for="canonical.lazr.timeout.TimeoutError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.RequestExpiredView"
-      />
-
-  <!-- UnexpectedFormData -->
-  <browser:page
-      for="lp.app.errors.UnexpectedFormData"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
-      />
-
-  <!-- OffsiteFormPostError -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.OffsiteFormPostError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
-      />
-
-  <!-- NoReferrerError -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.NoReferrerError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-noreferrer.pt"
-      class="canonical.launchpad.webapp.error.NoReferrerErrorView"
-      />
-
-  <!-- UnsafeFormGetSubmissionError -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
-      />
-
-  <!-- InvalidBatchSizeError -->
-  <browser:page
-      for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-invalidbatchsize.pt"
-      class="canonical.launchpad.webapp.error.InvalidBatchSizeView"
-      />
-
-  <!-- TranslationUnavailable -->
-  <browser:page
-      for="lp.app.errors.TranslationUnavailable"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-translationunavailable.pt"
-      class="canonical.launchpad.webapp.error.TranslationUnavailableView"
-      />
-
-  <!-- ReadOnlyModeViolation -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ReadOnlyModeViolation"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-readonlyfailure.pt"
-      class="canonical.launchpad.webapp.error.ReadOnlyErrorView"
-      />
-
-  <!-- Vocabularies -->
-  <browser:page
-    for="*"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.vocabulary.HugeVocabularyJSONView"
-    name="+huge-vocabulary"
-    />
-
-  <adapter
-    factory="canonical.launchpad.browser.vocabulary.default_pickerentry_adapter"
-    />
-
-  <adapter
-    factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
-    />
-
-  <adapter
-    factory="canonical.launchpad.browser.vocabulary.branch_to_pickerentry"
-    />
-
-  <adapter
-    factory="canonical.launchpad.browser.vocabulary.sourcepackagename_to_pickerentry"
-    />
-
 <facet facet="overview">
-
-  <utility
-      factory="canonical.launchpad.utilities.LaunchpadCelebrities"
-      provides="canonical.launchpad.interfaces.launchpad.ILaunchpadCelebrities">
-  </utility>
-
-  <browser:page
-      for="*"
-      name="+maintenancemessage"
-      template="../templates/launchpad-maintenance.pt"
-      class="canonical.launchpad.browser.MaintenanceMessage"
-      permission="zope.Public"
-      />
-
-  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
-  shipit-forbidden.pt, initially. -->
-  <browser:page
-      for="*"
-      name="+forbidden-page-macros"
-      template="../templates/launchpad-forbidden-macros.pt"
-      permission="zope.Public"
-      />
-
-
-  <!-- The +basiclogin view is registered using Python code so that we can do
-       it only for development and tests. Below is what its declaration would
-       look like, and it's here so that someone grepping zcml files for its
-       name will find it.
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.webapp.login.BasicLoginPage"
-      name="+basiclogin"
-      permission="zope.Public" />
-  -->
-
-  <class class="canonical.launchpad.webapp.login.BasicLoginPage">
-    <allow attributes="__call__" />
-    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
-  </class>
-
-  <subscriber
-      for="zope.processlifetime.ProcessStarting"
-      handler="canonical.launchpad.webapp.login.register_basiclogin"
-      />
-
-  <!-- OpenID RP views -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.webapp.login.OpenIDLogin"
-      permission="zope.Public"
-      name="+login"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.webapp.login.OpenIDCallbackView"
-      permission="zope.Public"
-      name="+openid-callback"
-      />
-
-  <browser:page
-      for="*"
-      attribute="logout"
-      class="canonical.launchpad.webapp.login.CookieLogoutPage"
-      permission="zope.Public"
-      name="+logout"
-      />
-
-  <browser:page
-      for="*"
-      name="login_status"
-      template="../templates/launchpad-loginstatus.pt"
-      class="canonical.launchpad.browser.LoginStatus"
-      permission="zope.Public"
-      />
-
-  <!-- Other non-application-specific pages. -->
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="lp.registry.browser.person.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <!-- A page to list all the icons in LP -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+graphics"
-      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
-      template="../templates/launchpad-graphics.pt"
-      permission="zope.Public"
-      />
-
   <!-- OAuth-related pages. -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+request-token"
-      class="canonical.launchpad.browser.OAuthRequestTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthRequestTokenView"
       permission="zope.Public" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+authorize-token"
-      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
       permission="launchpad.AnyPerson" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+token-authorized"
-      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
-      template="../templates/token-authorized.pt"
-      permission="launchpad.AnyPerson" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
-      class="canonical.launchpad.browser.OAuthAccessTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthAccessTokenView"
       permission="zope.Public" />
 
-  <!-- Common menus -->
-  <browser:menus
-      module="canonical.launchpad.browser.launchpad"
-      classes="LaunchpadRootFacets"
-      />
-
-  <browser:defaultView
-      for="canonical.launchpad.webapp.interfaces.ILink"
-      name="+link"
-      />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILink"
-      name="+link"
-      class="canonical.launchpad.browser.launchpad.LinkView"
-      template="../templates/launchpad-link.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILink"
-      name="+inline"
-      class="canonical.launchpad.browser.launchpad.LinkView"
-      template="../templates/launchpad-inline-link.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILink"
-      name="+inline-icon"
-      class="canonical.launchpad.browser.launchpad.LinkView"
-      template="../templates/launchpad-inline-icon-link.pt"
-      permission="zope.Public"
-      />
-
-  <!-- Test page for soft timeouts. The permission checking is done in
-       the view class, only Launchpad developers have access to the
-       page -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="+soft-timeout"
-      class="canonical.launchpad.browser.launchpad.SoftTimeoutView"
-      attribute="__call__"
-      permission="zope.Public"
-      />
-
 </facet>
-
-<class
-    class="canonical.launchpad.utilities.personroles.PersonRoles">
-    <allow
-        interface="canonical.launchpad.interfaces.launchpad.IPersonRoles"/>
-</class>
-<adapter
-    for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.launchpad.IPersonRoles"
-    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
 <adapter
@@ -375,22 +77,6 @@ these URLs in Apache.
   for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
   interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
   class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
-  permission="zope.Public"
-  />
-
-<!-- icing resources -->
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing"
-  class="canonical.launchpad.browser.launchpad.IcingFolder"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-contrib"
-  class="canonical.launchpad.browser.launchpad.IcingContribFolder"
-  attribute="__call__"
   permission="zope.Public"
   />
 

@@ -11,8 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet,
@@ -23,9 +23,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.testing import login_as
 from lp.testing.factory import LaunchpadObjectFactory
 
-
+# XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
+# TestCaseWithFactory.
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
@@ -89,6 +91,30 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnlessEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.UNKNOWN)
+
+    def test_source_mirror_freshness_property(self):
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).source_mirror_freshness,
+            MirrorFreshness.TWODAYSBEHIND)
+
+    def test_arch_mirror_freshness_property(self):
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).arch_mirror_freshness,
+            MirrorFreshness.ONEHOURBEHIND)
 
     def test_archive_mirror_with_source_content_freshness(self):
         self._create_source_mirror(
@@ -182,6 +208,25 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
 
+    def test_no_email_sent_to_uncontactable_owner(self):
+        # If the owner has no contact address, only the mirror admins are
+        # notified.
+        mirror = self.cdimage_mirror
+        login_as(mirror.owner)
+        # Deactivate the mirror owner to remove the contact address.
+        mirror.owner.deactivateAccount("I hate mirror spam.")
+        login_as(mirror.distribution.mirror_admin)
+        # Clear out notifications about the new team member.
+        transaction.commit()
+        stub.test_emails = []
+
+        # Disabling the mirror results in a single notification to the
+        # mirror admins.
+        self.factory.makeMirrorProbeRecord(mirror)
+        mirror.disable(notify_owner=True, log="It broke.")
+        transaction.commit()
+        self.failUnlessEqual(len(stub.test_emails), 1)
+
 
 class TestDistributionMirrorSet(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
@@ -223,8 +268,3 @@ class TestDistributionMirrorSet(unittest.TestCase):
             france, MirrorContent.RELEASE)
         self.failUnless(len(mirrors) > 1, "Not enough mirrors")
         self.failUnlessEqual(main_mirror, mirrors[-1])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

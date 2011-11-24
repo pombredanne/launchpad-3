@@ -3,16 +3,14 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.i18nmessageid import Message
 from zope.interface import implements
 
-from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.app.browser.launchpad import Hierarchy
 from lp.testing import (
     login,
     TestCase,
@@ -139,7 +137,3 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
             [distro_url, distroseries_url, package_url, package_bugs_url,
              self.package_bugtask_url],
             self.package_bugtask)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -150,6 +150,14 @@
         for="lp.translations.interfaces.translationexporter.ITranslationExporter"
         provides="lp.translations.interfaces.translationexporter.ITranslationFormatExporter"
         factory="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter"/>
+    <subscriber
+        for="lp.registry.interfaces.packaging.IPackaging
+             lazr.lifecycle.interfaces.IObjectEvent"
+        handler=".model.translationsharingjob.schedule_packaging_job" />
+    <subscriber
+        for="lp.translations.interfaces.potemplate.IPOTemplate
+             lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        handler=".model.translationsharingjob.schedule_potemplate_job" />
     <facet
         facet="translations">
 
@@ -383,6 +391,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
+        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
@@ -426,15 +435,15 @@
             <allow
                 interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
             <require
-                permission="launchpad.Edit"
-                set_attributes="
-                    owner priority description translation_domain path
-                    iscurrent"/>
-            <require
                 permission="launchpad.TranslationsAdmin"
                 set_attributes="
-                    name productseries distroseries sourcepackagename
-                    sourcepackageversion binarypackagename languagepack
+                    name owner priority description translation_domain path
+                    iscurrent languagepack sourcepackagename"/>
+            <require
+                permission="launchpad.Admin"
+                set_attributes="
+                    productseries distroseries
+                    sourcepackageversion binarypackagename
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
         </class>
@@ -623,26 +632,51 @@
         provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
         <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
     </securedutility>
+    <securedutility
+        component='lp.translations.model.translationpackagingjob.TranslationPackagingJob'
+        provides='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'
+    >
+        <allow
+        interface='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'/>
+    </securedutility>
+    <class
+        class="lp.translations.model.translationpackagingjob.TranslationMergeJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
+    <class
+        class="lp.translations.model.translationpackagingjob.TranslationSplitJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
+    <class
+        class="lp.translations.model.translationpackagingjob.TranslationTemplateChangeJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
     <utility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
         name="TRANSLATIONTEMPLATESBUILD"/>
-    <adapter
-        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
-        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
-        factory="lp.translations.model.translationtemplatesbuild.get_translation_templates_build_for_build_farm_job"
-        name="TRANSLATIONTEMPLATESBUILD"
-        permission="zope.Public"/>
 
     <!-- TranslationTemplatesBuild -->
     <class
         class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
-        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+        <require permission="launchpad.View" interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+        <!-- This is needed for BuildManager to run. The permission isn't
+             important; launchpad.Edit isn't actually held by anybody.
+             Inspired by the similar change for SourcePackageRecipeBuild. -->
+        <require permission="launchpad.Edit"
+            set_attributes="builder date_finished date_started log status" />
+
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
         provides="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource">
         <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+        name="TRANSLATIONTEMPLATESBUILD">
+        <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
     </securedutility>
 
     <!-- TranslationTemplateBuildBehavior -->
@@ -659,5 +693,14 @@
         />
 
   <webservice:register module="lp.translations.interfaces.webservice" />
+
+  <class
+      class="lp.translations.model.pofilestatsjob.POFileStatsJob">
+      <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+  </class>
+  <utility
+      component="lp.translations.model.pofilestatsjob.POFileStatsJob"
+      provides="lp.translations.interfaces.pofilestatsjob.IPOFileStatsJobSource"
+      />
 
 </configure>

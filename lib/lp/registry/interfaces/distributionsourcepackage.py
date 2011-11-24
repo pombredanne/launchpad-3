@@ -31,25 +31,28 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
+from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                                 IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IHasOfficialBugTags):
+                                 IQuestionTarget, IHasDrivers):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -80,8 +83,14 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    is_official = Attribute(
+        'Is this source package officially in the distribution?')
+
     summary = Attribute(
         'The summary of binary packages built from this package')
+
+    binary_names = Attribute(
+        'A list of binary package names built from this package.')
 
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
@@ -113,6 +122,8 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     po_message_count = Attribute(
         "Number of translations matching the distribution and "
         "sourcepackagename of the IDistributionSourcePackage.")
+
+    drivers = Attribute("The drivers for the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
@@ -205,7 +216,12 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     def __ne__(other):
         """IDistributionSourcePackage comparison method.
 
-        Distro sourcepackages compare not equal if either of their distribution
-        or sourcepackagename compare not equal.
+        Distro sourcepackages compare not equal if either of their
+        distribution or sourcepackagename compare not equal.
         """
 
+    def delete():
+        """Delete the persistent DSP if it exists.
+
+        :return: True if a persistent object was removed, otherwise False.
+        """

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionFilterTag']
 
-from storm.base import Storm
 from storm.locals import (
     Bool,
     Int,
@@ -14,8 +13,10 @@ from storm.locals import (
     Unicode,
     )
 
+from lp.services.database.stormbase import StormBase
 
-class BugSubscriptionFilterTag(Storm):
+
+class BugSubscriptionFilterTag(StormBase):
     """Tags to filter."""
 
     __storm_table__ = "BugSubscriptionFilterTag"

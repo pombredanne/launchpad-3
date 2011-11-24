@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-import unittest
 
 import transaction
 
@@ -16,11 +15,11 @@ from canonical.launchpad.webapp.interaction import (
     queryInteraction,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.bugs.externalbugtracker.isolation import (
+from lp.bugs.scripts.checkwatches.base import WorkingBase
+from lp.services.database.isolation import (
     is_transaction_in_progress,
     TransactionInProgress,
     )
-from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
@@ -171,7 +170,3 @@ class TestWorkingBaseErrorReporting(TestCaseWithFactory):
     def test_sql_log_cleared_after_error(self):
         with self._test_sql_log_cleared_after_x() as base:
             base.error("Numpty on deck.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

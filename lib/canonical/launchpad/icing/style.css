@@ -22,31 +22,71 @@
 ...
 */
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    margin: 1em 0;
+    }
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
+    top: 0;
+    }
 
 /* === Fonts and colors === */
 
-.unavailable {color: #999; background: none;}
-
-.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
-
-/* Using colored text as you wish. */
-.green {color: green;}
-.red {color: red;}
-
-.helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
-    padding: 0.5em; font-size: smaller; padding-left: 3em
+.unavailable {
+    color: #999;
+    background: none;
 }
+
+.duplicate-details p {
+    padding: 0em;
+    margin-top: 0em;
+    margin-bottom: 0.2em;
+}
+
+.helpwanted {
+    background-color: #fafca9;
+    border: 1px solid black;
+    padding: 0.5em;
+    padding-left: 3em;
+}
+
 .whiteboard {
-  color: #666;
+    color: #666;
 }
+
 /* When shown as in a definition description, indent slightly. */
 dd .whiteboard {
-  padding-left: 1em;
+    padding-left: 1em;
 }
 
 form.primary.search {
-  margin-bottom: 2em;
+    margin-bottom: 2em;
 }
+
+div#bugs-search-form.dynamic_bug_listing {
+    background: #EEE;
+    padding: 2px 15px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+form.primary.search.dynamic_bug_listing {
+    margin-bottom: 0;
+}
+
+form.primary.search.dynamic_bug_listing h3 {
+    margin-top: 5px;
+}
+
+form.primary.search.dynamic_bug_listing p {
+    margin: 3px 0;
+}
+
 @media print {
   .notforprint {display:none;}
 }
@@ -77,7 +117,6 @@ form.primary.search {
 
 .official-tags-layout-table th {
   text-align: left;
-  font-size: 1.25em;
   padding-bottom: 5px;
 }
 
@@ -113,8 +152,7 @@ form.primary.search {
 }
 
 .official-tags-layout-table ul .tag-used-count {
-  color: #888;
-  font-size: 75%;
+  color: #666;
 }
 
 .official-tags-layout-table .list-scrollable-area {
@@ -136,19 +174,12 @@ form.primary.search {
 
 .official-tag-error-message-header {
   font-weight: bold;
-  font-size: 1.25em;
   margin-left: 1em;
 }
 
 .official-tag-error-message-value {
   color: red;
   text-decoration: underline;
-}
-
-.tags-container {
-  width: 45%;
-  text-align: left;
-  float: left;
 }
 
 .tags-show { display: block; }
@@ -178,9 +209,8 @@ a.bg-image {
 
 /* == Application-specific styles == */
 
-.description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
-.report h2 {font-size: 1.4em;}
+.report h2 {font-size: 24px;}
 .boardComment, .boardCommentSummary {border: 1px solid #ddd;}
 .boardComment {margin: 1em 0 1.5em;}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
@@ -215,10 +245,10 @@ a.bg-image {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
-.boardCommentContent { line-height: 1.5em;}
+.boardCommentContent { line-height: 1.4em;}
 .boardCommentFooter {
   background-color: #eee;
-  color: #555;
+  color: #666;
   padding: 0.5em 12px;
   border-top: 1px solid #ddd;
 }
@@ -227,10 +257,6 @@ a.bg-image {
 
 /* --- Overview --- */
 
-.tab-overview #application-footer strong {
-  background: none;
-  color: #83ad23;
-}
 body.tab-overview #description, div#branch-description {
     width: 50em;
 }
@@ -250,6 +276,60 @@ div#branch-description {
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
+
+ul.latest-ppa-updates li {
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    }
+table#packages_list tr.superseded, tr.blacklisted {
+    background-color: #eee;
+    }
+ul.latest-ppa-updates li:nth-child(odd) {
+    /* The following could be generalised for use to the following selector:
+       .side .portlet li.nth-child(odd)
+       if needed. */
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
+    }
+ul.latest-ppa-updates li.FULLYBUILT {
+    background-image: url('/@@/yes');
+    }
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background-image: url('/@@/build-success-publishing');
+    }
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background-image: url('/@@/build-needed');
+    }
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background-image: url('/@@/build-failed');
+    }
+ul.latest-ppa-updates li.BUILDING {
+    background-image: url('/@@/processing');
+    }
+
+.package-diff-status span.COMPLETED {
+    background-image: url('/@@/packagediff-ok');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+     }
+.package-diff-status span.PENDING {
+    background-image: url('/@@/packagediff-loading');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.FAILED {
+    background-image: url('/@@/packagediff-failed');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.request-derived-diff {
+    background-image: url('/@@/packagediff-unknown');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
@@ -309,7 +389,7 @@ p.update-failure-message {
 .update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
-    color: #999;
+    color: #666;
 }
 
 a.update-retry {
@@ -368,7 +448,6 @@ form.archive-subscription-activation button {
     padding: 0 0 0 15px;
     margin:0;
     cursor: pointer;
-    font-size: 100%;
 }
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
@@ -381,7 +460,7 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font: 100% monospace;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     -moz-border-radius: 5px;
     -o-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -425,15 +504,16 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
-body.tab-branches #actions, body.tab-branches .results {background-color: #ffc;}
-body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
-  background-color: #d18b39;
-}
-.tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong {
-  background: none;
-  color: #d18b39;
-}
+table.code {
+    margin-bottom: 1em;
+    }
+table.code th {
+    text-align: left;
+    font-weight: bold;
+    }
+table.code th, table.code td {
+    padding-right: 3em;
+    }
 
 .branch-no-dev-focus {
   background: #FFF59C;
@@ -455,11 +535,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   -webkit-border-radius: 5px;
 }
 
-.pending-update h3{
-  color: black;
+.pending-update h3 {
   font-weight: bold;
   text-align: center;
-  font-size: 160%;
   margin-top: 0.5em;
 }
 
@@ -481,17 +559,7 @@ div.diff .attachmentBody {
 div.diff .horizontal {
   margin: 0;
 }
-body.tab-branches table.listing .section-heading {
-  color: #d18b39;
-}
 
-body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
-  color: #666666;
-}
-
-.yui-diff-overlay table.diff {
-  font-size: 98%;
-}
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
@@ -499,7 +567,7 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
-table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
   text-align: right;
   background-color: #f6f6f6;
@@ -542,23 +610,19 @@ dl.reviews dd {
 
 
 /* === Bugs === */
-/* The Launchpad Bugs application uses a maroon color: */
-body.tab-bugs #actions, body.tab-bugs .results {background-color: #fee;}
-body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
-  background-color: #9f2b33;
-}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
-.tab-bugs table.listing thead {
-  background: none;
-  color: #9f2b33;
-}
 
+tr.bug-branch-summary td {
+    padding: 0px 6px;
+    }
+tr.bug-branch-summary td.first {
+    padding-left: 0px;
+    }
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
 
 /* Bug report page subscribe/unsubscribe spinner */
-div#sub-unsub-spinner {
+div#sub-unsub-spinner, div#mute-unmute-spinner {
   background: url(/@@/spinner) center left no-repeat;
   color:#999;
   display:none;
@@ -568,7 +632,6 @@ div#sub-unsub-spinner {
 
 .highlight-message {
   margin: 2em 0 2em 0;
-  font-size: 120%;
 }
 
 .patches-view-cell {
@@ -584,35 +647,114 @@ div#sub-unsub-spinner {
   text-align: left;
 }
 
-/* --- Blueprints --- */
+/* Intended to be used as temporary replacement for a sprite class when the
+   associated link's action is in-progress. */
+.spinner {
+  background: url(/@@/spinner) center left no-repeat;
+}
 
-body.tab-specifications #actions, body.tab-specifications .results {
-  background-color: #eff;
+/* Intended to be used as temporary replacement for a button class like
+   lazr-pos when the associated button's action is in-progress. */
+button.spinner {
+  background-image: url(/@@/spinner) !important;
 }
-body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
-  background-color: #3594bb;
+
+/* This lets us have a help link sprite and a normal link sprite on the same
+   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
+div#mute-link-container a.sprite {
+  width: auto;
 }
-.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #application-footer strong,
-.tab-specifications table.listing thead {
-  background: none;
-  color: #3594bb;
+
+/* Gives us some room after the description of the user's subscription. */
+div#current_user_subscription {
+    padding-bottom: 8px;
+}
+
+/* This lets us have a link that spans lines. */
+div#current_user_subscription a.sprite {
+  display: inline;
+}
+
+/* Rules for CustomBugListings bug search result lists. */
+div#client-listing {
+    float: left;
+    color: #666;
+    }
+div.buglisting-row {
+    float: left;
+    margin-top: 5px;
+    border-bottom: 1px solid #EEE;
+    min-width: 585px;
+    width: 100%;
+    padding-bottom: 5px;
+    }
+div.buglisting-col1 {
+    width: 100px;
+    float: left;
+    padding-bottom: 8px;
+    }
+div.buglisting-col2 {
+    width: 70%;
+    float: left;
+    }
+div.buglisting-col3 {
+    width: 10%;
+    float: right;
+    }
+div#client-listing .importance {
+    height: 1.5em;
+    width: 65px;
+    font-size: .8em;
+    border-radius: 2px;
+    text-transform: uppercase;
+    line-height: 12px;
+    margin: 5px 50px 2px 0;
+    text-align: center;
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .buglisting-col2 {
+    position: relative;
+    top: 2px;
+    }
+div#client-listing .bug-related-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .bug-heat-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .status {
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .field {
+    display: inline-block;
+    min-width: 120px;
+    line-height: 16px;
+    margin-right: 5px;
+}
+
+/* Tags portlet */
+.tag-list {
+    margin-bottom: 0.5em;
+    }
+.tag-list li {
+    padding-bottom: 0;
+    }
+.tag-count {
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: right;
+    padding-right: 0.25em;
+    }
+.edit-official-tags {
+    margin-top: 1em;
 }
 
 /* === Translations === */
 
-body.tab-translations #actions, body.tab-translations .results {
-  background-color: #f1d7e6;
-}
-body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
-  background-color: #bb3a84;
-}
-.tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #application-footer strong,
-.tab-translations table.listing thead {
-  background: none;
-  color: #bb3a84;
-}
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */
 .translation samp { /* a leading/trailing space */
   background: url(/@@/translation-space) center center no-repeat;
@@ -623,17 +765,73 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 available width, just like multi-line fields (see "textarea" above): */
 input.translate {width: 90%; max-width: 60em;}
 
-/* === Answers === */
 
-body.tab-answers #actions, body.tab-answers .results {background-color: #eef;}
-body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
-  background-color: #3840be;
-}
-.tab-answers h1, .tab-answers h2, .tab-answers h3,
-.tab-answers #application-footer strong, .tab-answers table.listing thead {
-  background: none;
-  color: #3840be;
-}
+
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+    }
+
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+    }
+table.translation-stats td {
+    text-align: center;
+    }
+table.translation-stats td.template-name {
+    text-align: left;
+    }
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    }
+table.translation-stats tfoot th {
+    text-align: left;
+    }
+table.translation-stats tfoot td {
+    text-align: center;
+    }
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+    float: right;
+    }
+div.translation-help-links div {
+    clear: both;
+    }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
+    }
+
 
 
 /* ====== Content area styles ====== */
@@ -642,20 +840,11 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.central input {
-  font-size: 1em;
-}
-.front_page label {
-  color: #303030;
-  font-size: 1.2em;
-}
 #application-summary, #application-footer, #page-summary {
-  font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
 }
@@ -741,14 +930,14 @@ div.popupTitle {
 #search-results .upper-batch-nav, .freeform-batch .upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 2.5em;
-  margin-bottom: 10px;
+  margin-bottom: 1em;
   background: #e7effc;
 }
 
 #search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
-  margin-bottom: 10px;
+  margin-bottom: 1em;
   background: #e7effc;
 }
 

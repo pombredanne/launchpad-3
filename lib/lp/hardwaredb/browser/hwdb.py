@@ -15,7 +15,6 @@ from textwrap import dedent
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -32,7 +31,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.hardwaredb.interfaces.hwdb import (
-    HWSubmissionMissingFields,
     IHWDBApplication,
     IHWDeviceClassSet,
     IHWDeviceSet,
@@ -69,10 +67,6 @@ class HWDBUploadView(LaunchpadFormView):
         missing_fields = expected_fields.difference(submitted_fields)
         if len(missing_fields) > 0:
             missing_fields = ', '.join(sorted(missing_fields))
-            info = (HWSubmissionMissingFields,
-                    'Missing form fields: %s' % missing_fields, None)
-            errorUtility = getUtility(IErrorReportingUtility)
-            errorUtility.handling(info, self.request)
             self.addCustomHeader(
                 'Error: Required fields not contained in POST data: '
                 + missing_fields)
@@ -106,7 +100,6 @@ class HWDBUploadView(LaunchpadFormView):
         if fingerprint is None:
             fingerprint = fingerprintset.createFingerprint(data['system'])
 
-        submitted_data = data['submission_data']
         filesize = len(data['submission_data'])
         submission_file = self.request.form[
             self.widgets['submission_data'].name]
@@ -146,7 +139,6 @@ class HWDBUploadView(LaunchpadFormView):
         successful as well as an failed request, add some HTTP headers
         to the response.
         """
-        response = self.request.response
         for field in self.form_fields:
             field_name = field.__name__
             error = self.getFieldError(field_name)
@@ -305,4 +297,3 @@ class HWDBFingerprintSetView(LaunchpadView):
         return (submission.owner is not None
                 and (submission.contactable
                      or (submission.owner == self.user)))
-

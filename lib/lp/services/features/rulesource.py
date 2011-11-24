@@ -4,6 +4,7 @@
 """Returns rules defining which features are active"""
 
 __all__ = [
+    'DuplicatePriorityError',
     'FeatureRuleSource',
     'NullFeatureRuleSource',
     'StormFeatureRuleSource',
@@ -12,10 +13,14 @@ __all__ = [
 __metaclass__ = type
 
 import re
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+    )
 
 from storm.locals import Desc
 
+from canonical.launchpad.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
@@ -24,6 +29,17 @@ from lp.services.features.model import (
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")
+
+
+class DuplicatePriorityError(Exception):
+
+    def __init__(self, flag, priority):
+        self.flag = flag
+        self.priority = priority
+
+    def __str__(self):
+        return 'duplicate priority for flag "%s": %d' % (
+            self.flag, self.priority)
 
 
 class FeatureRuleSource(object):
@@ -71,17 +87,24 @@ class FeatureRuleSource(object):
     def parseRules(self, text_form):
         """Return a list of tuples for the parsed form of the text input.
 
-        For each non-blank line gives back a tuple of (flag, scope, priority, value).
+        For each non-blank line gives back a tuple of
+        (flag, scope, priority, value).
 
         Returns a list rather than a generator so that you see any syntax
         errors immediately.
         """
         r = []
+        seen_priorities = defaultdict(set)
         for line in text_form.splitlines():
             if line.strip() == '':
                 continue
             flag, scope, priority_str, value = re.split('[ \t]+', line, 3)
-            r.append((flag, scope, int(priority_str), unicode(value)))
+            priority = int(priority_str)
+            r.append((flag, scope, priority, unicode(value)))
+            if priority in seen_priorities[flag]:
+                raise DuplicatePriorityError(flag, priority)
+            seen_priorities[flag].add(priority)
+
         return r
 
 
@@ -90,12 +113,24 @@ class StormFeatureRuleSource(FeatureRuleSource):
     """
 
     def getAllRulesAsTuples(self):
+        try:
+            # This LBYL may look odd but it is needed. Rendering OOPSes and
+            # timeouts also looks up flags, but doing such a lookup can
+            # will cause a doom if the db request is not executed or is
+            # canceled by the DB - and then results in a failure in
+            # zope.app.publications.ZopePublication.handleError when it
+            # calls transaction.commit.
+            # By Looking this up first, we avoid this and also permit
+            # code using flags to work in timed out requests (by appearing to
+            # have no rules).
+            adapter.get_request_remaining_seconds()
+        except adapter.RequestExpired:
+            return
         store = getFeatureStore()
         rs = (store
                 .find(FeatureFlag)
                 .order_by(
                     FeatureFlag.flag,
-                    FeatureFlag.scope,
                     Desc(FeatureFlag.priority)))
         for r in rs:
             yield Rule(str(r.flag), str(r.scope), r.priority, r.value)
@@ -105,8 +140,8 @@ class StormFeatureRuleSource(FeatureRuleSource):
 
         :param new_rules: List of (name, scope, priority, value) tuples.
         """
-        # XXX: would be slightly better to only update rules as necessary so we keep
-        # timestamps, and to avoid the direct sql etc -- mbp 20100924
+        # XXX: would be slightly better to only update rules as necessary so
+        # we keep timestamps, and to avoid the direct sql etc -- mbp 20100924
         store = getFeatureStore()
         store.execute('DELETE FROM FeatureFlag')
         for (flag, scope, priority, value) in new_rules:
@@ -115,6 +150,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
                 flag=unicode(flag),
                 value=value,
                 priority=priority))
+        store.flush()
 
 
 class NullFeatureRuleSource(FeatureRuleSource):

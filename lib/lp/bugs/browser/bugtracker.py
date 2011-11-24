@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -10,6 +10,7 @@ __all__ = [
     'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
+    'BugTrackerEditComponentView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
     'BugTrackerSetBreadcrumb',
@@ -22,6 +23,7 @@ __all__ = [
 
 from itertools import chain
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -35,10 +37,7 @@ from canonical.launchpad.helpers import (
     english_list,
     shortlist,
     )
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag,
-    ILaunchpadCelebrities,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -58,23 +57,23 @@ from canonical.launchpad.webapp.batching import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    DelimitedListWidget,
-    LaunchpadRadioWidget,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import DelimitedListWidget
+from lp.bugs.browser.widgets.bugtask import UbuntuSourcePackageNameWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
     IBugTrackerSet,
     IRemoteBug,
-    IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
 
@@ -230,6 +229,11 @@ class BugTrackerView(LaunchpadView):
         """
         return shortlist(chain(self.context.projects,
                                self.context.products), 100)
+
+    @property
+    def related_component_groups(self):
+        """All component groups and components."""
+        return self.context.getAllRemoteComponentGroups()
 
 
 BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
@@ -449,16 +453,89 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
     @stepthrough("+components")
-    def component_groups(self, name):
-        return self.context.getRemoteComponentGroup(name)
+    def component_groups(self, name_or_id):
+        """Navigate by id (component group name should work too)"""
+        return self.context.getRemoteComponentGroup(name_or_id)
+
+
+class BugTrackerEditComponentView(LaunchpadEditFormView):
+    """Provides editing form for setting source packages for components.
+
+    This class assumes that bug tracker components are always
+    linked to source packages in the Ubuntu distribution.
+    """
+    schema = IBugTrackerComponent
+    custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
+    field_names = ['sourcepackagename']
+    page_title = 'Link component'
+
+    @property
+    def label(self):
+        return (
+            'Link a distribution source package to %s component' %
+            self.context.name)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        field_values = dict(sourcepackagename='')
+        dsp = self.context.distro_source_package
+        if dsp is not None:
+            field_values['sourcepackagename'] = dsp.name
+        return field_values
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.component_group.bug_tracker)
+
+    cancel_url = next_url
+
+    def updateContextFromData(self, data, context=None):
+        """Link component to specified distro source package.
+
+        Get the user-provided source package name from the form widget,
+        look it up in Ubuntu to retrieve the distro_source_package
+        object, and link it to this component.
+        """
+        sourcepackagename = data['sourcepackagename']
+        distribution = self.widgets['sourcepackagename'].getDistribution()
+        dsp = distribution.getSourcePackage(sourcepackagename)
+        bug_tracker = self.context.component_group.bug_tracker
+        # Has this source package already been assigned to a component?
+        component = bug_tracker.getRemoteComponentForDistroSourcePackageName(
+            distribution, sourcepackagename)
+        if component is not None:
+            self.request.response.addNotification(
+                "The %s source package is already linked to %s:%s in %s." % (
+                    sourcepackagename.name,
+                    component.component_group.name,
+                    component.name, distribution.name))
+            return
+        # The submitted component can be linked to the distro source package.
+        component = context or self.context
+        component.distro_source_package = dsp
+        if sourcepackagename is None:
+            self.request.response.addNotification(
+                "%s:%s is now unlinked." % (
+                    component.component_group.name, component.name))
+        else:
+            self.request.response.addNotification(
+                "%s:%s is now linked to the %s source package in %s." % (
+                    component.component_group.name, component.name,
+                    sourcepackagename.name, distribution.name))
+
+    @action('Save Changes', name='save')
+    def save_action(self, action, data):
+        """Update the component with the form data."""
+        self.updateContextFromData(data)
 
 
 class BugTrackerComponentGroupNavigation(Navigation):
 
     usedfor = IBugTrackerComponentGroup
 
-    def traverse(self, name):
-        return self.context.getComponent(name)
+    def traverse(self, id):
+        return self.context.getComponent(id)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):

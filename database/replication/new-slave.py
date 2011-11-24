@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bring a new slave online."""
@@ -8,23 +8,28 @@
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 import subprocess
 import sys
-import time
 from textwrap import dedent
+import time
 
+import _pythonpath
 import psycopg2
+import replication.helpers
+from replication.helpers import LPMAIN_SET_ID
 
 from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
-    connect_string, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.scripts import db_options, logger_options, logger
+    connect_string,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
-import replication.helpers
-from replication.helpers import LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -44,7 +49,7 @@ def main():
 
     # Confirm we can connect to the source database.
     # Keep the connection as we need it later.
-    source_connection_string = ConnectionString(connect_string('slony'))
+    source_connection_string = ConnectionString(connect_string(user='slony'))
     try:
         log.debug(
             "Opening source connection to '%s'" % source_connection_string)
@@ -194,8 +199,7 @@ def main():
         """)
 
     full_sync = []
-    sync_nicknames = [node.nickname for node in existing_nodes]
-    sync_nicknames.append('new_node');
+    sync_nicknames = [node.nickname for node in existing_nodes] + ['new_node']
     for nickname in sync_nicknames:
         full_sync.append(dedent("""\
             echo 'Waiting for %(nickname)s sync.';
@@ -248,7 +252,8 @@ def get_master_connection_string(con, parser, set_id):
 
     # Confirm we can connect from here.
     try:
-        test_con = psycopg2.connect(str(connection_string))
+        # Test connection only.  We're not going to use it.
+        psycopg2.connect(str(connection_string))
     except psycopg2.Error, exception:
         parser.error("Failed to connect to using '%s' (%s)" % (
             connection_string, str(exception).strip()))

@@ -1,27 +1,34 @@
 #!/usr/bin/python -S
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate the database statistics report."""
 
 __metaclass__ = type
 
-import _pythonpath
-
 from datetime import datetime
 from operator import attrgetter
-from textwrap import dedent
+from textwrap import (
+    dedent,
+    fill,
+    )
 
-from canonical.database.sqlbase import connect, sqlvalues
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
 from canonical.launchpad.scripts import db_options
 from lp.scripts.helpers import LPOptionParser
+from lp.services.database.namedrow import named_fetchall
 
 
 class Table:
     pass
 
 
-def get_where_clause(options):
+def get_where_clause(options, fuzz='0 seconds'):
     "Generate a WHERE clause referencing the date_created column."
     # We have two of the from timestamp, the until timestamp and an
     # interval. The interval is in a format unsuitable for processing in
@@ -55,7 +62,9 @@ def get_where_clause(options):
     else:
         until_sql = "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
 
-    clause = "date_created BETWEEN (%s) AND (%s)" % (from_sql, until_sql)
+    fuzz_sql = "CAST(%s AS interval)" % sqlvalues(fuzz)
+    clause = "date_created BETWEEN (%s - %s) AND (%s + %s)" % (
+        from_sql, fuzz_sql, until_sql, fuzz_sql)
 
     return clause
 
@@ -152,6 +161,63 @@ def get_cpu_stats(cur, options):
     return cpu_stats
 
 
+def get_bloat_stats(cur, options, kind):
+    # Return information on bloated tables and indexes, as of the end of
+    # the requested time period.
+    params = {
+        # We only collect these statistics daily, so add some fuzz
+        # to ensure bloat information ends up on the daily reports;
+        # we cannot guarantee the disk utilization statistics occur
+        # exactly 24 hours apart. Our most recent snapshot could be 1
+        # day ago, give or take a few hours.
+        'where': get_where_clause(options, fuzz='1 day 6 hours'),
+        'bloat': options.bloat,
+        'min_bloat': options.min_bloat,
+        'kind': kind,
+        }
+    query = dedent("""
+        SELECT * FROM (
+            SELECT DISTINCT
+                namespace,
+                name,
+                sub_namespace,
+                sub_name,
+                count(*) OVER t AS num_samples,
+                last_value(table_len) OVER t AS table_len,
+                pg_size_pretty(last_value(table_len) OVER t) AS table_size,
+                last_value(dead_tuple_len + free_space) OVER t AS bloat_len,
+                pg_size_pretty(last_value(dead_tuple_len + free_space) OVER t)
+                    AS bloat_size,
+                first_value(dead_tuple_percent + free_percent) OVER t
+                    AS start_bloat_percent,
+                last_value(dead_tuple_percent + free_percent) OVER t
+                    AS end_bloat_percent,
+                (last_value(dead_tuple_percent + free_percent) OVER t
+                    - first_value(dead_tuple_percent + free_percent) OVER t
+                    ) AS delta_bloat_percent,
+                (last_value(table_len) OVER t
+                    - first_value(table_len) OVER t) AS delta_bloat_len,
+                pg_size_pretty(
+                    last_value(table_len) OVER t
+                    - first_value(table_len) OVER t) AS delta_bloat_size
+            FROM DatabaseDiskUtilization
+            WHERE
+                %(where)s
+                AND kind = %%(kind)s
+            WINDOW t AS (
+                PARTITION BY sort ORDER BY date_created
+                ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+            ) AS whatever
+        WHERE
+            table_len >= %(min_bloat)s
+            AND end_bloat_percent >= %(bloat)s
+        ORDER BY bloat_len DESC
+        """ % params)
+    cur.execute(query, params)
+    bloat_stats = named_fetchall(cur)
+    return list(bloat_stats)
+
+
 def main():
     parser = LPOptionParser()
     db_options(parser)
@@ -166,14 +232,22 @@ def main():
     parser.add_option(
         "-i", "--interval", dest="interval", type=str,
         default=None, metavar="INTERVAL",
-        help=
+        help=(
             "Use statistics collected over the last INTERVAL period. "
             "INTERVAL is a string parsable by PostgreSQL "
-            "such as '5 minutes'.")
+            "such as '5 minutes'."))
     parser.add_option(
         "-n", "--limit", dest="limit", type=int,
         default=15, metavar="NUM",
         help="Display the top NUM items in each category.")
+    parser.add_option(
+        "-b", "--bloat", dest="bloat", type=float,
+        default=40, metavar="BLOAT",
+        help="Display tables and indexes bloated by more than BLOAT%.")
+    parser.add_option(
+        "--min-bloat", dest="min_bloat", type=int,
+        default=10000000, metavar="BLOAT",
+        help="Don't report tables bloated less than BLOAT bytes.")
     parser.set_defaults(dbuser="database_stats_report")
     options, args = parser.parse_args()
 
@@ -181,7 +255,7 @@ def main():
         parser.error(
             "Only two of --from, --until and --interval may be specified.")
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     tables = list(get_table_stats(cur, options))
@@ -190,7 +264,27 @@ def main():
     arbitrary_table = tables[0]
     interval = arbitrary_table.date_end - arbitrary_table.date_start
     per_second = float(interval.days * 24 * 60 * 60 + interval.seconds)
+    if per_second == 0:
+        parser.error("Only one sample in that time range.")
 
+    user_cpu = get_cpu_stats(cur, options)
+    print "== Most Active Users =="
+    print
+    for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
+        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
+
+    print
+    print "== Most Written Tables =="
+    print
+    tables_sort = [
+        'total_tup_written', 'n_tup_upd', 'n_tup_ins', 'n_tup_del', 'relname']
+    most_written_tables = sorted(
+        tables, key=attrgetter(*tables_sort), reverse=True)
+    for table in most_written_tables[:options.limit]:
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_written / per_second)
+
+    print
     print "== Most Read Tables =="
     print
     # These match the pg_user_table_stats view. schemaname is the
@@ -203,24 +297,77 @@ def main():
     for table in most_read_tables[:options.limit]:
         print "%40s || %10.2f tuples/sec" % (
             table.relname, table.total_tup_read / per_second)
-    print
 
-    print "== Most Written Tables =="
-    print
-    tables_sort = [
-        'total_tup_written', 'n_tup_upd', 'n_tup_ins', 'n_tup_del', 'relname']
-    most_written_tables = sorted(
-        tables, key=attrgetter(*tables_sort), reverse=True)
-    for table in most_written_tables[:options.limit]:
-        print "%40s || %10.2f tuples/sec" % (
-            table.relname, table.total_tup_written / per_second)
-    print
+    table_bloat_stats = get_bloat_stats(cur, options, 'r')
 
-    user_cpu = get_cpu_stats(cur, options)
-    print "== Most Active Users =="
-    print
-    for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
-        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
+    if not table_bloat_stats:
+        print
+        print "(There is no bloat information available in this time range.)"
+
+    else:
+        print
+        print "== Most Bloated Tables =="
+        print
+        for bloated_table in table_bloat_stats[:options.limit]:
+            print "%40s || %2d%% || %s of %s" % (
+                bloated_table.name,
+                bloated_table.end_bloat_percent,
+                bloated_table.bloat_size,
+                bloated_table.table_size)
+
+        index_bloat_stats = get_bloat_stats(cur, options, 'i')
+
+        print
+        print "== Most Bloated Indexes =="
+        print
+        for bloated_index in index_bloat_stats[:options.limit]:
+            print "%65s || %2d%% || %s of %s" % (
+                bloated_index.sub_name,
+                bloated_index.end_bloat_percent,
+                bloated_index.bloat_size,
+                bloated_index.table_size)
+
+        # Order bloat delta report by size of bloat increase.
+        # We might want to change this to percentage bloat increase.
+        bloating_sort_key = lambda x: x.delta_bloat_len
+
+        table_bloating_stats = sorted(
+            table_bloat_stats, key=bloating_sort_key, reverse=True)
+
+        if table_bloating_stats[0].num_samples <= 1:
+            print
+            print fill(dedent("""\
+                (There are not enough samples in this time range to display
+                bloat change statistics)
+                """))
+        else:
+            print
+            print "== Most Bloating Tables =="
+            print
+
+            for bloated_table in table_bloating_stats[:options.limit]:
+                # Bloat decreases are uninteresting, and would need to be in
+                # a separate table sorted in reverse anyway.
+                if bloated_table.delta_bloat_percent > 0:
+                    print "%40s || +%4.2f%% || +%s" % (
+                        bloated_table.name,
+                        bloated_table.delta_bloat_percent,
+                        bloated_table.delta_bloat_size)
+
+            index_bloating_stats = sorted(
+                index_bloat_stats, key=bloating_sort_key, reverse=True)
+
+            print
+            print "== Most Bloating Indexes =="
+            print
+            for bloated_index in index_bloating_stats[:options.limit]:
+                # Bloat decreases are uninteresting, and would need to be in
+                # a separate table sorted in reverse anyway.
+                if bloated_index.delta_bloat_percent > 0:
+                    print "%65s || +%4.2f%% || +%s" % (
+                        bloated_index.sub_name,
+                        bloated_index.delta_bloat_percent,
+                        bloated_index.delta_bloat_size)
 
 
 if __name__ == '__main__':

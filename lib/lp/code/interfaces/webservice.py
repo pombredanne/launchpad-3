@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """All the interfaces that are exposed through the webservice.
@@ -28,12 +28,11 @@ __all__ = [
     'IPreviewDiff',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeBuild',
-    'IStaticDiff',
     'TooManyBuilds',
     ]
 
 # The exceptions are imported so that they can produce the special
-# status code defined by webservice_error when they are raised.
+# status code defined by error_status when they are raised.
 from lp.code.errors import (
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
@@ -57,7 +56,6 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import (
     IDiff,
     IPreviewDiff,
-    IStaticDiff,
     )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (

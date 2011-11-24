@@ -12,30 +12,26 @@ does not happen automatically.
     ...     extract_text,
     ...     find_tag_by_id,
     ...     )
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
+    >>> from lp.soyuz.model.distributionsourcepackagecache import (
+    ...     DistributionSourcePackageCache)
 
     >>> import transaction
     >>> from lp.services.log.logger import BufferLogger
     >>> logger = BufferLogger()
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import reconnect_stores
+    >>> from lp.testing.dbuser import dbuser
     >>> def updateCache():
     ...     # Switch to the statistician user who is the only user with
     ...     # write permission to the source package cache tables.
-    ...     transaction.commit()
-    ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     ignore = ubuntu.updateCompleteSourcePackageCache(
-    ...         archive=ubuntu.main_archive, log=logger, ztm=transaction)
-    ...     transaction.commit()
-    ...     reconnect_stores('launchpad')
-    ...     # Get ubuntu, our product, and the sourcepackage name again
-    ...     # since the transaction changed.
-    ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    ...     with dbuser(config.statistician.dbuser):
+    ...         DistributionSourcePackageCache.updateAll(
+    ...             ubuntu, archive=ubuntu.main_archive, log=logger,
+    ...             ztm=transaction)
     ...     product = getUtility(IProductSet)['bingo']
     ...     spn = getUtility(ISourcePackageNameSet)['bingo']
     ...     login(ANONYMOUS)
@@ -329,19 +325,19 @@ reverses the order so that the latest packages for the current ubuntu
 series are shown first.
 
     >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="b-recent-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="c-current-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> for package in product.sourcepackages:

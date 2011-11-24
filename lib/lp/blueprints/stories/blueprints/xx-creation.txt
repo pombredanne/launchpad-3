@@ -579,6 +579,17 @@ When registering a blueprint, users can specify the ''sprint'' field to
 propose the blueprint as a topic for discussion at the sprint. If the user has
 permission, the blueprint will be automatically added to the sprint agenda:
 
+    >>> import datetime as dt
+    >>> from pytz import UTC
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('test@canonical.com')
+    >>> rome_sprint = factory.makeSprint(name='rome')
+    >>> rome_sprint.time_ends = dt.datetime.now(UTC) + dt.timedelta(30)
+    >>> rome_sprint.time_starts = dt.datetime.now(UTC) + dt.timedelta(20)
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> rome_sprint.driver = sample_person
+    >>> logout()
+
     >>> sample_browser = setupBrowser('Basic test@canonical.com:test')
     >>> sample_browser.open('http://blueprints.launchpad.dev/jokosher')
     >>> sample_browser.getLink('Register a blueprint').click()
@@ -586,13 +597,13 @@ permission, the blueprint will be automatically added to the sprint agenda:
     >>> sample_browser.getControl('Title').value = 'Spec for Sprint'
     >>> summary = "A spec to be discussed at a sprint"
     >>> sample_browser.getControl('Summary').value = summary
-    >>> sample_browser.getControl('Propose for sprint').value = ['paris']
+    >>> sample_browser.getControl('Propose for sprint').value = ['rome']
     >>> sample_browser.getControl('Register Blueprint').click()
     >>> sample_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
     >>> print sample_browser.title
     Spec for Sprint...
-    >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/paris')
+    >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/rome')
     >>> find_tag_by_id(sample_browser.contents, 'speclisting')
     <...spec-for-sprint...>
 
@@ -622,10 +633,10 @@ an error:
     ...      print message.renderContents()
     There is 1 error...already in use by another blueprint...
 
-Attempting to register a duplicate blueprint from a non-target context produces
-the same error:
+Attempting to register a duplicate blueprint from a non-target context
+produces the same error:
 
-    >>> url = 'http://blueprints.launchpad.dev/sprints/paris/+addspec'
+    >>> url = 'http://blueprints.launchpad.dev/sprints/rome/+addspec'
     >>> user_browser.open(url)
     >>> user_browser.getControl('For').value = 'ubuntu'
     >>> user_browser.getControl('Name').value = 'media-integrity-check'
@@ -635,7 +646,7 @@ the same error:
     ...     'There is already a blueprint with this name')
     >>> user_browser.getControl('Register Blueprint').click()
     >>> print user_browser.url
-    http://blueprints.launchpad.dev/sprints/paris/+addspec
+    http://blueprints.launchpad.dev/sprints/rome/+addspec
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...      print message.renderContents()
     There is 1 error...already in use by another blueprint...
@@ -691,7 +702,8 @@ blueprint:
     'http://blueprints.launchpad.dev/ubuntu/+addspec'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...      print message.renderContents()
-    There is 1 error...already registered by another blueprint...
+    There is 1 error...is already registered by...
+    ...Network Magic: Auto Network Detection...
 
 
 Registering blueprints from other locations

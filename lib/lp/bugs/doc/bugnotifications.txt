@@ -51,6 +51,16 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     this is a comment
 
+Notifications usually have references to a corresponding bug activity.  These
+can get you details on precisely what changed from a more programmatic
+perspective.  You can get details on what the activity provides in
+bugactivity.txt, but for now here is a small demo.
+
+    >>> print latest_notification.activity.whatchanged
+    bug
+    >>> print latest_notification.activity.person.displayname
+    Sample Person
+
 
 === Editing a bug report ===
 
@@ -72,6 +82,12 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     ** Description changed:
     ...
+    >>> print latest_notification.activity.attribute
+    description
+    >>> print latest_notification.activity.oldvalue
+    this is a comment
+    >>> print latest_notification.activity.newvalue
+    a new description
 
 
 === Filing a new task on an existing bug ===
@@ -91,9 +107,8 @@ bug. Let's take a look at each type.
     >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
     >>> firefox_crashes_in_debian = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, distribution=debian,
-    ...     sourcepackagename=firefox_source,
-    ...     owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter,
+    ...     debian.getSourcePackage(firefox_source))
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_debian, firefox_crashes_in_debian.owner))
 
@@ -118,8 +133,8 @@ bug. Let's take a look at each type.
 
     >>> sid = getUtility(IDistroSeriesSet).get(8)
     >>> firefox_crashes_in_sid = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, distroseries=sid,
-    ...     sourcepackagename=firefox_source, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter,
+    ...     sid.getSourcePackage(firefox_source))
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_sid, firefox_crashes_in_sid.owner))
 
@@ -147,7 +162,7 @@ bug. Let's take a look at each type.
 
     >>> evolution = getUtility(IProductSet).get(5)
     >>> evolution_crashes_too = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, product=evolution, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter, evolution)
     >>> notify(ObjectCreatedEvent(
     ...     evolution_crashes_too, evolution_crashes_too.owner))
 
@@ -169,7 +184,7 @@ bug. Let's take a look at each type.
 
     >>> trunk = evolution.getSeries('trunk')
     >>> firefox_crashes_in_trunk = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, productseries=trunk, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter, trunk)
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_trunk, firefox_crashes_in_trunk.owner))
 
@@ -213,11 +228,11 @@ task Fixed, and assigns himself to it.
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus,
-    ...     IDistroBugTask,
+    ...     IBugTask,
     ...     )
 
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_debian, providing=IDistroBugTask)
+    ...     firefox_crashes_in_debian, providing=IBugTask)
     >>> firefox_crashes_in_debian.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
@@ -236,9 +251,8 @@ task Fixed, and assigns himself to it.
     ** Changed in: mozilla-firefox (Debian)
     ...
 
-    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_trunk, providing=IProductSeriesBugTask)
+    ...     firefox_crashes_in_trunk, providing=IBugTask)
     >>> firefox_crashes_in_trunk.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_trunk.transitionToAssignee(bug_submitter)

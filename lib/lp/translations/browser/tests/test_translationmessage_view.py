@@ -304,9 +304,26 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def _makeView(self):
-        message = self.factory.makeCurrentTranslationMessage()
-        request = LaunchpadTestRequest()
+    def _makeView(self, with_form=False):
+        potemplate = self.factory.makePOTemplate()
+        pofile = self.factory.makePOFile(potemplate=potemplate)
+        potmsgset = self.factory.makePOTMsgSet(potemplate)
+        message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        message.browser_pofile = pofile
+        form = {}
+        if with_form:
+            msgset_id_field = 'msgset_%d' % potmsgset.id
+            form[msgset_id_field] = u'poit'
+            base_field_name = 'msgset_%d_%s_translation_' % (
+                message.potmsgset.id, pofile.language.code)
+            # Add the expected plural forms fields.
+            for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+                field_name = '%s%d_new' % (base_field_name, plural_form)
+                form[field_name] = u'snarf'
+        url = '/%s/%s/%s/+translate' % (
+            canonical_url(potemplate), pofile.language.code, 1)
+        request = LaunchpadTestRequest(SERVER_URL=url, form=form)
         view = CurrentTranslationMessagePageView(message, request)
         view.lock_timestamp = datetime.now(pytz.utc)
         return view
@@ -352,6 +369,27 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
         with person_logged_in(decliner):
             view = self._makeView()
             self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
+
+    def test_max_plural_forms_fields_accepted(self):
+        # The plural forms translation fields are accepted if there are less
+        # than or equal to TranslationConstants.MAX_PLURAL_FORM.
+        view = self._makeView(with_form=True)
+        view.initialize()
+        self.assertEqual(
+            None, view._extractFormPostedTranslations(view.context.potmsgset))
+
+    def test_max_plural_forms_fields_greater_error(self):
+        # An AssertionError is raised if the number of plural forms
+        # translation fields exceed TranslationConstants.MAX_PLURAL_FORMS.
+        view = self._makeView(with_form=True)
+        view.initialize()
+        # Add a field that is greater than the expected MAX_PLURAL_FORMS.
+        field_name = 'msgset_%d_%s_translation_%d_new' % (
+            view.context.potmsgset.id, view.pofile.language.code,
+            TranslationConstants.MAX_PLURAL_FORMS)
+        view.request.form[field_name] = u'snarf'
+        self.assertRaises(AssertionError,
+            view._extractFormPostedTranslations, view.context.potmsgset)
 
 
 class TestHelpers(TestCaseWithFactory):

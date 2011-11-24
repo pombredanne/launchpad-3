@@ -1,0 +1,15 @@
+<!-- Copyright 2011 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <adapter
+            provides="lazr.restful.interfaces.IJSONPublishable"
+            for="zope.interface.common.idatetime.ITimeDelta"
+            factory="lp.services.webservice.json.StrJSONSerializer"
+            permission="zope.Public"/>
+</configure>

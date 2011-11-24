@@ -6,13 +6,19 @@
 __metaclass__ = type
 
 
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.errors import TargetAlreadyHasSpecification
-from lp.blueprints.interfaces.specification import SpecificationGoalStatus
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationGoalStatus,
+    )
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -101,3 +107,39 @@ class SpecificationTests(TestCaseWithFactory):
             product=self.factory.makeProduct())
         self.assertRaises(
             Unauthorized, getattr, specification, 'setTarget')
+
+
+class TestSpecificationSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecificationSet, self).setUp()
+        self.specification_set = getUtility(ISpecificationSet)
+        self.new_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+
+    def test_new_with_open_definition_status_creates_specification(self):
+        # Calling new() with an open definition status will will create
+        # a specification.
+        self.assertTrue(
+            SpecificationDefinitionStatus.NEW.name in self.new_names)
+        product = self.factory.makeProduct()
+        spec = self.specification_set.new(
+            name='plane', title='Place', specurl='http://eg.org/plane',
+            summary='summary', owner=product.owner, product=product,
+            definition_status=SpecificationDefinitionStatus.NEW)
+        self.assertEqual(
+            SpecificationDefinitionStatus.NEW, spec.definition_status)
+
+    def test_new_with_closed_definition_status_raises_error(self):
+        # Calling new() with a obsolete or superseded definition status
+        # raises an error.
+        self.assertTrue(
+            SpecificationDefinitionStatus.OBSOLETE.name not in self.new_names)
+        product = self.factory.makeProduct()
+        args = dict(
+            name='plane', title='Place', specurl='http://eg.org/plane',
+            summary='summary', owner=product.owner, product=product,
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.assertRaises(
+            AssertionError, self.specification_set.new, **args)

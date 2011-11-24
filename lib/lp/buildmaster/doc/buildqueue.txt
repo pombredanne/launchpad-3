@@ -4,7 +4,7 @@ BuildQueue class represents the run-time-records of builds being
 processed.
 
 See buildd-queuebuilder.txt for more information about the BuildQueue
-initialisation.
+initialization.
 
 BuildQueue should provide all the information needed for dispatching
 and collecting build results.
@@ -38,7 +38,7 @@ attribute:
     >>> build.status.name
     'BUILDING'
 
-The static timestamps, representing when the record was initialised
+The static timestamps, representing when the record was initialized
 (inserted) and when the job was dispatched are provided as datetime
 instances:
 

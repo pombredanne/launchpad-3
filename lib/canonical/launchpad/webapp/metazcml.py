@@ -55,13 +55,13 @@ from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
-    IAuthorization,
     ICanonicalUrlData,
     IContextMenu,
     IFacetMenu,
     INavigationMenu,
     )
 from canonical.launchpad.webapp.publisher import RenamedView
+from lp.app.interfaces.security import IAuthorization
 
 
 class IAuthorizationsDirective(Interface):
@@ -697,12 +697,9 @@ def launchpadPublisher(_context, name, factory, methods=['*'],
     # needs to be unique -- and to do nothing if no hostname is
     # configured for this publisher.
 
-    # shipit, uniquely, uses a different name in its <publisher>
-    # directives to the name of the section in the config.
-    if not name.startswith('shipit'):
-        section = getattr(config.vhost, name, None)
-        if section is None or section.hostname is None:
-            return
+    section = getattr(config.vhost, name, None)
+    if section is None or section.hostname is None:
+        return
     global _arbitrary_priority
     if priority is None:
         _arbitrary_priority += 1

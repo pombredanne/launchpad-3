@@ -20,19 +20,19 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.validators.email import valid_email
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
+from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
+    BugTrackerConnectError,
     ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
     UnparsableBugData,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -44,6 +44,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services.database.isolation import ensure_no_transaction
 
 # Symbolic constants used for the Trac LP plugin.
 LP_PLUGIN_BUG_IDS_ONLY = 0
@@ -76,6 +77,8 @@ class Trac(ExternalBugTracker):
                 return TracLPPlugin(self.baseurl)
             else:
                 return self
+        except urllib2.URLError, error:
+            return self
         else:
             # If the response contains a trac_auth cookie then we're
             # talking to the LP plugin. However, it's unlikely that
@@ -105,7 +108,7 @@ class Trac(ExternalBugTracker):
                 # We try to retrive the ticket in HTML form, since that will
                 # tell us whether or not it is actually a valid ticket
                 ticket_id = int(bug_ids.pop())
-                self.urlopen(html_ticket_url % ticket_id)
+                self._fetchPage(html_ticket_url % ticket_id)
             except (ValueError, urllib2.HTTPError):
                 # If we get an HTTP error we can consider the ticket to be
                 # invalid. If we get a ValueError then the ticket_id couldn't
@@ -116,7 +119,7 @@ class Trac(ExternalBugTracker):
                 # CSV form. If this fails then we can consider single ticket
                 # exports to be unsupported.
                 try:
-                    csv_data = self.urlopen(
+                    csv_data = self._fetchPage(
                         "%s/%s" % (self.baseurl, self.ticket_url % ticket_id))
                     return csv_data.headers.subtype == 'csv'
                 except (urllib2.HTTPError, urllib2.URLError):
@@ -271,8 +274,7 @@ class Trac(ExternalBugTracker):
     _status_lookup_titles = 'Trac status',
     _status_lookup = LookupTree(
         ('new', 'open', 'reopened', BugTaskStatus.NEW),
-        # XXX: 2007-08-06 Graham Binns:
-        #      We should follow dupes if possible.
+        # XXX: Graham Binns 2007-08-06: We should follow dupes if possible.
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
         # Status fixverified added for bug 667340, for http://trac.yorba.org/,
         # but could be generally useful so adding here.
@@ -373,10 +375,9 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
 
         try:
-            self.urlopen(auth_url)
-        except urllib2.HTTPError, error:
-            raise BugTrackerAuthenticationError(
-                self.baseurl, '%s "%s"' % (error.code, error.msg))
+            self._fetchPage(auth_url)
+        except BugTrackerConnectError, e:
+            raise BugTrackerAuthenticationError(self.baseurl, e.error)
 
     @ensure_no_transaction
     @needs_authentication

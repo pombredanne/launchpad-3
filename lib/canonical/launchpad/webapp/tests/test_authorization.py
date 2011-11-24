@@ -21,7 +21,6 @@ from zope.interface import (
 from zope.testing.cleanup import CleanUp
 
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
     check_permission,
@@ -30,7 +29,6 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
-    IAuthorization,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
     IStoreSelector,
@@ -42,6 +40,8 @@ from canonical.launchpad.webapp.servers import (
     )
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import AuthorizationBase
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -357,7 +357,3 @@ class TestPrecachePermissionForObjects(TestCase):
         # Confirm that the objects have the permission set.
         self.assertTrue(check_permission('launchpad.View', objects[0]))
         self.assertTrue(check_permission('launchpad.View', objects[1]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

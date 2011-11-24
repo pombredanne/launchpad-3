@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -154,9 +154,11 @@ class IBugWatch(IHasBug):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
+
+    # Actually refers to Bug; redefined in bug.py.
     bug = exported(
-        Reference(title=_('Bug'), schema=Interface, # Redefined in bug.py
-                  required=True, readonly=True))
+        Reference(
+            title=_('Bug'), schema=Interface, required=True, readonly=True))
     bugtracker = exported(
         ReferenceChoice(
             title=_('Bug System'), required=True,
@@ -349,7 +351,7 @@ class IBugWatchSet(Interface):
         If no bug tracker type can be guessed, None is returned.
         """
 
-    def getBugWatchesForRemoteBug(self, remote_bug, bug_watch_ids=None):
+    def getBugWatchesForRemoteBug(remote_bug, bug_watch_ids=None):
         """Returns bug watches referring to the given remote bug.
 
         Returns a set of those bug watches, optionally limited to

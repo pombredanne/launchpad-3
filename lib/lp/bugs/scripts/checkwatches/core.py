@@ -14,6 +14,7 @@ __all__ = [
     'externalbugtracker',
     ]
 
+from contextlib import contextmanager
 from copy import copy
 from datetime import (
     datetime,
@@ -27,6 +28,7 @@ import socket
 import sys
 import threading
 import time
+from xmlrpclib import ProtocolError
 
 import pytz
 from twisted.internet import reactor
@@ -36,8 +38,8 @@ from twisted.python.threadpool import ThreadPool
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log as default_log
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -109,6 +111,25 @@ def suggest_batch_size(remote_system, num_watches):
             SUGGESTED_BATCH_SIZE_MIN,
             int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
 
+
+@contextmanager
+def record_errors(transaction, bug_watch_ids):
+    """Context manager to record errors in BugWatchActivity.
+
+    If an exception occurs, it will be logged in BugWatchActivity
+    against all the given watches.
+    """
+    try:
+        yield
+    except Exception, e:
+        # We record the error against all the bugwatches that should
+        # have been updated before re-raising it. We also update the
+        # bug watches' lastchecked dates so that checkwatches
+        # doesn't keep trying to update them every time it runs.
+        with transaction:
+            getUtility(IBugWatchSet).bulkSetError(
+                bug_watch_ids, get_bugwatcherrortype_for_error(e))
+        raise
 
 class CheckwatchesMaster(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
@@ -250,19 +271,20 @@ class CheckwatchesMaster(WorkingBase):
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
-            info = sys.exc_info()
-            properties = [
-                ('bugtracker', bug_tracker_name),
-                ('baseurl', bug_tracker_url)]
             if isinstance(error, BugWatchUpdateError):
-                self.error(
-                    str(error), properties=properties, info=info)
+                self.logger.info(
+                    "Error updating %s: %s" % (
+                        bug_tracker.baseurl, error))
             elif isinstance(error, socket.timeout):
-                self.error(
-                    "Connection timed out when updating %s" %
-                    bug_tracker_url,
-                    properties=properties, info=info)
+                self.logger.info(
+                    "Connection timed out when updating %s" % (
+                        bug_tracker.baseurl))
             else:
+                # Unknown exceptions are logged as OOPSes.
+                info = sys.exc_info()
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
                 self.error(
                     "An exception was raised when updating %s" %
                     bug_tracker_url,
@@ -404,7 +426,7 @@ class CheckwatchesMaster(WorkingBase):
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
-            except UnknownBugTrackerTypeError, error:
+            except (UnknownBugTrackerTypeError, ProtocolError), error:
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another
@@ -414,10 +436,9 @@ class CheckwatchesMaster(WorkingBase):
                 with self.transaction:
                     getUtility(IBugWatchSet).bulkSetError(
                         bug_watches_to_update, error_type)
-                message = (
-                    "ExternalBugtracker for BugTrackerType '%s' is not "
-                    "known." % (error.bugtrackertypename))
-                self.warning(message)
+                    self.logger.info(
+                        "'%s' error updating %s: %s" % (
+                            error_type.title, bug_tracker.baseurl, error))
             else:
                 for remotesystem, bug_watch_batch in trackers_and_watches:
                     self.updateBugWatches(
@@ -568,17 +589,10 @@ class CheckwatchesMaster(WorkingBase):
         # Fetch the time on the server. We'll use this in
         # _getRemoteIdsToCheck() and when determining whether we can
         # sync comments or not.
-        server_time = remotesystem.getCurrentDBTime()
-        try:
+        with record_errors(self.transaction, bug_watch_ids):
+            server_time = remotesystem.getCurrentDBTime()
             remote_ids = self._getRemoteIdsToCheck(
                 remotesystem, bug_watches, server_time, now, batch_size)
-        except TooMuchTimeSkew, error:
-            # If there's too much time skew we can't continue with this
-            # run.
-            with self.transaction:
-                getUtility(IBugWatchSet).bulkSetError(
-                    bug_watch_ids, get_bugwatcherrortype_for_error(error))
-            raise
 
         remote_ids_to_check = remote_ids['remote_ids_to_check']
         all_remote_ids = remote_ids['all_remote_ids']
@@ -596,17 +610,8 @@ class CheckwatchesMaster(WorkingBase):
             "Updating %i watches for %i bugs on %s" % (
                 len(bug_watches), len(remote_ids_to_check), bug_tracker_url))
 
-        try:
+        with record_errors(self.transaction, bug_watch_ids):
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
-        except Exception, error:
-            # We record the error against all the bugwatches that should
-            # have been updated before re-raising it. We also update the
-            # bug watches' lastchecked dates so that checkwatches
-            # doesn't keep trying to update them every time it runs.
-            with self.transaction:
-                getUtility(IBugWatchSet).bulkSetError(
-                    bug_watch_ids, get_bugwatcherrortype_for_error(error))
-            raise
 
         for remote_bug_id in all_remote_ids:
             remote_bug_updater = self.remote_bug_updater_factory(

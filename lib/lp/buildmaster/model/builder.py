@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -18,9 +18,9 @@ import logging
 import os
 import socket
 import tempfile
-import transaction
 import xmlrpclib
 
+from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -33,18 +33,16 @@ from storm.expr import (
     Count,
     Sum,
     )
-
+import transaction
 from twisted.internet import (
     defer,
     reactor as default_reactor,
     )
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
-
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -59,7 +57,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -81,9 +78,12 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.twistedsupport import cancel_on_timeout
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -171,7 +171,8 @@ class BuilderSlave(object):
 
         :param builder_url: The URL of the slave buildd machine,
             e.g. http://localhost:8221
-        :param vm_host: If the slave is virtual, specify its host machine here.
+        :param vm_host: If the slave is virtual, specify its host machine
+            here.
         :param reactor: Used by tests to override the Twisted reactor.
         :param proxy: Used By tests to override the xmlrpc.Proxy.
         """
@@ -216,7 +217,7 @@ class BuilderSlave(object):
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
 
-        :param sha_sum: The sha of the file (which is also its name on the 
+        :param sha_sum: The sha of the file (which is also its name on the
             builder)
         :param file_to_write: A file name or file-like object to write
             the file to
@@ -258,7 +259,8 @@ class BuilderSlave(object):
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self._vm_host}
         # Twisted API requires string but the configuration provides unicode.
-        resume_argv = [term.encode('utf-8') for term in resume_command.split()]
+        resume_argv = [
+            term.encode('utf-8') for term in resume_command.split()]
         d = defer.Deferred()
         p = ProcessWithTimeout(
             d, config.builddmaster.socket_timeout, clock=clock)
@@ -281,6 +283,7 @@ class BuilderSlave(object):
     def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         d = self.ensurepresent(sha1, url, username, password)
+
         def check_present((present, info)):
             if not present:
                 raise CannotFetchFile(url, info)
@@ -299,6 +302,7 @@ class BuilderSlave(object):
         """
         d = self._with_timeout(self._server.callRemote(
             'build', buildid, builder_type, chroot_sha1, filemap, args))
+
         def got_fault(failure):
             failure.trap(xmlrpclib.Fault)
             raise BuildSlaveFailure(failure.value)
@@ -311,7 +315,7 @@ def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
-    # two status we care about. See see lib/canonical/buildd/slave.py
+    # two status we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -326,7 +330,6 @@ def rescueBuilderIfLost(builder, logger=None):
         Always return status_sentence.
         """
         # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
         # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 
@@ -338,6 +341,16 @@ def rescueBuilderIfLost(builder, logger=None):
         # communications with the slave and the build manager had to reset
         # the job.
         if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+            if not builder.virtualized:
+                # We can't reset non-virtual builders reliably as the
+                # abort() function doesn't kill the actual build job,
+                # only the sbuild process!  All we can do here is fail
+                # the builder with a message indicating the problem and
+                # wait for an admin to reboot it.
+                builder.failBuilder(
+                    "Non-virtual builder in ABORTED state, requires admin to "
+                    "restart")
+                return "dummy status"
             if logger is not None:
                 logger.info(
                     "Builder '%s' being cleaned up from ABORTED" %
@@ -360,6 +373,7 @@ def rescueBuilderIfLost(builder, logger=None):
                 d = builder.cleanSlave()
             else:
                 d = builder.requestAbort()
+
             def log_rescue(ignored):
                 if logger:
                     logger.info(
@@ -504,8 +518,10 @@ class Builder(SQLBase):
         logger.info("Resuming %s (%s)" % (self.name, self.url))
 
         d = self.slave.resume()
+
         def got_resume_ok((stdout, stderr, returncode)):
             return stdout, stderr
+
         def got_resume_bad(failure):
             stdout, stderr, code = failure.value
             raise CannotResumeHost(
@@ -513,18 +529,24 @@ class Builder(SQLBase):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    _testing_slave = None
+
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute is used to allow tests to replace
-        # the slave object, which is usually an XMLRPC client, with a
-        # stub object that removes the need to actually create a buildd
-        # slave in various states - which can be hard to create.
+        # When testing it's possible to substitute the slave object, which is
+        # usually an XMLRPC client, with a stub object that removes the need
+        # to actually create a buildd slave in various states - which can be
+        # hard to create. We cannot use the property cache because it is
+        # cleared on transaction boundaries, hence the low tech approach.
+        if self._testing_slave is not None:
+            return self._testing_slave
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
-        self.slave = proxy
+        self._testing_slave = proxy
+        del get_property_cache(self).slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
@@ -595,6 +617,7 @@ class Builder(SQLBase):
     def slaveStatus(self):
         """See IBuilder."""
         d = self.slave.status()
+
         def got_status(status_sentence):
             status = {'builder_status': status_sentence[0]}
 
@@ -670,11 +693,13 @@ class Builder(SQLBase):
         if not self.builderok:
             return defer.succeed(False)
         d = self.slaveStatusSentence()
+
         def catch_fault(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
             return False
+
         def check_available(status):
-            return status[0] == BuilderStatus.IDLE
+            return status[0] == 'BuilderStatus.IDLE'
         return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):
@@ -885,13 +910,6 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.selectBy(
             active=True, orderBy=['virtualized', 'processor', 'name'])
-
-    def getBuildersByArch(self, arch):
-        """See IBuilderSet."""
-        return Builder.select('builder.processor = processor.id '
-                              'AND processor.family = %d'
-                              % arch.processorfamily.id,
-                              clauseTables=("Processor",))
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""

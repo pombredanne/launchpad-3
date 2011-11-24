@@ -1,34 +1,51 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from datetime import datetime
+import doctest
 import unittest
 
-from lazr.restful.testing.webservice import FakeRequest
+import pytz
+from testtools.matchers import Equals
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
+    )
 from lp.testing import (
+    FakeLaunchpadRequest,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import DocTestMatches
 from lp.testing.views import create_initialized_view
 
 
-class LocalFakeRequest(FakeRequest):
+class TestSpecificationSearch(TestCaseWithFactory):
 
-    @property
-    def stepstogo(self):
-        """See IBasicLaunchpadRequest.
+    layer = DatabaseFunctionalLayer
 
-        This method is called by traversal machinery.
-        """
-        return StepsToGo(self)
+    def test_search_with_percent(self):
+        # Using '%' in a search should not error.
+        specs = getUtility(ISpecificationSet)
+        form = {'field.search_text': r'%'}
+        view = create_initialized_view(specs, '+index', form=form)
+        self.assertEqual([], view.errors)
 
 
 class TestBranchTraversal(TestCaseWithFactory):
@@ -49,7 +66,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def traverse(self, segments):
         stack = list(reversed(['+branch'] + segments))
         name = stack.pop()
-        request = LocalFakeRequest([], stack)
+        request = FakeLaunchpadRequest([], stack)
         traverser = specification.SpecificationNavigation(
             self.specification, request)
         return traverser.publishTraverse(request, name)
@@ -114,14 +131,43 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
+class TestSpecificationView(TestCaseWithFactory):
+    """Test the SpecificationView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_offsite_url(self):
+        """The specification URL is rendered when present."""
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        spec.specurl = 'http://eg.dom/parrot'
+        view = create_initialized_view(
+            spec, name='+index', principal=spec.owner,
+            rootsite='blueprints')
+        li = find_tag_by_id(view.render(), 'spec-url')
+        self.assertEqual('nofollow', li.a['rel'])
+        self.assertEqual(spec.specurl, li.a['href'])
+
+    def test_registration_date_displayed(self):
+        """The time frame does not prepend on incorrectly."""
+        spec = self.factory.makeSpecification(
+            owner=self.factory.makePerson(displayname="Some Person"))
+        html = create_initialized_view(
+                spec, '+index')()
+        self.assertThat(
+            extract_text(html), DocTestMatches(
+                "... Registered by Some Person ... ago ..."))
+
+
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""
 
     layer = DatabaseFunctionalLayer
 
     def test_records_started(self):
+        not_started = SpecificationImplementationStatus.NOTSTARTED
         spec = self.factory.makeSpecification(
-            implementation_status=SpecificationImplementationStatus.NOTSTARTED)
+            implementation_status=not_started)
         login_person(spec.owner)
         form = {
             'field.implementation_status': 'STARTED',
@@ -129,7 +175,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             }
         view = create_initialized_view(spec, name='+status', form=form)
         self.assertEqual(
-            SpecificationImplementationStatus.STARTED, spec.implementation_status)
+            SpecificationImplementationStatus.STARTED,
+            spec.implementation_status)
         self.assertEqual(spec.owner, spec.starter)
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
@@ -146,12 +193,13 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             }
         view = create_initialized_view(spec, name='+status', form=form)
         self.assertEqual(
-            SpecificationImplementationStatus.SLOW, spec.implementation_status)
+            SpecificationImplementationStatus.SLOW,
+            spec.implementation_status)
         self.assertEqual(0, len(view.request.notifications))
 
     def test_records_unstarting(self):
-        # If a spec was started, and is changed to not started, a notice is shown.
-        # Also the spec.starter is cleared out.
+        # If a spec was started, and is changed to not started,
+        # a notice is shown. Also the spec.starter is cleared out.
         spec = self.factory.makeSpecification(
             implementation_status=SpecificationImplementationStatus.STARTED)
         login_person(spec.owner)
@@ -167,7 +215,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Not started".', notification.message)
+            'Blueprint is now considered "Not started".',
+            notification.message)
 
     def test_records_completion(self):
         # If a spec is marked as implemented the user is notifiec it is now
@@ -209,10 +258,44 @@ class TestSecificationHelpers(unittest.TestCase):
         self.assertEqual(dot_attrs, expected_attrs)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
+class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
 
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
+    layer = DatabaseFunctionalLayer
+
+    def test_starter_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_starter_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.STARTED, user)
+        removeSecurityProxy(blueprint).date_started = when
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))
+
+    def test_completer_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_completer_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.IMPLEMENTED, user)
+        removeSecurityProxy(blueprint).date_completed = when
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))

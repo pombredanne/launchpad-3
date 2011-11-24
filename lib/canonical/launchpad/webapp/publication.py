@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -56,13 +56,13 @@ from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IDatabasePolicy,
     ILaunchpadRoot,
     INotificationResponse,
@@ -78,6 +78,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -85,6 +86,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
+from lp.services.osutils import open_for_writing
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -150,7 +152,7 @@ def maybe_block_offsite_form_post(request):
         # exception was added as a result of bug 597324 (message #10 in
         # particular).
         return
-    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    referrer = request.getHeader('referer')  # Match HTTP spec misspelling.
     if not referrer:
         raise NoReferrerError('No value for REFERER header')
     # XXX: jamesh 2007-04-26 bug=98437:
@@ -245,7 +247,8 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
+        threadrequestfile = open_for_writing(
+            'logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:
@@ -328,7 +331,17 @@ class LaunchpadBrowserPublication(
         personless account, return the unauthenticated principal.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
+        principal = None
+        # +opstats and +haproxy are status URLs that must not query the DB at
+        # all.  This is enforced (see
+        # lib/canonical/launchpad/webapp/dbpolicy.py). If the request is for
+        # one of those two pages, don't even try to authenticate, because we
+        # may fail.  We haven't traversed yet, so we have to sniff the request
+        # this way.  Even though PATH_INFO is always present in real requests,
+        # we need to tread carefully (``get``) because of test requests in our
+        # automated tests.
+        if request.get('PATH_INFO') not in [u'/+opstats', u'/+haproxy']:
+            principal = auth_utility.authenticate(request)
         if principal is None or principal.person is None:
             # This is either an unauthenticated user or a user who
             # authenticated on our OpenID server using a personless account.
@@ -462,7 +475,7 @@ class LaunchpadBrowserPublication(
             'RootObject:OpStats', 'RootObject:+opstats',
             'RootObject:+haproxy'):
             request.features = NullFeatureController()
-            features.per_thread.features = request.features
+            features.install_feature_controller(request.features)
 
         # Calculate the hard timeout: needed because featureflags can be used
         # to control the hard timeout, and they trigger DB access, but our
@@ -504,7 +517,7 @@ class LaunchpadBrowserPublication(
         sql_statements = da.get_request_statements()
         sql_milliseconds = sum(
             endtime - starttime
-                for starttime, endtime, id, sql_statement in sql_statements)
+                for starttime, endtime, id, sql_statement, tb in sql_statements)
 
         # Log publication tickcount, sql statement count, and sql time
         # to the tracelog.
@@ -519,10 +532,11 @@ class LaunchpadBrowserPublication(
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
-            self.finishReadOnlyRequest(txn)
+            self.finishReadOnlyRequest(request, ob, txn)
         elif txn.isDoomed():
-            txn.abort() # Sends an abort to the database, even though
+            # The following sends an abort to the database, even though the
             # transaction is still doomed.
+            txn.abort()
         else:
             txn.commit()
 
@@ -540,12 +554,13 @@ class LaunchpadBrowserPublication(
             # calling beforeTraversal or doing proper cleanup.
             pass
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Hook called at the end of a read-only request.
 
         By default it abort()s the transaction, but subclasses may need to
         commit it instead, so they must overwrite this.
         """
+        notify(FinishReadOnlyRequestEvent(ob, request))
         txn.abort()
 
     def callTraversalHooks(self, request, ob):
@@ -611,10 +626,12 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
-        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # Log an OOPS for DisconnectionErrors: we don't expect to see
+        # disconnections as a routine event, so having information about them
+        # is important. See Bug #373837 for more information.
         # We need to do this before we re-raise the exception as a Retry.
         if isinstance(exc_info[1], DisconnectionError):
-            getUtility(IErrorReportingUtility).handling(exc_info, request)
+            getUtility(IErrorReportingUtility).raising(exc_info, request)
 
         def should_retry(exc_info):
             if not retry_allowed:
@@ -706,6 +723,8 @@ class LaunchpadBrowserPublication(
 
         da.clear_request_started()
 
+        getUtility(IOpenLaunchBag).clear()
+
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):
             OpStats.stats['retries'] += 1
@@ -720,11 +739,11 @@ class LaunchpadBrowserPublication(
             if IBrowserRequest.providedBy(request):
                 OpStats.stats['http requests'] += 1
                 status = request.response.getStatus()
-                if status == 404: # Not Found
+                if status == 404:  # Not Found
                     OpStats.stats['404s'] += 1
-                elif status == 500: # Unhandled exceptions
+                elif status == 500:  # Unhandled exceptions
                     OpStats.stats['500s'] += 1
-                elif status == 503: # Timeouts
+                elif status == 503:  # Timeouts
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
@@ -746,7 +765,7 @@ class LaunchpadBrowserPublication(
                 # not happen, as store.rollback() should have been called
                 # by now. Log an OOPS so we know about this. This
                 # is Bug #504291 happening.
-                getUtility(IErrorReportingUtility).handling(
+                getUtility(IErrorReportingUtility).raising(
                     sys.exc_info(), request)
                 # Repair things so the server can remain operational.
                 store.rollback()

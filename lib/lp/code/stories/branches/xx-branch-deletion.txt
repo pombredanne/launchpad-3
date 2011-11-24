@@ -1,4 +1,5 @@
-= Deleting branches =
+Deleting branches
+=================
 
 Branches that have no revisions or links to other Launchpad objects
 can be deleted.  The main use for this is to allow users to delete
@@ -21,7 +22,6 @@ branches that have been created in error.
     >>> browser = setupBrowser(auth="Basic alice@example.com:test")
     >>> browser.open('http://code.launchpad.dev/earthlynx')
     >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
@@ -59,7 +59,6 @@ the deleted branch's owner.
 
     >>> browser.open('http://code.launchpad.dev/~alice')
     >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> browser.getLink('Delete branch').click()
@@ -88,25 +87,21 @@ Even if you are an admin.
     This branch cannot be deleted as it has 1 branch sharing revisions.
 
 However, you can delete a branch that's the official branch of a source
-package.
+package, when you also have the permission to set the official package branch.
 
-    >>> from zope.component import getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> login(ANONYMOUS)
-    >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-    >>> ignored = removeSecurityProxy(ubuntu_branches).addMember(
-    ...     alice, ubuntu_branches.teamowner)
-    >>> login_person(alice)
+    >>> login(ADMIN_EMAIL)
     >>> branch = factory.makePackageBranch(owner=alice)
     >>> package = branch.sourcepackage
-    >>> package.setBranch(
-    ...     PackagePublishingPocket.RELEASE, branch, branch.registrant)
+    >>> package.setBranch(PackagePublishingPocket.RELEASE, branch, alice)
     >>> branch_url = canonical_url(branch)
+
+    # Give Alice permission to change the official branch.
+    >>> archive = package.get_default_archive()
+    >>> archive.newPackageUploader(alice, package.name)
+    <...>
     >>> logout()
+
     >>> browser.open(branch_url)
     >>> browser.getLink('Delete branch').click()
     >>> browser.getControl('Delete').click()

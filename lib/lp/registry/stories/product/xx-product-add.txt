@@ -60,7 +60,7 @@ forgetting to enter a title or summary.
     >>> print_errors(user_browser.contents)
     There are 3 errors.
     URL:
-    http://launchpad.net/
+    http://launchpad.dev/
     Invalid name 'aard vark'. Names must be at least two characters ...
     At least one lowercase letter or number, followed by letters, numbers,
     dots, hyphens or pluses. Keep this name short; it is used in URLs as
@@ -123,7 +123,7 @@ This time, Sample Person remembers to select a license.
     >>> user_browser.getControl('Python License').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
-    Aardvark Central Command in Launchpad
+    Aardvark Center in Launchpad
 
 Let's ensure the summary and description are presented.
 
@@ -209,7 +209,7 @@ Firefox project is discovered.
 Instead of registering her new project, Sample Person decides to participate
 in the Mozilla Project.
 
-    >>> user_browser.getLink('the Mozilla Project').click()
+    >>> user_browser.getLink('The Mozilla Project').click()
     >>> print user_browser.title
     The Mozilla Project in Launchpad
 

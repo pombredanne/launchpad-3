@@ -15,6 +15,8 @@ __all__ = [
     ]
 
 
+import collections
+
 from email import message_from_string
 from email.Header import (
     decode_header,
@@ -69,17 +71,15 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp.registry.interfaces.mailinglist import (
@@ -588,6 +588,9 @@ class MailingList(SQLBase):
         # a bit tortured, so just do it here.
         if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
+            email = getUtility(IEmailAddressSet).getByEmail(self.address)
+            if email is not None:
+                removeSecurityProxy(email).destroySelf()
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
             raise UnsafeToPurge(self)
@@ -662,9 +665,23 @@ class MailingListSet:
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
 
+    def _getTeamIdsAndMailingListIds(self, team_names):
+        """Return a tuple of team and mailing list Ids for the team names."""
+        store = IStore(MailingList)
+        tables = (
+            Person,
+            Join(MailingList, MailingList.team == Person.id))
+        results = set(store.using(*tables).find(
+            (Person.id, MailingList.id),
+            And(Person.name.is_in(team_names),
+                Person.teamowner != None)))
+        team_ids = [result[0] for result in results]
+        list_ids = [result[1] for result in results]
+        return team_ids, list_ids
+
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -688,19 +705,10 @@ class MailingListSet:
             LeftJoin(Team,
                      Team.id == MailingList.teamID),
             )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None)))
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
-                MailingList,
-                MailingList.teamID.is_in(team_ids)))
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription, TeamParticipation,
-             Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -709,12 +717,12 @@ class MailingListSet:
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
-        by_team = {}
-        for address, subscription, participation, person, team in preferred:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        by_team = collections.defaultdict(set)
+        for email, display_name, team_name in preferred:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email)
+            by_team[team_name].add(value)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -734,16 +742,16 @@ class MailingListSet:
                      Team.id == MailingList.teamID),
             )
         explicit = store.using(*tables).find(
-            (EmailAddress, MailingList, Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
-        for address, mailing_list, person, team in explicit:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        for email, display_name, team_name in explicit:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email)
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -752,7 +760,7 @@ class MailingListSet:
 
     def getSenderAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # First, we need to find all the members of all the mailing lists for
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
@@ -766,11 +774,7 @@ class MailingListSet:
             Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None)))
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         team_members = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
@@ -793,10 +797,6 @@ class MailingListSet:
                      MailingList.id == MessageApproval.mailing_listID),
             Join(Team, Team.id == MailingList.teamID),
             )
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
-                MailingList,
-                MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
@@ -805,13 +805,13 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE,
                 ))
         # Sort allowed posters by team/mailing list.
-        by_team = {}
+        by_team = collections.defaultdict(set)
         all_posters = team_members.union(approved_posters)
         for team_name, person_displayname, email in all_posters:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
             value = (person_displayname, email)
-            by_team.setdefault(team_name, set()).add(value)
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():

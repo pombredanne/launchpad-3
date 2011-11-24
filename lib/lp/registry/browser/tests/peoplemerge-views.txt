@@ -9,11 +9,14 @@ Team Merges
 Create a member of the registry team that is not a member of the admins
 team.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.persontransferjob import (
+    ...     IPersonMergeJobSource,
+    ...     )
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
+    >>> merge_job_source = getUtility(IPersonMergeJobSource)
     >>> registry_expert= factory.makeRegistryExpert()
     >>> login_person(registry_expert)
 
@@ -31,34 +34,14 @@ A team (name21) can be merged into another (ubuntu-team).
     ...     person_set, '+adminteammerge', form=form)
     >>> len(view.errors)
     0
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    A merge is queued and is expected to complete in a few minutes.
 
-The old team is now renamed but the target team remains.
-
-    >>> print person_set.getByName('name21')
-    None
-    >>> print person_set.getByName('ubuntu-team').displayname
-    Ubuntu Team
-
-Teams which have superteams cannot be merged into other teams. This
-restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
-
-    >>> parent_team = factory.makeTeam()
-    >>> child_team = factory.makeTeam(name='child-team')
-    >>> random_team = factory.makeTeam()
-    >>> transaction.commit()
-    >>> login('foo.bar@canonical.com')
-    >>> ignored = parent_team.addMember(
-    ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
-    >>> form = {'field.dupe_person': child_team.name,
-    ...         'field.target_person': random_team.name,
-    ...         'field.actions.deactivate_members_and_merge': 'Merge'}
-    >>> view = create_initialized_view(
-    ...     person_set, '+adminteammerge', form=form)
-    >>> view.errors
-    [u"child-team has super teams, so it can't be merged."]
 
 Attempting to merge a non-existent team results in an error.
 
+    >>> transaction.commit()
     >>> form = {'field.dupe_person': 'not-a-real-team',
     ...         'field.target_person': 'another-fake-team',
     ...         'field.actions.merge': 'Merge'}
@@ -93,12 +76,9 @@ them to merge a profile which has no email address.
     >>> view = create_initialized_view(
     ...     person_set, '+requestmerge', form=form)
     >>> len(view.errors)
-    1
-
-    # XXX Salgado, 2009-07-08, bug=396410: There should be a meaningful
-    # error message here instead of this one.
+    2
     >>> print view.getFieldError('dupe_person')
-    Constraint not satisfied
+    The duplicate is not a valid person or team.
 
 Admins, on the other hand, are allowed to merge people without a single email
 address.
@@ -152,7 +132,7 @@ The view provides a label, page_title, and cancel url to present the page.
     >>> print view.cancel_url
     http://launchpad.dev/~deletable
 
-The view uses the same form fields as the team merge view, but it does not
+The view uses the similar form fields as the team merge view, but it does not
 render them because their values are preset. Only the action is rendered,
 and it is only rendered if canDelete() returns True.
 
@@ -161,16 +141,16 @@ and it is only rendered if canDelete() returns True.
     >>> view = create_initialized_view(
     ...     deletable_team, '+delete', principal=team_owner)
     >>> view.field_names
-    ['dupe_person', 'target_person']
+    ['dupe_person']
 
     >>> view.default_values
-    {'field.target_person': u'registry', 'field.dupe_person': u'deletable'}
+    {'field.delete': True, 'field.dupe_person': u'deletable'}
 
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print find_tag_by_id(content, 'field.dupe_person')
     None
 
-    >>> print find_tag_by_id(content, 'field.target_person')
+    >>> print find_tag_by_id(content, 'field.delete')
     None
 
     >>> print find_tag_by_id(content, 'field.actions.delete')['value']
@@ -198,18 +178,23 @@ The user is redirected to /people when a team is deleted.
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Team deleted.
+    The team is queued to be deleted.
 
     >>> print view.next_url
     http://launchpad.dev/people
 
-    >>> print person_set.getByName('deletable')
-    None
+And there is a person merge job setup to delete them.
+
+    >>> job = merge_job_source.find(deletable_team).any()
+    >>> job.metadata['delete']
+    True
+    >>> job.from_person.name
+    u'deletable'
 
 The delete team view cannot be hacked to delete another team, or change
 the team that the merge operation is performed with.
 
-    >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
+    >>> deletable_team = factory.makeTeam(owner=team_owner, name='delete-me')
     >>> transaction.commit()
     >>> form = {
     ...     'field.target_person': 'rosetta-admins',
@@ -222,9 +207,6 @@ the team that the merge operation is performed with.
 
     >>> view.request.response.notifications
     []
-
-    >>> print deletable_team.name
-    deletable
 
 A team with a mailing list cannot be deleted.
 
@@ -263,4 +245,4 @@ Private teams can be deleted by admins.
     []
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Team deleted.
+    The team is queued to be deleted.

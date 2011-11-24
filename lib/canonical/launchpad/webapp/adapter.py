@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 
+from functools import partial
 import logging
 import os
 import re
@@ -16,6 +17,7 @@ from time import time
 import traceback
 import warnings
 
+from lazr.restful.utils import get_current_browser_request, safe_hasattr
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -24,7 +26,10 @@ from psycopg2.extensions import (
     QueryCanceledError,
     )
 import pytz
-from storm.database import register_scheme
+from storm.database import (
+    Connection,
+    register_scheme,
+    )
 from storm.databases.postgres import (
     Postgres,
     PostgresConnection,
@@ -34,6 +39,7 @@ from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
+from timeline.timeline import Timeline
 import transaction
 from zope.component import getUtility
 from zope.interface import (
@@ -46,9 +52,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import (
     config,
-    DatabaseConfig,
+    dbconfig,
     )
 from canonical.database.interfaces import IRequestExpired
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -64,15 +71,19 @@ from canonical.launchpad.webapp.interfaces import (
     ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
+from canonical.launchpad.webapp.interaction import get_interaction_extras
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2
-from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,
+    )
+from lp.services.stacktrace import (
+    extract_stack,
+    extract_tb,
+    print_list,
     )
 
 
@@ -84,7 +95,10 @@ __all__ = [
     'get_request_start_time',
     'get_request_duration',
     'get_store_name',
+    'print_queries',
     'soft_timeout_expired',
+    'start_sql_logging',
+    'stop_sql_logging',
     'StoreSelector',
     ]
 
@@ -114,13 +128,13 @@ class RequestExpired(RuntimeError):
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
 
 
 def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     """Set the dirty commit status to False unless previous is True"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     if not previous_committed:
         ConnectionWrapper.committed = False
     if not previous_dirty:
@@ -180,10 +194,8 @@ def set_request_started(
         set_request_timeline(request, Timeline())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
-    if txn is not None:
-        _local.commit_logger = CommitLogger(txn)
-        txn.registerSynch(_local.commit_logger)
-    set_permit_timeout_from_features(False)
+    _local.commit_logger = CommitLogger(transaction)
+    transaction.manager.registerSynch(_local.commit_logger)
 
 
 def clear_request_started():
@@ -194,11 +206,13 @@ def clear_request_started():
         warnings.warn('clear_request_started() called outside of a request',
             stacklevel=2)
     _local.request_start_time = None
+    _local.sql_logging = None
+    _local.sql_logging_start = None
+    _local.sql_logging_tracebacks_if = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
-    commit_logger = getattr(_local, 'commit_logger', None)
-    if commit_logger is not None:
-        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
+    if getattr(_local, 'commit_logger', None) is not None:
+        transaction.manager.unregisterSynch(_local.commit_logger)
         del _local.commit_logger
 
 
@@ -275,7 +289,7 @@ def set_permit_timeout_from_features(enabled):
     :param enabled: If True permit looking up request timeouts in
         feature flags.
     """
-    _local._permit_feature_timeout = enabled
+    get_interaction_extras().permit_timeout_from_features = enabled
 
 
 def _get_request_timeout(timeout=None):
@@ -288,7 +302,9 @@ def _get_request_timeout(timeout=None):
         return None
     if timeout is None:
         timeout = config.database.db_statement_timeout
-        if getattr(_local, '_permit_feature_timeout', False):
+        interaction_extras = get_interaction_extras()
+        if (interaction_extras is not None
+            and interaction_extras.permit_timeout_from_features):
             set_permit_timeout_from_features(False)
             try:
                 timeout_str = features.getFeatureFlag('hard_timeout')
@@ -341,6 +357,55 @@ def soft_timeout_expired():
         return False
     except RequestExpired:
         return True
+
+
+def start_sql_logging(tracebacks_if=False):
+    """Turn the sql data logging on."""
+    if getattr(_local, 'sql_logging', None) is not None:
+        warnings.warn('SQL logging already started')
+        return
+    _local.sql_logging_tracebacks_if = tracebacks_if
+    result = []
+    _local.sql_logging = result
+    _local.sql_logging_start = int(time() * 1000)
+    return result
+
+
+def stop_sql_logging():
+    """Turn off the sql data logging and return the result."""
+    result = getattr(_local, 'sql_logging', None)
+    _local.sql_logging_tracebacks_if = None
+    _local.sql_logging = None
+    _local.sql_logging_start = None
+    if result is None:
+        warnings.warn('SQL logging not started')
+    return result
+
+
+def print_queries(queries, file=None):
+    if file is None:
+        file = sys.stdout
+    for query in queries:
+        # Note: this could use the sql tb if it exists.
+        stack = query['stack']
+        if stack is not None:
+            exception = query['exception']
+            if exception is not None:
+                file.write(
+                    'Error when determining whether to generate a '
+                    'stacktrace.\n')
+                file.write('Traceback (most recent call last):\n')
+            print_list(stack, file)
+            if exception is not None:
+                lines = traceback.format_exception_only(*exception)
+                file.write(' '.join(lines))
+            file.write("." * 70 + "\n")
+        sql = query['sql']
+        if sql is not None:
+            file.write('%d-%d@%s %s\n' % sql[:4])
+        else:
+            file.write('(no SQL recorded)\n')
+        file.write("-" * 70 + "\n")
 
 
 # ---- Prevent database access in the main thread of the app server
@@ -439,38 +504,35 @@ class LaunchpadDatabase(Postgres):
             raise StormAccessFromMainThread()
 
         try:
-            config_section, realm, flavor = self._uri.database.split('-')
+            realm, flavor = self._uri.database.split('-')
         except ValueError:
             raise AssertionError(
-                'Connection uri %s does not match section-realm-flavor format'
+                'Connection uri %s does not match realm-flavor format'
                 % repr(self._uri.database))
 
         assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
-        my_dbconfig = DatabaseConfig()
-        my_dbconfig.setConfigSection(config_section)
-
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
         config_entry = '%s_%s' % (realm, flavor)
-        connection_string = getattr(my_dbconfig, config_entry)
+        connection_string = getattr(dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
 
         # Try to lookup dbuser using the $realm_dbuser key. If this fails,
         # fallback to the dbuser key.
-        dbuser = getattr(my_dbconfig, '%s_dbuser' % realm, my_dbconfig.dbuser)
+        dbuser = getattr(dbconfig, '%s_dbuser' % realm, dbconfig.dbuser)
 
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
 
-        if my_dbconfig.isolation_level is None:
+        if dbconfig.isolation_level is None:
             self._isolation = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+            self._isolation = isolation_level_map[dbconfig.isolation_level]
 
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
@@ -513,10 +575,19 @@ class LaunchpadSessionDatabase(Postgres):
     name = 'session'
 
     def raw_connect(self):
-        self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                           config.launchpad_session.dbuser)
-        if config.launchpad_session.dbhost:
-            self._dsn += ' host=%s' % config.launchpad_session.dbhost
+        if config.launchpad_session.database is not None:
+            dsn = ConnectionString(config.launchpad_session.database)
+            dsn.user = config.launchpad_session.dbuser
+            self._dsn = str(dsn)
+        else:
+            # This is fallback code for old config files. It can be
+            # removed when all live configs have been updated to use the
+            # 'database' setting instead of 'dbname' + 'dbhost' settings.
+            self._dsn = 'dbname=%s user=%s' % (
+                config.launchpad_session.dbname,
+                config.launchpad_session.dbuser)
+            if config.launchpad_session.dbhost:
+                self._dsn += ' host=%s' % config.launchpad_session.dbhost
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
@@ -596,33 +667,70 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 class LaunchpadStatementTracer:
     """Storm tracer class to log executed statements."""
 
+    _normalize_whitespace = partial(re.compile('\s+').sub, ' ')
+
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
-        self._debug_sql_bind_values = bool(
-            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        if self._debug_sql_extra:
-            traceback.print_stack()
-            sys.stderr.write("." * 70 + "\n")
-        if self._debug_sql or self._debug_sql_extra:
-            stmt_to_log = statement
-            if self._debug_sql_bind_values:
-                from storm.database import Connection
-                param_strings = Connection.to_database(params)
-                stmt_to_log = statement % tuple(param_strings)
-            sys.stderr.write(stmt_to_log + "\n")
-            sys.stderr.write("-" * 70 + "\n")
+        statement_to_log = statement
+        if params:
+            # There are some bind parameters so we want to insert them into
+            # the sql statement so we can log the statement.
+            query_params = list(Connection.to_database(params))
+            # We need to ensure % symbols used for LIKE statements etc are
+            # properly quoted or else the string format operation will fail.
+            quoted_statement = re.sub(
+                    "%%%", "%%%%", re.sub("%([^s])", r"%%\1", statement))
+            # We need to massage the query parameters a little to deal with
+            # string parameters which represent encoded binary data.
+            param_strings = [repr(p) if isinstance(p, basestring) else p
+                                 for p in query_params]
+            statement_to_log = quoted_statement % tuple(param_strings)
+        # Record traceback to log, if requested.
+        print_traceback = self._debug_sql_extra
+        log_sql = getattr(_local, 'sql_logging', None)
+        log_traceback = False
+        if log_sql is not None:
+            log_sql.append(dict(stack=None, sql=None, exception=None))
+            conditional = getattr(_local, 'sql_logging_tracebacks_if', None)
+            if callable(conditional):
+                try:
+                    log_traceback = conditional(
+                        self._normalize_whitespace(
+                            statement_to_log.strip()).upper())
+                except (MemoryError, SystemExit, KeyboardInterrupt):
+                    raise
+                except:
+                    exc_type, exc_value, tb = sys.exc_info()
+                    log_sql[-1]['exception'] = (exc_type, exc_value)
+                    log_sql[-1]['stack'] = extract_tb(tb)
+            else:
+                log_traceback = bool(conditional)
+        if print_traceback or log_traceback:
+            stack = extract_stack()
+            if log_traceback:
+                log_sql[-1]['stack'] = stack
+            if print_traceback:
+                print_list(stack)
+                sys.stderr.write("." * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
         threading.currentThread().lp_last_sql_statement = statement
         request_starttime = getattr(_local, 'request_start_time', None)
         if request_starttime is None:
+            if print_traceback or self._debug_sql or log_sql is not None:
+                # Stash some information for logging at the end of the
+                # SQL execution.
+                connection._lp_statement_info = (
+                    int(time() * 1000),
+                    'SQL-%s' % connection._database.name,
+                    statement_to_log)
             return
         action = get_request_timeline(get_current_browser_request()).start(
-            'SQL-%s' % connection._database.name, statement)
+            'SQL-%s' % connection._database.name, statement_to_log)
         connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,
@@ -630,8 +738,35 @@ class LaunchpadStatementTracer:
         action = getattr(connection, '_lp_statement_action', None)
         if action is not None:
             # action may be None if the tracer was installed after the
-            # statement was submitted.
+            # statement was submitted or if the timeline tracer is not
+            # installed.
             action.finish()
+        log_sql = getattr(_local, 'sql_logging', None)
+        if log_sql is not None or self._debug_sql or self._debug_sql_extra:
+            data = None
+            if action is not None:
+                data = action.logTuple()
+            else:
+                info = getattr(connection, '_lp_statement_info', None)
+                if info is not None:
+                    stop = int(time() * 1000)
+                    start, dbname, statement = info
+                    logging_start = (
+                        getattr(_local, 'sql_logging_start', None) or start)
+                    # Times are in milliseconds, to mirror actions.
+                    start = start - logging_start
+                    stop = stop - logging_start
+                    data = (start, stop, dbname, statement, None)
+                    connection._lp_statement_info = None
+            if data is not None:
+                if log_sql and log_sql[-1]['sql'] is None:
+                    log_sql[-1]['sql'] = data
+                if self._debug_sql or self._debug_sql_extra:
+                    # Don't print the backtrace from the data to stderr - too
+                    # messy given that LP_DEBUG_SQL_EXTRA logs that
+                    # separately anyhow.
+                    sys.stderr.write('%d-%d@%s %s\n' % data[:4])
+                    sys.stderr.write("-" * 70 + "\n")
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):

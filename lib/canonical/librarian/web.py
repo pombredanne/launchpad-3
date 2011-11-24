@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from urlparse import urlparse
 
+from storm.exceptions import DisconnectionError
 from twisted.python import log
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
@@ -26,7 +27,8 @@ defaultResource = static.Data("""
         <h1>Launchpad Librarian</h1>
         <p>
         http://librarian.launchpad.net/ is a
-        file repository used by <a href="https://launchpad.net/">Launchpad</a>.
+        file repository used by
+        <a href="https://launchpad.net/">Launchpad</a>.
         </p>
         <p><small>Copyright 2004-2009 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
@@ -80,7 +82,7 @@ class LibraryFileAliasResource(resource.Resource):
                 self.aliasID = int(filename)
             except ValueError:
                 log.msg(
-                    "404 (old URL): alias is not an int: %r" % (name,))
+                    "404 (old URL): alias is not an int: %r" % (filename,))
                 return fourOhFour
             filename = request.postpath[0]
 
@@ -107,7 +109,8 @@ class LibraryFileAliasResource(resource.Resource):
 
         token = request.args.get('token', [None])[0]
         path = request.path
-        deferred = deferToThread(self._getFileAlias, self.aliasID, token, path)
+        deferred = deferToThread(
+            self._getFileAlias, self.aliasID, token, path)
         deferred.addCallback(
                 self._cb_getFileAlias, filename, request
                 )
@@ -125,11 +128,19 @@ class LibraryFileAliasResource(resource.Resource):
             raise NotFound
 
     def _eb_getFileAlias(self, failure):
-        failure.trap(NotFound)
-        return fourOhFour
+        err = failure.trap(NotFound, DisconnectionError)
+        if err == DisconnectionError:
+            return resource.ErrorPage(
+                503, 'Database unavailable',
+                'A required database is unavailable.\n'
+                'See http://identi.ca/launchpadstatus '
+                'for maintenance and outage notifications.')
+        else:
+            return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype, date_created, restricted),
+            self,
+            (dbcontentID, dbfilename, mimetype, date_created, restricted),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -167,6 +178,7 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
+
     def __init__(
         self, contentType, encoding, modification_time, *args, **kwargs):
         # Have to convert the UTC datetime to POSIX timestamp (localtime)

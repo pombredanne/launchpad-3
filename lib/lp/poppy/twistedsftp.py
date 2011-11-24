@@ -22,7 +22,6 @@ from zope.component import (
     adapter,
     provideHandler,
     )
-import zope.component.event
 from zope.interface import implements
 
 from lp.poppy.filesystem import UploadFileSystem
@@ -129,7 +128,7 @@ class SFTPFile:
     def writeChunk(self, offset, data):
         try:
             chunk_file = os.open(
-                self.filename, os.O_CREAT | os.O_WRONLY, 0674)
+                self.filename, os.O_CREAT | os.O_WRONLY, 0664)
         except OSError, e:
             if e.errno != errno.EISDIR:
                 raise
@@ -143,4 +142,3 @@ class SFTPFile:
 
     def setAttrs(self, attr):
         pass
-

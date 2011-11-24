@@ -44,10 +44,12 @@
     </td>
   </tr>
 
-  <tal:product tal:define="widget nocall:view/widgets/product|nothing"
-               tal:condition="widget">
-    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
-  </tal:product>
+  <noscript>
+    <tal:product tal:define="widget nocall:view/widgets/product|nothing"
+                 tal:condition="widget">
+      <metal:widget use-macro="context/@@launchpad_form/widget_row" />
+    </tal:product>
+  </noscript>
 
   <metal:summary tal:define="widget nocall:view/widgets/title">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
@@ -57,51 +59,14 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
-  <metal:bug_reporting_guidelines
-      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
-  <tr tal:define="security_context view/getSecurityContext">
-    <td colspan="2" width="100%"
-        tal:define="widget nocall: view/widgets/security_related">
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <input type="checkbox" tal:replace="structure widget" />
-            </td>
-            <td>
-              <label tal:attributes="for widget/name">
-                This bug is a security vulnerability
-              </label>
-              <div tal:condition="view/can_decide_security_contact"
-                   tal:define="security_contact security_context/security_contact|nothing">
-                <tal:security-contact tal:condition="security_contact">
-                  The security contact for
-                  <tal:security-context content="security_context/displayname" />,
-                  <a tal:replace="structure security_contact/fmt:link" />,
-                  will be notified.
-                </tal:security-contact>
-                <tal:maintainer condition="not:security_contact"
-                   define="maintainer security_context/owner">
-                  The maintainer of
-                  <tal:security-context content="security_context/displayname">
-                    Mozilla Firefox</tal:security-context>,
-                  <a tal:replace="structure maintainer/fmt:link">
-                    Sample Person</a>,
-                  will be notified.
-                </tal:maintainer>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </td>
-  </tr>
+  <tr id="extra-filebug-details"
+    tal:replace="structure context/@@+filebug-reporting-guidelines" />
 
   <tr>
     <td colspan="2">
-      <fieldset id="filebug-extra-options" class="collapsible collapsed">
+      <fieldset id="filebug-extra-options" class="collapsible">
         <legend>Extra options</legend>
+        <div class="unseen">
         <table>
           <tal:status
               define="widget nocall:view/widgets/status|nothing"
@@ -129,6 +94,7 @@
         </table>
         <metal:attachment-form
             use-macro="context/@@bug-attachment-macros/attachment-form" />
+        </div>
       </fieldset>
     </td>
   </tr>
@@ -380,17 +346,17 @@
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
         <tbody>
           <tr>
-            <td>
-              <img width="14" height="14" src="/@@/treeCollapsed"
-                  class="bug-already-reported-expander"
-                  tal:attributes="id string:bug-details-expander-bug-${bug/id};"
-                />
-            </td>
-            <td>
-              <label tal:attributes="for string:bug-already-reported-as-${bug/id};
+            <td class="bug-already-reported-expander">
+              <tal:comment condition="nothing">
+                We use zero-width space (&#8203;) to force the otherwise
+                empty span using sprite image to show up. Also no whitespace
+                between tags is allowed.
+              </tal:comment>
+              <span class="expander">&#8203;</span><label
+                 tal:attributes="for string:bug-already-reported-as-${bug/id};
                                      class bugtask/image:sprite_css"
-                     tal:condition="bugtask"/>
-              <label class="sprite bug" tal:condition="not:bugtask"/>
+                     tal:condition="bugtask">&#8203;</label><label
+                 class="sprite bug" tal:condition="not:bugtask">&#8203;</label>
             </td>
             <td>
               <div>
@@ -423,7 +389,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" target="_blank"
+                  &nbsp;&nbsp;
+                  <a class="sprite new-window view-bug-link" target="_blank"
 		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
@@ -506,7 +473,7 @@
 </metal:similar-bugs-and-filebug-form>
 
 <metal:inline-filebug-form define-macro="inline-filebug-form">
-  <div id="bug_reporting_form">
+  <div id="bug-reporting-form">
     <metal:form use-macro="context/@@launchpad_form/form">
       <a name="form-start" />
       <metal:widgets metal:fill-slot="widgets">

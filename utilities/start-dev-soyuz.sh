@@ -8,14 +8,14 @@ start_twistd() {
     bin/twistd \
         --logfile "/var/tmp/development-$1.log" \
         --pidfile "/var/tmp/development-$1.pid" \
-        -y "daemons/$1.tac"
+        -y "$2"
 }
 
-start_twistd zeca
-start_twistd buildd-manager
-
-echo "Starting poppy."
+start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
+start_twistd buildd-manager daemons/buildd-manager.tac
 mkdir -p /var/tmp/poppy
-bin/py daemons/poppy-upload.py /var/tmp/poppy/incoming 2121 &
+export POPPY_ROOT=/var/tmp/poppy/incoming
+start_twistd poppy-sftp daemons/poppy-sftp.tac
+
 
 echo "Done."

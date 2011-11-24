@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test milestone views."""
@@ -11,10 +11,11 @@ from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -26,7 +27,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
 
@@ -155,7 +159,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         master_bugtask = getUtility(IBugTaskSet).createTask(
-            bug, productseries=product.development_focus, owner=product.owner)
+            bug, product.owner, product.development_focus)
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
         login_person(product.owner)
@@ -186,19 +190,6 @@ class TestQueryCountBase(TestCaseWithFactory):
             bugtasks = list(view.bugtasks)
         self.assertThat(recorder, HasQueryCount(LessThan(query_limit)))
         self.assertEqual(bugtask_count, len(bugtasks))
-
-    def assert_milestone_page_query_count(self, milestone, query_limit):
-        collector = QueryCollector()
-        collector.register()
-        try:
-            milestone_url = canonical_url(milestone)
-            browser = self.getUserBrowser(user=self.owner)
-            browser.open(milestone_url)
-            self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
-        finally:
-            # Unregister now in case this method is called multiple
-            # times in a single test.
-            collector.unregister()
 
 
 class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
@@ -232,25 +223,25 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         logout()
 
     def test_bugtasks_queries(self):
-        # The view.bugtasks attribute will make four queries:
+        # The view.bugtasks attribute will make several queries:
         #  1. Load bugtasks and bugs.
-        #  2. Load assignees (Person, Account, and EmailAddress).
-        #  3. Load links to specifications.
-        #  4. Load links to branches.
+        #  2. Loads the target (sourcepackagename / product)
+        #  3. Load assignees (Person, Account, and EmailAddress).
+        #  4. Load links to specifications.
+        #  5. Load links to branches.
+        #  6. Loads milestones
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=5)
+            self.milestone, bugtask_count, query_limit=7)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 34
+        browses_under_limit = BrowsesWithQueryLimit(36, self.owner)
         self.add_bug(3)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
 
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone
@@ -260,7 +251,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-        page_query_limit = 34
+        page_query_limit = 37
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -271,7 +262,8 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # We look at the page as someone who is a member of a team and the
         # team is subscribed to the bugs, so that we don't get trivial
         # shortcuts avoiding queries : test the worst case.
-        subscribed_team = self.factory.makeTeam()
+        subscribed_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         viewer = self.factory.makePerson(password="test")
         with person_logged_in(subscribed_team.teamowner):
             subscribed_team.addMember(viewer, subscribed_team.teamowner)
@@ -359,21 +351,20 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         #  3. Load assignees (Person, Account, and EmailAddress).
         #  4. Load links to specifications.
         #  5. Load links to branches.
+        #  6. Loads milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=6)
+            self.milestone, bugtask_count, query_limit=7)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees as long as the number of
         # projects doesn't increase.
-        query_limit = 37
+        browses_under_limit = BrowsesWithQueryLimit(37, self.owner)
         self.add_bug(1)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
 
 
 class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
@@ -405,6 +396,9 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
             bug = self.factory.makeBug(distribution=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.ubuntu.currentseries,
+                sourcepackagename=distrosourcepackage.sourcepackagename)
             bug.bugtasks[0].transitionToTarget(distrosourcepackage)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.owner)
@@ -419,20 +413,20 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  2. Check if the user is in the admin team.
         #  3. Check if the user is in the owner of the admin team.
         #  4. Load bugtasks and bugs.
-        #  5. Load assignees (Person, Account, and EmailAddress).
-        #  6. Load links to specifications.
-        #  7. Load links to branches.
+        #  5. load the source package names.
+        #  6. Load assignees (Person, Account, and EmailAddress).
+        #  7. Load links to specifications.
+        #  8. Load links to branches.
+        #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=8)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 32
-        self.add_bug(3)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        browses_under_limit = BrowsesWithQueryLimit(35, self.owner)
+        self.add_bug(4)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)

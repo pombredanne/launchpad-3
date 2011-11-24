@@ -74,9 +74,6 @@ The user specified a binary package name, so that's been added to the
 bug description and the first comment:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 the source package from which the binary was built has been set on
@@ -166,7 +163,7 @@ grab a new view to actually see them:
     3
     >>> [ (c.index, c.owner.name, c.text_contents)
     ...  for c in ubuntu_bugview.comments ]
-    [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
+    [(0, u'name16', u'a bug in a bin pkg'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
@@ -178,17 +175,11 @@ When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 Its description has the same contents as the bug's first comment:
 
     >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 The view class offers a method to check exactly that:
@@ -206,16 +197,17 @@ If we go ahead and modify the description, however:
     True
 
 The displayable comments for a bug can be obtained from the view
-property visible_oldest_comments_for_display.
+property activity_and_comments.
 
-    >>> viewable_comments = ubuntu_bugview.visible_oldest_comments_for_display
+    >>> comments = [event.get('comment') for event in
+    ...     ubuntu_bugview.activity_and_comments if event.get('comment')]
 
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
 
-    >>> print len(viewable_comments)
+    >>> print len(comments)
     1
-    >>> [(c.index, c.owner.name, c.text_contents) for c in viewable_comments]
+    >>> [(c.index, c.owner.name, c.text_contents) for c in comments]
     [(1, u'name16', u'I can reproduce this bug.')]
 
 (Unregister our listener, since we no longer need it.)
@@ -339,19 +331,19 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
     >>> bug_menu.subscription().icon
     'add'
 
-If we subscribe Foo Bar, 'Unsubscribe' is shown.
+If we subscribe Foo Bar, 'Edit subscription' is shown.
 
     >>> bug_one.subscribe(foo_bar, foo_bar)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
-still say 'Unsubscribe':
+still say 'Edit subscription':
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
@@ -360,10 +352,10 @@ still say 'Unsubscribe':
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
 unsubsription is handled by the remove icon next the the team in the
@@ -405,15 +397,12 @@ can't know if the user is subscribed or not.
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-    is presented with the Unsubscribe link.
-
-    >>> from canonical.launchpad.ftests import syncUpdate
+    is presented with the "Edit subscription" link.
 
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
-        'Unsubscribe'
+    'Edit subscription'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
     time where the subscription from the duplicate is of a /team/ of which
@@ -421,7 +410,6 @@ can't know if the user is subscribed or not.
     Subscribe link initially.
 
     >>> bug_two.markAsDuplicate(None)
-    >>> syncUpdate(bug_two)
 
     >>> login("foo.bar@canonical.com")
 
@@ -436,7 +424,6 @@ can't know if the user is subscribed or not.
         <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
     'Subscribe'
@@ -445,9 +432,20 @@ can't know if the user is subscribed or not.
 BugTasks and Nominations Table
 ------------------------------
 
-A table is rendered at the top of the bug page which shows both bugtasks
-and nominations. This table is rendered with the
-+bugtasks-and-nomination-table view.
+Content is rendered at the top of the bug page which shows both bugtasks
+and nominations and various links like "Does this bug affect you" and
+"Also Affects Project" etc. This content is rendered with the
++bugtasks-and-nominations-portal view.
+
+    >>> request = LaunchpadTestRequest()
+
+    >>> bugtasks_and_nominations_view = getMultiAdapter(
+    ...     (bug_one_bugtask.bug, request),
+    ...     name="+bugtasks-and-nominations-portal")
+    >>> bugtasks_and_nominations_view.initialize()
+
+The bugtasks and nominations table itself is rendered with the
++bugtasks-and-nominations-table view.
 
     >>> request = LaunchpadTestRequest()
 
@@ -539,10 +537,7 @@ Let's add another affected package in Ubuntu to the bug.
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> bugtaskset.createTask(
-    ...     owner=current_user, bug=bug_one,
-    ...     distribution=evolution.distribution,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    >>> bugtaskset.createTask(bug_one, current_user, evolution)
     <BugTask ...>
 
 A nomination row will be included for evolution now too.
@@ -776,7 +771,7 @@ order, the comments and activity that have taken place on a bug.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(
@@ -832,7 +827,7 @@ comments and activity together.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(

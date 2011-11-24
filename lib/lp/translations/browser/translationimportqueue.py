@@ -25,7 +25,6 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
     canonical_url,
     GetitemNavigation,
@@ -39,6 +38,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -92,12 +92,14 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     max_series_to_display = 3
 
+    page_title = 'Translation import queue entry'
+
     @property
     def initial_values(self):
         """Initialize some values on the form, when it's possible."""
         field_values = {}
         if self.request.method == 'POST':
-            # We got a form post, we don't need to do any initialisation.
+            # We got a form post, we don't need to do any initialization.
             return field_values
         # Fill the know values.
         field_values['path'] = self.context.path
@@ -280,7 +282,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # Only show languagepack for Ubuntu packages.
             self.field_names.remove('languagepack')
 
-        # Execute default initialisation.
+        # Execute default initialization.
         LaunchpadFormView.initialize(self)
 
 # XXX: HenningEggers 2008-11-21 bug=300608: This code is too generic to be in

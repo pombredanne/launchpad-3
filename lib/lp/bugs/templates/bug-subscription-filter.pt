@@ -4,7 +4,8 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     xml:lang="en" lang="en" dir="ltr"
-    tal:define="conditions view/conditions"
+    tal:define="conditions view/conditions;
+                filters_everything view/filters_everything;"
     tal:omit-tag="">
   <dt tal:define="description view/description">
     <span tal:condition="description">
@@ -17,7 +18,12 @@
       allows mail through when:
     </span>
     <span tal:condition="not:conditions">
-      allows all mail through.
+      <tal:condition condition="filters_everything">
+        allows no mail through.
+      </tal:condition>
+      <tal:condition condition="not:filters_everything">
+        allows all mail through.
+      </tal:condition>
     </span>
   </dt>
   <dd tal:condition="conditions">
@@ -32,7 +38,9 @@
     </tal:editable>
   </dd>
   <dd tal:condition="not:conditions">
-    There are no filter conditions!
+    <tal:condition condition="not:filters_everything">
+      There are no filter conditions!
+    </tal:condition>
     <tal:editable condition="context/required:launchpad.Edit">
       <br /><a tal:attributes="href context/fmt:url/+edit">(edit)</a>
     </tal:editable>

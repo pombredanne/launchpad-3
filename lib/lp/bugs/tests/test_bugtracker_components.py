@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for components and component groups (products) in bug trackers."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
 import transaction
 
 from canonical.launchpad.ftests import login_person
@@ -21,12 +20,12 @@ from lp.testing import (
     )
 
 
-class TestBugTrackerComponent(TestCaseWithFactory):
+class BugTrackerComponentTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTrackerComponent, self).setUp()
+        super(BugTrackerComponentTestCase, self).setUp()
 
         regular_user = self.factory.makePerson()
         login_person(regular_user)
@@ -88,14 +87,15 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
     def test_link_distro_source_package(self):
         """Check that a link can be set to a distro source package"""
-        component = self.factory.makeBugTrackerComponent(
+        example_component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
-        package = self.factory.makeDistributionSourcePackage()
-        self.assertIs(None, component.distro_source_package)
+        dsp = self.factory.makeDistributionSourcePackage(u'example')
 
-        # Set the source package on the component
-        component.distro_source_package = package
-        self.assertIsNot(None, component.distro_source_package)
+        example_component.distro_source_package = dsp
+        self.assertEqual(dsp, example_component.distro_source_package)
+        comp = self.bug_tracker.getRemoteComponentForDistroSourcePackageName(
+            dsp.distribution, dsp.sourcepackagename)
+        self.assertIsNot(example_component, comp)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
@@ -148,7 +148,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
     def test_multiple_product_bugtracker(self):
         """Bug tracker with multiple products and components"""
         # Create several component groups with varying numbers of components
-        comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        self.bug_tracker.addRemoteComponentGroup(u'alpha')
 
         comp_group_ii = self.bug_tracker.addRemoteComponentGroup(u'beta')
         comp_group_ii.addComponent(u'example-beta-1')
@@ -291,10 +291,3 @@ class TestWebservice(TestCaseWithFactory):
         component = ws_object(self.launchpad, db_comp)
         package = ws_object(self.launchpad, db_src_pkg)
         component.distro_source_package = package
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-
-    return suite

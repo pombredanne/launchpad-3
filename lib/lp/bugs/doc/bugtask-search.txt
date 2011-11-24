@@ -98,9 +98,7 @@ If No Privileges is specified as Firefox's bug supervisor, searching for his
 bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> firefox.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(firefox)
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
@@ -126,7 +124,6 @@ twice.
     True
 
     >>> ubuntu.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(ubuntu)
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
@@ -213,7 +210,6 @@ But if we put that word in the bug #4 description, it will be found.
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
     ...     'extension installed.')
-    >>> syncUpdate(bug_four)
 
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> for bugtask in found_bugtasks:
@@ -308,9 +304,8 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> bug_twelve =  getUtility(IBugSet).get(12)
     >>> task_open_upstream = bugtask_set.createTask(
-    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
-    ...     status=BugTaskStatus.NEW,
-    ...     importance=BugTaskImportance.MEDIUM)
+    ...     bug_twelve, foo_bar, ubuntu,
+    ...     status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
     >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
 
 Pass the resolved_upstream flag to include only bugtasks linked to
@@ -494,7 +489,6 @@ for bugs of this milestone.
     >>> print bugTaskInfo(bugtask)
     2 1 Mozilla Firefox Firefox does not support SVG
     >>> bugtask.milestone = product_milestone
-    >>> syncUpdate(bugtask)
     >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
     >>> milestone_tasks = bugtask_set.search(params)
     >>> for bugtask in milestone_tasks:
@@ -515,9 +509,8 @@ same milestone...
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
     >>> productseries_task = bugtask_set.createTask(
-    ...     owner=no_priv, bug=bug_one, productseries=firefox_1_0)
+    ...     bug_one, no_priv, firefox_1_0)
     >>> productseries_task.milestone = product_milestone
-    >>> syncUpdate(productseries_task)
     >>> print bugTaskInfo(productseries_task)
     40 1 Mozilla Firefox 1.0 Firefox does not support SVG
 
@@ -741,7 +734,7 @@ It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
     ...     IBugAttachmentSet,
@@ -1009,6 +1002,15 @@ Similarly, we can search for bugs that do not have any linked branches.
     20 0
     21 0
 
+And we can search for bugs linked to a specific branch.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=1)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id
+    4
+    5
+
 
 == Ordering search results ==
 
@@ -1230,7 +1232,7 @@ Firefox bug tasks.
     ...     name='product-struct-subber')
     >>> firefox.addBugSubscription(product_struct_subber,
     ...     product_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> product_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=product_struct_subber)
     >>> found_bugtasks = bugtask_set.search(product_struct_sub_search)
@@ -1248,7 +1250,7 @@ for the product series in which they are interested.
     ...     name='series-struct-subber')
     >>> product_series.addBugSubscription(series_struct_subber,
     ...     series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(series_struct_sub_search)
@@ -1269,7 +1271,7 @@ person is subscribed.
     ...     name='project-struct-subber')
     >>> project.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1285,7 +1287,7 @@ results.
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1300,7 +1302,7 @@ bug tasks for the milestone in which they are interested.
     ...     name='milestone-struct-subber')
     >>> product_milestone.addBugSubscription(milestone_struct_subber,
     ...     milestone_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> milestone_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=milestone_struct_subber)
     >>> found_bugtasks = bugtask_set.search(milestone_struct_sub_search)
@@ -1315,7 +1317,7 @@ bugs with an Ubuntu bug task.
     ...     name='distro-struct-subber')
     >>> ubuntu.addBugSubscription(distro_struct_subber,
     ...     distro_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_struct_sub_search)
@@ -1332,7 +1334,7 @@ is subscribed to all of the bug tasks about that distro series.
     ...     name='distro-series-struct-subber')
     >>> hoary.addBugSubscription(distro_series_struct_subber,
     ...     distro_series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_series_struct_sub_search)
@@ -1349,7 +1351,7 @@ subscribed to all of the Ubuntu Firefox bug tasks.
     ...     name='package-struct-subber')
     >>> ubuntu_firefox.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
@@ -1363,7 +1365,7 @@ tasks.
 
     >>> product_series.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)

@@ -10,7 +10,7 @@ the common use cases.
 
 First, let's bring in a small helper function:
 
-   >>> from canonical.launchpad.ftests import test_tales
+   >>> from lp.testing import test_tales
 
 == Quoting styles ==
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone views."""
@@ -47,30 +47,33 @@ from canonical.launchpad.webapp.menu import (
     Link,
     NavigationMenu,
     )
-from canonical.widgets import DateWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
+from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
 
@@ -139,14 +142,25 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
 class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     """The menu for this milestone."""
     usedfor = IMilestone
-    links = ['edit', 'subscribe', 'create_release']
+
+    @cachedproperty
+    def links(self):
+        links = ['edit']
+        add_subscribe_link(links)
+        links.append('create_release')
+        return links
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
-    links = ('edit', 'delete', 'subscribe')
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'delete']
+        add_subscribe_link(links)
+        return links
 
 
 class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
@@ -199,6 +213,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def expire_cache_minutes(self):
@@ -252,11 +268,18 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
                 self.user, self.context))
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
+        # NB: this is in principle unneeded due to injection of permission in
+        # the model layer now.
         precache_permission_for_objects(
             self.request, 'launchpad.View', non_conjoined_slaves)
         precache_permission_for_objects(
             self.request, 'launchpad.View',
             [task.bug for task in non_conjoined_slaves])
+        # We want the assignees loaded as we show them in the milestone home
+        # page.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [bug.assigneeID for bug in non_conjoined_slaves],
+            need_validity=True))
         return non_conjoined_slaves
 
     @cachedproperty
@@ -284,9 +307,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The formatted count of bugs for this milestone."""
         count = len(self.bugtasks)
         if count == 1:
-            return '<strong>1 bug</strong>'
+            return '1 bug'
         else:
-            return '<strong>%d bugs</strong>' % count
+            return '%d bugs' % count
 
     @property
     def bugtask_status_counts(self):
@@ -298,9 +321,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
         if count == 1:
-            return '<strong>1 blueprint</strong>'
+            return '1 blueprint'
         else:
-            return '<strong>%d blueprints</strong>' % count
+            return '%d blueprints' % count
 
     @property
     def specification_status_counts(self):

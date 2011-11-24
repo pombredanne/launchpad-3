@@ -29,5 +29,5 @@ if __name__ == '__main__':
     script = UpdateBugTaskTargetNameCaches(
         'launchpad-targetnamecacheupdater',
         dbuser=config.targetnamecacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=False)
+    script.lock_and_run()
 

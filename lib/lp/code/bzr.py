@@ -20,38 +20,38 @@ import lp.codehosting
 
 from bzrlib.branch import (
     BranchReferenceFormat,
-    BzrBranchFormat4,
     BzrBranchFormat5,
     BzrBranchFormat6,
     BzrBranchFormat7,
     )
-from bzrlib.bzrdir import (
-    BzrDirFormat4,
-    BzrDirFormat5,
-    BzrDirFormat6,
-    BzrDirMetaFormat1,
-    )
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
     )
-from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
-from bzrlib.repofmt.knitrepo import (
-    RepositoryFormatKnit1,
-    RepositoryFormatKnit3,
-    RepositoryFormatKnit4,
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.bzrdir import (
+    BzrDirFormat4,
+    BzrDirFormat5,
+    BzrDirFormat6,
     )
-from bzrlib.repofmt.pack_repo import (
+from bzrlib.plugins.weave_fmt.repository import (
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+from bzrlib.repofmt.knitpack_repo import (
     RepositoryFormatKnitPack1,
     RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4,
     RepositoryFormatKnitPack5,
     )
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4,
-    RepositoryFormat5,
-    RepositoryFormat6,
-    RepositoryFormat7,
+from bzrlib.repofmt.knitrepo import (
+    RepositoryFormatKnit1,
+    RepositoryFormatKnit3,
+    RepositoryFormatKnit4,
     )
 from lazr.enum import (
     DBEnumeratedType,
@@ -213,6 +213,11 @@ class RepositoryFormat(BazaarFormatEnum):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_DEV_8 = DBItem(306,
+        "Bazaar development format 8\n",
+        "2a repository format with support for nested trees.\n"
+        )
+
     BZR_CHK1 = DBItem(400,
         "Bazaar development format - group compression and chk inventory"
         " (needs bzr.dev from 1.14)\n",
@@ -269,6 +274,7 @@ CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.BZR_DEV_1_SUBTREE,
     RepositoryFormat.BZR_DEV_2,
     RepositoryFormat.BZR_DEV_2_SUBTREE,
+    RepositoryFormat.BZR_DEV_8,
     RepositoryFormat.BZR_CHK1,
     RepositoryFormat.BZR_CHK2,
     RepositoryFormat.BZR_CHK_2A)

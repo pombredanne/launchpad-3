@@ -4,17 +4,14 @@ Language Pack Exports
 Launchpad has a way to export all distribution series translations in a
 tarball to provide language packs.
 
-Some initialisation tasks:
+Some initialization tasks:
 
     >>> import datetime
     >>> import pytz
-    >>> import sys
-    >>> import traceback
     >>> import transaction
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.helpers import string_to_tarfile
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.translations.scripts.language_pack import (
     ...    export_language_pack)
     >>> from canonical.database.sqlbase import flush_database_caches
@@ -140,7 +137,7 @@ Get the Grumpy distro series.
     >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
 
 
-Sample data initialisation
+Sample data initialization
 ..........................
 
 We need to import an XPI template and a translation to see those files
@@ -285,7 +282,7 @@ Create a PO template and put a single message set in it.
     ...     owner=mark, languagepack=True, path='po/test.pot',
     ...     header=pot_header)
     >>> potmsgset = template.createMessageSetFromText(u'blah', None)
-    >>> potmsgset.setSequence(template, 1)
+    >>> item = potmsgset.setSequence(template, 1)
 
 We set the template last update date to the oldest date we are going to
 play with, so it doesn't affect translations export.

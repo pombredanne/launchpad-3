@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -69,6 +70,13 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
         bug_supervisor = data['bug_supervisor']
         self.changeBugSupervisor(bug_supervisor)
         if bug_supervisor is None:
-            self.request.response.addNotification(
+            message = (
                 "Successfully cleared the bug supervisor. "
                 "You can set the bug supervisor again at any time.")
+        else:
+            message = structured(
+                'A bug mail subscription was created for the bug supervisor. '
+                'You can <a href="%s">edit bug mail</a> '
+                'to change which notifications will be sent.',
+                canonical_url(self.context, view_name='+subscriptions'))
+        self.request.response.addNotification(message)

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -55,8 +55,13 @@
         />
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
-        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        provides="lazr.restful.interfaces.IWebBrowserOriginatingRequest"
         factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
+        />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="lazr.restful.interfaces.INotificationsProvider"
+        factory="canonical.launchpad.webapp.interfaces.INotificationRequest"
         />
 
     <!-- lazr.batchnavigator hook -->
@@ -245,7 +250,7 @@
     <browser:page
         for="*"
         name="bag"
-        template="../templates/launchbag-debug.pt"
+        template="templates/launchbag-debug.pt"
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
@@ -255,13 +260,13 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
 
@@ -302,28 +307,28 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
@@ -344,13 +349,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
-        />
-
-
-    <!-- Confirm the database is the correct revision level -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.database.revision.confirm_dbrevision_on_startup"
         />
 
     <!-- Confirm that no main thread event handlers use the connection cache -->
@@ -387,17 +385,17 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.VocabularyPickerWidget"
+      factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <!-- Define the widget used by PersonChoice fields. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for="lp.services.fields.PublicPersonChoice
+      for="lp.services.fields.PersonChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.popup.PersonPickerWidget"
+      factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
 
@@ -407,7 +405,7 @@
       for="zope.schema.interfaces.IChoice
         lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />
 
@@ -434,6 +432,25 @@
         provides="zope.traversing.interfaces.ITraversable" for="*"
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
+
+    <!-- Expose LaunchpadView methods. -->
+    <class class="canonical.launchpad.webapp.publisher.LaunchpadView">
+      <allow attributes="getCacheJson initialize" />
+    </class>
+
+    <!-- Create a namespace to render the model of any LaunchpadView-->
+    <view
+        name="model" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.JsonModelNamespaceView"
+        permission="zope.Public"
+        />
+
+    <class class="canonical.launchpad.webapp.namespace.JsonModelNamespaceView">
+        <allow
+          attributes="__call__"
+          interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+    </class>
 
     <!-- Registrations to support +haproxy status url. -->
     <browser:page

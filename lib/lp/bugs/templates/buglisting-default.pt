@@ -10,6 +10,58 @@
 <metal:block fill-slot="head_epilogue">
   <meta condition="not: view/should_show_bug_information"
         name="robots" content="noindex,nofollow" />
+
+    <tal:comment replace="nothing">
+        The javascript below should only be executed (or indeed even exist)
+        when the bug subscription links exist. They don't exist on the
+        advanced search form, so we don't show the js for that case.
+    </tal:comment>
+    <script type="text/javascript"
+      tal:condition="not: view/shouldShowAdvancedForm">
+    LPS.use('lp.registry.structural_subscription', function(Y) {
+        Y.on('domready', function() {
+            Y.lp.registry.structural_subscription.setup(
+                {content_box: "#structural-subscription-content-box"});
+        });
+    });
+  </script>
+  <script type="text/javascript"
+    tal:define="
+      show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
+      advanced_search view/shouldShowAdvancedForm"
+    tal:condition="python: show_new_listings and not advanced_search">
+    LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
+      function(Y) {
+        Y.on('domready', function() {
+            var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
+            var orderby = new Y.lp.ordering.OrderByBar({
+                srcNode: Y.one('#bugs-orderby'),
+                sort_keys: [
+                    ['id', 'Bug number'],
+                    ['title', 'Bug title'],
+                    ['importance', 'Importance'],
+                    ['status', 'Status'],
+                    ['heat', 'Bug heat']
+                ],
+                active: 'importance',
+                sort_order: 'desc',
+                config_slot: true
+            });
+            orderby.render();
+            Y.on('orderbybar:sort', function(e) {
+                navigator.first_batch(e);
+            });
+            var config_node = orderby.get('config_node');
+            var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
+                srcNode: config_node
+            });
+            list_util.render();
+            Y.on('buglisting-config-util:fields-changed', function(e) {
+                navigator.change_fields(list_util.get('field_visibility'));
+            });
+        });
+    });
+  </script>
 </metal:block>
 
 <body>
@@ -48,11 +100,6 @@
         </tal:has_products>
       </tal:is_project_group>
 
-        <h1
-          tal:condition="view/shouldShowAdvancedForm"
-          tal:content="view/getAdvancedSearchPageHeading"
-        >Bugs in Fooix: Advanced search</h1>
-
         <tal:do_not_show_advanced_form
           condition="not: view/shouldShowAdvancedForm">
           <div tal:define="batch_navigator view/search">
@@ -66,6 +113,9 @@
              use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
         </tal:show_advanced_form>
 
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
+      </div>
 
     </div>
     <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"

@@ -6,19 +6,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
-    celebrity_logged_in,
     login_celebrity,
     login_person,
     person_logged_in,
@@ -30,33 +24,70 @@ from lp.testing.views import (
     )
 
 
-class TestRequestPeopleMergeView(TestCaseWithFactory):
+class TestValidatingMergeView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestRequestPeopleMergeView, self).setUp()
+        super(TestValidatingMergeView, self).setUp()
         self.person_set = getUtility(IPersonSet)
         self.dupe = self.factory.makePerson(name='dupe')
-        self.target = self.factory.makeTeam(name='target')
+        self.target = self.factory.makePerson(name='target')
+
+    def getForm(self, dupe_name=None):
+        if dupe_name is None:
+            dupe_name = self.dupe.name
+        return {
+            'field.dupe_person': dupe_name,
+            'field.target_person': self.target.name,
+            'field.actions.continue': 'Continue',
+            }
 
     def test_cannot_merge_person_with_ppas(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
         archive = self.dupe.createPPA()
         login_celebrity('registry_experts')
-        form = {
-            'field.dupe_person': self.dupe.name,
-            'field.target_person': self.target.name,
-            'field.actions.continue': 'Continue',
-            }
         view = create_initialized_view(
-            self.person_set, '+requestmerge', form=form)
+            self.person_set, '+requestmerge', form=self.getForm())
         self.assertEqual(
             [u"dupe has a PPA that must be deleted before it can be "
               "merged. It may take ten minutes to remove the deleted PPA's "
               "files."],
             view.errors)
+
+    def test_cannot_merge_person_with_itself(self):
+        # A IPerson cannot be merged with itself.
+        login_person(self.target)
+        form = self.getForm(dupe_name=self.target.name)
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=form)
+        self.assertEqual(
+            ["You can't merge target into itself."], view.errors)
+
+    def test_cannot_merge_dupe_person_with_an_existing_merge_job(self):
+        # A merge cannot be requested for an IPerson if it there is a job
+        # queued to merge it into another IPerson.
+        job_source = getUtility(IPersonMergeJobSource)
+        duplicate_job = job_source.create(
+            from_person=self.dupe, to_person=self.target)
+        login_person(self.target)
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            ["dupe is already queued for merging."], view.errors)
+
+    def test_cannot_merge_target_person_with_an_existing_merge_job(self):
+        # A merge cannot be requested for an IPerson if it there is a job
+        # queued to merge it into another IPerson.
+        job_source = getUtility(IPersonMergeJobSource)
+        duplicate_job = job_source.create(
+            from_person=self.target, to_person=self.dupe)
+        login_person(self.target)
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            ["target is already queued for merging."], view.errors)
 
 
 class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
@@ -138,53 +169,6 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         return create_initialized_view(
             self.person_set, '+adminteammerge', form=form)
 
-    def test_merge_team_with_inactive_mailing_list(self):
-        # Inactive lists do not block merges.
-        mailing_list = self.factory.makeMailingList(
-            self.dupe_team, self.dupe_team.teamowner)
-        mailing_list.deactivate()
-        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
-
-    def test_merge_team_with_email_address(self):
-        # Team email addresses are not transferred.
-        self.factory.makeEmail(
-            "del@ex.dom", self.dupe_team, email_status=EmailAddressStatus.NEW)
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
-        emails = getUtility(IEmailAddressSet).getByPerson(self.target_team)
-        self.assertEqual(0, emails.count())
-
-    def test_merge_team_with_super_teams_into_registry_experts(self):
-        # Super team memberships are removed.
-        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
-        super_team = self.factory.makeTeam()
-        login_celebrity('admin')
-        self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_person(self.dupe_team.teamowner)
-        form = {
-            'field.dupe_person': self.dupe_team.name,
-            'field.target_person': self.target_team.name,
-            'field.actions.merge': 'Merge',
-            }
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
-
-    def test_owner_delete_team_with_super_teams(self):
-        # Super team memberships are removed.
-        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
-        super_team = self.factory.makeTeam()
-        login_celebrity('admin')
-        self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_person(self.dupe_team.teamowner)
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
-
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
@@ -197,18 +181,6 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
               "merged. It may take ten minutes to remove the deleted PPA's "
               "files."],
             view.errors)
-
-    def test_registry_delete_team_with_super_teams(self):
-        # Registry admins can delete teams with super team memberships.
-        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
-        super_team = self.factory.makeTeam()
-        # Use admin to avoid the team invitation dance. The Registry admin
-        # is logged back in.
-        with celebrity_logged_in('admin'):
-            self.dupe_team.join(super_team, super_team.teamowner)
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
 
 
 class TestAdminPeopleMergeView(TestCaseWithFactory):

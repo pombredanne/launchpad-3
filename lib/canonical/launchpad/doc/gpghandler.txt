@@ -288,11 +288,11 @@ keyserver web interface.
 IGPGHandler also allow callsites to upload the public part of a local
 key to the configuration keyserver.
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 Upload the just-generated key to the keyserver so that we can reset
 the local keyring.
@@ -315,21 +315,18 @@ An attempt to upload an unknown key will fail.
     >>> gpghandler.uploadPublicKey('F' * 40)
     Traceback (most recent call last):
     ...
-    GPGKeyNotFoundError: No GPG key found with the given content:
-    ...
+    GPGKeyDoesNotExistOnServer: GPG key
+    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF does not exist on the keyserver.
 
 Uploading the same key more than once is fine, it is handled on the
 keyserver side.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
 
-Let's shut zeca down.
-
-    >>> z.tearDown()
-
 An attempt to upload a key when the keyserver is unreachable results
 in a error.
 
+    >>> tac.tearDown()
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
     Traceback (most recent call last):
     ...

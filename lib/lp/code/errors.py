@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchCannotBePrivate',
@@ -14,12 +15,15 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchHasPendingWrites',
     'BranchTargetError',
     'BranchTypeError',
     'BuildAlreadyPending',
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotUpgradeBranch',
+    'CannotUpgradeNonHosted',
     'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -32,23 +36,33 @@ __all__ = [
     'NoSuchBranch',
     'PrivateBranchRecipe',
     'ReviewNotPending',
+    'StaleLastMirrored',
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
+    'UpdatePreviewDiffNotReady',
+    'UpgradePending',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
 
-from lazr.restful.declarations import webservice_error
+import httplib
+
+from bzrlib.plugins.builder.recipe import RecipeParseError
+from lazr.restful.declarations import error_status
 
 from lp.app.errors import NameLookupFailed
+
+# Annotate the RecipeParseError's with a 400 webservice status.
+error_status(httplib.BAD_REQUEST)(RecipeParseError)
 
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
 
@@ -57,10 +71,9 @@ class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
 
+@error_status(httplib.CONFLICT)
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
-
-    webservice_error(400)
 
     def __init__(self, existing_branch):
         # XXX: TimPenhey 2009-07-12 bug=405214: This error
@@ -81,10 +94,20 @@ class BranchExists(BranchCreationException):
         BranchCreationException.__init__(self, message)
 
 
+class BranchHasPendingWrites(Exception):
+    """Raised if the branch can't be processed because a write is pending.
+
+    In this case the operation can usually be retried in a while.
+
+    See bug 612171.
+    """
+
+
 class BranchTargetError(Exception):
     """Raised when there is an error determining a branch target."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
 
@@ -97,6 +120,7 @@ class BranchCreationForbidden(BranchCreationException):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """Branch creator is not a member of the owner team.
 
@@ -104,17 +128,14 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     the branch to a team that they are not a member of.
     """
 
-    webservice_error(400)
 
-
+@error_status(httplib.BAD_REQUEST)
 class BranchCreatorNotOwner(BranchCreationException):
     """A user cannot create a branch belonging to another user.
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to another user.
     """
-
-    webservice_error(400)
 
 
 class BranchTypeError(Exception):
@@ -162,6 +183,36 @@ class CannotHaveLinkedBranch(InvalidBranchException):
     _msg_template = "%s cannot have linked branches."
 
 
+class CannotUpgradeBranch(Exception):
+    """"Made for subclassing."""
+
+    def __init__(self, branch):
+        super(CannotUpgradeBranch, self).__init__(
+            self._msg_template % branch.bzr_identity)
+        self.branch = branch
+
+
+class AlreadyLatestFormat(CannotUpgradeBranch):
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = (
+        'Branch %s is in the latest format, so it cannot be upgraded.')
+
+
+class CannotUpgradeNonHosted(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a non-Hosted branch."""
+
+    _msg_template = 'Cannot upgrade non-hosted branch %s'
+
+
+class UpgradePending(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = 'An upgrade is already in progress for branch %s.'
+
+
 class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
@@ -173,10 +224,17 @@ class InvalidBranchMergeProposal(Exception):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
-    webservice_error(400) #Bad request.
+    def __init__(self, existing_proposal):
+        super(BranchMergeProposalExists, self).__init__(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s that is still active.' %
+                (existing_proposal.source_branch.displayname,
+                 existing_proposal.target_branch.displayname))
+        self.existing_proposal = existing_proposal
 
 
 class InvalidNamespace(Exception):
@@ -204,6 +262,25 @@ class NoSuchBranch(NameLookupFailed):
     _message_prefix = "No such branch"
 
 
+class StaleLastMirrored(Exception):
+    """Raised when last_mirrored_id is out of date with on-disk value."""
+
+    def __init__(self, db_branch, info):
+        """Constructor.
+
+        :param db_branch: The database branch.
+        :param info: A dict of information about the branch, as produced by
+            lp.codehosting.bzrutils.get_branch_info
+        """
+        self.db_branch = db_branch
+        self.info = info
+        Exception.__init__(
+            self,
+            'Database last_mirrored_id %s does not match on-disk value %s' %
+            (db_branch.last_mirrored_id, self.info['last_revision_id']))
+
+
+@error_status(httplib.BAD_REQUEST)
 class PrivateBranchRecipe(Exception):
 
     def __init__(self, branch):
@@ -216,6 +293,10 @@ class PrivateBranchRecipe(Exception):
 
 class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
+
+
+class UpdatePreviewDiffNotReady(Exception):
+    """Raised if the the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):
@@ -239,10 +320,9 @@ class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class CodeImportNotInReviewedState(Exception):
     """Raised when the user requests an import of a non-automatic import."""
-
-    webservice_error(400)
 
 
 class CodeImportAlreadyRequested(Exception):
@@ -253,12 +333,12 @@ class CodeImportAlreadyRequested(Exception):
         self.requesting_user = requesting_user
 
 
+@error_status(httplib.BAD_REQUEST)
 class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
-    webservice_error(400)
 
-
+@error_status(httplib.BAD_REQUEST)
 class TooNewRecipeFormat(Exception):
     """The format of the recipe supplied was too new."""
 
@@ -268,6 +348,7 @@ class TooNewRecipeFormat(Exception):
         self.newest_supported = newest_supported
 
 
+@error_status(httplib.BAD_REQUEST)
 class RecipeBuildException(Exception):
 
     def __init__(self, recipe, distroseries, template):
@@ -280,8 +361,6 @@ class RecipeBuildException(Exception):
 class TooManyBuilds(RecipeBuildException):
     """A build was requested that exceeded the quota."""
 
-    webservice_error(400)
-
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
@@ -292,8 +371,6 @@ class TooManyBuilds(RecipeBuildException):
 class BuildAlreadyPending(RecipeBuildException):
     """A build was requested when an identical build was already pending."""
 
-    webservice_error(400)
-
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
@@ -303,18 +380,15 @@ class BuildAlreadyPending(RecipeBuildException):
 class BuildNotAllowedForDistro(RecipeBuildException):
     """A build was requested against an unsupported distroseries."""
 
-    webservice_error(400)
-
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidMergeQueueConfig(Exception):
     """The config specified is not a valid JSON string."""
-
-    webservice_error(400)
 
     def __init__(self):
         message = ('The configuration specified is not a valid JSON string.')

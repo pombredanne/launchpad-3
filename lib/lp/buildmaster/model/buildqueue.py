@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -46,9 +46,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -208,6 +206,11 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.logtail = None
         self.specific_job.jobReset()
+
+    def cancel(self):
+        """See `IBuildQueue`."""
+        self.specific_job.jobCancel()
+        self.destroySelf()
 
     def setDateStarted(self, timestamp):
         """See `IBuildQueue`."""
@@ -458,7 +461,7 @@ class BuildQueue(SQLBase):
             # the delays should be averaged/divided by the number of jobs.
             denominator = (jobs if jobs < builders else builders)
             if denominator > 1:
-                duration = int(duration/float(denominator))
+                duration = int(duration / float(denominator))
 
             sum_of_delays += duration
 

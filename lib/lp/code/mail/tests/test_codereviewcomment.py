@@ -1,17 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
 
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
@@ -20,6 +16,8 @@ from lp.code.enums import (
     CodeReviewVote,
     )
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.services.mail.sendmail import format_address
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     login,
     login_person,
@@ -122,7 +120,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
-            mailer._getSubject(email=None))
+            mailer._getSubject(email=None, recipient=subscriber))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
@@ -184,7 +182,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '-- \n'
             'I am a wacky guy.\n')
         branch_name = mailer.merge_proposal.source_branch.bzr_identity
-        body = mailer._getBody(subscriber)
+        body = mailer._getBody(subscriber.preferredemail.email, subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
@@ -197,7 +195,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -207,7 +205,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve dbtag', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def makeComment(self, email_message):
@@ -256,7 +254,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         attachment = message.get_payload()[1]
         self.assertEqual(
             'This is a diff.', attachment.get_payload(decode=True))
-
 
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.
@@ -323,6 +320,3 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
         self.assertEqual([mailer.merge_proposal.address], to)
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

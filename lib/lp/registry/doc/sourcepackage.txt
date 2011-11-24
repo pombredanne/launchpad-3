@@ -131,13 +131,11 @@ upload, even though it gets changed in the publishing record.
     >>> from lp.soyuz.model.component import Component
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
-    >>> from canonical.launchpad.ftests import syncUpdate
 
     >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
-    >>> syncUpdate(latest_publishing)
     >>> flush_database_caches()
 
     >>> for release in firefox_warty.distinctreleases:
@@ -153,7 +151,6 @@ component. If there are no PUBLISHED records, None is returned.
     >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
-    >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
 
@@ -191,7 +188,6 @@ See bug #179028 for further information.
 
     >>> from datetime import timedelta
     >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
@@ -233,7 +229,7 @@ method on a distribution:
     \u201cmozilla-firefox\u201d package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
 
     >>> ubuntu_firefox.distribution == ubuntu
     True
@@ -321,7 +317,7 @@ to a product series, the source package does have a product series.
 
     >>> user = factory.makePerson()
     >>> a52dec_series = factory.makeProductSeries(name='ratty')
-    >>> PackagingUtil().createPackaging(
+    >>> packaging = PackagingUtil().createPackaging(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary,
@@ -340,10 +336,12 @@ to a product series, the source package does have a product series.
 Packaging entries can be deleted using PackagingUtil.deletePackaging. That
 also removes the source package product series.
 
-    >>> PackagingUtil().deletePackaging(
-    ...     productseries=a52dec_series,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=hoary)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(user):
+    ...     PackagingUtil().deletePackaging(
+    ...         productseries=a52dec_series,
+    ...         sourcepackagename=a52dec,
+    ...         distroseries=hoary)
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
@@ -381,19 +379,8 @@ be more like the bug number linkification just below.
     <BLANKLINE>
 
 The view will linkify bug numbers of the format "LP: #number" in the
-changelog if number is a valid bug ID (also see Soyuz page tests 24
--sourcepackage-changelog.txt).  The changelog() method calls a method
-_linkify_bug_numbers() to do this.
-
-Zero or more spaces may appear between the ":" and the "#".
-
-    >>> from lp.soyuz.browser.sourcepackagerelease import (
-    ...     linkify_bug_numbers)
-    >>> linkify_bug_numbers("LP: #10")
-    'LP: <a href="/bugs/10">#10</a>'
-
-More complete examples of the bug linkification can be found in the doctest
-displaying-paragraphs-of-text.
+changelog if number is a valid bug ID (see Soyuz page tests 24
+-sourcepackage-changelog.txt).
 
 
 Comparing Sourcepackages

@@ -7,7 +7,6 @@
 
 # DO NOT set LPCONFIG here, it should come from the crontab or the shell.
 # Define common variables.
-LPCURRENT=/srv/launchpad.net/codelines/current
 PPAROOT=/srv/launchpad.net/ppa-archive
 P3AROOT=/srv/launchpad.net/private-ppa-archive
 LOCKFILE=$PPAROOT/.lock

@@ -141,8 +141,7 @@ SourceForge instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
@@ -217,9 +216,6 @@ been checked.
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     sync(bug_watch)
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

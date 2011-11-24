@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     call_with,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     REQUEST_USER,
     )
@@ -89,6 +90,7 @@ class ISetLocation(Interface):
         longitude=copy_field(IHasLocation['longitude'], required=True),
         time_zone=copy_field(IHasLocation['time_zone'], required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def setLocation(latitude, longitude, time_zone, user):
         """Specify the location and time zone of a person."""
 

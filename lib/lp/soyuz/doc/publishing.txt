@@ -30,12 +30,14 @@ Verify if the object follows its interface contracts:
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    ...     IDistributionSourcePackageRelease)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackagePublishingHistory,
     ...     )
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -112,7 +114,7 @@ The pmount source has no packageupload in the sampledata:
 
 The iceweasel source has good data:
 
-    >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
+    >>> pub = spph.archive.getPublishedSources(name="iceweasel").first()
     >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
@@ -362,7 +364,7 @@ Files published are accessible via the files property:
     >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
     ...   pub_file.archive_url) for pub_file in spph.files]
     [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
-      u'http://ftpmaster.internal/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+      u'http://archive.launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
 Deletion and obsolescence
@@ -768,17 +770,8 @@ Perform the source-only copy.
     >>> ppa_copied_source = SourcePackagePublishingHistory.get(
     ...     ppa_copied_source.id)
 
-Since it's a rebuild we can immediately create the corresponding
-builds.
-
-    >>> builds = ppa_copied_source.createMissingBuilds()
-
-    >>> for build in builds:
-    ...     print build.title
-    i386 build of jkl 666 in ubuntutest hoary-test RELEASE
-
-If createMissingBuilds get called again on either sources no builds
-will get created.
+createMissingBuilds will not create any builds because this is an
+intra-archive copy:
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -793,8 +786,8 @@ from breezy-autotest and test if the build algorithm copes with it.
 This simulates a rebuild in of the same source in a more recent
 distroseries, like rebuilding SRUs for constant sources.
 
-    >>> breezy_autotest.parent_series = None
-    >>> hoary_test.parent_series = breezy_autotest
+    >>> breezy_autotest.previous_series = None
+    >>> hoary_test.previous_series = breezy_autotest
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -805,8 +798,8 @@ distroseries, like rebuilding SRUs for constant sources.
 Now, let's check the opposite, as if the copy was from a more recent
 distroseries to a older one, like a backport rebuild.
 
-    >>> breezy_autotest.parent_series = hoary_test
-    >>> hoary_test.parent_series = None
+    >>> breezy_autotest.previous_series = hoary_test
+    >>> hoary_test.previous_series = None
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -910,7 +903,8 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and IBinaryPackagePublishingHistory
 
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackageFilePublishing
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackageFilePublishing)
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
     >>> print bpph.displayname
@@ -923,7 +917,6 @@ Generating respective "Packages" stanzas:
 
     >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
     Package: mozilla-firefox
-    Source: mozilla-firefox
     Priority: important
     Section: editors
     Maintainer: Mark Shuttleworth <mark@canonical.com>
@@ -952,8 +945,11 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
     [u'mozilla-firefox_0.9_i386.deb']
 
+    >>> debian = bpph.distroarchseries.distroseries.distribution
+    >>> discard = factory.makePublisherConfig(
+    ...     distribution=debian, base_url=u"http://archive.launchpad.dev")
     >>> [pub_file.archive_url for pub_file in bpph.files]
-    [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+    [u'http://archive.launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
 Binary publishing records also have a download count, which contains
 the number of downloads of this binary package release in this archive.
@@ -1123,7 +1119,7 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    8
+    7
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
@@ -1177,7 +1173,7 @@ there were 8 sources and builds.
     >>> cprov_builds_new = publishing_set.getBuildsForSources(
     ...     cprov_sources_new)
     >>> cprov_builds_new.count()
-    9
+    8
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
@@ -1432,9 +1428,9 @@ The returned ResultSet element is tuple containing:
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
-    >>> cprov_sources = sorted(list(
+    >>> cprov_sources = sorted(
     ...     cprov.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.PUBLISHED)),
+    ...     status=PackagePublishingStatus.PUBLISHED),
     ...     key=operator.attrgetter('id'))
     >>> print len(cprov_sources)
     6
@@ -1477,15 +1473,6 @@ by one.
     >>> cprov_binaries.count()
     8
 
-Please note also that the source publishing records to be deleted must
-be passed as a list. Otherwise an exception will be raised.
-
-    >>> deleted = publishing_set.requestDeletion(
-    ...     tuple(cprov_sources[:2]), cprov, 'OOPS-934EC47')
-    Traceback (most recent call last):
-    ...
-    AssertionError: The 'sources' parameter must be a list.
-
 
 ArchiveSourcePublications
 =========================
@@ -1498,8 +1485,8 @@ All references related with the given set of source publications are
 fetch in a fixed number of queries (3) instead of varying according
 the size of the set (3 * N).
 
-     >>> from lp.soyuz.adapters.archivesourcepublication import (
-     ...     ArchiveSourcePublications)
+    >>> from lp.soyuz.adapters.archivesourcepublication import (
+    ...     ArchiveSourcePublications)
 
 We will use all published sources in Celso's PPA as our initial set.
 
@@ -1513,7 +1500,7 @@ We will use all published sources in Celso's PPA as our initial set.
     pmount 0.1-1 in warty
     pqr 666 in breezy-autotest
 
-We use the source publications to initialise
+We use the source publications to initialize
 `ArchiveSourcePublications`.
 
     >>> decorated_set = ArchiveSourcePublications(cprov_published_sources)
@@ -1587,11 +1574,9 @@ And the order is not the same than the original source set.
     Mismatch: ...
 
 We will check a little bit of the `ArchiveSourcePublications`
-internals. There are three essential methods to fetch distinct
+internals. There is one essential method to fetch distinct
 information to be cached in the decorated objects:
 
-  * getBuildsBySource;
-  * getUnpublishedBuildsBySource;
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1600,24 +1585,6 @@ a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
 can be quickly looked up when building `ArchiveSourcePublications`.
 
     >>> real_pub = cprov_published_sources[1]
-
-Builds by source.
-
-    >>> builds_by_source = decorated_set.getBuildsBySource()
-
-    >>> compare_ids(
-    ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
-    Matches
-
-Unpublished builds by source.
-
-    >>> unpublished_builds_by_source = (
-    ...     decorated_set.getUnpublishedBuildsBySource())
-
-    >>> compare_ids(
-    ...     real_pub.getUnpublishedBuilds(),
-    ...     unpublished_builds_by_source.get(real_pub, []))
-    Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
 source package publication to its corresponding .changes file (as a

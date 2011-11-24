@@ -1,4 +1,5 @@
-= Asking New Questions =
+Asking New Questions
+====================
 
 There are two paths available to a user to ask a new question. The first
 one involes two steps. First, go to the product or distribution for
@@ -26,7 +27,8 @@ Asking a new question requires logging in:
     Ask a question...
 
 
-== Get Help Online ==
+Get Help Online
+---------------
 
 The other way is by using the 'Get Help Online' menu item that is found
 in all GTK2 applications packaged for Ubuntu (and soon in QT
@@ -45,7 +47,8 @@ associated with the source package of the used application.
     Ask a question...
 
 
-== Searching for Similar FAQs and Questions ==
+Searching for Similar FAQs and Questions
+----------------------------------------
 
 Asking a new question is a two-step process. In the first step, the user
 enters a summary of his problem. Using that summary, a search
@@ -89,9 +92,8 @@ For now, use a closer search:
     >>> similar_questions = contents.find(id='similar-questions')
     >>> print extract_text(similar_questions).encode(
     ...     'ascii', 'backslashreplace')
-    Installation of Java Runtime Environment for Mozilla  (Answered)
-        posted on 2006-07-20 by  Sample Person
-        in ...mozilla-firefox... package in Ubuntu
+    8: Installation of Java Runtime Environment for Mozilla  (Answered)
+        posted on ... in ...mozilla-firefox... package in Ubuntu
     >>> similar_questions.a['href']
     u'http://answers.../ubuntu/+source/mozilla-firefox/+question/...'
 
@@ -101,7 +103,7 @@ mouse is left over the question's title.
     >>> import re
     >>> question_link = contents.find(
     ...     'a', text=re.compile('Installation of Java'))
-    >>> print question_link.findParent('tr')['title']
+    >>> print question_link.findParent('li')['title']
     <BLANKLINE>
     When opening http://www.gotomypc.com/ with Mozilla, a java run time
     ennvironment plugin is requested.
@@ -124,7 +126,8 @@ hovers on the FAQ's title:
     details.
 
 
-== Creating a New Question ==
+Creating a New Question
+-----------------------
 
 If the shown questions don't help the user, he may post a new question
 by filling in the 'Description' field. He may also edit the
@@ -158,11 +161,7 @@ redirect the user to the question page.
     ...     'Visiting a web page requiring java crashes firefox')
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Description').value = (
-    ... "I use Ubuntu on AMD64 and I've installed the blackdown java plugin\n"
-    ... "The plugin is displayed in about:plugins. When I visit\n"
-    ... "http://java.com/en/download/help/testvm.xml, the page loads ok and\n"
-    ... "shows my java version. But if I move the mouse on the page, firefox\n"
-    ... "crashes.\n")
+    ... "I use Ubuntu on AMD64 and firefox is slow.")
     >>> user_browser.getControl('Post Question').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
@@ -171,12 +170,7 @@ redirect the user to the question page.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'registration'))
-    Asked by No Privileges Person on ...
+    Asked by No Privileges Person ...
     >>> contents = find_main_content(user_browser.contents)
     >>> print extract_text(contents.find('div', 'report'))
     I use Ubuntu on AMD64 ...
-
-The user automatically got subscribed to this new question.
-
-    >>> find_tag_by_id(user_browser.contents, 'subscribers')
-    <div ...No Privileges Person...

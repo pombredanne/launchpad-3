@@ -30,8 +30,9 @@
 
             <td colspan="2">
               <fieldset id="mergeproposal-extra-options"
-                        class="collapsible collapsed">
+                        class="collapsible">
                 <legend>Extra options</legend>
+                <div class="unseen"><!-- hidden by default -->
                 <table class="extra-options">
 
                   <tal:widget define="widget nocall:view/widgets/commit_message">
@@ -49,6 +50,7 @@
 
 
                 </table>
+                </div>
               </fieldset>
             </td>
 

@@ -16,6 +16,14 @@ translation.
 
 Listing languages with translations is best checked with a helper method.
 
+    >>> def extract_link_info(container):
+    ...         link_tag = container.find('a')
+    ...         if link_tag:
+    ...             href = extract_link_from_tag(link_tag)
+    ...         else:
+    ...             href = ''
+    ...         return int(extract_text(container)), href
+
     >>> def print_language_stats(browser):
     ...     table = find_tag_by_id(browser.contents, 'languagestats')
     ...     if table is None:
@@ -27,10 +35,12 @@ Listing languages with translations is best checked with a helper method.
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
-    ...         untranslated = extract_text(cols[2])
-    ...         unreviewed = extract_text(cols[3])
-    ...         print "%-25s %13d %13d" % (
-    ...             language, int(untranslated), int(unreviewed))
+    ...         untranslated = extract_link_info(cols[2])
+    ...         unreviewed = extract_link_info(cols[3])
+    ...         print "%-25s %13d %13d\n" % (
+    ...             language, untranslated[0], unreviewed[0])
+    ...         print "Untranslated link: %s\n" % untranslated[1]
+    ...         print "Unreviewed link: %s\n" % unreviewed[1]
 
 When there are no translatable templates, series is considered as not
 being set up for translation.
@@ -62,7 +72,8 @@ translation.
     To start translating your project...
 
 With one translatable template (with fake stats for 10 messages), a listing
-of existing translations is shown.
+of existing translations is shown. Since there is only one template, each row
+count links to the correctly filtered PO file pages.
 
     >>> login('foo.bar@canonical.com')
     >>> pot = factory.makePOTemplate(
@@ -80,6 +91,8 @@ of existing translations is shown.
     >>> print_language_stats(browser)
     Language                   Untranslated    Unreviewed
     Serbian                               6             5
+    Untranslated link: /frobnicator/trunk/+pots/template1/sr/+translate?show=untranslated
+    Unreviewed link: /frobnicator/trunk/+pots/template1/sr/+translate?show=new_suggestions
 
 Since there is only one template, language link directly to PO file
 pages.
@@ -98,12 +111,15 @@ A product series can have more than one translatable template.
     >>> removeSecurityProxy(pot).messagecount = 5
     >>> logout()
 
-Statistics add up for untranslated messages.
+Statistics add up for untranslated messages. With more than one template the
+aggregated row numbers do not link anywhere.
 
     >>> browser.open(frobnicator_trunk_url)
     >>> print_language_stats(browser)
     Language                   Untranslated    Unreviewed
     Serbian                              11             5
+    Untranslated link:
+    Unreviewed link:
 
 With more than one template, link points to a product series per-language
 translations page.
@@ -195,8 +211,7 @@ owner (and so won't be able to change the project's settings) sees the
 notice but not the link to the project's settings.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet, TeamMembershipStatus)
@@ -299,7 +314,7 @@ release series should be translated.
 
     >>> login('admin@canonical.com')
     >>> distribution = factory.makeDistribution(name='earthian')
-    >>> distroseries = factory.makeDistroRelease(
+    >>> distroseries = factory.makeDistroSeries(
     ...     name='1.4', distribution=distribution)
     >>> logout()
     >>> print distribution.translation_focus
@@ -311,7 +326,7 @@ release series should be translated.
 If focus is set, nice explanatory text is displayed.
 
     >>> login('admin@canonical.com')
-    >>> focus_series = factory.makeDistroRelease(
+    >>> focus_series = factory.makeDistroSeries(
     ...     name='1.6', distribution=distribution)
     >>> distribution.translation_focus = focus_series
     >>> logout()

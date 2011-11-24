@@ -8,12 +8,17 @@
   <include package=".features" />
   <include package=".fields" />
   <include package=".geoip" />
+  <include package=".googlesearch" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
+  <include package=".longpoll" />
   <include package=".memcache" />
+  <include package=".messages" />
+  <include package=".messaging" />
   <include package=".openid" />
   <include package=".profile" />
   <include package=".salesforce" />
   <include package=".scripts" />
+  <include package=".session" />
   <include package=".worlddata" />
 </configure>

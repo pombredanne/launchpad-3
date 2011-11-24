@@ -18,8 +18,8 @@ from cscvs.dircompare import path
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.validators.name import invalid_name_pattern
-from canonical.launchpad.validators.version import sane_version
+from lp.app.validators.name import invalid_name_pattern
+from lp.app.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.interfaces.series import SeriesStatus
@@ -104,7 +104,7 @@ class ProductReleaseFinder:
 
         self.ztm.begin()
         products = getUtility(IProductSet)
-        for product in products:
+        for product in products.get_all_active(eager_load=False):
             filters = []
 
             for series in product.series:

@@ -62,6 +62,7 @@ class Category:
         self.title = title
         self.regexp = regexp
         self._compiled_regexp = re.compile(regexp, re.I | re.X)
+        self.partition = False
 
     def match(self, request):
         """Return true when the request match this category."""
@@ -275,12 +276,20 @@ class Stats:
         return self.mean + 3*self.std
 
     @property
-    def relative_histogram(self):
-        """Return an histogram where the frequency is relative."""
-        if self.histogram:
-            return [[x, float(f)/self.total_hits] for x, f in self.histogram]
-        else:
-            return None
+    def ninetyninth_percentile_sqltime(self):
+        """SQL time under which 99% of requests are rendered.
+
+        This is estimated as 3 std deviations from the mean.
+        """
+        return self.mean_sqltime + 3*self.std_sqltime
+
+    @property
+    def ninetyninth_percentile_sqlstatements(self):
+        """Number of SQL statements under which 99% of requests are rendered.
+
+        This is estimated as 3 std deviations from the mean.
+        """
+        return self.mean_sqlstatements + 3*self.std_sqlstatements
 
     def text(self):
         """Return a textual version of the stats."""
@@ -304,15 +313,14 @@ class OnlineStats(Stats):
     with minimum storage space.
     """
 
-    def __init__(self, histogram_width):
+    def __init__(self, histogram_width, histogram_resolution):
         self.time_stats = OnlineStatsCalculator()
         self.time_median_approximate = OnlineApproximateMedian()
         self.sql_time_stats = OnlineStatsCalculator()
         self.sql_time_median_approximate = OnlineApproximateMedian()
         self.sql_statements_stats = OnlineStatsCalculator()
         self.sql_statements_median_approximate = OnlineApproximateMedian()
-        self._histogram = [
-            [x, 0] for x in range(histogram_width)]
+        self.histogram = Histogram(histogram_width, histogram_resolution)
 
     @property
     def total_hits(self):
@@ -366,13 +374,6 @@ class OnlineStats(Stats):
     def std_sqlstatements(self):
         return self.sql_statements_stats.std
 
-    @property
-    def histogram(self):
-        if self.time_stats.count:
-            return self._histogram
-        else:
-            return None
-
     def update(self, request):
         """Update the stats based on request."""
         self.time_stats.update(request.app_seconds)
@@ -381,9 +382,7 @@ class OnlineStats(Stats):
         self.sql_time_median_approximate.update(request.sql_seconds)
         self.sql_statements_stats.update(request.sql_statements)
         self.sql_statements_median_approximate.update(request.sql_statements)
-
-        idx = int(min(len(self.histogram)-1, request.app_seconds))
-        self.histogram[idx][1] += 1
+        self.histogram.update(request.app_seconds)
 
     def __add__(self, other):
         """Merge another OnlineStats with this one."""
@@ -396,9 +395,118 @@ class OnlineStats(Stats):
         results.sql_statements_stats += other.sql_statements_stats
         results.sql_statements_median_approximate += (
             other.sql_statements_median_approximate)
-        for i, (n, f) in enumerate(other._histogram):
-            results._histogram[i][1] += f
+        results.histogram = self.histogram + other.histogram
         return results
+
+
+class Histogram:
+    """A simple object to compute histogram of a value."""
+
+    @staticmethod
+    def from_bins_data(data):
+        """Create an histogram from existing bins data."""
+        assert data[0][0] == 0, "First bin should start at zero."
+
+        hist = Histogram(len(data), data[1][0])
+        for idx, bin in enumerate(data):
+            hist.count += bin[1]
+            hist.bins[idx][1] = bin[1]
+
+        return hist
+
+    def __init__(self, bins_count, bins_size):
+        """Create a new histogram.
+
+        The histogram will count the frequency of values in bins_count bins
+        of bins_size each.
+        """
+        self.count = 0
+        self.bins_count = bins_count
+        self.bins_size = bins_size
+        self.bins = []
+        for x in range(bins_count):
+            self.bins.append([x*bins_size, 0])
+
+    @property
+    def bins_relative(self):
+        """Return the bins with the frequency expressed as a ratio."""
+        return [[x, float(f)/self.count] for x, f in self.bins]
+
+    def update(self, value):
+        """Update the histogram for this value.
+
+        All values higher than the last bin minimum are counted in that last
+        bin.
+        """
+        self.count += 1
+        idx = int(min(self.bins_count-1, value / self.bins_size))
+        self.bins[idx][1] += 1
+
+    def __repr__(self):
+        """A string representation of this histogram."""
+        return "<Histogram %s>" % self.bins
+
+    def __eq__(self, other):
+        """Two histogram are equals if they have the same bins content."""
+        if not isinstance(other, Histogram):
+            return False
+
+        if self.bins_count != other.bins_count:
+            return False
+
+        if self.bins_size != other.bins_size:
+            return False
+
+        for idx, other_bin in enumerate(other.bins):
+            if self.bins[idx][1] != other_bin[1]:
+                return False
+
+        return True
+
+    def __add__(self, other):
+        """Add the frequency of the other histogram to this one.
+
+        The resulting histogram has the same bins_size than this one.
+        If the other one has a bigger bins_size, we'll assume an even
+        distribution and distribute the frequency across the smaller bins. If
+        it has a lower bin_size, we'll aggregate its bins into the larger
+        ones. We only support different bins_size if the ratio can be
+        expressed as the ratio between 1 and an integer.
+
+        The resulting histogram is as wide as the widest one.
+        """
+        ratio = float(other.bins_size) / self.bins_size
+        bins_count = max(self.bins_count, math.ceil(other.bins_count * ratio))
+        total = Histogram(int(bins_count), self.bins_size)
+        total.count = self.count + other.count
+
+        # Copy our bins into the total
+        for idx, bin in enumerate(self.bins):
+            total.bins[idx][1] = bin[1]
+
+        assert int(ratio) == ratio or int(1/ratio) == 1/ratio, (
+            "We only support different bins size when the ratio is an "
+            "integer to 1: "
+            % ratio)
+
+        if ratio >= 1:
+            # We distribute the frequency across the bins.
+            # For example. if the ratio is 3:1, we'll add a third
+            # of the lower resolution bin to 3 of the higher one.
+            for other_idx, bin in enumerate(other.bins):
+                f = bin[1] / ratio
+                start = int(math.floor(other_idx * ratio))
+                end = int(start + ratio)
+                for idx in range(start, end):
+                    total.bins[idx][1] += f
+        else:
+            # We need to collect the higher resolution bins into the
+            # corresponding lower one.
+            for other_idx, bin in enumerate(other.bins):
+                idx = int(other_idx * ratio)
+                total.bins[idx][1] += bin[1]
+
+        return total
 
 
 class RequestTimes:
@@ -431,29 +539,45 @@ class RequestTimes:
         # distribution become very different than what it currently is.
         self.top_urls_cache_size = self.top_urls * 50
 
-        # Histogram has a bin per second up to 1.5 our timeout.
-        self.histogram_width = int(options.timeout*1.5)
+        # Histogram has a bin per resolution up to our timeout
+        #(and an extra bin).
+        self.histogram_resolution = float(options.resolution)
+        self.histogram_width = int(
+            options.timeout / self.histogram_resolution) + 1
         self.category_times = [
-            (category, OnlineStats(self.histogram_width))
+            (category, OnlineStats(
+                self.histogram_width, self.histogram_resolution))
             for category in categories]
         self.url_times = {}
         self.pageid_times = {}
 
     def add_request(self, request):
         """Add request to the set of requests we collect stats for."""
+        matched = []
         for category, stats in self.category_times:
             if category.match(request):
                 stats.update(request)
+                if category.partition:
+                    matched.append(category.title)
+
+        if len(matched) > 1:
+            log.warning(
+                "Multiple partition categories matched by %s (%s)",
+                request.url, ", ".join(matched))
+        elif not matched:
+            log.warning("%s isn't part of the partition", request.url)
 
         if self.by_pageids:
             pageid = request.pageid or 'Unknown'
             stats = self.pageid_times.setdefault(
-                pageid, OnlineStats(self.histogram_width))
+                pageid, OnlineStats(
+                    self.histogram_width, self.histogram_resolution))
             stats.update(request)
 
         if self.top_urls:
             stats = self.url_times.setdefault(
-                request.url, OnlineStats(self.histogram_width))
+                request.url, OnlineStats(
+                    self.histogram_width, self.histogram_resolution))
             stats.update(request)
             #  Whenever we have more URLs than we need to, discard 10%
             # that is less likely to end up in the top.
@@ -535,6 +659,10 @@ def main():
         default=None, metavar="TIMESTAMP",
         help="Ignore log entries after TIMESTAMP")
     parser.add_option(
+        "--no-partition", dest="partition",
+        action="store_false", default=True,
+        help="Do not produce partition report")
+    parser.add_option(
         "--no-categories", dest="categories",
         action="store_false", default=True,
         help="Do not produce categories report")
@@ -551,14 +679,22 @@ def main():
         help="Output reports in DIR directory")
     parser.add_option(
         "--timeout", dest="timeout",
-        # Default to 12: the staging timeout.
-        default=12, type="int",
-        help="The configured timeout value : determines high risk page ids.")
+        # Default to 9: our production timeout.
+        default=9, type="int", metavar="SECONDS",
+        help="The configured timeout value: used to determine high risk " +
+        "page ids. That would be pages which 99% under render time is "
+        "greater than timeoout - 2s. Default is %defaults.")
+    parser.add_option(
+        "--histogram-resolution", dest="resolution",
+        # Default to 0.5s
+        default=0.5, type="float", metavar="SECONDS",
+        help="The resolution of the histogram bin width. Detault to "
+        "%defaults.")
     parser.add_option(
         "--merge", dest="merge",
         default=False, action='store_true',
-        help="Files are interpreted as pickled stats and are aggregated for" +
-        "the report.")
+        help="Files are interpreted as pickled stats and are aggregated " +
+        "for the report.")
 
     options, args = parser.parse_args()
 
@@ -602,6 +738,17 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
+    # Determine the categories making a partition of the requests
+    for option in script_config.options('partition'):
+        for category in categories:
+            if category.title == option:
+                category.partition = True
+                break
+        else:
+            log.warning(
+                "In partition definition: %s isn't a defined category",
+                option)
+
     times = RequestTimes(categories, options)
 
     if options.merge:
@@ -625,37 +772,58 @@ def main():
     def _report_filename(filename):
         return os.path.join(options.directory, filename)
 
+    # Partition report
+    if options.partition:
+        report_filename = _report_filename('partition.html')
+        log.info("Generating %s", report_filename)
+        partition_times = [
+            category_time
+            for category_time in category_times
+            if category_time[0].partition]
+        html_report(
+            open(report_filename, 'w'), partition_times, None, None,
+            histogram_resolution=options.resolution,
+            category_name='Partition')
+
     # Category only report.
     if options.categories:
         report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), category_times, None, None)
+        html_report(
+            open(report_filename, 'w'), category_times, None, None,
+            histogram_resolution=options.resolution)
 
     # Pageid only report.
     if options.pageids:
         report_filename = _report_filename('pageids.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, pageid_times, None)
+        html_report(
+            open(report_filename, 'w'), None, pageid_times, None,
+            histogram_resolution=options.resolution)
 
     # Top URL only report.
     if options.top_urls:
         report_filename = _report_filename('top%d.html' % options.top_urls)
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, None, url_times)
+        html_report(
+            open(report_filename, 'w'), None, None, url_times,
+            histogram_resolution=options.resolution)
 
     # Combined report.
     if options.categories and options.pageids:
         report_filename = _report_filename('combined.html')
         html_report(
             open(report_filename, 'w'),
-            category_times, pageid_times, url_times)
+            category_times, pageid_times, url_times, 
+            histogram_resolution=options.resolution)
 
     # Report of likely timeout candidates
     report_filename = _report_filename('timeout-candidates.html')
     log.info("Generating %s", report_filename)
     html_report(
         open(report_filename, 'w'), None, pageid_times, None,
-        options.timeout - 2)
+        options.timeout - 2, 
+        histogram_resolution=options.resolution)
 
     # Save the times cache for later merging.
     report_filename = _report_filename('stats.pck.bz2')
@@ -679,7 +847,7 @@ def main():
                 writer.writerows([
                     ("%s_99" % option, "%f@%d" % (
                         stats.ninetyninth_percentile_time, date)),
-                    ("%s_mean" % option, "%f@%d" % (stats.mean, date))])
+                    ("%s_hits" % option, "%d@%d" % (stats.total_hits, date))])
                 break
         else:
             log.warning("Can't find category %s for metric %s" % (
@@ -828,7 +996,8 @@ def parse_extension_record(request, args):
 
 def html_report(
     outf, category_times, pageid_times, url_times,
-    ninetyninth_percentile_threshold=None):
+    ninetyninth_percentile_threshold=None, histogram_resolution=0.5,
+    category_name='Category'):
     """Write an html report to outf.
 
     :param outf: A file object to write the report to.
@@ -838,6 +1007,9 @@ def html_report(
     :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
         pages in the pageid section; pages where 99 percent of the requests are
         served under this threshold will not be included.
+    :param histogram_resolution: used as the histogram bar width
+    :param category_name: The name to use for category report. Defaults to
+        'Category'.
     """
 
     print >> outf, dedent('''\
@@ -848,17 +1020,21 @@ def html_report(
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Launchpad Page Performance Report %(date)s</title>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/jquery.appear-1.1.1.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/sorttable.js"></script>
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.flot.min.js"
+            ></script>
+        <script language="javascript" type="text/javascript"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/sorttable.js"></script>
         <style type="text/css">
-            h3 { font-weight: normal; font-size: 100%%; }
+            h3 { font-weight: normal; font-size: 1em; }
             thead th { padding-left: 1em; padding-right: 1em; }
-            .category-title { text-align: right; padding-right: 2em; }
+            .category-title { text-align: right; padding-right: 2em;
+                              max-width: 25em; }
             .regexp { font-size: x-small; font-weight: normal; }
             .mean { text-align: right; padding-right: 1em; }
             .median { text-align: right; padding-right: 1em; }
@@ -878,8 +1054,8 @@ def html_report(
                 padding: 1em;
                 }
             .clickable { cursor: hand; }
-            .total_hits, .histogram, .median_sqltime,
-            .median_sqlstatements { border-right: 1px dashed #000000; }
+            .total-hits, .histogram, .median-sqltime,
+            .median-sqlstatements { border-right: 1px dashed #000000; }
         </style>
         </head>
         <body>
@@ -896,8 +1072,6 @@ def html_report(
 
             <th class="clickable">Total Hits</th>
 
-            <th class="clickable">Total Time (secs)</th>
-
             <th class="clickable">99% Under Time (secs)</th>
 
             <th class="clickable">Mean Time (secs)</th>
@@ -905,16 +1079,17 @@ def html_report(
             <th class="clickable">Median Time (secs)</th>
             <th class="sorttable_nosort">Time Distribution</th>
 
-            <th class="clickable">Total SQL Time (secs)</th>
+            <th class="clickable">99% Under SQL Time (secs)</th>
             <th class="clickable">Mean SQL Time (secs)</th>
             <th class="clickable">SQL Time Standard Deviation</th>
             <th class="clickable">Median SQL Time (secs)</th>
 
-            <th class="clickable">Total SQL Statements</th>
+            <th class="clickable">99% Under SQL Statements</th>
             <th class="clickable">Mean SQL Statements</th>
             <th class="clickable">SQL Statement Standard Deviation</th>
             <th class="clickable">Median SQL Statements</th>
 
+            <th class="clickable">Hits * 99% Under SQL Statement</th>
             </tr>
         </thead>
         <tbody>
@@ -925,44 +1100,48 @@ def html_report(
     histograms = []
 
     def handle_times(html_title, stats):
-        histograms.append(stats.relative_histogram)
+        histograms.append(stats.histogram)
         print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
-            <td class="numeric total_hits">%d</td>
-            <td class="numeric total_time">%.2f</td>
-            <td class="numeric 99pc_under">%.2f</td>
-            <td class="numeric mean_time">%.2f</td>
-            <td class="numeric std_time">%.2f</td>
-            <td class="numeric median_time">%.2f</td>
+            <td class="numeric total-hits">%d</td>
+            <td class="numeric 99pc-under-time">%.2f</td>
+            <td class="numeric mean-time">%.2f</td>
+            <td class="numeric std-time">%.2f</td>
+            <td class="numeric median-time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
-            <td class="numeric total_sqltime">%.2f</td>
-            <td class="numeric mean_sqltime">%.2f</td>
-            <td class="numeric std_sqltime">%.2f</td>
-            <td class="numeric median_sqltime">%.2f</td>
+            <td class="numeric 99pc-under-sqltime">%.2f</td>
+            <td class="numeric mean-sqltime">%.2f</td>
+            <td class="numeric std-sqltime">%.2f</td>
+            <td class="numeric median-sqltime">%.2f</td>
 
-            <td class="numeric total_sqlstatements">%.f</td>
-            <td class="numeric mean_sqlstatements">%.2f</td>
-            <td class="numeric std_sqlstatements">%.2f</td>
-            <td class="numeric median_sqlstatements">%.2f</td>
+            <td class="numeric 99pc-under-sqlstatement">%.f</td>
+            <td class="numeric mean-sqlstatements">%.2f</td>
+            <td class="numeric std-sqlstatements">%.2f</td>
+            <td class="numeric median-sqlstatements">%.2f</td>
+
+            <td class="numeric high-db-usage">%.f</td>
             </tr>
             """ % (
                 html_title,
-                stats.total_hits, stats.total_time,
-                stats.ninetyninth_percentile_time,
+                stats.total_hits, stats.ninetyninth_percentile_time,
                 stats.mean, stats.std, stats.median,
                 len(histograms) - 1,
-                stats.total_sqltime, stats.mean_sqltime,
+                stats.ninetyninth_percentile_sqltime, stats.mean_sqltime,
                 stats.std_sqltime, stats.median_sqltime,
-                stats.total_sqlstatements, stats.mean_sqlstatements,
-                stats.std_sqlstatements, stats.median_sqlstatements))
+                stats.ninetyninth_percentile_sqlstatements,
+                stats.mean_sqlstatements,
+                stats.std_sqlstatements, stats.median_sqlstatements,
+                stats.ninetyninth_percentile_sqlstatements* stats.total_hits,
+                ))
 
     # Table of contents
     print >> outf, '<ol>'
     if category_times:
-        print >> outf, '<li><a href="#catrep">Category Report</a></li>'
+        print >> outf, '<li><a href="#catrep">%s Report</a></li>' % (
+            category_name)
     if pageid_times:
         print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
     if url_times:
@@ -970,7 +1149,8 @@ def html_report(
     print >> outf, '</ol>'
 
     if category_times:
-        print >> outf, '<h2 id="catrep">Category Report</h2>'
+        print >> outf, '<h2 id="catrep">%s Report</h2>' % (
+            category_name)
         print >> outf, table_header
         for category, times in category_times:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
@@ -1003,10 +1183,9 @@ def html_report(
         $(function () {
             var options = {
                 series: {
-                    bars: {show: true}
+                    bars: {show: true, barWidth: %s}
                     },
                 xaxis: {
-                    tickDecimals: 0,
                     tickFormatter: function (val, axis) {
                         return val.toFixed(axis.tickDecimals) + "s";
                         }
@@ -1022,7 +1201,7 @@ def html_report(
                         },
                     tickDecimals: 1,
                     tickFormatter: function (val, axis) {
-                        return (val * 100).toFixed(axis.tickDecimals) + "%";
+                        return (val * 100).toFixed(axis.tickDecimals) + "%%";
                         },
                     ticks: [0.001,0.01,0.10,0.50,1.0]
                     },
@@ -1031,19 +1210,24 @@ def html_report(
                     labelMargin: 15
                     }
                 };
-        """)
+        """ % histogram_resolution)
 
     for i, histogram in enumerate(histograms):
-        if histogram is None:
+        if histogram.count == 0:
             continue
         print >> outf, dedent("""\
-            var d = %s;
+            function plot_histogram_%(id)d() {
+                var d = %(data)s;
 
-            $.plot(
-                $("#histogram%d"),
-                [{data: d}], options);
+                $.plot(
+                    $("#histogram%(id)d"),
+                    [{data: d}], options);
+            }
+            $('#histogram%(id)d').appear(function() {
+                plot_histogram_%(id)d();
+            });
 
-            """ % (json.dumps(histogram), i))
+            """ % {'id': i, 'data': json.dumps(histogram.bins_relative)})
 
     print >> outf, dedent("""\
             });

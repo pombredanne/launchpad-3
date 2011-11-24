@@ -6,7 +6,8 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
@@ -83,7 +84,8 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
@@ -184,23 +186,23 @@ account_status must always be set to NOACCOUNT. (Notice how we use
 setContactAddress() rather than setPreferredEmail() here, since the
 latter can be used only for people and the former only for teams)
 
-    >>> shipit_admins = personset.getByName('shipit-admins')
-    >>> shipit_admins.account_status
+    >>> team = factory.makeTeam(name='foo', displayname='foobaz')
+    >>> team.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email = emailset.new('foo@baz.com', shipit_admins)
-    >>> shipit_admins.setContactAddress(email)
+    >>> email = emailset.new('foo@baz.com', team)
+    >>> team.setContactAddress(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
-    >>> shipit_admins.account_status
+    >>> team.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
 Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
 
-    >>> shipit_admins.setContactAddress(None)
-    >>> print shipit_admins.preferredemail
+    >>> team.setContactAddress(None)
+    >>> print team.preferredemail
     None
 
 When a new sourcepackage is imported and a Person entry has to be
@@ -337,8 +339,6 @@ reason for the change.
     >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(lifeless)
 
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -529,7 +529,7 @@ account_status is NOACCOUNT, though.
     >>> not_a_person.convertToTeam(team_owner=landscape_devs)
     Traceback (most recent call last):
     ...
-    AssertionError: Can't convert a team to a team.
+    AlreadyConvertedException: foo-v has already been converted to a team.
 
 
 Team members
@@ -762,15 +762,12 @@ address:
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
     Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
-    Ubuntu branches (ubuntu-branches): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Technical Board (techboard): []
     Ubuntu Translators (ubuntu-translators): []
-    Ubuntu-branches-owner (ubuntu-branches-owner):
-      [u'ubuntu-branches-owner@example.com']
 
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
@@ -1027,11 +1024,11 @@ alphabetically by package name.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
     >>> pmount.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> [package.name for package in no_priv.getBugSubscriberPackages()]
     [u'mozilla-firefox', u'pmount']
@@ -1095,8 +1092,7 @@ ordered by displayname.
 The method does not return inactive projects.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts

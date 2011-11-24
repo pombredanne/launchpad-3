@@ -39,7 +39,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -72,13 +71,21 @@ class structured:
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
         if replacements:
-            self.escapedtext = text % tuple(
-                cgi.escape(unicode(replacement))
-                for replacement in replacements)
+            escaped = []
+            for replacement in replacements:
+                if isinstance(replacement, structured):
+                    escaped.append(unicode(replacement.escapedtext))
+                else:
+                    escaped.append(cgi.escape(unicode(replacement)))
+            self.escapedtext = text % tuple(escaped)
         elif kwreplacements:
-            self.escapedtext = text % dict(
-                (key, cgi.escape(unicode(value)))
-                for key, value in kwreplacements.iteritems())
+            escaped = {}
+            for key, value in kwreplacements.iteritems():
+                if isinstance(value, structured):
+                    escaped[key] = unicode(value.escapedtext)
+                else:
+                    escaped[key] = cgi.escape(unicode(value))
+            self.escapedtext = text % escaped
         else:
             self.escapedtext = unicode(text)
 
@@ -120,7 +127,7 @@ class LinkData:
     implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
-                 site=None, menu=None):
+                 site=None, menu=None, hidden=False):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -150,6 +157,7 @@ class LinkData:
         self.enabled = enabled
         self.site = site
         self.menu = menu
+        self.hidden = hidden
 
 Link = LinkData
 
@@ -234,8 +242,8 @@ class MenuBase(UserAttributeCache):
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
-        ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
-         'iterlinks', 'initLink', 'updateLink', 'extra_attributes'])
+        ['user', 'initialize', 'links', 'enable_only', 'iterlinks',
+         'initLink', 'updateLink', 'extra_attributes'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
@@ -519,6 +527,10 @@ class enabled_with_permission:
         called.
         """
         permission = self.permission
+
+        # This is imported here to forestall an import-time config read that
+        # wreaks havoc.
+        from canonical.launchpad.webapp.authorization import check_permission
 
         def enable_if_allowed(self):
             link = func(self)

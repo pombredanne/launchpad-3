@@ -44,12 +44,33 @@
             <td>
               <span class="sortkey"
                     tal:content="language_stats/untranslatedCount">0</span>
-              <tal:value content="language_stats/untranslatedCount" />
+              <tal:set-render_as_link
+                  define="global render_as_link python: view.single_potemplate and language_stats.untranslatedCount"/>
+              <tal:no_link condition="not:render_as_link">
+                  <tal:value content="language_stats/untranslatedCount" />
+              </tal:no_link>
+              <tal:link condition="render_as_link">
+                <a tal:attributes="href string:${language_stats/pofile/fmt:url}/+translate?show=untranslated"
+                  tal:content="language_stats/untranslatedCount"
+                  >0
+                </a>
+              </tal:link>
              </td>
             <td>
               <span class="sortkey"
                     tal:content="language_stats/unreviewedCount">0</span>
-              <tal:value content="language_stats/unreviewedCount" />
+              <tal:set-render_as_link
+                  define="global render_as_link python: view.single_potemplate and language_stats.unreviewedCount"/>
+              <tal:no_link condition="not:render_as_link">
+                  <tal:value content="language_stats/unreviewedCount" />
+              </tal:no_link>
+              <tal:link condition="render_as_link">
+                <a tal:attributes="href
+                string:${language_stats/pofile/fmt:url}/+translate?show=new_suggestions"
+                  tal:content="language_stats/unreviewedCount"
+                  >0
+                </a>
+              </tal:link>
             </td>
             <td>
               <span class="sortkey"

@@ -5,23 +5,28 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
 
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.browser.edit import FeatureControlView
+from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.testing.matchers import Contains
-
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.matchers import Contains
 
 
 class FauxForm:
@@ -41,11 +46,11 @@ class TestFeatureControlPage(BrowserTestCase):
         # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
         # must know the password; we can't get the password for an existing
         # user so we have to make a new one.
-        user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson(password='test')
         for team in teams:
             with person_logged_in(team.teamowner):
-                team.addMember(user, reviewer=team.teamowner)
-        return self.getUserBrowser(url=None, user=user, password='test')
+                team.addMember(self.user, reviewer=team.teamowner)
+        return self.getUserBrowser(url=None, user=self.user, password='test')
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
@@ -97,6 +102,19 @@ class TestFeatureControlPage(BrowserTestCase):
             browser.open,
             self.getFeatureRulesViewURL())
 
+    def test_feature_page_can_view(self):
+        """User that can only view the rules do not see the form."""
+        browser = self.getUserBrowserAsTeamMember(
+            [getUtility(ILaunchpadCelebrities).registry_experts])
+        browser.open(self.getFeatureRulesViewURL())
+        content = find_main_content(browser.contents)
+        self.assertEqual(
+            None, find_tag_by_id(content, 'field.feature_rules'))
+        self.assertEqual(
+            None, find_tag_by_id(content, 'field.actions.change'))
+        self.assertTrue(
+            find_tag_by_id(content, 'feature-rules'))
+
     def test_feature_page_submit_changes(self):
         """Submitted changes show up in the db."""
         browser = self.getUserBrowserAsAdmin()
@@ -104,12 +122,20 @@ class TestFeatureControlPage(BrowserTestCase):
         new_value = 'beta_user some_key 10 some value with spaces'
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = new_value
+        browser.getControl(name="field.comment").value = 'Bob is testing.'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
             Equals([
                 ('beta_user', 'some_key', 10, 'some value with spaces'),
                 ]))
+        changes = list(ChangeLog.get())
+        self.assertEqual(1, len(changes))
+        self.assertEqual(
+            '+beta_user\tsome_key\t10\tsome value with spaces',
+            changes[0].diff)
+        self.assertEqual('Bob is testing.', changes[0].comment)
+        self.assertEqual(self.user, changes[0].person)
 
     def test_change_message(self):
         """Submitting shows a message that the changes have been applied."""
@@ -117,6 +143,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = 'beta_user some_key 10 some value with spaces'
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             browser.contents,
@@ -128,7 +155,9 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 another value with spaces')
         browser.getControl(name="field.actions.change").click()
@@ -151,6 +180,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser.open(self.getFeatureRulesEditURL())
         browser.getControl(name="field.feature_rules").value = (
             'beta_user some_key 10 some value with spaces')
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             browser.contents,
@@ -165,6 +195,7 @@ class TestFeatureControlPage(BrowserTestCase):
         new_value = ''
         textarea = browser.getControl(name="field.feature_rules")
         textarea.value = new_value
+        browser.getControl(name="field.comment").value = 'comment'
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
@@ -172,10 +203,22 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def test_feature_page_submit_change_when_unauthorized(self):
         """Correctly handling attempted value changes when not authorized."""
-        # When a change is submitted but the user is unauthorized, an
-        # exception is raised.
-
+        # The action is not available to unauthorized users.
         view = FeatureControlView(None, None)
-        self.assertRaises(
-            Unauthorized,
-            view.change_action.success_handler, FauxForm(), None, None)
+        self.assertFalse(view.change_action.available())
+
+    def test_error_for_duplicate_priority(self):
+        """Duplicate priority values for a flag result in a nice error."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        textarea = browser.getControl(name="field.feature_rules")
+        textarea.value = dedent("""\
+            key foo 10 foo
+            key bar 10 bar
+            """)
+        browser.getControl(name="field.comment").value = 'comment'
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Invalid rule syntax: duplicate priority for flag "key": 10'))

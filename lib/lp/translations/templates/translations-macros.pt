@@ -41,8 +41,11 @@
         </tal:form-writeable>
       </td>
       <td>
+        <div tal:condition="not:submission/suggestion_text">
+          (not translated yet)
+        </div>
         <div
-          tal:condition="not:user_is_official_translator"
+          tal:condition="python: not user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
@@ -52,7 +55,7 @@
         </div>
         <label
           style="white-space: normal"
-          tal:condition="user_is_official_translator"
+          tal:condition="python: user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
@@ -64,6 +67,7 @@
       </td>
     </tr>
     <tr
+      tal:condition="submission/suggestion_text"
       tal:attributes="id string:${submission/origin_html_id};
                       class string:discreet secondary ${dismissable}">
       <td colspan="3"></td>
@@ -144,7 +148,7 @@
 <metal:pofile-js-footer define-macro="pofile-js-footer">
     <script type="text/javascript"
         tal:content="
-        structure string:<!-- 
+        structure string:<!--
         var autofocus_field = '${view/autofocus_html_id}';
         var translations_order = '${view/translations_order}';
         var plural_forms = ${context/plural_forms};
@@ -178,7 +182,7 @@
 
 <metal:languages-table-actions define-macro="languages-table-actions">
   <div align="right">
-    [ <a href="/+editmylanguages">Choose preferred languages...</a>
+    [ <a href="/+editmylanguages">Change your preferred languages...</a>
       <tal:has-preferred condition="view/translatable_languages">&mdash;
         <a href="#" id="toggle-languages-visibility">
           View all languages</a>

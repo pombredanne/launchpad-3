@@ -109,7 +109,7 @@ access.  This prevents direct access to the build URL by unauthorised
 users:
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build_id)
     Traceback (most recent call last):
     ...
@@ -118,10 +118,10 @@ users:
 But it is fine for authorised users:
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build_id)
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/p3a/+buildjob/...
+    http://launchpad.dev/~cprov/+archive/p3a/+build/...
 
 
 == Builder history page ==
@@ -253,7 +253,7 @@ users:
     >>> from zope.security.interfaces import Unauthorized
     >>> try:
     ...     anon_browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...         private_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -264,7 +264,7 @@ users:
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> try:
     ...     browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...         private_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -319,13 +319,13 @@ Any other logged-in user will also see the build:
 Accessing the build page will now also work:
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build_id)
     >>> print anon_browser.title
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
     >>> browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+buildjob/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build_id)
     >>> print browser.title
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
@@ -342,7 +342,7 @@ portlet will display a link to the newly unembargoed build:
     breezy-autotest i386 Successfully built
 
     >>> print browser.getLink('i386').url
-    http://launchpad.dev/~cprov/+archive/p3a/+buildjob/...
+    http://launchpad.dev/~cprov/+archive/p3a/+build/...
 
 Similarly, when accessing the distribution source package release page,
 the main content will display a link to the newly unembargoed build:
@@ -355,4 +355,4 @@ the main content will display a link to the newly unembargoed build:
     Breezy Badger Autotest: i386
 
     >>> print browser.getLink('i386').url
-    http://launchpad.dev/~cprov/+archive/p3a/+buildjob/...
+    http://launchpad.dev/~cprov/+archive/p3a/+build/...

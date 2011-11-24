@@ -1,11 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
-    'sendStatusChangeNotification',
+    'find_team_participations',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -21,6 +21,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -30,6 +31,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
+    cursor,
     flush_database_updates,
     SQLBase,
     sqlvalues,
@@ -38,15 +40,11 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import (
     TeamMembershipTransitionError,
     UserCannotChangeMembershipSilently,
@@ -67,6 +65,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     ITeamParticipation,
     TeamMembershipStatus,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 
 
@@ -139,7 +141,8 @@ class TeamMembership(SQLBase):
                         'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s extended their membership' % member.name
-        template = get_email_template('membership-member-renewed.txt')
+        template = get_email_template(
+            'membership-member-renewed.txt', app='registry')
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
@@ -168,7 +171,7 @@ class TeamMembership(SQLBase):
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = get_contact_email_addresses(member)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -179,7 +182,7 @@ class TeamMembership(SQLBase):
         template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -227,17 +230,21 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
-        assert self.dateexpires is not None, (
-            'This membership has no expiration date')
-        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
-            "This membership's expiration date must be in the future: %s"
-            % self.dateexpires.strftime('%Y-%m-%d'))
+        if self.dateexpires is None:
+            raise AssertionError(
+                '%s in team %s has no membership expiration date.' %
+                (self.person.name, self.team.name))
         if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
             # An email will be sent later by handleMembershipsExpiringToday()
             # when the membership is automatically renewed.
             raise AssertionError(
-                'Team %r with automatic renewals should not send expiration '
+                'Team %s with automatic renewals should not send expiration '
                 'warnings.' % self.team.name)
+        if self.dateexpires < datetime.now(pytz.timezone('UTC')):
+            # The membership has reached expiration. Silently return because
+            # there is nothing to do. The member will have received emails
+            # from previous calls by flag-expired-memberships.py
+            return
         member = self.person
         team = self.team
         if member.isTeam():
@@ -299,7 +306,7 @@ class TeamMembership(SQLBase):
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
-        msg = get_email_template(templatename) % replacements
+        msg = get_email_template(templatename, app='registry') % replacements
         from_addr = format_address(
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
@@ -333,7 +340,7 @@ class TeamMembership(SQLBase):
             deactivated: [proposed, approved, admin, invited],
             expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved, admin],
+            declined: [proposed, approved, admin, invited],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
 
@@ -488,6 +495,32 @@ class TeamMembershipSet:
                     TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
 
+    def deactivateActiveMemberships(self, team, comment, reviewer):
+        """See `ITeamMembershipSet`."""
+        now = datetime.now(pytz.timezone('UTC'))
+        cur = cursor()
+        all_members = list(team.activemembers)
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=team.id,
+                original_statuses=ACTIVE_STATES))
+        for member in all_members:
+            # store.invalidate() is called for each iteration.
+            _cleanTeamParticipation(member, team)
+
 
 class TeamParticipation(SQLBase):
     implements(ITeamParticipation)
@@ -624,3 +657,64 @@ def _fillTeamParticipation(member, accepting_team):
 
     store = Store.of(member)
     store.execute(query)
+
+
+def find_team_participations(people, teams=None):
+    """Find the teams the given people participate in.
+
+    :param people: The people for which to query team participation.
+    :param teams: Optionally, limit the participation check to these teams.
+
+    This method performs its work with at most a single database query.
+    It first does similar checks to those performed by IPerson.in_team() and
+    it may turn out that no database query is required at all.
+    """
+
+    teams_to_query = []
+    people_teams = {}
+
+    def add_team_to_result(person, team):
+        teams = people_teams.get(person)
+        if teams is None:
+            teams = set()
+            people_teams[person] = teams
+        teams.add(team)
+
+    # Check for the simple cases - self membership etc.
+    if teams:
+        for team in teams:
+            if team is None:
+                continue
+            for person in people:
+                if team.id == person.id:
+                    add_team_to_result(person, team)
+                    continue
+            if not team.is_team:
+                continue
+            teams_to_query.append(team)
+
+    # Avoid circular imports
+    from lp.registry.model.person import Person
+
+    # We are either checking for membership of any team or didn't eliminate
+    # all the specific team participation checks above.
+    if teams_to_query or not teams:
+        Team = ClassAlias(Person, 'Team')
+        person_ids = [person.id for person in people]
+        conditions = [
+            TeamParticipation.personID == Person.id,
+            TeamParticipation.teamID == Team.id,
+            Person.id.is_in(person_ids)
+        ]
+        team_ids = [team.id for team in teams_to_query]
+        if team_ids:
+            conditions.append(Team.id.is_in(team_ids))
+
+        store = IStore(Person)
+        rs = store.find(
+            (Person, Team),
+            *conditions)
+
+        for (person, team) in rs:
+            add_team_to_result(person, team)
+    return people_teams

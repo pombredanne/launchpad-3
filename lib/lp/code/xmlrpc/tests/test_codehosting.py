@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -41,6 +41,8 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     )
@@ -390,7 +392,7 @@ class CodehostingTest(TestCaseWithFactory):
         # If createBranch is called with the path to a non-existent distro, it
         # will return a Fault saying so in plain English.
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
@@ -416,19 +418,39 @@ class CodehostingTest(TestCaseWithFactory):
         message = "No such distribution series: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
-    def test_createBranch_invalid_sourcepackagename(self):
-        # If createBranch is called with the path to an invalid source
-        # package, it will return a Fault saying so.
+    def test_createBranch_missing_sourcepackagename(self):
+        # If createBranch is called with the path to a missing source
+        # package, it will create the source package.
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
+        branch_id = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual(distroseries, branch.distroseries)
+        self.assertEqual(
+            'ningnangnong', branch.sourcepackagename.name)
+        self.assertEqual(branch_name, branch.name)
+        self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
+
+    def test_createBranch_invalid_sourcepackagename(self):
+        # If createBranch is called with an invalid path, it will fault.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/ningn%%20angnong/%s' % (
+            owner.name, distroseries.distribution.name, distroseries.name,
+            branch_name)
         fault = self.codehosting_api.createBranch(
             owner.id, escape(unique_name))
-        message = "No such source package: 'ningnangnong'."
-        self.assertEqual(faults.NotFound(message), fault)
+        self.assertEqual(
+            faults.InvalidSourcePackageName('ningn%20angnong'), fault)
 
     def test_createBranch_using_branch_alias(self):
         # Branches can be created using the branch alias and the full unique
@@ -972,7 +994,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_invalid_product_name(self):
-        # translatePath returns a not found when there is an invalid product name.
+        # translatePath returns a not found when there is an invalid product
+        # name.
         requester = self.factory.makePerson()
         invalid_name = '_' + self.factory.getUniqueString()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
@@ -991,14 +1014,73 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ALIAS_PREFIX)
 
+    def test_translatePath_branch_id_alias_bzrdir_content(self):
+        # translatePath('/+branch-id/.bzr/.*') *must* return not found,
+        # otherwise bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(
+            requester, '/%s/.bzr/branch-format' % BRANCH_ID_ALIAS_PREFIX)
+
+    def test_translatePath_branch_id_alias_bzrdir(self):
+        # translatePath('/+branch-id/.bzr') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ID_ALIAS_PREFIX)
+
+    def test_translatePath_branch_id_alias_trailing(self):
+        # Make sure the trailing path is returned.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeAnyBranch())
+        path = escape(u'%s/foo/bar' % branch_id_alias(branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        expected = (
+            BRANCH_TRANSPORT,
+            {'id': branch.id, 'writable': False},
+            'foo/bar',
+            )
+        self.assertEqual(expected, translation)
+
+    def test_translatePath_branch_id_alias_owned(self):
+        # Even if the the requester is the owner, the branch is read only.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, owner=requester))
+        path = escape(branch_id_alias(branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_branch_id_alias_private_branch(self):
+        # Private branches are accessible but read-only even if you are the
+        # owner.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, private=True, owner=requester))
+        path = escape(branch_id_alias(branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_branch_id_alias_private_branch_no_access(self):
+        # Private branches you don't have access to raise permission denied.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, private=True))
+        path = escape(branch_id_alias(branch))
+        self.assertPermissionDenied(requester, path)
+
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
                                             trailing_path):
         """Assert that 'translation' points to the right control transport."""
-        unique_name = escape(u'/' + default_stacked_on)
         expected_translation = (
             CONTROL_TRANSPORT,
-            {'default_stack_on': unique_name}, trailing_path)
+            {'default_stack_on': escape(default_stacked_on)}, trailing_path)
         self.assertEqual(expected_translation, translation)
 
     def test_translatePath_control_directory(self):
@@ -1009,7 +1091,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
@@ -1035,7 +1117,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
@@ -1047,7 +1129,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_package_no_focus(self):
@@ -1073,7 +1155,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
 

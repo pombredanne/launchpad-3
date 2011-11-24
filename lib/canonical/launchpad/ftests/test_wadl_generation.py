@@ -5,21 +5,17 @@
 
 __metaclass__ = type
 
-import pkg_resources
-import shutil
-import subprocess
-import tempfile
-
 from testtools.matchers import StartsWith
 
 from zope.component import getUtility
 
-from canonical.launchpad.rest.wadl import generate_wadl, generate_html
-from canonical.launchpad.systemhomes import WebServiceApplication
+from canonical.launchpad.rest.wadl import (
+    generate_json,
+    generate_wadl,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceConfiguration
 from lp.testing import TestCase
-from lp.testing.matchers import Contains
 
 
 class SmokeTestWadlAndDocGeneration(TestCase):
@@ -32,3 +28,9 @@ class SmokeTestWadlAndDocGeneration(TestCase):
         for version in config.active_versions:
             wadl = generate_wadl(version)
             self.assertThat(wadl[:40], StartsWith('<?xml '))
+
+    def test_json(self):
+        config = getUtility(IWebServiceConfiguration)
+        for version in config.active_versions:
+            json = generate_json(version)
+            self.assertThat(json, StartsWith('{"'))

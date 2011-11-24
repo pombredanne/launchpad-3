@@ -13,10 +13,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.ftests.test_system_documentation import (
-    uploaderSetUp,
-    uploadQueueSetUp,
-    )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -32,6 +28,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.testing import build_test_suite
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.tests.test_doc import (
+    uploaderSetUp,
+    uploadQueueSetUp,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -49,7 +49,7 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    ubuntu.addAnswerContact(ubuntu_team)
+    ubuntu.addAnswerContact(ubuntu_team, ubuntu_team.teamowner)
     ubuntu_question = ubuntu.newQuestion(
         sample_person, "Can't install Ubuntu",
         "I insert the install CD in the CD-ROM drive, but it won't boot.")
@@ -62,7 +62,7 @@ def _createUbuntuBugTaskLinkedToQuestion():
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
     # Remove the notifcations for the newly created question.
-    notifications = pop_notifications()
+    pop_notifications()
     return ubuntu_bugtask.id
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Packaging content class."""
@@ -7,9 +7,18 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import (
     IPackagingUtil,
@@ -17,10 +26,121 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.packaging import Packaging
 from lp.testing import (
+    EventRecorder,
     login,
+    person_logged_in,
     TestCaseWithFactory,
     )
+
+
+class TestPackaging(TestCaseWithFactory):
+    """Test Packaging object."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_init_notifies(self):
+        """Creating a Packaging should generate an event."""
+        with EventRecorder() as recorder:
+            packaging = Packaging()
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectCreatedEvent)
+        self.assertIs(packaging, event.object)
+
+    def test_destroySelf_notifies(self):
+        """destroySelf creates a notification."""
+        packaging = self.factory.makePackagingLink()
+        with person_logged_in(packaging.owner):
+            with EventRecorder() as recorder:
+                removeSecurityProxy(packaging).destroySelf()
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectDeletedEvent)
+        self.assertIs(removeSecurityProxy(packaging), event.object)
+
+    def test_destroySelf__not_allowed_for_anonymous(self):
+        """Anonymous cannot delete a packaging."""
+        packaging = self.factory.makePackagingLink()
+        packaging_util = getUtility(IPackagingUtil)
+        self.assertRaises(
+            Unauthorized, packaging_util.deletePackaging,
+            packaging.productseries, packaging.sourcepackagename,
+            packaging.distroseries)
+
+    def test_destroySelf__not_allowed_for_arbitrary_user(self):
+        """Arbitrary users cannot delete a packaging."""
+        packaging = self.factory.makePackagingLink()
+        packaging_util = getUtility(IPackagingUtil)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                Unauthorized, packaging_util.deletePackaging,
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries)
+
+    def test_destroySelf__allowed_for_packaging_owner(self):
+        """A packaging owner can delete a packaging."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        distroseries = packaging.distroseries
+        productseries = packaging.productseries
+        packaging_util = getUtility(IPackagingUtil)
+        with person_logged_in(packaging.owner):
+            packaging_util.deletePackaging(
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries)
+        self.assertFalse(
+            packaging_util.packagingEntryExists(
+                sourcepackagename, distroseries, productseries))
+
+    def test_destroySelf__allowed_for_distro_owner(self):
+        """A distribution owner can delete a packaging link."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        distroseries = packaging.distroseries
+        productseries = packaging.productseries
+        packaging_util = getUtility(IPackagingUtil)
+        with person_logged_in(distroseries.distribution.owner):
+            packaging_util.deletePackaging(
+                productseries, sourcepackagename, distroseries)
+        self.assertFalse(
+            packaging_util.packagingEntryExists(
+                sourcepackagename, distroseries, productseries))
+
+    def test_destroySelf__allowed_for_uploader(self):
+        """A person with upload rights for the sourcepackage can
+        delete a packaging link.
+        """
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        sourcepackage = packaging.sourcepackage
+        distroseries = packaging.distroseries
+        productseries = packaging.productseries
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(distroseries.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        packaging_util = getUtility(IPackagingUtil)
+        with person_logged_in(uploader):
+            packaging_util.deletePackaging(
+                productseries, sourcepackagename, distroseries)
+        self.assertFalse(
+            packaging_util.packagingEntryExists(
+                sourcepackagename, distroseries, productseries))
+
+    def test_destroySelf__allowed_for_admin(self):
+        """A Launchpad admin can delete a packaging."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        distroseries = packaging.distroseries
+        productseries = packaging.productseries
+        packaging_util = getUtility(IPackagingUtil)
+        login('foo.bar@canonical.com')
+        packaging_util.deletePackaging(
+            packaging.productseries, packaging.sourcepackagename,
+            packaging.distroseries)
+        self.assertFalse(
+            packaging_util.packagingEntryExists(
+                sourcepackagename, distroseries, productseries))
 
 
 class PackagingUtilMixin:
@@ -32,7 +152,7 @@ class PackagingUtilMixin:
         TestCaseWithFactory.setUp(self)
         self.packaging_util = getUtility(IPackagingUtil)
         self.sourcepackagename = self.factory.makeSourcePackageName('sparkle')
-        self.distroseries = self.factory.makeDistroRelease(name='dazzle')
+        self.distroseries = self.factory.makeDistroSeries(name='dazzle')
         self.productseries = self.factory.makeProductSeries(name='glitter')
         self.owner = self.productseries.product.owner
 
@@ -84,7 +204,7 @@ class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
             self.packaging_util.packagingEntryExists(
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.distroseries))
-        other_distroseries = self.factory.makeDistroRelease(name='shimmer')
+        other_distroseries = self.factory.makeDistroSeries(name='shimmer')
         self.assertFalse(
             self.packaging_util.packagingEntryExists(
                 sourcepackagename=self.sourcepackagename,
@@ -162,6 +282,19 @@ class TestDeletePackaging(TestCaseWithFactory):
                 "distroseries=ubuntu/hoary")
         else:
             self.fail("AssertionError was not raised.")
+
+    def test_deletePackaging_notifies(self):
+        """Deleting a Packaging creates a notification."""
+        packaging_util = getUtility(IPackagingUtil)
+        packaging = self.factory.makePackagingLink()
+        with person_logged_in(packaging.owner):
+            with EventRecorder() as recorder:
+                packaging_util.deletePackaging(
+                    packaging.productseries, packaging.sourcepackagename,
+                    packaging.distroseries)
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectDeletedEvent)
+        self.assertIs(removeSecurityProxy(packaging), event.object)
 
 
 def test_suite():

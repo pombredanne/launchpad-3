@@ -5,34 +5,33 @@
 
 __metaclass__ = type
 
-import unittest
 from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
+import unittest
 from urlparse import urlunsplit
 
+from lazr.lifecycle.snapshot import Snapshot
+from pytz import utc
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-
-from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -53,6 +52,7 @@ from lp.bugs.model.bugwatch import (
     )
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
+from lp.scripts.garbo import BugWatchActivityPruner
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login_person,
@@ -476,6 +476,20 @@ class TestBugWatch(TestCaseWithFactory):
         bug.default_bugtask.bugwatch = bug_watch
         self.assertRaises(BugWatchDeletionError, bug_watch.destroySelf)
 
+    def test_deleting_bugwatch_deletes_bugwatchactivity(self):
+        # Deleting a bug watch will also delete all its
+        # BugWatchActivity entries.
+        bug_watch = self.factory.makeBugWatch()
+        for i in range(5):
+            bug_watch.addActivity(message="Activity %s" % i)
+        store = Store.of(bug_watch)
+        watch_activity_query = (
+            "SELECT id FROM BugWatchActivity WHERE bug_watch = %s" %
+            bug_watch.id)
+        self.assertNotEqual(0, store.execute(watch_activity_query).rowcount)
+        bug_watch.destroySelf()
+        self.assertEqual(0, store.execute(watch_activity_query).rowcount)
+
 
 class TestBugWatchSet(TestCaseWithFactory):
     """Tests for the bugwatch updating system."""
@@ -621,61 +635,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.bug_watch = self.factory.makeBugWatch()
         for i in range(MAX_SAMPLE_SIZE + 1):
             self.bug_watch.addActivity()
-
-        self.pruner = BugWatchActivityPruner(BufferLogger())
         transaction.commit()
-
-    def test_getPrunableBugWatchIds(self):
-        # BugWatchActivityPruner.getPrunableBugWatchIds() will return a
-        # set containing the IDs of BugWatches whose activity can be
-        # pruned.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(1, len(prunable_ids))
-        self.failUnless(
-            self.bug_watch.id in prunable_ids,
-            "BugWatch ID not present in prunable_ids.")
-
-        # Even if we specify a bigger chunk size, only one result will
-        # be returned.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
-        self.assertEqual(1, len(prunable_ids))
-
-        # If we add another BugWatch with prunable activity, it too will
-        # be returned.
-        new_watch = self.factory.makeBugWatch()
-        for i in range(10):
-            new_watch.addActivity()
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
-        self.assertEqual(2, len(prunable_ids))
-
-    def test_pruneBugWatchActivity(self):
-        # BugWatchActivityPruner.pruneBugWatchActivity() will prune the
-        # activity for all the BugWatches whose IDs are passed to it.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-
-        self.layer.switchDbUser('garbo')
-        self.pruner.pruneBugWatchActivity(prunable_ids)
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(0, len(prunable_ids))
-
-    def test_call_prunes_activity(self):
-        # BugWatchActivityPruner is a callable object. Calling it will
-        # cause it to prune the BugWatchActivity of prunable watches.
-        self.layer.switchDbUser('garbo')
-        self.pruner(chunk_size=1)
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(0, len(prunable_ids))
-
-    def test_isDone(self):
-        # BugWatchActivityPruner.isDone() returns True when there are no
-        # more prunable BugWatches. Until then, it returns False.
-        self.layer.switchDbUser('garbo')
-        self.assertFalse(self.pruner.isDone())
-        self.pruner(chunk_size=1)
-        self.assertTrue(self.pruner.isDone())
 
     def test_pruneBugWatchActivity_leaves_most_recent(self):
         # BugWatchActivityPruner.pruneBugWatchActivity() will delete all
@@ -686,10 +646,22 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         transaction.commit()
 
         self.layer.switchDbUser('garbo')
+        self.pruner = BugWatchActivityPruner(BufferLogger())
+        self.addCleanup(self.pruner.cleanUp)
+
+        # MAX_SAMPLE_SIZE + 1 created in setUp(), and 5 more created
+        # just above.
         self.assertEqual(MAX_SAMPLE_SIZE + 6, self.bug_watch.activity.count())
-        self.pruner.pruneBugWatchActivity([self.bug_watch.id])
+
+        # Run the pruner
+        while not self.pruner.isDone():
+            self.pruner(chunk_size=3)
+
+        # Only MAX_SAMPLE_SIZE items should be left.
         self.assertEqual(MAX_SAMPLE_SIZE, self.bug_watch.activity.count())
 
+        # They should be the most recent items - the ones created at the
+        # start of this test.
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)

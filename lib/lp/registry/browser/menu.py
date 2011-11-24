@@ -47,6 +47,11 @@ class TopLevelMenuMixin:
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
 
+    @enabled_with_permission('launchpad.Admin')
+    def register_distribution(self):
+        text = 'Register a distribution'
+        return Link('/distros/+add', text, icon='add')
+
     def create_account(self):
         text = 'Create an account'
         # Only enable this link for anonymous users.

@@ -216,10 +216,10 @@ access details.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Celso Providelo
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Celso Providelo
 
 When Joe navigates back to his current archive subscriptions then the list of
@@ -308,10 +308,10 @@ access details are displayed.
     ...
     deb http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
         hoary main #Personal access of
-        Mark Shuttleworth to PPA named p3a for Celso Providelo
+        Mark Shuttleworth (mark) to PPA named p3a for Celso Providelo
     deb-src http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
         hoary main #Personal access of
-        Mark Shuttleworth to PPA named p3a for Celso Providelo
+        Mark Shuttleworth (mark) to PPA named p3a for Celso Providelo
 
 When Mark navigates back to his current archive subscriptions then the list of
 subscriptions reflects the confirmed subscription, providing a normal

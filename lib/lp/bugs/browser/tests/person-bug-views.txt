@@ -272,7 +272,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts = package_bug_counts[0]
 
     >>> ubuntu_firefox_bugcounts['package_name']
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_bugcounts['package_search_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
@@ -358,7 +358,7 @@ other package listed in name16's package bug listing overview, which is
 pmount:
 
     >>> packagebugs_search_view.package_bug_counts[1]['package_name']
-    u'pmount in ubuntu'
+    u'pmount in Ubuntu'
 
     >>> pmount = ubuntu.getSourcePackage('pmount')
     >>> new_bug = pmount.createBug(bug_params)
@@ -516,7 +516,7 @@ list of relevant milestones remains empty.
     >>> transaction.commit()
 
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
-    [<BugTask at ...>]
+    [<BugTask ...>]
     >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
     []
 

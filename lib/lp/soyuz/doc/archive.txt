@@ -101,7 +101,7 @@ As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
-    >>> cprov_archive.external_dependencies = "test"
+    >>> cprov_archive.external_dependencies = "deb http://foo hardy bar"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -299,11 +299,14 @@ returning I{Source, Binary}PackagePublishingHistory objects.
     >>> cprov_archive.getAllPublishedBinaries().count()
     4
 
-This lookup also supports optional filters:
+This lookup also supports various filters - see the api docs for more info.
 
- * 'name': as in SQL "LIKE '%%' || NAME || '%%'");
- * 'version': exact version string matching;
- * 'status': a item or a list of PackagePublishingStatus.
+Binary publication lookups
+--------------------------
+
+'getPublishedOnDiskBinaries' returns only unique publications, i.e., it
+excludes architecture-independent duplications which is necessary for
+having correct publication counters and archive size.
 
     >>> from lp.soyuz.enums import PackagePublishingStatus
 
@@ -313,146 +316,10 @@ This lookup also supports optional filters:
     >>> inactive_status = [PackagePublishingStatus.SUPERSEDED,
     ...                    PackagePublishingStatus.DELETED]
 
-Let's inspect source publications in Cprov PPA:
-
-    >>> all_sources = cd_lookup = cprov_archive.getPublishedSources()
-    >>> for pub in all_sources:
-    ...     title = pub.sourcepackagerelease.title
-    ...     pub_ds = pub.distroseries.name
-    ...     print "%s -> %s" % (title, pub_ds)
-    cdrkit - 1.0 -> breezy-autotest
-    iceweasel - 1.0 -> warty
-    pmount - 0.1-1 -> warty
-
-Using 'name' filter:
-
-    >>> cprov_archive.getPublishedSources(name='cd').count()
-    1
-
-    >>> cprov_archive.getPublishedSources(name='ice').count()
-    1
-
-Combining 'name' filter and 'exact_match' flag:
-
-    >>> cprov_archive.getPublishedSources(
-    ...     name='iceweasel', exact_match=True).count()
-    1
-    >>> cprov_archive.getPublishedSources(
-    ...     name='ice', exact_match=True).count()
-    0
-
-Using 'version' filter:
-
-    >>> ice_version_lookup = cprov_archive.getPublishedSources(
-    ...     version='1.0')
-    Traceback (most recent call last):
-    ...
-    VersionRequiresName: The 'version' parameter can be used only together
-    with the 'name' parameter.
-
-    >>> ice_version_lookup = cprov_archive.getPublishedSources(
-    ...     name='ice', version='1.0')
-    >>> ice_version_lookup.count()
-    1
-
-    >>> cprov_archive.getPublishedSources(
-    ...     name='ice', version='666').count()
-    0
-
-Using 'status' filter:
-
-    >>> cprov_archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.PUBLISHED).count()
-    3
-
-    >>> cprov_archive.getPublishedSources(
-    ...     status=active_status).count()
-    3
-
-    >>> cprov_archive.getPublishedSources(
-    ...     status=inactive_status).count()
-    0
-
-Using 'distroseries' filter:
-
     >>> warty = cprov_archive.distribution['warty']
     >>> hoary = cprov_archive.distribution['hoary']
     >>> breezy_autotest = cprov_archive.distribution['breezy-autotest']
-
-    >>> cprov_archive.getPublishedSources(
-    ...     distroseries=warty).count()
-    2
-    >>> cprov_archive.getPublishedSources(
-    ...     distroseries=hoary).count()
-    0
-    >>> cprov_archive.getPublishedSources(
-    ...     distroseries=breezy_autotest).count()
-    1
-
-Using 'pocket' filter:
-
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> cprov_archive.getPublishedSources(
-    ...     distroseries=warty,
-    ...     pocket=PackagePublishingPocket.RELEASE).count()
-    2
-
-    >>> cprov_archive.getPublishedSources(
-    ...     distroseries=warty,
-    ...     pocket=PackagePublishingPocket.UPDATES).count()
-    0
-
-Combining 'name' and 'distroseries' filters:
-
-    >>> cprov_archive.getPublishedSources(
-    ...     name='ice', distroseries=warty).count()
-    1
-    >>> cprov_archive.getPublishedSources(
-    ...     name='ice', distroseries=breezy_autotest).count()
-    0
-
-    >>> cprov_archive.getPublishedSources(
-    ...     name='cd', distroseries=warty).count()
-    0
-    >>> cprov_archive.getPublishedSources(
-    ...     name='cd', distroseries=breezy_autotest).count()
-    1
-
-Using the 'created_since_date' filter. This argument accept both,
-iso-timestamp strings and datetime objects.
-
-    >>> cprov_archive.getPublishedSources(
-    ...     created_since_date='2007-07-09 14:00:00').count()
-    0
-
-    >>> import datetime
-    >>> instant = datetime.datetime(year=2007, month=7, day=9, hour=14)
-
-    >>> cprov_archive.getPublishedSources(
-    ...     created_since_date=instant).count()
-    0
-
-As we move the given 'create_since_date' instant to the past the
-publications in Celso's PPA start to show up.
-
-    >>> one_hour_step = datetime.timedelta(hours=1)
-    >>> one_hour_earlier = instant - one_hour_step
-    >>> cprov_archive.getPublishedSources(
-    ...     created_since_date=one_hour_earlier).count()
-    1
-
-    >>> two_hours_earlier = one_hour_earlier - one_hour_step
-    >>> cprov_archive.getPublishedSources(
-    ...     created_since_date=two_hours_earlier).count()
-    3
-
-
-Binary publication lookups
---------------------------
-
-'getPublishedOnDiskBinaries' returns only unique publications, i.e., it
-excludes architecture-independent duplications which is necessary for
-having correct publication counters and archive size.
 
     >>> def check_bin_pubs(pubs):
     ...     """Print binary publication details."""
@@ -785,8 +652,7 @@ view the archive:
 
     # Grab some source IDs from the archive that we can use for calls to
     # getBuildSummariesForSourceIds():
-    >>> sources = cprov_private_ppa.getPublishedSources()
-    >>> source_ids = [sources[0].id]
+    >>> source_ids = [cprov_private_ppa.getPublishedSources()[0].id]
 
 Then verify that an admin can see the counters and build summaries:
 
@@ -872,8 +738,7 @@ The 'estimated_size' property automatically excludes duplicated published
 files as it happens in the archive filesystem (pool/):
 
     >>> def print_published_files(archive):
-    ...     pub_sources = archive.getPublishedSources()
-    ...     for pub_source in pub_sources:
+    ...     for pub_source in archive.getPublishedSources():
     ...         for src_file in pub_source.sourcepackagerelease.files:
     ...             print '%s: %s (%s, %d bytes)' % (
     ...                 src_file.sourcepackagerelease.title,
@@ -896,7 +761,7 @@ upstream tarball, as if it was part of two different SourcePackageRelease.
     ...     )
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
-    ...     name='cdrkit')[0]
+    ...     name='cdrkit').first()
     >>> unused_src_file = cprov_cdrkit_src.sourcepackagerelease.addFile(
     ...     huge_firefox_orig_file)
 
@@ -926,7 +791,7 @@ decreases.
     >>> cprov_archive.number_of_sources
     3
     >>> cprov_archive.getPublishedSources(
-    ...     name='cdrkit')[0].supersede()
+    ...     name='cdrkit').first().supersede()
 
     >>> cprov_archive.number_of_sources
     2
@@ -987,7 +852,7 @@ If only the source publication is DELETED, leaving its binary behind,
 it continues to be considered 'available for deletion'.
 
     >>> removal_candidate = cprov_archive.getPublishedSources(
-    ...     name='ice')[0]
+    ...     name='ice').first()
     >>> len(removal_candidate.getPublishedBinaries())
     1
 
@@ -1178,6 +1043,7 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
+    >>> login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 
@@ -1193,8 +1059,7 @@ dependency is published in Mark's PPA.
     ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 'dependency' and target archive are the same.
 
@@ -1234,8 +1099,7 @@ Only one dependency per archive can be added.
     ...     getUtility(IComponentSet)['main'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 Thus archive dependency removal can be performed simply by passing the
 dependency target.
@@ -1419,21 +1283,23 @@ Passing an invalid name will cause an empty result set.
     None
 
 IArchive.archive_url will return a URL for the archive that the builder can
-use to retrieve files from it.
+use to retrieve files from it.  Internal paths and urls supplied via the
+PunlisherConfig require us to log in as an admin:
 
+    >>> login('admin@canonical.com')
     >>> print partner_archive.archive_url
-    http://ftpmaster.internal/ubuntutest-partner
+    http://archive.launchpad.dev/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
     http://ppa.launchpad.dev/name16/ppa/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    http://ftpmaster.internal/ubuntutest
+    http://archive.launchpad.dev/ubuntutest
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
-    http://ftpmaster.internal/ubuntu-debug
+    http://archive.launchpad.dev/ubuntu-debug
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
@@ -1445,6 +1311,7 @@ COPY archives use a URL format of <distro-name>-<archive-name>:
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
+    >>> login("celso.providelo@canonical.com")
     >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -1820,7 +1687,7 @@ We will create a new PPA and some activity.
     >>> name12_archive = archive_set.new(
     ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA)
 
-    >>> a_pub = cprov_archive.getPublishedSources()[0]
+    >>> a_pub = cprov_archive.getPublishedSources().first()
     >>> def create_activity(where, how_many):
     ...     for i in range(how_many):
     ...         a_pub.copyTo(
@@ -1971,7 +1838,7 @@ One of the new copy archives will be owned by a team:
     >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(mark, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
     >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...                                        name="team-archive",
     ...                                        owner=team)
@@ -2070,7 +1937,7 @@ included:
 And if the archive is owned by a team, then anyone in the team will also
 be able to view the private team archive:
 
-    >>> cprov.join(team)
+    >>> ignore = team.addMember(cprov, team.teamowner)
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
@@ -2407,7 +2274,8 @@ can ask syncSources to synchronise these packages into mark's PPA in the
 release pocket, but to do so we must have edit permissions on the archive.
 
     >>> sources = ["package1", "package2"]
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=None)
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -2416,12 +2284,13 @@ Let's log in as mark and it will work:
 
     >>> login("mark@example.com")
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=mark)
 
-    >>> [mark_one] = mark.archive.getPublishedSources(name="package1")
+    >>> mark_one = mark.archive.getPublishedSources(name="package1").one()
     >>> print mark_one.sourcepackagerelease.version
     1.1
-    >>> [mark_two] = mark.archive.getPublishedSources(name="package2")
+    >>> mark_two = mark.archive.getPublishedSources(name="package2").one()
     >>> print mark_two.sourcepackagerelease.version
     1.0
 
@@ -2430,7 +2299,8 @@ older one.
 
 Repeating this source copy gives an error:
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy:
@@ -2442,7 +2312,8 @@ Repeating this source copy gives an error:
 Repeating this copy with binaries also gives an error:
 
     >>> mark.archive.syncSources(
-    ...     sources, cprov.archive, "release", include_binaries=True)
+    ...     sources, cprov.archive, "release", include_binaries=True,
+    ...     person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy:
@@ -2452,21 +2323,24 @@ Repeating this copy with binaries also gives an error:
 Specifying non-existent source names, pocket names or distroseries names
 all result in a NotFound exception:
 
-    >>> mark.archive.syncSources(["bogus"], cprov.archive, "release")
+    >>> mark.archive.syncSources(["bogus"], cprov.archive, "release",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
     NoSuchSourcePackageName: No such source package: 'bogus'.
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "badpocket")
+    >>> mark.archive.syncSources(sources, cprov.archive, "badpocket",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
-    PocketNotFound: 'BADPOCKET'
+    PocketNotFound: No such pocket: 'BADPOCKET'.
 
     >>> mark.archive.syncSources(
-    ...     sources, cprov.archive, "release", to_series="badseries")
+    ...     sources, cprov.archive, "release", to_series="badseries",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
-    DistroSeriesNotFound: badseries
+    NoSuchDistroSeries: No such distribution series: 'badseries'.
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
@@ -2492,7 +2366,8 @@ only match one of the test packages we created above rather than all of them.
 As with syncSources() you need to have edit permission on the archive.
 
     >>> login(ANONYMOUS)
-    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release",
+    ...     person=None)
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -2500,16 +2375,18 @@ As with syncSources() you need to have edit permission on the archive.
 Login as mark to continue.
 
     >>> login("mark@example.com")
-    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release")
-    >>> [pack] = mark.archive.getPublishedSources(
-    ...     name="pack", exact_match=True)
+    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release",
+    ...     person=mark)
+    >>> pack = mark.archive.getPublishedSources(
+    ...     name="pack", exact_match=True).one()
     >>> print pack.sourcepackagerelease.version
     1.0
 
 Copy package3 1.0 explicitly:
 
-    >>> mark.archive.syncSource("package3", "1.0", cprov.archive, "release")
-    >>> [mark_three] = mark.archive.getPublishedSources(name="package3")
+    >>> mark.archive.syncSource("package3", "1.0", cprov.archive,
+    ...     "release", person=mark)
+    >>> mark_three = mark.archive.getPublishedSources(name="package3").one()
     >>> print mark_three.sourcepackagerelease.version
     1.0
 
@@ -2535,11 +2412,11 @@ PPA like this:
 
     >>> mark.archive.syncSource(
     ...     "built-source", "1.0", cprov.archive, "release",
-    ...     include_binaries=True)
+    ...     include_binaries=True, person=mark)
 
 Now, Mark's PPA has 'built-source' source and it's 2 binaries.
 
-    >>> [copy] = mark.archive.getPublishedSources(name="built-source")
+    >>> copy = mark.archive.getPublishedSources(name="built-source").one()
     >>> len(copy.getPublishedBinaries())
     2
 
@@ -2547,7 +2424,7 @@ If copying packages into a PPA, you can only copy into the "release" pocket,
 or a CannotCopy exception is thrown.
 
     >>> mark.archive.syncSource(
-    ...     "package3", "1.2", cprov.archive, "updates")
+    ...     "package3", "1.2", cprov.archive, "updates", person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy: Destination pocket must be 'release' for a PPA.
@@ -2578,9 +2455,9 @@ the one published in 'python' section, will be used.
 
     >>> mark.archive.syncSource(
     ...     source_name='overridden', version='1.0',
-    ...     from_archive=source_archive, to_pocket='release')
+    ...     from_archive=source_archive, to_pocket='release', person=mark)
 
-    >>> [copy] = mark.archive.getPublishedSources(name="overridden")
+    >>> copy = mark.archive.getPublishedSources(name="overridden").one()
     >>> print copy.section.name
     python
 
@@ -2595,7 +2472,7 @@ true for all other archive types.
     >>> uber = getUtility(IDistributionSet).new(
     ... 'uberdistro', 'The uberdistro', 'The mother of all distros',
     ... 'All you would want from a distro', 'zero', 'uberdistro.org',
-    ... mark, cprov)
+    ... mark, cprov, cprov)
 
 The primary archive for the Überdistro was created by the
 IDistributionSet.new() method. Let's check its publish flag.

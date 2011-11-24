@@ -301,7 +301,3 @@ class PropertyFileExportTest(unittest.TestCase):
             """).strip()
 
         self.assertEqual(self.exporter.export(file).strip(), expected)
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

@@ -410,7 +410,7 @@ Let's see...
 It's important to note that even if the owner leaves the team, which
 removes his membership, he will still be the team's owner and retain his
 rights over it. This ensures we'll never have teams which can't be
-managed.
+managed. This does not imply that the owner will be a member of the team.
 
     >>> login_person(t5.teamowner)
     >>> t5.teamowner.leave(t5)
@@ -418,8 +418,23 @@ managed.
     >>> [m.displayname for m in t5.allmembers]
     []
     >>> t5.teamowner.inTeam(t5)
+    False
+
+The team owner can make themselves a member again even if the team is
+restricted:
+
+    >>> t5.teamowner.join(t5, requester=t5.teamowner)
+    >>> flush_database_updates()
+    >>> t5.teamowner in t5.allmembers
+    True
+    >>> t5.teamowner.inTeam(t5)
     True
 
+And escalate their privileges back to administrator:
+
+    >>> membership = membershipset.getByPersonAndTeam(t5.teamowner, t5)
+    >>> membership.setStatus(TeamMembershipStatus.ADMIN, t5.teamowner)
+    True
 
 Changing membership data
 ------------------------
@@ -781,8 +796,6 @@ active and set to expire tomorrow).
     >>> login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(karl_on_mirroradmins)
 
 Now the membership can't be renewed by the member as it's not going to
 expire soon.
@@ -854,11 +867,14 @@ admin members plus the owner in case he is not one of the admin members.
     >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
     True
 
-    >>> shipit_admins = personset.getByName('shipit-admins')
-    >>> shipit_admins.adminmembers.count() == 0
+    >>> from lp.testing import person_logged_in
+    >>> owner = factory.makePerson()
+    >>> adminless_team = factory.makeTeam(owner=owner)
+    >>> with person_logged_in(owner):
+    ...     owner.leave(adminless_team)
+    >>> adminless_team.adminmembers.count() == 0
     True
-    >>> owner = shipit_admins.teamowner
-    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
+    >>> list(adminless_team.getDirectAdministrators()) == [owner]
     True
 
 Note that the team administrators can contain teams, so if you want to
@@ -895,8 +911,9 @@ teams for which the person/team has admin rights.
 If a team is merged it will not show up in the set of administered teams.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_team.deactivateAllMembers("Merging", foobar)
-    >>> personset.merge(cprov_team, guadamen_team)
+    >>> membershipset.deactivateActiveMemberships(
+    ...     cprov_team, "Merging", foobar)
+    >>> personset.merge(cprov_team, guadamen_team, cprov_team.teamowner)
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
@@ -953,59 +970,3 @@ for Salgado.
     mailing-list-experts
     t1
     t4
-
-
-Email to invalid users
-----------------------
-
-There are cases where teams have deactivated or suspended users as members.
-This is a data error that needs fixing, but should not interfere with
-any notification processes. An OOPS is reported in such cases and the
-method ignores the user.
-
-Bad user joins a team, and he is approved. An admin later suspends him.
-
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     EmailAddressStatus)
-
-    >>> bad_user =  factory.makePerson(
-    ...     email='bad-user@canonical.com',
-    ...     name='bad-user',
-    ...     password='invalid')
-
-    >>> login('bad-user@canonical.com')
-    >>> bad_user.join(t3)
-
-    >>> login_person(t3.teamowner)
-    >>> t3.setMembershipData(
-    ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
-
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
-    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
-    >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from lp.services.propertycache import get_property_cache
-    >>> del get_property_cache(removeSecurityProxy(bad_user)).preferredemail
-    >>> transaction.commit()
-
-    >>> [m.displayname for m in t3.allmembers]
-    [u'Bad-user', u'Jeff Waugh']
-    >>> bad_user.is_valid_person
-    False
-    >>> print bad_user.preferredemail
-    None
-
-The teams's notifications do not fail when they process bad user.
-
-    >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
-    >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
-    >>> bad_membership.sendExpirationWarningEmail()
-
-    >>> t3.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-    >>> t3.defaultrenewalperiod = 1
-    >>> removeSecurityProxy(bad_membership).dateexpires = utc_now
-    >>> bad_membership.sendAutoRenewalNotification()
-
-    >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
-    True

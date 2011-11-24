@@ -30,8 +30,8 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import (BranchRevision)
 from lp.code.model.revision import Revision
-from lp.codehosting import iter_list_chunks
 from lp.codehosting.scanner import events
+from lp.services.utils import iter_list_chunks
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
@@ -220,6 +220,13 @@ class BzrSync:
         revids_to_insert = dict(
             self.revisionsToInsert(
                 added_history, last_revno, added_ancestry))
+        # We must remove any stray BranchRevisions that happen to already be
+        # present.
+        existing_branchrevisions = Store.of(self.db_branch).find(
+            Revision.revision_id, BranchRevision.branch == self.db_branch,
+            BranchRevision.revision_id == Revision.id,
+            Revision.revision_id.is_in(revids_to_insert))
+        branchrevisions_to_delete.update(existing_branchrevisions)
 
         return (added_ancestry, list(branchrevisions_to_delete),
                 revids_to_insert)
@@ -319,5 +326,5 @@ def schedule_diff_updates(tip_changed):
 
 
 def update_recipes(tip_changed):
-    for recipe in tip_changed.db_branch.getRecipes():
+    for recipe in tip_changed.db_branch.recipes:
         recipe.is_stale = True

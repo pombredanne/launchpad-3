@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -30,6 +30,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -413,11 +414,11 @@ class FileImporter(object):
         :param message: The message.
         :return: The POTMsgSet instance, existing or new.
         """
-        potmsgset = (
-            self.potemplate.getOrCreateSharedPOTMsgSet(
-                message.msgid_singular, plural_text=message.msgid_plural,
-                context=message.context))
-        return potmsgset
+        return self.potemplate.getOrCreateSharedPOTMsgSet(
+            message.msgid_singular, plural_text=message.msgid_plural,
+            context=message.context,
+            initial_file_references=message.file_references,
+            initial_source_comment=message.source_comment)
 
     @cachedproperty
     def share_with_other_side(self):
@@ -430,6 +431,20 @@ class FileImporter(object):
             self.translation_import_queue_entry.importer,
             self.pofile.language, sourcepackage=potemplate.sourcepackage,
             purportedly_upstream=from_upstream)
+
+    @cachedproperty
+    def is_upstream_import_on_sourcepackage(self):
+        """Use TranslationMessage.acceptFromUpstreamImportOnPackage`."""
+        if self.pofile is None:
+            return False
+        if not self.translation_import_queue_entry.by_maintainer:
+            return False
+        if self.translation_import_queue_entry.sourcepackagename is None:
+            return False
+        sourcepackage = getUtility(ISourcePackageFactory).new(
+            self.translation_import_queue_entry.sourcepackagename,
+            self.translation_import_queue_entry.distroseries)
+        return not sourcepackage.has_sharing_translation_templates
 
     @cachedproperty
     def translations_are_msgids(self):
@@ -466,12 +481,16 @@ class FileImporter(object):
         message.validation_status = TranslationValidationStatus.OK
         return True
 
-    def _approveMessage(self, potmsgset, message, message_data):
+    def _acceptMessage(self, potmsgset, message, message_data):
         """Try to approve the message, return None on TranslationConflict."""
         try:
-            message.approve(
-                self.pofile, self.last_translator,
-                self.share_with_other_side, self.lock_timestamp)
+            if self.is_upstream_import_on_sourcepackage:
+                message.acceptFromUpstreamImportOnPackage(
+                    self.pofile, self.lock_timestamp)
+            else:
+                message.acceptFromImport(
+                    self.pofile, self.share_with_other_side,
+                    self.lock_timestamp)
         except TranslationConflict:
             self._addConflictError(message_data, potmsgset)
             if self.logger is not None:
@@ -524,12 +543,13 @@ class FileImporter(object):
         # The message is first stored as a suggestion and only made
         # current if it validates.
         new_message = potmsgset.submitSuggestion(
-            self.pofile, self.last_translator, sanitized_translations)
+            self.pofile, self.last_translator, sanitized_translations,
+            from_import=True)
 
         validation_ok = self._validateMessage(
             potmsgset, new_message, sanitized_translations, message_data)
         if validation_ok and self.is_editor:
-            return self._approveMessage(potmsgset, new_message, message_data)
+            return self._acceptMessage(potmsgset, new_message, message_data)
 
         return new_message
 
@@ -581,9 +601,6 @@ class FileImporter(object):
         :param potmsgset: The current messageset for this message id.
         :param errormsg: The errormessage returned by updateTranslation.
         """
-# XXX: henninge 2008-11-05: The error should contain an ID of some sort
-#  to provide an explicit identification in tests. Until then error messages
-#  must not be rephrased without changing the test as well.
         self.errors.append({
             'potmsgset': potmsgset,
             'pofile': self.pofile,
@@ -801,11 +818,6 @@ class POFileImporter(FileImporter):
             return
 
         potmsgset = self.getOrCreatePOTMsgSet(message)
-        if potmsgset.getSequence(self.potemplate) == 0:
-            # We are importing a message that does not exist in
-            # latest translation template so we can update its values.
-            potmsgset.sourcecomment = message.source_comment
-            potmsgset.filereferences = message.file_references
 
         if 'fuzzy' in message.flags:
             message.flags.remove('fuzzy')

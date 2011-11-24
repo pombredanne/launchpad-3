@@ -14,89 +14,6 @@ contact any external servers.
     >>> import transaction
     >>> transaction.commit()
 
-We'll add a bug watch to the Gnu Savannah bug tracker so that
-checkwatches will try to get an ExternalBugTracker with which to update
-the watch.
-
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> from lp.testing.factory import LaunchpadObjectFactory
-
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> factory = LaunchpadObjectFactory()
-    >>> savannah = getUtility(ILaunchpadCelebrities).savannah_tracker
-    >>> bug_watch = factory.makeBugWatch(bugtracker=savannah)
-
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     ['cronscripts/checkwatches.py', '-v'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out
-    ''
-    >>> process.returncode
-    0
-
-    >>> print err
-    DEBUG   ...
-    DEBUG   No global batch size specified.
-    DEBUG   Skipping updating Ubuntu Bugzilla watches.
-    DEBUG   No watches to update on http://bugs.debian.org
-    DEBUG   No watches to update on mailto:bugs@example.com
-    DEBUG   No watches to update on http://bugzilla.gnome.org/
-    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
-    DEBUG   No watches to update on https://bugzilla.mozilla.org/
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    (OOPS-...)
-    DEBUG   No watches to update on http://sourceforge.net/
-    INFO    Time for this run: ... seconds.
-    DEBUG   Removing lock file:...
-    <BLANKLINE>
-
-OOPSes reported by the checkwatches process are raised using the
-CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix
-and their type is 'BugWatchUpdateWarning'.
-
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     CheckWatchesErrorUtility)
-    >>> error_utility = CheckWatchesErrorUtility()
-    >>> report = error_utility.getLastOopsReport()
-    >>> report.id
-    'OOPS-...TCW...'
-    >>> report.type
-    'BugWatchUpdateWarning'
-
-    >>> from sys import stdout
-    >>> def dump_last_oops():
-    ...     error_utility.getLastOopsReport().write(stdout)
-
-    >>> dump_last_oops()
-    Oops-Id: OOPS-...TCW...
-    Exception-Type: BugWatchUpdateWarning
-    Exception-Value: ExternalBugtracker for BugTrackerType 'SAVANE' ...
-    Date: ...
-    Page-Id:
-    Branch: ...
-    Revision: ...
-    User: None
-    URL: None
-    Duration: ...
-    Informational: False
-    <BLANKLINE>
-    error-explanation=ExternalBugtracker for ... is not known.
-    ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
-    ...Transaction completed, status: Active...
-    Traceback (most recent call last):
-    ...
-    BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
-    is not known.
-
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
 timeout and call the checkwatches cronscript machinery directly.
@@ -104,6 +21,7 @@ timeout and call the checkwatches cronscript machinery directly.
 First, we create some bug watches to test with:
 
     >>> from datetime import datetime
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.model.bugtracker import BugTracker
@@ -136,15 +54,16 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
-The timeout will also produce an OOPS report and the OOPS id will be
-included in the logged error message. The URL field of the OOPS report
-will also be automatically filled from the baseurl OOPS property.
+The timeout will not produce an OOPS report; they happen routinely and
+require no action from the Launchpad end.
 
     >>> import socket
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
-    >>> transaction.commit()
+    >>> from lp.testing.fixture import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> def do_not_urlopen(url=None, data=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
@@ -154,30 +73,9 @@ will also be automatically filled from the baseurl OOPS property.
     ...         bug_tracker_names=[example_bug_tracker_name])
     ... finally:
     ...     urllib2.urlopen = urlopen
-    >>> dump_last_oops()
-    Oops-Id: OOPS-...TCW...
-    Exception-Type: timeout
-    Exception-Value: Connection timed out.
-    Date: ...
-    Page-Id:
-    Branch: ...
-    Revision: ...
-    User: None
-    URL: http://bugs.example.com
-    Duration: ...
-    Informational: False
-    <BLANKLINE>
-    baseurl=http://bugs.example.com
-    bugtracker=example-bugs
-    error-explanation=Connection timed out ... http://bugs.example.com
-    <BLANKLINE>
-    ...SELECT COUNT(*) FROM...
-    ...SELECT BugTracker.active, BugTracker.baseurl...
-    ...Transaction completed, status: Committed...
-    <BLANKLINE>
-    Traceback (most recent call last):
-    ...
-    timeout: Connection timed out.
+    >>> capture.oopses
+    []
+    >>> capture.cleanUp()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -215,8 +113,6 @@ of the externalbugtracker module to ensure that it raises this error.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
-    WARNING...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
-    known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:
@@ -273,7 +169,7 @@ requests are actually made.
     ...     urllib2.urlopen = urlopen
     DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
-    INFO Connection timed out when updating ... (OOPS-...)
+    INFO Connection timed out when updating ...
 
 
 Updating all the watches on a bug tracker
@@ -285,9 +181,12 @@ forceUpdateAll() accepts a bug_tracker_name argument because it's
 called by the checkwatches script, which doesn't know or care about
 IBugTracker and instances thereof.
 
-If we look at our Savannah bug tracker, we'll see that it's got one bug
-watch.
+Let's first create a watch on our Savannah bug tracker.
 
+    >>> from lp.testing.dbuser import dbuser
+    >>> savannah = getUtility(ILaunchpadCelebrities).savannah_tracker
+    >>> with dbuser('launchpad'):
+    ...     bug_watch = factory.makeBugWatch(bugtracker=savannah)
     >>> savannah.watches.count()
     1
 
@@ -295,8 +194,7 @@ We'll set the lastchecked time on that Savannah instance to make sure
 that it looks as though it has been updated recently
 
     >>> login('test@canonical.com')
-    >>> for watch in savannah.watches:
-    ...     watch.lastchecked = datetime.now(utc)
+    >>> savannah.resetWatches()
 
 So our Savannah instance now has no watches that need checking.
 
@@ -318,8 +216,7 @@ CheckwatchesMaster's logger.
     >>> update_all('savannah', batch_size)
     INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    (OOPS-...)
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
     INFO 0 watches left to check on bug tracker 'savannah'
 
 We can see that the Savannah bug watch has been updated recently. Also,
@@ -334,13 +231,10 @@ since that's the error that was raised during the update.
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
 will ignore it.
 
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('test@canonical.com')
-    >>> empty_tracker = factory.makeBugTracker(
-    ...     'http://example.com', BugTrackerType.ROUNDUP)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with dbuser('launchpad'):
+    ...     login('test@canonical.com')
+    ...     empty_tracker = factory.makeBugTracker(
+    ...         'http://example.com', BugTrackerType.ROUNDUP)
     >>> empty_tracker_name = empty_tracker.name
     >>> update_all(empty_tracker_name)
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
@@ -354,11 +248,9 @@ The batch_size parameter is set, the watches will be updated in batches.
 We'll add some more watches in order to demonstrate this.
 
     >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> for i in range(5):
-    ...     bug_watch = factory.makeBugWatch(bugtracker=empty_tracker)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with dbuser('launchpad'):
+    ...     for i in range(5):
+    ...         bug_watch = factory.makeBugWatch(bugtracker=empty_tracker)
 
     >>> empty_tracker.watches.count()
     5
@@ -461,13 +353,11 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
 We'll generate a bug watch with which to test this. The bug watch must
 be associated with at least one bug task to enable syncing.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> bug_tracker = factory.makeBugTracker()
-    >>> bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
-    >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with dbuser('launchpad'):
+    ...     login('foo.bar@canonical.com')
+    ...     bug_tracker = factory.makeBugTracker()
+    ...     bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
+    ...     bug_watch.bug.default_bugtask.bugwatch = bug_watch
 
 If we pass our UselessExternalBugTracker and the bug watch we just
 generated to updateBugWatches we can see that its comments will be
@@ -487,8 +377,7 @@ If we mark the bug to which our bug watch is attached as a duplicate of
 another bug, comments won't be synced and the bug won't be linked back
 to the remote bug.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_15 = getUtility(IBugSet).get(15)
-    >>> bug_watch.bug.markAsDuplicate(bug_15)
-
-    >>> updater.updateBugWatches(remote_system, [bug_watch], now=nowish)
+    >>> with dbuser('launchpad'):
+    ...     bug_15 = getUtility(IBugSet).get(15)
+    ...     bug_watch.bug.markAsDuplicate(bug_15)
+    ...     updater.updateBugWatches(remote_system, [bug_watch], now=nowish)

@@ -1,4 +1,5 @@
-= Code import results =
+Code import results
+===================
 
 Information about the last ten import runs for a code import are shown
 on the branch index page with the other code import details.
@@ -15,9 +16,11 @@ shown on the branch page, so we create two imports in order to test
 how each result type is rendered.
 
     >>> odin = factory.makeCodeImportMachine(hostname='odin')
-    >>> make_all_result_types(code_import_1, factory, machine=odin, start=0, count=7)
+    >>> make_all_result_types(
+    ...     code_import_1, factory, machine=odin, start=0, count=7)
     >>> branch_url_1 = canonical_url(code_import_1.branch)
-    >>> make_all_result_types(code_import_2, factory, machine=odin, start=7, count=7)
+    >>> make_all_result_types(
+    ...     code_import_2, factory, machine=odin, start=7, count=7)
     >>> branch_url_2 = canonical_url(code_import_2.branch)
     >>> logout()
 
@@ -29,19 +32,19 @@ file stored with the result.
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> print extract_text(import_results).replace('&mdash;', '--')
     Import started on 2007-12-07 on odin and finished on 2007-12-07
-      taking seven hours -- see the log
+      taking 7 hours -- see the log
     Import started on 2007-12-06 on odin and finished on 2007-12-06
-      taking six hours -- see the log
+      taking 6 hours -- see the log
     Import started on 2007-12-05 on odin and finished on 2007-12-05
-      taking five hours -- see the log
+      taking 5 hours -- see the log
     Import started on 2007-12-04 on odin and finished on 2007-12-04
-      taking four hours -- see the log
+      taking 4 hours -- see the log
     Import started on 2007-12-03 on odin and finished on 2007-12-03
-      taking three hours -- see the log
+      taking 3 hours -- see the log
     Import started on 2007-12-02 on odin and finished on 2007-12-02
-      taking two hours -- see the log
+      taking 2 hours -- see the log
     Import started on 2007-12-01 on odin and finished on 2007-12-01
-      taking an hour -- see the log
+      taking 1 hour -- see the log
 
 Each of the lines is prefixed with a tick if the result status was
 success, or a cross if the status was a failure.  The title of the image
@@ -51,8 +54,8 @@ is the text of the failure or success type.
     >>> # are declared in the enumeration.
     >>> for img in import_results.fetch('img'):
     ...     print img
-    <img src="/@@/no" title="Bazaar Import Failed" />
-    <img src="/@@/no" title="Source Checkout Failed" />
+    <img src="/@@/no" title="Unsupported feature" />
+    <img src="/@@/no" title="Foreign branch invalid" />
     <img src="/@@/no" title="Internal Failure" />
     <img src="/@@/no" title="Failure" />
     <img src="/@@/yes-gray" title="Partial Success" />
@@ -65,5 +68,5 @@ is the text of the failure or success type.
     ...     print img
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />
-    <img src="/@@/no" title="Bazaar Update Failed" />
-    <img src="/@@/no" title="Source Update Failed" />
+    <img src="/@@/no" title="Broken remote branch" />
+    <img src="/@@/no" title="Forbidden URL" />

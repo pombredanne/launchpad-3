@@ -7,9 +7,9 @@ Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
+    >>> from lp.answers.tests.test_question_notifications import (
+    ...     pop_questionemailjobs)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.testing.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -29,7 +29,7 @@ is sent:
     >>> [sub.person.displayname for sub in ubuntu_question.subscriptions]
     [u'Sample Person']
 
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     1
 
@@ -41,44 +41,25 @@ that he is replying to the question and not the user. [sic] Kiko and
 Danilo have a story worth telling.
 
     >>> add_notification = notifications[0]
-    >>> add_notification['From']
-    'Sample Person <question...@answers.launchpad.net>'
 
-    >>> add_notification['Reply-To']
-    'question...@answers.launchpad.net'
-
-    >>> add_notification['To']
-    'test@canonical.com'
-
-    >>> add_notification['Subject']
-    "[Question #...]: Can't install Ubuntu"
+    >>> print add_notification.subject
+    [Question #...]: Can't install Ubuntu
 
 Like all Launchpad notifications should, the message contain in the
 footer the reason why the user is receiving the notification.
 
-    >>> notification_body = add_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print add_notification.body
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 The notification also includes a 'X-Launchpad-Question' header that
 contains information about the question.
 
-    >>> print add_notification['X-Launchpad-Question']
+    >>> print add_notification.headers['X-Launchpad-Question']
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
-
-As well as the standard 'X-Launchpad-Message-Rationale' header that
-contains in short format the reason for the user to be contacted.
-
-    >>> print add_notification['X-Launchpad-Message-Rationale']
-    Subscriber
 
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
@@ -87,7 +68,7 @@ notified about the changes as well:
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> ubuntu.addAnswerContact(ubuntu_team)
+    >>> ubuntu.addAnswerContact(ubuntu_team, ubuntu_team.teamowner)
     True
 
 And assign this question to Foo Bar, so that he will also receive
@@ -125,21 +106,16 @@ will be sent.
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
 
-    >>> from operator import itemgetter
-    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
-    >>> [notification['To'] for notification in notifications]
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
+    >>> edit_notification = notifications[1]
+    >>> print edit_notification.subject
+    Re: [Question #...]: Installer doesn't work on a Mac
 
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
-    >>> print edit_notification['Subject']
-    [Question #...]: Installer doesn't work on a Mac
-
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Question #... libstdc++ in ubuntu changed:
+    >>> print edit_notification.body
+    Question #... libstdc++ in Ubuntu changed:
     http://.../ubuntu/+source/libstdc++/+question/...
     <BLANKLINE>
-        Project: Ubuntu => libstdc++ in ubuntu
+        Project: Ubuntu => libstdc++ in Ubuntu
     <BLANKLINE>
     Summary changed to:
     Installer doesn't work on a Mac
@@ -149,10 +125,6 @@ Foo Bar, and one to Ubuntu Team:
     drive, but it won't boot.
     <BLANKLINE>
     It boots straight into MacOS 9.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are the assignee for
-    this question.
 
 # XXX flacoste 2006-09-19: Add checks for notification of change to #
 status whiteboard, priority. For example, if a question is # transferred
@@ -164,21 +136,13 @@ does not include priority.
     >>> ubuntu_question.target = ubuntu
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['target']))
-    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
-    >>> [notification['To'] for notification in notifications]
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
-
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> notifications = pop_questionemailjobs()
+    >>> edit_notification = notifications[1]
+    >>> print edit_notification.body
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Project: libstdc++ in ubuntu => Ubuntu
-    <BLANKLINE>
-    --...
-    You received this question notification because you are the assignee for
-    this question.
+        Project: libstdc++ in Ubuntu => Ubuntu
 
 Changing the assignee will trigger a notification.
 
@@ -188,21 +152,13 @@ Changing the assignee will trigger a notification.
     >>> ubuntu_question.assignee = no_priv
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['assignee']))
-    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
-    >>> [notification['To'] for notification in notifications]
-    ['no-priv@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
-
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
-    >>> print notification_body
+    >>> notifications = pop_questionemailjobs()
+    >>> edit_notification = notifications[1]
+    >>> print edit_notification.body
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Assignee: Foo Bar => No Privileges Person
-    <BLANKLINE>
-    --...
-    You received this question notification because you are the assignee for
-    this question.
 
 If we trigger a modification event when no changes worth notifying about
 was made, no notification is sent:
@@ -212,7 +168,7 @@ was made, no notification is sent:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['status']))
 
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     0
 
@@ -246,23 +202,18 @@ has been linked to it:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     2
 
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> edit_notification = notifications[1]
+    >>> print edit_notification.body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Linked to bug: #...
         http://.../bugs/...
         "Installer fails on a Mac PPC"
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 
 Bug Unlinked Notification
@@ -278,23 +229,18 @@ A notification is also sent when a bug is unlinked from the question:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     2
 
-    >>> edit_notification = notifications[0]
-    >>> notification_body = edit_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> edit_notification = notifications[1]
+    >>> print edit_notification.body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Removed link to bug: #...
         http://.../bugs/...
         "Installer fails on a Mac PPC"
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 
 Linked Bug Status Changed Notification
@@ -315,13 +261,10 @@ workflow action done.
     >>> request_message = ubuntu_question.requestInfo(
     ...     no_priv, "What is your Mac model?")
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
-
-    >>> support_notification = notifications[0]
-    >>> support_notification['Subject']
-    "Re: [Question #...]: Installer doesn't work on a Mac"
+    >>> notifications = pop_questionemailjobs()
+    >>> support_notification = notifications[1]
+    >>> print support_notification.subject
+    Re: [Question #...]: Installer doesn't work on a Mac
 
 For workflow notifications, the content of the notification is slightly
 different based on whether you are the question owner or somebody else.
@@ -329,54 +272,41 @@ different based on whether you are the question owner or somebody else.
 For example, the notification to the answer contacts and every other
 subscribers except the question owner will look like this:
 
-    >>> notification_body = support_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print support_notification.body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 But the owner notification has a slightly different preamble and has an
 extra footer.
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
     <BLANKLINE>
     --...
     To answer this request for more information, you can either reply to
     this email or enter your reply at the following page:
     http://.../ubuntu/+question/...
-    <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
 
     >>> login('test@canonical.com')
-    >>> ubuntu_question.unsubscribe(sample_person)
+    >>> ubuntu_question.unsubscribe(sample_person, sample_person)
     >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com']
-
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> notifications = pop_questionemailjobs()
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -384,15 +314,11 @@ a notification.
     <BLANKLINE>
     Sample Person gave more information on the question:
     A PowerMac 7200.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
 
-    >>> references = notifications[0]['References']
+    >>> references = notifications[0].headers['References']
     >>> print references
     <...>
 
@@ -415,15 +341,11 @@ Notifications for expireQuestion()
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_question.expireQuestion(
     ...     no_priv, "Expired because of no recent activity.")
-
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the question is expired:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -432,14 +354,10 @@ Default notification when the question is expired:
     No Privileges Person expired the question:
     Expired because of no recent activity.
     <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -453,9 +371,6 @@ Notification received by the owner:
     by replying to this email or by going to the following page and
     entering more information about your problem:
     http://.../ubuntu/+question/...
-    <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for reopen()
@@ -465,7 +380,7 @@ Notifications for reopen()
 display.)
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> email_msg = getUtility(IMessageSet).fromText(
     ...     subject=(
     ...         "Re: [Question %d]: Installer doesn't work on "
@@ -476,20 +391,16 @@ display.)
     ...         "newbie."),
     ...     owner=sample_person)
     >>> message = ubuntu_question.reopen(email_msg)
-
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Notice also how the 'Re' handling is handled nicely:
 
-    >>> print notifications[0]['Subject']
+    >>> print notifications[0].subject
     Re: [Question #...]: Installer doesn't work on a Mac
 
 Default notification when the owner reopens the question:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -500,15 +411,10 @@ Default notification when the owner reopens the question:
     useful.
     <BLANKLINE>
     Please provide some help to a newbie.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -519,10 +425,6 @@ Notification received by the owner:
     useful.
     <BLANKLINE>
     Please provide some help to a newbie.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for giveAnswer()
@@ -537,14 +439,11 @@ Notifications for giveAnswer()
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
     ...     "for all the details.")
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when an answer is proposed:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -557,15 +456,10 @@ Default notification when an answer is proposed:
     <BLANKLINE>
     Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
     all the details.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -587,9 +481,6 @@ Notification received by the owner:
     If you still need help, you can reply to this email or go to the
     following page to enter your feedback:
     http://.../ubuntu/+question/...
-    <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for confirm()
@@ -600,14 +491,11 @@ Notifications for confirm()
     ...     "I've installed BootX and the installer CD is now booting. "
     ...     "Thanks!", answer=answer_message)
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the owner confirms an answer:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -615,15 +503,10 @@ Default notification when the owner confirms an answer:
     <BLANKLINE>
     Sample Person confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -631,10 +514,6 @@ Notification received by the owner:
     <BLANKLINE>
     You confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for addComment()
@@ -645,39 +524,27 @@ Notifications for addComment()
     ...     no_priv, "Unless you have lots of RAM... and even then, the "
     ...     "system will probably be very slow.")
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when a comment is posted:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
     Unless you have lots of RAM... and even then, the system will probably
     be very slow.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
     Unless you have lots of RAM... and even then, the system will probably
     be very slow.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for reject()
@@ -688,14 +555,11 @@ Notifications for reject()
     >>> message = ubuntu_question.reject(
     ...     foo_bar, "Yeah! It will be awfully slow.")
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the question is rejected:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -704,14 +568,10 @@ Default notification when the question is rejected:
     Foo Bar rejected the question:
     Yeah! It will be awfully slow.
     <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -725,27 +585,21 @@ Notification received by the owner:
     explaining your point of view either by replying to this email or at
     the following page:
     http://.../ubuntu/+question/...
-    <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for setStatus()
 .............................
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when somebody changes the status:
 
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -753,15 +607,10 @@ Default notification when somebody changes the status:
     <BLANKLINE>
     Foo Bar changed the question status:
     The rejection was a mistake.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -769,10 +618,6 @@ Notification received by the owner:
     <BLANKLINE>
     Foo Bar changed the question status:
     The rejection was a mistake.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 
 Notifications for linkFAQ()
@@ -786,10 +631,7 @@ information before the message.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_question = firefox.newQuestion(
     ...     no_priv, 'How can I play Flash?', 'I want Flash!')
-
-    # Discard notifications.
-
-    >>> notifications = pop_notifications()
+    >>> ignore = pop_questionemailjobs()
 
     >>> login('test@canonical.com')
     >>> firefox_faq = firefox.getFAQ(10)
@@ -798,13 +640,9 @@ information before the message.
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, firefox_faq, "Read the FAQ.")
+    >>> notifications = pop_questionemailjobs()
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['no-priv@canonical.com']
-
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
@@ -823,13 +661,9 @@ If the FAQ is unlinked, the notification will look like:
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, None, "Sorry, this wasn't so useful.")
+    >>> notifications = pop_questionemailjobs()
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['no-priv@canonical.com']
-
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
@@ -850,62 +684,9 @@ Answer contacts and the bug owner is notified when questions are created
 from bugs just like when a question is normally created.
 
     >>> bug_question = ubuntu.createQuestionFromBug(bug)
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
-    2
-
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['no-priv@canonical.com', 'support@ubuntu.com']
-
-    >>> notifications[1]['Subject']
-    '[Question #...]: Installer fails on a Mac PPC'
-
-    >>> notification_body = notifications[1].get_payload(decode=True)
-    >>> print notification_body
-    New question #... on Ubuntu:
-    http://answers.launchpad.dev/ubuntu/+question/...
-    <BLANKLINE>
-    I insert the install CD in the CD-ROM drive, but it won't boot.
-    <BLANKLINE>
-    It boots straight into MacOS 9.
-    <BLANKLINE>
-    --...
-
-
-Notifications and Teams
------------------------
-
-When a team is subscribed to a question, there are two cases two
-consider. The first one is if the team has an email address set, a
-notification will only be sent to that address. (That email address is
-assumed to be a mailing list reaching all the team members.) We already
-saw an example of that case with the Ubuntu Team in the examples above.
-
-The other case is when the team doesn't have an email address set. In
-that case, all the team members will be notified individually.
-
-    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> ubuntu_question.subscribe(launchpad_devs)
-    <QuestionSubscription...>
-
-    >>> login('test@canonical.com')
-    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
-
-Of course, if the user is also individually subscribed to the question,
-he will receives only one notification:
-
-    >>> ubuntu_question.subscribe(foo_bar)
-    <QuestionSubscription...>
-
-    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+    3
 
 
 Notifications and Localized Questions
@@ -918,7 +699,7 @@ receive notifications related to it.
     # supported in Ubuntu.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> ubuntu.addAnswerContact(salgado)
+    >>> ubuntu.addAnswerContact(salgado, salgado)
     True
 
     >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
@@ -937,13 +718,10 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
-    >>> from email.Header import decode_header, make_header
-    >>> unicode(make_header(decode_header(notifications[0]['Subject'])))
-    u'[Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox'
+    >>> print notifications[0].subject.encode('ASCII', 'backslashreplace')
+    [Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox
 
 Similarly, when a question in a non-English language is modified or its
 status changed, only the subscribers speaking that language will receive
@@ -953,9 +731,7 @@ the notifications.
     ...     "Veja o screenshot: http://tinyurl.com/y8jq8z")
     <QuestionMessage...>
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['guilherme.salgado@canonical.com', 'test@canonical.com']
+    >>> ignore = pop_questionemailjobs()
 
 The exception to these general rules is that when a question is created
 in language spoken by none of the answer contacts, each one will receive
@@ -971,43 +747,35 @@ sent to the support list about that question:
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
-     'test@canonical.com']
+    >>> notifications = pop_questionemailjobs()
 
-    >>> notifications[0]['Subject']
-    "[Question #...]: (French) Impossible d'installer Ubuntu"
+    >>> print notifications[1].subject
+    [Question #...]: (French) Impossible d'installer Ubuntu
 
     # Define a function that will replace non-ascii character with
     # its unicoded encoded value.
     # Effectively replace u'\xe9' by '\\e9'.
 
-    >>> def escape_utf8_payload(message):
-    ...     charset = message.get_content_charset()
-    ...     content = unicode(message.get_payload(decode=True), charset)
-    ...     return content.encode('us-ascii', 'backslashreplace')
+    >>> def recode_text(notification):
+    ...     return notification.body.encode('ASCII', 'backslashreplace')
 
-    >>> notification_body = escape_utf8_payload(notifications[0])
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> notification_body = recode_text(notifications[1])
+    >>> print notification_body
     A question was asked in a language (French) spoken by
     none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     http://.../ubuntu/+question/...
     <BLANKLINE>
     Le CD ne semble pas fonctionn\xe9...
-    --...
-    You received this question notification because you are an answer
-    contact for Ubuntu.
 
 The notification received by the question owner contain a warning that
 the question is in a language spoken by none of the answer contacts:
 
-    >>> notifications[-1]['Subject']
-    "[Question #...]: Impossible d'installer Ubuntu"
+    >>> print notifications[0].subject
+    [Question #...]: Impossible d'installer Ubuntu
 
-    >>> notification_body = escape_utf8_payload(notifications[-1])
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> notification_body = recode_text(notifications[0])
+    >>> print notification_body
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -1015,10 +783,6 @@ the question is in a language spoken by none of the answer contacts:
     <BLANKLINE>
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
 
 No notification will be sent to the answer contacts when this question
 is modified. Only the owner will receive a modification notification
@@ -1029,13 +793,10 @@ with a warning appended to it.
     >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
     >>> notify(ObjectModifiedEvent(
     ...     french_question, unmodified_question, ['title']))
+    >>> notifications = pop_questionemailjobs()
 
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['test@canonical.com']
-
-    >>> notification_body = escape_utf8_payload(notifications[0])
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> notification_body = recode_text(notifications[0])
+    >>> print notification_body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -1044,90 +805,3 @@ with a warning appended to it.
     <BLANKLINE>
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a direct
-    subscriber of the question.
-
-
-Localized Questions and Teams
-.............................
-
-We will notify the team only if the question language is in one of the
-team's preferred languages. The languages spoken by the team members is
-unimportant.
-
-For example, the rosetta admins team becomes an Answer contact for
-English questions. Carlos speaks Spanish, and he is an answer contact
-for Ubuntu. He is also a member of the rosetta admins team. The team
-wont receive emails because of his membership when they become answer
-contacts too.
-
-    >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
-    >>> [lang.code for lang in rosetta_admins.languages]
-    []
-
-    >>> rosetta_admins.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> carlos.inTeam(rosetta_admins)
-    True
-
-    >>> spanish = getUtility(ILanguageSet)['es']
-    >>> spanish in carlos.languages
-    True
-
-    >>> ubuntu.addAnswerContact(carlos)
-    True
-
-    >>> ubuntu.addAnswerContact(rosetta_admins)
-    True
-
-    >>> spanish_question = ubuntu.newQuestion(
-    ...     sample_person, title="Necesidad ayuda con Firefox",
-    ...     description="No puedo acceso al Internet en Firefox.",
-    ...     language=spanish)
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['carlos@canonical.com', 'test@canonical.com']
-
-    >>> ubuntu.removeAnswerContact(carlos)
-    True
-
-But if the team languages attribute is set, this set of languages will
-be used. So, if the team only officially speaks French, it will only
-receive notifications about French (and English) questions.
-
-    >>> rosetta_admins.addLanguage(french)
-
-    # Resend the new message notification
-
-    >>> notify(ObjectCreatedEvent(french_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['rosetta@launchpad.net', 'test@canonical.com']
-
-When the team doesn't use an explicit address. All team members will be
-contacted if the question language is supported. For example, the
-Launchpad Developers team doesn't have any preferred email address set.
-Its only member, Foo Bar will receive a notification if the team
-supported languages includes the question language:
-
-    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> list(launchpad_devs.languages)
-    []
-
-    >>> [member.name for member in launchpad_devs.activemembers]
-    [u'name16']
-
-    >>> launchpad_devs.addLanguage(spanish)
-    >>> ubuntu.addAnswerContact(launchpad_devs)
-    True
-
-    # Resend the new message notification
-
-    >>> notify(ObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['foo.bar@canonical.com', 'test@canonical.com']
-
-

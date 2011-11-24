@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security adapters for the bugs module."""
@@ -6,11 +6,15 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.component import getUtility
+
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.security import (
+from lp.services.messages.interfaces.message import IMessage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
+    DelegatedAuthorization,
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -18,8 +22,13 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtask import IBugTaskDelete
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.features import getFeatureFlag
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -45,6 +54,50 @@ class EditBugTask(AuthorizationBase):
         return self.obj.bug.userCanView(user)
 
 
+class DeleteBugTask(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IBugTaskDelete
+
+    def checkAuthenticated(self, user):
+        """Check that a user may delete a bugtask.
+
+        A user may delete a bugtask if:
+         - The disclosure.delete_bugtask.enabled feature flag is enabled,
+         and they are:
+         - project maintainer
+         - task creator
+         - bug supervisor
+        """
+        if user is None:
+            return False
+
+        # Admins can always delete bugtasks.
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+
+        delete_allowed = bool(getFeatureFlag(
+            'disclosure.delete_bugtask.enabled'))
+        if not delete_allowed:
+            return False
+
+        bugtask = self.obj
+        owner = None
+        if IHasOwner.providedBy(bugtask.pillar):
+            owner = bugtask.pillar.owner
+        bugsupervisor = None
+        if IHasBugSupervisor.providedBy(bugtask.pillar):
+            bugsupervisor = bugtask.pillar.bug_supervisor
+        return (
+            user.inTeam(owner) or
+            user.inTeam(bugsupervisor) or
+            user.inTeam(bugtask.owner))
+
+
+class AdminDeleteBugTask(DeleteBugTask):
+    """Launchpad admins can also delete bug tasks."""
+    permission = 'launchpad.Admin'
+
+
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IHasBug
@@ -64,8 +117,8 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
     def checkAuthenticated(self, user):
         """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs. Any bug that can be seen can
-        be edited.
+        explicit subscribers to edit private bugs. Any bug that can be
+        seen can be edited.
         """
         return self.obj.userCanView(user)
 
@@ -96,11 +149,10 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bug_branch.bug)
+        super(EditBugBranch, self).__init__(bug_branch.bug)
 
 
-class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to view the
@@ -110,12 +162,11 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
-            self, bugattachment.bug)
+        super(ViewBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
-class EditBugAttachment(
-    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to edit the
@@ -125,13 +176,33 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bugattachment.bug)
+        super(EditBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):
 
     usedfor = IBugSubscription
+
+
+class EditBugSubscription(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBugSubscription
+
+    def checkAuthenticated(self, user):
+        """Check that a user may edit a subscription.
+
+        A user may edit a subscription if:
+         - They are the owner of the subscription.
+         - They are the owner of the team that owns the subscription.
+         - They are an admin of the team that owns the subscription.
+        """
+        if self.obj.person.isTeam():
+            return (
+                self.obj.person.teamowner == user.person or
+                user.person in self.obj.person.adminmembers)
+        else:
+            return user.person == self.obj.person
 
 
 class ViewBugMessage(AnonymousAuthorization):
@@ -172,6 +243,16 @@ class AdminBugWatch(AuthorizationBase):
         return (
             user.in_admin or
             user.in_launchpad_developers)
+
+
+class EditStructuralSubscription(AuthorizationBase):
+    """Edit permissions for `IStructuralSubscription`."""
+    permission = "launchpad.Edit"
+    usedfor = IStructuralSubscription
+
+    def checkAuthenticated(self, user):
+        """Subscribers can edit their own structural subscriptions."""
+        return user.inTeam(self.obj.subscriber)
 
 
 class EditBugSubscriptionFilter(AuthorizationBase):

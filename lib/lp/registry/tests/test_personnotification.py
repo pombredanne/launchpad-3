@@ -27,6 +27,44 @@ from lp.registry.scripts.personnotification import PersonNotificationManager
 from lp.testing import TestCaseWithFactory
 
 
+class TestPersonNotification(TestCaseWithFactory):
+    """Tests for PersonNotification."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonNotification, self).setUp()
+        self.notification_set = getUtility(IPersonNotificationSet)
+
+    def test_to_addresses_user(self):
+        # The to_addresses list is the user's preferred email address.
+        user = self.factory.makePerson()
+        notification = self.notification_set.addNotification(
+            user, 'subject', 'body')
+        email = '%s <%s>' % (
+            user.displayname, removeSecurityProxy(user.preferredemail).email)
+        self.assertEqual([email], notification.to_addresses)
+        self.assertTrue(notification.can_send)
+
+    def test_to_addresses_user_without_address(self):
+        # The to_addresses list is empty and the notification cannot be sent.
+        user = self.factory.makePerson()
+        user.setPreferredEmail(None)
+        notification = self.notification_set.addNotification(
+            user, 'subject', 'body')
+        self.assertEqual([], notification.to_addresses)
+        self.assertFalse(notification.can_send)
+
+    def test_to_addresses_team(self):
+        # The to_addresses list is the team admin addresses.
+        team = self.factory.makeTeam()
+        notification = self.notification_set.addNotification(
+            team, 'subject', 'body')
+        email = removeSecurityProxy(team.teamowner.preferredemail).email
+        self.assertEqual([email], notification.to_addresses)
+        self.assertTrue(notification.can_send)
+
+
 class TestPersonNotificationManager(TestCaseWithFactory):
     """Tests for the PersonNotificationManager use in scripts."""
 
@@ -59,6 +97,15 @@ class TestPersonNotificationManager(TestCaseWithFactory):
         unsent = self.manager.sendNotifications()
         self.assertEqual([notification], unsent)
         self.assertEqual(None, notification.date_emailed)
+
+    def test_sendNotifications_sent_to_team_admins(self):
+        team = self.factory.makeTeam()
+        self.assertIs(None, team.preferredemail)
+        notification = self.notification_set.addNotification(
+            team, 'subject', 'body')
+        unsent = self.manager.sendNotifications()
+        self.assertEqual(None, unsent)
+        self.failIf(notification.date_emailed is None)
 
     def test_purgeNotifications_old(self):
         user = self.factory.makePerson()

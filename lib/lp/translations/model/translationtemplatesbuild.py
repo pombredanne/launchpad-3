@@ -13,19 +13,24 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,
     )
+from lp.registry.model.product import Product
+from lp.services.database.bulk import load_related
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
@@ -48,6 +53,11 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')
+
+    @property
+    def title(self):
+        return u'Translation template build for %s' % (
+            self.branch.displayname)
 
     def __init__(self, build_farm_job, branch):
         super(TranslationTemplatesBuild, self).__init__()
@@ -86,7 +96,7 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return build
 
     @classmethod
-    def get(cls, build_id, store=None):
+    def getByID(cls, build_id, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
@@ -95,13 +105,36 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return match.one()
 
     @classmethod
-    def getByBuildFarmJob(cls, buildfarmjob_id, store=None):
+    def getByBuildFarmJob(cls, buildfarmjob, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
             TranslationTemplatesBuild,
-            TranslationTemplatesBuild.build_farm_job == buildfarmjob_id)
+            TranslationTemplatesBuild.build_farm_job_id == buildfarmjob.id)
         return match.one()
+
+    @classmethod
+    def getByBuildFarmJobs(cls, buildfarmjobs, store=None):
+        buildfarmjob_ids = [buildfarmjob.id for buildfarmjob in buildfarmjobs]
+        """See `ITranslationTemplatesBuildSource`."""
+        store = cls._getStore(store)
+
+        def eager_load(rows):
+            # Load the related branches, products.
+            branches = load_related(
+                Branch, rows, ['branch_id'])
+            load_related(
+                Product, branches, ['productID'])
+            branch_collection = GenericBranchCollection()
+            # Preload branches cached associated product series and
+            # suite source packages for all the related branches.
+            branch_collection._preloadDataForBranches(branches)
+
+        resultset = store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.build_farm_job_id.is_in(
+                buildfarmjob_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     @classmethod
     def findByBranch(cls, branch, store=None):
@@ -111,10 +144,9 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == branch)
 
-
-def get_translation_templates_build_for_build_farm_job(build_farm_job):
-    """Return a `TranslationTemplatesBuild` from its `BuildFarmJob`."""
-    build = Store.of(build_farm_job).find(
-        TranslationTemplatesBuild,
-        TranslationTemplatesBuild.build_farm_job == build_farm_job).one()
-    return ProxyFactory(build)
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`."""
+        if self.log is None:
+            return None
+        return self.log.http_url

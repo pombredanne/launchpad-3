@@ -26,9 +26,17 @@ from bzrlib.transport import get_transport
 from canonical.config import config
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BzrSvnImportWorker, CSCVSImportWorker, CodeImportSourceDetails,
-    GitImportWorker, HgImportWorker, get_default_bazaar_branch_store)
+    BzrImportWorker, BzrSvnImportWorker, CSCVSImportWorker,
+    CodeImportBranchOpenPolicy, CodeImportSourceDetails, GitImportWorker,
+    HgImportWorker, get_default_bazaar_branch_store)
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from canonical.launchpad import scripts
+
+
+opener_policies = {
+    "anything": AcceptAnythingPolicy(),
+    "default": CodeImportBranchOpenPolicy()
+    }
 
 
 def force_bzr_to_use_urllib():
@@ -36,7 +44,7 @@ def force_bzr_to_use_urllib():
 
     We want this because pycurl rejects self signed certificates, which
     prevents a significant number of import branchs from updating.  Also see
-    https://bugs.edge.launchpad.net/bzr/+bug/516222.
+    https://bugs.launchpad.net/bzr/+bug/516222.
     """
     from bzrlib.transport import register_lazy_transport
     register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
@@ -50,8 +58,12 @@ class CodeImportWorker:
     def __init__(self):
         parser = OptionParser()
         scripts.logger_options(parser)
-        options, self.args = parser.parse_args()
-        self.logger = scripts.logger(options, 'code-import-worker')
+        parser.add_option(
+            "--access-policy", type="choice", metavar="ACCESS_POLICY",
+            choices=["anything", "default"], default="default",
+            help="Access policy to use when accessing branches to import.")
+        self.options, self.args = parser.parse_args()
+        self.logger = scripts.logger(self.options, 'code-import-worker')
 
     def main(self):
         force_bzr_to_use_urllib()
@@ -65,15 +77,19 @@ class CodeImportWorker:
         elif source_details.rcstype == 'hg':
             load_optional_plugin('hg')
             import_worker_cls = HgImportWorker
-        else:
-            if source_details.rcstype not in ['cvs', 'svn']:
-                raise AssertionError(
-                    'unknown rcstype %r' % source_details.rcstype)
+        elif source_details.rcstype == 'bzr':
+            load_optional_plugin('loom')
+            import_worker_cls = BzrImportWorker
+        elif source_details.rcstype in ['cvs', 'svn']:
             import_worker_cls = CSCVSImportWorker
+        else:
+            raise AssertionError(
+                'unknown rcstype %r' % source_details.rcstype)
         import_worker = import_worker_cls(
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
-            get_default_bazaar_branch_store(), self.logger)
+            get_default_bazaar_branch_store(), self.logger,
+            opener_policies[self.options.access_policy])
         return import_worker.run()
 
 

@@ -1,14 +1,15 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import re
+
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -121,7 +122,7 @@ class TestTranslationsImport(TestCaseWithFactory):
 
     def test_checkEntry_misapproved_package(self):
         package = self.factory.makeSourcePackage()
-        other_series = self.factory.makeDistroRelease(
+        other_series = self.factory.makeDistroSeries(
             distribution=package.distroseries.distribution)
         template = self.factory.makePOTemplate(
             distroseries=package.distroseries,

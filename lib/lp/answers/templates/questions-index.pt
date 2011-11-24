@@ -28,7 +28,7 @@
       </div>
 
       <div class="yui-g">
-        <form class="central" action="" method="get"
+        <form id="search-all-questions" class="central" action="" method="get"
               tal:attributes="action request/URL">
           <table>
             <tbody>
@@ -49,27 +49,25 @@
                   />
                 </td>
               </tr>
-              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
-                <td tal:attributes="class view/scope_css_class"
-                    style="text-align: right;">
-
-                  <tal:scope
-                    replace="structure view/widgets/scope/renderScopeOptions" />
-
-                    <tal:input replace="structure target_widget/inputField" />
-
-                  <tal:sort
+            <tr>
+              <td colspan="2"
+                tal:attributes="class view/scope_css_class">
+                <input tal:replace="structure view/widgets/scope" />
+                <div class="message"
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="view/widgets/scope/error">
+                  Error message
+                </div>
+                <script type="text/javascript"
+                  tal:define="script view/focusedElementScript"
+                  tal:condition="script"
+                  tal:content="structure script" ></script>
+                <tal:sort
                     replace="structure view/widgets/sort/hidden" />
-                  <tal:status
-                    replace="structure view/widgets/status/hidden" />
-                  <div class="message"
-                    tal:condition="view/scope_error"
-                    tal:content="structure view/scope_error">
-                    Error message
-                  </div>
-                </td>
-                <td tal:content="structure target_widget/chooseLink" />
-              </tr>
+                <tal:status
+                  replace="structure view/widgets/status/hidden" />
+              </td>
+            </tr>
             </tbody>
           </table>
         </form>
@@ -90,22 +88,22 @@
 
         <div id="latest-questions-asked" class="three column middle">
           <h2>Latest questions asked</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_asked"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
 
         <div id="latest-questions-solved" class="three column right">
           <h2>Latest questions solved</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_solved"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -10,9 +10,11 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
-import sys
 
 from psycopg2 import ProgrammingError
 from pytz import utc
@@ -21,23 +23,25 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
-from zope.component import (
-    getUtility,
+from storm.store import (
+    EmptyResultSet,
+    Store,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -49,7 +53,10 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
-from lp.code.errors import BuildAlreadyPending
+from lp.code.errors import (
+    BuildAlreadyPending,
+    BuildNotAllowedForDistro,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -61,7 +68,11 @@ from lp.code.mail.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.person import Person
+from lp.services.database.bulk import load_related
 from lp.services.job.model.job import Job
+from lp.soyuz.interfaces.archive import CannotUploadToArchive
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -83,13 +94,21 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     is_private = False
 
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = [
+        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
+
     @property
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
-        return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==
-            SourcePackageRelease.id,
-            SourcePackageRelease.source_package_recipe_build==self.id)
+        return Store.of(self).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.source_package_release ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.source_package_recipe_build == self.id)
 
     @property
     def current_component(self):
@@ -194,8 +213,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            recipe.is_stale = False
             logger.debug(
                 'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            if recipe.daily_build_archive is None:
+                logger.debug(' - No daily build archive specified.')
+                continue
             for distroseries in recipe.distroseries:
                 series_name = distroseries.named_version
                 try:
@@ -206,16 +229,22 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     logger.debug(
                         ' - build already pending for %s', series_name)
                     continue
+                except CannotUploadToArchive, e:
+                    # This will catch all PPA related issues -
+                    # disabled, security, wrong pocket etc
+                    logger.debug(
+                        ' - daily build failed for %s: %s',
+                        series_name, repr(e))
+                except BuildNotAllowedForDistro:
+                    logger.debug(
+                        ' - cannot build against %s.' % series_name)
                 except ProgrammingError:
                     raise
                 except:
                     logger.exception(' - problem with %s', series_name)
-                    info = sys.exc_info()
-                    errorlog.globalErrorUtility.raising(info)
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
-            recipe.is_stale = False
         return builds
 
     def _unqueueBuild(self):
@@ -247,18 +276,48 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         package_build.destroySelf()
 
     @classmethod
-    def getById(cls, build_id):
+    def getByID(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
 
     @classmethod
+    def getByBuildFarmJob(cls, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        return Store.of(build_farm_job).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == build_farm_job.id).one()
+
+    @classmethod
+    def getByBuildFarmJobs(cls, build_farm_jobs):
+        """See `ISpecificBuildFarmJobSource`."""
+        if len(build_farm_jobs) == 0:
+            return EmptyResultSet()
+        build_farm_job_ids = [
+            build_farm_job.id for build_farm_job in build_farm_jobs]
+
+        def eager_load(rows):
+            # Circular imports.
+            from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+            package_builds = load_related(
+                PackageBuild, rows, ['package_build_id'])
+            archives = load_related(Archive, package_builds, ['archive_id'])
+            load_related(Person, archives, ['ownerID'])
+            sprs = load_related(
+                SourcePackageRecipe, rows, ['recipe_id'])
+            SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
+        resultset = Store.of(build_farm_jobs[0]).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
+
+    @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.datetime.now(utc)
+            _now = datetime.now(utc)
         store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - datetime.timedelta(days=1)
+        old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             BuildFarmJob.date_created > old_threshold,
@@ -279,13 +338,20 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
-        return datetime.timedelta(minutes=10)
+        return timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
+        # If our recipe has been deleted, any notification will fail.
+        if self.recipe is None:
+            return
+        if self.status == BuildStatus.FULLYBUILT:
+            # Don't send mail for successful recipe builds; it can be just
+            # too much.
+            return
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -323,16 +389,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             return files[filename]
         except KeyError:
             raise NotFoundError(filename)
-
-    def _handleStatus_OK(self, librarian, slave_status, logger):
-        """See `IPackageBuild`."""
-        d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
-            librarian, slave_status, logger)
-        def uploaded_build(ignored):
-            # Base implementation doesn't notify on success.
-            if self.status == BuildStatus.FULLYBUILT:
-                self.notify()
-        return d.addCallback(uploaded_build)
 
     def getUploader(self, changes):
         """See `IPackageBuild`."""
@@ -387,12 +443,3 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score
-
-
-def get_recipe_build_for_build_farm_job(build_farm_job):
-    """Return the SourcePackageRecipeBuild associated with a BuildFarmJob."""
-    store = Store.of(build_farm_job)
-    result = store.find(SourcePackageRecipeBuild,
-        SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-        PackageBuild.build_farm_job_id == build_farm_job.id)
-    return ProxyFactory(result.one())

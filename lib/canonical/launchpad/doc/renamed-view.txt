@@ -89,7 +89,7 @@ raise an error. e.g. http://launchpad.dev/ubuntu/+tickets/foo
     >>> view.publishTraverse(request, u'foo')
     Traceback (most recent call last):
      ...
-    NotFound: Object: u'foo', name: <Distribution 'Ubuntu' (ubuntu)>
+    NotFound: Object: <Distribution 'Ubuntu' (ubuntu)>, name: u'foo'
 
 
 == Registering from ZCML ==

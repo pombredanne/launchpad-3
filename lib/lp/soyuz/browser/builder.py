@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -20,6 +20,7 @@ __all__ = [
 
 import operator
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
@@ -41,14 +42,13 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
-from canonical.widgets import HiddenUserWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.owner import HiddenUserWidget
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -64,9 +64,9 @@ class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        build = super(BuilderSetNavigation, self).traverse_buildjob(name)
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        build = super(BuilderSetNavigation, self).traverse_build(name)
         if build is None:
             return None
         else:

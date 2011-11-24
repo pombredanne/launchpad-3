@@ -121,6 +121,7 @@ Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
 are there any email addresses.
 
+    >>> login(ANONYMOUS)
     >>> view = create_initialized_view(mark, '+index')
     >>> view.email_address_visibility.is_login_required
     True
@@ -482,7 +483,7 @@ explain exactly who is being contacted.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact this user
 
     >>> print view.recipients.description
@@ -512,7 +513,7 @@ contacted.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact yourself
 
     >>> print view.recipients.description
@@ -540,7 +541,7 @@ owner.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact this team
 
     >>> print view.recipients.description
@@ -570,7 +571,7 @@ The EmailToPersonView can be used by members to contact their team.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact your team
 
     >>> print view.recipients.description
@@ -599,7 +600,7 @@ special message just for him.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact your team
 
     >>> print view.recipients.description
@@ -780,8 +781,7 @@ If the person is a member of teams with PPAs but doesn't own any
 himself, the section will still not appear for anyone but people with
 lp.edit.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> login("admin@canonical.com")
     >>> team = factory.makeTeam()

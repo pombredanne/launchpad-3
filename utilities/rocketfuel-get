@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Update your copy of trunk and the necessary source dependencies, and make
@@ -9,6 +9,9 @@
 
 # Stop if there's an error, and treat unset variables as errors.
 set -eu
+
+# A rough measure of how much stuff we can do in parallel.
+CPU_COUNT="$(egrep -c '^processor\b' /proc/cpuinfo)"
 
 # Helper function to run a child process, indenting stdout to aid
 # readability.
@@ -27,6 +30,7 @@ fi
 
 LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
 LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+YUI_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/yui"
 LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
 LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
@@ -36,7 +40,7 @@ bzr pull -d "$LP_TRUNK_PATH"
 FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
 # Make sure our directories are around.
-mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
 
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
@@ -56,29 +60,41 @@ then
 fi
 
 echo "Updating sourcecode dependencies in rocketfuel:"
-echo ""
-echo "  NOTE: Each sourcedep may take a while; please be patient."
-echo ""
-echo "  ALSO NOTE: You can ignore any warnings you see below about how"
-echo "  'You have not informed bzr of your Launchpad ID ...' etc."
-echo "  See https://bugs.launchpad.net/bzr/+bug/401617 for why."
-echo ""
-echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
-
-run-child $LP_TRUNK_PATH/utilities/update-sourcecode $LP_SOURCEDEPS_PATH $sourcedeps_conf
-
+run-child \
+    "$LP_TRUNK_PATH/utilities/update-sourcecode" \
+    "$LP_SOURCEDEPS_PATH" "$sourcedeps_conf"
 
 # Update the current trees in the repo.
 echo "Updating sourcecode dependencies in current local branches:"
-for branch in "$LP_PROJECT_PATH"/*
-do
-    if [ -d "$branch/sourcecode" ]
-    then
-        echo "    ${branch}"
-        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
-            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
-    fi
-done
+
+# Find directories among local branches containing "sourcecode" directories.
+# Prints each as a null-terminated record (since Unix filenames may contain
+# newlines).
+find_branches_to_relink() {
+    find "$LP_PROJECT_PATH" \
+        -mindepth 2 -maxdepth 2 -type d -name sourcecode -printf '%h\0'
+}
+
+# Some old setups (notably dogfood) may have lp-sourcedeps mixed in with the
+# local branches.  Echo stdin to stdout, with these filenames filtered out.
+# Filenames must be null-terminated on input, and remain null-terminated on
+# output.
+filter_branches_to_relink() {
+    grep -vz '/lp-sourcedeps$'
+}
+
+# Re-link the sourcecode directories for local branches.  Takes the branch
+# paths from stdin, as null-terminated records.
+relink_branches() {
+    run-child xargs --no-run-if-empty \
+        --max-procs="${CPU_COUNT}" --max-args=1 --null \
+        "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent "$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target
+}
+
+# Actually do it:
+find_branches_to_relink | filter_branches_to_relink | relink_branches
+
 
 # Build launchpad if there were changes.
 if [ $FINAL_REV != $INITIAL_REV ];

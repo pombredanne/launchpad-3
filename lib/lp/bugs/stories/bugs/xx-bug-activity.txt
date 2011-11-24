@@ -1,4 +1,5 @@
-= Bug Activity =
+Bug Activity
+============
 
 The bug activity page is where you find the "changelog" of a bug.
 
@@ -15,7 +16,7 @@ the main heading repeats the bug number for clarity:
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
-    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) - http://bugs...dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
@@ -43,7 +44,8 @@ The bug page contains a link to the activity log.
     http://.../+bug/3/+activity
 
 
-== Activity interleaved with comments ==
+Activity interleaved with comments
+----------------------------------
 
 Some bug activity is show interleaved with comments on a bug's main
 page.
@@ -62,13 +64,13 @@ page.
     >>> user_browser.getControl('Post Comment').click()
     >>> print_comments(user_browser.contents, slice(None))
     In...
-    Bug Watch Updater
+    Bug Watch Updater (bug-watch-updater)
     on 2007-12-18
     Changed in thunderbird:
     status:
     Unknown => New
     --------
-    No Privileges Person
+    No Privileges Person (no-priv)
     ...
     #7
     Here's a comment for testing, like.
@@ -89,7 +91,7 @@ that have been added.
     Bug
     ...
     --------
-    Foo Bar ... ago
+    Foo Bar (name16) ... ago
     summary:
     - Nonsensical bugs are useless
     + A new title for this bug
@@ -127,7 +129,7 @@ are still shown in the order the changes were made.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     ... ago
     summary:
     ...
@@ -185,7 +187,7 @@ made.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     ... ago
     summary:
     ...
@@ -219,7 +221,7 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> admin_browser.getControl("Save Changes").click()
 
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     ... ago
     summary:
     ...
@@ -243,7 +245,7 @@ package, the name of the package and the distro will be displayed.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     ... ago
     Changed in mozilla-firefox (Ubuntu):
     status:
@@ -262,11 +264,12 @@ bundled with that comment in the UI.
     >>> admin_browser.getControl('Comment').value = "Lookit, a change!"
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     wrote
     ... ago:
     #2
     Lookit, a change!
+    ...
     Changed in mozilla-firefox (Ubuntu):
     status:
     New => Confirmed
@@ -282,14 +285,30 @@ If a target of a bug task is changed the old and new value will be shown.
     ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
     ...     '1/+editstatus')
     >>> admin_browser.getControl(
-    ...     'Package').value = 'linux-source-2.6.15'
+    ...     name='ubuntu_mozilla-firefox.target.package'
+    ...     ).value = 'linux-source-2.6.15'
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Foo Bar
+    Foo Bar (name16)
     wrote
     ... ago:
     #2
     ...
     affects:
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
+    --------
+
+If a bug task is deleted the pillar no longer affected will be shown.
+
+    >>> admin_browser.open("http://bugs.launchpad.dev/firefox/+bug/6")
+    >>> admin_browser.getLink(url='+distrotask').click()
+    >>> admin_browser.getControl('Distribution').value = ['ubuntu']
+    >>> admin_browser.getControl('Continue').click()
+    >>> admin_browser.open("https://bugs.launchpad.dev/ubuntu/+bug/6/+delete")
+    >>> admin_browser.getControl('Delete').click()
+    >>> print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    bug task deleted:
+    no longer affects ubuntu
     --------

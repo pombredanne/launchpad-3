@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
@@ -6,14 +6,20 @@
 __metaclass__ = type
 
 from datetime import datetime
-from unittest import TestLoader
 
 import pytz
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
@@ -23,12 +29,17 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.registry.model.personproduct import PersonProduct
 from lp.testing import (
     ANONYMOUS,
+    BrowserTestCase,
     login,
     login_person,
+    person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -179,6 +190,23 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         self.assertEqual(4, comment_count)
 
 
+class TestMerges(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person_product(self):
+        """The merges view should be enabled for PersonProduct."""
+        personproduct = PersonProduct(
+            self.factory.makePerson(), self.factory.makeProduct())
+        self.getViewBrowser(personproduct, '+merges',
+                rootsite='code')
+
+    def test_DistributionSourcePackage(self):
+        """The merges view should be enabled for DistributionSourcePackage."""
+        package = self.factory.makeDistributionSourcePackage()
+        self.getViewBrowser(package, '+merges', rootsite='code')
+
+
 class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""
 
@@ -276,9 +304,9 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is in needs review, the sort_key will be the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.registrant)
-        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        request_date = datetime(2009, 7, 1, tzinfo=pytz.UTC)
         bmp.requestReview(request_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(request_date, item.sort_key)
@@ -287,13 +315,13 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is approved, the sort_key will default to the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
-        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        request_date = datetime(2009, 7, 1, tzinfo=pytz.UTC)
         bmp.requestReview(request_date)
         bmp.approveBranch(
             bmp.target_branch.owner, 'rev-id',
-            datetime(2009,8,1,tzinfo=pytz.UTC))
+            datetime(2009, 8, 1, tzinfo=pytz.UTC))
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(request_date, item.sort_key)
 
@@ -301,9 +329,9 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is approved and the review has been bypassed, the
         # date_reviewed is used.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
-        review_date = datetime(2009,8,1,tzinfo=pytz.UTC)
+        review_date = datetime(2009, 8, 1, tzinfo=pytz.UTC)
         bmp.approveBranch(
             bmp.target_branch.owner, 'rev-id', review_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
@@ -312,7 +340,7 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
     def test_sort_key_wip(self):
         # If the proposal is a work in progress, the date_created is used.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(bmp.date_created, item.sort_key)
@@ -328,13 +356,13 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bmp1 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp1.source_branch.owner)
-        bmp1.requestReview(datetime(2009,6,1,tzinfo=pytz.UTC))
+        bmp1.requestReview(datetime(2009, 6, 1, tzinfo=pytz.UTC))
         bmp2 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp2.source_branch.owner)
-        bmp2.requestReview(datetime(2009,3,1,tzinfo=pytz.UTC))
+        bmp2.requestReview(datetime(2009, 3, 1, tzinfo=pytz.UTC))
         bmp3 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp3.source_branch.owner)
-        bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
+        bmp3.requestReview(datetime(2009, 1, 1, tzinfo=pytz.UTC))
         login(ANONYMOUS)
         view = create_initialized_view(
             product, name='+activereviews', rootsite='code')
@@ -343,5 +371,76 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
             [item.context for item in view.review_groups[view.OTHER]])
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch_owner(self):
+        # Merge proposals against private branches are visible to
+        # the branch owner.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(private=True, product=product)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            view = create_initialized_view(
+                branch, name='+activereviews', rootsite='code')
+            self.assertEqual([mp], list(view.getProposals()))
+
+
+class PersonActiveReviewsPerformance(TestCaseWithFactory):
+    """Test the performance of the person's active reviews page."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def createBMP(self, reviewer=None, target_branch_owner=None):
+        target_branch = None
+        if target_branch_owner is not None:
+            target_branch = self.factory.makePackageBranch(
+                owner=target_branch_owner)
+        bmp = self.factory.makeBranchMergeProposal(
+            reviewer=reviewer,
+            target_branch=target_branch)
+        self.factory.makePreviewDiff(merge_proposal=bmp)
+        login_person(bmp.source_branch.owner)
+        bmp.requestReview()
+        return bmp
+
+    def createBMPsAndRecordQueries(self, number_of_bmps):
+        # Create {number_of_bmps} branch merge proposals related to a
+        # user, render the person's +activereviews page and return the
+        # view and a recorder of the queries generated by this page
+        # rendering.
+        user = self.factory.makePerson()
+        for i in xrange(number_of_bmps):
+            # Create one of the two types of BMP which will be displayed
+            # on a person's +activereviews page:
+            # - A BMP for which the person is the reviewer.
+            # - A BMP for which the person is the owner of the target
+            # branch.
+            if i % 2 == 0:
+                self.createBMP(target_branch_owner=user)
+            else:
+                self.createBMP(reviewer=user)
+        login_person(user)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                user, name='+activereviews', rootsite='code',
+                principal=user)
+            view.render()
+        return recorder, view
+
+    def test_activereviews_query_count(self):
+        # Note that we keep the number of bmps created small (3 and 7)
+        # so that the all the per-cached objects will fit into the cache
+        # used in tests (storm_cache_size: 100).
+        base_bmps = 3
+        added_bmps = 4
+        recorder1, view1 = self.createBMPsAndRecordQueries(base_bmps)
+        self.assertEqual(base_bmps, view1.proposal_count)
+        self.addDetail("r1tb", Content(UTF8_TEXT, lambda: [str(recorder1)]))
+        recorder2, view2 = self.createBMPsAndRecordQueries(
+            base_bmps + added_bmps)
+        self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

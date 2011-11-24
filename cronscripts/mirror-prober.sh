@@ -8,7 +8,7 @@
 # will be sent to an email address for inspection.
 
 # Only run this script on loganberry
-THISHOST=`uname -n`
+THISHOST=$(uname -n)
 if [ "loganberry" != "$THISHOST" ]
 then
         echo "This script must be run on loganberry."
@@ -16,7 +16,7 @@ then
 fi
 
 # Only run this as the launchpad user
-USER=`whoami`
+USER=$(whoami)
 if [ "launchpad" != "$USER" ]
 then
         echo "Must be launchpad user to run this script."
@@ -24,25 +24,30 @@ then
 fi
 
 
-export LPCONFIG=production
+export LPCONFIG=distromirror
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
+
+LOGFILE=/srv/launchpad.net/production-logs/mirror-prober.log
 
 LOCK=/var/lock/launchpad_mirror_prober.lock
 lockfile -r0 -l 259200 $LOCK
 if [ $? -ne 0 ]; then
-    echo Unable to grab $LOCK lock - aborting
+    echo $(date): Unable to grab $LOCK lock - aborting | tee -a $LOGFILE
     ps fuxwww
     exit 1
 fi
 
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
-echo '== Distribution mirror prober (archive)' `date` ==
-python -S distributionmirror-prober.py --content-type=archive --max-mirrors=20
+echo $(date): Grabbed lock >> $LOGFILE
 
-echo '== Distribution mirror prober (cdimage)' `date` ==
-python -S distributionmirror-prober.py --content-type=cdimage --max-mirrors=30
+echo $(date): Probing archive mirrors >> $LOGFILE
+python -S distributionmirror-prober.py -q --content-type=archive --max-mirrors=20 --log-file=DEBUG:$LOGFILE
 
+echo $(date): Probing cdimage mirrors >> $LOGFILE
+python -S distributionmirror-prober.py -q --content-type=cdimage --max-mirrors=30 --log-file=DEBUG:$LOGFILE
+
+echo $(date): Removing lock >> $LOGFILE
 rm -f $LOCK
 

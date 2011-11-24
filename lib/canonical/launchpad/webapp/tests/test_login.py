@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2011 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0105
 """Test harness for running the new-login.txt tests."""
 
@@ -19,6 +19,7 @@ from datetime import (
     )
 import httplib
 import unittest
+import urllib2
 
 import mechanize
 from openid.consumer.consumer import (
@@ -26,10 +27,12 @@ from openid.consumer.consumer import (
     SUCCESS,
     )
 from openid.extensions import sreg
+from openid.yadis.discover import DiscoveryFailure
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
+from zope.testbrowser.testing import Browser as TestBrowser
 
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
@@ -49,7 +52,10 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication,
+    IStoreSelector,
+    )
 from canonical.launchpad.webapp.login import (
     OpenIDCallbackView,
     OpenIDLogin,
@@ -62,10 +68,13 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     logout,
+    TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import ZopeViewReplacementFixture
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 
@@ -468,6 +477,19 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 AssertionError,
                 getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
+    def test_logs_to_timeline(self):
+        # Completing an OpenID association *can* make an HTTP request to the
+        # OP, so it's a potentially long action. It is logged to the
+        # request timeline.
+        account = self.factory.makeAccount('Test account')
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
+        start, stop = get_request_timeline(view.request).actions[-2:]
+        self.assertEqual(start.category, 'openid-association-complete-start')
+        self.assertEqual(start.detail, '')
+        self.assertEqual(stop.category, 'openid-association-complete-stop')
+        self.assertEqual(stop.detail, '')
+
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
         self.assertTrue(datetime.utcnow() - last_write < timedelta(minutes=1))
@@ -498,7 +520,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
-            QUERY_STRING='starting_url='+self.STARTING_URL)
+            QUERY_STRING='starting_url=' + self.STARTING_URL)
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -558,7 +580,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('name12', login_status)
+        self.assertIn('Sample Person (name12)', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -574,6 +596,39 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         error_msg = find_tags_by_class(replay_browser.contents, 'error')[0]
         self.assertEquals('Nonce already used or out of range',
                           extract_text(error_msg))
+
+
+class FakeHTTPResponse:
+    status = 500
+
+
+class OpenIDConsumerThatFailsDiscovery:
+
+    def begin(self, url):
+        raise DiscoveryFailure(
+            'HTTP Response status from identity URL host is not 200. '
+            'Got status 500', FakeHTTPResponse)
+
+
+class TestMissingServerShowsNiceErrorPage(TestCase):
+    layer = DatabaseFunctionalLayer
+
+    def test_missing_openid_server_shows_nice_error_page(self):
+        fixture = ZopeViewReplacementFixture('+login', ILaunchpadApplication)
+
+        class OpenIDLoginThatFailsDiscovery(fixture.original):
+            def _getConsumer(self):
+                return OpenIDConsumerThatFailsDiscovery()
+
+        fixture.replacement = OpenIDLoginThatFailsDiscovery
+        self.useFixture(fixture)
+        browser = TestBrowser()
+        self.assertRaises(urllib2.HTTPError,
+                          browser.open, 'http://launchpad.dev/+login')
+        self.assertEquals('503 Service Unavailable',
+                          browser.headers.get('status'))
+        self.assertTrue(
+            'OpenID Provider Is Unavailable at This Time' in browser.contents)
 
 
 class FakeOpenIDRequest:
@@ -639,6 +694,24 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
         self.assertEquals(['email', 'fullname'],
                           sorted(sreg_extension.allRequestedFields()))
+        self.assertEquals(sorted(sreg_extension.required),
+                          sorted(sreg_extension.allRequestedFields()))
+
+    def test_logs_to_timeline(self):
+        # Beginning an OpenID association makes an HTTP request to the
+        # OP, so it's a potentially long action. It is logged to the
+        # request timeline.
+        request = LaunchpadTestRequest()
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        start, stop = get_request_timeline(request).actions[-2:]
+        self.assertEqual(start.category, 'openid-association-begin-start')
+        self.assertEqual(start.detail, 'http://testopenid.dev/')
+        self.assertEqual(stop.category, 'openid-association-begin-stop')
+        self.assertEqual(stop.detail, 'http://testopenid.dev/')
 
 
 class TestOpenIDRealm(TestCaseWithFactory):

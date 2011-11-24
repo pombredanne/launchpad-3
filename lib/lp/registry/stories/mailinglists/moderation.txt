@@ -8,7 +8,7 @@ member in good standing (as is the default).
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> from lp.registry.tests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
@@ -58,7 +58,7 @@ member in good standing.  He posts a message to the team's mailing list,
 and it is held for approval.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: carlos@canonical.com

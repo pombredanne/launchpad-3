@@ -40,7 +40,7 @@ projects' pages in Launchpad. The "project of the day" is listed separately.
     Mozilla Firefox
     Gentoo
     GNOME Terminal
-    the Mozilla Project
+    The Mozilla Project
     Mozilla Thunderbird
     Ubuntu
 
@@ -108,7 +108,7 @@ is now at index '4' and is therefore displayed as the top project:
     Mozilla Firefox
     GNOME
     GNOME Terminal
-    the Mozilla Project
+    The Mozilla Project
     Mozilla Thunderbird
     Ubuntu
 
@@ -138,7 +138,7 @@ that Apache has been removed:
     Mozilla Firefox
     Gentoo
     GNOME Terminal
-    the Mozilla Project
+    The Mozilla Project
     Mozilla Thunderbird
     Ubuntu
     Browse all ... projects

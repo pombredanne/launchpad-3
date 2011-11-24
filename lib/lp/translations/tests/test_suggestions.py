@@ -19,10 +19,6 @@ from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
-    )
-from lp.translations.utilities.validate import GettextValidationError
 
 
 class TestTranslationSuggestions(TestCaseWithFactory):
@@ -63,11 +59,13 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # translations for it, there are no suggestions for translating
         # it whatsoever.
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
-        potmsgset.setSequence(self.foo_template, 1)
         self.assertEquals(
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
         self.assertEquals(
             potmsgset.getExternallySuggestedTranslationMessages(self.nl), [])
+        self.assertEqual({},
+            potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[self.nl], used_languages=[self.nl]))
 
     def test_SimpleExternallyUsedSuggestion(self):
         # If foo wants to translate "error message 936" and bar happens
@@ -75,21 +73,26 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # suggestion.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
         transaction.commit()
 
+        def check_used_suggested():
+            self.assertEquals(len(used_suggestions), 1)
+            self.assertEquals(used_suggestions[0], translation)
+            self.assertEquals(len(other_suggestions), 0)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
-        self.assertEquals(len(used_suggestions), 1)
-        self.assertEquals(used_suggestions[0], translation)
-        self.assertEquals(len(other_suggestions), 0)
+        check_used_suggested()
+        other_suggestions, used_suggestions = \
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[self.nl],
+                used_languages=[self.nl])[self.nl]
+        check_used_suggested()
 
     def test_DisabledExternallyUsedSuggestions(self):
         # If foo wants to translate "error message 936" and bar happens
@@ -98,9 +101,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # If global suggestions are disabled, empty list is returned.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
@@ -109,6 +110,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # There is a global (externally used) suggestion.
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
+        self.assertEquals(len(used_suggestions), 1)
+        used_suggestions = foomsg.getExternallySuggestedOrUsedTranslationMessages(
+            used_languages=[self.nl], suggested_languages=[self.nl])[self.nl].used
         self.assertEquals(len(used_suggestions), 1)
 
         # Override the config option to disable global suggestions.
@@ -120,6 +124,11 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         disabled_used_suggestions = (
             foomsg.getExternallyUsedTranslationMessages(self.nl))
         self.assertEquals(len(disabled_used_suggestions), 0)
+        disabled_used_suggestions = (
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[self.nl],
+                suggested_languages=[self.nl]))[self.nl].used
+        self.assertEquals(len(disabled_used_suggestions), 0)
         # Restore the old configuration.
         config.pop('disabled_suggestions')
 
@@ -127,21 +136,26 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # Suggestions made for bar can also be useful suggestions for foo.
         text = "Welcome to our application!  We hope to have code soon."
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         suggestion = barmsg.submitSuggestion(
-            self.bar_nl, self.foo_template.owner, { 0: "Noueh hallo dus." })
+            self.bar_nl, self.foo_template.owner, {0: "Noueh hallo dus."})
 
         transaction.commit()
 
+        def check_used_suggested():
+            self.assertEquals(len(used_suggestions), 0)
+            self.assertEquals(len(other_suggestions), 1)
+            self.assertEquals(other_suggestions[0], suggestion)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
-        self.assertEquals(len(used_suggestions), 0)
-        self.assertEquals(len(other_suggestions), 1)
-        self.assertEquals(other_suggestions[0], suggestion)
+        check_used_suggested()
+        other_suggestions, used_suggestions = \
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[self.nl],
+                suggested_languages=[self.nl])[self.nl]
+        check_used_suggested()
 
     def test_IdenticalSuggestions(self):
         # If two suggestions are identical, the most recent one is used.
@@ -151,15 +165,13 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         before = now - timedelta(1, 1, 1)
 
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=foomsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=barmsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         self.assertNotEqual(suggestion1, suggestion2)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
@@ -170,12 +182,15 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         oof_template = self.factory.makePOTemplate()
         oof_potmsgset = self.factory.makePOTMsgSet(
             oof_template, singular=text)
-        oof_potmsgset.setSequence(oof_template, 1)
         from storm.store import Store
         Store.of(oof_template).flush()
         transaction.commit()
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
+        self.assertEquals(len(suggestions), 1)
+        self.assertEquals(suggestions[0], suggestion1)
+        suggestions = oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+            suggested_languages=[self.nl], used_languages=[self.nl])[self.nl].used
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
 
@@ -188,11 +203,11 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_in_ubuntu },
+            translations={0: translated_in_ubuntu},
             current_other=False)
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_upstream },
+            translations={0: translated_upstream},
             current_other=True)
         ubuntu_translation = potmsgset.getCurrentTranslation(
             self.foo_template, self.foo_nl.language,

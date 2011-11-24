@@ -6,14 +6,26 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
-  <tal:css metal:fill-slot="head_epilogue"
-    condition="view/is_project_milestone">
-    <style id="hide-side-portlets" type="text/css">
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <tal:is_project condition="view/is_project_milestone">
+      <style id="hide-side-portlets" type="text/css">
         .side {
-            background: #fff;
-            }
-    </style>
-  </tal:css>
+          background: #fff;
+        }
+      </style>
+    </tal:is_project>
+    <tal:uses_launchpad_bugtracker
+       condition="context/target/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
+  </tal:head-epilogue>
 
   <body>
     <tal:heading metal:fill-slot="heading">
@@ -199,10 +211,10 @@
 
     <div id="milestone-specs-bugs" class="portlet full-page-width">
         <h2>
-          <span id="specification-count" style="color: #3594bb;"
+          <span id="specification-count"
             tal:content="structure view/specification_count_text">2</span>
           and
-          <span id="bug-count" style="color: #9f2b33;"
+          <span id="bug-count"
             tal:content="structure view/bugtask_count_text">2</span>
           targeted
         </h2>
@@ -307,6 +319,9 @@
               series</a>
           </li>
         </ul>
+      </div>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
     </div>
 

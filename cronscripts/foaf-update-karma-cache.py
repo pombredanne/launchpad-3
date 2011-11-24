@@ -1,17 +1,18 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
 
 import _pythonpath
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    ISOLATION_LEVEL_AUTOCOMMIT, flush_database_updates)
+    cursor,
+    flush_database_updates,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.services.scripts.base import LaunchpadCronScript
@@ -33,14 +34,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         self.logger.info("Updating Launchpad karma caches")
 
-        # We use the autocommit transaction isolation level to minimize
-        # contention. It also allows us to not bother explicitly calling
-        # COMMIT all the time. However, if we interrupt this script mid-run
-        # it will need to be re-run as the data will be inconsistent (only
-        # part of the caches will have been recalculated).
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
-        self.cur = self.txn.conn().cursor()
+        self.cur = cursor()
         self.karmacachemanager = getUtility(IKarmaCacheManager)
 
         # This method ordering needs to be preserved. In particular,
@@ -184,7 +178,8 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
-            SELECT person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
+            SELECT
+                person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
             FROM KarmaCache
             WHERE distribution IS NOT NULL
             GROUP BY person, distribution
@@ -204,7 +199,8 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             GROUP BY person, Product.project
             """)
 
-        # - All actions with a specific category of a person on a given project
+        # - All actions with a specific category of a person on a given
+        # project.
         # IMPORTANT: This has to be the latest step; otherwise the rows
         # inserted here will be included in the calculation of the overall
         # karma of a person on a given project.
@@ -267,7 +263,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         at C_add_summed_totals to see how the summed entries are generated.
         """
         (person_id, category_id, product_id, distribution_id, points) = entry
-        points *= scaling[category_id] # Scaled. wow.
+        points *= scaling[category_id]  # Scaled. wow.
         self.logger.debug("Setting person_id=%d, category_id=%d, points=%d"
                           % (person_id, category_id, points))
 
@@ -291,7 +287,12 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = KarmaCacheUpdater('karma-update',
+    script = KarmaCacheUpdater(
+        'karma-update',
         dbuser=config.karmacacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=True)
-
+    # We use the autocommit transaction isolation level to minimize
+    # contention. It also allows us to not bother explicitly calling
+    # COMMIT all the time. However, if we interrupt this script mid-run
+    # it will need to be re-run as the data will be inconsistent (only
+    # part of the caches will have been recalculated).
+    script.lock_and_run(isolation='autocommit')

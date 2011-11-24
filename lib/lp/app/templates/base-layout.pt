@@ -4,8 +4,6 @@
   define-macro="master"
   tal:define="
     revno modules/lp.app.versioninfo/revno | string:unknown;
-    release modules/lp.app.versioninfo/release;
-    version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -46,19 +44,17 @@
     </style>
 
     <tal:comment condition="nothing">
-      This CSS collapses the contents of collapsible fieldsets,
-      without the flashing that would result from doing it in JavaScript.
-      activateCollapsibles() removes the class="collapsed" from fieldsets, to
-      re-show their divs, once the children themselves have been collapsed.
+      Removing the below <noscript></noscript> snippet makes two tests fail
+      with redirection problems:
+        xx-ubuntu-filebug.txt
+        xx-bug-reporting-tools.txt
+      No time to look into it now, so keeping it in. XXX Danilo 20110715
     </tal:comment>
-    <style type="text/css">
-      fieldset.collapsed div, fieldset div.collapsed {display: none;}
-    </style>
-    <noscript>
-      <style type="text/css">
-        fieldset.collapsible div, fieldset div.collapsed {display: block;}
-      </style>
-    </noscript>
+    <noscript></noscript>
+
+    <meta name="description" 
+      tal:condition="view/page_description | nothing"
+      tal:attributes="content view/page_description/fmt:strip-email/fmt:shorten/500">
 
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
@@ -66,6 +62,8 @@
   </head>
 
   <body id="document"
+    itemscope=""
+    itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
@@ -129,13 +127,15 @@
 
             <tal:maintenance
               replace="structure context/@@+maintenancemessage" />
-            <tal:notifications
-              define="notifications request/notifications"
-              condition="notifications">
-              <metal:notifications
-                use-macro="context/@@+base-layout-macros/notifications"/>
-            </tal:notifications>
-              <metal:main define-slot="main" />
+            <div id="request-notifications">
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications">
+                <metal:notifications
+                  use-macro="context/@@+base-layout-macros/notifications"/>
+              </tal:notifications>
+            </div>
+            <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
@@ -169,7 +169,6 @@
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
   </body>
-</html>
 
 <tal:template>
   <tal:comment
@@ -183,10 +182,26 @@
 
     At least ${log}
 
-    Features: ${request/features/usedFlags} 
-    in scopes ${request/features/usedScopes} 
+    Features: ${request/features/usedFlags}
+    in scopes ${request/features/usedScopes}
 
     r${revno}
   --&gt;" />
 </tal:template>
+
+<tal:comment
+    tal:condition="request/features/visible_render_time"
+    define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+  start_ajax_logging();
+  var render_time = "${render_time}";
+  LPS.use("node", function(Y) {
+    Y.on("domready", function() {
+      var node = Y.one("#rendertime");
+      node.set("innerHTML", render_time);
+    });
+  });
+&lt;/script&gt;' />
+
+</html>
 </metal:page>

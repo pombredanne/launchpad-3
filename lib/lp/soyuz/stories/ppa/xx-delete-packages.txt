@@ -507,7 +507,7 @@ Remove the just deleted publication from disk setting its
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> deleted_pub = no_priv.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.DELETED)[0]
+    ...     status=PackagePublishingStatus.DELETED).first()
     >>> deleted_pub.dateremoved = deleted_pub.datecreated
     >>> logout()
 

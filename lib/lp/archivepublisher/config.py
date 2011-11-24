@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -8,8 +8,14 @@
 
 import os
 
+from zope.component import getUtility
+
 from canonical.config import config
-from lp.soyuz.enums import ArchivePurpose
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.soyuz.enums import (
+    archive_suffixes,
+    ArchivePurpose,
+    )
 
 
 APT_FTPARCHIVE_PURPOSES = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
@@ -24,9 +30,13 @@ def getPubConfig(archive):
     """
     pubconf = Config()
     ppa_config = config.personalpackagearchive
+    db_pubconf = getUtility(
+        IPublisherConfigSet).getByDistribution(archive.distribution)
+    if db_pubconf is None:
+        return None
 
     pubconf.temproot = os.path.join(
-        config.archivepublisher.root, '%s-temp' % archive.distribution.name)
+        db_pubconf.root_dir, '%s-temp' % archive.distribution.name)
 
     if archive.is_ppa:
         if archive.private:
@@ -40,15 +50,12 @@ def getPubConfig(archive):
             pubconf.distroroot, archive.owner.name, archive.name,
             archive.distribution.name)
     elif archive.is_main:
-        pubconf.distroroot = config.archivepublisher.root
+        pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name)
-        if archive.purpose == ArchivePurpose.PARTNER:
-            pubconf.archiveroot += '-partner'
-        elif archive.purpose == ArchivePurpose.DEBUG:
-            pubconf.archiveroot += '-debug'
+        pubconf.archiveroot += archive_suffixes[archive.purpose]
     elif archive.is_copy:
-        pubconf.distroroot = config.archivepublisher.root
+        pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot,
             archive.distribution.name + '-' + archive.name,
@@ -81,10 +88,6 @@ def getPubConfig(archive):
         meta_root, "meta", archive.name)
 
     return pubconf
-
-
-class LucilleConfigError(Exception):
-    """Lucille configuration was not present."""
 
 
 class Config(object):

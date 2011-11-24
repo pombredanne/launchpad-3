@@ -18,7 +18,7 @@ product. He does not provide bug watch information.
     >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 1'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()

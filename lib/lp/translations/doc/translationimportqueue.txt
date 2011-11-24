@@ -27,8 +27,7 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.product import IProductSet
@@ -40,7 +39,7 @@ Here we have some imports and utility fetch.
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.model.productseries import ProductSeries
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from canonical.launchpad.ftests import login, syncUpdate
+    >>> from canonical.launchpad.ftests import login
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
@@ -1057,7 +1056,6 @@ review.
 Administrators temporarily block translation imports to Warty.
 
     >>> warty_distroseries.defer_translation_imports = True
-    >>> syncUpdate(warty_distroseries)
 
 While imports are blocked, Warty does not show up as having pending
 imports.
@@ -1074,7 +1072,6 @@ run in violation of Launchpad policies.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False
-    >>> syncUpdate(firefox)
 
 Now that Firefox is inactive, it no longer shows up as having pending
 imports.
@@ -1087,7 +1084,6 @@ The administrator realizes that there has been a mistake, and makes
 Firefox active again.
 
     >>> firefox.active = True
-    >>> syncUpdate(firefox)
 
 The import request for Firefox was not removed, so Firefox is listed as
 having pending imports again.
@@ -1151,7 +1147,32 @@ Current entries in the queue are:
     warty evolution | None               | po/sr.po
 
 Attach the sample tarball to the 'evolution-2.2-test' template in evolution
-product. There will be three new entries from the tarball.
+product. We can ask to only upload the template from the tarball and ignore
+the other files.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, by_maintainer, rosetta_experts,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_test_template,
+    ...     only_templates=True)
+    (1, [])
+
+And this new entry in the queue appears in the list.
+
+    >>> print_queue_entries(queue)
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | foo.pot
+
+
+But we really want all files from the tarball, so we upload them all.
+There will be three new entries from the tarball.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
     ...     tarfile_content, by_maintainer, rosetta_experts,
@@ -1170,8 +1191,8 @@ And those new entries in the queue appear in the list.
     evolution       | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
     warty evolution | None               | po/sr.po
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
 
 It is possible to update the content of an entry in the queue.
@@ -1244,8 +1265,8 @@ the extra three entries.
     >>> print_queue_entries(queue)
     hoary ...
     ...
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
     evolution       | evolution-2.2      | es.po
     evolution       | evolution-2.2      | foo.pot
@@ -1562,14 +1583,11 @@ A user sets up Jokosher for translation, and uploads a template.
     >>> jokosher = productset['jokosher']
     >>> jokosher_trunk = jokosher.getSeries('trunk')
     >>> jokosher.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> syncUpdate(jokosher)
     >>> jokosher_subset = potemplateset.getSubset(
     ...     productseries=jokosher_trunk)
     >>> template = jokosher_subset.new(
     ...     'jokosher', 'jokosher', 'jokosher.pot', rosetta_experts)
-    >>> syncUpdate(template)
     >>> entry = create_product_request('jokosher', 'jokosher')
-    >>> syncUpdate(entry)
     >>> print_queue_entries(translationimportqueue)
     jokosher    | jokosher    | messages.pot
 
@@ -1584,7 +1602,6 @@ An administrator finds that this registration of the Jokosher project
 does not satisfy Launchpad policy, and disables it.
 
     >>> jokosher.active = False
-    >>> syncUpdate(jokosher)
 
 The request is now eligible for purging.  Since the Jokosher product is
 no longer usable, there is no point in keeping the entry on the queue.

@@ -31,17 +31,17 @@
         div.collapsible, div.collapsed {display: block;}
       </style>
     </noscript>
-
-        <script type="text/javascript"
-                tal:content="string:
-          LPS.use('lp.registry.pillar', function(Y) {
-              Y.on('load',
-                  function(e) {
-                      Y.lp.registry.pillar.activate_collapsible_div();
-                  },
-                  window);
+    <tal:uses_launchpad_bugtracker
+       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
           });
-        "/>
+      </script>
+    </tal:uses_launchpad_bugtracker>
   </tal:head-epilogue>
 </head>
 
@@ -162,9 +162,9 @@
                         condition="not:repeat/license/end">,</tal:comma>
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
-                  <tal:has_description condition="context/license_info">
-                    (<tal:description replace="context/license_info" />)
-                  </tal:has_description>
+                  <tal:has_license_info condition="view/show_license_info">
+                    (<tal:license_info replace="context/license_info" />)
+                  </tal:has_license_info>
                 </dd>
                 <dd id="commercial_subscription"
                   tal:condition="context/commercial_subscription">
@@ -256,6 +256,10 @@
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
+
       </div>
     </tal:main>
 

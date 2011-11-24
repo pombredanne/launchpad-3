@@ -5,13 +5,20 @@
 
 __metaclass__ = type
 
+import transaction
+
 from zope.security.management import endInteraction
 
-from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.testing.pages import webservice_for_person
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus,
+from canonical.launchpad.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
     )
+from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.testing import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
@@ -40,7 +47,7 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     """Test accessing specification attributes over the webservice."""
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
 
     def test_representation_is_empty_on_1_dot_0(self):
         # ISpecification is exposed on the 1.0 version so that they can be
@@ -52,7 +59,8 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link',
+                         u'web_link']
         self.assertEqual(response.status, 200)
         self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
@@ -154,6 +162,14 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         self.assertEqual(1, spec_webservice.dependencies.total_size)
         self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
 
+    def test_representation_contains_linked_branches(self):
+        spec = self.factory.makeSpecification()
+        branch = self.factory.makeBranch()
+        person = self.factory.makePerson()
+        spec.linkBranch(branch, person)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.linked_branches.total_size)
+
     def test_representation_contains_bug_links(self):
         spec = self.factory.makeSpecification()
         bug = self.factory.makeBug()
@@ -167,11 +183,11 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
 
     def test_get_specification_on_product(self):
         product = self.factory.makeProduct(name="fooix")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product, name="some-spec")
         product_on_webservice = self.getPillarOnWebservice(product)
         spec = product_on_webservice.getSpecification(name="some-spec")
@@ -180,7 +196,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
 
     def test_get_specification_on_distribution(self):
         distribution = self.factory.makeDistribution(name="foobuntu")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             distribution=distribution, name="some-spec")
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         spec = distro_on_webservice.getSpecification(name="some-spec")
@@ -191,7 +207,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         product = self.factory.makeProduct(name="fooix")
         productseries = self.factory.makeProductSeries(
             product=product, name="fooix-dev")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product, name="some-spec", goal=productseries)
         product_on_webservice = self.getPillarOnWebservice(product)
         productseries_on_webservice = product_on_webservice.getSeries(
@@ -204,7 +220,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         distribution = self.factory.makeDistribution(name="foobuntu")
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="maudlin")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             distribution=distribution, name="some-spec",
             goal=distroseries)
         distro_on_webservice = self.getPillarOnWebservice(distribution)
@@ -259,3 +275,109 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         self.assertNamesOfSpecificationsAre(
             ["spec1"], distro_on_webservice.valid_specifications)
+
+
+class TestSpecificationSubscription(SpecificationWebserviceTestCase):
+
+    layer = AppServerLayer
+
+    def test_subscribe(self):
+        # Test subscribe() API.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+        spec = ws_object(launchpad, db_spec)
+        person = ws_object(launchpad, db_person)
+        spec.subscribe(person=person, essential=True)
+        transaction.commit()
+
+        # Check the results.
+        sub = db_spec.subscription(db_person)
+        self.assertIsNot(None, sub)
+        self.assertTrue(sub.essential)
+
+    def test_unsubscribe(self):
+        # Test unsubscribe() API.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeBlueprint()
+            db_person = self.factory.makePerson()
+            db_spec.subscribe(person=db_person)
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
+
+        spec = ws_object(launchpad, db_spec)
+        person = ws_object(launchpad, db_person)
+        spec.unsubscribe(person=person)
+        transaction.commit()
+
+        # Check the results.
+        self.assertFalse(db_spec.isSubscribed(db_person))
+
+    def test_canBeUnsubscribedByUser(self):
+        # Test canBeUnsubscribedByUser() API.
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything',
+            domain='api.launchpad.dev:8085')
+
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+            spec = ws_object(launchpad, db_spec)
+            person = ws_object(launchpad, db_person)
+            subscription = spec.subscribe(person=person, essential=True)
+            transaction.commit()
+
+        result = webservice.named_get(
+            subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+        self.assertFalse(result)
+
+
+class TestSpecificationBugLinks(SpecificationWebserviceTestCase):
+
+    layer = AppServerLayer
+
+    def test_bug_linking(self):
+        # Set up a spec, person, and bug.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            db_bug = self.factory.makeBug()
+            launchpad = self.factory.makeLaunchpadService()
+
+        # Link the bug to the spec via the web service.
+        with person_logged_in(db_person):
+            spec = ws_object(launchpad, db_spec)
+            bug = ws_object(launchpad, db_bug)
+            # There are no bugs associated with the spec/blueprint yet.
+            self.assertEqual(0, spec.bugs.total_size)
+            spec.linkBug(bug=bug)
+            transaction.commit()
+
+        # The spec now has one bug associated with it and that bug is the one
+        # we linked.
+        self.assertEqual(1, spec.bugs.total_size)
+        self.assertEqual(bug.id, spec.bugs[0].id)
+
+    def test_bug_unlinking(self):
+        # Set up a spec, person, and bug, then link the bug to the spec.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeBlueprint()
+            db_person = self.factory.makePerson()
+            db_bug = self.factory.makeBug()
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
+
+        spec = ws_object(launchpad, db_spec)
+        bug = ws_object(launchpad, db_bug)
+        spec.linkBug(bug=bug)
+
+        # There is only one bug linked at the moment.
+        self.assertEqual(1, spec.bugs.total_size)
+
+        spec.unlinkBug(bug=bug)
+        transaction.commit()
+
+        # Now that we've unlinked the bug, there are no linked bugs at all.
+        self.assertEqual(0, spec.bugs.total_size)

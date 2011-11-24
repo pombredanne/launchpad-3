@@ -9,6 +9,7 @@ from datetime import datetime
 import hashlib
 import os
 import shutil
+import tempfile
 
 from storm.store import Store
 from zope.component import getUtility
@@ -46,6 +47,7 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPackageBuildBase(TestCaseWithFactory):
@@ -203,15 +205,6 @@ class TestPackageBuild(TestPackageBuildBase):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the package build id and record id.
-        # The uploadprocessor relies on this format.
-        Store.of(self.package_build).flush()
-        cookie = self.package_build.getBuildCookie()
-        expected_cookie = "%d-PACKAGEBUILD-%d" % (
-            self.package_build.id, self.package_build.build_farm_job.id)
-        self.assertEquals(expected_cookie, cookie)
-
     def test_destroySelf_removes_BuildFarmJob(self):
         # Destroying a packagebuild also destroys the BuildFarmJob it
         # references.
@@ -285,8 +278,10 @@ class TestGetUploadMethodsMixin:
         # that is parseable by the upload processor.
         upload_leaf = self.build.getUploadDirLeaf(
             self.build.getBuildCookie())
-        job_id = parse_build_upload_leaf_name(upload_leaf)
-        self.assertEqual(job_id, self.build.build_farm_job.id)
+        (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(
+            (self.build.build_farm_job.job_type.name, self.build.id),
+            (job_type, job_id))
 
 
 class TestHandleStatusMixin:
@@ -315,8 +310,7 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        tempdir = self.mktemp()
-        os.mkdir(tempdir)
+        tempdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tempdir)
         self.upload_root = tempdir
         tmp_builddmaster_root = """
@@ -380,9 +374,41 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
+
         def got_status(ignored):
             self.assertNotEqual(None, self.build.log)
+
         return d.addCallback(got_status)
+
+    def _test_handleStatus_notifies(self, status):
+        # An email notification is sent for a given build status if
+        # notifications are allowed for that status.
+
+        naked_build = removeSecurityProxy(self.build)
+        expected_notification = (
+            status in naked_build.ALLOWED_STATUS_NOTIFICATIONS)
+
+        def got_status(ignored):
+            if expected_notification:
+                self.failIf(
+                    len(pop_notifications()) == 0,
+                    "No notifications received")
+            else:
+                self.failIf(
+                    len(pop_notifications()) > 0,
+                    "Notifications received")
+
+        d = self.build.handleStatus(status, None, {})
+        return d.addCallback(got_status)
+
+    def test_handleStatus_DEPFAIL_notifies(self):
+        return self._test_handleStatus_notifies("DEPFAIL")
+
+    def test_handleStatus_CHROOTFAIL_notifies(self):
+        return self._test_handleStatus_notifies("CHROOTFAIL")
+
+    def test_handleStatus_PACKAGEFAIL_notifies(self):
+        return self._test_handleStatus_notifies("PACKAGEFAIL")
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
@@ -391,6 +417,8 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
+
         def got_status(ignored):
             self.assertNotEqual(None, self.build.date_finished)
+
         return d.addCallback(got_status)

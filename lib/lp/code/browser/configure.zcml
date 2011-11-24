@@ -62,7 +62,7 @@
   <browser:page
       for="zope.interface.Interface"
       name="+test-webservice-js"
-      template="../../../canonical/launchpad/templates/test-webservice-js.pt"
+      template="../templates/test-webservice-js.pt"
       permission="zope.Public"
       />
 
@@ -356,7 +356,8 @@
         layer="lp.code.publisher.CodeLayer"
         name="+bmp-macros"
         permission="zope.Public"
-        template="../templates/branchmergeproposal-macros.pt"/>
+        template="../templates/branchmergeproposal-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:menus
         classes="
             BranchMergeProposalContextMenu
@@ -413,9 +414,6 @@
         <browser:page
             name="+index"
             template="../templates/branch-index.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/branch-portlet-details.pt"/>
         <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
@@ -493,7 +491,8 @@
         layer="lp.code.publisher.CodeLayer"
         name="branch-form-macros"
         permission="zope.Public"
-        template="../templates/branch-form-macros.pt"/>
+        template="../templates/branch-form-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         name="+whiteboard"
         for="lp.code.interfaces.branch.IBranch"
@@ -660,13 +659,6 @@
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+spark"
-        for="lp.code.interfaces.branch.IBranch"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchSparkView"
-        facet="branches"
-        permission="zope.Public"/>
     <browser:menus
         classes="
             BranchContextMenu
@@ -1196,7 +1188,7 @@
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="archive"
-        path_expression="string:+buildjob/${url_id}"
+        path_expression="string:+recipebuild/${id}"
         />
     <adapter
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
@@ -1228,10 +1220,23 @@
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsHtmlView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsAjaxView"
+            name="+builds"
+            template="../templates/sourcepackagerecipe-builds.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestDailyBuildView"
+            name="+request-daily-build"
+            permission="launchpad.Edit"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
@@ -1340,7 +1345,8 @@
             layer="lp.code.publisher.CodeLayer"
             name="+bmq-macros"
             permission="zope.Public"
-            template="../templates/branchmergequeue-macros.pt"/>
+            template="../templates/branchmergequeue-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
 
 
     </facet>

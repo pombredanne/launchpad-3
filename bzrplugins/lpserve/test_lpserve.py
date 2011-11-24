@@ -3,6 +3,7 @@
 
 import errno
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -13,6 +14,7 @@ import time
 from testtools import content
 
 from bzrlib import (
+    errors,
     osutils,
     tests,
     trace,
@@ -263,6 +265,46 @@ class TestLPForkingService(TestCaseWithLPForkingService):
                                                 one_byte_at_a_time=True)
         self.assertStartsWith(response, 'FAILURE\n')
 
+    def test_child_connection_timeout(self):
+        self.assertEqual(self.service.CHILD_CONNECT_TIMEOUT,
+                         self.service._child_connect_timeout)
+        response = self.send_message_to_service('child_connect_timeout 1\n')
+        self.assertEqual('ok\n', response)
+        self.assertEqual(1, self.service._child_connect_timeout)
+
+    def test_child_connection_timeout_bad_float(self):
+        self.assertEqual(self.service.CHILD_CONNECT_TIMEOUT,
+                         self.service._child_connect_timeout)
+        response = self.send_message_to_service('child_connect_timeout 1.2\n')
+        self.assertStartsWith(response, 'FAILURE:')
+
+    def test_child_connection_timeout_no_val(self):
+        response = self.send_message_to_service('child_connect_timeout \n')
+        self.assertStartsWith(response, 'FAILURE:')
+
+    def test_child_connection_timeout_bad_val(self):
+        response = self.send_message_to_service('child_connect_timeout b\n')
+        self.assertStartsWith(response, 'FAILURE:')
+
+    def test__open_handles_will_timeout(self):
+        # signal.alarm() has only 1-second granularity. :(
+        self.service._child_connect_timeout = 1
+        tempdir = tempfile.mkdtemp(prefix='testlpserve-')
+        self.addCleanup(shutil.rmtree, tempdir, ignore_errors=True)
+        os.mkfifo(os.path.join(tempdir, 'stdin'))
+        os.mkfifo(os.path.join(tempdir, 'stdout'))
+        os.mkfifo(os.path.join(tempdir, 'stderr'))
+        # catch SIGALRM so we don't stop the test suite. It will still
+        # interupt the blocking open() calls.
+        def noop_on_alarm(signal, frame):
+            return
+        signal.signal(signal.SIGALRM, noop_on_alarm)
+        self.addCleanup(signal.signal, signal.SIGALRM, signal.SIG_DFL)
+        e = self.assertRaises(errors.BzrError,
+            self.service._open_handles, tempdir)
+        self.assertContainsRe(str(e), r'After \d+.\d+s we failed to open.*')
+
+
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
@@ -452,9 +494,9 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stderr_path = os.path.join(path, 'stderr')
         # The ordering must match the ordering of the service or we get a
         # deadlock.
-        child_stdin = open(stdin_path, 'wb')
-        child_stdout = open(stdout_path, 'rb')
-        child_stderr = open(stderr_path, 'rb')
+        child_stdin = open(stdin_path, 'wb', 0)
+        child_stdout = open(stdout_path, 'rb', 0)
+        child_stderr = open(stderr_path, 'rb', 0)
         return child_stdin, child_stdout, child_stderr
 
     def communicate_with_fork(self, path, stdin=None):
@@ -483,6 +525,24 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
         self.assertReturnCode(0, sock)
+
+    def DONT_test_fork_lp_serve_multiple_hello(self):
+        # This ensures that the fifos are all set to blocking mode
+        # We can't actually run this test, because by default 'bzr serve
+        # --inet' does not flush after each message. So we end up blocking
+        # forever waiting for the server to finish responding to the first
+        # request.
+        path, _, sock = self.send_fork_request('lp-serve --inet 2')
+        child_stdin, child_stdout, child_stderr = self._get_fork_handles(path)
+        child_stdin.write('hello\n')
+        child_stdin.flush()
+        self.assertEqual('ok\x012\n', child_stdout.read())
+        child_stdin.write('hello\n')
+        self.assertEqual('ok\x012\n', child_stdout.read())
+        child_stdin.close()
+        self.assertEqual('', child_stderr.read())
+        child_stdout.close()
+        child_stderr.close()
 
     def test_fork_replay(self):
         path, _, sock = self.send_fork_request('launchpad-replay')
@@ -539,6 +599,29 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
 
     def test_sigint_exits_nicely(self):
         self._check_exits_nicely(signal.SIGINT)
+
+    def test_child_exits_eventually(self):
+        # We won't ever bind to the socket the child wants, and after some
+        # time, the child should exit cleanly.
+        # First, tell the subprocess that we want children to exit quickly.
+        # *sigh* signal.alarm only has 1s resolution, so this test is slow.
+        response = self.send_message_to_service('child_connect_timeout 1\n')
+        self.assertEqual('ok\n', response)
+        # Now request a fork
+        path, pid, sock = self.send_fork_request('rocks')
+        # # Open one handle, but not all of them
+        stdin_path = os.path.join(path, 'stdin')
+        stdout_path = os.path.join(path, 'stdout')
+        stderr_path = os.path.join(path, 'stderr')
+        child_stdin = open(stdin_path, 'wb')
+        # We started opening the child, but stop before we get all handles
+        # open. After 1 second, the child should get signaled and die.
+        # The master process should notice, and tell us the status of the
+        # exited child.
+        val = sock.recv(4096)
+        self.assertEqual('exited\n%s\n' % (signal.SIGALRM,), val)
+        # The master process should clean up after the now deceased child.
+        self.failIfExists(path)
 
 
 class TestCaseWithLPForkingServiceDaemon(

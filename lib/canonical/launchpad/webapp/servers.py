@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231,E1002
@@ -21,7 +21,6 @@ from lazr.restful.publisher import (
     WebServiceRequestTraversal,
     )
 from lazr.uri import URI
-import pytz
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
@@ -35,6 +34,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
@@ -68,11 +68,9 @@ from canonical.launchpad.interfaces.launchpad import (
     IWebServiceApplication,
     )
 from canonical.launchpad.interfaces.oauth import (
-    ClockSkew,
     IOAuthConsumerSet,
     IOAuthSignedRequest,
-    NonceAlreadyUsed,
-    TimestampOrderingError,
+    TokenException,
     )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
@@ -84,6 +82,7 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IAPIDocRoot,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
@@ -109,6 +108,7 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
+from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -544,6 +544,16 @@ class LaunchpadBrowserRequestMixin:
         """See `IBasicLaunchpadRequest`."""
         return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
 
+    def getURL(self, level=0, path_only=False, include_query=False):
+        """See `IBasicLaunchpadRequest`."""
+        sup = super(LaunchpadBrowserRequestMixin, self)
+        url = sup.getURL(level, path_only)
+        if include_query:
+            query_string = self.get('QUERY_STRING')
+            if query_string is not None and len(query_string) > 0:
+                url = "%s?%s" % (url, query_string)
+        return url
+
 
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
@@ -695,12 +705,15 @@ class BrowserFormNG:
 def web_service_request_to_browser_request(webservice_request):
     """Convert a given webservice request into a webapp one.
 
-    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
-    body.
+    Overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.  Encodes PATH_INFO because it is unconditionally decoded by
+    zope.publisher.http.sane_environment.
     """
     body = webservice_request.bodyStream.getCacheStream().read()
     environ = dict(webservice_request.environment)
     environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    if 'PATH_INFO' in environ:
+        environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
     return LaunchpadBrowserRequest(body, environ)
 
 
@@ -800,8 +813,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
-                           LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
+                           TestRequest, ErrorReportRequest):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -853,8 +866,10 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
     False
 
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-               canonical.launchpad.layers.LaunchpadLayer)
+    implements(
+        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+        canonical.launchpad.layers.LaunchpadLayer)
+
     # These two attributes satisfy IParticipation.
     principal = None
     interaction = None
@@ -868,9 +883,11 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        # stub out the FeatureController that would normally be provided by
-        # the publication mechanism
-        self.features = NullFeatureController()
+        # Use an existing feature controller if one exists, otherwise use the
+        # null controller.
+        self.features = get_relevant_feature_controller()
+        if self.features is None:
+            self.features = NullFeatureController()
 
     @property
     def uuid(self):
@@ -1023,7 +1040,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
 
 
 http = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1037,7 +1054,7 @@ pmhttp = wsgi.ServerType(
     True)
 
 debughttp = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8082,
@@ -1045,7 +1062,7 @@ debughttp = wsgi.ServerType(
     requestFactory=DebugLayerRequestFactory)
 
 privatexmlrpc = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1090,7 +1107,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
         interface or redirect to some other url.
         """
         # LaunchpadImageFolder is imported here to avoid an import loop.
-        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
+        from lp.app.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
@@ -1167,7 +1184,7 @@ class WebServicePublication(WebServicePublicationMixin,
                 pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
-        if op:
+        if op and isinstance(op, basestring):
             pageid += ':' + op
         return pageid
 
@@ -1193,8 +1210,9 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             return super(WebServicePublication, self).getResource(request, ob)
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        notify(FinishReadOnlyRequestEvent(ob, request))
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
         # encounter doomed transactions.  If it does, this will need to be
@@ -1206,6 +1224,14 @@ class WebServicePublication(WebServicePublicationMixin,
 
         Web service requests are authenticated using OAuth, except for the
         one made using (presumably) JavaScript on the /api override path.
+
+        Raises a variety of token errors (ClockSkew, NonceAlreadyUsed,
+        TimestampOrderingError, TokenException) which have a webservice error
+        status of Unauthorized - 401.  All of these exceptions represent
+        errors on the part of the client.
+
+        Raises Unauthorized directly in the case where the consumer is None
+        for a non-anonymous request as it may represent a server error.
         """
         # Use the regular HTTP authentication, when the request is not
         # on the API virtual host but comes through the path_override on
@@ -1233,8 +1259,7 @@ class WebServicePublication(WebServicePublicationMixin,
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
             if consumer_key == '':
-                raise Unauthorized(
-                    'Anonymous requests must provide a User-Agent.')
+                consumer_key = 'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
@@ -1249,7 +1274,7 @@ class WebServicePublication(WebServicePublicationMixin,
                 # transactions committed so that we can keep track of
                 # the OAuth nonces and prevent replay attacks.
                 if consumer_key == '' or consumer_key is None:
-                    raise Unauthorized("No consumer key specified.")
+                    raise TokenException("No consumer key specified.")
                 consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous
@@ -1269,19 +1294,16 @@ class WebServicePublication(WebServicePublicationMixin,
             return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
-            raise Unauthorized('Unknown access token (%s).' % token_key)
+            raise TokenException('Unknown access token (%s).' % token_key)
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
-        try:
-            token.checkNonceAndTimestamp(nonce, timestamp)
-        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
-            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
+        token.checkNonceAndTimestamp(nonce, timestamp)
         if token.permission == OAuthPermission.UNAUTHORIZED:
-            raise Unauthorized('Unauthorized token (%s).' % token.key)
+            raise TokenException('Unauthorized token (%s).' % token.key)
         elif token.is_expired:
-            raise Unauthorized('Expired token (%s).' % token.key)
+            raise TokenException('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
-            raise Unauthorized('Invalid signature.')
+            raise TokenException('Invalid signature.')
         else:
             # Everything is fine, let's return the principal.
             pass
@@ -1528,7 +1550,8 @@ def register_launchpad_request_publication_factories():
     # len(factories)+1.
     for priority, factory in enumerate(factories):
         publisher_factory_registry.register(
-            "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
+            "*", "*", factory.vhost_name, len(factories) - priority + 1,
+            factory)
 
     # Register a catch-all "not found" handler at the lowest priority.
     publisher_factory_registry.register(

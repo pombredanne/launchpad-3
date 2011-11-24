@@ -6,11 +6,11 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import transaction
 
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -48,7 +48,10 @@ def make_bug_watch_updater(checkwatches_master, bug_watch,
 
 
 class BrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
-    """An ExternalBugTracker that can't sync comments."""
+    """An ExternalBugTracker that can't sync comments.
+
+    Its exceptions are not known, so it should generate OOPSes.
+    """
 
     import_comments_error_message = "Can't import comments, sorry."
     push_comments_error_message = "Can't push comments, sorry."
@@ -62,6 +65,18 @@ class BrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
 
     def getLaunchpadBugId(self, remote_bug):
         raise Exception(self.back_link_error_message)
+
+
+class KnownBrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
+    """An ExternalBugTracker that fails in a known manner.
+
+    It should not generate OOPSes.
+    """
+
+    import_comments_error_message = "Can't import comments, sorry."
+
+    def getCommentIds(self, remote_bug_id):
+        raise BugWatchUpdateError(self.import_comments_error_message)
 
 
 class LoggingBugWatchUpdater(BugWatchUpdater):
@@ -93,12 +108,16 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         self.bug_watch = self.factory.makeBugWatch(bug_task=self.bug_task)
 
     def _checkLastErrorAndMessage(self, expected_last_error,
-                                  expected_message):
+                                  expected_message, want_oops=True):
         """Check the latest activity and last_error_type for a BugWatch."""
         latest_activity = self.bug_watch.activity[0]
         self.assertEqual(expected_last_error, self.bug_watch.last_error_type)
         self.assertEqual(expected_last_error, latest_activity.result)
         self.assertEqual(expected_message, latest_activity.message)
+        if want_oops:
+            self.assertIsNot(None, latest_activity.oops_id)
+        else:
+            self.assertIs(None, latest_activity.oops_id)
 
     def test_updateBugWatch(self):
         # Calling BugWatchUpdater.updateBugWatch() will update the
@@ -175,6 +194,25 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
             BugWatchActivityStatus.BACKLINK_FAILED,
             external_bugtracker.back_link_error_message)
 
+    def test_known_error_handling(self):
+        # Some errors are known to be the remote end's fault, and should
+        # not generate OOPSes. These are still logged in
+        # BugWatchActivity.
+        external_bugtracker = KnownBrokenCommentSyncingExternalBugTracker(
+            'http://example.com')
+        bug_watch_updater = make_bug_watch_updater(
+            self.checkwatches_master, self.bug_watch, external_bugtracker,
+            can_import_comments=True)
+
+        bug_watch_updater.updateBugWatch(
+            'FIXED', BugTaskStatus.FIXRELEASED, 'LOW',
+            BugTaskImportance.LOW)
+
+        self._checkLastErrorAndMessage(
+            BugWatchActivityStatus.COMMENT_IMPORT_FAILED,
+            external_bugtracker.import_comments_error_message,
+            want_oops=False)
+
     def test_comment_bools_inherited(self):
         # BugWatchUpdater.updateBugWatches() doesn't have to be passed
         # values for can_import_comments, can_push_comments and
@@ -218,7 +256,3 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         self.assertFalse(bug_watch_updater.import_bug_comments_called)
         self.assertFalse(bug_watch_updater.push_bug_comments_called)
         self.assertFalse(bug_watch_updater.link_launchpad_bug_called)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

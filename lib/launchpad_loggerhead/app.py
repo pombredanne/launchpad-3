@@ -1,38 +1,59 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import os
-import sys
 import threading
 import urllib
+import urllib2
 import urlparse
 import xmlrpclib
 
-from bzrlib import errors, lru_cache, urlutils
+from bzrlib import (
+    errors,
+    lru_cache,
+    urlutils,
+    )
 from bzrlib.transport import get_transport
-
-from loggerhead.apps import favicon_app, static_app
+from loggerhead.apps import (
+    favicon_app,
+    static_app,
+    )
 from loggerhead.apps.branch import BranchWSGIApp
-
-from openid.extensions.sreg import SRegRequest, SRegResponse
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-from openid.store.memstore import MemoryStore
-
+import oops_wsgi
+from openid.consumer.consumer import (
+    CANCEL,
+    Consumer,
+    FAILURE,
+    SUCCESS,
+    )
+from openid.extensions.sreg import (
+    SRegRequest,
+    SRegResponse,
+    )
 from paste.fileapp import DataApp
-from paste.request import construct_url, parse_querystring, path_info_pop
 from paste.httpexceptions import (
-    HTTPMovedPermanently, HTTPNotFound, HTTPUnauthorized)
+    HTTPMovedPermanently,
+    HTTPNotFound,
+    HTTPUnauthorized,
+    )
+from paste.request import (
+    construct_url,
+    parse_querystring,
+    path_info_pop,
+    )
 
 from canonical.config import config
-from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
+    BRANCH_TRANSPORT,
+    LAUNCHPAD_ANONYMOUS,
+    )
+from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
-from lp.codehosting.bzrutils import safe_open
+
 
 robots_txt = '''\
 User-agent: *
@@ -64,7 +85,6 @@ class RootApp:
         self.branchfs = xmlrpclib.ServerProxy(
             config.codehosting.codehosting_endpoint)
         self.session_var = session_var
-        self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
 
     def get_transport(self):
@@ -76,7 +96,10 @@ class RootApp:
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
-        return Consumer(environ[self.session_var], self.store)
+        # Multiple instances need to share a store or not use one at all (in
+        # which case they will use check_authentication). Using no store is
+        # easier, and check_authentication is cheap.
+        return Consumer(environ[self.session_var], None)
 
     def _begin_login(self, environ, start_response):
         """Start the process of authenticating with OpenID.
@@ -96,7 +119,7 @@ class RootApp:
         raise HTTPMovedPermanently(openid_request.redirectURL(
             config.codehosting.secure_codebrowse_root,
             config.codehosting.secure_codebrowse_root + '+login/?'
-            + urllib.urlencode({'back_to':back_to})))
+            + urllib.urlencode({'back_to': back_to})))
 
     def _complete_login(self, environ, start_response):
         """Complete the OpenID authentication process.
@@ -165,6 +188,7 @@ class RootApp:
         lp_server = get_lp_server(user, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
+
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
@@ -214,6 +238,33 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
+            base_api_url = config.appserver_root_url('api')
+            branch_api_url = '%s/%s/%s' % (
+                base_api_url,
+                'devel',
+                branch_name,
+                )
+            self.log.info('branch_api_url: %s', branch_api_url)
+            req = urllib2.Request(branch_api_url)
+            private = False
+            try:
+                # We need to determine if the branch is private
+                response = urllib2.urlopen(req)
+            except urllib2.HTTPError as response:
+                code = response.getcode()
+                if code in (400, 401, 403):
+                    # 400, 401, and 403 are the possible returns for api
+                    # requests on a private branch without authentication.
+                    self.log.info("Branch is private")
+                    private = True
+                self.log.info(
+                    "Branch state not determined; api error, return code: %s",
+                    code)
+                response.close()
+            else:
+                self.log.info("Branch is public")
+                response.close()
+
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
@@ -224,19 +275,13 @@ class RootApp:
             try:
                 view = BranchWSGIApp(
                     bzr_branch, branch_name, {'cachepath': cachepath},
-                    self.graph_cache, branch_link=branch_link, served_url=None)
+                    self.graph_cache, branch_link=branch_link,
+                    served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
                 bzr_branch.unlock()
         finally:
             lp_server.stop_server()
-
-
-def make_oops_logging_exception_hook(error_utility, request):
-    """Make a hook for logging OOPSes."""
-    def log_oops():
-        error_utility.raising(sys.exc_info(), request)
-    return log_oops
 
 
 def make_error_utility():
@@ -246,118 +291,30 @@ def make_error_utility():
     return error_utility
 
 
-# XXX: This HTML template should be replaced with the same one that lpnet uses
-# for reporting OOPSes to users, or at least something that looks similar.  But
-# even this is better than the "Internal Server Error" you'd get otherwise.
-#  - Andrew Bennetts, 2010-07-27.
+# XXX AndrewBennets 2010-07-27: This HTML template should be replaced
+# with the same one that lpnet uses for reporting OOPSes to users, or at
+# least something that looks similar.  But even this is better than the
+# "Internal Server Error" you'd get otherwise.
 _oops_html_template = '''\
 <html>
-<head><title>Oops! %(oopsid)s</title></head>
+<head><title>Oops! %(id)s</title></head>
 <body>
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
 <a href="https://bugs.launchpad.net/launchpad"
 >https://bugs.launchpad.net/launchpad</a>
-and quote OOPS-ID <strong>%(oopsid)s</strong>
+and quote OOPS-ID <strong>%(id)s</strong>
 </p></body></html>'''
-
-
-_error_status = '500 Internal Server Error'
-_error_headers = [('Content-Type', 'text/html')]
-
-
-class WrappedStartResponse(object):
-    """Wraps start_response (from a WSGI request) to keep track of whether
-    start_response was called (and whether the callable it returns has been
-    called).
-
-    Used by oops_middleware.
-    """
-
-    def __init__(self, start_response):
-        self._real_start_response = start_response
-        self.response_start = None
-        self._write_callable = None
-
-    @property
-    def body_started(self):
-        return self._write_callable is not None
-
-    def start_response(self, status, headers, exc_info=None):
-        # Just keep a note of the values we were called with for now.  We don't
-        # need to invoke the real start_response until the response body
-        # starts.
-        self.response_start = (status, headers)
-        if exc_info is not None:
-            self.response_start += (exc_info,)
-        return self.write_wrapper
-
-    def really_start(self):
-        self._write_callable = self._real_start_response(*self.response_start)
-
-    def write_wrapper(self, data):
-        if not self.body_started:
-            self.really_start()
-        self._write_callable(data)
-
-    def generate_oops(self, environ, error_utility):
-        """Generate an OOPS.
-
-        :returns: True if the error page was sent to the user, and False if it
-            couldn't (i.e. if the response body was already started).
-        """
-        oopsid = report_oops(environ, error_utility)
-        if self.body_started:
-            return False
-        write = self._real_start_response(_error_status, _error_headers)
-        write(_oops_html_template % {'oopsid': oopsid})
-        return True
-
-
-def report_oops(environ, error_utility):
-    # XXX: We should capture more per-request information to include in
-    # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
-    # just a traceback and URL is better than nothing.
-    #   - Andrew Bennetts, 2010-07-27.
-    request = ScriptRequest(
-        [], URL=construct_url(environ))
-    error_utility.raising(sys.exc_info(), request)
-    return request.oopsid
 
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.
 
-    If the request fails before the response body has started then this returns
-    a basic HTML error page with the OOPS ID to the user (and status code 500).
+    If the request fails before the response body has started then this
+    returns a basic HTML error page with the OOPS ID to the user (and status
+    code 500).
     """
     error_utility = make_error_utility()
-    def wrapped_app(environ, start_response):
-        wrapped = WrappedStartResponse(start_response)
-        # Start processing this request
-        try:
-            app_iter = iter(app(environ, wrapped.start_response))
-        except:
-            error_page_sent = wrapped.generate_oops(environ, error_utility)
-            if error_page_sent:
-                return
-            # Could not send error page to user, so... just give up.
-            raise
-        # Start yielding the response
-        while True:
-            try:
-                data = app_iter.next()
-            except StopIteration:
-                return
-            except:
-                error_page_sent = wrapped.generate_oops(environ, error_utility)
-                if error_page_sent:
-                    return
-                # Could not send error page to user, so... just give up.
-                raise
-            else:
-                if not wrapped.body_started:
-                    wrapped.really_start()
-                yield data
-    return wrapped_app
+    return oops_wsgi.make_app(app, error_utility._oops_config,
+            template=_oops_html_template)

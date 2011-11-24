@@ -6,8 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 
@@ -96,6 +95,22 @@ class CreatePersonTests(TestCaseWithFactory):
             "when importing He-3 from the Moon",
             person.creation_comment)
 
+    def test_getByEmail_non_ascii_bytes(self):
+        """Lookups for non-ascii addresses should raise LookupError.
+
+        This tests the case where input is a bytestring.
+        """
+        with ExpectedException(LookupError, r"'SaraS\\xe1nchez@cocolee.net'"):
+            getUtility(IAccountSet).getByEmail('SaraS\xe1nchez@cocolee.net')
+
+    def test_getByEmail_non_ascii_unicode(self):
+        """Lookups for non-ascii addresses should raise LookupError.
+
+        This tests the case where input is a unicode string.
+        """
+        with ExpectedException(LookupError, r"u'SaraS\\xe1nchez@.*.net'"):
+            getUtility(IAccountSet).getByEmail(u'SaraS\xe1nchez@cocolee.net')
+
 
 class EmailManagementTests(TestCaseWithFactory):
     """Test email account management interfaces for `IAccount`."""
@@ -183,7 +198,3 @@ class EmailManagementTests(TestCaseWithFactory):
             EmailAddressStatus.OLD)
         transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

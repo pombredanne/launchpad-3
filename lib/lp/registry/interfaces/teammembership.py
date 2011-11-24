@@ -11,6 +11,8 @@ __all__ = [
     'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'IJoinTeamEvent',
+    'ITeamInvitationEvent',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
@@ -230,8 +232,14 @@ class ITeamMembership(Interface):
         """
 
     def sendExpirationWarningEmail():
-        """Send an email to the member warning him that this membership will
-        expire soon.
+        """Send the member an email warning that the membership will expire.
+
+        This method cannot be called for memberships without an expiration
+        date. Emails are not sent to members if their membership has already
+        expired or if the member is no longer active.
+
+        :raises AssertionError: if the member has no expiration date of the
+            team or if the TeamMembershipRenewalPolicy is AUTOMATIC.
         """
 
     @call_with(user=REQUEST_USER)
@@ -296,6 +304,16 @@ class ITeamMembershipSet(Interface):
         TeamMembership and I'll return None.
         """
 
+    def deactivateActiveMemberships(team, comment, reviewer):
+        """Deactivate all team members in ACTIVE_STATES.
+
+        This is a convenience method used before teams are deleted.
+
+        :param team: The team to deactivate.
+        :param comment: An explanation for the deactivation.
+        :param reviewer: The user doing the deactivation.
+        """
+
 
 class ITeamParticipation(Interface):
     """A TeamParticipation.
@@ -324,3 +342,17 @@ class CyclicalTeamMembershipError(Exception):
     a member of C then attempting to make C a member of A will
     result in this error being raised.
     """
+
+
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
+
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
+
+
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
+    team = Attribute("The team.")

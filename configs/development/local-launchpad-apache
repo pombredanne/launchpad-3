@@ -128,9 +128,6 @@ RewriteLock /var/tmp/rewrite-lock
 <VirtualHost 127.0.0.88:443>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev
-  ServerAlias shipit.edubuntu.dev
-  ServerAlias shipit.kubuntu.dev
-  ServerAlias shipit.ubuntu.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -140,6 +137,7 @@ RewriteLock /var/tmp/rewrite-lock
   SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
 
   ProxyPreserveHost on
+  ProxyPass /+longpoll/ http://localhost:22435/ retry=1
   ProxyPass / http://localhost:8086/ retry=1
 
   <Location />
@@ -160,9 +158,6 @@ RewriteLock /var/tmp/rewrite-lock
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev
-  ServerAlias shipit.edubuntu.dev
-  ServerAlias shipit.kubuntu.dev
-  ServerAlias shipit.ubuntu.dev
   RewriteEngine On
   RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </VirtualHost>

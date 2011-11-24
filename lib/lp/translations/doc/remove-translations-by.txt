@@ -15,8 +15,6 @@ In this example, we have a template with Dutch and German translations.
     >>> de_pofile = factory.makePOFile('de', potemplate=potemplate)
     >>> owner = potemplate.owner
 
-    >>> from datetime import datetime
-    >>> from pytz import timezone
     >>> def set_translation(message, pofile, text):
     ...     """Set text to be a translation for message in pofile."""
     ...     return factory.makeCurrentTranslationMessage(
@@ -100,9 +98,7 @@ criteria).
 
     # We're going to inspect these POFiles later; make sure we're not
     # gazing at an old cached copy from before the removal.
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(nl_pofile)
-    >>> sync(de_pofile)
+    >>> Store.of(nl_pofile).flush()
 
     >>> returncode
     0
@@ -111,6 +107,8 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
     DEBUG Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --
@@ -154,6 +152,10 @@ database.
     >>> print err
     WARNING Safety override in effect.  Deleting translations for template ...
     INFO    Dry run only.  Not really deleting.
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
     DEBUG   Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --

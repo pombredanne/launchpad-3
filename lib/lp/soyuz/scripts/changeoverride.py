@@ -25,7 +25,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
 class ArchiveOverriderError(SoyuzScriptError):
     """ArchiveOverrider specific exception.
 
-    Mostly used to describe errors in the initialisation of this object.
+    Mostly used to describe errors in the initialization of this object.
     """
 
 

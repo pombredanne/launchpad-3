@@ -55,6 +55,7 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_public_person_or_closed_team',
     'is_public_person',
     ]
 
@@ -100,11 +101,13 @@ from zope.schema.interfaces import (
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import (
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import (
     name_validator,
     valid_name,
     )
+from lp.bugs.errors import InvalidDuplicateValue
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -241,6 +244,7 @@ class StrippedTextLine(TextLine):
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
 
+
 # Title
 # A field to capture a launchpad object title
 
@@ -251,15 +255,29 @@ class Title(StrippedTextLine):
 class StrippableText(Text):
     """A text that can be configured to strip when setting."""
 
-    def __init__(self, strip_text=False, **kwargs):
+    def __init__(self, strip_text=False, trailing_only=False, **kwargs):
         super(StrippableText, self).__init__(**kwargs)
         self.strip_text = strip_text
+        self.trailing_only = trailing_only
+
+    def normalize(self, value):
+        """Strip the leading and trailing whitespace."""
+        if self.strip_text and value is not None:
+            if self.trailing_only:
+                value = value.rstrip()
+            else:
+                value = value.strip()
+        return value
 
     def set(self, object, value):
         """Strip the value and pass up."""
-        if self.strip_text and value is not None:
-            value = value.strip()
+        value = self.normalize(value)
         super(StrippableText, self).set(object, value)
+
+    def validate(self, value):
+        """See `IField`."""
+        value = self.normalize(value)
+        return super(StrippableText, self).validate(value)
 
 
 # Summary
@@ -344,6 +362,8 @@ class BugField(Reference):
     schema = property(_get_schema, _set_schema)
 
 
+# XXX: Tim Penhey 2011-01-21 bug 706099
+# Should have bug specific fields in lp.services.fields
 class DuplicateBug(BugField):
     """A bug that the context is a duplicate of."""
 
@@ -358,10 +378,10 @@ class DuplicateBug(BugField):
         current_bug = self.context
         dup_target = value
         if current_bug == dup_target:
-            raise LaunchpadValidationError(_(dedent("""
+            raise InvalidDuplicateValue(_(dedent("""
                 You can't mark a bug as a duplicate of itself.""")))
         elif dup_target.duplicateof is not None:
-            raise LaunchpadValidationError(_(dedent("""
+            raise InvalidDuplicateValue(_(dedent("""
                 Bug ${dup} is already a duplicate of bug ${orig}. You
                 can only mark a bug report as duplicate of one that
                 isn't a duplicate itself.
@@ -503,7 +523,8 @@ class BlacklistableContentNameField(ContentNameField):
 
         # Need a local import because of circular dependencies.
         from lp.registry.interfaces.person import IPersonSet
-        if getUtility(IPersonSet).isNameBlacklisted(input):
+        user = getUtility(ILaunchBag).user
+        if getUtility(IPersonSet).isNameBlacklisted(input, user):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
                 "administrators." % input)
@@ -711,7 +732,7 @@ class BaseImageUpload(Bytes):
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
             pil_image = PIL.Image.open(StringIO(image))
-        except IOError:
+        except (IOError, ValueError):
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
@@ -750,19 +771,19 @@ class BaseImageUpload(Bytes):
 class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
-    max_size = 5*1024
+    max_size = 5 * 1024
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
-    max_size = 50*1024
+    max_size = 50 * 1024
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
-    max_size = 100*1024
+    max_size = 100 * 1024
 
 
 class LocationField(Field):
@@ -808,6 +829,20 @@ def is_public_person(person):
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
+
+
+def is_public_person_or_closed_team(person):
+    """Return True if person is a Person or not an open or delegated team."""
+    from lp.registry.interfaces.person import (
+        IPerson,
+        PersonVisibility,
+        CLOSED_TEAM_POLICY,
+    )
+    if not IPerson.providedBy(person):
+        return False
+    if not person.is_team:
+        return person.visibility == PersonVisibility.PUBLIC
+    return person.subscriptionpolicy in CLOSED_TEAM_POLICY
 
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):

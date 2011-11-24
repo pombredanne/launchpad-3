@@ -10,6 +10,24 @@
 
 <div metal:fill-slot="main">
 
+  <p id="distro-branch-warning">
+    <strong>This page is for a packaging branch for a program in
+    <tal:name replace="context/distribution/displayname"/>.</strong> Changes
+    should be made here to
+    <tal:name replace="context/distribution/displayname"/> packaging or
+    for changes specific to
+    <tal:name replace="context/distribution/displayname"/>'s
+    needs. Changes to the program in general should be made on the
+    upstream branch
+
+    <tal:upstream condition="context/upstream_product">
+        <a tal:replace="structure context/upstream_product/fmt:link" />.
+    </tal:upstream>
+    <tal:no-upstream condition="not: context/upstream_product">
+        which is not currently known to Launchpad.
+    </tal:no-upstream>
+  </p>
+
   <tal:no-branches condition="not: view/branch_count">
     <div id="branch-summary">
     There are no branches for the <tal:name replace="context/title"/>
@@ -51,9 +69,9 @@
           </td>
           <td>
             <span tal:attributes="title branch/date_last_modified/fmt:datetime"
-                  tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                  tal:content="branch/date_last_modified/fmt:approximatedate">
               sometime
-              </span> ago
+              </span>
           </td>
         </tr>
         <tr tal:condition="group/more-branch-count">

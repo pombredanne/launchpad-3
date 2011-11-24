@@ -10,8 +10,7 @@ Productseries linking packages
 Distro series sourcepackages can be linked to product series using the
 +ubuntupkg named view.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
@@ -157,10 +156,13 @@ The package in the current Ubuntu series can be updated.
     >>> view.errors
     []
 
+We now have two source packages linked to our productseries.
+
     >>> for packaging in view.ubuntu_history:
     ...     print packaging.distroseries.name
     ...     print packaging.sourcepackagename.name
     hoary thunderbird
+    hoary hot
 
 It is not an error to submit the same sourcepackagename information, the
 action is ignored because there is no change
@@ -178,6 +180,7 @@ action is ignored because there is no change
     ...     print packaging.distroseries.name
     ...     print packaging.sourcepackagename.name
     hoary thunderbird
+    hoary hot
 
 When the current Ubuntu series changes, the sourcepackagename is not known,
 and a new entry can be added to the packaging history.
@@ -213,6 +216,7 @@ and a new entry can be added to the packaging history.
     ...     print packaging.sourcepackagename.name
     grumpy hot
     hoary thunderbird
+    hoary hot
 
 
 Product packages view
@@ -230,12 +234,15 @@ The view provides the series_batch property.
     ...     for series in view.series_batch.batch:
     ...         print series.name
     ...         for package in series.packagings:
-    ...             print '  Package:', package.distroseries.name
+    ...             print '  Package %s: %s' % (
+    ...                 package.sourcepackagename.name,
+    ...                 package.distroseries.name)
     >>> print_packages(view)
     trunk
     hotter
-      Package: grumpy
-      Package: hoary
+      Package hot: grumpy
+      Package thunderbird: hoary
+      Package hot: hoary
     cold
 
 The view provides the distro_packaging property that is a list of
@@ -249,15 +256,22 @@ order.
 
 A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
+(Note that the packaging link for thunderbird in the sample data does not
+have an owner, so we login as a member of distribution owner team
+instead.)
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> steve_a = getUtility(IPersonSet).getByName('stevea')
+    >>> login_person(steve_a)
     >>> view = create_initialized_view(
-    ...     product, name='+packages', principal=a_user)
+    ...     product, name='+packages', principal=steve_a)
     >>> print_packages(view)
     trunk
     hotter
-      Package: grumpy
-      Package: hoary
+      Package hot: grumpy
+      Package thunderbird: hoary
+      Package hot: hoary
     cold
 
     # There are links to the +remove-packaging page.
@@ -267,14 +281,17 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     ...         print link['href']
     http://launchpad.dev/ubuntu/grumpy/+source/hot/+remove-packaging
     http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
+    http://launchpad.dev/ubuntu/hoary/+source/hot/+remove-packaging
 
     >>> [hoary_package] = [
     ...     package for series in view.series_batch.batch
     ...     for package in series.packagings
-    ...     if package.distroseries.name == 'hoary']
+    ...     if package.distroseries.name == 'hoary' and
+    ...         package.sourcepackagename.name == 'thunderbird']
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> unlink_view = create_initialized_view(
-    ...     hoary_package.sourcepackage, name='+remove-packaging', form=form)
+    ...     hoary_package.sourcepackage, name='+remove-packaging', form=form,
+    ...     principal=steve_a)
     >>> unlink_view.errors
     []
 
@@ -283,7 +300,8 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> print_packages(view)
     trunk
     hotter
-      Package: grumpy
+      Package hot: grumpy
+      Package hot: hoary
     cold
 
 
@@ -317,6 +335,7 @@ to access the packagings. The default batch size is 20.
     ...     print packaging.sourcepackagename.name
     netapplet
     evolution
+    hot
 
 
 Distro series +needs-packaging view
@@ -349,5 +368,4 @@ The view provides the cached_unlinked_packages property to access a
     cnews
     libstdc++
     linux-source-2.6.15
-    hot
     thunderbird

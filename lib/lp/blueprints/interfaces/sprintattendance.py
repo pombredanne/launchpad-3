@@ -11,7 +11,10 @@ __all__ = [
     'ISprintAttendance',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -27,6 +30,7 @@ class ISprintAttendance(Interface):
 
     attendee = PublicPersonChoice(
         title=_('Attendee'), required=True, vocabulary='ValidPersonOrTeam')
+    attendeeID = Attribute('db attendee value')
     sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',
         description=_("Select the meeting from the list presented above."))

@@ -114,29 +114,12 @@
   </div>
 
   <div class="yui-u two-column-list">
-    <dl tal:condition="view/should_show_wikinames_section">
-      <dt>Wiki:
-        <a tal:replace="structure overview_menu/editwikinames/fmt:icon" />
-      </dt>
-      <dd>
-        <div tal:repeat="wiki context/wiki_names">
-          <a tal:content="wiki/url"
-             tal:attributes="href wiki/url"
-           >WikiName</a>
-        </div>
-        <div tal:condition="context/wiki_names/is_empty">
-          No Wiki names registered.
-        </div>
-      </dd>
-    </dl>
     <dl tal:condition="view/should_show_ircnicknames_section">
       <dt>IRC:
         <a tal:replace="structure overview_menu/editircnicknames/fmt:icon" />
       </dt>
       <dd tal:repeat="ircnick context/ircnicknames">
-        <strong tal:content="ircnick/nickname"/>
-        <span class="discreet">on network</span>
-        <strong tal:content="ircnick/network" />
+        <span tal:replace="structure ircnick/fmt:formatted_displayname"/>
       </dd>
       <dd tal:condition="not: context/ircnicknames">
         No IRC nicknames registered.
@@ -190,7 +173,9 @@
       <dt>Time zone:
         <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
       </dt>
-      <dd tal:content="context/time_zone">UTC</dd>
+      <dd><tal:timezone content="context/time_zone">UTC</tal:timezone>
+      (UTC<tal:offset content="view/time_zone_offset">+0000</tal:offset>)
+      </dd>
     </dl>
 
     <dl id="karma">
@@ -198,6 +183,8 @@
       <dd><a id="karma-total"
              tal:attributes="href overview_menu/karma/url"
              tal:content="context/karma">342</a>
+          <a target="help" href="/+help/karma.html" class="sprite maybe">&nbsp;
+          <span class="invisible-link">Karma help</span></a>
       </dd>
     </dl>
   </div>

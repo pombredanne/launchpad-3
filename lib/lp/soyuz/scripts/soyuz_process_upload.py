@@ -76,7 +76,7 @@ class ProcessUpload(LaunchpadCronScript):
             raise LaunchpadScriptFailure(
                 "%s is not a directory" % self.options.base_fsroot)
 
-        self.logger.debug("Initialising connection.")
+        self.logger.debug("Initializing connection.")
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)

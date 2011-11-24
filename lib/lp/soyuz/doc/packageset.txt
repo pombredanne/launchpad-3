@@ -572,8 +572,7 @@ use, which enforces the user to be an admin or a member of the "techboard"
 
     >>> from zope.security.checker import canAccess
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.teammembership import (
     ...     TeamMembershipStatus)

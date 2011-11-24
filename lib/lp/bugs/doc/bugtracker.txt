@@ -101,38 +101,6 @@ longer appear in the set returned by watches_needing_update.
 Auto-creating bug trackers
 --------------------------
 
-The bugtracker module contains a method, make_bugtracker_name() which
-can be used to generate a bug tracker name when a bugtracker is
-automatically created. make_bugtracker_name() accepts a single
-parameter, uri, which is used as the basis for the auto-generated name.
-
-Passing in a URI will produce a name based on the host name part of
-that URL.
-
-    >>> from lp.bugs.model.bugtracker import (
-    ...     make_bugtracker_name)
-    >>> make_bugtracker_name('http://bugs.example.com/shrubbery')
-    'auto-bugs.example.com'
-
-Passing in a mailto: URI will produce a name based on the local part
-of the email address.
-
-    >>> make_bugtracker_name('mailto:foo.bar@canonical.com')
-    'auto-foo.bar'
-
-Similarly, there is also make_bugtracker_title(), which does something
-similar, but for the title.
-
-    >>> from lp.bugs.model.bugtracker import (
-    ...     make_bugtracker_title)
-    >>> make_bugtracker_title('http://bugs.example.com/shrubbery')
-    'bugs.example.com/shrubbery'
-
-For email addresses, it uses the first part of the domain too.
-
-    >>> make_bugtracker_title('mailto:foo.bar@canonical.com')
-    'Email to foo.bar@canonical'
-
 The IBugTrackerSet interface provides a method, ensureBugTracker(),
 which will retrieve or create a bug tracker for the parameters passed to
 it. If this method is not passed a name parameter when it creates a new
@@ -356,14 +324,9 @@ We will forge some BugMessage records before trying again:
 Filing a bug on the remote tracker
 ----------------------------------
 
-The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
-which returns the URLs of the bug filing form and the bug search on
-the remote bug tracker as a dict. It accepts three parameters:
-remote_product, which is the name of the product on the remote
-tracker; summary, which is the bug summary to be passed to the remote
-bug tracker for searching or filing and description, which is the full
-description of the bug. This is only passed to the bug filing form as
-it is too specific for the search form.
+The IBugTracker interface defines a method to convert product,
+component, summary, and description strings into URLs for filing and/or
+searching bugs.
 
     >>> def print_links(links_dict):
     ...     for key in sorted(links_dict):
@@ -575,8 +538,7 @@ getBugFilingAndSearchLinks() will handle these cases too, returning the
 custom version of the bug filing URL for those bug trackers that don't
 use the default setup.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
 
     >>> links = gnome_bugzilla.getBugFilingAndSearchLinks(

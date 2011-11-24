@@ -99,7 +99,7 @@ which it was uploaded:
    >>> print spr.sourcepackage.displayname
    mozilla-firefox in Ubuntu Warty
    >>> print spr.distrosourcepackage.displayname
-   mozilla-firefox in ubuntu
+   mozilla-firefox in Ubuntu
 
 It should also work when the version has a dash and packaging revision
 after it:

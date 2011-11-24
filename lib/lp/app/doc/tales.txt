@@ -7,7 +7,7 @@ need to introduce complex Python code in the template itself.
 
 First, let's bring in a small helper function:
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
 
 
 The count: namespace to get numbers
@@ -433,8 +433,8 @@ the mainsite.
     >>> print test_tales("person/fmt:link", person=mark)
     <a ...http://launchpad.dev/~mark...
 
-    >>> print test_tales("person/fmt:name_link", person=mark)
-    <a ...http://launchpad.dev/~mark...
+    >>> print test_tales("person/fmt:link-display-name-id", person=mark)
+    <a ...http://launchpad.dev/~mark...>Mark Shuttleworth (mark)</a>
 
     >>> print test_tales("team/fmt:link", team=ubuntu_team)
     <a ...http://launchpad.dev/~ubuntu-team...
@@ -498,6 +498,8 @@ The bzr-link formatter uses the bzr identity.
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(branch)
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
 
@@ -517,8 +519,8 @@ appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1:
-      Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low"
+         title="Low - New">Bug #1: Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -528,11 +530,11 @@ title might be interpreted by the browser.
     >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1" class="sprite bug">Bug #1:
+    u'<a href=".../bugs/1" ...>Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1:
+    u'<a href=".../firefox/+bug/1" ...>Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
@@ -806,10 +808,10 @@ Bug Watches
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'/bugs/12/+watch/13'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/13'
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'/bugs/12/+watch/14'
+    u'http://bugs.launchpad.dev/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when hiding
 email addresses from users who are not logged in:
@@ -1031,29 +1033,39 @@ CSS ids
 -------
 
 Strings can be converted to valid CSS ids. The id will start with 'j' if
-the start of the string is not a letter.
+the start of the string is not a letter. If any invalid characters are
+stripped out, to ensure the id is unique, a base64 encoding is appended to the
+id.
 
     >>> test_tales('foo/fmt:css-id', foo='beta2-milestone')
     'beta2-milestone'
 
     >>> test_tales('foo/fmt:css-id', foo='user name')
-    'user-name'
+    'user-name-dXNlciBuYW1l'
 
     >>> test_tales('foo/fmt:css-id', foo='1.0.1_series')
-    'j1-0-1-series'
+    'j1-0-1_series'
 
 An optional prefix for the if can be added to the path. It too will be
 escaped.
 
     >>> test_tales('foo/fmt:css-id/series-', foo='1.0.1_series')
-    'series-1-0-1-series'
+    'series-1-0-1_series'
 
     >>> test_tales('foo/fmt:css-id/series_', foo='1.0.1_series')
-    'series-1-0-1-series'
+    'series_1-0-1_series'
 
     >>> test_tales('foo/fmt:css-id/0series-', foo='1.0.1_series')
-    'j0series-1-0-1-series'
+    'j0series-1-0-1_series'
 
+Zope fields are rendered with a period, and we need to ensure there is a way
+to retain the periods in the css id even though we would prefer not to.
+
+    >>> test_tales('foo/fmt:zope-css-id', foo='field.bug.target')
+    'field.bug.target'
+
+    >>> test_tales('foo/fmt:zope-css-id', foo='field.gtk+_package')
+    'field.gtk-_package-ZmllbGQuZ3RrK19wYWNrYWdl'
 
 The fmt: namespace to get strings (obfuscation)
 -----------------------------------------------
@@ -1388,9 +1400,6 @@ approximate durations.
     '2 days, 0 hours, 0 minutes, 0.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'two days'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 days'
 
     >>> delta = timedelta(days=12, hours=6, minutes=30)
@@ -1400,17 +1409,11 @@ approximate durations.
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
     '12 days'
 
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
-    '12 days'
-
     >>> delta = timedelta(days=0, minutes=62)
     >>> test_tales('delta/fmt:exactduration', delta=delta)
     '1 hour, 2 minutes, 0.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'an hour'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '1 hour'
 
     >>> delta = timedelta(days=0, minutes=82)
@@ -1420,17 +1423,11 @@ approximate durations.
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
     '1 hour 20 minutes'
 
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
-    '1 hour 20 minutes'
-
     >>> delta = timedelta(days=0, seconds=62)
     >>> test_tales('delta/fmt:exactduration', delta=delta)
     '1 minute, 2.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'a minute'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '1 minute'
 
     >>> delta = timedelta(days=0, seconds=90)
@@ -1438,9 +1435,6 @@ approximate durations.
     '1 minute, 30.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'two minutes'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 minutes'
 
 

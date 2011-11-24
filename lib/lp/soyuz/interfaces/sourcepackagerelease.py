@@ -30,12 +30,15 @@ class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
     id = Attribute("SourcePackageRelease identifier")
+    creatorID = Attribute("DB ID of creator")
     creator = Attribute("Person that created this release")
+    maintainerID = Attribute("DB ID of the maintainer")
     maintainer = Attribute("The person in general responsible for this "
         "release")
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
+    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
@@ -235,6 +238,17 @@ class ISourcePackageRelease(Interface):
         files that are all empty) have a size of zero.
 
         :return: total size (in KB) of this package
+        """
+
+    def aggregate_changelog(since_version):
+        """Get all the changelogs since the version specified.
+
+        :param since_version: Return changelogs of all versions
+            after since_version up to and including the version of the
+            sourcepackagerelease for this publication.
+        :return: A concatenated set of changelogs of all the required
+            versions, with a blank line between each.  If there is no
+            changelog, or there is an error parsing it, None is returned.
         """
 
 

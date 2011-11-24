@@ -6,17 +6,25 @@
 __metaclass__ = type
 
 from StringIO import StringIO
+from xml.parsers.expat import ExpatError
+import xmlrpclib
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+import transaction
+
+from canonical.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker.base import UnparsableBugData
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 
 class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
     """Test POSTs to Bugzilla's bug-search page."""
-    layer = DatabaseFunctionalLayer
+
+    layer = ZopelessLayer
 
     base_url = "http://example.com/"
 
@@ -55,3 +63,29 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
             """
         bugzilla = self._makeInstrumentedBugzilla(content=result_text)
         self.assertRaises(UnparsableBugData, bugzilla.getRemoteBugBatch, [])
+
+
+class TestBugzillaSniffing(TestCase):
+    """Tests for sniffing remote Bugzilla capabilities."""
+
+    layer = ZopelessLayer
+
+    def test_expat_error(self):
+        # If an `ExpatError` is raised when sniffing for XML-RPC capabilities,
+        # it is taken to mean that no XML-RPC capabilities exist.
+        bugzilla = Bugzilla("http://not.real")
+
+        class Transport(xmlrpclib.Transport):
+            def request(self, host, handler, request, verbose=None):
+                raise ExpatError("mismatched tag")
+
+        bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+            '%s/xmlrpc.cgi' % bugzilla.baseurl, transport=Transport())
+
+        # We must abort any existing transactions before attempting to call
+        # the _remoteSystemHas*() functions because they require that none be
+        # in progress.
+        transaction.abort()
+
+        self.assertFalse(bugzilla._remoteSystemHasBugzillaAPI())
+        self.assertFalse(bugzilla._remoteSystemHasPluginAPI())

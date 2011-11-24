@@ -55,9 +55,9 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.services.fields import (
     ContentNameField,
     PublicPersonChoice,
@@ -383,6 +383,10 @@ class IDistributionMirror(Interface):
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a FTP or Rsync base URL?'))
+    arch_mirror_freshness = Attribute(
+        'The freshness of this mirror\'s archive mirrors')
+    source_mirror_freshness = Attribute(
+        'The freshness of this mirror\'s source mirrors')
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,

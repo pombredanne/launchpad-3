@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -9,7 +9,6 @@ import datetime
 import os
 import random
 import time
-import unittest
 
 from bzrlib.revision import (
     NULL_REVISION,
@@ -41,13 +40,18 @@ from lp.code.model.revision import (
     RevisionParent,
     )
 from lp.code.model.tests.test_diff import commit_file
-from lp.codehosting.bzrutils import write_locked
+from lp.codehosting.bzrutils import (
+    read_locked,
+    write_locked,
+    )
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -60,14 +64,8 @@ def run_as_db_user(username):
     def _run_with_different_user(f):
 
         def decorated(*args, **kwargs):
-            current_user = LaunchpadZopelessLayer.txn._dbuser
-            if current_user == username:
+            with dbuser(username):
                 return f(*args, **kwargs)
-            LaunchpadZopelessLayer.switchDbUser(username)
-            try:
-                return f(*args, **kwargs)
-            finally:
-                LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
 
     return _run_with_different_user
@@ -82,6 +80,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
 
     def setUp(self):
         super(BzrSyncTestCase, self).setUp()
+        SafeBranchOpener.install_hook()
         self.disable_directory_isolation()
         self.useBzrBranches(direct_database=True)
         self.lp_db_user = config.launchpad.dbuser
@@ -274,7 +273,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         """
         file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
         if contents is None:
-            file.write(str(time.time()+random.random()))
+            file.write(str(time.time() + random.random()))
         else:
             file.write(contents)
         file.close()
@@ -559,6 +558,31 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_history, list(db_history))
 
 
+class TestPlanDatabaseChanges(BzrSyncTestCase):
+
+    def test_ancestry_already_present(self):
+        # If a BranchRevision is being added, and it's already in the DB, but
+        # not found through the graph operations, we should schedule it for
+        # deletion anyway.
+        rev1_id = self.bzr_tree.commit(
+            'initial commit', committer='me@example.org')
+        merge_tree = self.bzr_tree.bzrdir.sprout('merge').open_workingtree()
+        merge_id = merge_tree.commit(
+            'mergeable commit', committer='me@example.org')
+        self.bzr_tree.merge_from_branch(merge_tree.branch)
+        rev2_id = self.bzr_tree.commit(
+            'merge', committer='me@example.org')
+        self.useContext(read_locked(self.bzr_tree))
+        syncer = BzrSync(self.db_branch)
+        syncer.syncBranchAndClose(self.bzr_tree.branch)
+        self.assertEqual(rev2_id, self.db_branch.last_scanned_id)
+        self.db_branch.last_scanned_id = rev1_id
+        db_ancestry, db_history = self.db_branch.getScannerData()
+        branchrevisions_to_delete = syncer.planDatabaseChanges(
+            self.bzr_branch, [rev1_id, rev2_id], db_ancestry, db_history)[1]
+        self.assertIn(merge_id, branchrevisions_to_delete)
+
+
 class TestBzrSyncOneRevision(BzrSyncTestCase):
     """Tests for `BzrSync.syncOneRevision`."""
 
@@ -595,7 +619,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 class TestBzrTranslationsUploadJob(BzrSyncTestCase):
     """Tests BzrSync support for generating TranslationsUploadJobs."""
 
-    def _makeProductSeries(self, mode = None):
+    def _makeProductSeries(self, mode=None):
         """Switch to the Launchpad db user to create and configure a
         product series that is linked to the the branch.
         """
@@ -747,7 +771,3 @@ class TestRevisionProperty(BzrSyncTestCase):
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
         self.assertEquals(properties, db_revision.getProperties())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

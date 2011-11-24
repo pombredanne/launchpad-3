@@ -9,7 +9,7 @@ people.
 
 First, let's take a look at how a Moin change notification looks like:
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> moin_change = read_test_message('moin-change.txt')
 
 It contains some headers, which are of no use to us, and the body is
@@ -49,33 +49,12 @@ order to extract any useful information about the wiki page.
     -----------------------------------------------------------------...
     ...
 
-So, we'll have to extract the specification URL from the message. To do
-this, we use get_spec_url_from_moin_mail():
-
-    >>> from canonical.launchpad.mail.specexploder import (
-    ...     get_spec_url_from_moin_mail)
-    >>> get_spec_url_from_moin_mail(moin_change.get_payload(decode=True))
-    'https://wiki.ubuntu.com/MediaIntegrityCheck'
-
-Even though it's name get_spec_url_from_moin_mail(), it doesn't really
-care if it's a moin notification or not, it simply extracts the first
-URL from the body.
-
-    >>> get_spec_url_from_moin_mail(
-    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
-    'https://wiki.ubuntu.com/MediaIntegrityCheck'
-
-If no URL is found, None is returned.
-
-    >>> get_spec_url_from_moin_mail('foo bar') is None
-    True
-
 
 The Mail Handler
 ----------------
 
 The mail handler that handles mail on notifications@specs.launchpad.net
-is SpecificationHandler.
+is BlueprintHandler.
 
     >>> from canonical.config import config
     >>> from lp.services.mail.handlers import mail_handlers

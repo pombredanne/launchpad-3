@@ -7,7 +7,7 @@
        tal:define="context_menu view/context/menu:context">
 
     <div>
-      <div class="actions">
+      <div class="section">
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"

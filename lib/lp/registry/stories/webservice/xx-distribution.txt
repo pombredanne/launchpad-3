@@ -30,6 +30,7 @@ And for every distribution we publish most of its attributes.
     cdimage_mirrors_collection_link: u'http://.../ubuntu/cdimage_mirrors'
     current_series_link: u'http://.../ubuntu/hoary'
     date_created: u'2006-10-16T18:31:43.415195+00:00'
+    derivatives_collection_link: u'http://.../ubuntu/derivatives'
     description: u'Ubuntu is a new approach...'
     display_name: u'Ubuntu'
     domain_name: u'ubuntulinux.org'
@@ -43,12 +44,14 @@ And for every distribution we publish most of its attributes.
     name: u'ubuntu'
     official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
+    registrant_link: u'http://.../~registry'
     resource_type_link: u'http://.../#distribution'
     security_contact_link: None
     self_link: u'http://.../ubuntu'
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
     title: u'Ubuntu Linux'
+    web_link: u'http://launchpad.../ubuntu'
 
 
 Distribution Custom Operations
@@ -64,14 +67,14 @@ Distribution has some custom operations.
     >>> print series['self_link']
     http://.../ubuntu/hoary
 
-Requesting a series that does not exist is a bad request.
+Requesting a series that does not exist is results in a not found error.
 
     >>> print webservice.named_get(
     ...     ubuntu['self_link'], 'getSeries',
     ...     name_or_version='fnord')
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
-    NoSuchDistroSeries: No such distribution series: 'fnord'.
+    No such distribution series: 'fnord'.
 
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.
@@ -155,6 +158,7 @@ packages matching (substring) the given text.
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: None
 
 "getCountryMirror" returns the country DNS mirror for a given country;

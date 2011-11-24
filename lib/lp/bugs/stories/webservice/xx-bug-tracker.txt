@@ -10,7 +10,7 @@ any user can access.
     >>> bug_tracker_collection = anon_webservice.get(
     ...     '/bugs/bugtrackers').jsonBody()
     >>> pprint_collection(bug_tracker_collection)
-    next_collection_link: u'http://.../bugs/bugtrackers?ws.start=5&ws.size=5'
+    next_collection_link: u'http://.../bugs/bugtrackers?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_trackers'
     start: 0
     total_size: 8
@@ -28,6 +28,7 @@ any user can access.
     summary: u'The Mozilla.org bug tracker is the grand-daddy of ...'
     title: u'The Mozilla.org Bug Tracker'
     watches_collection_link: u'http:.../bugs/bugtrackers/mozilla.org/watches'
+    web_link: u'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org'
     --- ...
 
 A bug tracker can be retrieved using the the bug tracker collection's
@@ -75,3 +76,4 @@ logged in user can call to create a bug tracker.
     summary: u'Wombat summary'
     title: u'Wombat title'
     watches_collection_link: u'http://.../bugs/bugtrackers/wombat/watches'
+    web_link: u'http://bugs.launchpad.dev/bugs/bugtrackers/wombat'

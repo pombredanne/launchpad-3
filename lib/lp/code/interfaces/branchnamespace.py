@@ -52,8 +52,11 @@ class IBranchNamespace(Interface):
         a given prefix, use createBranchWithPrefix.
         """
 
-    def getBranches():
-        """Return the branches in this namespace."""
+    def getBranches(eager_load=False):
+        """Return the branches in this namespace.
+        
+        :param eager_load: If True eager load related data for the branches.
+        """
 
     def getBranchName(name):
         """Get the potential unique name for a branch called 'name'.

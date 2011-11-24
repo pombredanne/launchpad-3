@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Twisted `service.Service` class for the Launchpad SSH server.
@@ -23,7 +23,6 @@ from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
-from twisted.protocols.policies import TimeoutFactory
 from zope.event import notify
 
 from lp.services.sshserver import (
@@ -128,7 +127,7 @@ class SSHService(service.Service):
 
     def __init__(self, portal, private_key_path, public_key_path,
                  oops_configuration, main_log, access_log,
-                 access_log_path, strport='tcp:22', idle_timeout=3600,
+                 access_log_path, strport='tcp:22', factory_decorator=None,
                  banner=None):
         """Construct an SSH service.
 
@@ -145,18 +144,20 @@ class SSHService(service.Service):
         :param access_log_path: The path to the access log file.
         :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
-        :param idle_timeout: The number of seconds to wait before killing a
-            connection that isn't doing anything. Defaults to 3600.
+        :param factory_decorator: An optional callable that can decorate the
+            server factory (e.g. with a
+            `twisted.protocols.policies.TimeoutFactory`).  It takes one
+            argument, a factory, and must return a factory.
         :param banner: An announcement printed to users when they connect.
             By default, announce nothing.
         """
-        ssh_factory = TimeoutFactory(
-            Factory(
-                portal,
-                private_key=Key.fromFile(private_key_path),
-                public_key=Key.fromFile(public_key_path),
-                banner=banner),
-            timeoutPeriod=idle_timeout)
+        ssh_factory = Factory(
+            portal,
+            private_key=Key.fromFile(private_key_path),
+            public_key=Key.fromFile(public_key_path),
+            banner=banner)
+        if factory_decorator is not None:
+            ssh_factory = factory_decorator(ssh_factory)
         self.service = strports.service(strport, ssh_factory)
         self._oops_configuration = oops_configuration
         self._main_log = main_log
@@ -170,7 +171,7 @@ class SSHService(service.Service):
             logging.getLogger(self._access_log_path),
             self._access_log_path)
         manager.setUp()
-        set_up_oops_reporting(self._oops_configuration, self._main_log)
+        set_up_oops_reporting(self._main_log, self._oops_configuration)
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
@@ -184,7 +185,9 @@ class SSHService(service.Service):
         deferred = gatherResults([
             defer.maybeDeferred(service.Service.stopService, self),
             defer.maybeDeferred(self.service.stopService)])
+
         def log_stopped(ignored):
             notify(events.ServerStopped())
             return ignored
+
         return deferred.addBoth(log_stopped)

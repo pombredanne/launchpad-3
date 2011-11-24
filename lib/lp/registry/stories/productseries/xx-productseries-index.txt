@@ -43,7 +43,8 @@ and thus a member of the series drivers.
 
 Any user can subscribe to bug mail via the link on the page.
 
-    >>> anon_browser.getLink('Subscribe to bug mail')
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> user_browser.getLink('Subscribe to bug mail')
     <Link ... url='http://launchpad.dev/firefox/trunk/+subscribe'>
 
 The series page lists the milestones and releases for the series.

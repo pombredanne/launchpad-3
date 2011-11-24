@@ -1,73 +1,97 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
+import transaction
 import unittest
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from storm.store import ResultSet
-from testtools.matchers import StartsWith
+from lazr.restfulclient.errors import Unauthorized
+from testtools.testcase import ExpectedException
+from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
+    not_equals,
+    )
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    clear_cache,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    CannotDeleteBugtask,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTaskSet,
-    IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.bugs.model.bugtask import build_tag_search_clause
-from lp.bugs.tests.bug import (
-    create_old_bug,
-    sync_bugtasks,
+from lp.bugs.model.bugtask import (
+    bug_target_from_key,
+    bug_target_to_key,
+    BugTask,
+    BugTaskSet,
+    build_tag_search_clause,
+    IllegalTarget,
+    validate_new_target,
+    validate_target,
     )
+from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
+    EventRecorder,
+    feature_flags,
     login,
+    login_celebrity,
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
+    set_feature_flag,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
+    ws_object,
     )
-from lp.testing.factory import (
-    is_security_proxied_or_harmless,
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -82,18 +106,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
         # getDelta() should return None when no change has been made.
         bug_task = self.factory.makeBugTask()
         self.assertEqual(bug_task.getDelta(bug_task), None)
-
-    def test_get_mismatched_delta(self):
-        # getDelta() should raise TypeError when different types of
-        # bug tasks are passed in.
-        product = self.factory.makeProduct()
-        product_bug_task = self.factory.makeBugTask(target=product)
-        distro_source_package = self.factory.makeDistributionSourcePackage()
-        distro_source_package_bug_task = self.factory.makeBugTask(
-            target=distro_source_package)
-        self.assertRaises(
-            TypeError, product_bug_task.getDelta,
-            distro_source_package_bug_task)
 
     def check_delta(self, bug_task_before, bug_task_after, **expected_delta):
         # Get a delta between one bug task and another, then compare
@@ -194,6 +206,74 @@ class TestBugTaskDelta(TestCaseWithFactory):
             bug_task_before_modification, bug_task,
             importance=dict(old=bug_task_before_modification.importance,
                             new=bug_task.importance))
+
+
+class TestBugTaskSetStatusSearchClauses(TestCase):
+    # BugTaskSets contain a utility function that generates SQL WHERE clauses
+    # used to find sets of bugs.  These tests exercise that utility function.
+
+    def searchClause(self, status_spec):
+        return BugTaskSet._buildStatusClause(status_spec)
+
+    def test_simple_queries(self):
+        # WHERE clauses for simple status values are straightforward.
+        self.assertEqual(
+            '(BugTask.status = 10)',
+            self.searchClause(BugTaskStatus.NEW))
+        self.assertEqual(
+            '(BugTask.status = 16)',
+            self.searchClause(BugTaskStatus.OPINION))
+        self.assertEqual(
+            '(BugTask.status = 22)',
+            self.searchClause(BugTaskStatus.INPROGRESS))
+
+    def test_INCOMPLETE_query(self):
+        # Since we don't really store INCOMPLETE in the DB but instead store
+        # values with finer shades of meaning, asking for INCOMPLETE will
+        # result in a clause that actually matches multiple statuses.
+        self.assertEqual(
+            '(BugTask.status IN (13,14))',
+            self.searchClause(BugTaskStatus.INCOMPLETE))
+
+    def test_negative_query(self):
+        # If a negative is requested then the WHERE clause is simply wrapped
+        # in a "NOT".
+        status = BugTaskStatus.INCOMPLETE
+        base_query = self.searchClause(status)
+        expected_negative_query = '(NOT {0})'.format(base_query)
+        self.assertEqual(
+            expected_negative_query,
+            self.searchClause(not_equals(status)))
+
+    def test_any_query(self):
+        # An "any" object may be passed in containing a set of statuses to
+        # return.  The resulting SQL uses IN in an effort to be optimal.
+        self.assertEqual(
+            '(BugTask.status IN (10,16))',
+            self.searchClause(any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
+
+    def test_any_query_with_INCOMPLETE(self):
+        # Since INCOMPLETE is not a single-value status (see above) an "any"
+        # query that includes INCOMPLETE will cause more enum values to be
+        # included in the IN clause than were given.  Note that we go to a bit
+        # of effort to generate an IN expression instead of a series of
+        # ORed-together equality checks.
+        self.assertEqual(
+            '(BugTask.status IN (10,13,14))',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
+
+    def test_all_query(self):
+        # Since status is single-valued, asking for "all" statuses in a set
+        # doesn't make any sense.
+        with ExpectedException(ValueError):
+            self.searchClause(
+                all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
+
+    def test_bad_value(self):
+        # If an unrecognized status is provided then an error is raised.
+        with ExpectedException(ValueError):
+            self.searchClause('this-is-not-a-status')
 
 
 class TestBugTaskTagSearchClauses(TestCase):
@@ -600,7 +680,8 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         super(TestBugTaskPermissionsToSetAssigneeMixin, self).setUp()
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
+            owner=self.target_owner_member,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         self.regular_user = self.factory.makePerson()
 
         login_person(self.target_owner_member)
@@ -947,26 +1028,31 @@ class TestBugTaskSearch(TestCaseWithFactory):
         person = self.login()
         self.factory.makeBug(product=target, private=True, owner=person)
         self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, private=True, owner=person)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.
         login_person(person)
         tasks = target.searchTasks(BugTaskSearchParams(
             person, omit_dupes=True, orderby=['status', '-importance', 'id']))
-        # We must be finding the bugs.
-        self.assertEqual(2, tasks.count())
+        # We must have found the bugs.
+        self.assertEqual(3, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
         # distorting what we're testing.
         IPerson(person.account, None)
-        # One query and only one should be issued to get the tasks, bugs and
-        # allow access to getConjoinedMaster attribute - an attribute that
-        # triggers a permission check (nb: id does not trigger such a check)
-        self.assertStatementCount(1,
-            lambda: [task.getConjoinedMaster for task in tasks])
+        # The should take 2 queries - one for the tasks, one for the related
+        # products (eager loaded targets).
+        has_expected_queries = HasQueryCount(Equals(2))
+        # No extra queries should be issued to access a regular attribute
+        # on the bug that would normally trigger lazy evaluation for security
+        # checking.  Note that the 'id' attribute does not trigger a check.
+        with StormStatementRecorder() as recorder:
+            [task.getConjoinedMaster for task in tasks]
+            self.assertThat(recorder, has_expected_queries)
 
     def test_omit_targeted_default_is_false(self):
         # The default value of omit_targeted is false so bugs targeted
         # to a series are not hidden.
-        target = self.factory.makeDistroRelease()
+        target = self.factory.makeDistroSeries()
         self.login()
         task1 = self.factory.makeBugTask(target=target)
         default_result = target.searchTasks(None)
@@ -1007,6 +1093,28 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.datecreated += timedelta(days=1)
         result = target.searchTasks(None, created_since=date)
         self.assertEqual([task2], list(result))
+
+
+class BugTaskSetSearchTest(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_explicit_blueprint_specified(self):
+        # If the linked_blueprints is an integer id, then only bugtasks for
+        # bugs that are linked to that blueprint are returned.
+        bug1 = self.factory.makeBug()
+        blueprint1 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint1.owner):
+            blueprint1.linkBug(bug1)
+        bug2 = self.factory.makeBug()
+        blueprint2 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint2.owner):
+            blueprint2.linkBug(bug2)
+        self.factory.makeBug()
+        params = BugTaskSearchParams(
+            user=None, linked_blueprints=blueprint1.id)
+        tasks = set(getUtility(IBugTaskSet).search(params))
+        self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -1130,7 +1238,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_resolved_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in resolved_upstream_states)
 
         def _is_resolved_bugwatch_task(bugtask):
@@ -1166,7 +1274,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_open_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in open_states)
 
         def _is_open_bugwatch_task(bugtask):
@@ -1190,7 +1298,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         Returns True if yes, otherwise False.
         """
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product is not None:
                 return True
         return False
 
@@ -1223,15 +1331,12 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             create_old_bug("90 days old", 90, self.distribution))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=self.user,
-                distroseries=self.distroseries))
+                bugtasks[-1].bug, self.user, self.distroseries))
         bugtasks.append(
             create_old_bug("90 days old", 90, self.product))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=self.user,
-                productseries=self.productseries))
-        sync_bugtasks(bugtasks)
+                bugtasks[-1].bug, self.user, self.productseries))
 
     def tearDown(self):
         logout()
@@ -1330,103 +1435,1253 @@ class TestBugTaskStatuses(TestCase):
         """
         self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(
+            BugTaskStatus.UNKNOWN, DB_UNRESOLVED_BUGTASK_STATUSES)
 
 
-class TestGetStructuralSubscribers(TestCaseWithFactory):
+class TestBugTaskContributor(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_with_bug(self):
+    def test_non_contributor(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        # Create a person who has not contributed
+        person = self.factory.makePerson()
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertFalse(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+    def test_contributor(self):
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=owner)
+        bug1 = self.factory.makeBug(product=product, owner=owner)
+        # Create a person who has contributed
+        person = self.factory.makePerson()
+        login('foo.bar@canonical.com')
+        bug1.default_bugtask.transitionToAssignee(person)
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertTrue(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+
+class TestBugTaskDeletion(TestCaseWithFactory):
+    """Test the different cases that makes a bugtask deletable or not."""
+
+    layer = DatabaseFunctionalLayer
+
+    flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+
+    def test_cannot_delete_if_not_logged_in(self):
+        # You cannot delete a bug task if not logged in.
+        bug = self.factory.makeBug()
+        with FeatureFixture(self.flags):
+            self.assertFalse(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_unauthorised_cannot_delete(self):
+        # Unauthorised users cannot delete a bug task.
+        bug = self.factory.makeBug()
+        unauthorised = self.factory.makePerson()
+        login_person(unauthorised)
+        with FeatureFixture(self.flags):
+            self.assertFalse(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_admin_can_delete(self):
+        # With the feature flag on, an admin can delete a bug task.
+        bug = self.factory.makeBug()
+        login_celebrity('admin')
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Admin', bug.default_bugtask))
+        # Admins can also the task even without the feature flag.
+        clear_cache()
+        self.assertTrue(
+            check_permission('launchpad.Admin', bug.default_bugtask))
+
+    def test_pillar_owner_can_delete(self):
+        # With the feature flag on, the pillar owner can delete a bug task.
+        bug = self.factory.makeBug()
+        login_person(bug.default_bugtask.pillar.owner)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_bug_supervisor_can_delete(self):
+        # With the feature flag on, the bug supervisor can delete a bug task.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         bug = self.factory.makeBug(product=product)
-        return product, bug
+        login_person(bug_supervisor)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
-    def getStructuralSubscribers(self, bugtasks, *args, **kwargs):
-        # Call IBugTaskSet.getStructuralSubscribers() and check that the
-        # result is security proxied.
-        result = getUtility(IBugTaskSet).getStructuralSubscribers(
-            bugtasks, *args, **kwargs)
-        self.assertTrue(is_security_proxied_or_harmless(result))
-        return result
+    def test_task_reporter_can_delete(self):
+        # With the feature flag on, the bug task reporter can delete bug task.
+        bug = self.factory.makeBug()
+        login_person(bug.default_bugtask.owner)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
-    def test_getStructuralSubscribers_no_subscribers(self):
-        # If there are no subscribers for any of the bug's targets then no
-        # subscribers will be returned by getStructuralSubscribers().
-        product, bug = self.make_product_with_bug()
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual([], list(subscribers))
+    def test_cannot_delete_only_bugtask(self):
+        # The only bugtask cannot be deleted.
+        bug = self.factory.makeBug()
+        bugtask = bug.default_bugtask
+        login_person(bugtask.owner)
+        with FeatureFixture(self.flags):
+            self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
-    def test_getStructuralSubscribers_single_target(self):
-        # Subscribers for any of the bug's targets are returned.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
+    def test_delete_bugtask(self):
+        # A bugtask can be deleted.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        bug = bugtask.bug
+        login_person(bugtask.owner)
+        with FeatureFixture(self.flags):
+            bugtask.delete()
+        self.assertEqual([bug.default_bugtask], bug.bugtasks)
+
+    def test_delete_default_bugtask(self):
+        # The default bugtask can be deleted.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        bug = bugtask.bug
+        login_person(bug.default_bugtask.owner)
+        with FeatureFixture(self.flags):
+            bug.default_bugtask.delete()
+        self.assertEqual([bugtask], bug.bugtasks)
+        self.assertEqual(bugtask, bug.default_bugtask)
+
+    def test_bug_heat_updated(self):
+        # Test that the bug heat is updated when a bugtask is deleted.
+        bug = self.factory.makeBug()
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        login_person(distro.owner)
+        dsp_task = bug.addTask(bug.owner, dsp)
+        self.assertTrue(dsp.total_bug_heat > 0)
+        with FeatureFixture(self.flags):
+            dsp_task.delete()
+        self.assertTrue(dsp.total_bug_heat == 0)
+
+
+class TestConjoinedBugTasks(TestCaseWithFactory):
+    """Tests for conjoined bug task functionality."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestConjoinedBugTasks, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.distro = self.factory.makeDistribution(
+            name="eggs", owner=self.owner, bug_supervisor=self.owner)
+        self.distro_release = self.factory.makeDistroSeries(
+            distribution=self.distro, registrant=self.owner)
+        self.source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=self.distro_release)
+        self.bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=self.source_package.sourcepackagename,
+            owner=self.owner)
+        with person_logged_in(self.owner):
+            nomination = self.bug.addNomination(
+                self.owner, self.distro_release)
+            nomination.approve(self.owner)
+            self.generic_task, self.series_task = self.bug.bugtasks
+
+    def test_editing_generic_status_reflects_upon_conjoined_master(self):
+        # If a change is made to the status of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            # Both the generic task and the series task start off with the
+            # status of NEW.
+            self.assertEqual(
+                BugTaskStatus.NEW, self.generic_task.status)
+            self.assertEqual(
+                BugTaskStatus.NEW, self.series_task.status)
+            # Transitioning the generic task to CONFIRMED.
+            self.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            # Also transitions the series_task.
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, self.series_task.status)
+
+    def test_editing_generic_importance_reflects_upon_conjoined_master(self):
+        # If a change is made to the importance of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, self.owner)
+            self.assertEqual(
+                BugTaskImportance.HIGH, self.series_task.importance)
+
+    def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
+        # If a change is made to the assignee of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToAssignee(self.owner)
+            self.assertEqual(
+                self.owner, self.series_task.assignee)
+
+    def test_editing_generic_package_reflects_upon_conjoined_master(self):
+        # If a change is made to the source package of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        source_package_name = self.factory.makeSourcePackageName("ham")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distro.currentseries,
+            sourcepackagename=source_package_name)
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToTarget(
+                self.distro.getSourcePackage(source_package_name))
+            self.assertEqual(
+                source_package_name, self.series_task.sourcepackagename)
+
+    def test_creating_conjoined_task_gets_synced_attributes(self):
+        bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=self.source_package.sourcepackagename,
+            owner=self.owner)
+        generic_task = bug.bugtasks[0]
+        bugtaskset = getUtility(IBugTaskSet)
+        with person_logged_in(self.owner):
+            generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, generic_task.status)
+            slave_bugtask = bugtaskset.createTask(
+                bug, self.owner, generic_task.target.development_version)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, generic_task.status)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, slave_bugtask.status)
+
+
+# START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+# When feature flag code is removed, delete these tests (up to "# END
+# TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
+
+class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for _checkAutoconfirmFeatureFlag.
+
+    layer = DatabaseFunctionalLayer
+
+    def makeTarget(self):
+        return self.factory.makeProduct()
+
+    flag = u'bugs.autoconfirm.enabled_product_names'
+    alt_flag = u'bugs.autoconfirm.enabled_distribution_names'
+
+    def test_False(self):
+        # With no feature flags turned on, we do not auto-confirm.
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        self.assertFalse(
+            removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_flag_False(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'   ')
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, bug_task.pillar.name)
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag_of_many(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(
+                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_match_all_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'*')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_alt_flag_does_not_affect(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+
+class TestAutoConfirmBugTasksFlagForProductSeries(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeProductSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistribution(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    flag = TestAutoConfirmBugTasksFlagForProduct.alt_flag
+    alt_flag = TestAutoConfirmBugTasksFlagForProduct.flag
+
+    def makeTarget(self):
+        return self.factory.makeDistribution()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSeries(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistroSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistributionSourcePackage()
+
+
+class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for making sure that switching a task from one project that
+    # does not auto-confirm to another that does performs the auto-confirm
+    # correctly, if appropriate.  This is only necessary for as long as a
+    # project may not participate in auto-confirm.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_transitionToTarget(self):
+        # We can change the target.  If the normal bug conditions do not
+        # hold, there will be no transition.
+        person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+
+    def test_transitionToTarget(self):
+        # If the conditions *do* hold, though, we will auto-confirm.
+        person = self.factory.makePerson()
+        another_person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(another_person):
+                bug_task.bug.markUserAffected(another_person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+# END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+
+class TestAutoConfirmBugTasks(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for maybeConfirm
+
+    layer = DatabaseFunctionalLayer
+
+    def test_auto_confirm(self):
+        # A typical new bugtask auto-confirms.  Doing so changes the status of
+        # the bug task, creates a status event, and creates a new comment
+        # indicating the reason the Janitor auto-confirmed.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            bug = bug_task.bug
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            original_comment_count = bug.messages.count()
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(2, len(recorder.events))
+                msg_event, mod_event = recorder.events
+                self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
+                                 mod_event.user)
+                self.assertEqual(['status'], mod_event.edited_fields)
+                self.assertEqual(BugTaskStatus.NEW,
+                                 mod_event.object_before_modification.status)
+                self.assertEqual(bug_task, mod_event.object)
+                # A new comment is recorded.
+                self.assertEqual(
+                    original_comment_count + 1, bug.messages.count())
+                self.assertEqual(
+                    u"Status changed to 'Confirmed' because the bug affects "
+                    "multiple users.",
+                    bug.messages[-1].text_contents)
+
+    def test_do_not_confirm_bugwatch_tasks(self):
+        # A bugwatch bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            product = self.factory.makeProduct()
+            with person_logged_in(product.owner):
+                bug = self.factory.makeBug(
+                    product=product, owner=product.owner)
+                bug_task = bug.getBugTask(product)
+                watch = self.factory.makeBugWatch(bug=bug)
+                bug_task.bugwatch = watch
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
+
+    def test_only_confirm_new_tasks(self):
+        # A non-new bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            removeSecurityProxy(bug_task).transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_task.bug.owner)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
+
+
+class TestValidateTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.validateTransitionToTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAndCheckTransition(self, old, new, extra=None):
+        task = self.factory.makeBugTask(target=old)
+        if extra:
+            self.factory.makeBugTask(bug=task.bug, target=extra)
+        with person_logged_in(task.owner):
+            task.validateTransitionToTarget(new)
+
+    def assertTransitionWorks(self, a, b, extra=None):
+        """Check that a transition between two targets works both ways."""
+        self.makeAndCheckTransition(a, b, extra)
+        self.makeAndCheckTransition(b, a, extra)
+
+    def assertTransitionForbidden(self, a, b, extra=None):
+        """Check that a transition between two targets fails both ways."""
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition, a, b, extra)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition, b, a, extra)
+
+    def test_product_to_product_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeProduct())
+
+    def test_product_to_distribution_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_product_to_package_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_distribution_to_distribution_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistribution(),
+            self.factory.makeDistribution())
+
+    def test_distribution_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        self.assertEquals(dsp.distribution, distro)
+        self.assertTransitionWorks(distro, dsp)
+
+    def test_package_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(distribution=distro),
+            self.factory.makeDistributionSourcePackage(distribution=distro))
+
+    def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
+        sp1 = self.factory.makeSourcePackage(publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries,
+                                             publish=True)
+        self.assertTransitionWorks(sp1, sp2)
+
+    def test_sourcepackage_to_same_series_works(self):
+        sp = self.factory.makeSourcePackage()
+        self.assertTransitionWorks(sp, sp.distroseries)
+
+    def test_different_distros_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_cannot_transition_to_productseries(self):
+        product = self.factory.makeProduct()
+        self.assertTransitionForbidden(
+            product,
+            self.factory.makeProductSeries(product=product))
+
+    def test_cannot_transition_to_distroseries(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        self.assertTransitionForbidden(distro, series)
+
+    def test_cannot_transition_to_sourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        sp = self.factory.makeSourcePackage(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename)
+        self.assertTransitionForbidden(dsp, sp)
+
+    def test_cannot_transition_to_sourcepackage_in_different_series(self):
+        distro = self.factory.makeDistribution()
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        sp1 = self.factory.makeSourcePackage(distroseries=ds1)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds2)
+        self.assertTransitionForbidden(sp1, sp2)
+
+    # If series tasks for a distribution exist, the pillar of the
+    # non-series task cannot be changed. This is due to the strange
+    # rules around creation of DS/SP tasks.
+    def test_cannot_transition_pillar_of_distro_task_if_series_involved(self):
+        # If a Distribution task has subordinate DistroSeries tasks, its
+        # pillar cannot be changed.
+        series = self.factory.makeDistroSeries()
+        product = self.factory.makeProduct()
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            series.distribution, product, series)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            series.distribution, distro, series)
+
+    def test_cannot_transition_dsp_task_if_sp_tasks_exist(self):
+        # If a DistributionSourcePackage task has subordinate
+        # SourcePackage tasks, its pillar cannot be changed.
+        sp = self.factory.makeSourcePackage(publish=True)
+        product = self.factory.makeProduct()
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            sp.distribution_sourcepackage, product, sp)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            sp.distribution_sourcepackage, distro, sp)
+
+    def test_cannot_transition_to_distro_with_series_tasks(self):
+        # If there are any series (DistroSeries or SourcePackage) tasks
+        # for a distribution, you can't transition from another pillar
+        # to that distribution.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, ds.distribution, ds)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, ds.distribution, sp2)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, sp1.distribution_sourcepackage, ds)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, sp1.distribution_sourcepackage, sp2)
+
+    def test_can_transition_dsp_task_with_sp_task_to_different_spn(self):
+        # Even if a Distribution or DistributionSourcePackage task has
+        # subordinate series tasks, the sourcepackagename can be
+        # changed, added or removed. A Storm validator on
+        # sourcepackagename changes all the related tasks.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        dsp1 = sp1.distribution_sourcepackage
+        dsp2 = sp2.distribution_sourcepackage
+        # The sourcepackagename can be changed
+        self.makeAndCheckTransition(dsp1, dsp2, sp1)
+        self.makeAndCheckTransition(dsp2, dsp1, sp2)
+        # Or removed or added.
+        self.makeAndCheckTransition(dsp1, ds.distribution, sp1)
+        self.makeAndCheckTransition(ds.distribution, dsp1, ds)
+
+    def test_validate_target_is_called(self):
+        p = self.factory.makeProduct()
+        task1 = self.factory.makeBugTask(target=p)
+        task2 = self.factory.makeBugTask(
+            bug=task1.bug, target=self.factory.makeProduct())
+        with person_logged_in(task2.owner):
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "A fix for this bug has already been requested for %s"
+                % p.displayname, task2.transitionToTarget, p)
+
+
+class TestTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.transitionToTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAndTransition(self, old, new):
+        task = self.factory.makeBugTask(target=old)
+        p = self.factory.makePerson()
+        self.assertEqual(old, task.target)
+        old_state = Snapshot(task, providing=providedBy(task))
+        with person_logged_in(task.owner):
+            task.bug.subscribe(p, p)
+            task.transitionToTarget(new)
+            notify(ObjectModifiedEvent(task, old_state, ["target"]))
+        return task
+
+    def assertTransitionWorks(self, a, b):
+        """Check that a transition between two targets works both ways."""
+        self.assertEqual(b, self.makeAndTransition(a, b).target)
+        self.assertEqual(a, self.makeAndTransition(b, a).target)
+
+    def test_transition_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeProduct())
+
+    def test_target_type_transition_works(self):
+        # A transition from one type of target to another works.
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_validation(self):
+        # validateTransitionToTarget is called before any transition.
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+
+        # Patch out validateTransitionToTarget to raise an exception
+        # that we can check. Also check that the target was not changed.
+        msg = self.factory.getUniqueString()
+        removeSecurityProxy(task).validateTransitionToTarget = FakeMethod(
+            failure=IllegalTarget(msg))
+        with person_logged_in(task.owner):
+            self.assertRaisesWithContent(
+                IllegalTarget, msg,
+                task.transitionToTarget, self.factory.makeProduct())
+        self.assertEqual(p, task.target)
+
+    def test_transition_to_same_is_noop(self):
+        # While a no-op transition would normally be rejected due to
+        # task duplication, transitionToTarget short-circuits.
+        p = self.factory.makeProduct()
+        self.assertTransitionWorks(p, p)
+
+    def test_milestone_unset_on_transition(self):
+        # A task's milestone is reset when its target changes.
+        product = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=product)
+        with person_logged_in(task.owner):
+            task.milestone = self.factory.makeMilestone(product=product)
+            task.transitionToTarget(self.factory.makeProduct())
+        self.assertIs(None, task.milestone)
+
+    def test_milestone_preserved_if_transition_rejected(self):
+        # If validation rejects a transition, the milestone is not unset.
+        product = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=product)
+        with person_logged_in(task.owner):
+            task.milestone = milestone = self.factory.makeMilestone(
+                product=product)
+            self.assertRaises(
+                IllegalTarget,
+                task.transitionToTarget, self.factory.makeSourcePackage())
+        self.assertEqual(milestone, task.milestone)
+
+    def test_milestone_preserved_within_a_pillar(self):
+        # Milestones are pillar-global, so transitions between packages
+        # don't unset them.
+        sp = self.factory.makeSourcePackage(publish=True)
+        dsp = sp.distribution_sourcepackage
+        task = self.factory.makeBugTask(target=dsp.distribution)
+        with person_logged_in(task.owner):
+            task.milestone = milestone = self.factory.makeMilestone(
+                distribution=dsp.distribution)
+            task.transitionToTarget(dsp)
+        self.assertEqual(milestone, task.milestone)
+
+    def test_targetnamecache_updated(self):
+        new_product = self.factory.makeProduct()
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            task.transitionToTarget(new_product)
         self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(bug.bugtasks)))
+            new_product.bugtargetdisplayname,
+            removeSecurityProxy(task).targetnamecache)
 
-    def test_getStructuralSubscribers_multiple_targets(self):
-        # Subscribers for any of the bug's targets are returned.
-        actor = self.factory.makePerson()
-        login_person(actor)
+    def test_matching_sourcepackage_tasks_updated_when_name_changed(self):
+        # If the sourcepackagename is changed, it's changed on all tasks
+        # with the same distribution and sourcepackagename.
 
-        subscriber1 = self.factory.makePerson()
-        subscriber2 = self.factory.makePerson()
+        # Create a distribution and distroseries with tasks.
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=ds.distribution)
+        ds_task = self.factory.makeBugTask(bug=bug, target=ds)
 
-        product1 = self.factory.makeProduct(owner=actor)
-        product1.addBugSubscription(subscriber1, subscriber1)
-        product2 = self.factory.makeProduct(owner=actor)
-        product2.addBugSubscription(subscriber2, subscriber2)
+        # Also create a task for another distro. It will not be touched.
+        other_distro = self.factory.makeDistribution()
+        self.factory.makeBugTask(bug=bug, target=other_distro)
 
-        bug = self.factory.makeBug(product=product1)
-        bug.addTask(actor, product2)
-
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
-
-    def test_getStructuralSubscribers_recipients(self):
-        # If provided, getStructuralSubscribers() calls the appropriate
-        # methods on a BugNotificationRecipients object.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
-        recipients = BugNotificationRecipients()
-        subscribers = self.getStructuralSubscribers(
-            bug.bugtasks, recipients=recipients)
-        # The return value is a list only when populating recipients.
-        self.assertIsInstance(subscribers, list)
-        self.assertEqual([subscriber], recipients.getRecipients())
-        reason, header = recipients.getReason(subscriber)
-        self.assertThat(
-            reason, StartsWith(
-                u"You received this bug notification because "
-                u"you are subscribed to "))
-        self.assertThat(header, StartsWith(u"Subscriber "))
-
-    def test_getStructuralSubscribers_level(self):
-        # getStructuralSubscribers() respects the given level.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        subscription = product.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.METADATA)))
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
+        self.assertContentEqual(
+            (task.target for task in bug.bugtasks),
+            [ds, ds.distribution, other_distro])
+        sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        with person_logged_in(ds_task.owner):
+            ds_task.transitionToTarget(sp)
+        self.assertContentEqual(
+            (t.target for t in bug.bugtasks),
+            [sp, sp.distribution_sourcepackage, other_distro])
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+class TestBugTargetKeys(TestCaseWithFactory):
+    """Tests for bug_target_to_key and bug_target_from_key."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertTargetKeyWorks(self, target, flat):
+        """Check that a target flattens to the dict and back."""
+        self.assertEqual(flat, bug_target_to_key(target))
+        self.assertEqual(target, bug_target_from_key(**flat))
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assertTargetKeyWorks(
+            product,
+            dict(
+                product=product,
+                productseries=None,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_productseries(self):
+        series = self.factory.makeProductSeries()
+        self.assertTargetKeyWorks(
+            series,
+            dict(
+                product=None,
+                productseries=series,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_distribution(self):
+        distro = self.factory.makeDistribution()
+        self.assertTargetKeyWorks(
+            distro,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=distro,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTargetKeyWorks(
+            distroseries,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=distroseries,
+                sourcepackagename=None,
+                ))
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertTargetKeyWorks(
+            dsp,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=dsp.distribution,
+                distroseries=None,
+                sourcepackagename=dsp.sourcepackagename,
+                ))
+
+    def test_sourcepackage(self):
+        sp = self.factory.makeSourcePackage()
+        self.assertTargetKeyWorks(
+            sp,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=sp.distroseries,
+                sourcepackagename=sp.sourcepackagename,
+                ))
+
+    def test_no_key_for_non_targets(self):
+        self.assertRaises(
+            AssertionError, bug_target_to_key, self.factory.makePerson())
+
+    def test_no_target_for_bad_keys(self):
+        self.assertRaises(
+            AssertionError, bug_target_from_key, None, None, None, None, None)
+
+
+class ValidateTargetMixin:
+    """ A mixin used to test validate_target and validate_new_target when used
+        a private bugs to check for multi-tenant constraints.
+    """
+
+    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+
+    def test_private_multi_tenanted_forbidden(self):
+        # A new task project cannot be added if there is already one from
+        # another pillar.
+        d = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=d)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        p = self.factory.makeProduct()
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % d.displayname,
+                self.validate_method, bug, p)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, p)
+
+    def test_private_incorrect_pillar_task_forbidden(self):
+        # A product or distro cannot be added if there is already a bugtask.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        d = self.factory.makeDistribution()
+        bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, p2)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, d)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, p2)
+
+    def test_private_incorrect_product_series_task_forbidden(self):
+        # A product series cannot be added if there is already a bugtask for
+        # a different product.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=p2)
+        bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, series)
+
+    def test_private_incorrect_distro_series_task_forbidden(self):
+        # A distro series cannot be added if there is already a bugtask for
+        # a different distro.
+        d1 = self.factory.makeDistribution()
+        d2 = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=d2)
+        bug = self.factory.makeBug(distribution=d1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % d1.displayname,
+                self.validate_method, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, series)
+
+
+class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    multi_tenant_test_one_task_only = False
+
+    @property
+    def validate_method(self):
+        # Used for ValidateTargetMixin.
+        return validate_target
+
+    def test_new_product_is_allowed(self):
+        # A new product not on the bug is OK.
+        p1 = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p1)
+        p2 = self.factory.makeProduct()
+        validate_target(task.bug, p2)
+
+    def test_same_product_is_forbidden(self):
+        # A product with an existing task is not.
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s"
+            % p.displayname,
+            validate_target, task.bug, p)
+
+    def test_new_distribution_is_allowed(self):
+        # A new distribution not on the bug is OK.
+        d1 = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d1)
+        d2 = self.factory.makeDistribution()
+        validate_target(task.bug, d2)
+
+    def test_new_productseries_is_allowed(self):
+        # A new productseries not on the bug is OK.
+        ds1 = self.factory.makeProductSeries()
+        task = self.factory.makeBugTask(target=ds1)
+        ds2 = self.factory.makeProductSeries()
+        validate_target(task.bug, ds2)
+
+    def test_new_distroseries_is_allowed(self):
+        # A new distroseries not on the bug is OK.
+        ds1 = self.factory.makeDistroSeries()
+        task = self.factory.makeBugTask(target=ds1)
+        ds2 = self.factory.makeDistroSeries()
+        validate_target(task.bug, ds2)
+
+    def test_new_sourcepackage_is_allowed(self):
+        # A new sourcepackage not on the bug is OK.
+        sp1 = self.factory.makeSourcePackage(publish=True)
+        task = self.factory.makeBugTask(target=sp1)
+        sp2 = self.factory.makeSourcePackage(publish=True)
+        validate_target(task.bug, sp2)
+
+    def test_multiple_packageless_distribution_tasks_are_forbidden(self):
+        # A distribution with an existing task is not.
+        d = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s"
+            % d.displayname,
+            validate_target, task.bug, d)
+
+    def test_distributionsourcepackage_task_is_allowed(self):
+        # A DistributionSourcePackage task can coexist with a task for
+        # its Distribution.
+        d = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d)
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        validate_target(task.bug, dsp)
+
+    def test_different_distributionsourcepackage_tasks_are_allowed(self):
+        # A DistributionSourcePackage task can also coexist with a task
+        # for another one.
+        dsp1 = self.factory.makeDistributionSourcePackage()
+        task = self.factory.makeBugTask(target=dsp1)
+        dsp2 = self.factory.makeDistributionSourcePackage(
+            distribution=dsp1.distribution)
+        validate_target(task.bug, dsp2)
+
+    def test_same_distributionsourcepackage_task_is_forbidden(self):
+        # But a DistributionSourcePackage task cannot coexist with a
+        # task for itself.
+        dsp = self.factory.makeDistributionSourcePackage()
+        task = self.factory.makeBugTask(target=dsp)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
+            validate_target, task.bug, dsp)
+
+    def test_dsp_without_publications_disallowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "Package %s not published in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
+            validate_target, task.bug, dsp)
+
+    def test_dsp_with_publications_allowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename,
+            archive=series.main_archive)
+        validate_target(task.bug, dsp)
+
+    def test_dsp_with_only_ppa_publications_disallowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive. PPA publications don't count.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename,
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "Package %s not published in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
+            validate_target, task.bug, dsp)
+
+
+class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    multi_tenant_test_one_task_only = True
+
+    @property
+    def validate_method(self):
+        # Used for ValidateTargetMixin.
+        return validate_new_target
+
+    def test_products_are_ok(self):
+        p1 = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p1)
+        p2 = self.factory.makeProduct()
+        validate_new_target(task.bug, p2)
+
+    def test_calls_validate_target(self):
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s"
+            % p.displayname,
+            validate_new_target, task.bug, p)
+
+    def test_package_task_with_distribution_task_forbidden(self):
+        d = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        task = self.factory.makeBugTask(target=d)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug is already open on %s with no package specified. "
+            "You should fill in a package name for the existing bug."
+            % d.displayname,
+            validate_new_target, task.bug, dsp)
+
+    def test_distribution_task_with_package_task_forbidden(self):
+        d = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        task = self.factory.makeBugTask(target=dsp)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug is already on %s. Please specify an affected "
+            "package in which the bug has not yet been reported."
+            % d.displayname,
+            validate_new_target, task.bug, d)
+
+
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_delete_bugtask(self):
+        """Test that a bugtask can be deleted with the feature flag on."""
+        owner = self.factory.makePerson()
+        db_bug = self.factory.makeBug()
+        db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
+        transaction.commit()
+        logout()
+
+        # It will fail without feature flag enabled.
+        launchpad = self.factory.makeLaunchpadService(owner)
+        bugtask = ws_object(launchpad, db_bugtask)
+        self.assertRaises(Unauthorized, bugtask.lp_delete)
+
+        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+        with FeatureFixture(flags):
+            launchpad = self.factory.makeLaunchpadService(owner)
+            bugtask = ws_object(launchpad, db_bugtask)
+            bugtask.lp_delete()
+            transaction.commit()
+        # Check the delete really worked.
+        with person_logged_in(removeSecurityProxy(db_bug).owner):
+            self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
+
+
+class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskUserHasPrivileges, self).setUp()
+        self.celebrities = getUtility(ILaunchpadCelebrities)
+
+    def test_admin_is_allowed(self):
+        # An admin always has privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertTrue(bugtask.userHasPrivileges(self.celebrities.admin))
+
+    def test_bug_celebrities_are_allowed(self):
+        # The three bug celebrities (bug watcher, bug importer and
+        # janitor always have privileges.
+        bugtask = self.factory.makeBugTask()
+        for celeb in (
+            self.celebrities.bug_watch_updater,
+            self.celebrities.bug_importer, self.celebrities.janitor):
+            self.assertTrue(bugtask.userHasPrivileges(celeb))
+
+    def test_pillar_owner_is_allowed(self):
+        # The pillar owner has privileges.
+        pillar = self.factory.makeProduct()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(pillar.owner))
+
+    def test_pillar_driver_is_allowed(self):
+        # The pillar driver has privileges.
+        pillar = self.factory.makeProduct()
+        removeSecurityProxy(pillar).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(pillar.driver))
+
+    def test_pillar_bug_supervisor(self):
+        # The pillar bug supervisor has privileges.
+        pillar = self.factory.makeProduct()
+        bugsupervisor = self.factory.makePerson()
+        removeSecurityProxy(pillar).setBugSupervisor(
+            bugsupervisor, self.celebrities.admin)
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasPrivileges(bugsupervisor))
+
+    def test_productseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        series = self.factory.makeProductSeries()
+        removeSecurityProxy(series).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=series)
+        self.assertTrue(bugtask.userHasPrivileges(series.driver))
+
+    def test_distroseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        distroseries = self.factory.makeDistroSeries()
+        removeSecurityProxy(distroseries).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=distroseries)
+        self.assertTrue(bugtask.userHasPrivileges(distroseries.driver))
+
+    def test_random_has_no_privileges(self):
+        # Joe Random has no privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertFalse(
+            bugtask.userHasPrivileges(self.factory.makePerson()))
+
+
+class TestBugTaskUserHasPrivilegesContext(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assert_userHasPrivilegesContext(self, obj):
+        self.assertFalse(
+            BugTask.userHasPrivilegesContext(obj, self.factory.makePerson()))
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.assert_userHasPrivilegesContext(distribution)
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assert_userHasPrivilegesContext(dsp)
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assert_userHasPrivilegesContext(product)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.assert_userHasPrivilegesContext(productseries)
+
+    def test_sourcepackage(self):
+        source = self.factory.makeSourcePackage()
+        self.assert_userHasPrivilegesContext(source)

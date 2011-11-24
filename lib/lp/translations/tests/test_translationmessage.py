@@ -11,6 +11,7 @@ from datetime import (
     )
 
 from pytz import UTC
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -28,7 +29,10 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potranslation import POTranslation
-from lp.translations.model.translationmessage import DummyTranslationMessage
+from lp.translations.model.translationmessage import (
+    DummyTranslationMessage,
+    TranslationMessage,
+    )
 
 
 class TestTranslationMessage(TestCaseWithFactory):
@@ -73,6 +77,8 @@ class TestTranslationMessage(TestCaseWithFactory):
 
 
 class TestApprove(TestCaseWithFactory):
+    """Tests for `TranslationMessage.approve`."""
+
     layer = ZopelessDatabaseLayer
 
     def test_approve_activates_message(self):
@@ -80,8 +86,7 @@ class TestApprove(TestCaseWithFactory):
         # There is a suggestion for it.  The suggestion gets approved,
         # and thereby becomes the message's current translation.
         pofile = self.factory.makePOFile('br')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
@@ -97,8 +102,8 @@ class TestApprove(TestCaseWithFactory):
         # If there was already a current translation, it is disabled
         # when a suggestion is approved.
         pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('te')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset)
         incumbent_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
@@ -176,8 +181,7 @@ class TestApprove(TestCaseWithFactory):
         # details) the approval can be made to propagate to the other
         # side, subject to the share_with_other_side parameter.
         pofile = self.factory.makePOFile('ki')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
 
         self.assertFalse(suggestion.is_current_upstream)
@@ -191,8 +195,7 @@ class TestApprove(TestCaseWithFactory):
     def test_approve_marks_reviewed(self):
         # Approving a suggestion updates its review fields.
         pofile = self.factory.makePOFile('ko')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
         reviewer = self.factory.makePerson()
 
         self.assertIs(None, suggestion.reviewer)
@@ -220,8 +223,7 @@ class TestApprove(TestCaseWithFactory):
         # A reviewer receives karma for approving suggestions.
         reviewer = self.factory.makePerson()
         pofile = self.factory.makePOFile('be')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, suggestion=True)
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
 
         karmarecorder = self.installKarmaRecorder(person=reviewer)
         suggestion.approve(pofile, reviewer)
@@ -234,8 +236,8 @@ class TestApprove(TestCaseWithFactory):
         # A translator receives karma for suggestions that are approved.
         translator = self.factory.makePerson()
         pofile = self.factory.makePOFile('ba')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, translator=translator, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, translator=translator)
 
         karmarecorder = self.installKarmaRecorder(person=translator)
         suggestion.approve(pofile, self.factory.makePerson())
@@ -250,8 +252,8 @@ class TestApprove(TestCaseWithFactory):
         # suggestion.
         translator = self.factory.makePerson()
         pofile = self.factory.makePOFile('bi')
-        suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, translator=translator, suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, translator=translator)
 
         karmarecorder = self.installKarmaRecorder(person=translator)
         suggestion.approve(pofile, translator)
@@ -292,6 +294,260 @@ class TestApprove(TestCaseWithFactory):
             TranslationSide.UPSTREAM)
         self.assertEqual(ubuntu_tm.all_msgstrs, upstream_tm.all_msgstrs)
         self.assertNotEqual(ubuntu_tm, upstream_tm)
+
+
+class TestAcceptFromImport(TestCaseWithFactory):
+    """Tests for `TranslationMessage.acceptFromImport`.
+
+    This method is a lot like `TranslationMessage.approve`, so this test
+    mainly exercises what it does differently.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def test_accept_activates_message(self):
+        # An untranslated message receives an imported translation.
+        pofile = self.factory.makePOFile()
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        reviewer = self.factory.makePerson()
+        self.assertFalse(suggestion.is_current_upstream)
+        self.assertFalse(suggestion.is_current_ubuntu)
+
+        suggestion.acceptFromImport(pofile)
+
+        # By default the suggestion becomes current only on the side
+        # (upstream or Ubuntu) that it's being approved on.
+        self.assertTrue(suggestion.is_current_upstream)
+        self.assertFalse(suggestion.is_current_ubuntu)
+
+    def test_accept_can_make_other_side_track(self):
+        # In some situations (see POTMsgSet.setCurrentTranslation for
+        # details) the acceptance can be made to propagate to the other
+        # side, subject to the share_with_other_side parameter.
+        pofile = self.factory.makePOFile()
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        reviewer = self.factory.makePerson()
+
+        self.assertFalse(suggestion.is_current_upstream)
+        self.assertFalse(suggestion.is_current_ubuntu)
+
+        suggestion.acceptFromImport(pofile, share_with_other_side=True)
+
+        self.assertTrue(suggestion.is_current_upstream)
+        self.assertTrue(suggestion.is_current_ubuntu)
+
+    def test_accept_does_not_set_review_fields(self):
+        # Accepting a suggestion does not update its review fields.
+        pofile = self.factory.makePOFile()
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        reviewer = self.factory.makePerson()
+
+        self.assertIs(None, suggestion.reviewer)
+        self.assertIs(None, suggestion.date_reviewed)
+
+        suggestion.acceptFromImport(pofile)
+
+        self.assertIs(None, suggestion.reviewer)
+        self.assertIs(None, suggestion.date_reviewed)
+
+    def test_accept_awards_no_karma(self):
+        # The translator receives no karma.
+        translator = self.factory.makePerson()
+        pofile = self.factory.makePOFile()
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, translator=translator)
+
+        karmarecorder = self.installKarmaRecorder(person=translator)
+        suggestion.acceptFromImport(pofile)
+
+        self.assertEqual([], karmarecorder.karma_events)
+
+
+class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
+    """Tests for `TranslationMessage.acceptFromUpstreamImportOnPackage`.
+
+    This method is a lot like `TranslationMessage.acceptFromImport`, so this
+    test mainly exercises what it does differently.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        """Every test needs a `POFile` and a `POTMsgSet`."""
+        super(TestAcceptFromUpstreamImportOnPackage, self).setUp()
+        self.pofile, self.potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            side=TranslationSide.UBUNTU)
+
+    def _getStates(self, *messages):
+        """Get is_current_* states for messages.
+
+        :param messages: A list of messages to get state for.
+        :returns: List of tuples of two boolean values for the
+            values of (is_current_ubuntu, is_current_upstream) for each
+            message.
+        """
+        return [
+            (message.is_current_ubuntu, message.is_current_upstream)
+            for message in messages]
+
+    def _makeSuggestion(self, identical_to=None):
+        if identical_to is not None:
+            translations = identical_to.translations
+        else:
+            translations = None
+        return self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            translations=translations)
+
+    def _makeUbuntuMessage(self, identical_to=None):
+        if identical_to is not None:
+            identical_to.is_current_ubuntu = True
+            return identical_to
+        else:
+            return self.factory.makeCurrentTranslationMessage(
+                potmsgset=self.potmsgset, pofile=self.pofile)
+
+    def _makeUpstreamMessage(self):
+        message = self.factory.makeCurrentTranslationMessage(
+                potmsgset=self.potmsgset, pofile=self.pofile,
+                current_other=True)
+        message.is_current_ubuntu = False
+        return message
+
+    def test_accept_activates_message_if_untranslated(self):
+        # An untranslated message accepts an imported translation.
+        suggestion = self._makeSuggestion()
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        # Messages are always accepted on the other side, too.
+        self.assertEqual([(True, True)], self._getStates(suggestion))
+
+    def test_accept_no_previously_imported(self):
+        # If there was already a current translation, but no previously
+        # imported one, it is disabled when a suggestion is accepted.
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion()
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (False, False)],
+            self._getStates(suggestion, ubuntu_message))
+
+    def test_accept_upstream_no_ubuntu(self):
+        # If there was already an upstream translation, but no ubuntu
+        # one, accepting the suggestion replaces both.
+        upstream_message = self._makeUpstreamMessage()
+        suggestion = self._makeSuggestion()
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (False, False)],
+            self._getStates(suggestion, upstream_message))
+
+    def test_accept_previously_imported(self):
+        # If there was already an ubuntu translation, and an upstream
+        # one, the ubuntu translation is left untouched.
+        upstream_message = self._makeUpstreamMessage()
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion()
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        # The suggestion is accepted as the upstream translation.
+        self.assertEqual(
+            [(False, True), (True, False), (False, False)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_previously_imported_tracking(self):
+        # If there was already an ubuntu translation, and an identical
+        # upstream one, the new suggestion replaces both.
+        upstream_message = self._makeUpstreamMessage()
+        ubuntu_message = self._makeUbuntuMessage(
+            identical_to=upstream_message)
+        suggestion = self._makeSuggestion()
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (False, False), (False, False)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_different_upstream(self):
+        # If there was already an identcal ubuntu translation, and a
+        # different upstream one, the new suggestion will become both.
+        upstream_message = self._makeUpstreamMessage()
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion(identical_to=ubuntu_message)
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True), (False, False)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_different_ubuntu(self):
+        # If there was already an identcal upstream translation, and a
+        # different ubuntu one, the ubuntu translation is not touched.
+        upstream_message = self._makeUpstreamMessage()
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion(identical_to=upstream_message)
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(False, True), (True, False), (False, True)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_ubuntu_message(self):
+        # Accepting a message that's identical to the ubuntu message makes
+        # sure that the message also becomes current upstream.
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion(identical_to=ubuntu_message)
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True)],
+            self._getStates(suggestion, ubuntu_message))
+
+    def test_accept_upstream_message(self):
+        # Accepting a message that's identical to the upstream message makes
+        # sure that the message also becomes current in ubuntu.
+        upstream_message = self._makeUpstreamMessage()
+        suggestion = self._makeSuggestion(identical_to=upstream_message)
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True)],
+            self._getStates(suggestion, upstream_message))
+
+    def test_accept_ubuntu_and_upstream_message(self):
+        # Accepting a message that's already current and was also imported
+        # does nothing.
+        upstream_message = self._makeUpstreamMessage()
+        ubuntu_message = self._makeUbuntuMessage(
+            identical_to=upstream_message)
+        suggestion = self._makeSuggestion(identical_to=upstream_message)
+
+        suggestion.acceptFromUpstreamImportOnPackage(self.pofile)
+
+        self.assertEqual(
+            [(True, True), (True, True), (True, True)],
+            self._getStates(suggestion, ubuntu_message, upstream_message))
+
+    def test_accept_detects_conflict(self):
+        ubuntu_message = self._makeUbuntuMessage()
+        suggestion = self._makeSuggestion()
+        old = datetime.now(UTC) - timedelta(days=1)
+
+        self.assertRaises(
+            TranslationConflict,
+            suggestion.acceptFromUpstreamImportOnPackage,
+            self.pofile, lock_timestamp=old)
 
 
 class TestApproveAsDiverged(TestCaseWithFactory):
@@ -530,6 +786,38 @@ class TestTranslationMessage(TestCaseWithFactory):
         tm.potmsgset.setSequence(pofile.potemplate, 0)
         self.assertEquals(None, tm.getOnePOFile())
 
+    def test_clone(self):
+        """Cloning a translation should produce a near-identical copy."""
+        translations = [self.factory.getUniqueString() for x in range(6)]
+        tm = self.factory.makeCurrentTranslationMessage(
+            date_created=self.factory.getUniqueDate(),
+            translations=translations, current_other=True)
+        tm.comment = self.factory.getUniqueString()
+        tm.was_obsolete_in_last_import = True
+        potmsgset = self.factory.makePOTMsgSet()
+        clone = tm.clone(potmsgset)
+        self.assertNotEqual(tm.id, clone.id)
+        self.assertIs(None, clone.potemplate)
+        self.assertEqual(potmsgset, clone.potmsgset)
+        self.assertEqual(tm.submitter, clone.submitter)
+        self.assertEqual(tm.language, clone.language)
+        self.assertEqual(tm.origin, clone.origin)
+        self.assertEqual(tm.date_created, clone.date_created)
+        self.assertEqual(tm.reviewer, clone.reviewer)
+        self.assertEqual(tm.date_reviewed, clone.date_reviewed)
+        self.assertEqual(tm.msgstr0, clone.msgstr0)
+        self.assertEqual(tm.msgstr1, clone.msgstr1)
+        self.assertEqual(tm.msgstr2, clone.msgstr2)
+        self.assertEqual(tm.msgstr3, clone.msgstr3)
+        self.assertEqual(tm.msgstr4, clone.msgstr4)
+        self.assertEqual(tm.msgstr5, clone.msgstr5)
+        self.assertEqual(tm.comment, clone.comment)
+        self.assertEqual(tm.validation_status, clone.validation_status)
+        self.assertEqual(tm.is_current_ubuntu, clone.is_current_ubuntu)
+        self.assertEqual(tm.is_current_upstream, clone.is_current_upstream)
+        self.assertEqual(
+            tm.was_obsolete_in_last_import, clone.was_obsolete_in_last_import)
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
@@ -554,11 +842,9 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         self.other_template = self.factory.makePOTemplate(
             productseries=self.trunk, name="other")
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.template, singular='foo', plural='foos',
-            sequence=1)
+            potemplate=self.template, singular='foo', plural='foos')
         self.other_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.other_template, singular='bar', plural='bars',
-            sequence=1)
+            potemplate=self.other_template, singular='bar', plural='bars')
         self.pofile = self.factory.makePOFile(
             potemplate=self.template, language_code='nl')
         self.other_pofile = self.factory.makePOFile(
@@ -660,3 +946,157 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         setattr(self.other_message, last_form, translation)
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
+
+
+class TestShareIfPossible(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def makeUnsharedTranslation(self, converged=False,
+            different_language=False, different_translations=False,
+            different_potmsgsets=False, is_current_ubuntu=False,
+            clashing_ubuntu=False, is_current_upstream=False,
+            clashing_upstream=False, existing_shared=True):
+        if different_language:
+            language = None
+        else:
+            language = self.factory.makeLanguage()
+        translation = self.factory.makeCurrentTranslationMessage(
+            diverged=not converged, language=language)
+        translation.is_current_ubuntu = is_current_ubuntu
+        translation.is_current_upstream = is_current_upstream
+        if different_translations:
+            translations = None
+        else:
+            translations = translation.translations
+        if different_potmsgsets:
+            potmsgset = None
+        else:
+            potmsgset = translation.potmsgset
+        if existing_shared:
+            other_translation = self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language=language,
+                translations=translations)
+            other_translation.is_current_upstream = False
+        else:
+            other_translation = None
+        if clashing_upstream:
+            self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language=language)
+        if clashing_ubuntu:
+            self.factory.makeCurrentTranslationMessage(
+                potmsgset=potmsgset, language=language,
+                side=TranslationSide.UBUNTU)
+        return translation, other_translation
+
+    @staticmethod
+    def shareIfPossibleDeletes(translation):
+        translation.shareIfPossible()
+        result = Store.of(translation).find(
+            TranslationMessage, TranslationMessage.id==translation.id)
+        return result.is_empty()
+
+    def test_share_success(self):
+        """The base case deletes the translation."""
+        translation = self.makeUnsharedTranslation()[0]
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
+
+    def test_converged(self):
+        """Converged translations are skipped."""
+        translation = self.makeUnsharedTranslation(converged=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+
+    def test_different_language(self):
+        """Translations in different languages are not shared."""
+        translation = self.makeUnsharedTranslation(
+            different_language=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+
+    def test_different_translations(self):
+        """Translations with different translations are not shared."""
+        translation = self.makeUnsharedTranslation(
+            different_translations=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+
+    def test_different_potmsgset(self):
+        """Translations with different potmsgsets are not shared."""
+        translation = self.makeUnsharedTranslation(
+            different_potmsgsets=True)[0]
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+
+    def test_current_ubuntu_no_clash(self):
+        """If translation is current-Ubuntu, and there's no clash, delete."""
+        translation, other_translation = self.makeUnsharedTranslation(
+            is_current_ubuntu=True, clashing_ubuntu=False)
+        self.assertFalse(other_translation.is_current_ubuntu)
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
+        self.assertTrue(other_translation.is_current_ubuntu)
+
+    def test_current_ubuntu_clash(self):
+        """Keep if translation is current-Ubuntu, but clashes."""
+        translation, other_translation = self.makeUnsharedTranslation(
+            is_current_ubuntu=True, clashing_ubuntu=True)
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+        self.assertFalse(other_translation.is_current_ubuntu)
+
+    def test_current_upstream_no_clash(self):
+        """If tranlation is current-upstream, and there's no clash, delete."""
+        translation, other_translation = self.makeUnsharedTranslation(
+            is_current_upstream=True, clashing_upstream=False)
+        self.assertFalse(other_translation.is_current_upstream)
+        self.assertTrue(self.shareIfPossibleDeletes(translation))
+        self.assertTrue(other_translation.is_current_upstream)
+
+    def test_current_upstream_clash(self):
+        """Keep if translation is current-upstream, but clashes."""
+        translation, other_translation = self.makeUnsharedTranslation(
+            is_current_upstream=True, clashing_upstream=True)
+        self.assertFalse(self.shareIfPossibleDeletes(translation))
+        self.assertFalse(other_translation.is_current_upstream)
+
+    def test_no_shared_with_clashes(self):
+        """In the base case, the message converges.
+
+        Existing current translations are not considered clashes."""
+        translation = self.makeUnsharedTranslation(
+            existing_shared=False, clashing_upstream=True,
+            clashing_ubuntu=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_upstream_no_clash(self):
+        """Converges if current_upstream with no clash."""
+        translation = self.makeUnsharedTranslation(
+            existing_shared=False, is_current_upstream=True,
+            clashing_upstream=False)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_upstream_clash(self):
+        """Unchanged if current_upstream clashes."""
+        translation = self.makeUnsharedTranslation(
+            existing_shared=False, is_current_upstream=True,
+            clashing_upstream=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertTrue(translation.is_diverged)
+
+    def test_no_shared_current_ubuntu_no_clash(self):
+        """Converges if current_ubuntu with no clash."""
+        translation = self.makeUnsharedTranslation(
+            existing_shared=False, is_current_ubuntu=True,
+            clashing_ubuntu=False)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertFalse(translation.is_diverged)
+
+    def test_no_shared_current_ubuntu_clash(self):
+        """Unchanged if current_ubuntu clashes."""
+        translation = self.makeUnsharedTranslation(
+            existing_shared=False, is_current_ubuntu=True,
+            clashing_ubuntu=True)[0]
+        self.assertTrue(translation.is_diverged)
+        translation.shareIfPossible()
+        self.assertTrue(translation.is_diverged)

@@ -50,28 +50,6 @@ class DeferredBlockingProxy(BlockingProxy):
             method_name, *args, **kwargs)
 
 
-class DisconnectingQueryProtocol(xmlrpc.QueryProtocol):
-
-    def connectionMade(self):
-        self._response = None
-        xmlrpc.QueryProtocol.connectionMade(self)
-
-    def handleResponse(self, contents):
-        self.transport.loseConnection()
-        self._response = contents
-
-    def connectionLost(self, reason):
-        xmlrpc.QueryProtocol.connectionLost(self, reason)
-        if self._response is not None:
-            response, self._response = self._response, None
-            self.factory.parseResponse(response)
-
-
-def fix_bug_2518():
-    # XXX: See http://twistedmatrix.com/trac/ticket/2518.
-    xmlrpc._QueryFactory.protocol = DisconnectingQueryProtocol
-
-
 def trap_fault(failure, *fault_classes):
     """Trap a fault, based on fault code.
 

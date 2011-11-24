@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'HasSpecificationsMixin',
+    'recursive_blocked_query',
+    'recursive_dependent_query',
     'Specification',
     'SpecificationSet',
     ]
@@ -28,6 +30,7 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
@@ -48,10 +51,11 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
-    shortlist,
     )
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -75,12 +79,44 @@ from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+
+
+
+def recursive_blocked_query(spec):
+    return """
+        RECURSIVE blocked(id) AS (
+            SELECT %s
+        UNION
+            SELECT sd.specification
+            FROM specificationdependency sd, blocked b
+            WHERE sd.dependency = b.id
+        )""" % spec.id
+
+
+def recursive_dependent_query(spec):
+    return """
+        RECURSIVE dependencies(id) AS (
+            SELECT %s
+        UNION
+            SELECT sd.dependency
+            FROM specificationdependency sd, dependencies d
+            WHERE sd.specification = d.id
+        )""" % spec.id
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -152,7 +188,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = SQLMultipleJoin('SpecificationSubscription',
+    _subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
@@ -182,6 +218,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+
+    @cachedproperty
+    def subscriptions(self):
+        """Sort the subscriptions"""
+        from lp.registry.model.person import person_sort_key
+        return sorted(
+            self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
     def target(self):
@@ -398,6 +441,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         else:
             return SpecificationLifecycleStatus.NOTSTARTED
 
+    def setDefinitionStatus(self, definition_status, user):
+        self.definition_status = definition_status
+        self.updateLifecycleStatus(user)
+
+    def setImplementationStatus(self, implementation_status, user):
+        self.implementation_status = implementation_status
+        self.updateLifecycleStatus(user)
+
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None
@@ -486,9 +537,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, user, essential):
-        """Create or modify a user's subscription to this blueprint."""
-        # first see if a relevant subscription exists, and if so, return it
+    def subscribe(self, person, subscribed_by=None, essential=False):
+        """See ISpecification."""
+        if subscribed_by is None:
+            subscribed_by = person
+        # Create or modify a user's subscription to this blueprint.
+        # First see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
         if sub is not None:
             if sub.essential != essential:
@@ -502,19 +556,33 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # that we can get away with not examining the attribute
                 # at all - it's a boolean!
                 notify(ObjectModifiedEvent(
-                        sub, sub, ['essential'], user=user))
+                        sub, sub, ['essential'], user=subscribed_by))
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
-        notify(ObjectCreatedEvent(sub, user=user))
+        property_cache = get_property_cache(self)
+        if 'subscription' in property_cache:
+            from lp.registry.model.person import person_sort_key
+            property_cache.subscriptions.append(sub)
+            property_cache.subscriptions.sort(
+                key=lambda sub: person_sort_key(sub.person))
+        notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See ISpecification."""
         # see if a relevant subscription exists, and if so, delete it
+        if person is None:
+            person = unsubscribed_by
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
+                get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
                 return
 
@@ -600,42 +668,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _find_all_deps(self, deps):
-        """This adds all dependencies of this spec (and their deps) to
-        deps.
-
-        The function is called recursively, as part of self.all_deps.
-        """
-        for dep in self.dependencies:
-            if dep not in deps:
-                deps.add(dep)
-                dep._find_all_deps(deps)
-
     @property
     def all_deps(self):
-        deps = set()
-        self._find_all_deps(deps)
-        return sorted(shortlist(deps),
-                    key=lambda s: (s.definition_status, s.priority, s.title))
-
-    def _find_all_blocked(self, blocked):
-        """This adds all blockers of this spec (and their blockers) to
-        blocked.
-
-        The function is called recursively, as part of self.all_blocked.
-        """
-        for blocker in self.blocked_specs:
-            if blocker not in blocked:
-                blocked.add(blocker)
-                blocker._find_all_blocked(blocked)
+        return Store.of(self).with_(
+            SQL(recursive_dependent_query(self))).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from dependencies)')
+            ).order_by(Specification.name, Specification.id)
 
     @property
     def all_blocked(self):
         """See `ISpecification`."""
-        blocked = set()
-        self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.definition_status,
-                                              s.priority, s.title))
+        return Store.of(self).with_(
+            SQL(recursive_blocked_query(self))).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from blocked)')
+            ).order_by(Specification.name, Specification.id)
 
     # branches
     def getBranchLink(self, branch):
@@ -654,6 +704,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def unlinkBranch(self, branch, user):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
+
+    def getLinkedBugTasks(self, user):
+        """See `ISpecification`."""
+        params = BugTaskSearchParams(user=user, linked_blueprints=self.id)
+        tasks = getUtility(IBugTaskSet).search(params)
+        if self.distroseries is not None:
+            context = self.distroseries
+        elif self.distribution is not None:
+            context = self.distribution
+        elif self.productseries is not None:
+            context = self.productseries
+        else:
+            context = self.product
+        return filter_bugtasks_by_context(context, tasks)
+
+    def __repr__(self):
+        return '<Specification %s %r for %r>' % (
+            self.id, self.name, self.target.name)
 
 
 class HasSpecificationsMixin:
@@ -689,6 +757,7 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
+
         def cache_people(rows):
             # Find the people we need:
             person_ids = set()
@@ -717,6 +786,7 @@ class HasSpecificationsMixin:
                     column = row[index]
                     index += 1
                     decorator(person, column)
+
         results = Store.of(self).find(
             Specification,
             SQL(query),
@@ -900,6 +970,15 @@ class SpecificationSet(HasSpecificationsMixin):
         drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
+        # Adapt the NewSpecificationDefinitionStatus item to a
+        # SpecificationDefinitionStatus item.
+        status_name = definition_status.name
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status_name not in status_names:
+            raise AssertionError(
+                "definition_status must an item found in "
+                "NewSpecificationDefinitionStatus.")
+        definition_status = SpecificationDefinitionStatus.items[status_name]
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,

@@ -516,7 +516,7 @@ class POParser(object):
 
     def parse(self, content_text):
         """Parse string as a PO file."""
-        # Initialise the parser.
+        # Initialize the parser.
         self._translation_file = TranslationFileData()
         self._messageids = set()
         self._pending_chars = content_text

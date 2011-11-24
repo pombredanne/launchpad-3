@@ -13,50 +13,31 @@
   <div class="top-portlet">
     <div metal:use-macro="context/@@launchpad_form/form">
       <div metal:fill-slot="extra_info" class="application-summary" >
-        <h2>Granting approval</h2>
-
-        <ul class="bulleted">
-          <li>Does the project use any Launchpad services, such as code or
-              bugs?  Mark the <strong>project approved</strong>
-              and <strong>reviewed</strong> now.
-          </li>
-          <li>Are the project's licenses simple and obviously open source
-              and/or free software?  Does the project smell legitimate?  Mark
-              the <strong>project approved</strong>
-              and <strong>reviewed</strong> now.
-          </li>
-          <li>Does the project appear legitimate but incomplete?  That's fine,
-              mark the <strong>project approved</strong>
-              and <strong>reviewed</strong> now.  Consider also sending a
-              request to the
-              owner asking them to update the project with more details, so as
-              to help recruit contributors.
-          </li>
-        </ul>
-
-        <h2>Withholding approval</h2>
         <p>
-          There are a few reasons you may want to withhold approval.  You
-          should always contact the project owner for clarification if you do
-          not grant approval.
+          If you have read the project's essential information, mark it
+          Approved, or if there are issues, just Reviewed.
         </p>
+
+        <p>
+          You may need to withhold approval for these common reasons:
+        </p>
+
         <ul class="bulleted">
-          <li>The project has no license.</li>
+          <li>The project license is only "I Don't Know".</li>
           <li>The project has only <strong>Other/Open source</strong> selected
-              as a license and the license info field does not contain a URL
-              to a license, or contains the whole license.
+              as a license and the license info field does not contain a link
+              to the license, or contains the whole license.
           </li>
           <li>The <strong>Other/Open source</strong> license appears to
               discriminate against who can use the project, or how the
               project's work can be used.
           </li>
-          <li>The project details are too vague to know if it is legitimate.
-          </li>
+          <li>The project is <strong>Other/Proprietary</strong></li>
         </ul>
 
         <p>
           <strong>If the project looks like a test, a prank, or spam,
-          deactivate it.</strong>
+          deactivate it.</strong>.
         </p>
 
       <input type="hidden" name="next_url"

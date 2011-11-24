@@ -108,117 +108,12 @@ They are grouped together at the beginning of the list.
     unofficial-tag delta
 
 
-== Official Tags in Tags Portlet ==
-
-The tags portlet displays a mix of official and unofficial tags.
-
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> login('foo.bar@canonical.com')
-    >>> firesocks = factory.makeProduct(name='firesocks')
-    >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')
-    >>> firesocks.official_bug_tags = [
-    ...     u'official-tag-%02d' % idx for idx in range(1, 13)]
-    >>> fs_bug = factory.makeBug(product=firesocks)
-    >>> fs_bug.tags = [
-    ...     u'unofficial-tag-%02d' % idx for idx in range(1, 13)]
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_tags_portlet(tags_portlet):
-    ...     for section in BeautifulSoup(tags_portlet).findAll(
-    ...             'div', attrs={'class': 'section'}):
-    ...         header = section.find('h2').contents[0]
-    ...         print header
-    ...         print '-' * len(header)
-    ...         for a in section.findAll('a'):
-    ...             print a.contents[0]
-    ...         print
-
-This example adds 12 official tags and 12 unofficial tags.  The tag cloud
-displays all the official tags and 10 of the unofficial tags.
-
-    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
-    >>> print_tags_portlet(browser.contents)
-    Tags
-    ----
-    official-tag-01
-    official-tag-02
-    official-tag-03
-    official-tag-04
-    official-tag-05
-    official-tag-06
-    official-tag-07
-    official-tag-08
-    official-tag-09
-    official-tag-10
-    official-tag-11
-    official-tag-12
-    unofficial-tag-01
-    unofficial-tag-02
-    unofficial-tag-03
-    unofficial-tag-04
-    unofficial-tag-05
-    unofficial-tag-06
-    unofficial-tag-07
-    unofficial-tag-08
-    unofficial-tag-09
-    unofficial-tag-10
-
-The 10 unofficial tags will be the 10 most popular tags.  To demonstrate
-this, two additional bugs are created and unofficial tags 11 and 12 are
-added to those bugs.
-
-    >>> login('foo.bar@canonical.com')
-    >>> watersocks = factory.makeProduct(name='watersocks')
-    >>> watersocks_bugs_url = canonical_url(watersocks, rootsite='bugs')
-    >>> watersocks.official_bug_tags = [
-    ...     u'official-tag-%02d' % idx for idx in range(1, 13)]
-    >>> ws_bug = factory.makeBug(product=watersocks)
-    >>> ws_bug.tags = [
-    ...     u'unofficial-tag-%02d' % idx for idx in range(1, 13)]
-    >>> ws_bug_two = factory.makeBug(product=watersocks)
-    >>> ws_bug_two.tags = [u'unofficial-tag-11', u'unofficial-tag-12']
-    >>> ws_bug_three = factory.makeBug(product=watersocks)
-    >>> ws_bug_three.tags = [u'unofficial-tag-11', u'unofficial-tag-12']
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> browser.open(watersocks_bugs_url + '/+bugtarget-portlet-tags-content')
-    >>> print_tags_portlet(browser.contents)
-    Tags
-    ----
-    official-tag-01
-    official-tag-02
-    official-tag-03
-    official-tag-04
-    official-tag-05
-    official-tag-06
-    official-tag-07
-    official-tag-08
-    official-tag-09
-    official-tag-10
-    official-tag-11
-    official-tag-12
-    unofficial-tag-01
-    unofficial-tag-02
-    unofficial-tag-03
-    unofficial-tag-04
-    unofficial-tag-05
-    unofficial-tag-06
-    unofficial-tag-07
-    unofficial-tag-08
-    unofficial-tag-11
-    unofficial-tag-12
-
-
 == Entering Official Tags ==
 
 === Available Official Tags in Javascript ===
 
 The list of available official tags is present on the page as a Javascript
-variable. This list is used to initialise the tag entry widget. The list
+variable. This list is used to initialize the tag entry widget. The list
 comprises of the official tags of all targets for which the bug has a task.
 
     >>> login('foo.bar@canonical.com')
@@ -228,7 +123,7 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> product2.official_bug_tags = [u'miney', u'moe']
     >>> bug = factory.makeBug(product=product1)
     >>> bug.addTask(target=product2, owner=factory.makePerson())
-    <BugTask at ...>
+    <BugTask ...>
     >>> bug_url = canonical_url(bug)
     >>> transaction.commit()
     >>> logout()

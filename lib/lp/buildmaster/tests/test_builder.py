@@ -29,7 +29,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.buildd.slave import BuilderStatus
+from lpbuildd.slave import BuilderStatus
+
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
@@ -103,7 +104,7 @@ class TestBuilderBasics(TestCaseWithFactory):
     def test_default_values(self):
         builder = self.factory.makeBuilder()
         # Make sure the Storm cache gets the values that the database
-        # initialises.
+        # initializes.
         flush_database_updates()
         self.assertEqual(0, builder.failure_count)
 
@@ -279,9 +280,10 @@ class TestBuilder(TestCaseWithFactory):
         builder = removeSecurityProxy(self.factory.makeBuilder())
         self.assertEqual(builder.url, builder.slave.url)
 
-    def test_recovery_of_aborted_slave(self):
-        # If a slave is in the ABORTED state, rescueBuilderIfLost should
-        # clean it if we don't think it's currently building anything.
+    def test_recovery_of_aborted_virtual_slave(self):
+        # If a virtual_slave is in the ABORTED state,
+        # rescueBuilderIfLost should clean it if we don't think it's
+        # currently building anything.
         # See bug 463046.
         aborted_slave = AbortedSlave()
         builder = MockBuilder("mock_builder", aborted_slave)
@@ -290,6 +292,21 @@ class TestBuilder(TestCaseWithFactory):
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
         return d.addCallback(check_slave_calls)
+
+    def test_recovery_of_aborted_nonvirtual_slave(self):
+        # Nonvirtual slaves in the ABORTED state cannot be reliably
+        # cleaned since the sbuild process doesn't properly kill the
+        # build job.  We test that the builder is marked failed.
+        aborted_slave = AbortedSlave()
+        builder = MockBuilder("mock_builder", aborted_slave)
+        builder.currentjob = None
+        builder.virtualized = False
+        builder.builderok = True
+        d = builder.rescueIfLost()
+        def check_failed(ignored):
+            self.assertFalse(builder.builderok)
+            self.assertNotIn('clean', aborted_slave.call_log)
+        return d.addCallback(check_failed)
 
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.

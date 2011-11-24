@@ -3,6 +3,9 @@
 
 __all__ = ['DBUSER', 'get_ppa_file_key']
 
+import os.path
+import urllib
+
 from lp.archiveuploader.utils import re_isadeb
 
 
@@ -10,7 +13,7 @@ DBUSER = 'ppa-apache-log-parser'
 
 
 def get_ppa_file_key(path):
-    split_path = path.split('/')
+    split_path = os.path.normpath(urllib.unquote(path)).split('/')
     if len(split_path) != 9:
         return None
 

@@ -3,8 +3,6 @@
 
 """Test for emails sent after bug task modification."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
@@ -44,13 +42,9 @@ class TestModificationNotification(TestCaseWithFactory):
             ['status'], user=self.user))
         transaction.commit()
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications(
+        notifications, omitted, messages = construct_email_notifications(
             [latest_notification])
         self.assertEqual(len(notifications), 1,
                          'email notification not created')
         headers = [msg['X-Launchpad-Bug-Modifier'] for msg in messages]
         self.assertEqual(len(headers), len(messages))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

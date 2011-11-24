@@ -281,7 +281,7 @@ can access `self.context`.
     >>> defineChecker(MenuLink, InterfaceChecker(ILink))
     >>> defineChecker(URI, NamesChecker(dir(URI)))
 
-    >>> from canonical.lazr.utils import safe_hasattr
+    >>> from lazr.restful.utils import safe_hasattr
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
     ...     if url is not None:
@@ -931,9 +931,9 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> from zope.interface import classImplements
     >>> from zope.traversing.adapters import DefaultTraversable
     >>> from zope.traversing.interfaces import IPathAdapter, ITraversable
-    >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.lazr.testing.menus import summarise_tal_links
     >>> from lp.app.browser.tales import MenuAPI
+    >>> from lp.testing import test_tales
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:

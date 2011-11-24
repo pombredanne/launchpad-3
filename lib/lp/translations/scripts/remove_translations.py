@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'process_options',
     'RemoveTranslations',
     'remove_translations',
     ]
@@ -31,8 +32,8 @@ from lp.translations.interfaces.translationmessage import (
     )
 
 
-def check_bool_option(option, opt, value):
-    """`optparse.Option` type checker for Boolean argument."""
+def process_bool_option(value):
+    """Validation and conversion for Boolean argument."""
     value = value.lower()
     bool_representations = {
         'true': True,
@@ -100,14 +101,32 @@ def get_origin(name):
         return None
 
 
-def check_origin_option(option, opt, value):
-    """`optparse.Option` type checker for `RosettaTranslationsOrigin`."""
+def process_origin_option(value):
+    """Validation and conversion for `RosettaTranslationsOrigin`."""
     return get_id(value, get_origin)
 
 
-def check_person_option(option, opt, value):
-    """`optparse.Option` type checker for `Person`."""
+def process_person_option(value):
+    """Validation and conversion for `Person`."""
     return get_id(value, get_person_id)
+
+
+# Options that need special processing.
+OPTIONS_TO_PROCESS = {
+    'submitter': process_person_option,
+    'reviewer': process_person_option,
+    'origin': process_origin_option,
+    'is_current_ubuntu': process_bool_option,
+    'is_current_upstream': process_bool_option,
+    }
+
+
+def process_options(options):
+    """Process options that need special processing."""
+    for option_name, process_func in OPTIONS_TO_PROCESS.items():
+        option_value = getattr(options, option_name)
+        if option_value is not None:
+            setattr(options, option_name, process_func(option_value))
 
 
 def is_nonempty_list(list_option):
@@ -118,15 +137,6 @@ def is_nonempty_list(list_option):
 def is_nonempty_string(string_option):
     """Is string_option a non-empty option value?"""
     return string_option is not None and string_option != ''
-
-
-def check_option_type(options, option_name, option_type):
-    """Check that option value is of given type, or None."""
-    option = getattr(options, option_name)
-    if option is not None and not isinstance(option, option_type):
-        raise ValueError(
-            "Wrong argument type for %s: expected %s, got %s." % (
-                option_name, option_type.__name__, option.__class__.__name__))
 
 
 def compose_language_match(language_code):
@@ -156,14 +166,6 @@ def add_bool_match(conditions, expression, match_value):
     conditions.add(match)
 
 
-class ExtendedOption(Option):
-    TYPES = Option.TYPES + ('bool', 'origin', 'person')
-    TYPE_CHECKER = dict(entry for entry in Option.TYPE_CHECKER.items())
-    TYPE_CHECKER['bool'] = check_bool_option
-    TYPE_CHECKER['origin'] = check_origin_option
-    TYPE_CHECKER['person'] = check_person_option
-
-
 class RemoveTranslations(LaunchpadScript):
     """Remove specific `TranslationMessage`s from the database.
 
@@ -178,50 +180,48 @@ class RemoveTranslations(LaunchpadScript):
     loglevel = logging.INFO
 
     my_options = [
-        ExtendedOption(
-            '-s', '--submitter', dest='submitter', type='person',
+        Option(
+            '-s', '--submitter', dest='submitter',
             help="Submitter match: delete only messages with this "
                 "submitter."),
-        ExtendedOption(
-            '-r', '--reviewer', dest='reviewer', type='person',
+        Option(
+            '-r', '--reviewer', dest='reviewer',
             help="Reviewer match: delete only messages with this reviewer."),
-        ExtendedOption(
+        Option(
             '-x', '--reject-license', action='store_true',
             dest='reject_license',
             help="Match submitters who rejected the license agreement."),
-        ExtendedOption(
+        Option(
             '-i', '--id', action='append', dest='ids', type='int',
             help="ID of message to delete.  May be specified multiple "
                 "times."),
-        ExtendedOption(
+        Option(
             '-p', '--potemplate', dest='potemplate', type='int',
             help="Template id match.  Delete only messages in this "
                 "template."),
-        ExtendedOption(
+        Option(
             '-l', '--language', dest='language',
             help="Language match.  Deletes (default) or spares (with -L) "
                  "messages in this language."),
-        ExtendedOption(
+        Option(
             '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
-        ExtendedOption(
+        Option(
             '-C', '--is-current-ubuntu', dest='is_current_ubuntu',
-            type='bool',
             help="Match on is_current_ubuntu value (True or False)."),
-        ExtendedOption(
+        Option(
             '-I', '--is-current-upstream', dest='is_current_upstream',
-            type='bool',
             help="Match on is_current_upstream value (True or False)."),
-        ExtendedOption(
+        Option(
             '-m', '--msgid', dest='msgid',
             help="Match on (singular) msgid text."),
-        ExtendedOption(
-            '-o', '--origin', dest='origin', type='origin',
+        Option(
+            '-o', '--origin', dest='origin',
             help="Origin match: delete only messages with this origin code."),
-        ExtendedOption(
+        Option(
             '-f', '--force', action='store_true', dest='force',
             help="Override safety check on moderately unsafe action."),
-        ExtendedOption(
+        Option(
             '-d', '--dry-run', action='store_true', dest='dry_run',
             help="Go through the motions, but don't really delete."),
         ]
@@ -284,6 +284,7 @@ class RemoveTranslations(LaunchpadScript):
 
     def main(self):
         """See `LaunchpadScript`."""
+        process_options(self.options)
         (result, message) = self._check_constraints_safety()
         if not result:
             raise LaunchpadScriptFailure(message)
@@ -311,6 +312,43 @@ class RemoveTranslations(LaunchpadScript):
                 self.txn.abort()
         else:
             self.txn.commit()
+
+
+def warn_about_deleting_current_messages(cur, from_text, where_text, logger):
+    # Deleting currently used translations is a bit harmful. Log
+    # them so that we have a clue which messages might have to be
+    # translated again. Note that this script tries to find
+    # another translation that becomes current -- but only in one
+    # situation: If we delete a shared translation which is current
+    # in Ubuntu, a shared translation which is current in upstream
+    # becomes the current Ubuntu translation. In other cases (deleting
+    # a diverged translation, deleting a shared translation which
+    # is current upstream) we do not attempt to find another current
+    # message.
+    if logger is not None and logger.getEffectiveLevel() <= logging.WARN:
+        query = """
+            SELECT
+                TranslationMessage.id, TranslationMessage.is_current_upstream,
+                TranslationMessage.is_current_ubuntu
+            FROM %s
+            WHERE %s AND (
+                TranslationMessage.is_current_upstream OR
+                TranslationMessage.is_current_ubuntu)
+            """ % (from_text, where_text)
+        cur.execute(query)
+        rows = cur.fetchall()
+        if cur.rowcount > 0:
+            logger.warn(
+                'Deleting messages currently in use:')
+            for (id, is_current_upstream, is_current_ubuntu) in rows:
+                current = []
+                if is_current_upstream:
+                    current.append('upstream')
+                if is_current_ubuntu:
+                    current.append('Ubuntu')
+                logger.warn(
+                    'Message %i is a current translation in %s'
+                    % (id, ' and '.join(current)))
 
 
 def remove_translations(logger=None, submitter=None, reviewer=None,
@@ -393,17 +431,14 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
 
     assert len(conditions) > 0, "That would delete ALL translations, maniac!"
 
-    if len(joins) > 0:
-        using_clause = 'USING %s' % ', '.join(joins)
-    else:
-        using_clause = ''
-
     cur = cursor()
     drop_tables(cur, 'temp_doomed_message')
 
     joins.add('TranslationMessage')
     from_text = ', '.join(joins)
     where_text = ' AND\n    '.join(conditions)
+
+    warn_about_deleting_current_messages(cur, from_text, where_text, logger)
 
     # Keep track of messages we're going to delete.
     # Don't bother indexing this.  We'd more likely end up optimizing
@@ -416,10 +451,10 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         """ % (from_text, where_text)
     cur.execute(query)
 
-    # Note which messages are masked by the messages we're going to
-    # delete.  We'll be making those the current ones.
+    # Note which shared messages are masked by the messages we're
+    # going to delete.  We'll be making those the current ones.
     query = """
-        UPDATE temp_doomed_message
+         UPDATE temp_doomed_message
         SET imported_message = Imported.id
         FROM TranslationMessage Doomed, TranslationMessage Imported
         WHERE
@@ -427,7 +462,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             -- Is alternative for the message we're about to delete.
             Imported.potmsgset = Doomed.potmsgset AND
             Imported.language = Doomed.language AND
-            Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
+            Imported.potemplate IS NULL AND
+            Doomed.potemplate IS NULL AND
             -- Is used upstream.
             Imported.is_current_upstream IS TRUE AND
             -- Was masked by the message we're about to delete.

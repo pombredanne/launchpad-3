@@ -72,9 +72,9 @@ that he submitted:
 
     >>> similar_questions = find_tag_by_id(
     ...     user_browser.contents, 'similar-questions')
-    >>> for row in similar_questions.fetch('tr', 'lesser'):
+    >>> for row in similar_questions.fetch('li'):
     ...     print row.a.renderContents()
-    Problem showing the SVG demo on W3C site
+    2: Problem showing the SVG demo on W3C site
 
 No Privileged Person can still change the product for which he's asking
 the question. The user chooses Thunderbird from the 'Project' product
@@ -163,7 +163,7 @@ speaks Japanese, so we will use him.
     True
 
     >>> daf_browser.open(
-    ...     'http://answers.launchpad.dev/thunderbird/+support-contact')
+    ...     'http://answers.launchpad.dev/thunderbird/+answer-contact')
     >>> print daf_browser.title
     Answer contact for...
 

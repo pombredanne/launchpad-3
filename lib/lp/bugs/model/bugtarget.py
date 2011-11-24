@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -17,16 +17,14 @@ __all__ = [
 from storm.locals import (
     Int,
     Reference,
+    SQL,
     Storm,
     Unicode,
     )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -51,10 +49,8 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.bugs.model.bugtask import (
-    BugTaskSet,
-    get_bug_privacy_filter,
-    )
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -94,7 +90,8 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -117,15 +114,15 @@ class HasBugsBase:
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
-        raise NotImplementedError
+        raise NotImplementedError(self._customizeSearchParams)
 
-    def _getBugTaskContextWhereClause(self):
-        """Return an SQL snippet to filter bugtasks on this context."""
-        raise NotImplementedError
+    def getBugSummaryContextWhereClause(self):
+        """Return a storm clause to filter bugsummaries on this context.
 
-    def _getBugTaskContextClause(self):
-        """Return a SQL clause for selecting this target's bugtasks."""
-        raise NotImplementedError(self._getBugTaskContextClause)
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """
+        raise NotImplementedError(self.getBugSummaryContextWhereClause)
 
     @property
     def closed_bugtasks(self):
@@ -140,12 +137,7 @@ class HasBugsBase:
     @property
     def open_bugtasks(self):
         """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
+        return self.searchTasks(BugTaskSet().open_bugtask_search)
 
     @property
     def new_bugtasks(self):
@@ -211,31 +203,9 @@ class HasBugsBase:
         """See `IHasBugs`."""
         return not self.all_bugtasks.is_empty()
 
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause(),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
+    def getBugTaskWeightFunction(self):
+        """Default weight function is the simple one."""
+        return simple_weight_calculator
 
 
 class BugTargetBase(HasBugsBase):
@@ -247,6 +217,14 @@ class BugTargetBase(HasBugsBase):
     # The default implementation of the property, used for
     # IDistribution, IDistroSeries, IProjectGroup.
     enable_bugfiling_duplicate_search = True
+
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        from lp.bugs.model.bug import get_bug_tags_open_count
+        return get_bug_tags_open_count(
+            self.getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
 
 class HasBugHeatMixin:
@@ -308,7 +286,7 @@ class HasBugHeatMixin:
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT heat
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask, Product
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.product = Product.id
@@ -318,15 +296,12 @@ class HasBugHeatMixin:
         else:
             raise NotImplementedError
 
-        results = [0]
-        for query in sql:
-            cur = cursor()
-            cur.execute(query)
-            record = cur.fetchone()
-            if record is not None:
-                results.append(record[0])
-            cur.close()
-        self.setMaxBugHeat(max(results))
+        # Use Storm's lazy expression values
+        # <https://storm.canonical.com/Tutorial#Expression_values>
+        expr = SQL(
+            "(SELECT COALESCE(MAX(heat), 0) FROM (%s) AS geoff)" % (
+                " UNION ALL ".join("(%s)" % query for query in sql)))
+        self.setMaxBugHeat(expr)
 
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
@@ -385,7 +360,7 @@ class OfficialBugTagTargetMixin:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         target_clause = self._getOfficialTagClause()
         return store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+            OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""

@@ -19,6 +19,7 @@ from lazr.enum import (
     )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    call_with,
     collection_default_content,
     export_as_webservice_collection,
     export_as_webservice_entry,
@@ -30,6 +31,8 @@ from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.schema import (
     Bool,
     Choice,
@@ -163,6 +166,14 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
+    @invariant
+    def validatePluralData(form_language):
+        pair = (form_language.pluralforms, form_language.pluralexpression)
+        if None in pair and pair != (None, None):
+            raise Invalid(
+                'The number of plural forms and the plural form expression '
+                'must be set together, or not at all.')
+
 
 class ILanguageSet(Interface):
     """The collection of languages.
@@ -176,11 +187,12 @@ class ILanguageSet(Interface):
 
     @export_read_operation()
     @operation_returns_collection_of(ILanguage)
-    def getAllLanguages():
+    @call_with(want_translators_count=True)
+    def getAllLanguages(want_translators_count=False):
         """Return a result set of all ILanguages from Launchpad."""
 
-    @collection_default_content()
-    def getDefaultLanguages():
+    @collection_default_content(want_translators_count=True)
+    def getDefaultLanguages(want_translators_count=False):
         """An API wrapper for `common_languages`"""
 
     common_languages = Attribute(

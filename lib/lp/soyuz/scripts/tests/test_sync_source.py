@@ -5,26 +5,22 @@
 
 __metaclass__ = type
 
-from debian.deb822 import (
-    Changes,
-    Deb822Dict,
-    Dsc,
-    )
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
-from unittest import (
-    TestLoader,
-    )
 
+from debian.deb822 import (
+    Changes,
+    Deb822Dict,
+    Dsc,
+    )
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.librarian.testing.server import (
-    fillLibrarianFile,
-    )
+from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     LibrarianLayer,
@@ -33,16 +29,17 @@ from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
+    generate_changes,
     SyncSource,
     SyncSourceError,
-    generate_changes,
     )
 from lp.testing import (
     TestCase,
+    TestCaseWithFactory,
     )
 
 
-class TestSyncSource(TestCase):
+class TestSyncSource(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
     dbuser = 'ro'
 
@@ -236,10 +233,19 @@ class TestSyncSource(TestCase):
         It raises SyncSourceError when it find a DSC or DIFF already
         published, it means that the upload version is duplicated.
         """
+        spr = self.factory.makeSourcePackageRelease()
+        lfa = self.factory.makeLibraryFileAlias(filename='foobar_1.0.dsc')
+        self.factory.makeSourcePackageReleaseFile(
+            sourcepackagerelease=spr, library_file=lfa)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=getUtility(IDistributionSet)['ubuntu'].main_archive,
+            sourcepackagerelease=spr)
+        transaction.commit()
+
         files = {
-            'foobar-1.0.orig.tar.gz': {},
-            'foobar-1.0.dsc': {},
-            'foobar-1.0.diff.gz': {},
+            'foobar_1.0.orig.tar.gz': {},
+            'foobar_1.0.dsc': {},
+            'foobar_1.0.diff.gz': {},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -250,9 +256,9 @@ class TestSyncSource(TestCase):
 
         self.assertEqual(
             self.get_messages(),
-            ['INFO foobar-1.0.dsc: already in distro '
+            ['INFO foobar_1.0.dsc: already in distro '
              '- downloading from librarian'])
-        self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
+        self.assertEqual(self._listFiles(), ['foobar_1.0.dsc'])
 
 
 class TestSyncSourceScript(TestCase):
@@ -314,7 +320,9 @@ class TestSyncSourceScript(TestCase):
 
         self.assertEqual(
             err.splitlines(),
-            ['W: Could not find blacklist file on '
+            ['INFO    Creating lockfile: '
+             '/var/lock/launchpad-sync-source.lock',
+             'WARNING Could not find blacklist file on '
              '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <bar_1.0-1.diff.gz: cached>',
              'INFO      - <bar_1.0.orig.tar.gz: cached>',
@@ -333,8 +341,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'bar')
@@ -387,7 +394,9 @@ class TestSyncSourceScript(TestCase):
 
         self.assertEqual(
             err.splitlines(),
-            ['W: Could not find blacklist file on '
+            ['INFO    Creating lockfile: '
+             '/var/lock/launchpad-sync-source.lock',
+             'WARNING Could not find blacklist file on '
              '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
              'INFO      - <sample1_1.0-1.dsc: cached>',
@@ -408,8 +417,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'sample1')
@@ -542,6 +550,3 @@ class TestGenerateChanges(TestCase):
             'Urgency',
             'Version',
             ], read_changes.keys())
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

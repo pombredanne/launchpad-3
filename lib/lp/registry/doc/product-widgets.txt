@@ -29,7 +29,7 @@ option.  This is displayed by the widget as the project having a bug tracker
 in a specified external location.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.widgets.product import ProductBugTrackerWidget
+    >>> from lp.app.widgets.product import ProductBugTrackerWidget
     >>> from lp.registry.interfaces.product import IProduct
 
     >>> product_bugtracker = IProduct['bugtracker'].bind(firefox)
@@ -75,7 +75,7 @@ this bug tracker as selected.
     [ ] In Launchpad
     [ ] In a registered bug tracker:
     [ ] By emailing an upstream bug contact:
-    [X] In the the Mozilla Project bug tracker (GnomeGBug GTracker)
+    [X] In the The Mozilla Project bug tracker (GnomeGBug GTracker)
 
 On second thought, Firefox has no specified bug tracker.
 
@@ -239,7 +239,7 @@ Choosing a License
 
 A custom widget is used to display a link to the license policy.
 
-    >>> from canonical.widgets.product import LicenseWidget
+    >>> from lp.app.widgets.product import LicenseWidget
 
     >>> form = {'field.licenses': []}
 
@@ -463,7 +463,7 @@ do not manage the field itself. The LicenseWidget widget for example
 generates the markup for the license_info field; the view must use a
 GhostWidget to suppress the markup.
 
-    >>> from canonical.widgets.product import GhostWidget
+    >>> from lp.app.widgets.product import GhostWidget
 
     >>> license_info = IProduct['license_info'].bind(firefox)
     >>> ghost_widget = GhostWidget(license_info, LaunchpadTestRequest())

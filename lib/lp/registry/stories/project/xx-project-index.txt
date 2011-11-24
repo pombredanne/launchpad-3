@@ -22,7 +22,7 @@ The overview page for project groups is accessible to all users.
 
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> anon_browser.title
-    'The GNOME Project in Launchpad'
+    'GNOME in Launchpad'
 
 The page lists the member projects, together with the releases/milestones of
 its development focus.
@@ -46,19 +46,19 @@ project. It is only available to users which have 'Admin' privileges on the
 project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Register a project in the Mozilla Project')
+    >>> browser.getLink('Register a project in The Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.getLink('Register a project in the Mozilla Project')
+    >>> browser.getLink('Register a project in The Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> admin_browser.open('http://launchpad.dev/mozilla')
-    >>> admin_browser.getLink('Register a project in the Mozilla Project').url
+    >>> admin_browser.getLink('Register a project in The Mozilla Project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
 

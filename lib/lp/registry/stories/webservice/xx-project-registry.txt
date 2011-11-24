@@ -26,7 +26,7 @@ It is possible to get a batched list of all the project groups.
     Apache
     GNOME
     ...
-    the Mozilla Project
+    The Mozilla Project
 
 It's possible to search the list and get a subset of the project groups.
 
@@ -48,7 +48,7 @@ the project groups.
     Apache
     GNOME
     ...
-    the Mozilla Project
+    The Mozilla Project
 
 
 Project group entry
@@ -69,7 +69,7 @@ host.
     bug_tracker_link: None
     date_created: u'...'
     description: u'The Mozilla Project...'
-    display_name: u'the Mozilla Project'
+    display_name: u'The Mozilla Project'
     driver_link: None
     freshmeat_project: None
     homepage_content: None
@@ -88,6 +88,7 @@ host.
     sourceforge_project: None
     summary: u'The Mozilla Project...'
     title: u'The Mozilla Project'
+    web_link: u'http://launchpad.../mozilla'
     wiki_url: None
 
 The milestones can be accessed through the
@@ -170,7 +171,6 @@ Projects are available at their canonical URL on the API virtual host.
     is_permitted: False
     license_approved: False
     license_info: None
-    license_reviewed: False
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
@@ -178,7 +178,9 @@ Projects are available at their canonical URL on the API virtual host.
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    project_reviewed: False
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
@@ -192,6 +194,7 @@ Projects are available at their canonical URL on the API virtual host.
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     translation_focus_link: None
+    web_link: u'http://launchpad.../firefox'
     wiki_url: None
 
 In Launchpad project names may not have uppercase letters in their
@@ -233,7 +236,6 @@ several that are not available to non-privileged users marked as
     is_permitted:...redacted...
     license_approved:...redacted...
     license_info: None
-    license_reviewed:...redacted...
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
@@ -241,7 +243,9 @@ several that are not available to non-privileged users marked as
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    project_reviewed:...redacted...
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
@@ -255,6 +259,7 @@ several that are not available to non-privileged users marked as
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     translation_focus_link: None
+    web_link: u'http://launchpad.../firefox'
     wiki_url: None
 
 The milestones can be accessed through the
@@ -499,7 +504,8 @@ hierarchy of series, milestones, and releases.
                    u'resource_type_link': u'.../#timeline_project_series',
                    u'self_link': u'http://.../firefox/trunk',
                    u'status': u'Obsolete',
-                   u'uri': u'/firefox/trunk'},
+                   u'uri': u'/firefox/trunk',
+                   u'web_link': u'http://launchpad.../firefox/trunk'},
                   {u'http_etag': ...
                    u'is_development_focus': False,
                    u'landmarks': [{u'code_name': u'First Stable Release',
@@ -512,7 +518,8 @@ hierarchy of series, milestones, and releases.
                    u'resource_type_link': u'.../#timeline_project_series',
                    u'self_link': u'http://.../firefox/1.0',
                    u'status': u'Active Development',
-                   u'uri': u'/firefox/1.0'},
+                   u'uri': u'/firefox/1.0',
+                   u'web_link': u'http://launchpad.../firefox/1.0'},
                   {u'http_etag': ...
                    u'is_development_focus': False,
                    u'landmarks': [],
@@ -521,7 +528,8 @@ hierarchy of series, milestones, and releases.
                    u'resource_type_link': u'.../#timeline_project_series',
                    u'self_link': u'http://.../firefox/experimental',
                    u'status': u'Active Development',
-                   u'uri': u'/firefox/experimental'}],
+                   u'uri': u'/firefox/experimental',
+                   u'web_link': u'http://launchpad.../firefox/experimental'}],
      u'start': 0,
      u'total_size': 3}
 
@@ -535,10 +543,10 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
 
-The entire collection has 25 entries.
+The entire collection has 24 entries.
 
     >>> project_collection['total_size']
-    25
+    24
 
 But the batch has only 5.  (The batch size is 5 for testing but larger
 in production.)
@@ -555,7 +563,7 @@ The batch size can be changed through the ws.size argument.
     ...     project_collection['entries'],
     ...     key=itemgetter('display_name', 'name'))
     >>> len(project_entries)
-    25
+    24
 
     >>> project_entries[0]['self_link']
     u'http://.../aptoncd'
@@ -605,9 +613,9 @@ The latest projects registered can be retrieved.
     >>> for project in entries:
     ...     print project['display_name']
     Derby
-    Launchpad Translations
     Mega Money Maker
     Obsolete Junk
+    Redfish
     Test-project
 
 There is a method for doing a query about attributes related to project
@@ -615,7 +623,7 @@ licensing.  We can find all projects with unreviewed licenses.
 
     >>> unreviewed = webservice.named_get(
     ...     "/projects", "licensing_search",
-    ...     license_reviewed=False).jsonBody()
+    ...     project_reviewed=False).jsonBody()
 
     >>> entries = sorted(
     ...    unreviewed['entries'], key=itemgetter('display_name'))
@@ -628,13 +636,12 @@ Or those that are reviewed.
 
     >>> reviewed = webservice.named_get(
     ...     "/projects", "licensing_search",
-    ...     license_reviewed=True).jsonBody()
+    ...     project_reviewed=True).jsonBody()
 
     >>> entries = sorted(
     ...    reviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Launchpad Translations
     Obsolete Junk
     alsa-utils
     python gnome2 dev
@@ -699,10 +706,7 @@ Attempting to access it as a normal users is unauthorized.
     ...     licenses=["Other/Proprietary"])
     HTTP/1.1 401 Unauthorized
     ...
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (...)
-    <BLANKLINE>
+    (<...>, 'forReview', 'launchpad.Moderate')
 
 The project collection has a method for creating a new project.
 
@@ -712,7 +716,7 @@ The project collection has a method for creating a new project.
     ...                    download_url=None, freshmeat_project=None,
     ...                    sourceforge_project=None, programming_lang=None,
     ...                    licenses=(), license_info=None,
-    ...                    license_reviewed=False,
+    ...                    project_reviewed=False,
     ...                    registrant=None):
     ...     return webservice.named_post(
     ...         "/projects", "new_project",
@@ -724,7 +728,7 @@ The project collection has a method for creating a new project.
     ...         sourceforge_project=sourceforge_project,
     ...         programming_lang=programming_lang,
     ...         licenses=licenses, license_info=license_info,
-    ...         license_reviewed=license_reviewed,
+    ...         project_reviewed=project_reviewed,
     ...         registrant=registrant)
 
 Verify a project does not exist and then create it.
@@ -759,7 +763,7 @@ Verify a project does not exist and then create it.
     >>> print sorted(new_project['licenses'])
     [u'GNU GPL v2', u'Zope Public License']
 
-    >>> print new_project['license_reviewed']
+    >>> print new_project['project_reviewed']
     False
 
     >>> print new_project['homepage_url']
@@ -879,6 +883,7 @@ virtual host.
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
     title: u'Babadoo foobadoo series'
+    web_link: u'http://launchpad.../babadoo/foobadoo'
 
 "get_timeline" returns a lightweight representation of the series'
 milestones and releases.
@@ -894,7 +899,8 @@ milestones and releases.
      u'resource_type_link': u'http://.../#timeline_project_series',
      u'self_link': u'http://.../babadoo/foobadoo',
      u'status': u'Active Development',
-     u'uri': u'/babadoo/foobadoo'}
+     u'uri': u'/babadoo/foobadoo',
+     u'web_link': u'http://launchpad.../babadoo/foobadoo'}
 
 
 Creating a milestone on the product series
@@ -982,6 +988,7 @@ host.
     self_link: u'http://.../firefox/1.0/1.0.0'
     title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
     version: u'1.0.0'
+    web_link: u'http://launchpad.../firefox/1.0/1.0.0'
 
 The createProductRelease method is called by sending
 "ws.op=createProductRelease" as a request variable along with the
@@ -1016,7 +1023,7 @@ Only one product release can be created per milestone.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    MultipleProductReleases: A milestone can only have one ProductRelease.
+    A milestone can only have one ProductRelease.
 
 
 Project release entries
@@ -1059,6 +1066,7 @@ virtual host.
     summary: None
     target_link: u'http://.../firefox'
     title: u'Mozilla Firefox 1.0'
+    web_link: u'http://launchpad.../firefox/+milestone/1.0'
 
 The milestone entry has a link to its release if it has one.
 

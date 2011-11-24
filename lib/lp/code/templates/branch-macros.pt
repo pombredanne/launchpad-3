@@ -101,11 +101,10 @@
   </tal:comment>
 
   <table>
-    <tal:bug-tasks repeat="bug view/linked_bugs">
-      <tr tal:condition="bug/required:launchpad.View"
-           tal:define="bugtask bug/bugtask;
-                       show_edit show_edit|nothing;"
-           tal:attributes="id string:buglink-${bug/id}"
+    <tal:bug-tasks repeat="bugtask view/linked_bugtasks">
+      <tr tal:condition="bugtask/bug/required:launchpad.View"
+           tal:define="show_edit show_edit|nothing;"
+           tal:attributes="id string:buglink-${bugtask/bug/id}"
            class="bug-branch-summary">
         <td tal:content="structure bugtask/fmt:link" class="first"/>
         <td>
@@ -121,9 +120,9 @@
         <td tal:condition="show_edit|nothing">
           <a title="Remove link"
              class="delete-buglink"
-             tal:attributes="href string:+bug/${bug/id}/+delete;
-                             id string:delete-buglink-${bug/id}">
-            <img src="/@@/remove"/>
+             tal:attributes="href string:+bug/${bugtask/bug/id}/+delete;
+                             id string:delete-buglink-${bugtask/bug/id}">
+            <img src="/@@/remove" alt="Remove"/>
           </a>
         </td>
       </tr>
@@ -160,7 +159,7 @@
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
-            style="display: none"
+            class="hidden"
             >
          <dl><dd>
        </dd></dl>
@@ -175,15 +174,50 @@
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
-      branch - the branch that has the bug branch links
-      revisions - the revisions to list
-  </tal:comment>
+      branch - the branch that has the revisions
+      Either:
+          revisions - the revisions to list.
+        or
+          revision_info - extended revision information (revision,
+                          merge_proposal, linked_bugtasks) to list.
 
+  </tal:comment>
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
   <dl class="revision">
+    <!-- Display the extended revision listing -->
+    <tal:revision repeat="rev_info revision_info"
+                  define="codebrowse view/codebrowse_url"
+                  condition="revision_info | nothing">
+      <div tal:define="rev_no python:rev_info['revision']">
+        <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+      </div>
+    </tal:revision>
+    <!-- Display the standard revision listing -->
     <tal:revision repeat="rev_no revisions"
-                  define="codebrowse view/codebrowse_url">
+                  define="codebrowse view/codebrowse_url"
+                  condition="revisions | nothing">
       <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
+    <tal:ajax-revision-diffs
+        condition="request/features/code.ajax_revision_diffs.enabled">
+      <tal:diff-expander condition="show_diff_expander | nothing">
+  <div class="revision-group-diff" tal:condition="revisions | nothing">
+        <a href="#" class="unseen expander-icon js-action"
+            tal:define="start_revno python:revisions[0].sequence;
+       last_revno python:revisions[-1].sequence"
+       tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+    >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
+      <tal:plural condition="python: start_revno!=last_revno">
+        to revision <tal:revno replace="last_revno">2</tal:revno>
+      </tal:plural></a>
+      <div class="unseen expander-content">Loading diff <img src="/@@/spinner"/></div>
+  </div>
+      </tal:diff-expander>
+    </tal:ajax-revision-diffs>
   </dl>
 
 </metal:branch-revisions>
@@ -192,7 +226,11 @@
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
-      rev_no - the branch revision to be displayed.
+      Either:
+          rev_no - the branch revision to be displayed.
+        or
+          rev_info - a dict of the branch revision information (revision,
+                     merge_proposal, linked_bugtasks) to be displayed.
       codebrowse - the branch's codebrowse root.
 
     It is expected that this macro is called from within a definition
@@ -227,13 +265,33 @@
         tal:content="rev_no/revision/revision_date/fmt:displaydate"
         >2005-10-05 14:34:22 WST</span>
   </dt>
-  <dd class="revision-comment">
+  <dd class="subordinate revision-comment">
     <tal:commit-message
         replace="structure rev_no/revision/log_body/fmt:obfuscate-email/fmt:text-to-html">
       The revision commit message.
     </tal:commit-message>
   </dd>
 
+  <div tal:condition="rev_info | nothing">
+    <div tal:define="merge_proposal python:rev_info['merge_proposal']"
+         tal:condition="merge_proposal">
+      <dd class="subordinate revision-comment">
+        Merged branch <a tal:attributes="href merge_proposal/fmt:url"
+                    tal:content="merge_proposal/source_branch/displayname">source branch</a>
+        <tal:linkedbugs
+                define="linked_bugtasks python:rev_info['linked_bugtasks']"
+                condition="linked_bugtasks">
+          <dl>
+              <tal:bug repeat="bugtask linked_bugtasks">
+                <dd class="subordinate revision-comment">
+                  <tal:bug-link replace="structure bugtask/fmt:link"/>
+                </dd>
+              </tal:bug>
+          </dl>
+        </tal:linkedbugs>
+      </dd>
+    </div>
+  </div>
 </metal:revision-text>
 
 <metal:no-revision-message define-macro="no-revision-message">

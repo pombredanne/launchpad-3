@@ -3,18 +3,29 @@
 
 __metaclass__ = type
 
+from operator import methodcaller
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import (
+    TranslationSide,
+    )
 from lp.translations.model.potemplate import (
     get_pofiles_for,
-    POTemplateSet,
     )
 
 
@@ -26,7 +37,7 @@ class TestPOTemplate(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.potemplate = removeSecurityProxy(self.factory.makePOTemplate(
-            translation_domain = "testdomain"))
+            translation_domain="testdomain"))
 
     def assertIsDummy(self, pofile):
         """Assert that `pofile` is actually a `DummyPOFile`."""
@@ -81,7 +92,7 @@ class TestPOTemplate(TestCaseWithFactory):
         # Test that getDummyPOFile fails when trying to get a DummyPOFile
         # where a POFile already exists for that language.
         language = self.factory.makeLanguage('sr@test')
-        pofile = self.potemplate.newPOFile(language.code)
+        self.potemplate.newPOFile(language.code)
         self.assertRaises(
             AssertionError, self.potemplate.getDummyPOFile, language)
 
@@ -90,7 +101,7 @@ class TestPOTemplate(TestCaseWithFactory):
         # where a POFile already exists for that language when
         # check_for_existing=False is passed in.
         language = self.factory.makeLanguage('sr@test')
-        pofile = self.potemplate.newPOFile(language.code)
+        self.potemplate.newPOFile(language.code)
         # This is just "assertNotRaises".
         dummy = self.potemplate.getDummyPOFile(language,
                                                check_for_existing=False)
@@ -150,6 +161,31 @@ class TestPOTemplate(TestCaseWithFactory):
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
         self.assertEqual(package, template.translationtarget)
+
+    def _toggleIsCurrent(self, states):
+        """Toggle iscurrent according to states and report call count.
+
+        :param states: An array of Boolean values to set iscurrent to.
+        :returns: An array of integers representing the call count for
+            removeFromSuggestivePOTemplatesCache after each toggle.
+        """
+        patched_method = FakeMethod(result=True)
+        self.potemplate._removeFromSuggestivePOTemplatesCache = patched_method
+        call_counts = []
+        for state in states:
+            self.potemplate.setActive(state)
+            call_counts.append(patched_method.call_count)
+        return call_counts
+
+    def test_setActive_detects_negative_edge(self):
+        # SetActive will only trigger suggestive cache removal if the flag
+        # changes from true to false.
+        # Start with a current template.
+        self.assertTrue(self.potemplate.iscurrent)
+        # The toggle sequence, contains two negative edges.
+        self.assertEqual(
+            [0, 1, 1, 1, 2],
+            self._toggleIsCurrent([True, False, False, True, False]))
 
 
 class EquivalenceClassTestMixin:
@@ -232,7 +268,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
             productseries=self.trunk, name='foo')
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name='foo')
-        other_stable_template = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             productseries=self.stable, name='foo-other')
 
         templates = set(list(self.subset.getSharingPOTemplates('foo')))
@@ -340,7 +376,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         hoary_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
             name=template_name)
-        other_hoary_template = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
             name=not_matching_name)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
@@ -414,7 +450,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         """Order templates by precedence."""
         if templates is None:
             templates = self.templates
-        return sorted(templates, cmp=POTemplateSet.compareSharingPrecedence)
+        return sorted(templates, key=methodcaller('sharingKey'), reverse=True)
 
     def _getPrimaryTemplate(self, templates=None):
         """Get first template in order of precedence."""
@@ -481,6 +517,75 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         self.test_ageBreaksTie()
 
 
+class TestTranslationFoci(TestCaseWithFactory):
+    """Test the precedence rules for tranlation foci."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertFirst(self, expected, templates):
+        templates = sorted(
+            templates, key=methodcaller('sharingKey'), reverse=True)
+        self.assertEqual(expected, templates[0])
+
+    @staticmethod
+    def makeProductFocus(template):
+        with person_logged_in(template.productseries.product.owner):
+            template.productseries.product.translation_focus = (
+                template.productseries)
+
+    @staticmethod
+    def makePackageFocus(template):
+        distribution = template.distroseries.distribution
+        removeSecurityProxy(distribution).translation_focus = (
+        template.distroseries)
+
+    def makeProductPOTemplate(self):
+        """Create a product that is not the translation focus."""
+        # Manually creating a productseries to get one that is not the
+        # translation focus.
+        other_productseries = self.factory.makeProductSeries()
+        self.factory.makePOTemplate(
+            productseries=other_productseries)
+        product = other_productseries.product
+        productseries = self.factory.makeProductSeries(
+            product=product,
+            owner=product.owner)
+        with person_logged_in(product.owner):
+            product.translation_focus = other_productseries
+            other_productseries.product.translations_usage = (
+                ServiceUsage.LAUNCHPAD)
+            productseries.product.translations_usage = ServiceUsage.LAUNCHPAD
+        return self.factory.makePOTemplate(productseries=productseries)
+
+    def test_product_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.assertFirst(product, [package, product])
+
+    def test_package_focus(self):
+        """Template priority respects package translation focus."""
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        product = self.makeProductPOTemplate()
+        self.assertFirst(product, [package, product])
+        # default ordering is database id.
+        self.makePackageFocus(package)
+        self.assertFirst(package, [package, product])
+
+    def test_product_package_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.makePackageFocus(package)
+        self.assertFirst(product, [package, product])
+
+
 class TestGetPOFilesFor(TestCaseWithFactory):
     """Test `get_pofiles_for`."""
 
@@ -518,3 +623,236 @@ class TestGetPOFilesFor(TestCaseWithFactory):
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
         self.assertIsInstance(pofile, DummyPOFile)
+
+
+class TestPOTemplateUbuntuUpstreamSharingMixin:
+    """Test sharing between Ubuntu und upstream POTemplates."""
+
+    layer = ZopelessDatabaseLayer
+
+    def createData(self):
+        self.shared_template_name = self.factory.getUniqueString()
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        self.distroseries.distribution.translation_focus = (
+            self.distroseries)
+        self.sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries)
+        self.productseries = self.factory.makeProductSeries()
+
+    def makeThisSidePOTemplate(self):
+        """Create POTemplate on this side."""
+        raise NotImplementedError
+
+    def makeOtherSidePOTemplate(self):
+        """Create POTemplate on the other side. Override in subclass."""
+        raise NotImplementedError
+
+    def _setPackagingLink(self):
+        """Create the packaging link from source package to product series."""
+        self.factory.makePackagingLink(
+            productseries=self.productseries,
+            sourcepackage=self.sourcepackage)
+
+    def test_getOtherSidePOTemplate_none(self):
+        # Without a packaging link, None is returned.
+        potemplate = self.makeThisSidePOTemplate()
+        self.assertIs(None, potemplate.getOtherSidePOTemplate())
+
+    def test_getOtherSidePOTemplate_linked_no_template(self):
+        # No sharing template exists on the other side.
+        self._setPackagingLink()
+        potemplate = self.makeThisSidePOTemplate()
+        self.assertIs(None, potemplate.getOtherSidePOTemplate())
+
+    def test_getOtherSidePOTemplate_shared(self):
+        # This is how sharing should look like.
+        this_potemplate = self.makeThisSidePOTemplate()
+        other_potemplate = self.makeOtherSidePOTemplate()
+        self._setPackagingLink()
+        self.assertEquals(
+            other_potemplate, this_potemplate.getOtherSidePOTemplate())
+
+
+class TestPOTemplateUbuntuSharing(TestCaseWithFactory,
+                                  TestPOTemplateUbuntuUpstreamSharingMixin):
+    """Test sharing on Ubuntu side."""
+
+    def setUp(self):
+        super(TestPOTemplateUbuntuSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name=self.shared_template_name)
+
+    def makeOtherSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.productseries, name=self.shared_template_name)
+
+
+class TestPOTemplateUpstreamSharing(TestCaseWithFactory,
+                                    TestPOTemplateUbuntuUpstreamSharingMixin):
+    """Test sharing on upstream side."""
+
+    def setUp(self):
+        super(TestPOTemplateUpstreamSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.productseries, name=self.shared_template_name)
+
+    def makeOtherSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name=self.shared_template_name)
+
+
+class TestPOTemplateSubset(TestCaseWithFactory):
+    """Test POTemplate functions not covered by doctests."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getPOTemplatesByTranslationDomain_filters_by_domain(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, productseries=series)
+
+        # Another template in the same context with a different domain:
+        self.factory.makePOTemplate(productseries=series)
+
+        subset = getUtility(IPOTemplateSet).getSubset(productseries=series)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_productseries(self):
+        domain = self.factory.getUniqueString()
+        productseries = self.factory.makeProductSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, productseries=productseries)
+
+        # Similar templates that should not come up in the same search:
+        # * Different series (even for the same product).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                product=template.productseries.product))
+        # * Distro and series (even with the same name as the domain
+        # we're looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(
+                name=domain, distribution=self.factory.makeDistribution(
+                    name=domain)))
+        # * Source package (even with the same name as the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName(name=domain))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=productseries)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_sourcepackage(self):
+        domain = self.factory.getUniqueString()
+        package = self.factory.makeSourcePackage()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        # Similar templates that should not come up in the same search:
+        # * Productseries (even with the same names the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                name=domain, product=self.factory.makeProduct(name=domain)))
+
+        # * Different series (even for the same source package name and
+        # distribution).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            sourcepackagename=package.sourcepackagename,
+            distroseries=self.factory.makeDistroSeries(
+                distribution=package.distroseries.distribution))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_distroseries(self):
+        domain = self.factory.getUniqueString()
+        distroseries = self.factory.makeDistroSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, distroseries=distroseries)
+
+        # Similar templates that should not come up in the same search:
+        # * Productseries (even with the same names the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                name=domain, product=self.factory.makeProduct(name=domain)))
+
+        # * Different series (even for the same distribution).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(
+                distribution=distroseries.distribution))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            distroseries=distroseries)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_can_ignore_iscurrent(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+        templates = [
+            self.factory.makePOTemplate(
+                translation_domain=domain, productseries=series,
+                iscurrent=iscurrent)
+            for iscurrent in [False, True]]
+
+        subset = getUtility(IPOTemplateSet).getSubset(productseries=series)
+        self.assertContentEqual(
+            templates, subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_can_filter_by_iscurrent(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+
+        templates = dict(
+            (iscurrent, [self.factory.makePOTemplate(
+                translation_domain=domain, productseries=series,
+                iscurrent=iscurrent)])
+            for iscurrent in [False, True])
+
+        potset = getUtility(IPOTemplateSet)
+        found_templates = dict((
+            iscurrent,
+            list(potset.getSubset(productseries=series, iscurrent=iscurrent
+                ).getPOTemplatesByTranslationDomain(domain),)
+            )
+            for iscurrent in [False, True])
+
+        self.assertEqual(templates, found_templates)
+
+    def test_getPOTemplatesByTranslationDomain_returns_result_set(self):
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=self.factory.makeProductSeries())
+        self.assertEqual(
+            0, subset.getPOTemplatesByTranslationDomain("foo").count())

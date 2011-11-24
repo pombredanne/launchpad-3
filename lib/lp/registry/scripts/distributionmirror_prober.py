@@ -26,10 +26,9 @@ from twisted.web.http import HTTPClient
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet,
     MirrorContent,
@@ -565,6 +564,7 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         BadResponseCode,
         ConnectionSkipped,
         ProberTimeout,
+        RedirectToDifferentFile,
         UnknownURLSchemeAfterRedirect,
         )
 
@@ -815,7 +815,6 @@ class DistroMirrorProber:
             raise ValueError(
                 "Unrecognized content_type: %s" % (content_type,))
 
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.txn.begin()
 
         # To me this seems better than passing the no_remote_hosts value
@@ -848,7 +847,7 @@ class DistroMirrorProber:
             # Some people registered mirrors on distros other than Ubuntu back
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
-                self.logger.info(
+                self.logger.debug(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
                     "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))

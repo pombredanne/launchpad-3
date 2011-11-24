@@ -1,4 +1,5 @@
-= Remote bug comments =
+Remote bug comments
+===================
 
 Comments imported into Launchpad from external bug trackers are
 formatted for display in a way that distinguishes them from comments
@@ -7,11 +8,12 @@ entered within Launchpad itself.
     >>> user_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> remote_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment', only_first=True)
-    >>> details = remote_bug_comment.find(attrs={'class': 'boardCommentDetails'})
+    >>> details = remote_bug_comment.find(
+    ...     attrs={'class': 'boardCommentDetails'})
     >>> print extract_text(details)
     In
     Debian Bug tracker #308994,
-    josh
+    josh (jbuhl-nospam)
     wrote
     ...
     gnome-volume-manager: dvd+rw unreadable when automounted ...
@@ -27,7 +29,8 @@ synchronized with the remote bug tracker, we display a simple reply form
 inlined, to make it clear that the comment will end up on the remote
 bug tracker.
 
-    >>> footer = remote_bug_comment.find(attrs={'class': 'boardCommentFooter'})
+    >>> footer = remote_bug_comment.find(
+    ...     attrs={'class': 'boardCommentFooter'})
     >>> print extract_text(footer)
     Reply on Debian Bug tracker...
 
@@ -45,7 +48,8 @@ individual comment page, where the inline form is displayed.
 
 We enter a comment, and submit the form.
 
-    >>> user_browser.getControl(name='field.comment').value = 'A reply comment.'
+    >>> user_browser.getControl(
+    ...     name='field.comment').value = 'A reply comment.'
     >>> user_browser.getControl(name='field.actions.save').click()
 
 The new comment appears, formatted as a remote bug comment.
@@ -108,6 +112,7 @@ hidden, since they can't be used anonymously anyway.
     >>> anon_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> remote_bug_comment = find_tags_by_class(
     ...     anon_browser.contents, 'remoteBugComment', only_first=True)
-    >>> footer = remote_bug_comment.find(attrs={'class': 'boardCommentFooter'})
+    >>> footer = remote_bug_comment.find(
+    ...     attrs={'class': 'boardCommentFooter'})
     >>> 'Reply' in extract_text(footer)
     False

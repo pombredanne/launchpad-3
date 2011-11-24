@@ -5,8 +5,7 @@
 
 This module runs the interface test against the Product, ProductSeries
 ProjectGroup, DistributionSourcePackage, and DistroSeries implementations
-IBugTarget. It runs the bugtarget-bugcount.txt, and
-bugtarget-questiontarget.txt tests.
+IBugTarget. It runs the bugtarget-questiontarget.txt test.
 """
 # pylint: disable-msg=C0103
 
@@ -28,7 +27,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -94,8 +93,7 @@ def productseries_filebug(productseries, summary, status=None):
     """
     bug = bugtarget_filebug(productseries.product, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, productseries=productseries,
-        status=status)
+        bug, getUtility(ILaunchBag).user, productseries, status=status)
     return bug
 
 
@@ -133,10 +131,12 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
     first be filed on its distribution, and then a series task will be
     added.
     """
+    target = distroseries
+    if sourcepackagename:
+        target = target.getSourcePackage(sourcepackagename)
     bug = bugtarget_filebug(distroseries.distribution, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, distroseries=distroseries,
-        sourcepackagename=sourcepackagename, status=status)
+        bug, getUtility(ILaunchBag).user, target, status=status)
     return bug
 
 
@@ -178,20 +178,40 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
-def sourcePackageForQuestionSetUp(test):
-    """Setup the `ISourcePackage` test for QuestionTarget testing."""
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getSeries('warty')
-    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
-    test.globs['filebug'] = sourcepackage_filebug_for_question
-    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
+class BugTargetQuestionTargetTestCase(TestCaseWithFactory):
+    """Converting a bug into a question."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canBeAQuestion_does_not_use_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = False
+            pillar.official_answers = True
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_does_not_use_answers(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = False
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_uses_answers_and_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = True
+        self.assertTrue(bug.canBeAQuestion())
 
 
 class TestBugTargetSearchTasks(TestCaseWithFactory):
     """Tests of IHasBugs.searchTasks()."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTargetSearchTasks, self).setUp()
@@ -293,23 +313,12 @@ def test_suite():
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageForQuestionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
-        suite.addTest(test)
-
-    setUpMethods.remove(sourcePackageForQuestionSetUp)
-    setUpMethods.append(sourcePackageSetUp)
-    setUpMethods.append(projectSetUp)
-
-    for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-bugcount.txt',
-            setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
 
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))

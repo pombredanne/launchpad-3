@@ -21,7 +21,7 @@ __all__ = [
 from canonical.launchpad.interfaces.launchpad import IWebServiceApplication
 
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,

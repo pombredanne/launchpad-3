@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E1002
@@ -32,17 +32,26 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.launchpad.webapp.interfaces import (
+    IFinishReadOnlyRequestEvent,
+    )
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     ApplicationServerSettingRequestFactory,
     LaunchpadBrowserRequest,
+    LaunchpadTestRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
+    web_service_request_to_browser_request,
     WebServiceClientRequest,
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    EventRecorder,
+    TestCase,
+    )
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -277,6 +286,7 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
 
     def setUp(self):
         super(TestWebServiceRequestTraversal, self).setUp()
+
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
@@ -358,19 +368,89 @@ class TestBasicLaunchpadRequest(TestCase):
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
+
+class TestLaunchpadBrowserRequestMixin:
+    """Tests for `LaunchpadBrowserRequestMixin`.
+
+    As `LaunchpadBrowserRequestMixin` is a mixin, it needs to be tested when
+    mixed into another class, hence why this does not inherit from `TestCase`.
+    """
+
+    request_factory = None  # Specify in subclasses.
+
     def test_is_ajax_false(self):
         """Normal requests do not define HTTP_X_REQUESTED_WITH."""
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        request = self.request_factory(StringIO.StringIO(''), {})
 
         self.assertFalse(request.is_ajax)
 
     def test_is_ajax_true(self):
         """Requests with HTTP_X_REQUESTED_WITH set are ajax requests."""
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
+        request = self.request_factory(StringIO.StringIO(''), {
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             })
 
         self.assertTrue(request.is_ajax)
+
+    def test_getURL(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but behaves identically by
+        default.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = self.request_factory(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra",
+            request.getURL())
+        self.assertEqual(
+            "http://geturl.example.com/sabbra",
+            request.getURL(level=1))
+        self.assertEqual(
+            "/sabbra/cadabra",
+            request.getURL(path_only=True))
+
+    def test_getURL_include_query(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but appends the query string
+        if include_query=True.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = self.request_factory(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True))
+        self.assertEqual(
+            "http://geturl.example.com/sabbra?tuesday=gone",
+            request.getURL(include_query=True, level=1))
+        self.assertEqual(
+            "/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True, path_only=True))
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadBrowserRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaunchpadBrowserRequest`.
+    """
+    request_factory = LaunchpadBrowserRequest
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadTestRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaunchpadTestRequest`.
+    """
+    request_factory = LaunchpadTestRequest
 
 
 class IThingSet(Interface):
@@ -484,6 +564,74 @@ class TestLaunchpadBrowserRequest(TestCase):
             request.query_string_params,
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
+
+
+class TestWebServiceRequestToBrowserRequest(WebServiceTestCase):
+
+    def test_unicode_path_info(self):
+        web_service_request = WebServiceTestRequest(
+            PATH_INFO=u'/api/devel\u1234'.encode('utf-8'))
+        browser_request = web_service_request_to_browser_request(
+            web_service_request)
+        self.assertEqual(
+            web_service_request.get('PATH_INFO'),
+            browser_request.get('PATH_INFO'))
+
+
+class LoggingTransaction:
+
+    def __init__(self):
+        self.log = []
+
+    def commit(self):
+        self.log.append("COMMIT")
+
+    def abort(self):
+        self.log.append("ABORT")
+
+
+class TestFinishReadOnlyRequest(TestCase):
+    # Publications that have a finishReadOnlyRequest() method are obliged to
+    # fire an IFinishReadOnlyRequestEvent.
+
+    def _test_publication(self, publication, expected_transaction_log):
+        # publication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and alters the transaction.
+        fake_request = object()
+        fake_object = object()
+        fake_transaction = LoggingTransaction()
+
+        with EventRecorder() as event_recorder:
+            publication.finishReadOnlyRequest(
+                fake_request, fake_object, fake_transaction)
+
+        self.assertEqual(
+            expected_transaction_log,
+            fake_transaction.log)
+
+        finish_events = [
+            event for event in event_recorder.events
+            if IFinishReadOnlyRequestEvent.providedBy(event)]
+        self.assertEqual(
+            1, len(finish_events), (
+                "Expected only one IFinishReadOnlyRequestEvent, but "
+                "got: %r" % finish_events))
+
+        [finish_event] = finish_events
+        self.assertIs(fake_request, finish_event.request)
+        self.assertIs(fake_object, finish_event.object)
+
+    def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
+        # WebServicePublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and commits the transaction.
+        publication = WebServicePublication(None)
+        self._test_publication(publication, ["COMMIT"])
+
+    def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
+        # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
+        publication = LaunchpadBrowserPublication(None)
+        self._test_publication(publication, ["ABORT"])
 
 
 def test_suite():

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -32,12 +32,13 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from functools import wraps
 import operator
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 import simplejson
@@ -47,7 +48,6 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import (
     implements,
@@ -66,7 +66,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -80,32 +79,37 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
-   )
-from lp.app.browser.tales import DateTimeFormatterAPI
-from canonical.widgets.lazrjs import (
+    )
+from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
-from lp.app.browser.stringformatter import FormattersAPI
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.longpoll import subscribe
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
-from lp.code.browser.decorations import (
-    DecoratedBranch,
-    DecoratedBug,
-    )
+from lp.code.browser.decorations import DecoratedBranch
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchType,
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
-from lp.code.errors import WrongBranchMergeProposal
+from lp.code.errors import (
+    BranchMergeProposalExists,
+    ClaimReviewFailed,
+    InvalidBranchMergeProposal,
+    WrongBranchMergeProposal,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -120,6 +124,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -165,12 +170,10 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
-
+    @wraps(func)
     def decorator(view, *args, **kwargs):
-        snapshot = BranchMergeProposalDelta.snapshot(view.context)
-        result = func(view, *args, **kwargs)
-        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
-        return result
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(view.context):
+            return func(view, *args, **kwargs)
     return decorator
 
 
@@ -531,18 +534,16 @@ class DiffRenderingMixin:
 
     @cachedproperty
     def diff_oversized(self):
-        """Return True if the review_diff is over the configured size limit.
+        """Return True if the preview_diff is over the configured size limit.
 
         The diff can be over the limit in two ways.  If the diff is oversized
         in bytes it will be cut off at the Diff.text method.  If the number of
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.preview_diff
-        if review_diff is None:
+        preview_diff = self.preview_diff
+        if preview_diff is None:
             return False
-        if review_diff.oversized:
-            return True
         diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
@@ -596,12 +597,28 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     label = "Proposal to merge branch"
     schema = ClaimButton
 
+    def initialize(self):
+        super(BranchMergeProposalView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'branch_diff_link':
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name),
+            })
+        if getFeatureFlag("longpoll.merge_proposals.enabled"):
+            cache.objects['merge_proposal_event_key'] = (
+                subscribe(self.context).event_key)
+
     @action('Claim', name='claim')
     def claim_action(self, action, data):
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
         if request is not None:
-            request.claimReview(self.user)
+            try:
+                request.claimReview(self.user)
+            except ClaimReviewFailed as e:
+                self.request.response.addErrorNotification(unicode(e))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -673,8 +690,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """
         if self.context.preview_diff is not None:
             return self.context.preview_diff
-        if self.context.review_diff is not None:
-            return self.context.review_diff.diff
         return None
 
     @property
@@ -682,49 +697,44 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.linked_bugs or branch.spec_links
+        return self.linked_bugtasks or branch.spec_links
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return DecoratedBugs linked to the source branch."""
-        return [DecoratedBug(bug, self.context.source_branch)
-                for bug in self.context.related_bugs]
+    def linked_bugtasks(self):
+        """Return BugTasks linked to the source branch."""
+        return self.context.getRelatedBugTasks(self.user)
+
+    @property
+    def edit_description_link_class(self):
+        if self.context.description:
+            return "unseen"
+        else:
+            return ""
 
     @property
     def description_html(self):
         """The description as widget HTML."""
-        description = self.context.description
-        if description is None:
-            description = ''
-        formatter = FormattersAPI
-        hide_email = formatter(description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+        mp = self.context
+        description = IBranchMergeProposal['description']
+        title = "Description of the Change"
         return TextAreaEditorWidget(
-            self.context,
-            'description',
-            canonical_url(self.context, view_name='+edit-description'),
-            id="edit-description",
-            title="Description of the Change",
-            value=description,
-            accept_empty=True)
+            mp, description, title, edit_view='+edit-description')
+
+    @property
+    def edit_commit_message_link_class(self):
+        if self.context.commit_message:
+            return "unseen"
+        else:
+            return ""
 
     @property
     def commit_message_html(self):
         """The commit message as widget HTML."""
-        commit_message = self.context.commit_message
-        if commit_message is None:
-            commit_message = ''
-        formatter = FormattersAPI
-        hide_email = formatter(commit_message).obfuscate_email()
-        commit_message = formatter(hide_email).text_to_html()
+        mp = self.context
+        commit_message = IBranchMergeProposal['commit_message']
+        title = "Commit Message"
         return TextAreaEditorWidget(
-            self.context,
-            'commit_message',
-            canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-commit_message",
-            title="Commit Message",
-            value=commit_message,
-            accept_empty=True)
+            mp, commit_message, title, edit_view='+edit-commit-message')
 
     @property
     def status_config(self):
@@ -1018,10 +1028,22 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(
-            self.user, data['source_branch'], data['target_branch'],
-            data['prerequisite_branch'], data['description'],
-            data['break_link'])
+        try:
+            proposal = self.context.resubmit(
+                self.user, data['source_branch'], data['target_branch'],
+                data['prerequisite_branch'], data['description'],
+                data['break_link'])
+        except BranchMergeProposalExists as e:
+            message = structured(
+                'Cannot resubmit because <a href="%(url)s">a similar merge'
+                ' proposal</a> is already active.',
+                url=canonical_url(e.existing_proposal))
+            self.request.response.addErrorNotification(message)
+            self.next_url = canonical_url(self.context)
+            return None
+        except InvalidBranchMergeProposal as e:
+            self.addError(str(e))
+            return None
         self.next_url = canonical_url(proposal)
         return proposal
 

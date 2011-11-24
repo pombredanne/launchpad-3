@@ -1,15 +1,21 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import transaction
+import doctest
+
+import soupmatchers
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
+    DocTestMatches,
     Equals,
     LessThan,
+    Not,
     )
+
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -17,10 +23,11 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import extract_text
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -28,33 +35,34 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView)
-
-
+    )
+from lp.registry.browser.team import TeamInvitationView
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    PersonVisibility,
     IPersonSet,
+    PersonVisibility,
     )
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
+from lp.registry.model.person import Person
 from lp.soyuz.enums import (
+    ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
     )
-from lp.registry.model.person import Person
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login_person,
@@ -67,6 +75,46 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonIndexView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_is_merge_pending(self):
+        dupe_person = self.factory.makePerson(name='finch')
+        target_person = self.factory.makePerson()
+        job_source = getUtility(IPersonMergeJobSource)
+        job_source.create(from_person=dupe_person, to_person=target_person)
+        view = create_initialized_view(dupe_person, name="+index")
+        notifications = view.request.response.notifications
+        message = 'Finch is queued to be be merged in a few minutes.'
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(message, notifications[0].message)
+
+    def test_display_utcoffset(self):
+        person = self.factory.makePerson(time_zone='Asia/Kolkata')
+        html = create_initialized_view(person, '+portlet-contact-details')()
+        self.assertThat(extract_text(html), DocTestMatches(extract_text(
+            "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
+            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
+
+    def test_person_view_page_description(self):
+        person_description = self.factory.getUniqueString()
+        person = self.factory.makePerson(
+            homepage_content=person_description)
+        view = create_initialized_view(person, '+index')
+        self.assertThat(view.page_description,
+            Equals(person_description))
+
+    def test_team_page_description(self):
+        description = self.factory.getUniqueString()
+        person = self.factory.makeTeam(
+            description=description)
+        view = create_initialized_view(person, '+index')
+        self.assertThat(
+            view.page_description,
+            Equals(description))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -190,7 +238,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
 
         # But if the context person has a second ppa that is public,
         # then anon users will see the section.
-        second_ppa = self.factory.makeArchive(owner=self.owner)
+        self.factory.makeArchive(owner=self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
 
@@ -214,7 +262,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         self.failIf(person_view.should_show_ppa_section)
 
         # Unless the team also has another ppa which is public.
-        second_ppa = self.factory.makeArchive(owner=self.team)
+        self.factory.makeArchive(owner=self.team)
         person_view = PersonView(self.team, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
 
@@ -251,7 +299,7 @@ class TestPersonEditView(TestCaseWithFactory):
         self.assertTrue(self.view.form_fields['name'].for_display)
         self.assertEqual(
             self.view.widgets['name'].hint,
-            "This user has an active PPA with packages published and "
+            "This person has an active PPA with packages published and "
             "may not be renamed.")
 
     def test_cannot_rename_with_deleting_PPA(self):
@@ -283,7 +331,7 @@ class TestPersonEditView(TestCaseWithFactory):
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        view = create_initialized_view(self.person, "+editemails", form=form)
+        create_initialized_view(self.person, "+editemails", form=form)
 
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
@@ -295,7 +343,7 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def test_add_email_address_taken(self):
         email_address = self.factory.getUniqueEmailAddress()
-        account = self.factory.makeAccount(
+        self.factory.makeAccount(
             displayname='deadaccount',
             email=email_address,
             status=AccountStatus.NOACCOUNT)
@@ -333,7 +381,7 @@ class TestTeamCreationView(TestCaseWithFactory):
             'field.subscriptionpolicy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
-        view = create_initialized_view(
+        create_initialized_view(
             person_set, '+newteam', form=form)
         team = person_set.getByName('libertyland')
         self.assertTrue(team is not None)
@@ -341,7 +389,7 @@ class TestTeamCreationView(TestCaseWithFactory):
 
     def test_validate_email_catches_taken_emails(self):
         email_address = self.factory.getUniqueEmailAddress()
-        account = self.factory.makeAccount(
+        self.factory.makeAccount(
             displayname='libertylandaccount',
             email=email_address,
             status=AccountStatus.NOACCOUNT)
@@ -465,7 +513,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         # Verify the path of indirect membership.
         a_team = self.factory.makeTeam(name='a')
         b_team = self.factory.makeTeam(name='b', owner=a_team)
-        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        self.factory.makeTeam(name='c', owner=b_team)
         login_person(a_team.teamowner)
         a_team.addMember(self.user, a_team.teamowner)
         transaction.commit()
@@ -503,20 +551,31 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
         self.warty = self.ubuntu.getSeries('warty')
         self.view = create_initialized_view(self.user, '+related-software')
 
-    def publishSource(self, archive, maintainer):
+    def publishSources(self, archive, maintainer):
         publisher = SoyuzTestPublisher()
         publisher.person = self.user
         login('foo.bar@canonical.com')
+        spphs = []
         for count in range(0, self.view.max_results_to_display + 3):
             source_name = "foo" + str(count)
-            publisher.getPubSource(
+            spph = publisher.getPubSource(
                 sourcename=source_name,
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=archive,
-                maintainer = maintainer,
-                creator = self.user,
+                maintainer=maintainer,
+                creator=self.user,
                 distroseries=self.warty)
+            spphs.append(spph)
         login(ANONYMOUS)
+        return spphs
+
+    def copySources(self, spphs, copier, dest_distroseries):
+        self.copier = self.factory.makePerson()
+        for spph in spphs:
+            spph.copyTo(
+                dest_distroseries, creator=copier,
+                pocket=PackagePublishingPocket.UPDATES,
+                archive=dest_distroseries.main_archive)
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
@@ -538,22 +597,32 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
     def test_latest_uploaded_ppa_packages_with_stats(self):
         # Verify number of PPA packages to display.
         ppa = self.factory.makeArchive(owner=self.user)
-        self.publishSource(ppa, self.user)
+        self.publishSources(ppa, self.user)
         count = len(self.view.latest_uploaded_ppa_packages_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
     def test_latest_maintained_packages_with_stats(self):
         # Verify number of maintained packages to display.
-        self.publishSource(self.warty.main_archive, self.user)
+        self.publishSources(self.warty.main_archive, self.user)
         count = len(self.view.latest_maintained_packages_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
     def test_latest_uploaded_nonmaintained_packages_with_stats(self):
         # Verify number of non maintained packages to display.
         maintainer = self.factory.makePerson()
-        self.publishSource(self.warty.main_archive, maintainer)
+        self.publishSources(self.warty.main_archive, maintainer)
         count = len(
             self.view.latest_uploaded_but_not_maintained_packages_with_stats)
+        self.assertEqual(self.view.max_results_to_display, count)
+
+    def test_latest_synchronised_publishings_with_stats(self):
+        # Verify number of non synchronised publishings to display.
+        creator = self.factory.makePerson()
+        spphs = self.publishSources(self.warty.main_archive, creator)
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.copySources(spphs, self.user, dest_distroseries)
+        count = len(
+            self.view.latest_synchronised_publishings_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
 
@@ -584,6 +653,11 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonUploadedPackagesView, self).setUp()
         self.user = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spr = self.factory.makeSourcePackageRelease(
+            creator=self.user, archive=archive)
+        self.spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive)
         self.view = create_initialized_view(self.user, '+uploaded-packages')
 
     def test_view_helper_attributes(self):
@@ -593,6 +667,16 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
         self.assertEqual(
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
+
+    def test_verify_bugs_and_answers_links(self):
+        # Verify the links for bugs and answers point to locations that
+        # exist.
+        html = self.view()
+        expected_base = '/%s/+source/%s' % (
+            self.spph.distroseries.distribution.name,
+            self.spph.source_package_name)
+        self.assertIn('<a href="%s/+bugs">' % expected_base, html)
+        self.assertIn('<a href="%s/+questions">' % expected_base, html)
 
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
@@ -612,6 +696,55 @@ class TestPersonPPAPackagesView(TestCaseWithFactory):
         self.assertEqual(
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
+
+
+class TestPersonSynchronisedPackagesView(TestCaseWithFactory):
+    """Test the synchronised packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSynchronisedPackagesView, self).setUp()
+        user = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spr = self.factory.makeSourcePackageRelease(
+            creator=user, archive=archive)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive)
+        self.copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.copied_spph = spph.copyTo(
+            dest_distroseries, creator=self.copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_distroseries.main_archive)
+        self.view = create_initialized_view(
+            self.copier, '+synchronised-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Synchronised packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+    def test_verify_bugs_and_answers_links(self):
+        # Verify the links for bugs and answers point to locations that
+        # exist.
+        html = self.view()
+        expected_base = '/%s/+source/%s' % (
+            self.copied_spph.distroseries.distribution.name,
+            self.copied_spph.source_package_name)
+        bug_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Bugs link', 'a',
+                attrs={'href': expected_base + '/+bugs'}))
+        question_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Questions link', 'a',
+                attrs={'href': expected_base + '/+questions'}))
+        self.assertThat(html, bug_matcher)
+        self.assertThat(html, question_matcher)
 
 
 class TestPersonRelatedProjectsView(TestCaseWithFactory):
@@ -666,16 +799,85 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
-                self.build.url_id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
-                self.build.url_id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
+
+
+class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
+    """The related software views display links to synchronised packages."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareSynchronisedPackages, self).setUp()
+        self.user = self.factory.makePerson()
+        self.spph = self.factory.makeSourcePackagePublishingHistory()
+
+    def createCopiedSource(self, copier, spph):
+        self.copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        return spph.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_distroseries.main_archive)
+
+    def getLinkToSynchronisedMatcher(self):
+        person_url = canonical_url(self.user)
+        return soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Synchronised packages link', 'a',
+                attrs={'href': person_url + '/+synchronised-packages'},
+                text='Synchronised packages'))
+
+    def test_related_software_no_link_synchronised_packages(self):
+        # No link to the synchronised packages page if no synchronised
+        # packages.
+        view = create_view(self.user, name='+related-software')
+        synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
+        self.assertThat(view(), Not(synced_package_link_matcher))
+
+    def test_related_software_link_synchronised_packages(self):
+        # If this person has synced packages, the link to the synchronised
+        # packages page is present.
+        self.createCopiedSource(self.user, self.spph)
+        view = create_view(self.user, name='+related-software')
+        synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
+        self.assertThat(view(), synced_package_link_matcher)
+
+    def test_related_software_displays_synchronised_packages(self):
+        copied_spph = self.createCopiedSource(self.user, self.spph)
+        view = create_view(self.user, name='+related-software')
+        synced_packages_title = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Synchronised packages title', 'h2',
+                text='Synchronised packages'))
+        expected_base = '/%s/+source/%s' % (
+            copied_spph.distroseries.distribution.name,
+            copied_spph.source_package_name)
+        source_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package link', 'a',
+                text=copied_spph.sourcepackagerelease.name,
+                attrs={'href': expected_base}))
+        version_url = (expected_base + '/%s' %
+            copied_spph.sourcepackagerelease.version)
+        version_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package version link', 'a',
+                text=copied_spph.sourcepackagerelease.version,
+                attrs={'href': version_url}))
+
+        self.assertThat(view(), synced_packages_title)
+        self.assertThat(view(), source_link)
+        self.assertThat(view(), version_link)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):
@@ -708,6 +910,8 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+        self.assertEqual(
+            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):
@@ -840,9 +1044,11 @@ class BugTaskViewsTestBase:
             self.owned_bug = self.factory.makeBug(owner=self.person)
             self.commented_bug = self.factory.makeBug()
             self.commented_bug.newMessage(owner=self.person)
+            self.affecting_bug = self.factory.makeBug()
+            self.affecting_bug.markUserAffected(self.person)
 
         for bug in (self.subscribed_bug, self.assigned_bug, self.owned_bug,
-                    self.commented_bug):
+                    self.commented_bug, self.affecting_bug):
             with person_logged_in(bug.default_bugtask.product.owner):
                 milestone = self.factory.makeMilestone(
                     product=bug.default_bugtask.product)
@@ -858,7 +1064,8 @@ class BugTaskViewsTestBase:
         view = create_initialized_view(self.person, self.view_name)
         Store.of(self.subscribed_bug).invalidate()
         with StormStatementRecorder() as recorder:
-            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            prejoins = [
+                (Person, LeftJoin(Person, BugTask.owner == Person.id))]
             bugtasks = view.searchUnbatched(prejoins=prejoins)
             [bugtask.owner for bugtask in bugtasks]
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
@@ -881,12 +1088,21 @@ class BugTaskViewsTestBase:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
+    def test_context_description(self):
+        # view.context_description returns a string that can be used
+        # in texts like "Bugs in $context_descirption"
+        view = create_initialized_view(self.person, self.view_name)
+        self.assertEqual(
+            self.expected_context_description % self.person.displayname,
+            view.context_description)
+
 
 class TestPersonRelatedBugTaskSearchListingView(
     BugTaskViewsTestBase, TestCaseWithFactory):
     """Tests for PersonRelatedBugTaskSearchListingView."""
 
     view_name = '+bugs'
+    expected_context_description = 'related to %s'
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearchListingView, self).setUp()
@@ -903,6 +1119,7 @@ class TestPersonAssignedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+assignedbugs'
+    expected_context_description = 'assigned to %s'
 
     def setUp(self):
         super(TestPersonAssignedBugTaskSearchListingView, self).setUp()
@@ -916,6 +1133,7 @@ class TestPersonCommentedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+commentedbugs'
+    expected_context_description = 'commented on by %s'
 
     def setUp(self):
         super(TestPersonCommentedBugTaskSearchListingView, self).setUp()
@@ -929,6 +1147,7 @@ class TestPersonReportedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+reportedbugs'
+    expected_context_description = 'reported by %s'
 
     def setUp(self):
         super(TestPersonReportedBugTaskSearchListingView, self).setUp()
@@ -942,10 +1161,28 @@ class TestPersonSubscribedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+subscribedbugs'
+    expected_context_description = '%s is subscribed to'
 
     def setUp(self):
         super(TestPersonSubscribedBugTaskSearchListingView, self).setUp()
         self.expected_for_search_unbatched = [
             self.subscribed_bug.default_bugtask,
             self.owned_bug.default_bugtask,
+            ]
+
+
+class TestPersonAffectingBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAffectingBugTaskSearchListingView."""
+
+    view_name = '+affectingbugs'
+    expected_context_description = 'affecting %s'
+
+    def setUp(self):
+        super(TestPersonAffectingBugTaskSearchListingView, self).setUp()
+        # Bugs filed by this user are marked as affecting them by default, so
+        # the bug we filed is returned.
+        self.expected_for_search_unbatched = [
+            self.owned_bug.default_bugtask,
+            self.affecting_bug.default_bugtask,
             ]

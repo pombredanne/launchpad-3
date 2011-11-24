@@ -9,8 +9,11 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.services.job.runner import JobCronScript
 from lp.code.interfaces.branchjob import IBranchScanJobSource
+from lp.services.job.runner import (
+    JobCronScript,
+    TwistedJobRunner,
+    )
 
 
 class RunScanBranches(JobCronScript):
@@ -19,7 +22,11 @@ class RunScanBranches(JobCronScript):
     config_name = 'branchscanner'
     source_interface = IBranchScanJobSource
 
+    def __init__(self):
+        super(RunScanBranches, self).__init__(runner_class=TwistedJobRunner)
+
 
 if __name__ == '__main__':
+
     script = RunScanBranches()
     script.lock_and_run()

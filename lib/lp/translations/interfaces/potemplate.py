@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -33,6 +33,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
@@ -112,7 +113,7 @@ class IPOTemplate(IRosettaStats):
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True))
+        constraint=valid_name, required=True))
 
     translation_domain = exported(TextLine(
         title=_("Translation domain"),
@@ -168,6 +169,13 @@ class IPOTemplate(IRosettaStats):
             "The source package that uses this template."),
         required=False,
         vocabulary="SourcePackageName")
+
+    sourcepackagenameID = Int(
+        title=_("Source Package Name ID"),
+        description=_(
+            "The ID of the source package that uses this template."),
+        required=False,
+        readonly=True)
 
     sourcepackage = Reference(
         ISourcePackage, title=u"Source package this template is for, if any.",
@@ -256,9 +264,6 @@ class IPOTemplate(IRosettaStats):
             value_type=Reference(schema=Interface)),
         exported_as='translation_files')
 
-    relatives_by_name = Attribute(
-        _('All `IPOTemplate` objects that have the same name asa this one.'))
-
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
             For example those that came from the same productseries or the
@@ -327,6 +332,13 @@ class IPOTemplate(IRosettaStats):
         method to do that.
         """
 
+    def setActive(active):
+        """Toggle the iscurrent flag.
+
+        Takes care of updating the suggestive potempalte cache when the
+        template is disabled.
+        """
+
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 
@@ -385,6 +397,15 @@ class IPOTemplate(IRosettaStats):
         """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
+    def sharingKey():
+        """A key for determining the sharing precedence of a template.
+
+        Active templates have precedence over inactive ones.
+        Development foci have precendence over non-development foci.
+        Product development foci have precedence over Package development
+        foci.
+        """
+
     def getPOTMsgSetByID(id):
         """Return the POTMsgSet object related to this POTemplate with the id.
 
@@ -407,6 +428,11 @@ class IPOTemplate(IRosettaStats):
         """Get the PO file of the given language.
 
         Return None if there is no such POFile.
+        """
+
+    def getOtherSidePOTemplate():
+        """Get the POTemplate with the same name on the other side of a
+        packaging link.
         """
 
     def hasPluralMessage():
@@ -488,13 +514,21 @@ class IPOTemplate(IRosettaStats):
         :return: The newly created message set.
         """
 
-    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None,
+                                   initial_file_references=None,
+                                   initial_source_comment=None):
         """Finds an existing shared POTMsgSet to use or creates a new one.
 
         :param singular_text: string containing singular form.
         :param plural_text: string containing plural form.
         :param context: context to differentiate between two messages with
         same singular_text and plural_text.
+        :param initial_file_references: Initializer for file_references if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
+        :param initial_source_comment: Initializer for source_comment if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
         :return: existing or new shared POTMsgSet with a sequence of 0
         in this POTemplate.
         """
@@ -574,16 +608,13 @@ class IPOTemplateSubset(Interface):
         The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
-    def getPOTemplateByTranslationDomain(translation_domain):
-        """Return the `IPOTemplate` with the given translation_domain.
+    def getPOTemplatesByTranslationDomain(translation_domain):
+        """Return the `IPOTemplate`s with the given translation_domain.
 
-        The `IPOTemplate` is restricted to this concrete
-        `IPOTemplateSubset`.  If multiple templates in the subset match,
-        a warning is logged.
+        The search is restricted to this concrete `IPOTemplateSubset`.
 
-        :return: The single template in this `IPOTemplateSubset` with
-            the given translation_domain, if there is exactly one match.
-            None otherwise.
+        :return: An ORM result set containing the templates in the given
+            `IPOTemplateSubset` with the given translation_domain.
         """
 
     def getPOTemplateByPath(path):
@@ -659,18 +690,16 @@ class IPOTemplateSet(Interface):
         Return None if there is no such `IPOTemplate`.
         """
 
-    def compareSharingPrecedence(left, right):
-        """Sort comparison: order sharing templates by precedence.
-
-        Sort using this function to order sharing templates from most
-        representative to least representative, as per the message-sharing
-        migration spec.
-        """
-
     def wipeSuggestivePOTemplatesCache():
         """Erase suggestive-templates cache.
 
         :return: Number of rows deleted.
+        """
+
+    def removeFromSuggestivePOTemplatesCache(potemplate):
+        """Remove the given potemplate from the suggestive-templates cache.
+
+        :return: True if the template was in the cache.
         """
 
     def populateSuggestivePOTemplatesCache():
@@ -774,3 +803,9 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
+
+    def joinInner(cls, *conditions):
+        """Inner-join `cls` into the query."""
+
+    def joinOuter(cls, *conditions):
+        """Outer-join `cls` into the query."""

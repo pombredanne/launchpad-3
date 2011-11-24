@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.testing import login, login_person, TestCaseWithFactory
@@ -39,11 +39,12 @@ class TestBugWatchEditView(TestCaseWithFactory):
             "bugWatchIsUnlinked() returned True though there is a task "
             "linked to the watch.")
 
-    def test_cannot_delete_watch_if_linked_to_coment(self):
+    def test_cannot_delete_watch_if_linked_to_comment(self):
         # It isn't possible to delete a bug watch that's linked to a bug
         # comment.
         message = getUtility(IMessageSet).fromText(
-            "Example message", "With some example content to read.")
+            "Example message", "With some example content to read.",
+            owner=self.person)
         # We need to log in as an admin here as only admins can link a
         # watch to a comment.
         login(ADMIN_EMAIL)

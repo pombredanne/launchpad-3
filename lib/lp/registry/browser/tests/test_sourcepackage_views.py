@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -17,6 +17,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.sourcepackage import (
     get_register_upstream_url,
     PackageUpstreamTracking,
+    SourcePackageOverviewMenu,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
@@ -57,7 +58,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         self.assertTrue((field, value) in params)
 
     def test_get_register_upstream_url_fields(self):
-        distroseries = self.factory.makeDistroRelease(
+        distroseries = self.factory.makeDistroSeries(
             distribution=self.factory.makeDistribution(name='zoobuntu'),
             name='walrus')
         source_package = self.factory.makeSourcePackage(
@@ -84,7 +85,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
     def test_get_register_upstream_url_displayname(self):
         # The sourcepackagename 'python-super-package' is split on
         # the hyphens, and each word is capitalized.
-        distroseries = self.factory.makeDistroRelease(
+        distroseries = self.factory.makeDistroSeries(
             distribution=self.factory.makeDistribution(name='zoobuntu'),
             name='walrus')
         source_package = self.factory.makeSourcePackage(
@@ -158,7 +159,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
         productseries = self.factory.makeProductSeries(name='1.0')
         self.milestone = self.factory.makeMilestone(
             product=productseries.product, productseries=productseries)
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.source_package = self.factory.makeSourcePackage(
             distroseries=distroseries, sourcepackagename='fnord')
         self.factory.makeSourcePackagePublishingHistory(
@@ -206,3 +207,86 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
         self.assertEqual(
             PackageUpstreamTracking.NEWER, view.current_release_tracking)
         self.assertId(view, 'newer-upstream-version')
+
+
+class TestSourcePackagePackagingLinks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeSourcePackageOverviewMenu(self, with_packaging, for_other_user):
+        sourcepackage = self.factory.makeSourcePackage()
+        owner = self.factory.makePerson()
+        if with_packaging:
+            self.factory.makePackagingLink(
+                sourcepackagename=sourcepackage.sourcepackagename,
+                distroseries=sourcepackage.distroseries, owner=owner)
+        if for_other_user:
+            user = self.factory.makePerson()
+        else:
+            user = owner
+        with person_logged_in(user):
+            menu = SourcePackageOverviewMenu(sourcepackage)
+        return menu, user
+
+    def test_edit_packaging_link__enabled_without_packaging(self):
+        # If no packging exists, the edit_packaging link is always
+        # enabled.
+        menu, user = self.makeSourcePackageOverviewMenu(False, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.edit_packaging().enabled)
+
+    def test_set_upstrem_link__enabled_without_packaging(self):
+        # If no packging exists, the set_upstream link is always
+        # enabled.
+        menu, user = self.makeSourcePackageOverviewMenu(False, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.set_upstream().enabled)
+
+    def test_remove_packaging_link__enabled_without_packaging(self):
+        # If no packging exists, the remove_packaging link is always
+        # enabled.
+        menu, user = self.makeSourcePackageOverviewMenu(False, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.remove_packaging().enabled)
+
+    def test_edit_packaging_link__enabled_with_packaging_for_owner(self):
+        # If a packging exists, the edit_packaging link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.edit_packaging().enabled)
+
+    def test_set_upstrem_link__enabled_with_packaging_for_owner(self):
+        # If a packging exists, the set_upstream link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.set_upstream().enabled)
+
+    def test_remove_packaging_link__enabled_with_packaging_for_owner(self):
+        # If a packging exists, the remove_packaging link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, False)
+        with person_logged_in(user):
+            self.assertTrue(menu.remove_packaging().enabled)
+
+    def test_edit_packaging_link__enabled_with_packaging_for_others(self):
+        # If a packging exists, the edit_packaging link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, True)
+        with person_logged_in(user):
+            self.assertFalse(menu.edit_packaging().enabled)
+
+    def test_set_upstrem_link__enabled_with_packaging_for_others(self):
+        # If a packging exists, the set_upstream link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, True)
+        with person_logged_in(user):
+            self.assertFalse(menu.set_upstream().enabled)
+
+    def test_remove_packaging_link__enabled_with_packaging_for_others(self):
+        # If a packging exists, the remove_packaging link is enabled
+        # for the packaging owner.
+        menu, user = self.makeSourcePackageOverviewMenu(True, True)
+        with person_logged_in(user):
+            self.assertFalse(menu.remove_packaging().enabled)

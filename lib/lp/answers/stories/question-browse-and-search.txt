@@ -148,7 +148,6 @@ to jump to the question.
     >>> browser.getControl(name='field.search_text').value = '9'
     >>> browser.getControl('Find Answers').click()
     >>> from canonical.launchpad.helpers import backslashreplace
-    >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
     Question #9 : ...
 
@@ -377,7 +376,7 @@ He needs to login to access that page:
     ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print repr(sample_person_browser.title)
-    'Questions you asked about mozilla-firefox in ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    'Questions you asked about mozilla-firefox in Ubuntu : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -513,13 +512,13 @@ questions was made.
     ...     print question.first('a').renderContents()
     Ubuntu
     Ubuntu
-    mozilla-firefox in ubuntu
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
+    mozilla-firefox in Ubuntu
     Ubuntu
 
 These contexts are links to the context question listing.
 
-    >>> browser.getLink('mozilla-firefox in ubuntu').click()
+    >>> browser.getLink('mozilla-firefox in Ubuntu').click()
     >>> print repr(browser.title)
     'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
 
@@ -638,7 +637,7 @@ questions filed against any of the project's products is displayed.
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
@@ -671,21 +670,21 @@ The same standard reports than on regular QuestionTarget are available:
 
     >>> browser.getLink('Open').click()
     >>> print browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
     >>> browser.getLink('Answered').click()
     >>> print browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
     # The next two reports are only available to a logged-in user.
     >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
     >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
-    Questions you asked about the Mozilla Project : the Mozilla Project
+    Questions you asked about The Mozilla Project : The Mozilla Project
 
     >>> user_browser.getLink('Need attention').click()
     >>> print user_browser.title
-    Questions needing your attention for the Mozilla Project : the Mozilla Project
+    Questions needing your attention for The Mozilla Project : The Mozilla Project
 
 
 == Searching All Questions ==
@@ -709,7 +708,7 @@ there is an 'In' column displaying where the questions were filed.
     >>> print_questions_with_target(browser.contents)
     Firefox loses focus and gets stuck  Mozilla Firefox
     Firefox cannot render Bank Site     Mozilla Firefox
-    mailto: problem in webpage          mozilla-firefox in ubuntu
+    mailto: problem in webpage          mozilla-firefox in Ubuntu
     Newly installed plug-in doesn't seem to be used Mozilla Firefox
     Problem showing the SVG demo on W3C site    Mozilla Firefox
 
@@ -770,11 +769,11 @@ Entering an invalid project also displays an error message:
 
 If the browser supports javascript, there is a 'Choose' link available
 to help the user find an existing project. Since the test browser does
-not support javascript, it is turned into a "Find" link to the /people.
+not support javascript, it is turned into a "Find" link to the /questions.
 
     >>> find_link = anon_browser.getLink('Find')
     >>> print find_link.url
-    http://answers.launchpad.dev/people/
+    http://answers.launchpad.dev/questions...
 
 
 The form field can be filled manually without using the ajax widget.
@@ -785,7 +784,7 @@ The form field can be filled manually without using the ajax widget.
     >>> anon_browser.getControl(name='field.scope.target').value = 'mozilla'
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
 This works also with distributions:
 

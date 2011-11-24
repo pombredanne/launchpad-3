@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -17,12 +17,13 @@ from zope.interface import Interface
 class IPackageCloner(Interface):
     """Copies publishing history data across archives."""
 
-    def clonePackages(
-        origin, destination, distroarchseries_list=None,
-        proc_families=None, sourcepackagenames=None,
-        always_create=False):
-        """Copies the source packages from origin to destination as
-        well as the binary packages for the DistroArchSeries specified.
+    def clonePackages(origin, destination, distroarchseries_list=None,
+                    proc_families=None, sourcepackagenames=None,
+                    always_create=False):
+        """Copy packages from origin to destination.
+
+        Copies the source packages, as well as the binary packages for the
+        specified `DistroArchSeries`.
 
         :param origin: the location from which packages are to be copied.
         :param destination: the location to which the data is to be copied.

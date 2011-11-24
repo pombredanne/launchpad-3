@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface classes for a difference between two distribution series."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferenceAdmin',
     'IDistroSeriesDifferencePublic',
     'IDistroSeriesDifferenceEdit',
     'IDistroSeriesDifferenceSource',
@@ -22,7 +23,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -39,12 +43,15 @@ from lp.registry.enum import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+class IDistroSeriesDifferencePublic(Interface):
     """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -52,15 +59,28 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
     derived_series = exported(Reference(
         IDistroSeries, title=_("Derived series"), required=True,
         readonly=True, description=_(
-            "The distribution series which, together with its parent, "
-            "identifies the two series with the difference.")))
+            "The distribution series which identifies the derived series "
+            "with the difference.")))
 
+    parent_series = exported(Reference(
+        IDistroSeries, title=_("Parent series"), required=True,
+        readonly=True, description=_(
+            "The distribution series which identifies the parent series "
+            "with the difference.")))
+
+    source_package_name_id = Int(
+        title=u"Source package name id", required=True, readonly=True)
     source_package_name = Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
         description=_(
             "The package with a difference between the derived series "
             "and its parent."))
+
+    sourcepackagename = exported(
+        TextLine(
+            title=_("Source Package Name"),
+            required=False, readonly=True))
 
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
@@ -86,11 +106,27 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The url for the diff between the base version and the "
             "parent version.")))
 
-    status = Choice(
+    package_diff_status = exported(Choice(
+        title=_("Package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
+            "derived version.")))
+
+    parent_package_diff_status = exported(Choice(
+        title=_("Parent package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
+            "parent version.")))
+
+    status = exported(Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
         vocabulary=DistroSeriesDifferenceStatus,
-        required=True, readonly=True)
+        required=True, readonly=True))
 
     difference_type = Choice(
         title=_('Difference type'),
@@ -98,41 +134,56 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         vocabulary=DistroSeriesDifferenceType,
         required=True, readonly=True)
 
+    source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Derived source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "source_version."))
+
+    parent_source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Parent source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "parent_source_version."))
+
     source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Derived source pub"), readonly=True,
+        title=_("Latest derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
 
-    source_version = TextLine(
+    source_version = exported(TextLine(
         title=_("Source version"), readonly=True,
         description=_(
             "The version of the most recent source publishing in the "
-            "derived series."))
+            "derived series.")))
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Parent source pub"), readonly=True,
+        title=_("Latest parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
-    parent_source_version = TextLine(
+    parent_source_version = exported(TextLine(
         title=_("Parent source version"), readonly=True,
         description=_(
             "The version of the most recent source publishing in the "
-            "parent series."))
+            "parent series.")))
 
-    base_version = TextLine(
+    base_version = exported(TextLine(
         title=_("Base version"), readonly=True,
         description=_(
             "The common base version of the package for differences "
-            "with different versions in the parent and derived series."))
+            "with different versions in the parent and derived series.")))
 
     base_source_pub = Reference(
         ISourcePackagePublishingHistory,
         title=_("Base source pub"), readonly=True,
         description=_(
-            "The common base version published in the derived series."))
+            "The common base version published in the parent or the "
+            "derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
@@ -143,7 +194,17 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
-    def update():
+    packagesets = Attribute("The packagesets for this source package in the "
+                            "derived series.")
+
+    parent_packagesets = Attribute("The packagesets for this source package "
+                                   "in the parent series.")
+
+    base_distro_source_package_release = Attribute(
+        "The DistributionSourcePackageRelease object for the source release "
+        "in the parent distribution.")
+
+    def update(manual=False):
         """Checks that difference type and status matches current publishings.
 
         If the record is updated, a relevant comment is added.
@@ -151,8 +212,15 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         If there is no longer a difference (ie. the versions are
         the same) then the status is updated to RESOLVED.
 
+        :param manual: Boolean, True if this is a user-requested change.
+            This overrides auto-blacklisting.
         :return: True if the record was updated, False otherwise.
         """
+
+    latest_comment = Reference(
+        Interface,  # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
 
     def getComments():
         """Return a result set of the comments for this difference."""
@@ -168,23 +236,6 @@ class IDistroSeriesDifferenceEdit(Interface):
     def addComment(commenter, comment):
         """Add a comment on this difference."""
 
-    @operation_parameters(
-        all=Bool(title=_("All"), required=False))
-    @export_write_operation()
-    def blacklist(all=False):
-        """Blacklist this version or all versions of this source package.
-
-        :param all: indicates whether all versions of this package should
-            be blacklisted or just the current (default).
-        """
-
-    @export_write_operation()
-    def unblacklist():
-        """Removes this difference from the blacklist.
-
-        The status will be updated based on the versions.
-        """
-
     @call_with(requestor=REQUEST_USER)
     @export_write_operation()
     def requestPackageDiffs(requestor):
@@ -195,8 +246,45 @@ class IDistroSeriesDifferenceEdit(Interface):
         """
 
 
+class IDistroSeriesDifferenceAdmin(Interface):
+    """Difference attributes requiring launchpad.Admin."""
+
+    @call_with(commenter=REQUEST_USER)
+    @operation_parameters(
+        all=Bool(title=_("All"), required=False),
+        comment=TextLine(title=_('Comment text'), required=False),
+        )
+    @export_write_operation()
+    def blacklist(commenter, all=False, comment=None):
+        """Blacklist this version or all versions of this source package and
+        adds a comment on this difference.
+
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :param all: Indicates whether all versions of this package should
+            be blacklisted or just the current (default).
+        :return: The created `DistroSeriesDifferenceComment` object.
+        """
+
+    @call_with(commenter=REQUEST_USER)
+    @operation_parameters(
+        comment=TextLine(title=_('Comment text'), required=False))
+    @export_write_operation()
+    def unblacklist(commenter, comment=None):
+        """Removes this difference from the blacklist and adds a comment on
+        this difference.
+
+        The status will be updated based on the versions.
+
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :return: The created `DistroSeriesDifferenceComment` object.
+        """
+
+
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
-                              IDistroSeriesDifferenceEdit):
+                              IDistroSeriesDifferenceEdit,
+                              IDistroSeriesDifferenceAdmin):
     """An interface for a package difference between two distroseries."""
     export_as_webservice_entry()
 
@@ -204,7 +292,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name):
+    def new(derived_series, source_package_name, parent_series):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -214,16 +302,21 @@ class IDistroSeriesDifferenceSource(Interface):
         :param source_package_name: A source package name identifying the
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
+        :param parent_series: The distribution series which has the derived
+            series as a child. If there is only one parent, it does not need
+            to be specified.
+        :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.
         """
 
-    def getForDistroSeries(
-        distro_series,
-        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-        status=None):
-        """Return differences for the derived distro series.
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
+        """Return differences for the derived distro series sorted by
+        package name.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
@@ -231,18 +324,47 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
+        :param name_filter: Name of either a source package or a package set
+            to look for.  If given, return only packages whose name matches
+            this string, or that are in a `Packageset` those name matches it.
+        :type name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
-        :return: A result set of differences.
+        :param child_version_higher: Only differences for which the child's
+            version is higher than the parent's version will be included.
+        :type child_version_higher: bool.
+        :param parent_series: The parent series to consider. Consider all
+            parent series if this parameter is None.
+        :type distro_series: `IDistroSeries`.
+        :param packagesets: Optional iterable of `Packageset` to filter by.
+        :param changed_by: An optional `Person` (an individual or a team) or a
+            collection of `Person`s. The results are limited to only those
+            changes made by the given people.
+        :return: A result set of `IDistroSeriesDifference`.
         """
 
-    def getByDistroSeriesAndName(distro_series, source_package_name):
-        """Returns a single difference matching the series and name.
+    def getByDistroSeriesNameAndParentSeries(distro_series,
+                                             source_package_name,
+                                             parent_series):
+        """Returns a single difference matching the series, name and parent
+        series.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
         :type distro_series: `IDistroSeries`.
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
+        :param parent_series: The parent distribution series of the package
+        difference.
+        :type distro_series: `IDistroSeries`.
+        """
+
+    def getSimpleUpgrades(distro_series):
+        """Find pending upgrades that can be performed mindlessly.
+
+        These are `DistroSeriesDifferences` where the parent has been
+        updated and the child still has the old version, unchanged.
+
+        Blacklisted items are excluded.
         """

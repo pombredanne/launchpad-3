@@ -318,7 +318,7 @@ class FakePackager:
     def buildVersion(self, version, changelog_text="nicht !",
                      suite='hoary', section=None, arch=None, author='Foo Bar',
                      email='foo.bar@canonical.com', timestamp=None):
-        """Initialise a new version of extracted package."""
+        """Initialize a new version of extracted package."""
         assert version.startswith(self.version), (
             'New versions should start with the upstream version: %s ' % (
                 self.version))
@@ -421,8 +421,6 @@ class FakePackager:
         if queue_record.status in needs_acceptance_statuses:
             queue_record.acceptFromUploader(changesfile_path, logger)
 
-        pub_record = queue_record.archive.getPublishedSources(
-            name=self.name, version=version, exact_match=True)[0]
-
-        return pub_record
+        return queue_record.archive.getPublishedSources(
+            name=self.name, version=version, exact_match=True).first()
 

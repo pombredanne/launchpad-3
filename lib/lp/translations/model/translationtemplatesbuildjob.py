@@ -20,11 +20,11 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
@@ -112,7 +112,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         if build_id is None:
             return None
         else:
-            return getUtility(ITranslationTemplatesBuildSource).get(
+            return getUtility(ITranslationTemplatesBuildSource).getByID(
                 int(build_id))
 
     @classmethod

@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Remove personal details of a user from the database, leaving a stub."""
@@ -8,14 +8,21 @@
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect, sqlvalues
-from canonical.launchpad.scripts import db_options, logger_options, logger
-from lp.answers.interfaces.questionenums import QuestionStatus
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
+from lp.answers.enums import QuestionStatus
 from lp.registry.interfaces.person import PersonCreationRationale
 
 
@@ -27,9 +34,9 @@ def close_account(con, log, username):
     cur = con.cursor()
     cur.execute("""
         SELECT Person.id, Person.account, name, teamowner
-        FROM Person LEFT OUTER JOIN EmailAddress
-            ON Person.id = EmailAddress.person
-        WHERE name=%(username)s or lower(email)=lower(%(username)s)
+        FROM Person
+        LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
+        WHERE name = %(username)s OR lower(email) = lower(%(username)s)
         """, vars())
     try:
         person_id, account_id, username, teamowner = cur.fetchone()
@@ -64,12 +71,20 @@ def close_account(con, log, username):
     unknown_rationale = PersonCreationRationale.UNKNOWN.value
     cur.execute("""
         UPDATE Person
-        SET displayname='Removed by request',
-            name=%(new_name)s, language=NULL, account=NULL,
-            homepage_content=NULL, icon=NULL, mugshot=NULL,
-            hide_email_addresses=TRUE, registrant=NULL, logo=NULL,
-            creation_rationale=%(unknown_rationale)s, creation_comment=NULL
-        WHERE id=%(person_id)s
+        SET
+            displayname = 'Removed by request',
+            name=%(new_name)s,
+            language = NULL,
+            account = NULL,
+            homepage_content = NULL,
+            icon = NULL,
+            mugshot = NULL,
+            hide_email_addresses = TRUE,
+            registrant = NULL,
+            logo = NULL,
+            creation_rationale = %(unknown_rationale)s,
+            creation_comment = NULL
+        WHERE id = %(person_id)s
         """, vars())
 
     # Remove the Account. We don't set the status to deactivated,
@@ -87,7 +102,7 @@ def close_account(con, log, username):
     # Reassign their bugs
     table_notification('BugTask')
     cur.execute("""
-        UPDATE BugTask SET assignee=NULL WHERE assignee=%(person_id)s
+        UPDATE BugTask SET assignee = NULL WHERE assignee = %(person_id)s
         """, vars())
 
     # Reassign questions assigned to the user, and close all their questions
@@ -121,7 +136,6 @@ def close_account(con, log, username):
         ('BranchSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),
-        ('POSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
 
         # Personal stuff, freeing up the namespace for others who want to play
@@ -143,15 +157,10 @@ def close_account(con, log, username):
         ('TeamParticipation', 'person'),
 
         # Contacts
-        ('PackageBugSupervisor', 'bug_supervisor'),
         ('AnswerContact', 'person'),
 
         # Pending items in queues
         ('POExportRequest', 'person'),
-
-        # Access lists
-        ('PushMirrorAccess', 'person'),
-        ('DistroComponentUploader', 'uploader'),
         ]
     for table, person_id_column in removals:
         table_notification(table)
@@ -171,6 +180,7 @@ def close_account(con, log, username):
 
     return True
 
+
 def main():
     parser = OptionParser(
             '%prog [options] (username|email) [...]'
@@ -188,7 +198,7 @@ def main():
     con = None
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         for username in args:
             if not close_account(con, log, username):
                 log.debug("Rolling back")
@@ -203,6 +213,7 @@ def main():
         if con is not None:
             con.rollback()
         return 1
+
 
 if __name__ == '__main__':
     sys.exit(main())

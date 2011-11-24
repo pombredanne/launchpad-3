@@ -29,8 +29,8 @@ else:
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
 combined_image_file = os.path.join(icing, 'icon-sprites')
 positioning_file = os.path.join(icing, 'icon-sprites.positioning')
-css_template_file = os.path.join(icing, 'style-3-0.css.in')
-css_file = os.path.join(icing, 'build/style-3-0.css')
+css_template_file = os.path.join(icing, 'sprite.css.in')
+css_file = os.path.join(icing, 'build/sprite.css')
 
 sprite_util = SpriteUtil(
     css_template_file, 'icon-sprites',

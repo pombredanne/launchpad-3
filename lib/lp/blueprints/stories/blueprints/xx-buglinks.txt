@@ -13,7 +13,7 @@ the 'Related Bugs' section.
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bug_links'))
     Related bugs
-    Bug #1: Firefox does not support SVG
+    Bug #1: Firefox does not support SVG   New
 
 
 == Adding Links ==

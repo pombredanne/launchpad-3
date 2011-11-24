@@ -12,11 +12,20 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
-from storm.expr import Desc
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -152,33 +161,59 @@ class DistributionSourcePackageRelease:
     @property
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
-        all_published = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            BinaryPackageBuild.source_package_release = %s
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagerelease),
-            distinct=True,
-            orderBy=['BinaryPackageName.name'],
-            clauseTables=['DistroArchSeries', 'DistroSeries',
-                          'BinaryPackageRelease', 'BinaryPackageName',
-                          'BinaryPackageBuild'],
-            prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
-        samples = []
-        names = set()
-        for publishing in all_published:
-            if publishing.binarypackagerelease.binarypackagename not in names:
-                names.add(publishing.binarypackagerelease.binarypackagename)
-                samples.append(
-                    DistroSeriesBinaryPackage(
-                        publishing.distroarchseries.distroseries,
-                        publishing.binarypackagerelease.binarypackagename))
-        return samples
+        #avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        archive_ids = list(self.distribution.all_distro_archive_ids)
+        result_row = (
+            SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
+            BinaryPackagePublishingHistory, DistroSeriesPackageCache,
+            BinaryPackageRelease, BinaryPackageName)
+        tables = (
+            BinaryPackagePublishingHistory,
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                 BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                DistroSeries,
+                DistroArchSeries.distroseriesID == DistroSeries.id),
+            Join(
+                BinaryPackageRelease,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID),
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            LeftJoin(
+                DistroSeriesPackageCache,
+                And(
+                    DistroSeriesPackageCache.distroseries == DistroSeries.id,
+                    DistroSeriesPackageCache.archiveID.is_in(archive_ids),
+                    DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id)))
+
+        all_published = store.using(*tables).find(
+            result_row,
+            DistroSeries.distribution == self.distribution,
+            BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease)
+        all_published = all_published.order_by(
+            BinaryPackageName.name)
+
+        def make_dsb_package(row):
+            publishing = row[1]
+            package_cache = row[2]
+            return DistroSeriesBinaryPackage(
+                publishing.distroarchseries.distroseries,
+                publishing.binarypackagerelease.binarypackagename,
+                package_cache)
+        return DecoratedResultSet(all_published, make_dsb_package)

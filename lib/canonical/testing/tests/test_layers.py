@@ -8,24 +8,8 @@ __all__ = []
 
 import threading
 
-from canonical.testing.layers import (
-    BaseLayer,
-    BaseWindmillLayer,
-    DatabaseLayer,
-    )
+from canonical.testing.layers import BaseLayer
 from lp.testing import TestCase
-
-
-class TestBaseWindmillLayer(TestCase):
-
-    layer_to_test = BaseWindmillLayer
-
-    def test_db_reset_between_tests(self):
-        # The db is reset between tests when DatabaseLayer layer's
-        # testSetUp is called, if _reset_between_tests is True.
-        self.assertTrue(
-            issubclass(self.layer_to_test, DatabaseLayer))
-        self.assertTrue(self.layer_to_test._reset_between_tests)
 
 
 class TestThreadWaiting(TestCase):

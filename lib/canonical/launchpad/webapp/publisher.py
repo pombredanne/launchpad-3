@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -14,7 +14,6 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
-    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,7 +25,17 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.tales import WebLayerAPI
+from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -68,11 +77,17 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
+from lp.services.encoding import is_ascii_only
+from lp.services.features import (
+    defaultFlagValue,
+    getFeatureFlag,
+    )
+from lp.services.utils import obfuscate_structure
 
-# HTTP Status code constants - define as appropriate.
-HTTP_MOVED_PERMANENTLY = 301
+# Monkeypatch NotFound to always avoid generating OOPS
+# from NotFound in web service calls.
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:
@@ -225,19 +240,6 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
-    _is_beta = None
-    @property
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if self._is_beta is not None:
-            return self._is_beta
-
-        # We cannot import ILaunchpadCelebrities here, so we will use the
-        # hardcoded name of the beta testers team
-        self._is_beta = self.user is not None and self.user.inTeam(
-            'launchpad-beta-testers')
-        return self._is_beta
-
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.
@@ -252,7 +254,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
-    - isBetaUser   <-- whether the logged-in user is a beta tester
+    - publishTraverse() <-- override this to support traversing-through.
     """
 
     def __init__(self, context, request):
@@ -260,6 +262,23 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
         self._error_message = None
         self._info_message = None
+        # FakeRequest does not have all properties required by the
+        # IJSONRequestCache adapter.
+        if isinstance(request, FakeRequest):
+            return
+        # Some tests create views without providing any request
+        # object at all; other tests run without the component
+        # infrastructure.
+        try:
+            cache = IJSONRequestCache(self.request).objects
+        except TypeError, error:
+            if error.args[0] == 'Could not adapt':
+                return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
 
     def initialize(self):
         """Override this in subclasses.
@@ -267,6 +286,24 @@ class LaunchpadView(UserAttributeCache):
         Default implementation does nothing.
         """
         pass
+
+    @property
+    def page_description(self):
+        """Return a string containing a description of the context.
+
+        Typically this is the contents of the most-descriptive text attribute
+        of the context, by default its 'description' attribute if there is one.
+
+        This will be inserted into the HTML meta description, and may
+        eventually end up in search engine summary results, or when a link to
+        the page is shared elsewhere.
+
+        This may be specialized by view subclasses.
+
+        Do not write eg "This is a page about...", just directly describe the
+        object on the page.
+        """
+        return getattr(self.context, 'description', None)
 
     @property
     def template(self):
@@ -348,6 +385,53 @@ class LaunchpadView(UserAttributeCache):
                     type(info_message))
 
     info_message = property(_getInfoMessage, _setInfoMessage)
+
+    def getCacheJSON(self):
+        cache = dict(IJSONRequestCache(self.request).objects)
+        if WebLayerAPI(self.context).is_entry:
+            cache['context'] = self.context
+        if self.user is None:
+            cache = obfuscate_structure(cache)
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        # By default, a LaunchpadView cannot be traversed through.
+        # Those that can be must override this method.
+        raise NotFound(self, name, request=request)
+
+    # Names of feature flags which affect a view.
+    related_features = ()
+
+    @property
+    def related_feature_info(self):
+        """Related feature flags that are active for this context and scope.
+
+        This property describes all features marked as related_features in the
+        view.  is_beta means that the value is not the default value.
+
+        Return a dict of flags keyed by flag_name, with title and url as given
+        by the flag's description.  Value is the value in the current scope,
+        and is_beta is true if this is not the default value.
+        """
+        # Avoid circular imports.
+        from lp.services.features.flags import flag_info
+
+        beta_info = {}
+        for (flag_name, value_domain, documentation, default_behavior, title,
+             url) in flag_info:
+            if flag_name not in self.related_features:
+                continue
+            value = getFeatureFlag(flag_name)
+            beta_info[flag_name] = {
+                'is_beta': (defaultFlagValue(flag_name) != value),
+                'title': title,
+                'url': url,
+                'value': value,
+            }
+        return beta_info
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -474,9 +558,9 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken
-    from the root_url given in launchpad.conf.
-
+    :param request: The web request; if not provided, canonical_url attempts
+        to guess at the current request, using the protocol, host, and port
+        taken from the root_url given in launchpad.conf.
     :param path_only_if_possible: If the protocol and hostname can be omitted
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
@@ -494,8 +578,7 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
-    # The request is needed when there's no rootsite specified and when
-    # handling the different shipit sites.
+    # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
@@ -550,8 +633,7 @@ def canonical_url(
     if ((path_only_if_possible and
          request is not None and
          root_url.startswith(request.getApplicationURL()))
-        or force_local_path
-        ):
+        or force_local_path):
         return unicode('/' + path)
     return unicode(root_url + path)
 
@@ -651,13 +733,16 @@ class Navigation:
         return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
-
     def publishTraverse(self, request, name):
         """Shim, to set objects in the launchbag when traversing them.
 
         This needs moving into the publication component, once it has been
         refactored.
         """
+        # Launchpad only produces ascii URLs.  If the name is not ascii, we
+        # can say nothing is found here.
+        if not is_ascii_only(name):
+            raise NotFound(self.context, name)
         nextobj = self._publishTraverse(request, name)
         getUtility(IOpenLaunchBag).add(nextobj)
         return nextobj
@@ -840,7 +925,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name, self.context)
+        raise NotFound(self.context, name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

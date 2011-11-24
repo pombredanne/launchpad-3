@@ -15,19 +15,26 @@ import subprocess
 
 from canonical.testing.layers import DatabaseLayer
 from lp.testing import TestCase
+from lp.testing.pgsql import PgTestSetup
 
 
 class SampleDataTestCase(TestCase):
     layer = DatabaseLayer
 
+    def setUp(self):
+        super(SampleDataTestCase, self).setUp()
+        self.pg_fixture = PgTestSetup(template='template1')
+        self.pg_fixture.setUp()
+
     def tearDown(self):
-        DatabaseLayer.force_dirty_database()
+        self.pg_fixture.tearDown()
         super(SampleDataTestCase, self).tearDown()
 
     def test_testSampledata(self):
         """Test the sample data used by the test suite."""
         self.dump_and_restore('launchpad_ftest_template')
 
+    # XXX bug 365385
     def disabled_test_devSampledata(self):
         """Test the sample data used by developers for manual testing."""
         self.dump_and_restore('launchpad_dev_template')
@@ -35,9 +42,9 @@ class SampleDataTestCase(TestCase):
     def dump_and_restore(self, source_dbname):
         cmd = (
             "pg_dump --format=c --compress=0 --no-privileges --no-owner"
-            " --schema=public %s | pg_restore --clean"
+            " %s | pg_restore "
             " --exit-on-error --dbname=%s" % (
-            source_dbname, DatabaseLayer._db_fixture.dbname))
+            source_dbname, self.pg_fixture.dbname))
         proc = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             stdin=subprocess.PIPE)

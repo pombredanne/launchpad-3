@@ -24,7 +24,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,
@@ -209,9 +209,9 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
         browser.getControl(
             name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
-    # Apply for the team's mailing list.
+    # Create the team's mailing list.
     browser.open('%s~%s/+mailinglist' % (rooturl, team_name))
-    browser.getControl('Apply for Mailing List').click()
+    browser.getControl('Create new Mailing List').click()
 
 
 def get_alternative_email(person):

@@ -15,13 +15,6 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp,
-    lobotomize_stevea,
-    uploaderSetUp,
-    uploaderTearDown,
-    uploadQueueSetUp,
-    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -33,6 +26,15 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.code.tests.test_doc import branchscannerSetUp
+from lp.services.mail.tests.test_doc import (
+    ProcessMailLayer,
+    )
+from lp.soyuz.tests.test_doc import (
+    lobotomize_stevea,
+    uploaderSetUp,
+    uploadQueueSetUp,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -43,28 +45,34 @@ def lobotomizeSteveASetUp(test):
     lobotomize_stevea()
     setUp(test)
 
+
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
 
 def branchscannerBugsSetUp(test):
     """Setup the user for the branch scanner tests."""
     lobotomize_stevea()
     branchscannerSetUp(test)
 
+
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
     setUp(test)
 
+
 def bugNotificationSendingTearDown(test):
     tearDown(test)
+
 
 def cveSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
     setUp(test)
+
 
 def uploaderBugsSetUp(test):
     """Set up a test suite using the 'uploader' db user.
@@ -79,16 +87,20 @@ def uploaderBugsSetUp(test):
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
+
 def uploaderBugsTearDown(test):
     logout()
 
+
 def uploadQueueTearDown(test):
     logout()
+
 
 def noPrivSetUp(test):
     """Set up a test logged in as no-priv."""
     setUp(test)
     login('no-priv@canonical.com')
+
 
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
@@ -107,6 +119,16 @@ def updateRemoteProductTeardown(test):
     # Mark the DB as dirty, since we run a script in a sub process.
     DatabaseLayer.force_dirty_database()
     tearDown(test)
+
+
+def bugSetStatusSetUp(test):
+    setUp(test)
+    test.globs['test_dbuser'] = config.processmail.dbuser
+
+
+def bugmessageSetUp(test):
+    setUp(test)
+    login('no-priv@canonical.com')
 
 
 special = {
@@ -158,12 +180,6 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=bugNotificationSendingSetUp,
         tearDown=bugNotificationSendingTearDown),
-    'bugzilla-import.txt': LayeredDocFileSuite(
-        '../doc/bugzilla-import.txt',
-        setUp=setUp, tearDown=tearDown,
-        stdout_logging_level=logging.WARNING,
-        layer=LaunchpadZopelessLayer
-        ),
     'bug-export.txt': LayeredDocFileSuite(
         '../doc/bug-export.txt',
         setUp=setUp, tearDown=tearDown,
@@ -201,13 +217,13 @@ special = {
     'bugmessage.txt-uploader': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
         setUp=uploaderSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-checkwatches': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
         setUp=checkwatchesSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
@@ -219,7 +235,7 @@ special = {
     'bugtracker-person.txt': LayeredDocFileSuite(
         '../doc/bugtracker-person.txt',
         setUp=checkwatchesSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugwatch.txt':
@@ -414,6 +430,21 @@ special = {
         '../doc/sourceforge-remote-products.txt',
         layer=LaunchpadZopelessLayer,
         ),
+    'bug-set-status.txt-processmail': LayeredDocFileSuite(
+        '../doc/bug-set-status.txt',
+        setUp=bugSetStatusSetUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False),
+    'bugmessage.txt-processmail': LayeredDocFileSuite(
+        '../doc/bugmessage.txt',
+        setUp=bugmessageSetUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False),
+    'bugs-emailinterface.txt-processmail': LayeredDocFileSuite(
+        '../tests/bugs-emailinterface.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False),
     }
 
 

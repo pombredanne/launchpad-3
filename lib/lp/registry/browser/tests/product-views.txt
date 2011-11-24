@@ -128,7 +128,7 @@ cannot access the page.
     >>> view = create_initialized_view(firefox, name='+review-license')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.Moderate')
+    Unauthorized: (<Product..., 'project_reviewed', 'launchpad.Moderate')
 
 Mark is in the registry admins team and is allowed to access the page.
 
@@ -153,7 +153,7 @@ The view allow the reviewer to see and change project privileges and
 judge the licenses.
 
     >>> view.field_names
-    ['license_reviewed', 'license_approved', 'active', 'private_bugs',
+    ['project_reviewed', 'license_approved', 'active', 'private_bugs',
      'reviewer_whiteboard']
 
 The reviewer cannot deactivate a project if it is linked
@@ -291,14 +291,14 @@ subscription.
     >>> form = {
     ...     'field.active': 'on',
     ...     'field.reviewer_whiteboard': 'This is not a free license',
-    ...     'field.license_reviewed': 'on',
+    ...     'field.project_reviewed': 'on',
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     False
@@ -326,7 +326,7 @@ approval.
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     True
@@ -354,7 +354,7 @@ the project must be reviewed again
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     True
@@ -440,37 +440,6 @@ All the product series can be viewed in batches.
 
 Product index view
 ==================
-
-Programming languages
----------------------
-
-When the product has no programming languages specified, nothing is displayed
-on the index page.
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    False
-
-But if the project owner logs in, they will see the programming language
-details, so that they can edit them.
-
-    >>> login_person(firefox.owner)
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
-Once the programming languages are specified though, even users who aren't the
-owner will see the list.
-
-    >>> firefox.programminglang = 'C++'
-    >>> transaction.commit()
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
 
 +index portlets
 ---------------

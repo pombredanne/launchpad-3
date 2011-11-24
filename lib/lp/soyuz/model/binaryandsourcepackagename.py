@@ -18,9 +18,7 @@ from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
-from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
-from lp.soyuz.model.binarypackagename import getBinaryPackageDescriptions
 
 
 class BinaryAndSourcePackageName(SQLBase):
@@ -45,15 +43,7 @@ class BinaryAndSourcePackageNameIterator(BatchedCountableIterator):
     """
 
     def getTermsWithDescriptions(self, results):
-        # Note that we grab first source package descriptions and then
-        # binary package descriptions, giving preference to the latter,
-        # via the update() call.
-        descriptions = getSourcePackageDescriptions(results, use_names=True)
-        binary_descriptions = getBinaryPackageDescriptions(results,
-                                                           use_names=True)
-        descriptions.update(binary_descriptions)
-        return [SimpleTerm(obj, obj.name,
-                    descriptions.get(obj.name, "Not uploaded"))
+        return [SimpleTerm(obj, obj.name, obj.name)
                 for obj in results]
 
 

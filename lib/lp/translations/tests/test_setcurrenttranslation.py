@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
@@ -23,6 +23,7 @@ from lp.translations.tests.helpers import (
 #  https://dev.launchpad.net/Translations/Specs
 #     /UpstreamImportIntoUbuntu/FixingIsImported
 #     /setCurrentTranslation#Execution%20matrix
+
 
 class SetCurrentTranslationTestMixin:
     """Tests for `POTMsgSet.setCurrentTranslation`.
@@ -161,6 +162,12 @@ class SetCurrentTranslationTestMixin:
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [])
 
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # Return the upstream translation.
+        # :param tm: A translation for this side.
+        # :param tm_other: A translation for the other side.
+        raise NotImplementedError
+
     def test_c_None__n_None__o_shared(self, follows=False):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
@@ -175,10 +182,17 @@ class SetCurrentTranslationTestMixin:
             new_translations, share_with_other_side=follows)
 
         # We end up with a shared current translation.
-        # Current for other context one stays the same.
+        # Current for other context one stays the same, if the
+        # other side does not follow this side.
         self.assertTrue(tm is not None)
+        if follows:
+            # Even if the other side is supposed to follow this side,
+            # we ovverride the other only if the current side is Ubuntu.
+            expected_other = self.selectUpstreamTranslation(tm, tm_other)
+        else:
+            expected_other = tm_other
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
+            tm, None, expected_other, [])
 
     def test_c_None__n_None__o_shared__follows(self):
         # There is no current translation, though there is a shared one
@@ -318,14 +332,17 @@ class SetCurrentTranslationTestMixin:
             new_translations, share_with_other_side=True)
 
         # tm_suggestion becomes current.
-        # Current for other context one stays the same.
         self.assertTrue(tm is not None)
         self.assertEquals(tm_suggestion, tm)
+        # If a translation is set for the first time in upstream,
+        # this translation becomes current in Ubuntu too, but if the
+        # translation is set for the first time in Ubuntu, this does
+        # not affect the upstream translation.
+        expected_other = self.selectUpstreamTranslation(tm, tm_other)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
+            tm, None, expected_other, [])
 
-    def test_c_None__n_shared__o_shared__identical(self,
-                                                               follows=False):
+    def test_c_None__n_shared__o_shared__identical(self, follows=False):
         # Current translation is None, and we have found a
         # shared existing TM matching new translations and it's
         # also a current translation in "other" context.
@@ -1126,7 +1143,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
         potemplate = self.factory.makePOTemplate(
             distroseries=ubuntu.currentseries,
             sourcepackagename=sourcepackagename)
-        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
+        sharing_series = self.factory.makeDistroSeries(distribution=ubuntu)
         sharing_potemplate = self.factory.makePOTemplate(
             distroseries=sharing_series,
             sourcepackagename=sourcepackagename,
@@ -1145,7 +1162,11 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
             language_code=self.pofile.language.code)
 
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=potemplate, sequence=1)
+            potemplate=potemplate)
+
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # See `SetCurrentTranslationTestMixin`
+        return tm_other
 
 
 class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
@@ -1181,4 +1202,8 @@ class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
             language_code=self.pofile.language.code)
 
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=potemplate, sequence=1)
+            potemplate=potemplate)
+
+    def selectUpstreamTranslation(self, tm, tm_other):
+        # See `SetCurrentTranslationTestMixin`
+        return tm

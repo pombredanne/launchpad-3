@@ -1,11 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from zope.component import getUtility
+from lazr.restful.utils import smartquote
 
-from canonical.lazr.utils import smartquote
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
@@ -53,7 +53,7 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
     def test_distroseries(self):
         distribution = self.factory.makeDistribution(
             name='crumb-tester', displayname="Crumb Tester")
-        series = self.factory.makeDistroRelease(
+        series = self.factory.makeDistroSeries(
             name="test", version="1.0", distribution=distribution)
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
@@ -110,7 +110,7 @@ class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
     def test_distroserieslanguage(self):
         distribution = self.factory.makeDistribution(
             name='crumb-tester', displayname="Crumb Tester")
-        series = self.factory.makeDistroRelease(
+        series = self.factory.makeDistroSeries(
             name="test", version="1.0", distribution=distribution)
         naked_series = remove_security_proxy_and_shout_at_engineer(series)
         naked_series.hide_all_translations = False

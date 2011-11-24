@@ -32,7 +32,7 @@ import re
 import signal
 import subprocess
 
-from canonical.encoding import (
+from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
@@ -57,14 +57,14 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
 source_file_exts = [
-    'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
-    '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
+    'orig(?:-.+)?\.tar\.(?:gz|bz2|xz)', 'diff.gz',
+    '(?:debian\.)?tar\.(?:gz|bz2|xz)', 'dsc']
 re_issource = re.compile(
     r"([^_]+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
-re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
-re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
-re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
-re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2)$")
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2|xz)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2|xz)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2|xz)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2|xz)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -257,7 +257,7 @@ def safe_fix_maintainer(content, fieldname):
     """Wrapper for fix_maintainer() to handle unicode and string argument.
 
     It verifies the content type and transform it in a unicode with guess()
-    before call ascii_smash(). Then we can safelly call fix_maintainer().
+    before call ascii_smash(). Then we can safely call fix_maintainer().
     """
     if type(content) != unicode:
         content = guess_encoding(content)

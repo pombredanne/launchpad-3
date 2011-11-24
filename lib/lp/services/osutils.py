@@ -1,14 +1,18 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
 
 __metaclass__ = type
 __all__ = [
-    'override_environ',
-    'remove_tree',
+    'ensure_directory_exists',
+    'get_pid_from_file',
     'kill_by_pidfile',
+    'get_pid_from_file',
+    'open_for_writing',
+    'override_environ',
     'remove_if_exists',
+    'remove_tree',
     'two_stage_kill',
     'until_no_eintr',
     ]
@@ -17,13 +21,12 @@ from contextlib import contextmanager
 import errno
 import os.path
 import shutil
-import socket
-
-from canonical.launchpad.daemons.tachandler import (
-    kill_by_pidfile,
-    remove_if_exists,
-    two_stage_kill,
+from signal import (
+    SIGKILL,
+    SIGTERM,
     )
+import socket
+import time
 
 
 def remove_tree(path):
@@ -89,3 +92,115 @@ def until_no_eintr(retries, function, *args, **kwargs):
             raise
     else:
         raise
+
+
+def ensure_directory_exists(directory, mode=0777):
+    """Create 'directory' if it doesn't exist.
+
+    :return: True if the directory had to be created, False otherwise.
+    """
+    try:
+        os.makedirs(directory, mode=mode)
+    except OSError, e:
+        if e.errno == errno.EEXIST:
+            return False
+        raise
+    return True
+
+
+def open_for_writing(filename, mode, dirmode=0777):
+    """Open 'filename' for writing, creating directories if necessary.
+
+    :param filename: The path of the file to open.
+    :param mode: The mode to open the filename with. Should be 'w', 'a' or
+        something similar. See ``open`` for more details. If you pass in
+        a read-only mode (e.g. 'r'), then we'll just accept that and return
+        a read-only file-like object.
+    :param dirmode: The mode to use to create directories, if necessary.
+    :return: A file-like object that can be used to write to 'filename'.
+    """
+    try:
+        return open(filename, mode)
+    except IOError, e:
+        if e.errno == errno.ENOENT:
+            os.makedirs(os.path.dirname(filename), mode=dirmode)
+            return open(filename, mode)
+
+
+def _kill_may_race(pid, signal_number):
+    """Kill a pid accepting that it may not exist."""
+    try:
+        os.kill(pid, signal_number)
+    except OSError, e:
+        if e.errno in (errno.ESRCH, errno.ECHILD):
+            # Process has already been killed.
+            return
+        # Some other issue (e.g. different user owns it)
+        raise
+
+
+def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
+    """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
+
+    :param pid: The pid of the process to kill.
+    :param poll_interval: The polling interval used to check if the
+        process is still around.
+    :param num_polls: The number of polls to do before doing a SIGKILL.
+    """
+    # Kill the process.
+    _kill_may_race(pid, SIGTERM)
+
+    # Poll until the process has ended.
+    for i in range(num_polls):
+        try:
+            # Reap the child process and get its return value. If it's not
+            # gone yet, continue.
+            new_pid, result = os.waitpid(pid, os.WNOHANG)
+            if new_pid:
+                return result
+            time.sleep(poll_interval)
+        except OSError, e:
+            if e.errno in (errno.ESRCH, errno.ECHILD):
+                # Raised if the process is gone by the time we try to get the
+                # return value.
+                return
+
+    # The process is still around, so terminate it violently.
+    _kill_may_race(pid, SIGKILL)
+
+
+def get_pid_from_file(pidfile_path):
+    """Retrieve the PID from the given file, if it exists, None otherwise."""
+    if not os.path.exists(pidfile_path):
+        return None
+    # Get the pid.
+    pid = open(pidfile_path, 'r').read().split()[0]
+    try:
+        pid = int(pid)
+    except ValueError:
+        # pidfile contains rubbish
+        return None
+    return pid
+
+
+def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
+    """Kill a process identified by the pid stored in a file.
+
+    The pid file is removed from disk.
+    """
+    try:
+        pid = get_pid_from_file(pidfile_path)
+        if pid is None:
+            return
+        two_stage_kill(pid, poll_interval, num_polls)
+    finally:
+        remove_if_exists(pidfile_path)
+
+
+def remove_if_exists(path):
+    """Remove the given file if it exists."""
+    try:
+        os.remove(path)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise

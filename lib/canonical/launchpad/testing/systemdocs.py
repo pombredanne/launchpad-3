@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'default_optionflags',
     'LayeredDocFileSuite',
-    'SpecialOutputChecker',
     'setUp',
     'setGlobs',
     'stop',
@@ -16,6 +15,7 @@ __all__ = [
     ]
 
 import doctest
+from functools import partial
 import logging
 import os
 import pdb
@@ -26,7 +26,6 @@ import transaction
 from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
-from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -90,7 +89,7 @@ class StdoutHandler(Handler):
             record.levelname, record.name, self.format(record))
 
 
-def LayeredDocFileSuite(*args, **kw):
+def LayeredDocFileSuite(*paths, **kw):
     """Create a DocFileSuite, optionally applying a layer to it.
 
     In addition to the standard DocFileSuite arguments, the following
@@ -135,31 +134,20 @@ def LayeredDocFileSuite(*args, **kw):
         kw['tearDown'] = tearDown
 
     layer = kw.pop('layer', None)
-    suite = doctest.DocFileSuite(*args, **kw)
+    suite = doctest.DocFileSuite(*paths, **kw)
     if layer is not None:
         suite.layer = layer
+
+    for test in suite:
+        # doctest._module_relative_path() does not normalize paths. To make
+        # test selection simpler and reporting easier to read, normalize here.
+        test._dt_test.filename = os.path.normpath(test._dt_test.filename)
+        # doctest.DocFileTest insists on using the basename of the file as the
+        # test ID. This causes conflicts when two doctests have the same
+        # filename, so we patch the id() method on the test cases.
+        test.id = partial(lambda test: test._dt_test.filename, test)
+
     return suite
-
-
-class SpecialOutputChecker(doctest.OutputChecker):
-    """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
-    def output_difference(self, example, got, optionflags):
-        if config.canonical.chunkydiff is False:
-            return doctest.OutputChecker.output_difference(
-                self, example, got, optionflags)
-
-        if optionflags & doctest.ELLIPSIS:
-            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            newgot = elided_source(example.want, got,
-                                   normalize_whitespace=normalize_whitespace)
-            if newgot == example.want:
-                # There was no difference.  May be an error in
-                # elided_source().  In any case, return the whole thing.
-                newgot = got
-        else:
-            newgot = got
-        return doctest.OutputChecker.output_difference(
-            self, example, newgot, optionflags)
 
 
 def ordered_dict_as_string(dict):

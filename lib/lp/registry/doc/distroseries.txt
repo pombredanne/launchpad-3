@@ -294,12 +294,12 @@ components since partner is allowed for upload:
     partner
 
 
-DistroSeries can be initialised from their parents
+DistroSeries can be initialized from their parents
 --------------------------------------------------
 
 When a distroseries is derived from another distroseries (be it a
 derivative distribution, or simply the next release in a sequence from
-Ubuntu) we need to initialise the new release with quite a lot of
+Ubuntu) we need to initialize the new release with quite a lot of
 information. Not least of which is the section and component
 selections and the publishing information for the distroseries.
 
@@ -308,18 +308,19 @@ goes behind the back of sqlobject to copy potentially tens of
 thousands of rows around in order to set up a distroseries.
 
 IDistroSeries lists a series of preconditions for performing an
-initialisation. In particular the initialiser won't overwrite
+initialization. In particular the initializer won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
-    >>> from lp.soyuz.scripts.initialise_distroseries import (
-    ...     InitialiseDistroSeries)
+    >>> from lp.soyuz.scripts.initialize_distroseries import (
+    ...     InitializeDistroSeries)
     >>> login("foo.bar@canonical.com")
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
-    ...                          '99.2',hoary, hoary.owner)
-    >>> ids = InitialiseDistroSeries(humpy)
-    >>> ids.initialise()
+    ...                          '99.2', None, hoary.owner)
+    >>> humpy.previous_series = hoary
+    >>> ids = InitializeDistroSeries(humpy, [hoary.id])
+    >>> ids.initialize()
     >>> hoary.getPublishedSources('pmount').count()
     1
     >>> humpy.getPublishedSources('pmount').count()
@@ -329,12 +330,12 @@ again" type set of assertions.
     >>> len(humpy['i386'].getReleasedPackages('pmount'))
     1
 
-Check if the attributes of an DRSPR instance for the just initialised
+Check if the attributes of an DRSPR instance for the just initialized
 distroseries are sane. A DRSPR instance should filter attributes of
 a SPR according the distroseries in question (practically according
 what is published in this distrorelelase)
 
-Since the initialise-from-parent procedure copies the latest
+Since the initialize-from-parent procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting
 that there are no builds for this SPR in this DistroSeries.
 IDRSPR.builds will be non-empty after a developer submits a new SPR
@@ -346,14 +347,15 @@ published in this distroseries (in fact, in one of its architectures)
 resulted of the sourcepackagerelease in question, but built anywhere.
 (fix bug #52938)
 
-Initialise a new distroseries based on warty (since it has, at least
+Initialize a new distroseries based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
 
     >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
     ...                          'The Bumpy', 'Fat', 'Boom',
-    ...                          '99.3', warty, warty.owner)
-    >>> ids = InitialiseDistroSeries(bumpy)
-    >>> ids.initialise()
+    ...                          '99.3', None, warty.owner)
+    >>> bumpy.previous_series = warty
+    >>> ids = InitializeDistroSeries(bumpy, [warty.id])
+    >>> ids.initialize()
 
 Build a new ISourcePackage based in the new distroseries:
 
@@ -478,7 +480,7 @@ list of up to five packages that are the most recently linked to an
 upstream.
 
     >>> distribution = factory.makeDistribution()
-    >>> distroseries = factory.makeDistroRelease(distribution=distribution)
+    >>> distroseries = factory.makeDistroSeries(distribution=distribution)
     >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()
     >>> print pkgs.count()
     0
@@ -842,9 +844,11 @@ so that he can edit it.
     >>> yo_series = youbuntu.newSeries(
     ...     name='island', displayname='Island', title='YouBuntu Island',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, owner=yo_driver)
+    ...     previous_series=warty, registrant=yo_driver)
     >>> print yo_series.name
     island
+    >>> print yo_series.registrant.name
+    yo-driver
     >>> print yo_series.driver.name
     yo-driver
 
@@ -856,7 +860,7 @@ have permission to edit the series.
     >>> yo_series = youbuntu.newSeries(
     ...     name='forest', displayname='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, owner=youbuntu.owner)
+    ...     previous_series=warty, registrant=youbuntu.owner)
     >>> print yo_series.name
     forest
     >>> print yo_series.driver
@@ -872,7 +876,7 @@ not create series.
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, owner=ubuntu.driver)
+    ...     previous_series=warty, owner=ubuntu.driver)
     Traceback (most recent call last):
      ...
     Unauthorized: ...
@@ -884,9 +888,11 @@ series.
     >>> u_series = ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, owner=ubuntu.owner)
+    ...     previous_series=warty, registrant=ubuntu.owner)
     >>> print u_series.name
     finch
+    >>> print u_series.registrant.name
+    ubuntu-team
     >>> print u_series.driver
     None
 
@@ -1056,7 +1062,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     mark
     >>> print sid.driver
     None
-    >>> print sid.owner.name
+    >>> print sid.registrant.name
     jdub
 
     >>> for d in sid.drivers:

@@ -8,12 +8,27 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvalidQuestionStateError',
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
     'IQuestionLinkFAQForm',
     ]
+
+
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    exported,
+    export_write_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
 
 from zope.interface import (
     Attribute,
@@ -24,7 +39,6 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
-    List,
     Object,
     Text,
     TextLine,
@@ -32,87 +46,98 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionPriority,
     QuestionStatus,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
-
-
-class InvalidQuestionStateError(Exception):
-    """Error raised when the question is in an invalid state.
-
-    Error raised when a workflow action cannot be executed because the
-    question is in an invalid state.
-    """
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    id = Int(
+    export_as_webservice_entry(as_of='beta')
+
+    id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
-        description=_("The tracking number for this question."))
-    title = TextLine(
+        description=_("The tracking number for this question.")),
+        as_of="devel")
+    title = exported(TextLine(
         title=_('Summary'), required=True, description=_(
-        "A one-line summary of the issue or problem."))
-    description = Text(
+        "A one-line summary of the issue or problem.")),
+        as_of="devel")
+    description = exported(Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead."))
-    status = Choice(
+        "you take, what happens, and what you think should happen instead.")),
+        as_of="devel")
+    status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
-        default=QuestionStatus.OPEN, readonly=True)
+        default=QuestionStatus.OPEN, readonly=True),
+        as_of="devel")
     priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
-    language = Choice(
-        title=_('Language'), vocabulary='Language',
-        description=_('The language in which this question is written.'))
-    owner = PublicPersonChoice(
+    language = exported(ReferenceChoice(
+        title=_('Language'), vocabulary='Language', schema=ILanguage,
+        description=_('The language in which this question is written.')),
+        as_of="devel")
+    owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    assignee = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+    assignee = exported(PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
-        vocabulary='ValidPersonOrTeam')
-    answerer = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+    answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
-        vocabulary='ValidPersonOrTeam')
-    answer = Object(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel",
+        readonly=True)
+    answer = exported(Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
-            schema=IQuestionMessage)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    datedue = Datetime(
+        schema=IQuestionMessage),
+        readonly=True, as_of="devel")
+    datecreated = exported(Datetime(
+        title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created', readonly=True, as_of="devel")
+    datedue = exported(Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_(
-            "The date by which we should have resolved this question."))
-    datelastquery = Datetime(
+            "The date by which we should have resolved this question.")),
+        exported_as='date_due', readonly=True, as_of="devel")
+    datelastquery = exported(Datetime(
         title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
-        "customer (owner)."))
-    datelastresponse = Datetime(
+        "customer (owner).")),
+       exported_as='date_last_query',  readonly=True, as_of="devel")
+    datelastresponse = exported(Datetime(
         title=_("Date last Responded"),
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
-        "datelastresponse tells us in whose court the ball is."))
-    date_solved = Datetime(title=_("Date Answered"), required=False,
+        "datelastresponse tells us in whose court the ball is.")),
+        exported_as='date_last_response', readonly=True, as_of="devel")
+    date_solved = exported(Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the question owner confirmed that the "
-            "question is Solved."))
+            "question is Solved.")),
+        exported_as='date_solved', readonly=True, as_of="devel")
     product = Choice(
         title=_('Upstream Project'), required=False,
         vocabulary='Product',
@@ -131,10 +156,12 @@ class IQuestion(IHasOwner):
         title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
-    target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
-        description=_('The distribution, source package, or product the '
-                      'question pertains to.'))
-
+    target = exported(Reference(
+        title=_('This question is about'), required=True,
+        schema=IQuestionTarget,
+        description=_('The distribution, source package, or project the '
+                      'question pertains to.')),
+        as_of="devel")
     faq = Object(
         title=_('Linked FAQ'),
         description=_('The FAQ document containing the long answer to this '
@@ -146,13 +173,14 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = List(
+    messages = exported(CollectionField(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
-        value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True)
+        value_type=Reference(schema=IQuestionMessage),
+        required=True, default=[], readonly=True),
+        as_of='devel')
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
@@ -408,20 +436,48 @@ class IQuestion(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe this person to the question."""
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def subscribe(person, subscribed_by=None):
+        """Subscribe `person` to the question.
+
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IQuestionSubscription`.
+        """
 
     def isSubscribed(person):
         """Return a boolean indicating whether the person is subscribed."""
 
-    def unsubscribe(person):
-        """Remove the person's subscription to this question."""
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def unsubscribe(person, unsubscribed_by):
+        """Unsubscribe `person` from the question.
+
+        :param person: the subscriber.
+        :param unsubscribed_by: the person who removed the subscription.
+        """
 
     def getDirectSubscribers():
         """Return the persons who are subscribed to this question.
 
         :return: A list of persons sorted by displayname.
         """
+
+    def getDirectSubscribersWithDetails():
+        """Get direct subscribers and their subscriptions for the question.
+
+        :returns: A ResultSet of tuples (Person, QuestionSubscription)
+            representing a subscriber and their question subscription.
+        """
+
     def getIndirectSubscribers():
         """Return the persons who are implicitly subscribed to this question.
 
@@ -438,21 +494,27 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    def getDirectRecipients():
-        """Return the set of persons who are subscribed to this question.
+    direct_recipients = Attribute(
+        "Return An `INotificationRecipientSet` containing the persons to "
+        "notify along the rationale for doing so.")
 
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
-        """
+    indirect_recipients = Attribute(
+        "Return the INotificationRecipientSet of answer contacts for the "
+        "question's target as well as the question's assignee.")
 
-    def getIndirectRecipients():
-        """Return the set of persons implicitly subscribed to this question.
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a question message.
 
-        That includes  the answer contacts for the question's target as well
-        as the question's assignee.
-
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
+        This is restricted to Launchpad admins and registry members, and will
+        return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
 
 

@@ -3,16 +3,18 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    )
+from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
@@ -21,6 +23,31 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+
+
+class TestProjectGroup(TestCaseWithFactory):
+    """Tests project group object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        pg = self.factory.makeProject()
+        self.assertEqual("Project Group", pg.pillar_category)
+
+    def test_owner_cannot_be_open_team(self):
+        """Project group owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProject,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Project group owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProject(owner=closed_team)
 
 
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
@@ -144,20 +171,14 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when a ValueError
         # is raised when trying to deactivate a project that has source
         # releases.
-        last_oops = globalErrorUtility.getLastOopsReport()
-
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
         project = launchpad.projects['evolution']
         project.active = False
         e = self.assertRaises(ClientError, project.lp_save)
 
         # no OOPS was generated as a result of the exception
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '
             'packages.', e.content)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

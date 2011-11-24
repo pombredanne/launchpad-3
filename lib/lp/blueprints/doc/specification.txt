@@ -65,8 +65,7 @@ call this the specification target.
 
 We attach now a spec to a distribution.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> mark = Person.byName('mark')
     >>> ubuspec = specset.new('fix-spec-permissions',
@@ -281,12 +280,12 @@ block-them-too.
     >>> canvas = efourx.blocked_specs[0]
     >>> svg = efourx.dependencies[0]
     >>> for spec in svg.all_blocked: print spec.name
-    e4x
     canvas
+    e4x
 
     >>> for spec in canvas.all_deps: print spec.name
-    svg-support
     e4x
+    svg-support
 
 
 Dependency mapping - `ISpecificationSet.getDependencyDict`

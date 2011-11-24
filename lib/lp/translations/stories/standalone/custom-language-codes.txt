@@ -13,8 +13,7 @@ package.
 
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.app.enums import ServiceUsage
 
     >>> def find_custom_language_codes_link(browser):
@@ -206,13 +205,13 @@ distribution's translation group is a translations administrator.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
 
     >>> distro = factory.makeDistribution('distro')
-    >>> distroseries = factory.makeDistroRelease(distribution=distro)
+    >>> distroseries = factory.makeDistroSeries(distribution=distro)
     >>> sourcepackagename = SourcePackageName(name='bar')
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
     >>> naked_distro = removeSecurityProxy(distro)
     >>> naked_distro.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> other_series = factory.makeDistroRelease(distribution=distro)
+    >>> other_series = factory.makeDistroSeries(distribution=distro)
     >>> template = factory.makePOTemplate(
     ...     distroseries=package.distroseries,
     ...     sourcepackagename=package.sourcepackagename)
@@ -260,7 +259,7 @@ The language code is displayed.
 
     >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
-    bar in distro uses the following custom language codes:
+    bar in Distro uses the following custom language codes:
     Code...     ...maps to language
     pt-br       Portuguese (Brazil)
 
@@ -277,7 +276,7 @@ release series of the same distribution.
     >>> translations_browser.getLink("define custom language codes").click()
     >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
-    bar in distro uses the following custom language codes:
+    bar in Distro uses the following custom language codes:
     Code...     ...maps to language
     pt-br       Portuguese (Brazil)
 

@@ -1,4 +1,5 @@
-= Bug Reporting Tools =
+Bug Reporting Tools
+===================
 
 In order to produce better bug reports, a bug reporting tool on the
 user's computer can upload a message containing extra information about
@@ -54,7 +55,8 @@ easier.
     ...     job.job.complete()
     ...     logout()
 
-== Guided +filebug ==
+Guided +filebug
+===============
 
 The most common case will be that the user is sent to the guided
 +filebug page and the user goes through the workflow there.
@@ -93,9 +95,9 @@ information will be added to the bug automatically.
 After the user fills in the summary and click on the button, we'll still
 be on the same URL, with the token present.
 
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     ''
-    >>> user_browser.getControl('Summary').value = 'A new bug'
+    >>> user_browser.getControl('Summary', index=0).value = 'A new bug'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url == filebug_url
     True
@@ -105,7 +107,8 @@ Even if the form has errors the token will be present in the URL.
     >>> user_browser.getControl('Further information').value
     ''
     >>> user_browser.getControl('Submit Bug Report').click()
-    >>> for error in find_tags_by_class(user_browser.contents, 'message error'):
+    >>> for error in find_tags_by_class(
+    ...     user_browser.contents, 'message error'):
     ...     print error.renderContents()
     There is 1 error.
 
@@ -120,12 +123,6 @@ information specified in the extra filebug data.
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
-
-Some extra text was appended to the description.
-
-    >>> find_tag_by_id(
-    ...     user_browser.contents, 'edit-description').renderContents()
-    '...<p>Binary package hint: mozilla-firefox</p>\n<p>A bug description...'
 
 Two attachments were added.
 
@@ -149,7 +146,8 @@ created for the attachments.
     ----------------------------------------
 
 
-=== Initial bug summary ===
+Initial bug summary
+-------------------
 
 If the uploaded message contains a Subject field in the initial headers,
 that will be used to automatically fill in a suggested title.
@@ -167,17 +165,18 @@ that will be used to automatically fill in a suggested title.
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
 
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     'Initial bug summary'
 
 The user can of course change the summary if he wants to.
 
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     'Another summary'
 
-=== Tags ===
+Tags
+----
 
 If the uploaded message contains a Tags field, the tags widget will be
 initialized with that value.
@@ -194,7 +193,7 @@ initialized with that value.
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+filebug/%s' % blob_token)
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl('Tags').value
@@ -203,7 +202,7 @@ initialized with that value.
 The user can of course change the tags if he wants.
 
     >>> user_browser.getControl('Tags').value = 'bar baz'
-    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Further information').value = (
     ...     'Bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
@@ -220,7 +219,7 @@ that will get their tags set as well.
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
-    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl('Further information').value = (
@@ -234,7 +233,8 @@ that will get their tags set as well.
     Tags: bar foo...
 
 
-=== References to HWDB submissions ===
+References to HWDB submissions
+------------------------------
 
 The uploaded message may contain a header "HWDB-Submission", its value
 should be a sequence of HWDB submission keys, separated by ', *'.
@@ -264,7 +264,7 @@ Once we submit the bug report...
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
     >>> user_browser.open(filebug_url)
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Further information').value = (
     ...     'A bug description.')

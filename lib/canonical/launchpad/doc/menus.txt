@@ -192,7 +192,7 @@ the name of the default link for this menu.
     ...         target = '+foo'
     ...         text = 'Foo'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def bar(self):
     ...         target = '+bar'
     ...         text = 'Bar'
@@ -215,6 +215,7 @@ they are as we expect.
     --- link foo ---
     enabled: True
     escapedtext: Foo
+    hidden: False
     icon: None
     icon_url: None
     linked: True
@@ -232,6 +233,7 @@ they are as we expect.
     --- link bar ---
     enabled: True
     escapedtext: Bar
+    hidden: False
     icon: None
     icon_url: None
     linked: True
@@ -357,6 +359,13 @@ Next, we return the link as HTML.
     # Clean up our special login.
     >>> login(ANONYMOUS)
 
+A menu item can be marked as hidden even though it is enabled.
+
+    >>> link = Link('z', 'text', 'summary', icon='icon', hidden=True)
+    >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
+    <a class="menu-link-None sprite icon invisible-link"
+        title="summary">text</a>
+
 
 == How do we tell which link from a facetmenu is the selected one? ==
 
@@ -448,10 +457,10 @@ in practice because we need to know how to register our menu as an
 adapter.  For this part of the test, we won't worry about that.
 
     >>> class FooApplicationMenu(ApplicationMenu):
-    ... 
+    ...
     ...     links = ['first']
     ...     facet = 'foo'
-    ... 
+    ...
     ...     def first(self):
     ...         target = '+first'
     ...         text = 'First menu'
@@ -473,6 +482,7 @@ they are as we expect.
     --- link first ---
     enabled: True
     escapedtext: First menu
+    hidden: False
     icon: None
     icon_url: None
     linked: True
@@ -515,9 +525,9 @@ tells the registration machinery how to render this menu as an adapter.
 For this part of the test, we won't worry about that.
 
     >>> class MyContextMenu(ContextMenu):
-    ... 
+    ...
     ...     links = ['first']
-    ... 
+    ...
     ...     def first(self):
     ...         target = '+firstcontext'
     ...         text = 'First context menu item'
@@ -539,6 +549,7 @@ they are as we expect.
     --- link first ---
     enabled: True
     escapedtext: First context menu item
+    hidden: False
     icon: None
     icon_url: None
     linked: True
@@ -583,9 +594,9 @@ registered for, and put it too in the canonical.launchpad.ftests module.
 
     >>> class FacetsForThing(Facets):
     ...     usedfor = IThingHavingFacets
-    ... 
+    ...
     ...     links = ['foo', 'bar', 'baz']
-    ... 
+    ...
     ...     def baz(self):
     ...         target = ''
     ...         text = 'baz'
@@ -689,21 +700,21 @@ link should appear linked. The request is also set as the menu's
 
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> from canonical.launchpad.webapp import LaunchpadView
     >>> from canonical.launchpad.webapp.vhosts import allvhosts
     >>> class FakeRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)
-    ... 
+    ...
     ...     interaction = None
-    ... 
+    ...
     ...     def __init__(self, url, query=None, url1=None):
     ...         self.url = url
     ...         self.query = query
     ...         self.url1 = url1  # returned from getURL(1)
     ...         self.method = 'GET'
     ...         self.annotations = {}
-    ... 
+    ...
     ...     def getURL(self, level=0):
     ...         assert 0 <= level <=1, 'level must be 0 or 1'
     ...         if level == 0:
@@ -712,7 +723,7 @@ link should appear linked. The request is also set as the menu's
     ...             assert self.url1 is not None, (
     ...                 'Must set url1 in FakeRequest')
     ...             return self.url1
-    ... 
+    ...
     ...     def getRootURL(self, rootsite):
     ...         if rootsite is not None:
     ...             return allvhosts.configs[rootsite].rooturl
@@ -722,14 +733,14 @@ link should appear linked. The request is also set as the menu's
     ...     def getApplicationURL(self):
     ...         # Just the http://place:port part, so stop at the 3rd slash.
     ...         return '/'.join(self.url.split('/', 3)[:3])
-    ... 
+    ...
     ...     def get(self, key, default=None):
     ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
     ...         if self.query is None:
     ...             return default
     ...         else:
     ...             return self.query
-    ... 
+    ...
     ...     def setPrincipal(self, principal):
     ...         self.principal = principal
     >>> request = FakeRequest('http://launchpad.dev/sesamestreet/+bar')
@@ -906,7 +917,7 @@ It works like this:
     >>> from canonical.launchpad.webapp import enabled_with_permission
 
     >>> class SomeMenu(ContextMenu):
-    ... 
+    ...
     ...     @enabled_with_permission('launchpad.Admin')
     ...     def foo(self):
     ...         return Link('+admin', 'Admin the foo')
@@ -930,4 +941,3 @@ Now, we log in as foo.bar@canonical.com, an admin.
     >>> foolink = somemenu.foo()
     >>> foolink.enabled
     True
-

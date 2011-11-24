@@ -1,0 +1,74 @@
+{
+    "bzr-builder": [
+        69, 
+        "launchpad@pqm.canonical.com-20101207212413-un3o2zgqauyvxpji"
+    ], 
+    "bzr-git": [
+        271, 
+        "launchpad@pqm.canonical.com-20111104111914-aab1gxfh6d4kk582"
+    ], 
+    "bzr-hg": [
+        292, 
+        "launchpad@pqm.canonical.com-20111011005914-kzwlk4nk5u44bntc"
+    ], 
+    "bzr-loom": [
+        51, 
+        "launchpad@pqm.canonical.com-20110921142504-p5xovac1r571h5iq"
+    ], 
+    "bzr-svn": [
+        2720, 
+        "launchpad@pqm.canonical.com-20111102161617-u478fn7rhbkekhbe"
+    ], 
+    "cscvs": [
+        432, 
+        "launchpad@pqm.canonical.com-20100414131608-cf6jatd9zk6l6wpk"
+    ], 
+    "difftacular": [
+        6, 
+        "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
+    ], 
+    "dulwich": [
+        433, 
+        "launchpad@pqm.canonical.com-20111102161814-dm6dx8d808rrg6a1"
+    ], 
+    "loggerhead": [
+        459, 
+        "jonathan.sackett@canonical.com-20111108221114-309y4rxrzwrmjode"
+    ], 
+    "lpreview": [
+        23, 
+        "launchpad@pqm.canonical.com-20090720061538-euyh68ifavhy0pi8"
+    ], 
+    "mailman": [
+        976, 
+        "launchpad@pqm.canonical.com-20091021010617-prbs2ay6nhxx515v"
+    ], 
+    "mustache.js": [
+        166, 
+        "git-v1:d87d274d4c37e3eb9ec28c2a5775d79bef4328c7"
+    ], 
+    "old_xmlplus": [
+        4, 
+        "sinzui-20090526164636-1swugzupwvjgomo4"
+    ], 
+    "pygettextpo": [
+        24, 
+        "launchpad@pqm.canonical.com-20100601182722-wo7h2fh0fvyw3aaq"
+    ], 
+    "pygpgme": [
+        49, 
+        "launchpad@pqm.canonical.com-20100325120516-q8to5dx3gga4wlvi"
+    ], 
+    "python-debian": [
+        186, 
+        "launchpad@pqm.canonical.com-20110329053617-irncjfr14k0m00zp"
+    ], 
+    "subvertpy": [
+        2049, 
+        "launchpad@pqm.canonical.com-20111102161913-94jrf4rhs0x9htah"
+    ], 
+    "testresources": [
+        16, 
+        "robertc@robertcollins.net-20050911111209-ee5da49011cf936a"
+    ]
+}

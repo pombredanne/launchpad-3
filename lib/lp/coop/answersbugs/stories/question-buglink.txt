@@ -137,15 +137,14 @@ able to link to that bug.
     Bug #6: Firefox crashes when Save As dialog for a nonexistent window
     is closed
 
-An anonymous visitor (or a user that doesn't have access to the bug)
-will only see that a private bug is linked.
+An anonymous visitor (or a user that doesn't have access to the bug) sees
+nothing.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'related-bugs'))
     Related bugs
-    Bug #6: private bug
 
 Only the administrator will be able to unlink the bug.
 

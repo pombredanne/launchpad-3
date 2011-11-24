@@ -197,7 +197,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 It's also important to note that the teams/pillars owned/driven by Foo
 Bar are now owned/driven by the registry admins team.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
     >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())

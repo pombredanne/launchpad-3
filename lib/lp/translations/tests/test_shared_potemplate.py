@@ -1,21 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
 
-import unittest
-
 from storm.exceptions import DataError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.app.enums import ServiceUsage
 
 
 class TestTranslationSharingPOTemplate(TestCaseWithFactory):
@@ -44,7 +42,6 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         # Create a single POTMsgSet that is used across all tests,
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        self.potmsgset.setSequence(self.devel_potemplate, 1)
 
     def test_getPOTMsgSets(self):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -114,10 +111,10 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         self.assertEquals(self.devel_potemplate.hasPluralMessage(), False)
 
         # Let's add a POTMsgSet with plural forms.
-        plural_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                                      singular="singular",
-                                                      plural="plural")
-        plural_potmsgset.setSequence(self.devel_potemplate, 4)
+        self.factory.makePOTMsgSet(self.devel_potemplate,
+                                   singular="singular",
+                                   plural="plural",
+                                   sequence=4)
 
         # Now, template contains a plural form message.
         self.assertEquals(self.devel_potemplate.hasPluralMessage(), True)
@@ -178,6 +175,52 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
             singular_text, None)
         self.assertEquals(potmsgset, shared_potmsgset)
 
+    def test_getOrCreateSharedPOTMsgSet_initializes_file_references(self):
+        # When creating a POTMsgSet, getOrCreateSharedPOTMsgSet
+        # initializes its filereferences to initial_file_references.
+        singular = self.factory.getUniqueString()
+        file_references = self.factory.getUniqueString()
+        potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular, None, initial_file_references=file_references)
+        self.assertEqual(file_references, potmsgset.filereferences)
+
+    def test_getOrCreateSharedPOTMsgSet_leaves_file_references_intact(self):
+        # In returning an existing POTMsgSet, getOrCreateSharedPOTMsgSet
+        # leaves its existing filereferences unchanged.  The
+        # initial_file_references argument is ignored.
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.devel_potemplate)
+        potmsgset.filereferences = None
+        new_file_references = self.factory.getUniqueString()
+        updated_potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            potmsgset.singular_text, potmsgset.plural_text,
+            initial_file_references=new_file_references)
+        self.assertEqual(potmsgset, updated_potmsgset)
+        self.assertIs(None, potmsgset.filereferences)
+
+    def test_getOrCreateSharedPOTMsgSet_initializes_source_comment(self):
+        # When creating a POTMsgSet, getOrCreateSharedPOTMsgSet
+        # initializes its sourcecomment to initial_source_comment.
+        singular = self.factory.getUniqueString()
+        source_comment = self.factory.getUniqueString()
+        potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular, None, initial_source_comment=source_comment)
+        self.assertEqual(source_comment, potmsgset.sourcecomment)
+
+    def test_getOrCreateSharedPOTMsgSet_leaves_source_comment_intact(self):
+        # In returning an existing POTMsgSet, getOrCreateSharedPOTMsgSet
+        # leaves its existing sourcecomment unchanged.  The
+        # initial_source_comment argument is ignored.
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.devel_potemplate)
+        potmsgset.sourcecomment = None
+        new_source_comment = self.factory.getUniqueString()
+        updated_potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            potmsgset.singular_text, potmsgset.plural_text,
+            initial_source_comment=new_source_comment)
+        self.assertEqual(potmsgset, updated_potmsgset)
+        self.assertIs(None, potmsgset.sourcecomment)
+
 
 class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
     """Isolate tests for regular expression use in SharingSubset."""
@@ -189,7 +232,6 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
 
     def _makeAndFind(self, names, name_pattern=None):
         product = self.factory.makeProduct()
-        product.official_rosetta = True
         trunk = product.getSeries('trunk')
         for name in names:
             self.factory.makePOTemplate(productseries=trunk, name=name)
@@ -616,7 +658,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             distroseries=self.hoary)
         self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
         hoary_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.hoary_template, sequence=1)
+            potemplate=self.hoary_template)
 
         trunk_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
                 singular_text=hoary_potmsgset.singular_text,
@@ -630,13 +672,9 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
                 self.packagename, self.hoary)
         sourcepackage.setPackaging(self.trunk, self.owner)
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.trunk_template, sequence=1)
+            potemplate=self.trunk_template)
 
         hoary_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
                 singular_text=trunk_potmsgset.singular_text,
                 plural_text=trunk_potmsgset.plural_text)
         self.assertEqual(trunk_potmsgset, hoary_potmsgset)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

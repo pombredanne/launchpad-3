@@ -1,13 +1,6 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-<tal:process condition="view/processNominationDecision" />
-<form action="#"
-      method="post"
-      tal:attributes="action view/getFormAction">
-  <input tal:condition="view/shouldShowApproveButton"
-         type="submit" name="approve" value="Approve" id="approve" />
-  <input tal:condition="view/shouldShowDeclineButton"
-         type="submit" name="decline" value="Decline" id="decline" />
-</form>
+  <div metal:use-macro="context/@@launchpad_form/form" />
 </tal:root>

@@ -78,8 +78,7 @@ no communication between the two systems.
 
     >>> the_owner = team_one.teamowner
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebrities = getUtility(ILaunchpadCelebrities)
     >>> an_expert = list(celebrities.registry_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]
@@ -159,7 +158,7 @@ but not re-activated.
 
     >>> list_one.purge()
     >>> view = create_view(the_owner)
-    >>> view.list_can_be_requested
+    >>> view.list_can_be_created
     True
     >>> view.list_can_be_deactivated
     False
