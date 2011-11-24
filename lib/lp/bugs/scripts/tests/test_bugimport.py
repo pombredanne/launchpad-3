@@ -802,14 +802,14 @@ class BugImportScriptTestCase(TestCase):
 
         # Find the imported bug number:
         match = re.search(r'Creating Launchpad bug #(\d+)', stderr)
-        self.assertNotEqual(match, None)
+        self.assertIsNotNone(match)
         bug_id = int(match.group(1))
 
         # Abort transaction so we can see the result:
         transaction.abort()
         bug = getUtility(IBugSet).get(bug_id)
-        self.assertEqual(bug.title, 'A test bug')
-        self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
+        self.assertEqual('A test bug', bug.title)
+        self.assertEqual('netapplet', bug.bugtasks[0].product.name)
 
     def test_bug_import_script_in_testing_mode(self):
         # Test that the bug import script works with --testing.
@@ -824,19 +824,19 @@ class BugImportScriptTestCase(TestCase):
 
         # Find the product that was created:
         match = re.search(r'Product ([^ ]+) created', stderr)
-        self.assertNotEqual(match, None)
+        self.assertIsNotNone(match)
         product_name = match.group(1)
 
         # Find the imported bug number:
         match = re.search(r'Creating Launchpad bug #(\d+)', stderr)
-        self.assertNotEqual(match, None)
+        self.assertIsNotNone(match)
         bug_id = int(match.group(1))
 
         # Abort transaction so we can see the result:
         transaction.abort()
         bug = getUtility(IBugSet).get(bug_id)
-        self.assertEqual(bug.title, 'A test bug')
-        self.assertEqual(bug.bugtasks[0].product.name, product_name)
+        self.assertEqual('A test bug', bug.title)
+        self.assertEqual(product_name, bug.bugtasks[0].product.name)
 
 
 class FakeResultSet:
