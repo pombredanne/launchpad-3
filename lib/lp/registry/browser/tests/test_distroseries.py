@@ -79,6 +79,7 @@ from lp.services.features import (
     getFeatureFlag,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
 from lp.soyuz.browser.archive import copy_asynchronously_message
 from lp.soyuz.enums import (
@@ -1967,7 +1968,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {dsd.source_package_name.name: object()}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: object(),
+            }
         self.assertIsNot(None, view.pendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
@@ -2019,7 +2022,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {dsd.source_package_name.name: object()}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: object(),
+            }
         self.assertFalse(view.canRequestSync(dsd))
 
     def test_canRequestSync_returns_False_if_child_is_newer(self):
@@ -2070,7 +2075,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=False)
         pcj = self.factory.makePlainPackageCopyJob()
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         self.assertEqual("synchronizing&hellip;", view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_queue(self):
@@ -2083,7 +2090,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # A copy job with an attached packageupload means the job is
         # waiting in the queues.
         removeSecurityProxy(pu).package_copy_job = pcj.id
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         expected = (
             'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
             % (canonical_url(dsd.derived_series), pu.status.value,
@@ -2098,7 +2107,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         pcj = self.factory.makePlainPackageCopyJob()
         self.factory.makePackageUpload(distroseries=dsd.derived_series,
                                        package_copy_job=pcj.id)
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         self.assertEqual(
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
