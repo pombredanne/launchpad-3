@@ -2321,7 +2321,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         if cookie is None:
             return
         for field, value in urlparse.parse_qsl(cookie):
-            # skip unsupported fields (from old cookies)
+            # Skip unsupported fields (from old cookies).
             if field not in self.field_visibility:
                 continue
             # We only record True or False for field values.
