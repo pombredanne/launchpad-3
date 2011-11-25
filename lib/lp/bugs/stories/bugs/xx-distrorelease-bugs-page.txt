@@ -6,7 +6,7 @@ bugs.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
     >>> anon_browser.title
-    'Bugs : The Warty Warthog Release'
+    'Bugs : Warty'
 
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
     True
