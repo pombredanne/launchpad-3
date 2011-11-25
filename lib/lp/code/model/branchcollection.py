@@ -12,7 +12,6 @@ from collections import defaultdict
 from functools import partial
 from operator import (
     attrgetter,
-    itemgetter,
     )
 
 from lazr.restful.utils import safe_hasattr
@@ -247,7 +246,7 @@ class GenericBranchCollection:
             """ % ', '.join(
                 ["(%s)" % quote(id)
                  for id in map(attrgetter('id'), branches)]))
-        branch_ids = map(itemgetter(0), result.get_all())
+        branch_ids = [res[0] for res in result.get_all()]
         if user is None:
             collection_class = AnonymousBranchCollection
         else:
