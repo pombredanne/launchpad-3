@@ -292,7 +292,8 @@ class LaunchpadView(UserAttributeCache):
         """Return a string containing a description of the context.
 
         Typically this is the contents of the most-descriptive text attribute
-        of the context, by default its 'description' attribute if there is one.
+        of the context, by default its 'description' attribute if there is
+        one.
 
         This will be inserted into the HTML meta description, and may
         eventually end up in search engine summary results, or when a link to
