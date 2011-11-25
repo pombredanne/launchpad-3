@@ -695,6 +695,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def api_request(self):
         return IWebServiceClientRequest(self.request)
 
+    @cachedproperty
+    def recommended_canonical_url(self):
+        return canonical_url(self.context.bug, rootsite='bugs')
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
