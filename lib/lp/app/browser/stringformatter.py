@@ -22,6 +22,7 @@ import cgi
 import re
 from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
+import markdown
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -38,6 +39,9 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.utils import (
     re_email_address,
     obfuscate_email,
+    )
+from lp.services.features import (
+    getFeatureFlag,
     )
 
 
@@ -556,7 +560,8 @@ class FormattersAPI:
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?
+        (?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
@@ -982,6 +987,12 @@ class FormattersAPI:
         url = root_url + self._stringtoformat
         return '<a href="%s">%s</a>' % (url, self._stringtoformat)
 
+    def markdown(self):
+        if getFeatureFlag('markdown.enabled'):
+            return format_markdown(self._stringtoformat)
+        else:
+            return self.text_to_html()
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -991,6 +1002,8 @@ class FormattersAPI:
             return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
+        elif name == 'markdown':
+            return self.markdown()
         elif name == 'text-to-html':
             return self.text_to_html()
         elif name == 'text-to-html-with-target':
@@ -1033,3 +1046,15 @@ class FormattersAPI:
             return self.oops_id()
         else:
             raise TraversalError(name)
+
+
+def format_markdown(text):
+    """Return html form of marked-up text."""
+    # This returns whole paragraphs (in p tags), similarly to text_to_html.
+    md = markdown.Markdown(
+        safe_mode='escape',
+        extensions=[
+            'tables',
+            'nl2br',
+            ])
+    return md.convert(text)  # How easy was that?
