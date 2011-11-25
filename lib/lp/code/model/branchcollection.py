@@ -127,6 +127,7 @@ class GenericBranchCollection:
         if exclude_from_search is None:
             exclude_from_search = []
         self._exclude_from_search = exclude_from_search
+        self._user = None
 
     def count(self):
         """See `IBranchCollection`."""
