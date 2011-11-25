@@ -316,9 +316,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
 
     @stepthrough('+subscriptions')
     def traverse_subscription(self, person_name):
-        try:
-            person = getUtility(IPersonSet).getByName(person_name)
-        except NotFoundError:
+        person = getUtility(IPersonSet).getByName(person_name)
+        if person is None:
             return None
 
         subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
