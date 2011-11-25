@@ -28,7 +28,11 @@
     lp_js string:${icingroot}/build">
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
-
+    <link
+      rel="canonical"
+      tal:define="url view/recommended_canonical_url | nothing"
+      tal:condition="url"
+      tal:attributes="href url"/>
     <tal:atomfeeds define="feed_links view/feed_links | nothing">
       <link rel="alternate" type="application/atom+xml"
         tal:repeat="link feed_links"
