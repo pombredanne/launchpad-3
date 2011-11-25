@@ -1709,7 +1709,7 @@ class Bug(SQLBase):
                     and len(self.affected_pillars) > 1
                     and private):
                 raise BugCannotBePrivate(
-                    "Multi-pillar bugs cannot be private")
+                    "Multi-pillar bugs cannot be private.")
             private_changed = True
             self.private = private
 

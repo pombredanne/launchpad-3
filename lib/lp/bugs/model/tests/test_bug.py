@@ -21,6 +21,7 @@ from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
+from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import (
@@ -826,9 +827,12 @@ class TestBugPrivacy(TestCaseWithFactory):
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
         self.factory.makeBugTask(bug=bug, target=product)
+        login_person(bug.owner)
         self.assertRaises(
-            ValueError, bug.setPrivacyAndSecurityRelated, True, False,
+            BugCannotBePrivate, bug.setPrivacyAndSecurityRelated, True, False,
             bug.owner)
+        self.assertRaises(
+            BugCannotBePrivate, bug.setPrivate, True, bug.owner)
 
         # Some teams though need to use a foot gun.
         feature_flag = {

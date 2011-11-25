@@ -423,25 +423,6 @@ addition to bugs #6 and #14:
     [4, 6, 14]
 
 
-Multi-pillar private bugs
-.........................
-
-Bugs which affect more than one pillar cannot be made private unless a
-specific feature flag is active.
-
-    >>> bug = bugset.get(2)
-    >>> bug.setPrivate(True, current_user())
-    Traceback (most recent call last):
-    ...
-    BugCannotBePrivate: Multi-pillar bugs cannot be private
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-    >>> with FeatureFixture(feature_flag):
-    ...     bug.setPrivate(True, current_user())
-    True
-
 
 Filing Public vs. Private Bugs
 ..............................
