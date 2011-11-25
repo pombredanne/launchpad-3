@@ -306,7 +306,7 @@ in the page he is viewing and submit the form to see the results.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print anon_browser.title
-    Bugs in Mozilla Firefox
+    Bugs : Mozilla Firefox
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/firefox
