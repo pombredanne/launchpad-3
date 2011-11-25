@@ -248,15 +248,16 @@ class GenericBranchCollection:
                 ["(%s)" % quote(id)
                  for id in map(attrgetter('id'), branches)]))
         branch_ids = [res[0] for res in result.get_all()]
-        if user is None:
-            collection_class = AnonymousBranchCollection
-        else:
-            collection_class = VisibleBranchCollection
         # Not really sure this is useful: if a given branch is visible by a
         # user, then I think it means that the whole chain of branches on
         # which is is stacked on is visible by this user
-        collection = collection_class(
-            user, branch_filter_expressions=[Branch.id.is_in(branch_ids)])
+        expressions = [Branch.id.is_in(branch_ids)]
+        if user is None:
+            collection = AnonymousBranchCollection(
+                branch_filter_expressions=expressions)
+        else:
+            collection = VisibleBranchCollection(
+                user=user, branch_filter_expressions=expressions)
         return list(collection.getBranches())
 
     @staticmethod
