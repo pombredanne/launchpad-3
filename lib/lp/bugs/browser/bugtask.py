@@ -2284,7 +2284,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_reporter': False,
             'show_status': True,
             'show_tags': False,
-            'show_title': True,
         }
         self.field_visibility = None
         self._setFieldVisibility()
@@ -2315,17 +2314,18 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """
         cookie_name = self.getCookieName()
         cookie = self.request.cookies.get(cookie_name)
-        fields_from_cookie = {}
+        self.field_visibility = dict(self.field_visibility_defaults)
         # "cookie" looks like a URL query string, so we split
         # on '&' to get items, and then split on '=' to get
         # field/value pairs.
-        if cookie is not None:
-            for field, value in urlparse.parse_qsl(cookie):
-                # We only record True or False for field values.
-                fields_from_cookie[field] = (value == 'true')
-            self.field_visibility = fields_from_cookie
-        else:
-            self.field_visibility = self.field_visibility_defaults
+        if cookie is None:
+            return
+        for field, value in urlparse.parse_qsl(cookie):
+            # skip unsupported fields (from old cookies)
+            if field not in self.field_visibility:
+                continue
+            # We only record True or False for field values.
+            self.field_visibility[field] = (value == 'true')
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
