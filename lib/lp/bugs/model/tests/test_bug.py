@@ -817,6 +817,28 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 expected_reason_body, True, False, 'Security Contact')
 
 
+class TestBugPrivacy(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_multipillar_private_bugs_disallowed(self):
+        # A multi-pillar bug cannot be made private.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+        self.assertRaises(
+            ValueError, bug.setPrivacyAndSecurityRelated, True, False,
+            bug.owner)
+
+        # Some teams though need to use a foot gun.
+        feature_flag = {
+            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
+            }
+        with FeatureFixture(feature_flag):
+            bug.setPrivacyAndSecurityRelated(True, False, bug.owner)
+            self.assertTrue(bug.private)
+
+
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
         TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
 

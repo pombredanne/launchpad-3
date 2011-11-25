@@ -117,6 +117,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -836,6 +837,14 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         private_field = copy_field(IBug['private'], readonly=False)
         security_related_field = copy_field(
             IBug['security_related'], readonly=False)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        if (not bool(features.getFeatureFlag(
+                'disclosure.allow_multipillar_private_bugs.enabled'))
+                and len(self.context.bug.affected_pillars) > 1):
+            self.form_fields = self.form_fields.omit('private')
 
     @property
     def next_url(self):

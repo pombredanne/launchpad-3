@@ -22,11 +22,12 @@ explicit. There are two implicit subscribers.
     Ubuntu Team
 
 We current use a feature flag to control who is subscribed when a bug is made
-private.
+private and also to allow multi-pillar private bugs.
 
     >>> from lp.services.features.testing import FeatureFixture
     >>> feature_flag = {
-    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on',
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
 
@@ -56,10 +57,6 @@ Subscribers have been updated according to the privacy rules.
     >>> print_also_notified(browser.contents)
     Also notified:
 
-Clean up the feature flag.
-
-    >>> flags.cleanUp()
-
 When we go back to the secrecy form, the previously set value is pre-selected.
 
     >>> browser.open(
@@ -67,6 +64,11 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     ...     "+bug/2/+secrecy")
     >>> browser.getControl("This bug report should be private").selected
     True
+
+Clean up the feature flags.
+
+    >>> flags.cleanUp()
+
 
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
 redirected to the bug page.

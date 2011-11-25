@@ -132,6 +132,7 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import (
+    BugCannotBePrivate,
     InvalidDuplicateValue,
     SubscriptionPrivacyViolation,
     )
@@ -1701,6 +1702,14 @@ class Bug(SQLBase):
                 self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
+            # We do not allow multi-pillar private bugs except for those teams
+            # who want to shoot themselves in the foot.
+            if (not bool(getFeatureFlag(
+                    'disclosure.allow_multipillar_private_bugs.enabled'))
+                    and len(self.affected_pillars) > 1
+                    and private):
+                raise BugCannotBePrivate(
+                    "Multi-pillar bugs cannot be private")
             private_changed = True
             self.private = private
 
