@@ -36,7 +36,10 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
@@ -47,6 +50,7 @@ from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.errors import SubscriptionPrivacyViolation
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
@@ -71,13 +75,18 @@ class BugSubscriptionAddView(LaunchpadFormView):
     @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
-        self.context.bug.subscribe(person, self.user, suppress_notify=False)
-        if person.isTeam():
-            message = '%s team has been subscribed to this bug.'
+        try:
+            self.context.bug.subscribe(
+                person, self.user, suppress_notify=False)
+        except SubscriptionPrivacyViolation as error:
+            self.setFieldError('person', unicode(error))
         else:
-            message = '%s has been subscribed to this bug.'
-        self.request.response.addInfoNotification(
-            message % person.displayname)
+            if person.isTeam():
+                message = '%s team has been subscribed to this bug.'
+            else:
+                message = '%s has been subscribed to this bug.'
+            self.request.response.addInfoNotification(
+                message % person.displayname)
 
     @property
     def next_url(self):
@@ -537,11 +546,17 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(bug.getDirectSubscribersWithDetails())
         for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if person == self.user or (person.private and not can_edit):
-                # Skip the current user viewing the page,
-                # and private teams user is not a member of.
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
+            if self.user is None and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
 
+            # If we have made it to here then the logged in user can see the
+            # bug, hence they can see any subscribers.
+            precache_permission_for_objects(
+                        self.request, 'launchpad.LimitedView', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -566,9 +581,18 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any subscribers.
+        include_private = self.user is not None
+        if include_private:
+            precache_permission_for_objects(
+                self.request, 'launchpad.LimitedView', others)
         for person in others:
             if person == self.user:
-                # Skip the current user viewing the page.
+                # Skip the current user viewing the page,
+                continue
+            if not include_private and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
             subscriber = {
                 'name': person.name,

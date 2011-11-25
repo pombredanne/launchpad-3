@@ -30,7 +30,7 @@
             });
         </script>
 
-        <table id="layout-table" class="official-tags-layout-table" style="display:none">
+        <table id="layout-table" class="official-tags-layout-table hidden">
           <tr>
             <th>Official tags</th>
             <th />

@@ -1011,7 +1011,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['registered', 'owned', 'subscribed', 'active_reviews']
+    links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
 
     def _getCountCollection(self):
         """See `PersonBranchesMenu`."""
@@ -1272,9 +1274,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
-        self.product = self.context
         revision_cache = getUtility(IRevisionCache)
-        self.revision_cache = revision_cache.inProduct(self.product)
+        self.revision_cache = revision_cache.inProduct(self.context)
 
     @property
     def branch(self):

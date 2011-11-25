@@ -95,7 +95,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         error_report = self.oopses[0]
         expected_error = "Failure processing queue_item"
         self.assertStartsWith(
-                dict(error_report['req_vars'])['error-explanation'],
+                error_report['req_vars']['error-explanation'],
                 expected_error)
 
     def test_accept_copy_archives(self):

@@ -112,6 +112,8 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
@@ -1137,6 +1139,12 @@ class TestBranchDeletion(TestCaseWithFactory):
             branch.canBeDeleted(), True,
             "A branch that has a import is deletable.")
 
+    def test_accessPolicyArtifactDoesntDisableDeletion(self):
+        """A branch referenced by an AccessPolicyArtifact can be deleted."""
+        artifact = self.factory.makeAccessPolicyArtifact(self.branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertEqual(True, self.branch.canBeDeleted())
+
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
@@ -1270,6 +1278,17 @@ class TestBranchDeletion(TestCaseWithFactory):
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
         self.assertNotEqual([], list(other_buildqueue))
+
+    def test_AccessPolicyArtifact_deleted(self):
+        # Any AccessPolicyArtifact referencing the branch is removed.
+        branch = self.factory.makeAnyBranch()
+        artifact = self.factory.makeAccessPolicyArtifact(branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertIsNot(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
+        branch.destroySelf()
+        self.assertIs(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -2250,6 +2269,11 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
+
+    def test_personal_branches_for_private_teams_are_private(self):
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makePersonalBranch(owner=team)
+        self.assertTrue(branch.private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):

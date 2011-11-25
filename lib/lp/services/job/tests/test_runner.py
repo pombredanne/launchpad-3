@@ -192,8 +192,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
         oops = self.oopses[-1]
         self.assertIn('Fake exception.  Foobar, I say!', oops['tb_text'])
-        self.assertEqual(1, len(oops['req_vars']))
-        self.assertEqual("{'foo': 'bar'}", oops['req_vars'][0][1])
+        self.assertEqual(["{'foo': 'bar'}"], oops['req_vars'].values())
 
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
@@ -209,8 +208,7 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job_1, job_2])
         runner.runAll()
         oops = self.oopses[-1]
-        self.assertEqual(1, len(oops['req_vars']))
-        self.assertEqual("{'foo': 'bar'}", oops['req_vars'][0][1])
+        self.assertEqual(["{'foo': 'bar'}"], oops['req_vars'].values())
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""

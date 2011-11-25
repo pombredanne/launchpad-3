@@ -1347,7 +1347,9 @@ class ExpectedException(TTExpectedException):
 
 
 def extract_lp_cache(text):
-    match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
+    match = re.search(r'<script[^>]*>LP.cache = (\{.*\});</script>', text)
+    if match is None:
+        raise ValueError('No JSON cache found.')
     return simplejson.loads(match.group(1))
 
 

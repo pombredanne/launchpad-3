@@ -52,6 +52,7 @@ setup(
         # Required for launchpadlib
         'keyring',
         'manuel',
+        'Markdown',
         'mechanize',
         'meliae',
         'mercurial',
