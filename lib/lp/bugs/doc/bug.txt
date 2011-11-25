@@ -845,7 +845,7 @@ We need a feature flag for this test since multi-pillar bugs shouldn't be
 private by default.
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
-    
+
     >>> firefox_bug.private
     False
     >>> firefox_bug.setPrivate(True, current_user())
