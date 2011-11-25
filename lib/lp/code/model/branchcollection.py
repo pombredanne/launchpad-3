@@ -34,7 +34,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import quote
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -235,7 +235,7 @@ class GenericBranchCollection:
         store = IStore(Branch)
         result = store.execute("""
             WITH RECURSIVE stacked_on_branches_ids AS (
-                SELECT id FROM BRANCH WHERE id IN %s
+                SELECT column1 as id FROM (VALUES %s) AS temp
                 UNION
                 SELECT DISTINCT branch.stacked_on
                 FROM stacked_on_branches_ids, Branch AS branch
@@ -244,7 +244,9 @@ class GenericBranchCollection:
                     branch.stacked_on IS NOT NULL
             )
             SELECT id from stacked_on_branches_ids
-            """ % sqlvalues(map(attrgetter('id'), branches)))
+            """ % ', '.join(
+                ["(%s)" % quote(id)
+                 for id in map(attrgetter('id'), branches)]))
         branch_ids = map(itemgetter(0), result.get_all())
         if user is None:
             collection_class = AnonymousBranchCollection
