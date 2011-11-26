@@ -911,7 +911,7 @@ class BranchMergeProposal(SQLBase):
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
     @staticmethod
-    def preloadDataForBMPs(branch_merge_proposals):
+    def preloadDataForBMPs(branch_merge_proposals, user):
         # Utility to load the data related to a list of bmps.
         # Circular imports.
         from lp.code.model.branch import Branch
@@ -933,9 +933,8 @@ class BranchMergeProposal(SQLBase):
                 "target_branchID", "prerequisite_branchID",
                 "source_branchID"))
         # The stacked on branches are used to check branch visibility.
-        # This is only temporary because we should fetch the whole chain
-        # of stacked on branches instead of only the first level.
-        load_related(Branch, branches, ["stacked_onID"])
+        GenericBranchCollection.preloadVisibleStackedOnBranches(
+            branches, user)
 
         if len(branches) == 0:
             return
@@ -951,8 +950,6 @@ class BranchMergeProposal(SQLBase):
             [preview_diff_and_diff[0] for preview_diff_and_diff
                 in preview_diffs_and_diffs])
 
-        GenericBranchCollection.preloadDataForBranches(branches)
-
         # Add source branch owners' to the list of pre-loaded persons.
         person_ids.update(
             branch.ownerID for branch in branches
@@ -966,6 +963,7 @@ class BranchMergeProposal(SQLBase):
         load_related(SourcePackageName, branches, ['sourcepackagenameID'])
         load_related(DistroSeries, branches, ['distroseriesID'])
         load_related(Product, branches, ['productID'])
+        GenericBranchCollection.preloadDataForBranches(branches)
 
 
 class BranchMergeProposalGetter:
