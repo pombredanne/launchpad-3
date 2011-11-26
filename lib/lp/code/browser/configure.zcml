@@ -85,8 +85,7 @@
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
-            name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            name="+index"/>
         <browser:page
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
             class="lp.code.browser.codeimportmachine.CodeImportMachineView"
@@ -106,8 +105,7 @@
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-            name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            name="+index"/>
         <browser:page
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
             class="lp.code.browser.codeimportmachine.CodeImportMachineSetView"
@@ -129,7 +127,6 @@
         rootsite="code"/>
     <browser:defaultView
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-        layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:page
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
@@ -157,7 +154,6 @@
         classes="BranchMergeProposalNavigation"/>
     <browser:defaultView
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        layer="lp.code.publisher.CodeLayer"
         name="+index"/>
 
     <!-- No view needed -->
@@ -344,7 +340,6 @@
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branchsubscription.IBranchSubscription"
-        layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:page
         name="+index"
@@ -366,7 +361,6 @@
         permission="zope.Public"/>
     <browser:defaultView
         for="lp.code.interfaces.branch.IBranch"
-        layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:url
         for="lp.code.interfaces.branch.IBranch"
@@ -621,7 +615,6 @@
         rootsite="code"/>
     <browser:defaultView
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:pages
         facet="branches"
@@ -689,8 +682,7 @@
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"
-            name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            name="+index"/>
         <browser:page
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             class="lp.code.browser.codeimport.CodeImportSetView"
@@ -1110,8 +1102,7 @@
 
         <browser:defaultView
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
-            name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            name="+index" />
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
@@ -1253,8 +1244,7 @@
     <facet facet="branches">
         <browser:defaultView
             for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-            name="+index"
-            layer="lp.code.publisher.CodeLayer" />
+            name="+index" />
         <browser:page
             for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
             class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
