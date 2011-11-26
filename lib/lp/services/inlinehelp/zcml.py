@@ -44,10 +44,10 @@ def register_help_folder(context, folder, name):
         NamesChecker(list(IBrowserPublisher.names(True)) + ['__call__']))
 
     context.action(
-        discriminator = (
+        discriminator=(
             'view', (ILaunchpadApplication, IBrowserRequest), name),
-        callable = handler,
-        args = ('registerAdapter',
-                help_folder, (ILaunchpadApplication, IBrowserRequest),
-                Interface, name, context.info),
+        callable=handler,
+        args=('registerAdapter',
+              help_folder, (ILaunchpadApplication, IBrowserRequest),
+              Interface, name, context.info),
         )
