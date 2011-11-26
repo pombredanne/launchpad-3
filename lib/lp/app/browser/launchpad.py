@@ -33,7 +33,6 @@ import re
 import time
 import urllib
 
-from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
@@ -85,9 +84,9 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot,
     INavigationMenu,
     )
+from canonical.launchpad.webapp.menu import get_facet
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,
@@ -266,21 +265,18 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        host = URI(self.request.getURL()).host
-        mainhost = allvhosts.configs['mainsite'].hostname
         if (len(breadcrumbs) != 0 and
-            host != mainhost and
             self.vhost_breadcrumb):
             # We have breadcrumbs and we're not on the mainsite, so we'll
-            # sneak an extra breadcrumb for the vhost we're on.
-            vhost = host.split('.')[0]
+            # sneak an extra breadcrumb for the facet we're on.
 
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the vhost we're
+            # for the first one we find an adapter named after the facet we're
             # on, generate an extra breadcrumb and insert it in our list.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=vhost)
+                    breadcrumb.context, IBreadcrumb,
+                    name=get_facet(self._naked_context_view))
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
