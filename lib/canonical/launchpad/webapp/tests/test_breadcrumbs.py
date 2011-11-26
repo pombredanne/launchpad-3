@@ -81,18 +81,16 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         self.assertEquals(breadcrumb.text, 'breadcrumb test')
 
 
-class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
-    """How our breadcrumbs behave when using a vhost other than the main one?
+class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
+    """How our breadcrumbs behave when using a facet other than the main one?
 
-    When we go to bugs.lp.net/ubuntu, we only traversed the Ubuntu distro, so
+    When we go to lp.net/ubuntu/+bugs, we only traversed the Ubuntu distro, so
     that's what we'd have a breadcrumb for, but we also want to generate a
-    breadcrumb for bugs on Ubuntu, given that we're on the bugs vhost.
-
-    The behaviour is similar to other vhosts; read on for more.
+    breadcrumb for bugs on Ubuntu, given that we're in the bugs facet.
     """
 
     def setUp(self):
-        super(TestExtraVHostBreadcrumbsOnHierarchyView, self).setUp()
+        super(TestExtraFacetBreadcrumbsOnHierarchyView, self).setUp()
         login('test@canonical.com')
         self.product = self.factory.makeProduct(name='crumb-tester')
         self.product_url = canonical_url(self.product)
@@ -123,7 +121,8 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
 
     def test_product_bugtask(self):
         self.assertBreadcrumbUrls(
-            [self.product_url, self.product_bugs_url, self.product_bugtask_url],
+            [self.product_url, self.product_bugs_url,
+             self.product_bugtask_url],
             self.product_bugtask)
 
     def test_package_bugtask(self):
