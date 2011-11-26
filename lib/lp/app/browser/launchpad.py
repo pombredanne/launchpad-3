@@ -265,9 +265,10 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        if (len(breadcrumbs) != 0 and
+        facet = get_facet(self._naked_context_view)
+        if (len(breadcrumbs) != 0 and facet is not None and
             self.vhost_breadcrumb):
-            # We have breadcrumbs and we're not on the mainsite, so we'll
+            # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
 
             # Iterate over the context of our breadcrumbs in reverse order and
@@ -275,8 +276,7 @@ class Hierarchy(LaunchpadView):
             # on, generate an extra breadcrumb and insert it in our list.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
                 extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb,
-                    name=get_facet(self._naked_context_view))
+                    breadcrumb.context, IBreadcrumb, name=facet)
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
