@@ -1084,6 +1084,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner=owner, name=name, title=title, time_zone=time_zone,
             time_starts=time_starts, time_ends=time_ends, summary=summary)
 
+    def makeStackedOnBranchChain(self, depth=5, **kwargs):
+        branch = None
+        for i in xrange(depth):
+            branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
+        return branch
+
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
