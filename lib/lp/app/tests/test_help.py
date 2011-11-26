@@ -57,6 +57,10 @@ class TestHelpSystemSetup(unittest.TestCase):
         self.assertHasHelpFolderView(
             '+help-registry', os.path.join(ROOT, 'lib/lp/registry/help'))
 
+    def test_soyuz_help_folder(self):
+        self.assertHasHelpFolderView(
+            '+help-soyuz', os.path.join(ROOT, 'lib/lp/soyuz/help'))
+
     def test_translations_help_folder(self):
         self.assertHasHelpFolderView(
             '+help-translations',

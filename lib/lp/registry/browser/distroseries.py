@@ -1239,7 +1239,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             "and %s, but are different somehow. "
             "Changes could be in either or both series so check the "
             "versions (and the diff if necessary) before syncing the parent "
-            'version (<a href="/+help/soyuz/derived-series-syncing.html" '
+            'version (<a href="/+help-soyuz/derived-series-syncing.html" '
             'target="help">Read more about syncing from a parent series'
             '</a>).',
             self.context.displayname,
