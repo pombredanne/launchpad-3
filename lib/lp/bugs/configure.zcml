@@ -23,8 +23,7 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="bugs" />
 
-    <lp:help-folder
-        folder="help" type="lp.bugs.publisher.BugsLayer" />
+    <lp:help-folder folder="help" name="+help-bugs" />
 
     <class
         class="lp.bugs.model.bugactivity.BugActivity">

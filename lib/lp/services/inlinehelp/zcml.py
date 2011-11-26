@@ -7,15 +7,13 @@ __metaclass__ = type
 __all__ = []
 
 from zope.component.zcml import handler
-from zope.configuration.fields import (
-    GlobalInterface,
-    Path,
-    )
+from zope.configuration.fields import Path
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IBrowserRequest,
     )
+from zope.schema import TextLine
 from zope.security.checker import (
     defineChecker,
     NamesChecker,
@@ -30,28 +28,26 @@ class IHelpFolderDirective(Interface):
     folder = Path(
         title=u'The path to the help folder.',
         required=True)
-    type = GlobalInterface(
-        title=u'The request type on which the help folder is registered',
-        required=False,
-        default=IBrowserRequest)
+    name = TextLine(
+        title=u'The name to register the help folder under.',
+        required=True)
 
 
-def register_help_folder(context, folder, type=IBrowserRequest):
+def register_help_folder(context, folder, name):
     """Create a help folder subclass and register it with the ZCA."""
 
-    # ZCML pass the type parameter via keyword parameters, so it can't be
-    # renamed and shadows the builtin. So access that type() builtin directly.
-    help_folder = __builtins__['type'](
-        str('+help for %s' % folder), (HelpFolder, ), {'folder': folder})
+    help_folder = type(
+        str('%s for %s' % (name, folder)), (HelpFolder, ), {'folder': folder})
 
     defineChecker(
         help_folder,
         NamesChecker(list(IBrowserPublisher.names(True)) + ['__call__']))
 
     context.action(
-        discriminator = ('view', (ILaunchpadApplication, type), '+help'),
+        discriminator = (
+            'view', (ILaunchpadApplication, IBrowserRequest), name),
         callable = handler,
         args = ('registerAdapter',
-                help_folder, (ILaunchpadApplication, type), Interface,
-                '+help', context.info),
+                help_folder, (ILaunchpadApplication, IBrowserRequest),
+                Interface, name, context.info),
         )

@@ -13,10 +13,6 @@ from canonical.launchpad.testing.systemdocs import create_view
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.folder import ExportedFolder
 from canonical.testing.layers import FunctionalLayer
-from lp.answers.publisher import AnswersLayer
-from lp.blueprints.publisher import BlueprintsLayer
-from lp.bugs.publisher import BugsLayer
-from lp.code.publisher import CodeLayer
 from lp.translations.publisher import TranslationsLayer
 
 # The root of the tree
@@ -27,18 +23,15 @@ ROOT = os.path.realpath(
 
 
 class TestHelpSystemSetup(unittest.TestCase):
-    """Test that all help folders are registered on +help."""
+    """Test that all help folders are registered."""
     layer = FunctionalLayer
 
-    def assertHasHelpFolderView(self, layer, expected_folder_path):
-        """Assert that layer has +help help folder registered.
-        It will make sure that the path is the expected one.
-        """
-        root = getUtility(ILaunchpadApplication)
-        view = create_view(root, '+help', layer=layer)
+    def assertHasHelpFolderView(self, name, expected_folder_path):
+        """Assert that the named help folder has the right path."""
+        view = create_view(getUtility(ILaunchpadApplication), name)
         self.failUnless(
             isinstance(view, ExportedFolder),
-            '+help view should be an instance of ExportedFolder: %s' % view)
+            'View should be an instance of ExportedFolder: %s' % view)
         self.failUnless(
             os.path.samefile(view.folder, expected_folder_path),
             "Expected help folder %s, got %s" % (
@@ -46,28 +39,25 @@ class TestHelpSystemSetup(unittest.TestCase):
 
     def test_answers_help_folder(self):
         self.assertHasHelpFolderView(
-            AnswersLayer, os.path.join(ROOT, 'lib/lp/answers/help'))
+            '+help-answers', os.path.join(ROOT, 'lib/lp/answers/help'))
 
     def test_blueprints_help_folder(self):
         self.assertHasHelpFolderView(
-            BlueprintsLayer,
-            os.path.join(ROOT, 'lib/lp/blueprints/help'))
+            '+help-blueprints', os.path.join(ROOT, 'lib/lp/blueprints/help'))
 
     def test_bugs_help_folder(self):
         self.assertHasHelpFolderView(
-            BugsLayer,
-            os.path.join(ROOT, 'lib/lp/bugs/help'))
+            '+help-bugs', os.path.join(ROOT, 'lib/lp/bugs/help'))
 
     def test_code_help_folder(self):
         self.assertHasHelpFolderView(
-            CodeLayer, os.path.join(ROOT, 'lib/lp/code/help'))
+            '+help-code', os.path.join(ROOT, 'lib/lp/code/help'))
 
     def test_registry_help_folder(self):
         self.assertHasHelpFolderView(
-            LaunchpadLayer,
-            os.path.join(ROOT, 'lib/lp/registry/help'))
+            '+help-registry', os.path.join(ROOT, 'lib/lp/registry/help'))
 
     def test_translations_help_folder(self):
         self.assertHasHelpFolderView(
-            TranslationsLayer,
+            '+help-translations',
             os.path.join(ROOT, 'lib/lp/translations/help'))
