@@ -404,7 +404,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         view = create_initialized_view(bug.default_bugtask, '+secrecy')
         self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
 
-        # Some teams though need to use a foot gun.
+        # Some teams though need multi-pillar private bugs.
         feature_flag = {
             'disclosure.allow_multipillar_private_bugs.enabled': 'on'
             }

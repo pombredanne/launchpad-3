@@ -841,8 +841,9 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
-        if (not bool(features.getFeatureFlag(
+        allow_multi_pillar_private = bool(features.getFeatureFlag(
                 'disclosure.allow_multipillar_private_bugs.enabled'))
+        if (not allow_multi_pillar_private
                 and len(self.context.bug.affected_pillars) > 1):
             self.form_fields = self.form_fields.omit('private')
 

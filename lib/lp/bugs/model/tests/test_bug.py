@@ -834,7 +834,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         self.assertRaises(
             BugCannotBePrivate, bug.setPrivate, True, bug.owner)
 
-        # Some teams though need to use a foot gun.
+        # Some teams though need multi-pillar private bugs.
         feature_flag = {
             'disclosure.allow_multipillar_private_bugs.enabled': 'on'
             }

@@ -1704,12 +1704,13 @@ class Bug(SQLBase):
         if self.private != private:
             # We do not allow multi-pillar private bugs except for those teams
             # who want to shoot themselves in the foot.
-            if (not bool(getFeatureFlag(
+            if private:
+                allow_multi_pillar_private = bool(getFeatureFlag(
                     'disclosure.allow_multipillar_private_bugs.enabled'))
-                    and len(self.affected_pillars) > 1
-                    and private):
-                raise BugCannotBePrivate(
-                    "Multi-pillar bugs cannot be private.")
+                if (not allow_multi_pillar_private
+                        and len(self.affected_pillars) > 1):
+                    raise BugCannotBePrivate(
+                        "Multi-pillar bugs cannot be private.")
             private_changed = True
             self.private = private
 
