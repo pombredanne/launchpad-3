@@ -10,13 +10,13 @@
     i18n_domain="launchpad">
 
   <adapter
-      name="blueprints"
+      name="specifications"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
-      name="blueprints"
+      name="specifications"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"

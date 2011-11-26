@@ -1133,7 +1133,7 @@
         template="../templates/active-reviews.pt"/>
 
     <adapter
-        name="code"
+        name="branches"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
         factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
