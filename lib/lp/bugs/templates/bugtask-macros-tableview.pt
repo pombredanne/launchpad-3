@@ -528,7 +528,7 @@
                          tal:content="structure view/widgets/tag/label">
                     Tag
                   </label>: <input tal:replace="structure view/widgets/tag" />
-                  <a tal:attributes="href string:${bugs_rooturl}/+help/tag-search.html"
+                  <a tal:attributes="href string:${bugs_rooturl}/+help-bugs/tag-search.html"
                       target="help">Tag search help</a>
                   <div
                     tal:condition="error"

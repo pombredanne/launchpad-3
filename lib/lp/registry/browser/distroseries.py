@@ -687,7 +687,7 @@ class DistroSeriesAddView(LaunchpadFormView):
         ]
 
     help_links = {
-        "name": u"/+help/distribution-add-series.html#codename",
+        "name": u"/+help-registry/distribution-add-series.html#codename",
         }
 
     label = 'Add a series'

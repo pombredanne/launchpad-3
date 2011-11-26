@@ -206,7 +206,7 @@ class POFileMetadataViewMixin:
 
         return """
             New to translating in Launchpad?
-            <a href="/+help/new-to-translating.html" target="help">
+            <a href="/+help-translations/new-to-translating.html" target="help">
                 Read our guide</a>.
             """
 

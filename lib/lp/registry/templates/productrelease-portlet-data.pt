@@ -12,7 +12,7 @@
       <p id="how-to-verify" tal:condition="view/download_files">
         After you've downloaded a file, you can verify its authenticity
         using its MD5 sum or signature.
-        (<a href="/+help/verify-downloads.html" target="help">How do I
+        (<a href="/+help-registry/verify-downloads.html" target="help">How do I
         verify a download?</a>)
       </p>
 
