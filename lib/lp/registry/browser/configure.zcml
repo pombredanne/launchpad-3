@@ -9,6 +9,7 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <!-- RDF downloadable documents -->
+<facet facet="overview">
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
@@ -51,14 +52,12 @@
     <browser:page
         name="+index"
         for="lp.registry.interfaces.teammembership.ITeamMembership"
-        facet="overview"
         permission="launchpad.Edit"
         class="lp.registry.browser.teammembership.TeamMembershipEditView"
         template="../templates/teammembership-index.pt"/>
     <browser:page
         name="+listing-simple"
         for="lp.registry.interfaces.teammembership.ITeamMembership"
-        facet="overview"
         permission="zope.Public"
         template="../templates/teammembership-listing-simple.pt"/>
     <browser:navigation
@@ -85,7 +84,6 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="zope.Public"
         name="+search"
-        facet="overview"
         class="lp.registry.browser.distroseries.DistroSeriesPackageSearchView"
         template="../templates/distroseries-search.pt"/>
     <browser:pages
@@ -94,7 +92,6 @@
         permission="zope.Public">
         <browser:page
             name="+table-milestones"
-            facet="overview"
             template="../templates/productseries-table-releases.pt"/>
         <browser:page
             name="+filebug"
@@ -102,19 +99,15 @@
             attribute="redirectToDistroFileBug"/>
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distroseries-index.pt"/>
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/distroseries-details.pt"/>
         <browser:page
             name="+portlet-package-summary"
-            facet="overview"
             template="../templates/distroseries-portlet-packaging.pt"/>
         <browser:page
             name="+portlet-derivation"
-            facet="overview"
             template="../templates/distroseries-portlet-derivation.pt"/>
      </browser:pages>
     <browser:page
@@ -122,34 +115,29 @@
         class="lp.registry.browser.distroseries.DistroSeriesPackagesView"
         permission="zope.Public"
         name="+packaging"
-        facet="overview"
         template="../templates/distroseries-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesNeedsPackagesView"
         permission="zope.Public"
         name="+needs-packaging"
-        facet="overview"
         template="../templates/distroseries-needs-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Edit"
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
-        facet="overview"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Moderate"
         name="+admin"
         class="lp.registry.browser.distroseries.DistroSeriesAdminView"
-        facet="overview"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addmilestone"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.milestone.MilestoneAddView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"/>
     <browser:page
@@ -213,8 +201,6 @@
             DistroSeriesBugsMenu
             DistroSeriesSpecificationsMenu"
         module="lp.registry.browser.distroseries"/>
-    <facet
-        facet="overview">
         <browser:menus
             module="lp.registry.browser.codeofconduct"
             classes="
@@ -311,7 +297,6 @@
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAckView"
             permission="launchpad.Admin"
             template="../../app/templates/generic-edit.pt" />
-    </facet>
     <browser:url
         for="lp.registry.interfaces.irc.IIrcID"
         path_expression="string:+ircnick/${id}"
@@ -360,7 +345,6 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/project-index.pt"/>
         <browser:page
             name="+listing-detailed"
@@ -370,20 +354,17 @@
 
         <browser:page
             name="+details"
-            facet="overview"
             template="../templates/project-details.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectRdfView"
-        facet="overview"
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         permission="launchpad.Edit"
-        facet="overview"
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
         <browser:page
             name="+reassign"
@@ -398,27 +379,23 @@
         name="+edit"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectEditView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"/>
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectBrandingView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-branding.pt"/>
     <browser:page
         name="+review"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectReviewView"
-        facet="overview"
         permission="launchpad.Moderate"
         template="../templates/project-edit.pt"/>
     <browser:page
         name="+newproduct"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        facet="overview"
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
@@ -435,7 +412,6 @@
         parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
-        facet="overview"
         permission="zope.Public"
         class="lp.registry.browser.project.ProjectSetView">
         <browser:page
@@ -449,7 +425,6 @@
         name="+new"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         class="lp.registry.browser.project.ProjectAddView"
-        facet="overview"
         permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:url
@@ -496,14 +471,12 @@
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
-        facet="overview"
         permission="zope.Public"
         name="+index"
         template="../templates/distributionsourcepackage-index.pt" />
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageChangelogView"
-        facet="overview"
         permission="zope.Public"
         name="+changelog"
         template="../templates/distributionsourcepackage-changelog.pt"/>
@@ -512,7 +485,6 @@
         permission="launchpad.BugSupervisor"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
-        facet="overview"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -569,11 +541,8 @@
         name="+get-involved"
         for="*"
         class="lp.registry.browser.pillar.PillarView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
-    <facet
-        facet="overview">
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaAction"
             path_expression="name"
@@ -607,7 +576,6 @@
         <browser:pages
             for="lp.registry.interfaces.karma.IKarmaContext"
             class="lp.registry.browser.karma.KarmaContextTopContributorsView"
-            facet="overview"
             permission="zope.Public">
             <browser:page
                 name="+topcontributors"
@@ -618,13 +586,9 @@
         </browser:pages>
         <browser:page
             for="lp.registry.interfaces.karma.IKarmaContext"
-            facet="overview"
             permission="zope.Public"
             name="karmacontext-macros"
             template="../templates/karmacontext-macros.pt"/>
-    </facet>
-    <facet
-        facet="overview">
         <browser:menus
             module="lp.registry.browser.poll"
             classes="
@@ -691,7 +655,6 @@
             class="lp.registry.browser.poll.PollOptionEditView"
             permission="launchpad.Edit"
             template="../templates/polloption-edit.pt"/>
-    </facet>
     <browser:url
         for="lp.registry.interfaces.announcement.IAnnouncement"
         path_expression="string:+announcement/${id}"
@@ -702,49 +665,42 @@
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementView"
-        facet="overview"
         permission="launchpad.View"
         template="../templates/announcement-index.pt"
         name="+index"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementEditView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+edit"
         template="../templates/announcement-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementRetargetView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+retarget"
         template="../templates/announcement-retarget.pt"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementPublishView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+publish"
         template="../templates/announcement-publish.pt"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementRetractView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+retract"
         template="../templates/announcement-retract.pt"/>
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncement"
         class="lp.registry.browser.announcement.AnnouncementDeleteView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+delete"
         template="../templates/announcement-delete.pt"/>
     <browser:pages
         for="lp.registry.interfaces.announcement.IHasAnnouncements"
         class="lp.registry.browser.announcement.HasAnnouncementsView"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+announcements"
@@ -756,7 +712,6 @@
     <browser:page
         for="lp.registry.interfaces.announcement.IMakesAnnouncements"
         class="lp.registry.browser.announcement.AnnouncementAddView"
-        facet="overview"
         permission="launchpad.Edit"
         name="+announce"
         template="../templates/announcement-add.pt"/>
@@ -770,7 +725,6 @@
     <browser:page
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         name="+announcements"
-        facet="overview"
         class="lp.registry.browser.announcement.AnnouncementSetView"
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
@@ -790,8 +744,6 @@
         classes="
             AnnouncementCreateNavigationMenu
             AnnouncementEditNavigationMenu"/>
-    <facet
-        facet="overview">
         <browser:navigation
             module="lp.registry.browser.person"
             classes="PersonNavigation"/>
@@ -1318,7 +1270,6 @@
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
         </browser:pages>
-    </facet>
     <browser:navigation
         module="lp.registry.browser.milestone"
         classes="
@@ -1346,7 +1297,6 @@
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneView"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -1362,42 +1312,36 @@
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
         class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneEditView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneDeleteView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/milestone-delete.pt"/>
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.productrelease.ProductReleaseAddView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"/>
     <browser:page
         for="lp.registry.interfaces.milestone.IHasMilestones"
         class="lp.registry.browser.milestone.ObjectMilestonesView"
         name="+milestones"
-        facet="overview"
         permission="zope.Public"
         template="../templates/object-milestones.pt"/>
     <browser:menus
@@ -1449,7 +1393,6 @@
         name="+get-involved"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductInvolvementView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
     <browser:page
@@ -1457,7 +1400,6 @@
         name="+download"
         class="lp.registry.browser.product.ProductDownloadFilesView"
         permission="zope.Public"
-        facet="overview"
         template="../templates/product-files.pt"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
@@ -1465,11 +1407,9 @@
         class="lp.registry.browser.product.ProductView">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/product-index.pt"/>
         <browser:page
             name="+timeline-graph"
-            facet="overview"
             template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+listing-for-review"
@@ -1479,32 +1419,27 @@
 
         <browser:page
             name="+portlet-requires-subscription"
-            facet="overview"
             template="../templates/product-portlet-requires-subscription.pt"/>
         <browser:page
             name="+portlet-license-missing"
-            facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
         name="+purchase-subscription"
-        facet="overview"
         class="lp.registry.browser.product.ProductPurchaseSubscriptionView"
         template="../templates/product-purchase-subscription.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
         name="+portlet-packages"
-        facet="overview"
         class="lp.registry.browser.product.ProductPackagesPortletView"
         template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductSeriesSetView"
         name="+series"
-        facet="overview"
         permission="zope.Public"
         template="../templates/product-series.pt"/>
     <browser:page
@@ -1512,7 +1447,6 @@
         permission="zope.Public"
         class="lp.registry.browser.product.ProductPackagesView"
         name="+packages"
-        facet="overview"
         template="../templates/product-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
@@ -1534,7 +1468,6 @@
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.Edit"
-        facet="overview"
         class="lp.registry.browser.product.ProductEditPeopleView">
         <browser:page
             name="+edit-people"
@@ -1543,20 +1476,17 @@
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         permission="launchpad.Edit"
         name="+configure-answers"
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureAnswersView"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         permission="launchpad.Edit"
         name="+configure-blueprints"
         template="../../app/templates/generic-edit.pt"
@@ -1564,21 +1494,18 @@
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         class="lp.registry.browser.product.ProductBrandingView"
         permission="launchpad.Edit"
         template="../templates/object-branding.pt"/>
     <browser:page
         name="+admin"
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         class="lp.registry.browser.product.ProductAdminView"
         permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+review-license"
         for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
         class="lp.registry.browser.product.ProductReviewLicenseView"
         permission="launchpad.Moderate"
         template="../templates/product-review-license.pt"/>
@@ -1586,7 +1513,6 @@
     <browser:page
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
         permission="launchpad.Edit"
-        facet="overview"
         class="lp.registry.browser.nameblacklist.NameBlacklistEditView"
         name="+edit"
         template="../../app/templates/generic-edit.pt"/>
@@ -1606,14 +1532,12 @@
     <browser:page
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         permission="launchpad.View"
-        facet="overview"
         class="lp.registry.browser.nameblacklist.NameBlacklistSetView"
         name="+index"
         template="../templates/nameblacklists-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         permission="launchpad.Edit"
-        facet="overview"
         class="lp.registry.browser.nameblacklist.NameBlacklistAddView"
         name="+add"
         template="../../app/templates/generic-edit.pt"/>
@@ -1633,7 +1557,6 @@
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductAddSeriesView"
-        facet="overview"
         permission="launchpad.Driver"
         template="../templates/productseries-new.pt"/>
     <browser:defaultView
@@ -1651,7 +1574,6 @@
     <browser:pages
         for="lp.registry.interfaces.product.IProductSet"
         permission="zope.Public"
-        facet="overview"
         class="lp.registry.browser.product.ProductSetView">
         <browser:page
             name="+index"
@@ -1663,7 +1585,6 @@
     <browser:pages
         for="lp.registry.interfaces.product.IProductSet"
         class="lp.registry.browser.product.ProductSetReviewLicensesView"
-        facet="overview"
         permission="launchpad.Moderate">
         <browser:page
             name="+review-licenses"
@@ -1672,7 +1593,6 @@
     <browser:page
         name="+new"
         for="lp.registry.interfaces.product.IProductSet"
-        facet="overview"
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
@@ -1734,13 +1654,11 @@
         name="+get-involved"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesInvolvementView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="canonical.launchpad.webapp.LaunchpadView"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+timeline-graph"
@@ -1755,7 +1673,6 @@
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -1766,7 +1683,6 @@
     </browser:pages>
     <browser:page
         name="+ubuntupkg"
-        facet="overview"
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
@@ -1777,7 +1693,6 @@
         permission="zope.Public">
         <browser:page
             name="+status"
-            facet="overview"
             template="../templates/productseries-status.pt"/>
         <browser:page
             name="+code-summary"
@@ -1787,13 +1702,11 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesDetailedDisplayView"
         template="../templates/productseries-detailed-display.pt"
-        facet="overview"
         permission="zope.Public"
         name="+detailed-display"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesRdfView"
-        facet="overview"
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
@@ -1801,26 +1714,22 @@
         name="+edit"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesEditView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesDeleteView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-delete.pt"/>
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productrelease.ProductReleaseFromSeriesAddView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add-from-series.pt"/>
     <browser:page
         name="+addmilestone"
-        facet="overview"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.milestone.MilestoneAddView"
         permission="launchpad.Edit"
@@ -1830,27 +1739,23 @@
         name="+linkbranch"
         class="lp.registry.browser.productseries.ProductSeriesLinkBranchView"
         template="../templates/productseries-linkbranch.pt"
-        facet="overview"
         permission="launchpad.Edit"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+linkbranchtoseries"
         class="lp.registry.browser.productseries.ProductSeriesLinkBranchFromCodeView"
         template="../templates/productseries-linkbranch.pt"
-        facet="overview"
         permission="launchpad.Edit"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+setbranch"
         class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
         template="../templates/productseries-setbranch.pt"
-        facet="overview"
         permission="launchpad.Edit"/>
     <browser:page
         name="+review"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesReviewView"
-        facet="overview"
         permission="launchpad.Admin"
         template="../templates/productseries-review.pt"/>
     <browser:page
@@ -1891,7 +1796,6 @@
             DistributionNavigation"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionArchiveMirrorsView"
         permission="zope.Public"
         name="+archivemirrors"
@@ -1909,7 +1813,6 @@
         template="../templates/distribution-mirrors-rss.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionSeriesMirrorsView"
         permission="zope.Public"
         name="+cdmirrors"
@@ -1922,28 +1825,24 @@
         template="../templates/distribution-mirrors-rss.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionDisabledMirrorsView"
         permission="zope.Public"
         name="+disabledmirrors"
         template="../templates/distribution-mirrors.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionUnofficialMirrorsView"
         permission="zope.Public"
         name="+unofficialmirrors"
         template="../templates/distribution-mirrors.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionPendingReviewMirrorsView"
         permission="zope.Public"
         name="+pendingreviewmirrors"
         template="../templates/distribution-mirrors.pt"/>
     <browser:page
         name="+newmirror"
-        facet="overview"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distributionmirror.DistributionMirrorAddView"
         permission="launchpad.AnyPerson"
@@ -1953,7 +1852,6 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
         name="+search"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionPackageSearchView"
         template="../templates/distribution-search.pt"/>
     <browser:page
@@ -1961,35 +1859,30 @@
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+index"
-        facet="overview"
         template="../templates/distribution-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionSeriesView"
         permission="zope.Public"
         name="+series"
-        facet="overview"
         template="../templates/distribution-series.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+series-and-milestones"
-        facet="overview"
         template="../templates/distribution-series-and-milestones.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionDerivativesView"
         permission="zope.Public"
         name="+derivatives"
-        facet="overview"
         template="../templates/distribution-series.pt"/>
      <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+derivatives-slot"
-        facet="overview"
         template="../templates/distribution-derivatives.pt"/>
      <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2000,7 +1893,6 @@
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
@@ -2012,7 +1904,6 @@
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
-        facet="overview"
         permission="launchpad.Admin"
         template="../templates/distroseries-add.pt">
     </browser:page>
@@ -2020,7 +1911,6 @@
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
-        facet="overview"
         permission="launchpad.Moderate"
         template="../templates/distroseries-add.pt">
     </browser:page>
@@ -2028,7 +1918,6 @@
         name="+initseries"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/distroseries-initialize.pt">
     </browser:page>
@@ -2038,20 +1927,17 @@
         permission="launchpad.Edit"
         class="lp.registry.browser.distribution.DistributionEditView"
         name="+edit"
-        facet="overview"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+selectmemberteam"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionChangeMembersView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+selectmirroradmins"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionChangeMirrorAdminView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
@@ -2059,7 +1945,6 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionPublisherConfigView"
         template="../../app/templates/generic-edit.pt"
-        facet="overview"
         permission="launchpad.Admin"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
@@ -2075,7 +1960,6 @@
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistributionSet"
         permission="zope.Public"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionSetView">
         <browser:page
             name="+index"
@@ -2084,14 +1968,12 @@
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistributionSet"
         permission="zope.Public"
-        facet="overview"
         class="lp.registry.browser.distribution.DistributionSetView">
         </browser:pages>
     <browser:page
         name="+add"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         class="lp.registry.browser.distribution.DistributionAddView"
-        facet="overview"
         permission="launchpad.Admin"
         template="../../app/templates/generic-edit.pt"/>
     <browser:menus
@@ -2125,7 +2007,6 @@
         attribute_to_parent="distroseries"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+portlet-releases"
@@ -2137,19 +2018,16 @@
         class="lp.registry.browser.sourcepackage.SourcePackageView">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/sourcepackage-index.pt"/>
         <!-- SourcePackage Portlets -->
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
         name="+portlet-associations"
-        facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
         template="../templates/sourcepackage-portlet-associations.pt"/>
 
@@ -2157,7 +2035,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
         name="+upstream-connections"
-        facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
         template="../templates/sourcepackage-upstream-connections.pt"/>
     <browser:menus
@@ -2188,7 +2065,6 @@
         name="+index"/>
     <browser:pages
         for="lp.registry.interfaces.productrelease.IProductRelease"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+portlet-downloads"
@@ -2196,7 +2072,6 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
-        facet="overview"
         permission="zope.Public"
         name="+index"
         class="lp.registry.browser.milestone.MilestoneView"
@@ -2204,7 +2079,6 @@
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
         class="lp.registry.browser.productrelease.ProductReleaseRdfView"
-        facet="overview"
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
@@ -2213,20 +2087,17 @@
         name="+adddownloadfile"
         class="lp.registry.browser.productrelease.ProductReleaseAddDownloadFileView"
         permission="launchpad.Edit"
-        facet="overview"
         template="../templates/productrelease-file-add.pt"/>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
         name="+delete"
         class="lp.registry.browser.productrelease.ProductReleaseDeleteView"
         permission="launchpad.Edit"
-        facet="overview"
         template="../templates/productrelease-delete.pt"/>
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.productrelease.IProductRelease"
         class="lp.registry.browser.productrelease.ProductReleaseEditView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-edit.pt"/>
     <browser:menus
@@ -2237,7 +2108,6 @@
         name="+driver"
         for="lp.registry.interfaces.role.IHasAppointedDriver"
         class="lp.registry.browser.driver.AppointDriverView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
    <browser:defaultView
@@ -2263,7 +2133,6 @@
         name="+index"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         class="lp.registry.browser.distributionmirror.DistributionMirrorView"
-        facet="overview"
         permission="zope.Public"
         template="../templates/distributionmirror-index.pt">
     </browser:page>
@@ -2272,7 +2141,6 @@
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         permission="launchpad.Edit"
         class="lp.registry.browser.distributionmirror.DistributionMirrorEditView"
-        facet="overview"
         template="../templates/distributionmirror-edit.pt">
     </browser:page>
     <browser:page
@@ -2280,7 +2148,6 @@
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         permission="launchpad.Admin"
         class="lp.registry.browser.distributionmirror.DistributionMirrorReviewView"
-        facet="overview"
         template="../templates/distributionmirror-review.pt">
     </browser:page>
     <browser:page
@@ -2288,14 +2155,12 @@
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         permission="launchpad.Admin"
         class="lp.registry.browser.distributionmirror.DistributionMirrorDeleteView"
-        facet="overview"
         template="../templates/distributionmirror-delete.pt">
     </browser:page>
     <browser:page
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         permission="launchpad.Edit"
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
-        facet="overview"
         name="+reassign"
         template="../../app/templates/object-reassignment.pt">
     </browser:page>
@@ -2303,7 +2168,6 @@
         name="+prober-logs"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         class="lp.registry.browser.distributionmirror.DistributionMirrorProberLogView"
-        facet="overview"
         permission="launchpad.Edit"
         template="../templates/distributionmirror-prober-logs.pt">
     </browser:page>
@@ -2327,7 +2191,6 @@
         permission="launchpad.AnyPerson"
         class="lp.registry.browser.sourcepackage.SourcePackageChangeUpstreamView"
         name="+edit-packaging"
-        facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
     <browser:page
@@ -2335,7 +2198,6 @@
         permission="launchpad.AnyPerson"
         class="lp.registry.browser.sourcepackage.SourcePackageRemoveUpstreamView"
         name="+remove-packaging"
-        facet="overview"
         template="../templates/sourcepackage-remove-packaging.pt"
         />
 
@@ -2364,4 +2226,5 @@
         rootsite="api"
         attribute_to_parent="owner" />
 
+</facet>
 </configure>
