@@ -206,8 +206,8 @@ class POFileMetadataViewMixin:
 
         return """
             New to translating in Launchpad?
-            <a href="/+help-translations/new-to-translating.html" target="help">
-                Read our guide</a>.
+            <a href="/+help-translations/new-to-translating.html"
+            target="help">Read our guide</a>.
             """
 
     @property
