@@ -739,8 +739,6 @@
       for="lp.code.interfaces.codeimport.ICodeImport
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.mail.codeimport.new_import"/>
-  <facet
-      facet="branches"/>
 
   <!-- CodeImportSet -->
 

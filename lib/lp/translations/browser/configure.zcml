@@ -8,6 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+<facet facet="translations">
     <browser:url
         for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
         path_expression="string:translations"
@@ -21,7 +22,6 @@
             RosettaApplicationNavigation"/>
     <browser:pages
         for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
-        facet="translations"
         permission="zope.Public"
         class="lp.translations.browser.translations.RosettaApplicationView">
         <browser:page
@@ -39,7 +39,6 @@
     </browser:pages>
     <browser:page
       for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
-      facet="translations"
       permission="zope.Public"
       class="lp.translations.browser.translations.TranslatableProductsView"
       name="+products-with-translations"
@@ -48,30 +47,24 @@
         for="*"
         name="+rosetta-status-legend"
         template="../templates/rosetta-status-legend.pt"
-        facet="translations"
         permission="zope.Public"/>
     <browser:page
         for="lp.translations.interfaces.rosettastats.IRosettaStats"
         class="lp.translations.browser.translations.RosettaStatsView"
-        facet="translations"
         permission="zope.Public"
         name="+barchart"
         template="../templates/rosettastats-barchart.pt"/>
     <browser:page
         for="*"
         name="+translations-macros"
-        facet="translations"
         permission="zope.Public"
         template="../templates/translations-macros.pt"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.translations.interfaces.translationpolicy.ITranslationPolicy"
-        facet="translations"
         permission="zope.Public"
         name="+portlet-translation-groups-and-permission"
         template="../templates/hastranslationgroup-portlet-translation-groups-and-permission.pt"/>
-    <facet
-        facet="translations">
         <browser:defaultView
             for="lp.translations.interfaces.translator.ITranslator"
             name="+admin"/>
@@ -93,9 +86,6 @@
             permission="launchpad.Edit"
             class="lp.translations.browser.translator.TranslatorRemoveView"
             template="../../app/templates/generic-edit.pt"/>
-    </facet>
-    <facet
-        facet="translations">
         <browser:navigation
             module="lp.translations.browser.translationimportqueue"
             classes="
@@ -116,7 +106,6 @@
             template="../templates/translationimportqueueentry-index.pt"/>
         <browser:page
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueueEntry"
-            facet="translations"
             permission="zope.Public"
             name="+portlet-details"
             class="lp.translations.browser.translationimportqueue.TranslationImportQueueEntryView"
@@ -132,10 +121,8 @@
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             name="+index"
             class="lp.translations.browser.translationimportqueue.TranslationImportQueueView"
-            facet="translations"
             permission="zope.Public"
             template="../templates/translationimportqueue-index.pt"/>
-    </facet>
     <browser:url
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         path_expression="string:+lang/${language/code}"
@@ -149,8 +136,7 @@
         name="+index"/>
     <browser:pages
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
-        permission="zope.Public"
-        facet="translations">
+        permission="zope.Public">
         <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
@@ -160,10 +146,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"
-        facet="translations"/>
-    <facet
-        facet="translations">
+        class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"/>
         <browser:navigation
             module="lp.translations.browser.pofile"
             classes="
@@ -229,7 +212,6 @@
             permission="zope.Public"
             template="../templates/pofile-filter.pt"
             class="lp.translations.browser.pofile.POFileFilteredView"/>
-    </facet>
     <browser:url
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         path_expression="string:+lang/${language/code}"
@@ -244,8 +226,7 @@
         name="+index"/>
     <browser:pages
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
-        permission="zope.Public"
-        facet="translations">
+        permission="zope.Public">
         <browser:page
             name="+rosetta-status-legend"
             template="../templates/rosetta-status-legend.pt"/>
@@ -255,10 +236,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
-        facet="translations"/>
-    <facet
-        facet="translations">
+        class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"/>
         <browser:navigation
             module="lp.translations.browser.language"
             classes="
@@ -633,7 +611,6 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations"
-            facet="translations"
             class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"
             template="../templates/person-translations.pt"/>
@@ -890,8 +867,7 @@
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
         template="../templates/customlanguagecode-add.pt"
         permission="launchpad.TranslationsAdmin"/>
-
-    </facet>
+</facet>
 
 <!-- TranslationTemplateBuild -->
     <browser:defaultView
