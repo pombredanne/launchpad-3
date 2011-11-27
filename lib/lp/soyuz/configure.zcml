@@ -21,8 +21,6 @@
         <allow
             interface="lp.soyuz.interfaces.packagecloner.IPackageCloner"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- BinaryPackagePublishingHistory -->
 
@@ -51,8 +49,6 @@
             <!-- XXX cprov 2006-06-14: missing security adapter -->
 
         </class>
-
-    </facet>
 
     <!-- ArchiveArch -->
     <class
@@ -95,8 +91,6 @@
             permission="launchpad.Edit"
             set_attributes="changelog"/>
     </class>
-    <facet
-        facet="overview">
 
         <!-- SourcePackagePublishingHistory -->
 
@@ -139,7 +133,6 @@
             <allow
                 interface="lp.soyuz.interfaces.publishing.IPublishingSet"/>
         </securedutility>
-    </facet>
     <class
         class="lp.soyuz.model.queue.PackageUploadQueue">
         <implements
@@ -234,8 +227,6 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadSet"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- BinaryPackagename -->
 
@@ -276,7 +267,6 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"/>
         </class>
-    </facet>
 
     <!-- ArchiveDependency -->
 
@@ -613,9 +603,6 @@
         factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumb"
         permission="zope.Public"/>
 
-    <facet
-        facet="overview">
-
         <!-- DistroArchSeries -->
 
         <class
@@ -635,7 +622,6 @@
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
-    </facet>
 
     <!-- DistroArchSeriesSet -->
 
