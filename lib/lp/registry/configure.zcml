@@ -1744,8 +1744,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
+    <lp:help-folder folder="help" name="+help-registry" />
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
