@@ -20,10 +20,7 @@ from lp.registry.vocabularies import (
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
-from lp.testing import (
-    login_person,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
@@ -55,7 +52,6 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_setUpSubWidgets_first_call(self):
         # The subwidgets are setup and a flag is set.
-        login_person(self.factory.makePerson())
         self.widget.setUpSubWidgets()
         self.assertTrue(self.widget._widgets_set_up)
         self.assertIsInstance(
@@ -67,3 +63,12 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertIsInstance(
             self.widget.package_widget.context.vocabulary,
             BinaryAndSourcePackageNameVocabulary)
+
+    def test_setUpSubWidgets_second_call(self):
+        # The setUpSubWidgets method exits early if a flag is set to
+        # indicate that the widgets were setup.
+        self.widget._widgets_set_up = True
+        self.widget.setUpSubWidgets()
+        self.assertIs(None, getattr(self.widget, 'distribution_widget', None))
+        self.assertIs(None, getattr(self.widget, 'package_widget', None))
+        self.assertIs(None, getattr(self.widget, 'product_widget', None))
