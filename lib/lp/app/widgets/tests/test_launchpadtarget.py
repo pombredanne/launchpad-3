@@ -5,7 +5,10 @@ __metaclass__ = type
 
 import doctest
 
-from zope.interface import Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from lazr.restful.fields import Reference
 
@@ -17,10 +20,20 @@ from lp.registry.vocabularies import (
     DistributionSourcePackageVocabulary,
     ProductVocabulary,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
 from lp.testing import TestCaseWithFactory
+
+
+class IThing(Interface):
+    target = Reference(schema=Interface)
+
+
+class Thing:
+    implements(IThing)
+    target = None
 
 
 class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
@@ -38,7 +51,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.project = self.factory.makeProduct('pting')
         request = LaunchpadTestRequest()
         field = Reference(schema=Interface, title=u'target', required=True)
-        field = field.bind(object())
+        field = field.bind(Thing())
         self.widget = LaunchpadTargetWidget(field, request)
 
     def test_template(self):
@@ -72,3 +85,12 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertIs(None, getattr(self.widget, 'distribution_widget', None))
         self.assertIs(None, getattr(self.widget, 'package_widget', None))
         self.assertIs(None, getattr(self.widget, 'product_widget', None))
+
+    def test_setUpSubWidgets_dsp_picker_feature_flag(self):
+        # The DistributionSourcePackageVocabulary is used when the
+        # disclosure.dsp_picker.enabled is true.
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            self.widget.setUpSubWidgets()
+        self.assertIsInstance(
+            self.widget.package_widget.context.vocabulary,
+            DistributionSourcePackageVocabulary)
