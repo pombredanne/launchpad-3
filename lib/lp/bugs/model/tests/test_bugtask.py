@@ -2543,10 +2543,11 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         with person_logged_in(bug.owner):
             bug.setAccessPolicy(orig_policy.type)
         self.assertEqual(orig_policy, bug.access_policy)
+        # No exception is raised.
         validate_target(bug, new_product)
 
     def test_missing_access_policy_rejected(self):
-        # If the new pillar doesn't have a corresponding access polciy,
+        # If the new pillar doesn't have a corresponding access policy,
         # the transition is forbidden.
         orig_product = self.factory.makeProduct()
         orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
