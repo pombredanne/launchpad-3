@@ -384,10 +384,11 @@ will be automatically subscribed, and only specifically allowed existing
 direct subscribers (eg bugtask pillar maintainers) will remain subscribed.
 
 We currently use a feature flag to control who is subscribed when a bug is
-made private.
+made private and to allow multi-pillar bugs to be private.
 
     >>> from lp.services.features.testing import FeatureFixture
     >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on',
     ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
