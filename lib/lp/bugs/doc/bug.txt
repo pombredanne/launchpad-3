@@ -824,6 +824,9 @@ Changing bug visibility.
 
 We need a feature flag for this test since multi-pillar bugs shouldn't be
 private by default.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
 

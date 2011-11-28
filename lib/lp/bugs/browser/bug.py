@@ -871,7 +871,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
         # recorded.
         bug = self.context.bug
-        private = data.pop('private')
+        private = data.pop('private', bug.private)
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
