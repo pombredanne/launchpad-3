@@ -1346,8 +1346,12 @@ class BugTask(SQLBase):
         else:
             return None
 
-    def userHasPrivileges(self, user):
-        """See `IBugTask`."""
+    @classmethod
+    def userHasPrivilegesContext(cls, context, user):
+        """Does the user have privileges for the given context?
+
+        :return: a boolean.
+        """
         if not user:
             return False
         role = IPersonRoles(user)
@@ -1365,12 +1369,12 @@ class BugTask(SQLBase):
         # Otherwise, if you're a member of the pillar owner, drivers, or the
         # bug supervisor, you can change bug details.
         return (
-            role.isOwner(self.pillar) or role.isOneOfDrivers(self.pillar) or
-            role.isBugSupervisor(self.pillar) or
-            (self.distroseries is not None and
-                role.isDriver(self.distroseries)) or
-            (self.productseries is not None and
-                role.isDriver(self.productseries)))
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isBugSupervisor(context.pillar))
+
+    def userHasPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)

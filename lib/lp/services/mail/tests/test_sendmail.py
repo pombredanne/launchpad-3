@@ -1,15 +1,24 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from doctest import DocTestSuite
+import email.header
 from email.Message import Message
 import unittest
+
+from zope.interface import implements
+from zope.sendmail.interfaces import IMailDelivery
 
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing.fixture import (
+    CaptureTimeline,
+    ZopeUtilityFixture,
+    )
+
 from lp.testing import TestCase
 
 
@@ -226,6 +235,7 @@ class TestMailController(TestCase):
         ctrl = MailController('from@example.com', 'to@example.com', 'subject',
                               'body', envelope_to=['to@example.org'])
         sendmail_kwargs = {}
+
         def fake_sendmail(message, to_addrs=None, bulk=True):
             sendmail_kwargs.update(locals())
         real_sendmail = sendmail.sendmail
@@ -236,6 +246,60 @@ class TestMailController(TestCase):
             sendmail.sendmail = real_sendmail
         self.assertEqual('to@example.com', sendmail_kwargs['message']['To'])
         self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
+
+    def test_MailController_into_timeline(self):
+        """sendmail records stuff in the timeline."""
+        fake_mailer = RecordingMailer()
+        self.useFixture(ZopeUtilityFixture(
+            fake_mailer, IMailDelivery, 'Mail'))
+        to_addresses = ['to1@example.com', 'to2@example.com']
+        subject = self.getUniqueString('subject')
+        with CaptureTimeline() as ctl:
+            ctrl = MailController(
+                'from@example.com', to_addresses,
+                subject, 'body', {'key': 'value'})
+            ctrl.send()
+        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEquals(fake_mailer.to_addr, to_addresses)
+        self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject)
+
+    def test_sendmail_with_email_header(self):
+        """Check the timeline is ok even if there is an email.Header.
+
+        See https://bugs.launchpad.net/launchpad/+bug/885972
+        """
+        fake_mailer = RecordingMailer()
+        self.useFixture(ZopeUtilityFixture(
+            fake_mailer, IMailDelivery, 'Mail'))
+        subject_str = self.getUniqueString('subject')
+        subject_header = email.header.Header(subject_str)
+        message = Message()
+        message.add_header('From', 'bounces@canonical.com')
+        message['Subject'] = subject_header
+        message.add_header('To', 'dest@example.com')
+        with CaptureTimeline() as ctl:
+            sendmail.sendmail(message)
+        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEquals(fake_mailer.to_addr, ['dest@example.com'])
+        self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject_str)
+
+    def checkTimelineHasOneMailAction(self, timeline, subject):
+        actions = timeline.actions
+        self.assertEquals(len(actions), 1)
+        a0 = actions[0]
+        self.assertEquals(a0.category, 'sendmail')
+        self.assertEquals(a0.detail, subject)
+        self.assertIsInstance(a0.detail, basestring)
+
+
+class RecordingMailer(object):
+
+    implements(IMailDelivery)
+
+    def send(self, from_addr, to_addr, raw_message):
+        self.from_addr = from_addr
+        self.to_addr = to_addr
+        self.raw_message = raw_message
 
 
 def test_suite():

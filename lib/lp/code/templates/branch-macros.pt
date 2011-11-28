@@ -159,7 +159,7 @@
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
-            style="display: none"
+            class="hidden"
             >
          <dl><dd>
        </dd></dl>
@@ -214,7 +214,7 @@
       <tal:plural condition="python: start_revno!=last_revno">
         to revision <tal:revno replace="last_revno">2</tal:revno>
       </tal:plural></a>
-  <div class="unseen expander-content">Loading diff</div>
+      <div class="unseen expander-content">Loading diff <img src="/@@/spinner"/></div>
   </div>
       </tal:diff-expander>
     </tal:ajax-revision-diffs>

@@ -288,6 +288,25 @@ class LaunchpadView(UserAttributeCache):
         pass
 
     @property
+    def page_description(self):
+        """Return a string containing a description of the context.
+
+        Typically this is the contents of the most-descriptive text attribute
+        of the context, by default its 'description' attribute if there is
+        one.
+
+        This will be inserted into the HTML meta description, and may
+        eventually end up in search engine summary results, or when a link to
+        the page is shared elsewhere.
+
+        This may be specialized by view subclasses.
+
+        Do not write eg "This is a page about...", just directly describe the
+        object on the page.
+        """
+        return getattr(self.context, 'description', None)
+
+    @property
     def template(self):
         """The page's template, if configured in zcml."""
         return self.index
@@ -383,6 +402,28 @@ class LaunchpadView(UserAttributeCache):
         # By default, a LaunchpadView cannot be traversed through.
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
+
+    @property
+    def recommended_canonical_url(self):
+        """Canonical URL to be recommended in metadata.
+
+        Used to generate <link rel="canonical"> to hint that pages
+        with different URLs are actually (at least almost) functionally
+        and semantically identical.
+
+        See http://www.google.com/support/webmasters/bin/\
+            answer.py?answer=139394
+        "Canonical is a long word that means my preferred or my
+        primary."
+
+        Google (at least) will primarily, but not absolutely certainly,
+        treat these pages as duplicates, so don't use this if there's any
+        real chance the user would want to specifically find one of the
+        non-duplicate pages.
+
+        Most views won't need this.
+        """
+        return None
 
     # Names of feature flags which affect a view.
     related_features = ()

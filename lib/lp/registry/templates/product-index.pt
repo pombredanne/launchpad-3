@@ -55,14 +55,15 @@
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
-        <div class="summary" tal:content="context/summary">
+	<div class="summary" 
+	  tal:content="structure context/summary/fmt:markdown">
           $Product.summary goes here. This should be quite short,
           just a single paragraph of text really, giving the project
           highlights.
         </div>
 
         <div class="description"
-          tal:content="structure context/description/fmt:text-to-html"
+          tal:content="structure context/description/fmt:markdown"
           tal:condition="context/description">
           $Product.description goes here. This should be a longer piece of
           text, up to three paragraphs in length, which gives much more

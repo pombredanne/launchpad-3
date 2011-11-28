@@ -661,6 +661,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
         return smartquote('%s: "%s"') % (heading, title)
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
@@ -690,6 +694,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def api_request(self):
         return IWebServiceClientRequest(self.request)
+
+    @cachedproperty
+    def recommended_canonical_url(self):
+        return canonical_url(self.context.bug, rootsite='bugs')
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -2263,7 +2271,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
-        self.field_visibility = {
+        self.user = getUtility(ILaunchBag).user
+        self.field_visibility_defaults = {
             'show_age': False,
             'show_assignee': False,
             'show_bugtarget': True,
@@ -2275,9 +2284,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_reporter': False,
             'show_status': True,
             'show_tags': False,
-            'show_title': True,
         }
-        self.field_visibility_defaults = self.field_visibility
+        self.field_visibility = None
+        self._setFieldVisibility()
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2285,6 +2294,38 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def bug_badge_properties(self):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
+
+    def getCookieName(self):
+        """Return the cookie name used in bug listings js code."""
+        cookie_name_template = '%s-buglist-fields'
+        cookie_name = ''
+        if self.user is not None:
+            cookie_name = cookie_name_template % self.user.name
+        else:
+            cookie_name = cookie_name_template % 'anon'
+        return cookie_name
+
+    def _setFieldVisibility(self):
+        """Set field_visibility for the page load.
+
+        If a cookie of the form $USER-buglist-fields is found,
+        we set field_visibility from this cookie; otherwise,
+        field_visibility will match the defaults.
+        """
+        cookie_name = self.getCookieName()
+        cookie = self.request.cookies.get(cookie_name)
+        self.field_visibility = dict(self.field_visibility_defaults)
+        # "cookie" looks like a URL query string, so we split
+        # on '&' to get items, and then split on '=' to get
+        # field/value pairs.
+        if cookie is None:
+            return
+        for field, value in urlparse.parse_qsl(cookie):
+            # Skip unsupported fields (from old cookies).
+            if field not in self.field_visibility:
+                continue
+            # We only record True or False for field values.
+            self.field_visibility[field] = (value == 'true')
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
@@ -2461,7 +2502,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     implements(IBugTaskSearchListingMenu)
 
-    related_features = ['bugs.dynamic_bug_listings.enabled']
+    related_features = (
+        'bugs.dynamic_bug_listings.enabled',
+        'bugs.dynamic_bug_listings.pre_fetch',
+    )
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
@@ -2539,7 +2583,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def page_title(self):
-        return "Bugs in %s" % self.context.title
+        return "Bugs : %s" % self.context.displayname
 
     label = page_title
 
@@ -2605,6 +2649,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 batch_navigator.field_visibility)
             cache.objects['field_visibility_defaults'] = (
                 batch_navigator.field_visibility_defaults)
+            cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
 
             def _getBatchInfo(batch):
                 if batch is None:
@@ -3998,12 +4043,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
         if self.context.milestone is None:
             return ''
         else:
-            return 'display: none'
+            return 'hidden'
 
     @property
     def style_for_edit_milestone(self):
         if self.context.milestone is None:
-            return 'display: none'
+            return 'hidden'
         else:
             return ''
 
