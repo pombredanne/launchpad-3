@@ -61,7 +61,13 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             'Template was not setup.')
 
     def test_default_option(self):
+        # This package field is the default option.
         self.assertEqual('package', self.widget.default_option)
+
+    def test_getDistributionVocabulary(self):
+        # The vocabulary is always "Distribution".
+        self.assertEqual(
+            'Distribution', self.widget.getDistributionVocabulary())
 
     def test_setUpSubWidgets_first_call(self):
         # The subwidgets are setup and a flag is set.
