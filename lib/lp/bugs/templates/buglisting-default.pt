@@ -25,7 +25,41 @@
         });
     });
   </script>
-  <metal:activate-listing use-macro="context/@@+bugtask-macros-tableview/activate_listing_js" />
+  <script type="text/javascript"
+    tal:define="
+      show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
+      advanced_search view/shouldShowAdvancedForm"
+    tal:condition="python: show_new_listings and not advanced_search">
+    LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
+      function(Y) {
+        Y.on('domready', function() {
+            var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
+            var orderby = new Y.lp.ordering.OrderByBar({
+                srcNode: Y.one('#bugs-orderby'),
+                sort_keys: [
+                    ['id', 'Bug number'],
+                    ['title', 'Bug title'],
+                    ['importance', 'Importance'],
+                    ['status', 'Status'],
+                    ['heat', 'Bug heat']
+                ],
+                active: 'importance',
+                sort_order: 'desc',
+                config_slot: true
+            });
+            orderby.render();
+            Y.on('orderbybar:sort', function(e) {
+                navigator.first_batch(e);
+            });
+            var config_node = orderby.get('config_node');
+            var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
+                srcNode: config_node,
+                model: navigator.get('model')
+            });
+            list_util.render();
+        });
+    });
+  </script>
 </metal:block>
 
 <body>
