@@ -986,7 +986,9 @@ def iter_view_registrations(cls):
         # This is theoretically sensitive to changes in Zope, but otherwise
         # seems to be entirely reliable.
         second_base = registration.factory.__bases__[0].__bases__[0]
-        if second_base.__module__ == 'canonical.launchpad.webapp.metazcml':
+        if registration.factory == cls:
+            pass
+        elif second_base.__module__ == 'canonical.launchpad.webapp.metazcml':
             if second_base.__bases__[0] != cls:
                 continue
         else:
