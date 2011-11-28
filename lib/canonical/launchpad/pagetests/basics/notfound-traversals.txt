@@ -67,32 +67,28 @@ status is returned.
 >>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
->>> check("/+imports", host='translations.launchpad.dev')
->>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
->>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
+>>> check("/+imports")
+>>> check("/+imports/1/+index", auth=True)
+>>> check_not_found("/+imports/foo")
 
->>> check("/+languages", host='translations.launchpad.dev')
->>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
->>> check("/+languages/es", host='translations.launchpad.dev')
->>> check("/+languages/es/+admin", auth=True, host='translations.launchpad.dev')
->>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
->>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
+>>> check("/+languages")
+>>> check("/+languages/+add", auth=True)
+>>> check("/+languages/es")
+>>> check("/+languages/es/+admin", auth=True)
+>>> check_not_found("/+languages/es/foos")
+>>> check_not_found("/+languages/foos")
 
->>> check("/+groups", host='translations.launchpad.dev')
->>> check("/+groups/+new", auth=True,
-...       host='translations.launchpad.dev')
->>> check("/+groups/testing-translation-team",
-...       host='translations.launchpad.dev')
+>>> check("/+groups")
+>>> check("/+groups/+new", auth=True)
+>>> check("/+groups/testing-translation-team")
 >>> check("/+groups/testing-translation-team/+edit",
-...       auth=True, host='translations.launchpad.dev')
+...       auth=True)
 >>> check("/+groups/testing-translation-team/+appoint",
-...       auth=True, host='translations.launchpad.dev')
+...       auth=True)
 >>> check("/+groups/testing-translation-team/es",
-...       auth=True, host='translations.launchpad.dev')
->>> check_not_found("/+groups/testing-translation-team/pt_br",
-...                 host='translations.launchpad.dev')
->>> check_not_found("/+groups/foos",
-...                 host='translations.launchpad.dev')
+...       auth=True)
+>>> check_not_found("/+groups/testing-translation-team/pt_br")
+>>> check_not_found("/+groups/foos")
 
 
 >>> check("/codeofconduct")
@@ -103,8 +99,7 @@ status is returned.
 >>> check("/projectgroups/+all", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
->>> check_redirect("/mozilla/+translations", status=301)
->>> check("/mozilla/+translations", host='translations.launchpad.dev')
+>>> check("/mozilla/+translations")
 
 >>> check_redirect("/products", status=301)
 >>> check("/projects")
@@ -117,9 +112,8 @@ status is returned.
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/+milestone/1.0/+addrelease", auth=True)
->>> check_redirect("/firefox/1.0/+translations", status=301)
->>> check("/firefox/1.0/+translations", host='translations.launchpad.dev')
->>> check("/firefox/1.0/+imports", host='translations.launchpad.dev')
+>>> check("/firefox/1.0/+translations")
+>>> check("/firefox/1.0/+imports")
 >>> check("/firefox/1.0/1.0.0")
 >>> check("/firefox/1.0/1.0.0/+edit", auth=True)
 >>> check("/firefox/1.0/1.0.0/+adddownloadfile", auth=True)
@@ -128,8 +122,7 @@ status is returned.
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
->>> check_redirect("/firefox/+translations", status=301)
->>> check("/firefox/+translations", host='translations.launchpad.dev')
+>>> check("/firefox/+translations")
 >>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
@@ -142,29 +135,24 @@ status is returned.
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
->>> check_redirect("/ubuntu/+translations", status=301)
->>> check("/ubuntu/+translations", host='translations.launchpad.dev')
+>>> check("/ubuntu/+translations")
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+configure-translations",
-...       host='translations.launchpad.dev', auth=True)
+>>> check("/ubuntu/+configure-translations", auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
->>> check("/ubuntu/+imports", host='translations.launchpad.dev')
+>>> check("/ubuntu/+imports")
 >>> check("/debian/+milestone/3.1")
 >>> check("/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
 
 >>> check("/ubuntu/hoary/+cve")
->>> check_redirect("/ubuntu/hoary/+translations", status=301)
->>> check("/ubuntu/hoary/+translations", host='translations.launchpad.dev')
->>> check_redirect("/ubuntu/hoary/+latest-full-language-pack",
-...       host="translations.launchpad.dev")
->>> check("/ubuntu/hoary/+imports", host='translations.launchpad.dev')
+>>> check("/ubuntu/hoary/+translations")
+>>> check_redirect("/ubuntu/hoary/+latest-full-language-pack")
+>>> check("/ubuntu/hoary/+imports")
 >>> check("/ubuntu/hoary/+source/pmount")
->>> check("/ubuntu/hoary/+source/pmount/+imports",
-...       host='translations.launchpad.dev')
+>>> check("/ubuntu/hoary/+source/pmount/+imports")
 >>> check("/ubuntu/hoary/+source/libstdc++")
 >>> check("/ubuntu/hoary/+package/pmount")
 >>> check("/ubuntu/hoary/i386/pmount/0.1-1")
@@ -184,8 +172,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+portlet-bugfilters")
->>> check_not_found("/ubuntu/+source/evolution/+translations",
-...                 host='translations.launchpad.dev')
+>>> check_not_found("/ubuntu/+source/evolution/+translations")
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
@@ -195,17 +182,11 @@ translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
->>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
->>> check("/ubuntu/hoary/+source/evolution/+translations",
-...       host='translations.launchpad.dev')
->>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots",
-...                host='translations.launchpad.dev')
+>>> check("/ubuntu/hoary/+source/evolution/+translations")
 >>> check("/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
-...       host='translations.launchpad.dev', auth=True)
->>> check_redirect("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
-...                status=301)
+...       auth=True)
 >>> check("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
-...       host='translations.launchpad.dev', auth=True)
+...       auth=True)
 >>> check_not_found("/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(
 ...     '/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
@@ -365,9 +346,8 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_redirect("/~name18/+translations", status=301)
->>> check("/~name18/+translations", host='translations.launchpad.dev')
->>> check("/~name18/+imports", host='translations.launchpad.dev')
+>>> check("/~name18/+translations")
+>>> check("/~name18/+imports")
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
 >>> check("/~name18/+newpoll", auth=True)
@@ -393,7 +373,7 @@ And this is for a person:
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+specworkload")
->>> check("/~name16/+imports", host='translations.launchpad.dev')
+>>> check("/~name16/+imports")
 
 mark owns many packages, so he's a better test for some pages:
 
