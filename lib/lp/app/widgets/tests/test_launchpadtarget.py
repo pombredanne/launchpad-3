@@ -49,9 +49,10 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.distribution, self.dsp = self.factory.makeDSPCache(
             distro_name='fnord', package_name='snarf')
         self.project = self.factory.makeProduct('pting')
-        request = LaunchpadTestRequest()
-        field = Reference(schema=Interface, title=u'target', required=True)
+        field = Reference(
+            __name__='target', schema=Interface, title=u'target')
         field = field.bind(Thing())
+        request = LaunchpadTestRequest()
         self.widget = LaunchpadTargetWidget(field, request)
 
     def test_template(self):
@@ -68,6 +69,23 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # The vocabulary is always "Distribution".
         self.assertEqual(
             'Distribution', self.widget.getDistributionVocabulary())
+
+    def test_hasInput_false(self):
+        # hasInput is false when the widget's name is not in the form data.
+        form = {}
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertEqual('field.target', self.widget.name)
+        self.assertFalse(self.widget.hasInput())
+
+    def test_hasInput_true(self):
+        # hasInput is true is the widget's name in the form data.
+        form = {
+            'field.target': 'package',
+            'field.target.distribution': 'ubuntu',
+            'field.target.package': 'evolution'}
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertEqual('field.target', self.widget.name)
+        self.assertTrue(self.widget.hasInput())
 
     def test_setUpSubWidgets_first_call(self):
         # The subwidgets are setup and a flag is set.
