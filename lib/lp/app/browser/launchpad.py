@@ -10,6 +10,7 @@ __all__ = [
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
+    'iter_view_registrations',
     'LaunchpadImageFolder',
     'LaunchpadGraphics',
     'LaunchpadRootNavigation',
@@ -19,7 +20,6 @@ __all__ = [
     'MaintenanceMessage',
     'NavigationMenuTabs',
     'SoftTimeoutView',
-    'get_launchpad_views',
     ]
 
 
@@ -36,7 +36,9 @@ import urllib
 from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
+from zope.app.pagetemplate.simpleviewclass import simple
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryAdapter,
     )
@@ -965,6 +967,32 @@ def get_launchpad_views(cookies):
             # part of a page. Any other value is considered to be 'true'.
             views[key] = value != 'false'
     return views
+
+
+def iter_view_registrations(cls):
+    """Return the name for a given view class.
+
+    This works only for view classes provided through zcml that have been
+    converted to SimpleViewClasses.
+    """
+    for registration in getGlobalSiteManager().registeredAdapters():
+        if not type(registration.factory) == type(cls):
+            continue
+        if not issubclass(registration.factory, simple):
+            continue
+        # Determine whether the simpleviewclass is a subclass of this View,
+        # but exclude indirect subclasses of the View.
+        #
+        # This is theoretically sensitive to changes in Zope, but otherwise
+        # seems to be entirely reliable.
+        second_base = registration.factory.__bases__[0].__bases__[0]
+        if second_base.__module__ == 'canonical.launchpad.webapp.metazcml':
+            if second_base.__bases__[0] != cls:
+                continue
+        else:
+            if second_base != cls:
+                continue
+        yield registration
 
 
 class DoesNotExistView:

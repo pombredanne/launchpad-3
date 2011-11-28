@@ -20,8 +20,15 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.launchpad import LaunchpadRootNavigation
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.app.browser.launchpad import (
+    iter_view_registrations,
+    LaunchpadRootNavigation,
+    Macro,
+    )
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -424,3 +431,17 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
+
+
+class TestGetViewName(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_get_view_registrations(self):
+        """get_view_registrations provides only registrations of class."""
+        names = set(reg.name for reg in iter_view_registrations(Macro))
+        # Direct use of Macro
+        self.assertIn('+base-layout-macros', names)
+        # Use of Macro through meta.zcml
+        self.assertIn('+translations-macros', names)
+        self.assertNotIn('+related-pages', names)
