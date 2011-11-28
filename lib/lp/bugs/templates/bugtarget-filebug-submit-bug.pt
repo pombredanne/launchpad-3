@@ -17,12 +17,20 @@
           });
       });
     </script>
+    <tal:private condtion="view/isPrivate">
+        <script type="text/javascript">
+            LPS.use('lp.app.privacy',  function(Y) {
+                var cfg = {
+                    notification_text = "This report will be private, though you can disclose it later." 
+                };
+                Y.lp.app.privacy.setup_privacy_notification();
+                Y.lp.app.privacy.display_privacy_notification(cfg);
+            });
+        </script>
+    </tal:private>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h1>Report a bug</h1>
   </div>
 
