@@ -12,7 +12,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_view
 
 
 class TargetSubscriptionViewTestCase(TestCaseWithFactory):
@@ -34,19 +33,3 @@ class TargetSubscriptionViewTestCase(TestCaseWithFactory):
             harness = LaunchpadFormHarness(
                 self.product, TargetSubscriptionView)
             harness.view.initialize()
-
-    def test_does_not_redirect(self):
-        # +subscriptions on the bugs facet does not redirect.
-        with person_logged_in(self.subscriber):
-            view = create_view(
-                self.product, name='+subscriptions', rootsite='bugs')
-            view.initialize()
-            self.assertFalse(view._isRedirected())
-
-    def test_redirects(self):
-        # +subscriptions on anything but the bugs facet redirects.
-        with person_logged_in(self.subscriber):
-            view = create_view(
-                self.product, name='+subscriptions', rootsite='code')
-            view.initialize()
-            self.assertTrue(view._isRedirected())
