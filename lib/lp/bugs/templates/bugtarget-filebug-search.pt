@@ -18,14 +18,16 @@
             Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
         });
     </script>
-    <tal:private condtion="view/isPrivate">
+    <tal:private condition="view/isPrivate">
         <script type="text/javascript">
             LPS.use('lp.app.privacy',  function(Y) {
-                var cfg = {
-                    notification_text = "This report will be private, though you can disclose it later." 
-                };
-                Y.lp.app.privacy.setup_privacy_notification();
-                Y.lp.app.privacy.display_privacy_notification(cfg);
+                Y.on('domready', function() {
+                    var cfg = {
+                        notification_text: "This report will be private, though you can disclose it later." 
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.privacy.display_privacy_notification();
+                });
             });
         </script>
     </tal:private>
