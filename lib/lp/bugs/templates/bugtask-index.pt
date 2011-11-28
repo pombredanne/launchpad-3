@@ -129,7 +129,7 @@
         <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
-      <div class="report">
+      <div itemprop="mainContentOfPage" class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 

@@ -35,6 +35,7 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_process',
     'run_script',
     'run_with_login',
     'run_with_storm_debug',
@@ -1125,6 +1126,30 @@ def run_script(cmd_line, env=None):
         stderr=subprocess.PIPE, env=env)
     (out, err) = process.communicate()
     return out, err, process.returncode
+
+
+def run_process(cmd, env=None):
+    """Run the given command as a subprocess.
+
+    This differs from `run_script` in that it does not execute via a shell and
+    it explicitly connects stdin to /dev/null so that processes will not be
+    able to hang, waiting for user input.
+
+    :param cmd_line: A command suitable for passing to `subprocess.Popen`.
+    :param env: An optional environment dict. If none is given, the script
+        will get a copy of your present environment. Either way, PYTHONPATH
+        will be removed from it because it will break the script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
+    """
+    if env is None:
+        env = os.environ.copy()
+    env.pop('PYTHONPATH', None)
+    with open(os.devnull, "rb") as devnull:
+        process = subprocess.Popen(
+            cmd, stdin=devnull, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=env)
+        stdout, stderr = process.communicate()
+        return stdout, stderr, process.returncode
 
 
 def normalize_whitespace(string):

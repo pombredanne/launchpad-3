@@ -51,6 +51,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
+    BugTask,
     BugTaskSet,
     build_tag_search_clause,
     IllegalTarget,
@@ -2640,12 +2641,12 @@ class TestWebservice(TestCaseWithFactory):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
 
 
-class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
+class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTaskUserHasPriviliges, self).setUp()
+        super(TestBugTaskUserHasPrivileges, self).setUp()
         self.celebrities = getUtility(ILaunchpadCelebrities)
 
     def test_admin_is_allowed(self):
@@ -2703,3 +2704,32 @@ class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask()
         self.assertFalse(
             bugtask.userHasPrivileges(self.factory.makePerson()))
+
+
+class TestBugTaskUserHasPrivilegesContext(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assert_userHasPrivilegesContext(self, obj):
+        self.assertFalse(
+            BugTask.userHasPrivilegesContext(obj, self.factory.makePerson()))
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.assert_userHasPrivilegesContext(distribution)
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assert_userHasPrivilegesContext(dsp)
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assert_userHasPrivilegesContext(product)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.assert_userHasPrivilegesContext(productseries)
+
+    def test_sourcepackage(self):
+        source = self.factory.makeSourcePackage()
+        self.assert_userHasPrivilegesContext(source)

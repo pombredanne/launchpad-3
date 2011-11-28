@@ -609,7 +609,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False, member_of=(),
+        homepage_content=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -646,6 +647,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
         naked_person._password_cleartext_cached = password
+        if homepage_content is not None:
+            naked_person.homepage_content = homepage_content
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -1080,6 +1083,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ISprintSet).new(
             owner=owner, name=name, title=title, time_zone=time_zone,
             time_starts=time_starts, time_ends=time_ends, summary=summary)
+
+    def makeStackedOnBranchChain(self, depth=5, **kwargs):
+        branch = None
+        for i in xrange(depth):
+            branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
+        return branch
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
@@ -1524,11 +1533,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u''):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
         diff = self.makeDiff()
-        bmp = self.makeBranchMergeProposal()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff.branch_merge_proposal = bmp
+        preview_diff._branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()

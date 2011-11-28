@@ -128,7 +128,7 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in The Evolution Groupware...
+    Bugs : Evolution...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
@@ -158,7 +158,7 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in Ubuntu Linux...
+    Bugs : Ubuntu...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
