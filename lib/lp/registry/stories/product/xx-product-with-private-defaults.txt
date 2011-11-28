@@ -31,15 +31,6 @@ the case with Firefox, the user will get an error:
     <BLANKLINE>
     Set a <a href="...+bugsupervisor">bug supervisor</a> for this project first.
 
-== Visual effects ==
-
-The file-a-bug page uses Launchpad's standard "private" style.
-
-    >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
-    This report will be private, though you can disclose it later.
-
-
 == Filing a new bug ==
 
 If we file a new bug in redfish:
