@@ -944,9 +944,8 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.distroseries.DistroSeriesTranslationsAdminView"
-        name="+admin"
-        template="../../app/templates/generic-edit.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/>
+        name="+translations-admin"
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+imports"

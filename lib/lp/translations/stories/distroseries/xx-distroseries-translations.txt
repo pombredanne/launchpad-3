@@ -38,7 +38,8 @@ series.  The link to hide translations is not available to anonymous users:
 And the page is not available either:
 
     >>> anon_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+admin')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+translations-admin')
     Traceback (most recent call last):
     ...
     Unauthorized:...

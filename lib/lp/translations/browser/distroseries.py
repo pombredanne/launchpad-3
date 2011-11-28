@@ -293,7 +293,7 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Settings', site='translations')
+        return Link('+translations-admin', 'Settings', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
