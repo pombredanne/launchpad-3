@@ -248,6 +248,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
+    access_policy = Attribute("Access policy")
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(
@@ -887,6 +888,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
         Return (private_changed, security_related_changed) tuple.
         """
+
+    def setAccessPolicy(policy_type):
+        """Set the `IAccessPolicy` that controls access to this bug."""
 
     def getBugTask(target):
         """Return the bugtask with the specified target.
