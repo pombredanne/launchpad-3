@@ -360,15 +360,15 @@ assignee it is visible.
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
 
-    >>> blackhole_trash_folder = bugset.get(2)
+    >>> reflow_problems_bug = bugset.get(4)
 
 And again, let's fake setting the bug private:
 
-    >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
-    >>> blackhole_trash_folder.setPrivate(True, current_user())
+    >>> old_state = Snapshot(reflow_problems_bug, providing=IBug)
+    >>> reflow_problems_bug.setPrivate(True, current_user())
     True
     >>> bug_set_private = ObjectModifiedEvent(
-    ...     blackhole_trash_folder, old_state,
+    ...     reflow_problems_bug, old_state,
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
@@ -381,22 +381,22 @@ the Cc list:
     >>> personset = getUtility(IPersonSet)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = blackhole_trash_folder.subscribe(
+    >>> subscription = reflow_problems_bug.subscribe(
     ...     ubuntu_team, ubuntu_team)
 
 Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
     >>> login("jeff.waugh@ubuntulinux.com")
 
-    >>> old_title = blackhole_trash_folder.title
-    >>> blackhole_trash_folder.title = "new title"
-    >>> blackhole_trash_folder.title
+    >>> old_title = reflow_problems_bug.title
+    >>> reflow_problems_bug.title = "new title"
+    >>> reflow_problems_bug.title
     u'new title'
-    >>> blackhole_trash_folder.title = old_title
-    >>> blackhole_trash_folder.title
-    u'Blackhole Trash folder'
+    >>> reflow_problems_bug.title = old_title
+    >>> reflow_problems_bug.title
+    u'Reflow problems with complex page layouts'
 
-Bug #2 is visible to him in searches. Note that bugs #6 and #14 are
+Bug #4 is visible to him in searches. Note that bugs #6 and #14 are
 hidden from him.
 
     >>> hidden_bugs()
@@ -411,16 +411,17 @@ of this bug) though:
 Trying to access a property of this bug will again raise an
 Unauthorized:
 
-    >>> blackhole_trash_folder.title
+    >>> reflow_problems_bug.title
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'title', 'launchpad.View')
 
-And, as you might have guessed, bug #2 is invisible in searches, in
+And, as you might have guessed, bug #4 is invisible in searches, in
 addition to bugs #6 and #14:
 
     >>> hidden_bugs()
-    [2, 6, 14]
+    [4, 6, 14]
+
 
 
 Filing Public vs. Private Bugs
@@ -821,6 +822,14 @@ Changing bug visibility.
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
+We need a feature flag for this test since multi-pillar bugs shouldn't be
+private by default.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
     >>> firefox_bug.private
     False
     >>> firefox_bug.setPrivate(True, current_user())
@@ -835,6 +844,9 @@ Changing bug visibility.
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
+
+Clean up the feature flag.
+    >>> flags.cleanUp()
 
 Changing bug security.
 

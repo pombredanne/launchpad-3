@@ -449,7 +449,9 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def createProductBMP(self, product):
-        bmp = self.factory.makeBranchMergeProposal(product=product)
+        target_branch = self.factory.makeStackedOnBranchChain(product=product)
+        bmp = self.factory.makeBranchMergeProposal(
+            product=product, target_branch=target_branch)
         self.setupBMP(bmp)
         return bmp
 

@@ -1066,6 +1066,15 @@ is already a current subscription:
     Mark Shuttleworth already has a current subscription
     for 'PPA named p3a for Celso Providelo'.
 
+If we try to look at the subscription of a user that doesn't exist,
+Launchpad will return a 404.
+
+    >>> response = cprov_webservice.get(
+    ...     cprov_private_ppa['self_link'] + '/+subscriptions/dave')
+    >>> print response
+    HTTP/1.1 404 Not Found
+    ...
+
 
 Modifying privacy
 ~~~~~~~~~~~~~~~~~

@@ -721,19 +721,19 @@ entitled _Privacy and Team Awareness_):
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bug import IBug
 
-    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_upstream_firefox_crashes = bugtaskset.get(15)
 
     >>> ubuntu_team = personset.getByEmail('support@ubuntu.com')
-    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
+    >>> subscription = bug_upstream_firefox_crashes.bug.subscribe(
     ...     ubuntu_team, ubuntu_team)
 
     >>> old_state = Snapshot(
-    ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
-    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     bug_upstream_firefox_crashes.bug, providing=IBug)
+    >>> bug_upstream_firefox_crashes.bug.setPrivate(
     ...     True, getUtility(ILaunchBag).user)
     True
     >>> bug_set_private = ObjectModifiedEvent(
-    ...     bug_upstream_firefox_no_svg_support.bug, old_state,
+    ...     bug_upstream_firefox_crashes.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
 
@@ -747,12 +747,12 @@ able to access or set properties of the bugtask.
     >>> login("no-priv@canonical.com")
     >>> mr_no_privs = launchbag.user
 
-    >>> bug_upstream_firefox_no_svg_support.status
+    >>> bug_upstream_firefox_crashes.status
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'status', 'launchpad.View')
 
-    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    >>> bug_upstream_firefox_crashes.transitionToStatus(
     ...     BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
@@ -772,7 +772,7 @@ results:
     3
     >>> bug_ids = [bt.bug.id for bt in bugtasks]
     >>> print sorted(bug_ids)
-    [4, 5, 6]
+    [1, 4, 5]
 
 Likewise when the No Privileges Person tries to do a search on tasks
 maintained by Foo Bar.
@@ -832,10 +832,10 @@ when it was marked private:
 
 And note that he can access and set the bugtask attributes:
 
-    >>> bug_upstream_firefox_no_svg_support.status.title
+    >>> bug_upstream_firefox_crashes.status.title
     'New'
 
-    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    >>> bug_upstream_firefox_crashes.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
 
@@ -849,7 +849,7 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
-    [4, 5, 6]
+    [1, 4, 5]
 
 
 But if we add No Privileges Person to the Ubuntu Team, and because the
@@ -908,18 +908,18 @@ we'll also see bug 1 again in the results, even though it's private.
 
 Trying to retrieve the bug directly will work fine:
 
-    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_upstream_firefox_crashes = bugtaskset.get(15)
 
 As will attribute access:
 
-    >>> bug_upstream_firefox_no_svg_support.status.title
+    >>> bug_upstream_firefox_crashes.status.title
     'New'
 
 And attribute setting:
 
-    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    >>> bug_upstream_firefox_crashes.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    >>> bug_upstream_firefox_crashes.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
 
@@ -975,11 +975,6 @@ bugtask is created.
 `BugTask.bugtargetdisplayname` simply returns `targetnamecache`, and
 the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
-
-    # We do not allow private bugs to affect multiple projects so we need to
-    # first make the bug public.
-    >>> bug_one.setPrivate(False, mark)
-    True
 
     >>> netapplet = productset.get(11)
     >>> upstream_task = bugtaskset.createTask(

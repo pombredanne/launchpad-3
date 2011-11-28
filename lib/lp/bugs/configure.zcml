@@ -23,8 +23,7 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="bugs" />
 
-    <lp:help-folder
-        folder="help" type="lp.bugs.publisher.BugsLayer" />
+    <lp:help-folder folder="help" name="+help-bugs" />
 
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
@@ -37,19 +36,14 @@
         <allow
             interface="lp.bugs.interfaces.bugactivity.IBugActivitySet"/>
     </securedutility>
-    <facet
-        facet="bugs"/>
 
     <!-- Macros -->
 
-    <facet
-        facet="bugs">
         <class
             class="lp.bugs.browser.bugcomment.BugComment">
             <allow
                 interface="lp.bugs.interfaces.bugmessage.IBugComment"/>
         </class>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.cve.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.cve.cve_modified"/>
@@ -156,8 +150,6 @@
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.cvereference.ICveReference"/>
     </class>
-    <facet
-        facet="bugs">
 
       <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
         <allow attributes="rank id task"/>
@@ -339,7 +331,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskDelta"/>
         </class>
-    </facet>
     <class
         class="lp.bugs.model.bugattachment.BugAttachment">
         <require
@@ -363,8 +354,6 @@
         <allow
             interface="lp.bugs.interfaces.bugattachment.IBugAttachmentSet"/>
     </securedutility>
-    <facet
-        facet="bugs">
 
         <!-- BugTracker -->
 
@@ -528,7 +517,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IRemoteBug"/>
         </class>
-    </facet>
 
     <!-- IBugBranch -->
 
@@ -573,8 +561,6 @@
         <allow
             interface="lp.bugs.interfaces.bugcve.IBugCve"/>
     </class>
-    <facet
-        facet="bugs">
 
         <!-- CVE -->
 
@@ -611,7 +597,6 @@
             <allow
                 interface="lp.bugs.interfaces.cve.ICveSet"/>
         </securedutility>
-    </facet>
 
     <!-- BugSubscription -->
 
@@ -711,9 +696,6 @@
             interface="
               lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
     </class>
-
-    <facet
-        facet="bugs">
 
         <!-- Bug -->
 
@@ -912,7 +894,6 @@
             <allow
                 interface="lp.bugs.interfaces.bug.IBugDelta"/>
         </class>
-    </facet>
 
     <!-- BugMessage -->
 
@@ -942,8 +923,6 @@
         for="lp.bugs.interfaces.bugnomination.IBugNomination"
         provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
-    <facet
-        facet="bugs">
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
             <require
@@ -976,7 +955,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugnomination.IBugNominationSet"/>
         </securedutility>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
@@ -992,8 +970,6 @@
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_edited"/>
-    <facet
-        facet="bugs">
 
         <!-- BugWatch -->
 
@@ -1077,7 +1053,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchActivity"/>
         </class>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>

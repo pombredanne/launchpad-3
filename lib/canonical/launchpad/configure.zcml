@@ -30,7 +30,6 @@
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
-  <include package="lp.vostok" />
 
   <browser:url
     for="lp.registry.interfaces.person.IPersonSet"

@@ -1863,7 +1863,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
-        self.assertTrue(field_visibility['show_title'])
+        self.assertTrue(field_visibility['show_id'])
 
     def test_cache_cookie_name(self):
         """The cookie name should be in cache for js code access."""
@@ -1879,7 +1879,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         task = self.factory.makeBugTask()
         cookie = (
             'anon-buglist-fields=show_age=true&show_reporter=true'
-            '&show_id=true&show_bugtarget=true&show_title=true'
+            '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_bug_heat=true&show_tags=true'
             '&show_importance=true&show_status=true')
@@ -1890,6 +1890,38 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_tags'])
 
+    def test_exclude_unsupported_cookie_values(self):
+        """Cookie values not present in defaults are ignored."""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true'
+            '&show_milestone_name=true&show_last_updated=true'
+            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_importance=true&show_status=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertNotIn('show_title', field_visibility)
+
+    def test_add_defaults_to_cookie_values(self):
+        """Where cookie values are missing, defaults are used"""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true'
+            '&show_milestone_name=true&show_last_updated=true'
+            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_importance=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertIn('show_status', field_visibility)
+
     def test_cache_field_visibility_defaults(self):
         """Cache contains sane-looking field_visibility_defaults values."""
         task = self.factory.makeBugTask()
@@ -1897,7 +1929,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility_defaults = cache.objects['field_visibility_defaults']
-        self.assertTrue(field_visibility_defaults['show_title'])
+        self.assertTrue(field_visibility_defaults['show_id'])
 
     def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
