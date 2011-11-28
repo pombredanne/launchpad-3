@@ -4069,6 +4069,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive=archive,
                 name=package_name,
                 binpkgnames=binary_names)
+        return distribution, dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
