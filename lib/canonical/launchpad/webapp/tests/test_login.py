@@ -698,7 +698,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # utf8 even.
         self.assertThat('key=value\x85', ForwardsCorrectly())
 
-    def test_return_to_with_non_ascii_key_bug_896959(self):
+    def test_return_to_with_non_ascii_key_bug_897039(self):
         # Sometimes the +login link will have non-ascii characters in the
         # query param keys, and we need to include those in the return_to URL
         # that we pass to the OpenID provider. The params may not be legimate
