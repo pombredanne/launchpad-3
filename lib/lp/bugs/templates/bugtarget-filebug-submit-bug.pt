@@ -21,8 +21,12 @@
         <script type="text/javascript">
             LPS.use('lp.app.privacy',  function(Y) {
                 Y.on('domready', function() {
+                    var notification_array = [
+                        "This report will be private, though you can",
+                        "disclose it later."
+                    ];
                     var cfg = {
-                        notification_text: "This report will be private, though you can disclose it later." 
+                        notification_text: notification_array.join(' ')
                     };
                     Y.lp.app.privacy.setup_privacy_notification(cfg);
                     Y.lp.app.privacy.display_privacy_notification();
