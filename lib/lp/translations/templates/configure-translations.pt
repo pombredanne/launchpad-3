@@ -14,8 +14,8 @@
           <tal:product replace="context/title">Launchpad</tal:product>. In
           most cases you should choose the <em>Launchpad Translators</em>
           group. You can also set the translation permissions policy here.
-          (<a href="/+help/translation-groups.html" target="help">Tips on
-          choosing a group</a>) (<a href="/+help/permissions-policies.html"
+          (<a href="/+help-translations/translation-groups.html" target="help">Tips on
+          choosing a group</a>) (<a href="/+help-translations/permissions-policies.html"
           target="help">Help on choosing a policy</a>)
         </p>
       </div>

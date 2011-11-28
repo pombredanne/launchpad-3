@@ -11,7 +11,7 @@ IObjectPrivacy and check its is_private attribute.
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> bug = getUtility(IBugSet).get(1)
+    >>> bug = getUtility(IBugSet).get(4)
     >>> bug.private
     False
     >>> IObjectPrivacy(bug).is_private

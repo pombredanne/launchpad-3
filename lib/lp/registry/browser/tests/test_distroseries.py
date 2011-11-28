@@ -1319,7 +1319,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         soup = BeautifulSoup(view())
         help_links = soup.findAll(
-            'a', href='/+help/soyuz/derived-series-syncing.html')
+            'a', href='/+help-soyuz/derived-series-syncing.html')
         self.assertEqual(1, len(help_links))
 
     def test_diff_row_includes_last_comment_only(self):

@@ -23,8 +23,7 @@
       name="blueprints" />
 
 
-  <lp:help-folder
-      folder="help" type="lp.blueprints.publisher.BlueprintsLayer" />
+  <lp:help-folder folder="help" name="+help-blueprints" />
 
   <!-- Sprint -->
 

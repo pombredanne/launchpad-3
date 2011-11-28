@@ -1116,8 +1116,8 @@ def bugtask_heat_html(bugtask, target=None):
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = (
-        '<span><a href="/+help/bug-heat.html" target="help" class="icon"><img'
-        ' src="/@@/bug-heat-%(ratio)i.png" '
+        '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+        'class="icon"><img src="/@@/bug-heat-%(ratio)i.png" '
         'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
         '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})

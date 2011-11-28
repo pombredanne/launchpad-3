@@ -401,6 +401,23 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
+    def test_hide_private_option_for_multipillar_bugs(self):
+        # A multi-pillar bug cannot be made private, so hide the form field.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+        view = create_initialized_view(bug.default_bugtask, '+secrecy')
+        self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
+
+        # Some teams though need multi-pillar private bugs.
+        feature_flag = {
+            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
+            }
+        with FeatureFixture(feature_flag):
+            view = create_initialized_view(bug.default_bugtask, '+secrecy')
+            self.assertIsNotNone(
+                find_tag_by_id(view.render(), 'field.private'))
+
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
