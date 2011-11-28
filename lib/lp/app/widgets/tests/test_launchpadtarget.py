@@ -12,7 +12,18 @@ from lazr.restful.fields import Reference
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
-from lp.testing import TestCaseWithFactory
+from lp.registry.vocabularies import (
+    DistributionVocabulary,
+    DistributionSourcePackageVocabulary,
+    ProductVocabulary,
+    )
+from lp.soyuz.model.binaryandsourcepackagename import (
+    BinaryAndSourcePackageNameVocabulary,
+    )
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
@@ -41,3 +52,18 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_default_option(self):
         self.assertEqual('package', self.widget.default_option)
+
+    def test_setUpSubWidgets_first_call(self):
+        # The subwidgets are setup and a flag is set.
+        login_person(self.factory.makePerson())
+        self.widget.setUpSubWidgets()
+        self.assertTrue(self.widget._widgets_set_up)
+        self.assertIsInstance(
+            self.widget.distribution_widget.context.vocabulary,
+            DistributionVocabulary)
+        self.assertIsInstance(
+            self.widget.product_widget.context.vocabulary,
+            ProductVocabulary)
+        self.assertIsInstance(
+            self.widget.package_widget.context.vocabulary,
+            BinaryAndSourcePackageNameVocabulary)
