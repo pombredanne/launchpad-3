@@ -14,7 +14,7 @@ and then returned each time it is asked for.
     >>> from itertools import count
     >>> counter = count(1)
 
-    >>> class Foo:
+    >>> class Foo(object):
     ...     @cachedproperty
     ...     def bar(self):
     ...         return counter.next()
@@ -123,7 +123,7 @@ A cached property can be declared with or without an explicit name. If
 not provided it will be derived from the decorated object. This name
 is the name under which values will be cached.
 
-    >>> class Foo:
+    >>> class Foo(object):
     ...     @cachedproperty("a_in_cache")
     ...     def a(self):
     ...         return 1234
@@ -164,3 +164,17 @@ cache too.
     5678
     >>> get_property_cache(foo).b
     5678
+
+Cached properties cannot be set or deleted from the host object.
+
+    >>> foo.a = 4321
+    Traceback (most recent call last):
+    ...
+    AttributeError: a_in_cache cannot be set here; instead set
+    explicitly with get_property_cache(object).a_in_cache = 4321
+
+    >>> del foo.a
+    Traceback (most recent call last):
+    ...
+    AttributeError: a_in_cache cannot be deleted here; instead delete
+    explicitly with del get_property_cache(object).a_in_cache

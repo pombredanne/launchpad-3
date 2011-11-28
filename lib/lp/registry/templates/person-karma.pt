@@ -13,7 +13,7 @@
       <p class="application-summary">
         This is a summary of the Launchpad karma earned by
         <span tal:replace="context/displayname" />, organized by activity
-        type. (<a href="/+help/karma.html" target="help">What is karma?</a>)
+        type. (<a href="/+help-registry/karma.html" target="help">What is karma?</a>)
       </p>
 
       <p id="no-karma" tal:condition="not: view/has_karma">

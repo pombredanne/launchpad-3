@@ -695,6 +695,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def api_request(self):
         return IWebServiceClientRequest(self.request)
 
+    @cachedproperty
+    def recommended_canonical_url(self):
+        return canonical_url(self.context.bug, rootsite='bugs')
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
@@ -1112,8 +1116,8 @@ def bugtask_heat_html(bugtask, target=None):
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = (
-        '<span><a href="/+help/bug-heat.html" target="help" class="icon"><img'
-        ' src="/@@/bug-heat-%(ratio)i.png" '
+        '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+        'class="icon"><img src="/@@/bug-heat-%(ratio)i.png" '
         'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
         '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
@@ -2280,7 +2284,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_reporter': False,
             'show_status': True,
             'show_tags': False,
-            'show_title': True,
         }
         self.field_visibility = None
         self._setFieldVisibility()
@@ -2311,17 +2314,18 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """
         cookie_name = self.getCookieName()
         cookie = self.request.cookies.get(cookie_name)
-        fields_from_cookie = {}
+        self.field_visibility = dict(self.field_visibility_defaults)
         # "cookie" looks like a URL query string, so we split
         # on '&' to get items, and then split on '=' to get
         # field/value pairs.
-        if cookie is not None:
-            for field, value in urlparse.parse_qsl(cookie):
-                # We only record True or False for field values.
-                fields_from_cookie[field] = (value == 'true')
-            self.field_visibility = fields_from_cookie
-        else:
-            self.field_visibility = self.field_visibility_defaults
+        if cookie is None:
+            return
+        for field, value in urlparse.parse_qsl(cookie):
+            # Skip unsupported fields (from old cookies).
+            if field not in self.field_visibility:
+                continue
+            # We only record True or False for field values.
+            self.field_visibility[field] = (value == 'true')
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
@@ -2579,7 +2583,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def page_title(self):
-        return "Bugs in %s" % self.context.title
+        return "Bugs : %s" % self.context.displayname
 
     label = page_title
 

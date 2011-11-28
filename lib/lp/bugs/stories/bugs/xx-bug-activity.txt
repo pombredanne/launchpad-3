@@ -98,6 +98,13 @@ that have been added.
     --------
 
 Alterations to a bug's privacy will show up as 'visibility' changes.
+We need a feature flag so that multi-pillar bugs can be made private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
@@ -115,6 +122,9 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     visibility:
     public => private
     --------
+
+Clean up the feature flag.
+    >>> flags.cleanUp()
 
 Changes to a bug's security_related field will be displayed as
 'security vulnerability' changes, with values of 'yes' or 'no'. Note

@@ -494,6 +494,14 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             expected, sourcepackage.getSharingDetailPermissions())
 
+    def test_drivers_are_distroseries(self):
+        # SP.drivers returns the drivers for the distroseries.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        self.assertNotEqual([], distroseries.drivers)
+        self.assertEqual(sourcepackage.drivers, distroseries.drivers)
+
 
 class TestSourcePackageWebService(WebServiceTestCase):
 

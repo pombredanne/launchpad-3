@@ -30,7 +30,7 @@
   <p>
     <strong>Note:</strong> it's quicker and easier to <a tal:attributes="
     href context/fmt:url:translations/+translations-settings">import from a
-    Bazaar branch</a> instead (<a href="/+help/importing-from-bzr.html"
+    Bazaar branch</a> instead (<a href="/+help-translations/importing-from-bzr.html"
     target="help">More about importing from Bazaar</a>)
   </p>
 
@@ -43,7 +43,7 @@
   <ul class="bulleted">
     <li>contain at least one <code>.pot</code> file with English strings,
     rather than message IDs or another language</li>
-    <li>give each template its own directory (<a href="/+help/directory-example.html"
+    <li>give each template its own directory (<a href="/+help-translations/directory-example.html"
     target="help">see an example directory layout</a>).</li>
   </ul>
 

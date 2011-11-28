@@ -573,7 +573,7 @@ class ISourcePackageEditSchema(Interface):
         Text(
             title=u'Recipe text', required=True,
             description=u"""The text of the recipe.
-                <a href="/+help/recipe-syntax.html" target="help"
+                <a href="/+help-code/recipe-syntax.html" target="help"
                   >Syntax help&nbsp;
                   <span class="sprite maybe">
                     <span class="invisible-link">Help</span>

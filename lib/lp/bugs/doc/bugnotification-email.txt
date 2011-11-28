@@ -218,18 +218,19 @@ is wrapped properly:
 (Note that there's a blank line in the email that contains whitespace.  You
 may see a lint warning for that.)
 
-Let's make the bug security-related, and private (we need to switch
+Let's make a bug security-related, and private (we need to switch
 logins to a user that is explicitly subscribed to this bug):
 
     >>> login("steve.alexander@ubuntulinux.com")
 
+    >>> edited_bug = getUtility(IBugSet).get(6)
     >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
     >>> changed = edited_bug.setSecurityRelated(
     ...     True, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={
@@ -256,7 +257,7 @@ e-mail sent changed as well.
     ...     False, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     private={'old': True, 'new': edited_bug.private},
     ...     security_related={
@@ -278,7 +279,7 @@ Let's add some tags to a bug:
     >>> edited_bug.tags = [u'foo', u'bar']
     >>> bug_delta = BugDelta(
     ...        bug=edited_bug,
-    ...        bugurl="http://www.example.com/bugs/2",
+    ...        bugurl="http://www.example.com/bugs/6",
     ...        user=sample_person,
     ...        tags={'old': old_tags, 'new': edited_bug.tags})
     >>> for change in get_bug_changes(bug_delta):
@@ -326,7 +327,7 @@ We use a BugTaskDelta to represent changes to a BugTask.
     >>> verifyObject(IBugTaskDelta, example_delta)
     True
 
-    >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
+    >>> edited_bugtask = getUtility(IBugTaskSet).get(15)
     >>> edited_bugtask.transitionToStatus(
     ...        BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> edited_bugtask.transitionToAssignee(sample_person)
@@ -336,17 +337,17 @@ We use a BugTaskDelta to represent changes to a BugTask.
     ...     assignee={'old' : None, 'new' : edited_bugtask.assignee})
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
     >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: tomcat
+    ** Changed in: firefox
            Status: New => Confirmed
     -----------------------------
-    ** Changed in: tomcat
+    ** Changed in: firefox
          Assignee: (unassigned) => Sample Person (name12)
     -----------------------------
 
@@ -363,7 +364,7 @@ edited:
     ...     assignee={'old' : sample_person, 'new' : None})
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
     >>> for change in get_bug_changes(bug_delta):
@@ -385,7 +386,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     filename='screenshot.png')
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     attachment={'new' : attachment, 'old': None})
     >>> for change in get_bug_changes(bug_delta):
@@ -400,7 +401,7 @@ Removing an attachment generates a notification, too.
 
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     attachment={'old' : attachment, 'new': None})
     >>> for change in get_bug_changes(bug_delta):
@@ -419,7 +420,7 @@ notification.
     ...     filename='new-icon.png', is_patch=True)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     attachment={'new' : attachment, 'old': None})
     >>> for change in get_bug_changes(bug_delta):
@@ -434,7 +435,7 @@ Removing a patch also generates a different notification.
 
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
+    ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
     ...     attachment={'old' : attachment, 'new': None})
     >>> for change in get_bug_changes(bug_delta):

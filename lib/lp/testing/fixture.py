@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad test fixtures that have no better home."""
@@ -15,12 +15,14 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import time
 
 import amqplib.client_0_8 as amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
+from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
 import pgbouncer.fixture
@@ -46,9 +48,11 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
+from canonical.launchpad import webapp
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -185,12 +189,38 @@ class ZopeViewReplacementFixture(Fixture):
         # can add more flexibility then.
         defineChecker(self.replacement, self.checker)
 
-    def tearDown(self):
-        super(ZopeViewReplacementFixture, self).tearDown()
-        undefineChecker(self.replacement)
-        self.gsm.adapters.register(
-            (self.context_interface, self.request_interface), Interface,
-             self.name, self.original)
+        self.addCleanup(
+            undefineChecker, self.replacement)
+        self.addCleanup(
+            self.gsm.adapters.register,
+            (self.context_interface, self.request_interface),
+            Interface,
+            self.name, self.original)
+
+
+class ZopeUtilityFixture(Fixture):
+    """A fixture that temporarily registers a different utility."""
+
+    def __init__(self, component, intf, name):
+        """Construct a new fixture.
+
+        :param component: An instance of a class that provides this
+            interface.
+        :param intf: The Zope interface class to register, eg
+            IMailDelivery.
+        :param name: A string name to match.
+        """
+        self.component = component
+        self.name = name
+        self.intf = intf
+
+    def setUp(self):
+        super(ZopeUtilityFixture, self).setUp()
+        gsm = getGlobalSiteManager()
+        gsm.registerUtility(self.component, self.intf, self.name)
+        self.addCleanup(
+            gsm.unregisterUtility,
+            self.component, self.intf, self.name)
 
 
 class Urllib2Fixture(Fixture):
@@ -299,3 +329,18 @@ class CaptureOops(Fixture):
             # Ensure we leave the queue ready to roll, or later calls to
             # sync() will fail.
             self.setUpQueue()
+
+
+class CaptureTimeline(Fixture):
+    """Record and return the timeline.
+
+    This won't work well (yet) for code that starts new requests as they will
+    reset the timeline.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        webapp.adapter.set_request_started(time.time())
+        self.timeline = get_request_timeline(
+            get_current_browser_request())
+        self.addCleanup(webapp.adapter.clear_request_started)

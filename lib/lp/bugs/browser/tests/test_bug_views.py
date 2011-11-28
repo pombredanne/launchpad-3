@@ -17,6 +17,11 @@ from testtools.matchers import (
     Not,
     )
 
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -396,6 +401,23 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
+    def test_hide_private_option_for_multipillar_bugs(self):
+        # A multi-pillar bug cannot be made private, so hide the form field.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+        view = create_initialized_view(bug.default_bugtask, '+secrecy')
+        self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
+
+        # Some teams though need multi-pillar private bugs.
+        feature_flag = {
+            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
+            }
+        with FeatureFixture(feature_flag):
+            view = create_initialized_view(bug.default_bugtask, '+secrecy')
+            self.assertIsNotNone(
+                find_tag_by_id(view.render(), 'field.private'))
+
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
@@ -448,3 +470,24 @@ class TestBugTextViewPrivateTeams(TestCaseWithFactory):
             "subscribers:\n.*%s \(%s\)"
             % (naked_subscriber.displayname, naked_subscriber.name),
             view_text)
+
+
+class TestBugCanonicalUrl(BrowserTestCase):
+    """Bugs give a <link rel=canonical> to a standard url.
+
+    See https://bugs.launchpad.net/launchpad/+bug/808282
+    """
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_canonical_url(self):
+        bug = self.factory.makeBug()
+        browser = self.getViewBrowser(bug, rootsite="bugs")
+        # Hardcode this to be sure we've really got what we expected, with no
+        # confusion about lp's own url generation machinery.
+        expected_url = 'http://bugs.launchpad.dev/bugs/%d' % bug.id
+        self.assertThat(
+            browser.contents,
+            HTMLContains(Tag(
+                'link rel=canonical',
+                'link',
+                dict(rel='canonical', href=expected_url))))
