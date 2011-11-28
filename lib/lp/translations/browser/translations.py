@@ -7,7 +7,6 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
-    'TranslateRedirectView',
     'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
@@ -170,13 +169,6 @@ class PageRedirectView:
                 canonical_url(self.context, rootsite='translations'),
                 self.page,
                 ]), status=301)
-
-
-class TranslateRedirectView(PageRedirectView):
-    """Redirects to translations site for +translate page."""
-
-    def __init__(self, context, request):
-        PageRedirectView.__init__(self, context, request, '+translate')
 
 
 class TranslationsRedirectView(PageRedirectView):
