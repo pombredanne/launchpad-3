@@ -147,6 +147,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     return distribution
                 try:
                     if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                        # XXX sinzui 2011-11-28: package_name might already
+                        # be a dsp because getTermByToken was called by
+                        # getInputValue().
                         vocab = self.package_widget.context.vocabulary
                         name = package_name.name
                         dsp = vocab.getTermByToken(name).value
