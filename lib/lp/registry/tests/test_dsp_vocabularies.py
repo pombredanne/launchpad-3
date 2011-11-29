@@ -61,6 +61,12 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(None, vocabulary.distribution)
         self.assertEqual(None, vocabulary.dsp)
 
+    def test_setDistribution(self):
+        new_distro = self.factory.makeDistribution(name='fnord')
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        vocabulary.setDistribution(new_distro)
+        self.assertEqual(new_distro, vocabulary.distribution)
+
     def test_getDistributionAndPackageName_distro_and_package(self):
         # getDistributionAndPackageName() returns a tuple of distribution
         # and package name when the text contains both.

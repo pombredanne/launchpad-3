@@ -135,6 +135,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
+                if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                    self.package_widget.vocabulary.setDistribution(
+                        distribution)
                 try:
                     package_name = self.package_widget.getInputValue()
                 except ConversionError:
