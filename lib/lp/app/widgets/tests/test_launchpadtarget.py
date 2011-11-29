@@ -81,8 +81,9 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # hasInput is true is the widget's name in the form data.
         form = {
             'field.target': 'package',
-            'field.target.distribution': 'ubuntu',
-            'field.target.package': 'evolution'}
+            'field.target.distribution': 'fnord',
+            'field.target.package': 'snarf',
+            }
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual('field.target', self.widget.name)
         self.assertTrue(self.widget.hasInput())
@@ -95,11 +96,11 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             self.widget.distribution_widget.context.vocabulary,
             DistributionVocabulary)
         self.assertIsInstance(
-            self.widget.product_widget.context.vocabulary,
-            ProductVocabulary)
-        self.assertIsInstance(
             self.widget.package_widget.context.vocabulary,
             BinaryAndSourcePackageNameVocabulary)
+        self.assertIsInstance(
+            self.widget.product_widget.context.vocabulary,
+            ProductVocabulary)
 
     def test_setUpSubWidgets_second_call(self):
         # The setUpSubWidgets method exits early if a flag is set to
@@ -118,3 +119,45 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertIsInstance(
             self.widget.package_widget.context.vocabulary,
             DistributionSourcePackageVocabulary)
+
+    def test_setUpOptions_default_package_checked(self):
+        # The radio button options are composed of the setup widgets with
+        # the package widget set as the default.
+        self.widget.setUpSubWidgets()
+        self.widget.setUpOptions()
+        self.assertEqual(
+            "selectWidget('field.target.option.package', event)",
+            self.widget.package_widget.onKeyPress)
+        self.assertEqual(
+            "selectWidget('field.target.option.product', event)",
+            self.widget.product_widget.onKeyPress)
+        self.assertEqual(
+            '<input class="radioType" checked="checked" '
+            'id="field.target.option.package" name="field.target" '
+            'type="radio" value="package" />',
+            self.widget.options['package'])
+        self.assertEqual(
+            '<input class="radioType" '
+            'id="field.target.option.product" name="field.target" '
+            'type="radio" value="product" />',
+            self.widget.options['product'])
+
+    def test_setUpOptions_product_checked(self):
+        # The product radio button is selected when the form is submitted
+        # with product as the target.
+        form = {
+            'field.target': 'product',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.widget.setUpSubWidgets()
+        self.widget.setUpOptions()
+        self.assertEqual(
+            '<input class="radioType" '
+            'id="field.target.option.package" name="field.target" '
+            'type="radio" value="package" />',
+            self.widget.options['package'])
+        self.assertEqual(
+            '<input class="radioType" checked="checked" '
+            'id="field.target.option.product" name="field.target" '
+            'type="radio" value="product" />',
+            self.widget.options['product'])
