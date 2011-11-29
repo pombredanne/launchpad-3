@@ -285,6 +285,9 @@ from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -304,6 +307,7 @@ from lp.testing import (
     time_counter,
     with_celebrity_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.enums import (
     LanguagePackType,
     RosettaImportStatus,
@@ -4043,6 +4047,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(package)._new(
                 distribution, sourcepackagename, False)
         return package
+
+    def makeDSPCache(self, distro_name, package_name, make_distro=True,
+                     official=True, binary_names=None, archive=None):
+        if make_distro:
+            distribution = self.makeDistribution(name=distro_name)
+        else:
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        dsp = self.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename=package_name,
+            with_db=official)
+        if archive is None:
+            archive = dsp.distribution.main_archive
+        else:
+            archive = self.makeArchive(
+                distribution=distribution, purpose=archive)
+        if official:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distribution.currentseries,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive)
+        with dbuser('statistician'):
+            DistributionSourcePackageCache(
+                distribution=dsp.distribution,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive,
+                name=package_name,
+                binpkgnames=binary_names)
+        return distribution, dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
