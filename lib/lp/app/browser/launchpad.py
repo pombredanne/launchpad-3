@@ -20,6 +20,7 @@ __all__ = [
     'MaintenanceMessage',
     'NavigationMenuTabs',
     'SoftTimeoutView',
+    'get_launchpad_views',
     ]
 
 

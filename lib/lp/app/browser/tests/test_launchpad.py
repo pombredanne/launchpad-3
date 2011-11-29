@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from zope.component import getMultiAdapter, getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
