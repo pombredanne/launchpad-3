@@ -17,6 +17,10 @@ from lp.testing import TestCase
 class TestSFTPServer(TestCase):
 
     def setUp(self):
+        # XXX: GavinPanella 2011-11-29 bug=???: Having to set the umask might
+        # be indicative of a bug in twistedsftp. It should probably set umask
+        # or reset permissions after file creation (see SFTPFile.writeChunk).
+        self.addCleanup(os.umask, os.umask(0022))
         self.fs_root = self.useFixture(TempDir()).path
         self.sftp_server = SFTPServer(None, self.fs_root)
         super(TestSFTPServer, self).setUp()
