@@ -253,6 +253,8 @@ class IBranchPublic(Interface):
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
 
+    access_policy = Attribute("Access policy")
+
 
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
