@@ -8,7 +8,6 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -16,7 +15,7 @@ from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
-    StormStatementRecorder,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
@@ -100,35 +99,15 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         removeSecurityProxy(build).builder = self.builder
         return build
 
-    def _record_queries_count(self, tested_method, item_creator):
-        # A simple helper that returns the two storm statement recorders
-        # obtained when running tested_method with {nb_objects} items creater
-        # (using item_creator) and then with {nb_objects}*2 items created.
-        for i in range(self.nb_objects):
-            item_creator()
-        # Record how many queries are issued when tested_method is
-        # called with {nb_objects} items created.
-        flush_database_caches()
-        with StormStatementRecorder() as recorder1:
-            tested_method()
-        # Create {nb_objects} more items.
-        for i in range(self.nb_objects):
-            item_creator()
-        # Record again the number of queries issued.
-        flush_database_caches()
-        with StormStatementRecorder() as recorder2:
-            tested_method()
-        return recorder1, recorder2
-
     def test_build_history_queries_count_view_recipe_builds(self):
         # The builder's history view creation (i.e. the call to
         # view.setupBuildList) issues a constant number of queries
         # when recipe builds are displayed.
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
-        recorder1, recorder2 = self._record_queries_count(
-            builder_history_render,
-            self.createRecipeBuildWithBuilder)
+        recorder1, recorder2 = record_two_runs(
+            builder_history_render, self.createRecipeBuildWithBuilder,
+            self.nb_objects)
 
         # XXX: rvb 2011-11-14 bug=890326: The only query remaining is the
         # one that results from a call to
@@ -142,9 +121,9 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         # when binary builds are displayed.
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
-        recorder1, recorder2 = self._record_queries_count(
-            builder_history_render,
-            self.createBinaryPackageBuild)
+        recorder1, recorder2 = record_two_runs(
+            builder_history_render, self.createBinaryPackageBuild,
+            self.nb_objects)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
@@ -153,8 +132,8 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         # when translation template builds are displayed.
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
-        recorder1, recorder2 = self._record_queries_count(
+        recorder1, recorder2 = record_two_runs(
             builder_history_render,
-            self.createTranslationTemplateBuildWithBuilder)
+            self.createTranslationTemplateBuildWithBuilder, self.nb_objects)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
