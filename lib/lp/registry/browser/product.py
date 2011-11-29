@@ -59,6 +59,7 @@ from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
+from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -2305,23 +2306,31 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
         At most one may be specified.
         """
-        # If errors have already been found we can skip validation.
-        if len(self.errors) > 0:
-            return
         xfer = data.get('transfer_to_registry', False)
         owner = data.get('owner')
-        if owner is not None and xfer:
-            self.setFieldError(
-                'owner',
-                'You may not specify a new owner if you '
-                'select the checkbox.')
-        elif xfer:
-            data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
-        elif owner is None:
-            self.setFieldError(
-                'owner',
-                'You must specify a maintainer or select '
-                'the checkbox.')
+        error = None
+        if xfer:
+            if owner:
+                error = (
+                    'You may not specify a new owner if you select the '
+                    'checkbox.')
+            else:
+                celebrities = getUtility(ILaunchpadCelebrities)
+                data['owner'] = celebrities.registry_experts
+        else:
+            if not owner:
+                if self.errors and isinstance(
+                    self.errors[0], WidgetInputError):
+                    del self.errors[0]
+                    error = (
+                        'You must choose a valid person or team to be the '
+                        'owner for %s.' % self.context.displayname)
+                else:
+                    error = (
+                        'You must specify a maintainer or select the '
+                        'checkbox.')
+        if error:
+            self.setFieldError('owner', error)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
