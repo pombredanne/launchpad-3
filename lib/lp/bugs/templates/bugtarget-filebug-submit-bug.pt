@@ -17,23 +17,7 @@
           });
       });
     </script>
-    <tal:private condition="view/isPrivate">
-        <script type="text/javascript">
-            LPS.use('lp.app.privacy',  function(Y) {
-                Y.on('domready', function() {
-                    var notification_array = [
-                        "This report will be private, though you can",
-                        "disclose it later."
-                    ];
-                    var cfg = {
-                        notification_text: notification_array.join(' ')
-                    };
-                    Y.lp.app.privacy.setup_privacy_notification(cfg);
-                    Y.lp.app.privacy.display_privacy_notification();
-                });
-            });
-        </script>
-    </tal:private>
+    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy"/>
   </metal:block>
 
   <div metal:fill-slot="heading">

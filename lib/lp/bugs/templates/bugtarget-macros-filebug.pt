@@ -327,6 +327,23 @@
   </tr>
 </metal:bug_reporting_guidelines>
 
+<metal:privacy define-macro="bug-reporting-privacy">
+    <tal:private condition="view/isPrivate">
+        <script type="text/javascript">
+            LPS.use('lp.app.privacy',  function(Y) {
+                Y.on('domready', function() {
+                   var cfg = {
+                        notification_text: "This report till be private, "
+                            + "though you can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.privacy.display_privacy_notification();
+                });
+            });
+        </script>
+    </tal:private>
+</metal:privacy>
+
 <metal:similar-bugs define-macro="display-similar-bugs">
   <tal:results-intro-with-summary condition="view/show_summary_in_results">
     <p id="filebug-query-heading">
