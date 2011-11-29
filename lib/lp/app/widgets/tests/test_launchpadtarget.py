@@ -244,3 +244,36 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             "Launchpad")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
+
+    def test_setRenderedValue_product(self):
+        # Passing a product will set the widget's render state to 'product'.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.project)
+        self.assertEqual('product', self.widget.default_option)
+        self.assertEqual(
+            self.project, self.widget.product_widget._getCurrentValue())
+
+    def test_setRenderedValue_distribution(self):
+        # Passing a distribution will set the widget's render state to
+        # 'package', but only the distribution widget is set.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.distribution)
+        self.assertEqual('package', self.widget.default_option)
+        self.assertEqual(
+            self.distribution,
+            self.widget.distribution_widget._getCurrentValue())
+        self.assertEqual(
+            None, self.widget.package_widget._getCurrentValue())
+
+    def test_setRenderedValue_package(self):
+        # Passing a package will set the widget's render state to
+        # 'package'.
+        self.widget.setUpSubWidgets()
+        self.widget.setRenderedValue(self.package)
+        self.assertEqual('package', self.widget.default_option)
+        self.assertEqual(
+            self.distribution,
+            self.widget.distribution_widget._getCurrentValue())
+        self.assertEqual(
+            self.package.sourcepackagename,
+            self.widget.package_widget._getCurrentValue())
