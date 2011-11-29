@@ -15,6 +15,7 @@ from lazr.restful.fields import Reference
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.validators import LaunchpadValidationError
 from lp.registry.vocabularies import (
     DistributionVocabulary,
     DistributionSourcePackageVocabulary,
@@ -184,7 +185,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
 
-    def test_getInputValue_package_distribution_only(self):
+    def test_getInputValue_distribution_only(self):
         # The field value is the distribution when the package radio button
         # is selected and the package sub field empty.
         form = self.form
@@ -192,7 +193,18 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(self.distribution, self.widget.getInputValue())
 
-    def test_getInputValue_package_product_only(self):
+    def test_getInputValue_distribution_invalid(self):
+        form = self.form
+        form['field.target.package'] = ''
+        form['field.target.distribution'] = 'non-existant'
+        self.widget.request = LaunchpadTestRequest(form=form)
+        message = (
+            "There is no distribution named 'non-existant' registered in "
+            "Launchpad")
+        self.assertRaisesWithContent(
+            LaunchpadValidationError, message, self.widget.getInputValue)
+
+    def test_getInputValue_product_only(self):
         # The field value is the product when the project radio button
         # is selected and the project sub field is valid.
         form = self.form
