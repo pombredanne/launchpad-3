@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
@@ -184,19 +184,29 @@ class PackageCloner:
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
-                datepublished, pocket)
-            SELECT bpph.binarypackagerelease, %s as distroarchseries,
-                   bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket
+                datepublished, pocket, binarypackagename)
+            SELECT
+                bpph.binarypackagerelease,
+                %s as distroarchseries,
+                bpph.status,
+                bpph.component,
+                bpph.section,
+                bpph.priority,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                bpph.binarypackagename
             """ % sqlvalues(
                 destination_das, destination.archive, UTC_NOW, UTC_NOW,
                 destination.pocket)
         query += clause_tables
         query += """
-            WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
-            AND
-                bpph.pocket = %s and bpph.archive = %s
+            WHERE
+                bpph.distroarchseries = %s AND
+                bpph.status in (%s, %s) AND
+                bpph.pocket = %s AND
+                bpph.archive = %s
             """ % sqlvalues(
                 origin_das,
                 PackagePublishingStatus.PENDING,
@@ -424,14 +434,25 @@ class PackageCloner:
         query = '''
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket)
-            SELECT spph.sourcepackagerelease, %s as distroseries,
-                   spph.status, spph.component, spph.section, %s as archive,
-                   %s as datecreated, %s as datepublished,
-                   %s as pocket
+                section, archive, datecreated, datepublished, pocket,
+                sourcepackagename)
+            SELECT
+                spph.sourcepackagerelease,
+                %s as distroseries,
+                spph.status,
+                spph.component,
+                spph.section,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                spph.sourcepackagename
             FROM SourcePackagePublishingHistory AS spph
-            WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
-                  spph.pocket = %s and spph.archive = %s
+            WHERE
+                spph.distroseries = %s AND
+                spph.status in (%s, %s) AND
+                spph.pocket = %s AND
+                spph.archive = %s
             ''' % sqlvalues(
                 destination.distroseries, destination.archive, UTC_NOW,
                 UTC_NOW, destination.pocket, origin.distroseries,
@@ -440,24 +461,27 @@ class PackageCloner:
                 origin.pocket, origin.archive)
 
         if sourcepackagenames and len(sourcepackagenames) > 0:
-            query += '''AND spph.sourcepackagerelease IN (
-                            (SELECT spr.id
-                            FROM SourcePackageRelease AS spr,
-                            SourcePackageName AS spn
-                        WHERE spr.sourcepackagename = spn.id
-                        AND spn.name IN %s))''' % sqlvalues(
-                            sourcepackagenames)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM SourcePackageRelease AS spr, SourcePackageName AS spn
+                    WHERE
+                        spr.sourcepackagename = spn.id AND spn.name IN %s
+                )''' % sqlvalues(sourcepackagenames)
 
         if origin.packagesets:
-            query += '''AND spph.sourcepackagerelease IN
-                            (SELECT spr.id
-                             FROM SourcePackageRelease AS spr,
-                                  packagesetsources AS pss,
-                                  flatpackagesetinclusion AS fpsi
-                             WHERE spr.sourcepackagename
-                                    = pss.sourcepackagename
-                             AND pss.packageset = fpsi.child
-                             AND fpsi.parent in %s)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM
+                        SourcePackageRelease AS spr,
+                        packagesetsources AS pss,
+                        flatpackagesetinclusion AS fpsi
+                    WHERE
+                        spr.sourcepackagename = pss.sourcepackagename AND
+                        pss.packageset = fpsi.child AND
+                        fpsi.parent in %s
+                )
                      ''' % sqlvalues([p.id for p in origin.packagesets])
 
         if origin.component:
