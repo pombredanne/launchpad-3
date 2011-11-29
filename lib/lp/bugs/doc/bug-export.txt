@@ -132,9 +132,9 @@ bug #1.  We need to commit here so that the librarian can later serve
 the file when we later serialise the bug:
 
     >>> login('test@canonical.com')
-    >>> bug1 = getUtility(IBugSet).get(1)
+    >>> bug4 = getUtility(IBugSet).get(4)
     >>> sampleperson = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> bug1.addAttachment(
+    >>> bug4.addAttachment(
     ...     sampleperson, StringIO('Hello World'), 'Added attachment',
     ...     'hello.txt', description='"Hello World" attachment')
     <BugAttachment ...>
@@ -144,16 +144,16 @@ the file when we later serialise the bug:
 A reference to the attachment is included with the new comment with the
 attachment contents encoded using base-64:
 
-    >>> node = serialise_bugtask(bug1.bugtasks[0])
+    >>> node = serialise_bugtask(bug4.bugtasks[0])
     >>> tree = ET.ElementTree(node)
     >>> tree.write(sys.stdout)
-    <bug id="1">
+    <bug id="4">
     ...
     <comment>
     <sender name="name12">Sample Person</sender>
     <date>...</date>
     <text>Added attachment</text>
-    <attachment href="http://bugs.launchpad.dev/bugs/1/.../+files/hello.txt">
+    <attachment href="http://bugs.launchpad.dev/bugs/4/.../+files/hello.txt">
     <type>UNSPECIFIED</type>
     <filename>hello.txt</filename>
     <title>"Hello World" attachment</title>
@@ -172,7 +172,7 @@ By default a bug export will not include any private bugs.  However,
 they can be included by passing the --include-private flag to the import
 script.  To test this, we'll make a bug private:
 
-    >>> bug1.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> bug4.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
     >>> transaction.commit()
@@ -181,12 +181,12 @@ Now we'll do a dump not including private bugs:
 
     >>> output = StringIO()
     >>> export_bugtasks(transaction, firefox, output)
-    >>> '<bug id="1">' in output.getvalue()
+    >>> '<bug id="4">' in output.getvalue()
     False
 
-However, bug #1 will appear in the export if we include private bugs:
+However, bug #4 will appear in the export if we include private bugs:
 
     >>> output = StringIO()
     >>> export_bugtasks(transaction, firefox, output, include_private=True)
-    >>> '<bug id="1">' in output.getvalue()
+    >>> '<bug id="4">' in output.getvalue()
     True

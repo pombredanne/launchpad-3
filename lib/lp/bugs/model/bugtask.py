@@ -135,6 +135,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -392,7 +393,8 @@ def validate_assignee(self, attr, value):
 def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
-    Checks that no conflicting tasks already exist.
+    Checks that no conflicting tasks already exist, and that the new
+    target's pillar supports the bug's access policy.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -424,6 +426,14 @@ def validate_target(bug, target, retarget_existing=True):
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
+
+    if (bug.access_policy is not None and
+        bug.access_policy.pillar != target.pillar and
+        not getUtility(IAccessPolicySource).getByPillarAndType(
+            target.pillar, bug.access_policy.type)):
+        raise IllegalTarget(
+            "%s doesn't have a %s access policy."
+            % (target.pillar.displayname, bug.access_policy.type.title))
 
 
 def validate_new_target(bug, target):
@@ -1223,6 +1233,12 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self.updateTargetNameCache()
 
+        # If there's a policy set and we're changing to a another
+        # pillar, recalculate the access policy.
+        if (self.bug.access_policy is not None and
+            self.bug.access_policy.pillar != target.pillar):
+            self.bug.setAccessPolicy(self.bug.access_policy.type)
+
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
@@ -1346,8 +1362,12 @@ class BugTask(SQLBase):
         else:
             return None
 
-    def userHasPrivileges(self, user):
-        """See `IBugTask`."""
+    @classmethod
+    def userHasPrivilegesContext(cls, context, user):
+        """Does the user have privileges for the given context?
+
+        :return: a boolean.
+        """
         if not user:
             return False
         role = IPersonRoles(user)
@@ -1365,12 +1385,12 @@ class BugTask(SQLBase):
         # Otherwise, if you're a member of the pillar owner, drivers, or the
         # bug supervisor, you can change bug details.
         return (
-            role.isOwner(self.pillar) or role.isOneOfDrivers(self.pillar) or
-            role.isBugSupervisor(self.pillar) or
-            (self.distroseries is not None and
-                role.isDriver(self.distroseries)) or
-            (self.productseries is not None and
-                role.isDriver(self.productseries)))
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isBugSupervisor(context.pillar))
+
+    def userHasPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)

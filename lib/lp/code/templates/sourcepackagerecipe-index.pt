@@ -83,7 +83,7 @@
         <div class="two-column-list">
           <dl id="build_daily">
             <dt>Build schedule:
-              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+              <a href="/+help-code/recipe-build-frequency.html" target="help" class="sprite maybe">
                 &nbsp;<span class="invisible-link">Tag help</span>
               </a>
             </dt>
@@ -146,10 +146,6 @@
   <div class='portlet'>
     <h2>Recipe contents</h2>
     <tal:widget replace="structure view/recipe_text_widget"/>
-    <p>
-        <a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes">
-        Get help with recipe syntax</a>
-    </p>
   </div>
 
   <script type="text/javascript">

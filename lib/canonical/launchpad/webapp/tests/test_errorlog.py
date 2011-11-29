@@ -262,6 +262,22 @@ class TestErrorReportingUtility(testtools.TestCase):
             report = utility.raising(sys.exc_info(), request)
         self.assertEqual("(1, 2)", report['req_vars']['xmlrpc args'])
 
+    def test_raising_non_utf8_request_param_key_bug_896959(self):
+        # When a form has a nonutf8 request param, the key in req_vars must
+        # still be unicode (or utf8).
+        request = TestRequest(form={'foo\x85': 'bar'})
+        utility = ErrorReportingUtility()
+        del utility._oops_config.publishers[:]
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+        for key in report['req_vars'].keys():
+            if isinstance(key, str):
+                key.decode('utf8')
+            else:
+                self.assertIsInstance(key, unicode)
+
     def test_raising_with_webservice_request(self):
         # Test ErrorReportingUtility.raising() with a WebServiceRequest
         # request. Only some exceptions result in OOPSes.

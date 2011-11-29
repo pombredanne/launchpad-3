@@ -91,7 +91,7 @@
           this untrusted PPA by adding <strong
           tal:content="context/fmt:reference">ppa:cprov/ppa</strong>
           to your system's Software Sources.
-          (<a href="/+help/soyuz/ppa-sources-list.html"
+          (<a href="/+help-soyuz/ppa-sources-list.html"
               target="help">Read about installing</a>)
         </p>
 
@@ -113,7 +113,7 @@
                 <code tal:content="signing_key/displayname"
                   >1024R/23456789</code>
               </a>
-              (<a href="/+help/soyuz/ppa-sources-list.html"
+              (<a href="/+help-soyuz/ppa-sources-list.html"
                   target="help">What is this?</a>)
             </dd>
             <dt>Fingerprint:</dt>

@@ -7,7 +7,7 @@
 
   <div id="branch-unique-name-div" class="hidden">
     The resulting location of the branch will be:
-    <strong><span id="branch-unique-name"></span></strong> (<a href="/+help/register-branch.html" target="help">Do you need to register?</a>)
+    <strong><span id="branch-unique-name"></span></strong> (<a href="/+help-code/register-branch.html" target="help">Do you need to register?</a>)
   </div>
 
   <div metal:use-macro="context/@@launchpad_form/form">

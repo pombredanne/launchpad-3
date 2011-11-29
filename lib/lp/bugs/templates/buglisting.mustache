@@ -20,22 +20,23 @@
             {{#show_id}}
                 <span class="bugnumber">#{{id}}</span>
             {{/show_id}}
-            {{#show_title}}
-                <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
-            {{/show_title}}
+            <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
         </div>
         <div class="buginfo-extras">
             {{#show_bugtarget}}
-                <span class="{{bugtarget_css}}">
+                <span class="{{bugtarget_css}} field">
                     {{bugtarget}}
                 </span>
             {{/show_bugtarget}}
             {{#show_milestone_name}}
-            {{#milestone_name}}
                 <span class="sprite milestone field">
+                    {{#milestone_name}}
                     {{milestone_name}}
+                    {{/milestone_name}}
+                    {{^milestone_name}}
+                    No milestone set
+                    {{/milestone_name}}
                 </span>
-            {{/milestone_name}}
             {{/show_milestone_name}}
             {{#show_last_updated}}
                 <span class="sprite milestone field">
@@ -43,11 +44,10 @@
                 </span>
             {{/show_last_updated}}
             {{#show_assignee}}
-            {{#assignee}}
                 <span class="sprite person field">
-                    Assignee: {{assignee}}
+                    {{#assignee}}Assignee: {{assignee}}{{/assignee}}
+                    {{^assignee}}Assignee: None{{/assignee}}
                 </span>
-            {{/assignee}}
             {{/show_assignee}}
             {{#show_reporter}}
                 <span class="sprite person field">
@@ -60,7 +60,10 @@
                 </span>
             {{/show_age}}
             {{#show_tags}}
-                <span class="field">{{tags}}</span>
+                <span class="field">Tags:
+                  {{#tags}}{{tags}}{{/tags}}
+                  {{^tags}}None{{/tags}}
+                </span>
             {{/show_tags}}
         </div>
     </div>

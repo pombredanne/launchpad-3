@@ -45,9 +45,9 @@ names = [
     # Include our main stylesheets at the end so they
     # take precedence over the others.
     'css/base.css',
+    'css/typography.css',
     'css/colours.css',
     'css/forms.css',
-    'css/typography.css',
     'css/layout.css',
     'css/modifiers.css']
 

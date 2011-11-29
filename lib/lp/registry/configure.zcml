@@ -275,9 +275,6 @@
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
 
-    <facet
-        facet="overview">
-
         <!-- CodeofConduct -->
 
         <class
@@ -334,7 +331,6 @@
 
         <!-- string:${id} because id is an int -->
 
-    </facet>
     <class
         class="lp.registry.model.person.IrcID">
         <allow
@@ -429,9 +425,6 @@
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
 
-    <facet
-        facet="answers"/>
-
     <!-- ProjectGroupSet-->
 
     <class
@@ -481,6 +474,7 @@
                 displayname
                 distribution
                 distro
+                drivers
                 findRelatedArchivePublications
                 findRelatedArchives
                 getMergeProposals
@@ -630,8 +624,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <facet
-        facet="overview">
 
         <!-- Karma -->
 
@@ -706,9 +698,6 @@
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
         </securedutility>
-    </facet>
-    <facet
-        facet="overview">
 
         <!-- Poll -->
 
@@ -809,7 +798,6 @@
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCastSet"/>
         </securedutility>
-    </facet>
 
     <!-- Announcement -->
 
@@ -848,8 +836,6 @@
         <allow
             interface="lp.registry.interfaces.announcement.IAnnouncementSet"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- Person -->
 
@@ -992,7 +978,6 @@
             <allow
                 interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
         </securedutility>
-    </facet>
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
@@ -1759,8 +1744,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
+    <lp:help-folder folder="help" name="+help-registry" />
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
@@ -1938,4 +1922,41 @@
         for="lp.registry.interfaces.person.IPerson"
         provides="lp.registry.interfaces.role.IPersonRoles"
         factory="lp.registry.model.personroles.PersonRoles" />
+
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicy">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicy"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicySource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+        <require
+            permission="zope.Public"
+            set_attributes="policy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
 </configure>

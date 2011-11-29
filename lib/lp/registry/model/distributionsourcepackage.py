@@ -63,6 +63,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackage import (
@@ -131,7 +132,8 @@ class DistributionSourcePackage(BugTargetBase,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
-                                HasBugHeatMixin):
+                                HasBugHeatMixin,
+                                HasDriversMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -218,6 +220,11 @@ class DistributionSourcePackage(BugTargetBase,
         # in the future.
         return self._get(
             self.distribution, self.sourcepackagename) is not None
+
+    @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        return self.distribution.drivers
 
     def delete(self):
         """See `DistributionSourcePackage`."""

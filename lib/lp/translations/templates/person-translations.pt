@@ -52,7 +52,7 @@
       <div id="translations-to-review-section" class="portlet">
         <h2>Translations you need to review</h2>
         <p>
-          By reviewing the following translations, you can help ensure other translators' work is published to software users. (<a href="/+help/reviewing.html" target="help">More about reviewing</a>)
+          By reviewing the following translations, you can help ensure other translators' work is published to software users. (<a href="/+help-translations/reviewing.html" target="help">More about reviewing</a>)
         </p>
         <metal:translations-to-review
           tal:replace="structure view/translations_to_review_table" />
