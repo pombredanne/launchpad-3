@@ -185,7 +185,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
 
-    def test_getInputValue_distribution_only(self):
+    def test_getInputValue_distribution(self):
         # The field value is the distribution when the package radio button
         # is selected and the package sub field empty.
         form = self.form
@@ -204,10 +204,34 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
 
-    def test_getInputValue_product_only(self):
+    def test_getInputValue_product(self):
         # The field value is the product when the project radio button
         # is selected and the project sub field is valid.
         form = self.form
         form['field.target'] = 'product'
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(self.project, self.widget.getInputValue())
+
+    def test_getInputValue_product_missing_input(self):
+        # The field value is the product when the project radio button
+        # is selected and the project sub field is valid.
+        form = self.form
+        form['field.target'] = 'product'
+        del form['field.target.product']
+        self.widget.request = LaunchpadTestRequest(form=form)
+        message = 'Please enter a project name'
+        self.assertRaisesWithContent(
+            LaunchpadValidationError, message, self.widget.getInputValue)
+
+    def test_getInputValue_product_invalid(self):
+        # The field value is the product when the project radio button
+        # is selected and the project sub field is valid.
+        form = self.form
+        form['field.target'] = 'product'
+        form['field.target.product'] = 'non-existant'
+        self.widget.request = LaunchpadTestRequest(form=form)
+        message = (
+            "There is no project named 'non-existant' registered in "
+            "Launchpad")
+        self.assertRaisesWithContent(
+            LaunchpadValidationError, message, self.widget.getInputValue)
