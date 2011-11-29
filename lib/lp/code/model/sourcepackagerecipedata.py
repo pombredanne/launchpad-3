@@ -141,7 +141,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         return branch
 
 
-MAX_RECIPE_FORMAT = 0.3
+MAX_RECIPE_FORMAT = 0.4
 
 
 class SourcePackageRecipeData(Storm):
