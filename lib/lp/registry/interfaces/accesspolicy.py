@@ -12,16 +12,25 @@ __all__ = [
     'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
     'IAccessPolicySource',
+    'UnsuitableAccessPolicyError',
     ]
+
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
     )
+
+
+@error_status(httplib.BAD_REQUEST)
+class UnsuitableAccessPolicyError(Exception):
+    pass
 
 
 class AccessPolicyType(DBEnumeratedType):
