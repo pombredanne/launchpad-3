@@ -36,23 +36,28 @@
           <td tal:condition="comment/bugwatch">
             <img width="14" height="14" src="/@@/bug-remote" alt=""/>
             In
-            <a tal:attributes="href comment/bugwatch/url"
-               tal:content="comment/bugwatch/title" />,
+            <a itemprop="url"
+              tal:attributes="href comment/bugwatch/url"
+              tal:content="comment/bugwatch/title" />,
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
-            <span tal:attributes="title comment/datecreated/fmt:datetime"
-                  tal:content="comment/datecreated/fmt:displaydate">
+            <time
+              itemprop="commentTime"
+              tal:attributes="title comment/datecreated/fmt:datetime;
+                datetime comment/datecreated/fmt:isodate"
+              tal:content="comment/datecreated/fmt:displaydate">
               7 minutes ago
-              </span>:
+              </time>:
               <a tal:attributes="href comment/fmt:url">
                 <strong tal:condition="comment/display_title"
                         tal:content="comment/title" />
               </a>
           </td>
+
           <td class="bug-comment-index">
-	  <a itemprop="url"
-	     tal:attributes="href comment/fmt:url"
+          <a itemprop="url"
+             tal:attributes="href comment/fmt:url"
              tal:content="string: #${comment/index}" />
           </td>
         </tr>
@@ -94,6 +99,7 @@
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>
+
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
     <a tal:attributes="id string:mark-spam-${context/index};"
        tal:condition="view/show_spam_controls"
