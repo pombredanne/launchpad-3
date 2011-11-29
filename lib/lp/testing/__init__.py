@@ -325,7 +325,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     """
     for i in range(first_round_number):
         item_creator()
-    # Record how many queries are issued when tested_method is
+    # Record how many queries are issued when {tested_method} is
     # called after {item_creator} has been run {first_round_number}
     # times.
     flush_database_caches()
