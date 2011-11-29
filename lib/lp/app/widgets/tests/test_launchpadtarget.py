@@ -49,7 +49,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(LaunchpadTargetWidgetTestCase, self).setUp()
-        self.distribution, self.dsp = self.factory.makeDSPCache(
+        self.distribution, self.package = self.factory.makeDSPCache(
             distro_name='fnord', package_name='snarf')
         self.project = self.factory.makeProduct('pting')
         field = Reference(
@@ -189,3 +189,45 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             }
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertFalse(self.widget.hasValidInput())
+
+    def test_getInputValue_package(self):
+        # The field value is the package when the package radio button
+        # is selected and the package sub field has valid input.
+        with person_logged_in(self.distribution.owner):
+            self.distribution.official_malone = True
+        form = {
+            'field.target': 'package',
+            'field.target.distribution': 'fnord',
+            'field.target.package': 'snarf',
+            'field.target.product': 'pting',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertEqual(self.package, self.widget.getInputValue())
+
+    def test_getInputValue_package_distribution_only(self):
+        # The field value is the distribution when the package radio button
+        # is selected and the package sub field empty.
+        with person_logged_in(self.distribution.owner):
+            self.distribution.official_malone = True
+        form = {
+            'field.target': 'package',
+            'field.target.distribution': 'fnord',
+            'field.target.package': '',
+            'field.target.product': 'pting',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertEqual(self.distribution, self.widget.getInputValue())
+
+    def test_getInputValue_package_product_only(self):
+        # The field value is the product when the project radio button
+        # is selected and the project sub field is valid.
+        with person_logged_in(self.distribution.owner):
+            self.distribution.official_malone = True
+        form = {
+            'field.target': 'product',
+            'field.target.distribution': 'fnord',
+            'field.target.package': '',
+            'field.target.product': 'pting',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertEqual(self.project, self.widget.getInputValue())
