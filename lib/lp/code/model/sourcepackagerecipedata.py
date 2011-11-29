@@ -160,7 +160,7 @@ class SourcePackageRecipeData(Storm):
     base_branch = Reference(base_branch_id, 'Branch.id')
 
     recipe_format = Unicode(allow_none=False)
-    deb_version_template = Unicode(allow_none=False)
+    deb_version_template = Unicode(allow_none=True)
     revspec = Unicode(allow_none=True)
 
     instructions = ReferenceSet(

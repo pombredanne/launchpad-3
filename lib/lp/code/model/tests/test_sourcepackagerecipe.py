@@ -921,6 +921,21 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
 
+    def test_builds_recipe_without_debversion(self):
+        recipe_text = '''\
+        # bzr-builder format 0.3
+        %(base)s
+        nest bar %(nested)s baz
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1,
+            deb_version=None)
+        child_branch, location = base_branch.child_branches[0].as_tuple()
+        self.assertEqual("baz", location)
+        self.check_recipe_branch(
+            child_branch, "bar", self.nested_branch.bzr_identity)
+
 
 class RecipeDateLastModified(TestCaseWithFactory):
     """Exercises the situations where date_last_modified is updated."""
