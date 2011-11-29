@@ -163,26 +163,26 @@ class SlaveScanner:
         # builder.
         try:
             builder = get_builder(self.builder_name)
-            if builder.currentjob is None:
-                self.logger.info(
-                    "Builder %s failed a probe, count: %s",
-                    self.builder_name, builder.failure_count)
-            else:
-                build_farm_job = builder.getCurrentBuildFarmJob()
-                self.logger.info(
-                    "builder %s failure count: %s, "
-                    "job '%s' failure count: %s",
-                    self.builder_name,
-                    builder.failure_count,
-                    build_farm_job.title,
-                    build_farm_job.failure_count)
-
             transaction.commit()
 
             with DatabaseTransactionPolicy(read_only=False):
                 builder.gotFailure()
-                if builder.currentjob is not None:
+
+                if builder.currentjob is None:
+                    self.logger.info(
+                        "Builder %s failed a probe, count: %s",
+                        self.builder_name, builder.failure_count)
+                else:
+                    build_farm_job = builder.getCurrentBuildFarmJob()
                     build_farm_job.gotFailure()
+                    self.logger.info(
+                        "builder %s failure count: %s, "
+                        "job '%s' failure count: %s",
+                        self.builder_name,
+                        builder.failure_count,
+                        build_farm_job.title,
+                        build_farm_job.failure_count)
+
                 assessFailureCounts(builder, failure.getErrorMessage())
                 transaction.commit()
         except:
