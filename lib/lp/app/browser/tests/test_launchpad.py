@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import getMultiAdapter, getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -27,7 +27,6 @@ from canonical.testing.layers import (
 from lp.app.browser.launchpad import (
     iter_view_registrations,
     LaunchpadRootNavigation,
-    Macro,
     )
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -437,11 +436,11 @@ class TestGetViewName(TestCaseWithFactory):
 
     layer = FunctionalLayer
 
-    def test_get_view_registrations(self):
-        """get_view_registrations provides only registrations of class."""
-        names = set(reg.name for reg in iter_view_registrations(Macro))
-        # Direct use of Macro
+    def test_iter_view_registrations(self):
+        """iter_view_registrations provides only registrations of class."""
+        macros = getMultiAdapter(
+            (object(), LaunchpadTestRequest()), name='+base-layout-macros')
+        names = set(
+            reg.name for reg in iter_view_registrations(macros.__class__))
         self.assertIn('+base-layout-macros', names)
-        # Use of Macro through meta.zcml
-        self.assertIn('+translations-macros', names)
         self.assertNotIn('+related-pages', names)

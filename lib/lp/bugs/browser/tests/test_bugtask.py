@@ -69,7 +69,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
-from lp.registry.browser.person import PersonCommentedBugTaskSearchListingView
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
@@ -1816,12 +1815,13 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """The IJSONRequestCache should provide the view's name."""
         self.useContext(self.dynamic_listings())
         task = self.factory.makeBugTask(private=False)
-        view = self.makeView(task)
+        view = getMultiAdapter(
+            (task.target, LaunchpadTestRequest()), name='+bugs')
+        view.initialize()
         cache = IJSONRequestCache(view.request)
         self.assertEqual('+bugs', cache.objects['view_name'])
-        commentview = PersonCommentedBugTaskSearchListingView(
-            task.owner,
-            LaunchpadTestRequest())
+        commentview = getMultiAdapter(
+            (task.owner, LaunchpadTestRequest()), name='+commentedbugs')
         commentview.initialize()
         cache = IJSONRequestCache(commentview.request)
         self.assertEqual('+commentedbugs', cache.objects['view_name'])
