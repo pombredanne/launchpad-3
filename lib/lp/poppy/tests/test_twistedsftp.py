@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 import os
-import tempfile
+
+from fixtures import TempDir
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory
@@ -16,7 +17,7 @@ from lp.testing import TestCase
 class TestSFTPServer(TestCase):
 
     def setUp(self):
-        self.fs_root = tempfile.mkdtemp()
+        self.fs_root = self.useFixture(TempDir()).path
         self.sftp_server = SFTPServer(None, self.fs_root)
         super(TestSFTPServer, self).setUp()
 
@@ -50,7 +51,7 @@ class TestSFTPServer(TestCase):
         test_file = open(file_name, 'r')
         self.assertEqual(test_file.read(), "This is a test")
         test_file.close()
-        self.assertEqual(os.stat(file_name).st_mode, 0100644)
+        self.assertEqual(os.stat(file_name).st_mode, 0100644)  # decimal:33188
         dir_name = os.path.join(self.sftp_server._current_upload, 'bar/foo')
         os.makedirs(dir_name)
         upload_file = self.sftp_server.openFile('bar/foo', None, None)
