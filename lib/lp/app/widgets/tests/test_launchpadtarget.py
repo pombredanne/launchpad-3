@@ -24,10 +24,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class IThing(Interface):
@@ -46,6 +43,15 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
     doctest_opts = (
         doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
         doctest.ELLIPSIS)
+
+    @property
+    def form(self):
+        return {
+        'field.target': 'package',
+        'field.target.distribution': 'fnord',
+        'field.target.package': 'snarf',
+        'field.target.product': 'pting',
+        }
 
     def setUp(self):
         super(LaunchpadTargetWidgetTestCase, self).setUp()
@@ -75,19 +81,13 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_hasInput_false(self):
         # hasInput is false when the widget's name is not in the form data.
-        form = {}
-        self.widget.request = LaunchpadTestRequest(form=form)
+        self.widget.request = LaunchpadTestRequest(form={})
         self.assertEqual('field.target', self.widget.name)
         self.assertFalse(self.widget.hasInput())
 
     def test_hasInput_true(self):
         # hasInput is true is the widget's name in the form data.
-        form = {
-            'field.target': 'package',
-            'field.target.distribution': 'fnord',
-            'field.target.package': 'snarf',
-            }
-        self.widget.request = LaunchpadTestRequest(form=form)
+        self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual('field.target', self.widget.name)
         self.assertTrue(self.widget.hasInput())
 
@@ -167,67 +167,35 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_hasValidInput_true(self):
         # The field input is valid when all submitted parts are valid.
-        with person_logged_in(self.distribution.owner):
-            self.distribution.official_malone = True
-        form = {
-            'field.target': 'package',
-            'field.target.distribution': 'fnord',
-            'field.target.package': 'snarf',
-            }
-        self.widget.request = LaunchpadTestRequest(form=form)
+        self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertTrue(self.widget.hasValidInput())
 
     def test_hasValidInput_false(self):
         # The field input is invalid if any of the submitted parts are
         # invalid.
-        with person_logged_in(self.distribution.owner):
-            self.distribution.official_malone = True
-        form = {
-            'field.target': 'package',
-            'field.target.distribution': 'fnord',
-            'field.target.package': 'non-existant',
-            }
+        form = self.form
+        form['field.target.package'] = 'non-existant'
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertFalse(self.widget.hasValidInput())
 
     def test_getInputValue_package(self):
         # The field value is the package when the package radio button
         # is selected and the package sub field has valid input.
-        with person_logged_in(self.distribution.owner):
-            self.distribution.official_malone = True
-        form = {
-            'field.target': 'package',
-            'field.target.distribution': 'fnord',
-            'field.target.package': 'snarf',
-            'field.target.product': 'pting',
-            }
-        self.widget.request = LaunchpadTestRequest(form=form)
+        self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_distribution_only(self):
         # The field value is the distribution when the package radio button
         # is selected and the package sub field empty.
-        with person_logged_in(self.distribution.owner):
-            self.distribution.official_malone = True
-        form = {
-            'field.target': 'package',
-            'field.target.distribution': 'fnord',
-            'field.target.package': '',
-            'field.target.product': 'pting',
-            }
+        form = self.form
+        form['field.target.package'] = ''
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(self.distribution, self.widget.getInputValue())
 
     def test_getInputValue_package_product_only(self):
         # The field value is the product when the project radio button
         # is selected and the project sub field is valid.
-        with person_logged_in(self.distribution.owner):
-            self.distribution.official_malone = True
-        form = {
-            'field.target': 'product',
-            'field.target.distribution': 'fnord',
-            'field.target.package': '',
-            'field.target.product': 'pting',
-            }
+        form = self.form
+        form['field.target'] = 'product'
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(self.project, self.widget.getInputValue())
