@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from functools import partial
+
 from storm.locals import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
@@ -12,7 +14,10 @@ from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
@@ -83,6 +88,7 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         build = source.create(build_farm_job, branch)
         removeSecurityProxy(build).builder = self.builder
+        self.addFakeBuildLog(build)
         return build
 
     def createRecipeBuildWithBuilder(self):
@@ -93,11 +99,26 @@ class TestBuilderHistoryView(TestCaseWithFactory):
                 branches=[branch1, branch2]))
         Store.of(build).flush()
         removeSecurityProxy(build).builder = self.builder
+        self.addFakeBuildLog(build)
         return build
 
-    def createBinaryPackageBuild(self):
-        build = self.factory.makeBinaryPackageBuild()
-        removeSecurityProxy(build).builder = self.builder
+    def addFakeBuildLog(self, build):
+        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
+        removeSecurityProxy(build).log = lfa
+        import transaction
+        transaction.commit()
+
+    def createBinaryPackageBuild(self, in_ppa=False):
+        archive = None
+        if in_ppa:
+            archive = self.factory.makeArchive()
+        build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.FULLYBUILT)
+        naked_build = removeSecurityProxy(build)
+        naked_build.builder = self.builder
+        naked_build.date_started = self.factory.getUniqueDate()
+        naked_build.date_finished = self.factory.getUniqueDate()
+        self.addFakeBuildLog(build)
         return build
 
     def _record_queries_count(self, tested_method, item_creator):
@@ -145,6 +166,18 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         recorder1, recorder2 = self._record_queries_count(
             builder_history_render,
             self.createBinaryPackageBuild)
+
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_build_history_queries_count_binary_package_builds_in_ppa(self):
+        # Rendering to builder's history issues a constant number of queries
+        # when ppa binary builds are displayed.
+        def builder_history_render():
+            create_initialized_view(self.builder, '+history').render()
+        createBinaryPackageBuildInPPA = partial(
+            self.createBinaryPackageBuild, in_ppa=True)
+        recorder1, recorder2 = self._record_queries_count(
+            builder_history_render, createBinaryPackageBuildInPPA)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 

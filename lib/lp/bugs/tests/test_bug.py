@@ -24,6 +24,10 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
+from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
+    UnsuitableAccessPolicyError,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -298,3 +302,38 @@ class TestBugCreation(TestCaseWithFactory):
         params.setBugTarget(product=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+
+
+class TestBugAccessPolicy(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_setAccessPolicy(self):
+        product = self.factory.makeProduct()
+        policy = self.factory.makeAccessPolicy(
+            pillar=product, type=AccessPolicyType.PRIVATE)
+        bug = self.factory.makeBug(product=product)
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(AccessPolicyType.PRIVATE)
+        self.assertEqual(policy, bug.access_policy)
+
+    def test_setAccessPolicy_none(self):
+        product = self.factory.makeProduct()
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        bug = self.factory.makeBug(product=product)
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(policy.type)
+            bug.setAccessPolicy(None)
+        self.assertIs(None, bug.access_policy)
+
+    def test_setAccessPolicy_without_use(self):
+        # Attempting to set the access policy to a type that is not used
+        # by the pillar fails.
+        bug = self.factory.makeBug()
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            self.assertRaises(
+                UnsuitableAccessPolicyError, bug.setAccessPolicy,
+                AccessPolicyType.PRIVATE)
+        self.assertIs(None, bug.access_policy)

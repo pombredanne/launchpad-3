@@ -707,6 +707,7 @@
                 attributes="
                     id
                     private
+                    access_policy
                     bugtasks
                     default_bugtask
                     affected_pillars
@@ -835,6 +836,7 @@
                     setPrivate
                     setSecurityRelated
                     setPrivacyAndSecurityRelated
+                    setAccessPolicy
                     setStatus
                     subscribe
                     unlinkBranch
