@@ -20,7 +20,7 @@
       </tal:recipes>
       using this branch.
 
-      <a href="/+help/related-recipes.html" target="help" class="sprite maybe">
+      <a href="/+help-code/related-recipes.html" target="help" class="sprite maybe">
         &nbsp;<span class="invisible-link">Tag help</span>
       </a>
     </div>

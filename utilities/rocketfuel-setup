@@ -84,14 +84,6 @@ if [ $? -ne 0 ]; then
   echo "bazaar.launchpad.dev added to /etc/hosts"
 fi
 
-grep -q "^127.0.0.77" /etc/hosts
-if [ $? -ne 0 ]; then
-  echo "
-127.0.0.77      vostok.dev archive.vostok.dev
-" | sudo tee -a /etc/hosts > /dev/null
-  echo "vostok.dev added to /etc/hosts"
-fi
-
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then

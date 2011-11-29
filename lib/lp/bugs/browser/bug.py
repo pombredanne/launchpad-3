@@ -117,6 +117,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -544,6 +545,10 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""
@@ -833,6 +838,15 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         security_related_field = copy_field(
             IBug['security_related'], readonly=False)
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        allow_multi_pillar_private = bool(features.getFeatureFlag(
+                'disclosure.allow_multipillar_private_bugs.enabled'))
+        if (not allow_multi_pillar_private
+                and len(self.context.bug.affected_pillars) > 1):
+            self.form_fields = self.form_fields.omit('private')
+
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
@@ -857,7 +871,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
         # recorded.
         bug = self.context.bug
-        private = data.pop('private')
+        private = data.pop('private', bug.private)
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')

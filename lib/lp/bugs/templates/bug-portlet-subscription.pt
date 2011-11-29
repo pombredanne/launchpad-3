@@ -43,7 +43,7 @@
             id="mute-link-container">
           <span tal:replace="structure context_menu/mute_subscription/render"
           />&nbsp;<a target="help" class="sprite maybe mute-help"
-              href="/+help/subscription-mute.html"
+              href="/+help-bugs/subscription-mute.html"
             >&nbsp;<span class="invisible-link">Mute help</span></a>
         </div>
       </li>

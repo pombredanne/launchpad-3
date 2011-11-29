@@ -2381,10 +2381,12 @@ class PersonView(LaunchpadView, FeedsMixin):
         if content is None:
             return None
         elif self.is_probationary_or_invalid_user:
+            # XXX: Is this really useful?  They can post links in many other
+            # places. -- mbp 2011-11-20.
             return cgi.escape(content)
         else:
             formatter = FormattersAPI
-            return formatter(content).text_to_html()
+            return formatter(content).markdown()
 
     @cachedproperty
     def recently_approved_members(self):
@@ -2948,6 +2950,16 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
             return '%s in Launchpad' % context.displayname
         else:
             return "%s does not use Launchpad" % context.displayname
+
+    @cachedproperty
+    def page_description(self):
+        context = self.context
+        if context.is_valid_person_or_team:
+            return (
+                self.context.homepage_content
+                or self.context.teamdescription)
+        else:
+            return None
 
     @cachedproperty
     def enable_xrds_discovery(self):

@@ -572,9 +572,12 @@ class ISourcePackageEditSchema(Interface):
     recipe_text = has_structured_doc(
         Text(
             title=u'Recipe text', required=True,
-            description=u"""Enter your recipe here.
-                (<a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes" 
-                >Get help with recipe syntax</a>)
+            description=u"""The text of the recipe.
+                <a href="/+help-code/recipe-syntax.html" target="help"
+                  >Syntax help&nbsp;
+                  <span class="sprite maybe">
+                    <span class="invisible-link">Help</span>
+                  </span></a>
                """))
 
 

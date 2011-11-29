@@ -32,7 +32,7 @@
         </tal:archive_name>
          you need to copy the lines below and add them to your system's
          software sources.
-         (<a href="/+help/soyuz/ppa-sources-list.html" target="help">Read
+         (<a href="/+help-soyuz/ppa-sources-list.html" target="help">Read
             about installing</a>)
       </p>
       <tal:entries replace="structure view/sources_list_entries" />

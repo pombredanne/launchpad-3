@@ -17,7 +17,7 @@
         <div class="discreet">This should be a <code>.po</code> file that
           was previously exported from Launchpad and contains updated
           translations.<br />
-          (<a href="/+help/pofile-upload.html" target="help">More about uploading updated translations</a>)
+          (<a href="/+help-translations/pofile-upload.html" target="help">More about uploading updated translations</a>)
         </div>
       </div>
 

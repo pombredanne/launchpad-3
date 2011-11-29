@@ -6,7 +6,7 @@ information the bugs in it. It doesn't display the list of bugs.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> anon_browser.title
-    'Bugs in Ubuntu Linux'
+    'Bugs : Ubuntu'
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
     True
 

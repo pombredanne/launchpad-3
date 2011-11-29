@@ -53,15 +53,15 @@ if the user is not logged in, they will be asked to log in.
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
 
-    >>> browser.getControl('Bug #').value = "9"
+    >>> browser.getControl('Bug #').value = "4"
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes
+    Bug #4: Reflow problems with complex page layouts
 
 Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link a bug report').click()
-    >>> browser.getControl('Bug #').value = "9"
+    >>> browser.getControl('Bug #').value = "4"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
@@ -70,16 +70,18 @@ The bug-branch link is also shown on the bug page.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> browser.getLink('Thunderbird crashes').click()
+    >>> browser.getLink('Reflow problems with complex page layouts').click()
 
     >>> printBugBranchLinks(browser)
+    lp://dev/~mark/firefox/release-0.9.2
+    lp://dev/~name12/firefox/main
     lp://dev/~name12/gnome-terminal/klingon
 
 If the bug is private, then the bug branch link isn't shows on the
 branch page for people that are not able to see it.  Get an admin
 to mark the bug private.
 
-    >>> admin_browser.open('http://launchpad.dev/bugs/9')
+    >>> admin_browser.open('http://launchpad.dev/bugs/4')
     >>> admin_browser.getLink('This report is public').click()
     >>> admin_browser.getControl('This bug report should be private').click()
     >>> admin_browser.getControl('Change').click()
@@ -91,7 +93,7 @@ Sample person can see it...
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes
+    Bug #4: Reflow problems with complex page layouts
 
 ... but an anonymous user cannot.
 
