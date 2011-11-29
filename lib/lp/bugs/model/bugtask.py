@@ -1375,7 +1375,7 @@ class BugTask(SQLBase):
         if role.in_admin:
             return True
 
-        # Similar to admins, the Bug Watch Updater, Bug Importer and 
+        # Similar to admins, the Bug Watch Updater, Bug Importer and
         # Janitor can always change bug details.
         if (
             role.in_bug_watch_updater or role.in_bug_importer or
@@ -2213,22 +2213,19 @@ class BugTaskSet:
         # is not for subscription to notifications.
         # See bug #191809
         if params.bug_supervisor:
-            bug_supervisor_clause = """BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, Product
-                WHERE BugTask.product = Product.id
-                    AND Product.bug_supervisor = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id
-                FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distribution = StructuralSubscription.distribution
-                    AND BugTask.sourcepackagename =
-                        StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, Distribution
-                WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+            bug_supervisor_clause = """(
+                BugTask.product IN (
+                    SELECT id FROM Product
+                    WHERE Product.bug_supervisor = %(bug_supervisor)s)
+                OR
+                ((BugTask.distribution, Bugtask.sourcepackagename) IN
+                    (SELECT distribution,  sourcepackagename FROM
+                     StructuralSubscription
+                     WHERE subscriber = %(bug_supervisor)s))
+                OR
+                BugTask.distribution IN (
+                    SELECT id from Distribution WHERE
+                    Distribution.bug_supervisor = %(bug_supervisor)s)
                 )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
             extra_clauses.append(bug_supervisor_clause)
 
