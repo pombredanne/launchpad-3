@@ -24,7 +24,10 @@ from lp.services.features.testing import FeatureFixture
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class IThing(Interface):
@@ -144,7 +147,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_setUpOptions_product_checked(self):
         # The product radio button is selected when the form is submitted
-        # with product as the target.
+        # when the target field's value is 'product'.
         form = {
             'field.target': 'product',
             }
@@ -161,3 +164,28 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             'id="field.target.option.product" name="field.target" '
             'type="radio" value="product" />',
             self.widget.options['product'])
+
+    def test_hasValidInput_true(self):
+        # The field input is valid when all submitted parts are valid.
+        with person_logged_in(self.distribution.owner):
+            self.distribution.official_malone = True
+        form = {
+            'field.target': 'package',
+            'field.target.distribution': 'fnord',
+            'field.target.package': 'snarf',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertTrue(self.widget.hasValidInput())
+
+    def test_hasValidInput_false(self):
+        # The field input is invalid if any of the submitted parts are
+        # invalid.
+        with person_logged_in(self.distribution.owner):
+            self.distribution.official_malone = True
+        form = {
+            'field.target': 'package',
+            'field.target.distribution': 'fnord',
+            'field.target.package': 'non-existant',
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertFalse(self.widget.hasValidInput())

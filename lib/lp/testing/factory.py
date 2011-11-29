@@ -4062,6 +4062,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         else:
             archive = self.makeArchive(
                 distribution=distribution, purpose=archive)
+        self.makeSourcePackagePublishingHistory(
+            distroseries=distribution.currentseries,
+            sourcepackagename=dsp.sourcepackagename,
+            archive=archive)
         with dbuser('statistician'):
             DistributionSourcePackageCache(
                 distribution=dsp.distribution,
