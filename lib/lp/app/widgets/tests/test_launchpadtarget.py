@@ -3,16 +3,21 @@
 
 __metaclass__ = type
 
-import doctest
+import re
+
+from BeautifulSoup import BeautifulSoup
 
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.app.form.interfaces import IInputWidget
 
 from lazr.restful.fields import Reference
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.validators import LaunchpadValidationError
@@ -41,9 +46,6 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
     """Test the LaunchpadTargetWidget class."""
 
     layer = DatabaseFunctionalLayer
-    doctest_opts = (
-        doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
-        doctest.ELLIPSIS)
 
     @property
     def form(self):
@@ -64,6 +66,10 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         field = field.bind(Thing())
         request = LaunchpadTestRequest()
         self.widget = LaunchpadTargetWidget(field, request)
+
+    def test_implements(self):
+        self.assertTrue(verifyObject(IBrowserWidget, self.widget))
+        self.assertTrue(verifyObject(IInputWidget, self.widget))
 
     def test_template(self):
         # The render template is setup.
@@ -175,7 +181,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # The field input is invalid if any of the submitted parts are
         # invalid.
         form = self.form
-        form['field.target.package'] = 'non-existant'
+        form['field.target.package'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertFalse(self.widget.hasValidInput())
 
@@ -186,14 +192,15 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_invalid(self):
-        # An error is raised when the package is not publshed in the distro.
+        # An error is raised when the package is not published in the distro.
         form = self.form
-        form['field.target.package'] = 'non-existant'
+        form['field.target.package'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no package name 'non-existant' published in Fnord")
+            "There is no package name 'non-existent' published in Fnord")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
+        self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_distribution(self):
         # The field value is the distribution when the package radio button
@@ -207,13 +214,14 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # An error is raised when the distribution is invalid.
         form = self.form
         form['field.target.package'] = ''
-        form['field.target.distribution'] = 'non-existant'
+        form['field.target.distribution'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no distribution named 'non-existant' registered in "
+            "There is no distribution named 'non-existent' registered in "
             "Launchpad")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
+        self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_product(self):
         # The field value is the product when the project radio button
@@ -232,18 +240,20 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         message = 'Please enter a project name'
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
+        self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_product_invalid(self):
         # An error is raised when the product is not valid.
         form = self.form
         form['field.target'] = 'product'
-        form['field.target.product'] = 'non-existant'
+        form['field.target.product'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no project named 'non-existant' registered in "
+            "There is no project named 'non-existent' registered in "
             "Launchpad")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
+        self.assertEqual(message, self.widget.error())
 
     def test_setRenderedValue_product(self):
         # Passing a product will set the widget's render state to 'product'.
@@ -277,3 +287,20 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertEqual(
             self.package.sourcepackagename,
             self.widget.package_widget._getCurrentValue())
+
+    def test_call(self):
+        # The __call__ method setups the widgets and the options.
+        markup = self.widget()
+        self.assertIsNot(None, self.widget.package_widget)
+        self.assertTrue('package' in self.widget.options)
+        expected_ids = [
+            'field.target.distribution',
+            'field.target.option.package',
+            'field.target.option.product',
+            'field.target.package',
+            'field.target.product',
+            ]
+        soup = BeautifulSoup(markup)
+        fields = soup.findAll(['input', 'select'], {'id': re.compile('.*')})
+        ids = [field['id'] for field in fields]
+        self.assertContentEqual(expected_ids, ids)
