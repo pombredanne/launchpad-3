@@ -185,6 +185,16 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
 
+    def test_getInputValue_package_invalid(self):
+        # An error is raised when the package is not publshed in the distro.
+        form = self.form
+        form['field.target.package'] = 'non-existant'
+        self.widget.request = LaunchpadTestRequest(form=form)
+        message = (
+            "There is no package name 'non-existant' published in Fnord")
+        self.assertRaisesWithContent(
+            LaunchpadValidationError, message, self.widget.getInputValue)
+
     def test_getInputValue_distribution(self):
         # The field value is the distribution when the package radio button
         # is selected and the package sub field empty.
@@ -194,6 +204,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertEqual(self.distribution, self.widget.getInputValue())
 
     def test_getInputValue_distribution_invalid(self):
+        # An error is raised when the distribution is invalid.
         form = self.form
         form['field.target.package'] = ''
         form['field.target.distribution'] = 'non-existant'
@@ -212,9 +223,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(self.project, self.widget.getInputValue())
 
-    def test_getInputValue_product_missing_input(self):
-        # The field value is the product when the project radio button
-        # is selected and the project sub field is valid.
+    def test_getInputValue_product_missing(self):
+        # An error is raised when the product field is missing.
         form = self.form
         form['field.target'] = 'product'
         del form['field.target.product']
@@ -224,8 +234,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             LaunchpadValidationError, message, self.widget.getInputValue)
 
     def test_getInputValue_product_invalid(self):
-        # The field value is the product when the project radio button
-        # is selected and the project sub field is valid.
+        # An error is raised when the product is not valid.
         form = self.form
         form['field.target'] = 'product'
         form['field.target.product'] = 'non-existant'
