@@ -272,6 +272,7 @@ class SoyuzTestPublisher:
         spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
+            sourcepackagename=spr.sourcepackagename,
             component=spr.component,
             section=spr.section,
             status=status,
@@ -459,6 +460,7 @@ class SoyuzTestPublisher:
             pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,
                 priority=binarypackagerelease.priority,

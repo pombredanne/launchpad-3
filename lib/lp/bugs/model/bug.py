@@ -186,6 +186,10 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    UnsuitableAccessPolicyError,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -357,6 +361,8 @@ class Bug(SQLBase):
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, 'AccessPolicy.id')
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -1783,6 +1789,19 @@ class Bug(SQLBase):
         """Setter for the `security_related` property."""
         return self.setPrivacyAndSecurityRelated(
             self.private, security_related, who)[1]
+
+    def setAccessPolicy(self, type):
+        """See `IBug`."""
+        if type is None:
+            policy = None
+        else:
+            policy = getUtility(IAccessPolicySource).getByPillarAndType(
+                self.default_bugtask.pillar, type)
+            if policy is None:
+                raise UnsuitableAccessPolicyError(
+                    "%s doesn't have a %s access policy."
+                    % (self.default_bugtask.pillar.name, type.title))
+        self.access_policy = policy
 
     def getRequiredSubscribers(self, for_private, for_security_related, who):
         """Return the mandatory subscribers for a bug with given attributes.

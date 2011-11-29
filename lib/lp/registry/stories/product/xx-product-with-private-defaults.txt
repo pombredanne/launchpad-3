@@ -1,10 +1,12 @@
-= Projects with private-bugs-by-default =
+Projects with private-bugs-by-default
+=====================================
 
 Projects can be configured to default all new bugs to private; the bugs
 will have their bug supervisor subscribed, but will otherwise be invisible
 to Launchpad users in general.
 
-== Setting private-bugs-by-default ==
+Setting private-bugs-by-default
+-------------------------------
 
 If the private_bugs checkbox on a project's +admin page is checked, bugs
 reported about that project will be private by default.
@@ -31,19 +33,12 @@ the case with Firefox, the user will get an error:
     <BLANKLINE>
     Set a <a href="...+bugsupervisor">bug supervisor</a> for this project first.
 
-== Visual effects ==
-
-The file-a-bug page uses Launchpad's standard "private" style.
-
-    >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
-    This report will be private, though you can disclose it later.
-
-
-== Filing a new bug ==
+Filing a new bug
+----------------
 
 If we file a new bug in redfish:
 
+    >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
     >>> user_browser.getControl(name="field.title", index=0).value = "a test summary"
     >>> user_browser.getControl('Continue').click()
 
