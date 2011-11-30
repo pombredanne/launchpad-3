@@ -297,16 +297,20 @@ class PackageBuildDerived:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
+        # Avoid circular imports.
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
-            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, self.buildqueue_record.builder.url))
+            logger.critical(
+                "Unknown BuildStatus '%s' for builder '%s'",
+                status, self.buildqueue_record.builder.url)
             return None
-        else:
-            return method(librarian, slave_status, logger, send_notification)
+
+        d = method(librarian, slave_status, logger, send_notification)
+        return d
 
     def _destroy_buildqueue_record(self, unused_arg):
         """Destroy this build's `BuildQueue` record."""
