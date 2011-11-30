@@ -87,6 +87,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.tales import test_tales
 from lazr.restful.testing.webservice import FakeRequest
 import oops_datedir_repo.serializer_rfc822
 import pytz
@@ -151,7 +152,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
     launchpadlib_credentials_for,
