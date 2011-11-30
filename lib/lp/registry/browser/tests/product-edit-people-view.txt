@@ -42,6 +42,24 @@ to No Privileges Person.
     >>> firefox.owner.name
     u'no-priv'
 
+Ownership can not be transferred to an open team.
+
+    >>> owner = factory.makePerson()
+    >>> login_person(owner)
+    >>> product = factory.makeProduct(owner=owner)
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> team = factory.makeTeam(
+    ...     name='open', subscription_policy=TeamSubscriptionPolicy.OPEN)
+    >>> form = {
+    ...     'field.owner': 'open',
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    [u'You must choose a valid person or team to be the owner for ...']
+
 
 Assigning to Registry Administrators
 ------------------------------------
@@ -51,6 +69,7 @@ role and transfer it to the Registry Administrators team.
 
     >>> login_person(sample_person)
     >>> product = factory.makeProduct(owner=sample_person)
+    >>> transaction.commit()
 
     >>> form = {
     ...     'field.transfer_to_registry': 'on',
@@ -77,6 +96,7 @@ Not specifying the owner/maintainer nor checking the checkbox is an error.
 Selecting both the owner/maintainer and the checkbox is also an error.
 
     >>> product = factory.makeProduct(owner=sample_person)
+    >>> transaction.commit()
     >>> form = {
     ...     'field.owner': 'no-priv',
     ...     'field.transfer_to_registry': 'on',
