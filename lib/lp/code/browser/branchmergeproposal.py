@@ -76,7 +76,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import check_permission, precache_permission_for_objects
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import (
@@ -840,6 +840,12 @@ class BranchMergeProposalVoteView(LaunchpadView):
     def reviews(self):
         """Return the decorated votes for the proposal."""
         users_vote = self.context.getUsersVoteReference(self.user)
+        if self.user is not None:
+            reviewers = [
+                vote.reviewer for vote in self.context.votes
+                if vote.reviewer]
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", reviewers)
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
                 for vote in self.context.votes]
 
