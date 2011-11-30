@@ -6,16 +6,22 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+
+from lp.testing import (
+    TestCaseWithFactory,
+    )
+
 from lp.services.features.scopes import (
     BaseScope,
     MultiScopeHandler,
     ScopesForScript,
     ScriptScope,
+    UserSliceScope,
     )
 
 
 class FakeScope(BaseScope):
+
     pattern = r'fake:'
 
     def __init__(self, name):
@@ -69,3 +75,24 @@ class TestScopes(TestCaseWithFactory):
         script_name = self.factory.getUniqueString()
         scopes = ScopesForScript(script_name)
         self.assertFalse(scopes.lookup("script:other"))
+
+
+class TestUserSliceScope(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_user_modulus(self):
+        person = self.factory.makePerson()
+        # NB: scopes take a callable that returns the person, that in
+        # production comes from the request.
+        scope = UserSliceScope(lambda: person)
+        # Effectively selects everyone; should always be true.
+        self.assertTrue(scope.lookup('userslice:0,1'))
+        # Exactly one of these should be true.
+        checks = 7
+        matches = []
+        for i in range(checks):
+            name = 'userslice:%d,%d' % (i, checks)
+            if scope.lookup(name):
+                matches.append(name)
+        self.assertEquals(len(matches), 1, matches)

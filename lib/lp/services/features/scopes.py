@@ -17,6 +17,7 @@ __all__ = [
     'ScopesForScript',
     'ScopesFromRequest',
     'TeamScope',
+    'UserSliceScope',
     'undocumented_scopes',
     ]
 
@@ -107,7 +108,22 @@ class PageScope(BaseScope):
             self._request._orig_env.get('launchpad.pageid', '')))
 
 
-class TeamScope(BaseScope):
+class ScopeWithPerson(BaseScope):
+    """An abstract base scope that matches on the current user of the request.
+
+    Intended for subclassing, not direct use.
+    """
+
+    def __init__(self, get_person):
+        self._get_person = get_person
+        self._person = None
+
+    @cachedproperty
+    def person(self):
+        return self._get_person()
+
+
+class TeamScope(ScopeWithPerson):
     """A user's team memberships.
 
     Team ID scopes are written as 'team:' + the team name to match.
@@ -122,14 +138,6 @@ class TeamScope(BaseScope):
 
     pattern = r'team:'
 
-    def __init__(self, get_person):
-        self._get_person = get_person
-        self._person = None
-
-    @cachedproperty
-    def person(self):
-        return self._get_person()
-
     def lookup(self, scope_name):
         """Is the given scope a team membership?
 
@@ -140,6 +148,36 @@ class TeamScope(BaseScope):
         if self.person is not None:
             team_name = scope_name[len('team:'):]
             return self.person.inTeam(team_name)
+
+
+class UserSliceScope(ScopeWithPerson):
+    """Selects a slice of all users based on their id.
+
+    Written as 'userslice:a,b' with 0<=a<b will slice the entire user
+    population into b approximately equal sub-populations, and then take the
+    a'th zero-based index.
+
+    For example, to test a new feature for 1% of users, and a different
+    version of it for a different 1% you can use `userslice:10,100` and
+    userslice:20,100`.
+
+    You may wish to avoid using the same a or b for different rules so that
+    some users don't have all the fun by being in eg 0,100.
+    """
+
+    pattern = r'userslice:(\d+),(\d+)'
+
+    def lookup(self, scope_name):
+        match = self.compiled_pattern.match(scope_name)
+        if not match:
+            return  # Shouldn't happen...
+        try:
+            modulus = int(match.group(1))
+            divisor = int(match.group(2))
+        except ValueError:
+            return
+        person_id = self.person.id
+        return (person_id % divisor) == modulus
 
 
 class ServerScope(BaseScope):
@@ -254,7 +292,8 @@ class ScopesFromRequest(MultiScopeHandler):
         scopes.extend([
             PageScope(request),
             ServerScope(),
-            TeamScope(person_from_request)
+            TeamScope(person_from_request),
+            UserSliceScope(person_from_request),
             ])
         super(ScopesFromRequest, self).__init__(scopes)
 
