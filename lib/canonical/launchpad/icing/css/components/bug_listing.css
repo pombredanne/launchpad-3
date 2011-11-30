@@ -1,0 +1,56 @@
+div#client-listing {
+    float: left;
+    color: #666;
+    }
+div.buglisting-row {
+    float: left;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #EEE;
+    min-width: 585px;
+    width: 100%;
+    }
+div.buglisting-col1 {
+    float: left;
+    padding-right: 20px;
+    }
+div.buglisting-col2 {
+    width: 65%;
+    float: left;
+    margin-top: 2px;
+    }
+div.buglisting-col3 {
+    float: right;
+    }
+div#client-listing .status,
+div#client-listing .importance {
+    float: left;
+    height: 1.5em;
+    font-size: 0.8em;
+    border-radius: 2px;
+    text-transform: uppercase;
+    line-height: 12px;
+    text-align: center;
+    margin: 5px 0 2px 10px;
+}
+div#client-listing .importance {
+    width: 65px;
+    }
+div#client-listing .status {
+    width: 90px;
+    }
+div#client-listing .buginfo-extras {
+    margin-top: 3px;
+    }
+div#client-listing .bug-related-icons,
+div#client-listing .bug-heat-icons {
+    float: right;
+    margin: 3px 0;
+    }
+div#client-listing .field {
+    display: inline-block;
+    min-width: 120px;
+    line-height: 16px;
+    margin-right: 5px;
+}
+
