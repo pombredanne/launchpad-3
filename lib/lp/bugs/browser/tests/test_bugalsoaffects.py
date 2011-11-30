@@ -8,11 +8,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
@@ -36,6 +34,22 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         browser.getControl('Continue').click()
         self.assertEqual([], get_feedback_messages(browser.contents))
 
+    def test_bug_alsoaffects_dsp_exists_dsp_picker_feature_flag(self):
+        # If the distribution source package is official, there is no error.
+        bug = self.factory.makeBug()
+        distribution, dsp = self.factory.makeDSPCache(
+            distro_name=self.distribution.name, package_name='snarf',
+            make_distro=False)
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            browser = self.getUserBrowser()
+            browser.open(canonical_url(bug))
+            browser.getLink(url='+distrotask').click()
+            browser.getControl('Distribution').value = [distribution.name]
+            browser.getControl('Source Package Name').value = (
+                '%s/%s' % (distribution.name, dsp.name))
+            browser.getControl('Continue').click()
+        self.assertEqual([], get_feedback_messages(browser.contents))
+
     def test_bug_alsoaffects_spn_not_exists_with_published_binaries(self):
         # When the distribution has published binaries, we search both
         # source and binary package names.
@@ -43,7 +57,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=self.distribution)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=das, status=PackagePublishingStatus.PUBLISHED)
         self.assertTrue(self.distribution.has_published_binaries)
         browser = self.getUserBrowser()
