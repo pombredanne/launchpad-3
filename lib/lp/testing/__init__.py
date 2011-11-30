@@ -1303,6 +1303,17 @@ def nested_tempfile():
         shutil.rmtree(tempdir_new, ignore_errors=True)
 
 
+class NestedTempfile(fixtures.Fixture):
+    """Nest all temporary directories inside a top-level one."""
+
+    def setUp(self):
+        super(NestedTempfile, self).setUp()
+        tempdir = fixtures.TempDir()
+        self.useFixture(tempdir)
+        patch = fixtures.MonkeyPatch("tempfile.tempdir", tempdir.path)
+        self.useFixture(patch)
+
+
 @contextmanager
 def temp_dir():
     """Provide a temporary directory as a ContextManager."""

@@ -14,6 +14,7 @@ from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,
     nested_tempfile,
+    NestedTempfile,
     set_feature_flag,
     TestCase,
     YUIUnitTestCase,
@@ -55,20 +56,22 @@ class TestYUIUnitTestCase(TestCase):
         self.assertEqual("../bar/bob.html", test.id())
 
 
-class NestedTempfileTest(TestCase):
-    """Tests for `nested_tempfile`."""
+class NestedTempfileBase:
+    """Common tests for `nested_tempfile` and `NestedTempfile`."""
+
+    nest_factory = None
 
     def test_normal(self):
         # The temp directory is removed when the context is exited.
         starting_tempdir = tempfile.gettempdir()
-        with nested_tempfile() as tempdir:
-            self.assertEqual(tempdir, tempfile.gettempdir())
-            self.assertEqual(tempdir, tempfile.tempdir)
-            self.assertNotEqual(tempdir, starting_tempdir)
-            self.assertTrue(os.path.isdir(tempdir))
-        self.assertEqual(starting_tempdir, tempfile.gettempdir())
+        with self.nest_factory():
+            self.assertEqual(tempfile.tempdir, tempfile.gettempdir())
+            self.assertNotEqual(tempfile.tempdir, starting_tempdir)
+            self.assertTrue(os.path.isdir(tempfile.tempdir))
+            nested_tempdir = tempfile.tempdir
+        self.assertEqual(tempfile.tempdir, tempfile.gettempdir())
         self.assertEqual(starting_tempdir, tempfile.tempdir)
-        self.assertFalse(os.path.isdir(tempdir))
+        self.assertFalse(os.path.isdir(nested_tempdir))
 
     def test_exception(self):
         # The temp directory is removed when the context is exited, even if
@@ -76,7 +79,20 @@ class NestedTempfileTest(TestCase):
         class ContrivedException(Exception):
             pass
         try:
-            with nested_tempfile() as tempdir:
+            with self.nest_factory():
+                nested_tempdir = tempfile.tempdir
                 raise ContrivedException
         except ContrivedException:
-            self.assertFalse(os.path.isdir(tempdir))
+            self.assertFalse(os.path.isdir(nested_tempdir))
+
+
+class NestedTempfileTest(NestedTempfileBase, TestCase):
+    """Tests for `nested_tempfile`."""
+
+    nest_factory = staticmethod(nested_tempfile)
+
+
+class NestedTempfileFixtureTest(NestedTempfileBase, TestCase):
+    """Tests for `NestedTempfile`."""
+
+    nest_factory = NestedTempfile
