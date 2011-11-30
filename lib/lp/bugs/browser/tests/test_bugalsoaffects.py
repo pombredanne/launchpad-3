@@ -34,6 +34,23 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         browser.getControl('Continue').click()
         self.assertEqual([], get_feedback_messages(browser.contents))
 
+    def test_bug_alsoaffects_spn_exists_dsp_picker_feature_flag(self):
+        # If the distribution source package for an spn is official,
+        # there is no error.
+        bug = self.factory.makeBug()
+        distribution, dsp = self.factory.makeDSPCache(
+            distro_name=self.distribution.name, package_name='snarf',
+            make_distro=False)
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            browser = self.getUserBrowser()
+            browser.open(canonical_url(bug))
+            browser.getLink(url='+distrotask').click()
+            browser.getControl('Distribution').value = [distribution.name]
+            browser.getControl('Source Package Name').value = (
+                dsp.sourcepackagename.name)
+            browser.getControl('Continue').click()
+        self.assertEqual([], get_feedback_messages(browser.contents))
+
     def test_bug_alsoaffects_dsp_exists_dsp_picker_feature_flag(self):
         # If the distribution source package is official, there is no error.
         bug = self.factory.makeBug()
