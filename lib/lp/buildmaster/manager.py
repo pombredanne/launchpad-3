@@ -279,7 +279,7 @@ class SlaveScanner:
                     self.logger.info(
                         "%s was made unavailable; resetting attached job.",
                         self.builder.name)
-                    transaction.abort()
+                    transaction.commit()
                     with DatabaseTransactionPolicy(read_only=False):
                         job.reset()
                         transaction.commit()
@@ -300,7 +300,7 @@ class SlaveScanner:
                 if self.builder.currentjob is not None:
                     # After a successful dispatch we can reset the
                     # failure_count.
-                    transaction.abort()
+                    transaction.commit()
                     with DatabaseTransactionPolicy(read_only=False):
                         self.builder.resetFailureCount()
                         transaction.commit()
