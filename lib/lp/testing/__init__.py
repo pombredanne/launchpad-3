@@ -29,7 +29,6 @@ __all__ = [
     'login_team',
     'logout',
     'map_branch_contents',
-    'nested_tempfile',
     'normalize_whitespace',
     'nonblocking_readline',
     'oauth_access_token_for',
@@ -1288,19 +1287,6 @@ def ws_object(launchpad, obj):
     """
     api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
     return launchpad.load(canonical_url(obj, request=api_request))
-
-
-@contextmanager
-def nested_tempfile():
-    """Nest all temporary directories inside a top-level one."""
-    tempdir_new = tempfile.mkdtemp()
-    tempdir_old = tempfile.tempdir
-    try:
-        tempfile.tempdir = tempdir_new
-        yield tempfile.tempdir
-    finally:
-        tempfile.tempdir = tempdir_old
-        shutil.rmtree(tempdir_new, ignore_errors=True)
 
 
 class NestedTempfile(fixtures.Fixture):

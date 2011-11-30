@@ -13,7 +13,6 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,
-    nested_tempfile,
     NestedTempfile,
     set_feature_flag,
     TestCase,
@@ -56,15 +55,13 @@ class TestYUIUnitTestCase(TestCase):
         self.assertEqual("../bar/bob.html", test.id())
 
 
-class NestedTempfileBase:
-    """Common tests for `nested_tempfile` and `NestedTempfile`."""
-
-    nest_factory = None
+class NestedTempfileTest(TestCase):
+    """Tests for `NestedTempfile`."""
 
     def test_normal(self):
         # The temp directory is removed when the context is exited.
         starting_tempdir = tempfile.gettempdir()
-        with self.nest_factory():
+        with NestedTempfile():
             self.assertEqual(tempfile.tempdir, tempfile.gettempdir())
             self.assertNotEqual(tempfile.tempdir, starting_tempdir)
             self.assertTrue(os.path.isdir(tempfile.tempdir))
@@ -79,20 +76,8 @@ class NestedTempfileBase:
         class ContrivedException(Exception):
             pass
         try:
-            with self.nest_factory():
+            with NestedTempfile():
                 nested_tempdir = tempfile.tempdir
                 raise ContrivedException
         except ContrivedException:
             self.assertFalse(os.path.isdir(nested_tempdir))
-
-
-class NestedTempfileTest(NestedTempfileBase, TestCase):
-    """Tests for `nested_tempfile`."""
-
-    nest_factory = staticmethod(nested_tempfile)
-
-
-class NestedTempfileFixtureTest(NestedTempfileBase, TestCase):
-    """Tests for `NestedTempfile`."""
-
-    nest_factory = NestedTempfile
