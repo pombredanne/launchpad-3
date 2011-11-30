@@ -354,7 +354,7 @@
                 Y.on('domready', function() {
                    var cfg = {
                         notification_text: "This report will be private "
-                            + "because it is a security vulnerability. You " 
+                            + "because it is a security vulnerability. You "
                             + "can disclose it later."
                     };
                     Y.lp.app.privacy.setup_privacy_notification(cfg);
@@ -364,7 +364,7 @@
                         if (checked) {
                             Y.lp.app.privacy.display_privacy_notification();
                         } else {
-                            Y.lp.app.privacy.hide_privacy_notification(); 
+                            Y.lp.app.privacy.hide_privacy_notification();
                         }
                     });
                 });
