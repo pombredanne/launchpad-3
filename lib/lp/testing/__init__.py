@@ -93,6 +93,7 @@ import pytz
 import simplejson
 from storm.store import Store
 import subunit
+from lazr.restful.testing.tales import test_tales
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
@@ -151,7 +152,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
     launchpadlib_credentials_for,
