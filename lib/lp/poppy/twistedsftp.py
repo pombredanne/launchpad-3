@@ -127,8 +127,8 @@ class SFTPFile:
 
     def writeChunk(self, offset, data):
         try:
-            chunk_file = os.open(
-                self.filename, os.O_CREAT | os.O_WRONLY, 0664)
+             chunk_file = os.open(
+                self.filename, os.O_CREAT | os.O_WRONLY, 0644)
         except OSError, e:
             if e.errno != errno.EISDIR:
                 raise
