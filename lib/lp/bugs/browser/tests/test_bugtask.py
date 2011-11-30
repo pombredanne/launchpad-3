@@ -60,7 +60,6 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
-    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
