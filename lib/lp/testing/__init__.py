@@ -87,13 +87,13 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.tales import test_tales
 from lazr.restful.testing.webservice import FakeRequest
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
 from storm.store import Store
 import subunit
-from lazr.restful.testing.tales import test_tales
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
