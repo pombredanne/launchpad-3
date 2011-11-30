@@ -1290,7 +1290,7 @@ def ws_object(launchpad, obj):
 
 
 class NestedTempfile(fixtures.Fixture):
-    """Nest all temporary directories inside a top-level one."""
+    """Nest all temporary files and directories inside a top-level one."""
 
     def setUp(self):
         super(NestedTempfile, self).setUp()
