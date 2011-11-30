@@ -361,24 +361,6 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         traversed = self.traverse(segment, segment)
         self.assertEqual(team, traversed)
 
-    def test_private_team_visible_to_admin_and_members_only(self):
-        # Verify a private team is  team is returned.
-        name = 'private-team'
-        team = self.factory.makeTeam(name=name)
-        login_person(self.admin)
-        team.visibility = PersonVisibility.PRIVATE
-        segment = '~%s' % name
-        # Admins can traverse to the team.
-        traversed = self.traverse(segment, segment)
-        self.assertEqual(team, traversed)
-        # Members can traverse to the team.
-        login_person(team.teamowner)
-        traversed = self.traverse(segment, segment)
-        self.assertEqual(team, traversed)
-        # All other user cannot traverse to the team.
-        login_person(self.any_user)
-        self.assertRaises(NotFound, self.traverse, segment, segment)
-
     def test_self_url_traversal(self):
         # Just /~/ expands to the current user.  (Bug 785800).
         person = self.factory.makePerson()

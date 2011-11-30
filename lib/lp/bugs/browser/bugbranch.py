@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes for BugBranch-related objects."""
+from canonical.launchpad.webapp.authorization import precache_permission_for_objects
 
 __metaclass__ = type
 __all__ = [
@@ -110,7 +111,12 @@ class BugBranchView(LaunchpadView):
     def merge_proposals(self):
         """Return a list of active proposals for the branch."""
         branch = self.context.branch
-        return latest_proposals_for_each_branch(branch.landing_targets)
+        proposals = latest_proposals_for_each_branch(branch.landing_targets)
+        if self.user is not None:
+            reviewers = [proposal.reviewer for proposal in proposals]
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", reviewers)
+        return proposals
 
     @property
     def show_branch_status(self):

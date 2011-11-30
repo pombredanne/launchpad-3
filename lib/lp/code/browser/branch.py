@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
+from zope.security.proxy import removeSecurityProxy
 
 __metaclass__ = type
 
@@ -96,7 +97,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import check_permission, precache_permission_for_objects
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpad import Hierarchy
@@ -442,6 +443,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def initialize(self):
         self.branch = self.context
         self.notices = []
+        authorised_people = [self.branch.owner]
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", authorised_people)
+
         # Replace our context with a decorated branch, if it is not already
         # decorated.
         if not isinstance(self.context, DecoratedBranch):
@@ -532,7 +538,15 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     @cachedproperty
     def landing_targets(self):
         """Return a filtered list of landing targets."""
-        return latest_proposals_for_each_branch(self.context.landing_targets)
+        proposals = latest_proposals_for_each_branch(
+            self.context.landing_targets)
+        if self.user is not None:
+            reviewers = [
+            proposal.reviewer for proposal in proposals
+            if proposal.reviewer]
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", reviewers)
+        return proposals
 
     @property
     def latest_landing_candidates(self):
