@@ -970,7 +970,7 @@ def get_launchpad_views(cookies):
 
 
 def iter_view_registrations(cls):
-    """Return the name for a given view class.
+    """Iterate through the AdapterRegistrations of a view.
 
     The input must be the final registered form of the class, which is
     typically a SimpleViewClass variant.

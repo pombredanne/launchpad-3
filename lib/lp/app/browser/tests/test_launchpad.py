@@ -435,7 +435,7 @@ class TestErrorViews(TestCaseWithFactory):
         self.assertEqual(410, view.request.response.getStatus())
 
 
-class TestGetViewName(TestCaseWithFactory):
+class TestIterViewRegistrations(TestCaseWithFactory):
 
     layer = FunctionalLayer
 
