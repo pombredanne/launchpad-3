@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import re
 import unittest
 from zope.component import getUtility
 from BeautifulSoup import BeautifulSoup
@@ -22,6 +23,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.milestone import ProjectMilestone
 from lp.testing import (
     celebrity_logged_in,
+    extract_lp_cache,
     person_logged_in,
     BrowserTestCase,
     TestCaseWithFactory,
@@ -69,7 +71,8 @@ class _TestResultsMixin:
             None, self.new_edit_link,
             "Expected edit_bug_mail link missing")
         # Ensure the LP.cache has been populated.
-        self.assertIn('LP.cache = {"administratedTeams": [', self.contents)
+        cache = extract_lp_cache(self.contents)
+        self.assertIn('administratedTeams', cache)
         # Ensure the call to setup the subscription is in the HTML.
         # Only check for the presence of setup's configuration step; more
         # detailed checking is needlessly brittle.

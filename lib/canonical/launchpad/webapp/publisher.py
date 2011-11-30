@@ -79,6 +79,11 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
+from lp.services.features import (
+    defaultFlagValue,
+    getFeatureFlag,
+    )
+from lp.services.utils import obfuscate_structure
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -257,6 +262,23 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
         self._error_message = None
         self._info_message = None
+        # FakeRequest does not have all properties required by the
+        # IJSONRequestCache adapter.
+        if isinstance(request, FakeRequest):
+            return
+        # Some tests create views without providing any request
+        # object at all; other tests run without the component
+        # infrastructure.
+        try:
+            cache = IJSONRequestCache(self.request).objects
+        except TypeError, error:
+            if error.args[0] == 'Could not adapt':
+                return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
 
     def initialize(self):
         """Override this in subclasses.
@@ -264,6 +286,25 @@ class LaunchpadView(UserAttributeCache):
         Default implementation does nothing.
         """
         pass
+
+    @property
+    def page_description(self):
+        """Return a string containing a description of the context.
+
+        Typically this is the contents of the most-descriptive text attribute
+        of the context, by default its 'description' attribute if there is
+        one.
+
+        This will be inserted into the HTML meta description, and may
+        eventually end up in search engine summary results, or when a link to
+        the page is shared elsewhere.
+
+        This may be specialized by view subclasses.
+
+        Do not write eg "This is a page about...", just directly describe the
+        object on the page.
+        """
+        return getattr(self.context, 'description', None)
 
     @property
     def template(self):
@@ -347,12 +388,11 @@ class LaunchpadView(UserAttributeCache):
     info_message = property(_getInfoMessage, _setInfoMessage)
 
     def getCacheJSON(self):
-        if self.user is not None:
-            cache = dict(IJSONRequestCache(self.request).objects)
-        else:
-            cache = dict()
+        cache = dict(IJSONRequestCache(self.request).objects)
         if WebLayerAPI(self.context).is_entry:
             cache['context'] = self.context
+        if self.user is None:
+            cache = obfuscate_structure(cache)
         return simplejson.dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
@@ -362,6 +402,59 @@ class LaunchpadView(UserAttributeCache):
         # By default, a LaunchpadView cannot be traversed through.
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
+
+    @property
+    def recommended_canonical_url(self):
+        """Canonical URL to be recommended in metadata.
+
+        Used to generate <link rel="canonical"> to hint that pages
+        with different URLs are actually (at least almost) functionally
+        and semantically identical.
+
+        See http://www.google.com/support/webmasters/bin/\
+            answer.py?answer=139394
+        "Canonical is a long word that means my preferred or my
+        primary."
+
+        Google (at least) will primarily, but not absolutely certainly,
+        treat these pages as duplicates, so don't use this if there's any
+        real chance the user would want to specifically find one of the
+        non-duplicate pages.
+
+        Most views won't need this.
+        """
+        return None
+
+    # Names of feature flags which affect a view.
+    related_features = ()
+
+    @property
+    def related_feature_info(self):
+        """Related feature flags that are active for this context and scope.
+
+        This property describes all features marked as related_features in the
+        view.  is_beta means that the value is not the default value.
+
+        Return a dict of flags keyed by flag_name, with title and url as given
+        by the flag's description.  Value is the value in the current scope,
+        and is_beta is true if this is not the default value.
+        """
+        # Avoid circular imports.
+        from lp.services.features.flags import flag_info
+
+        beta_info = {}
+        for (flag_name, value_domain, documentation, default_behavior, title,
+             url) in flag_info:
+            if flag_name not in self.related_features:
+                continue
+            value = getFeatureFlag(flag_name)
+            beta_info[flag_name] = {
+                'is_beta': (defaultFlagValue(flag_name) != value),
+                'title': title,
+                'url': url,
+                'value': value,
+            }
+        return beta_info
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

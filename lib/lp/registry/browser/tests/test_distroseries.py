@@ -28,7 +28,6 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import (
     ProxyFactory,
@@ -57,7 +56,6 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
-    reconnect_stores,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
@@ -72,6 +70,8 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -79,6 +79,7 @@ from lp.services.features import (
     getFeatureFlag,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
 from lp.soyuz.browser.archive import copy_asynchronously_message
 from lp.soyuz.enums import (
@@ -113,6 +114,7 @@ from lp.testing import (
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import (
     DocTestMatches,
@@ -585,7 +587,8 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # owner is an individual.
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam(
-                displayname=u"Team Teamy Team Team")
+                displayname=u"Team Teamy Team Team",
+                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
@@ -605,14 +608,11 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # We need to switch to the initializedistroseries user to set the
         # error_description on the given job. Which is a PITA.
         distroseries = job.distroseries
-        transaction.commit()
-        reconnect_stores("initializedistroseries")
-        job = self.job_source.get(distroseries)
-        job.start()
-        job.fail()
-        job.notifyUserError(error)
-        transaction.commit()
-        reconnect_stores('launchpad')
+        with dbuser("initializedistroseries"):
+            job = self.job_source.get(distroseries)
+            job.start()
+            job.fail()
+            job.notifyUserError(error)
 
     def test_initialization_failure_explanation_shown(self):
         # When initialization has failed an explanation of the failure can be
@@ -1319,7 +1319,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         soup = BeautifulSoup(view())
         help_links = soup.findAll(
-            'a', href='/+help/soyuz/derived-series-syncing.html')
+            'a', href='/+help-soyuz/derived-series-syncing.html')
         self.assertEqual(1, len(help_links))
 
     def test_diff_row_includes_last_comment_only(self):
@@ -1494,8 +1494,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
+        self.assertIn(
+            "by %s" % (
                 dsd.source_package_release.creator.displayname,),
             normalize_whitespace(creator_cell.text_content()))
 
@@ -1511,11 +1511,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s (uploaded by %s)" % (
+        matches = DocTestMatches(
+            "... ago by %s (uploaded by %s)" % (
                 dsd.source_package_release.creator.displayname,
-                dsd.source_package_release.dscsigningkey.owner.displayname),
-            normalize_whitespace(creator_cell.text_content()))
+                dsd.source_package_release.dscsigningkey.owner.displayname))
+        self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_links_to_parent_changelog(self):
         # After the parent's version, there should be text "(changelog)"
@@ -1968,7 +1968,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {dsd.source_package_name.name: object()}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: object(),
+            }
         self.assertIsNot(None, view.pendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
@@ -2020,7 +2022,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {dsd.source_package_name.name: object()}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: object(),
+            }
         self.assertFalse(view.canRequestSync(dsd))
 
     def test_canRequestSync_returns_False_if_child_is_newer(self):
@@ -2071,7 +2075,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=False)
         pcj = self.factory.makePlainPackageCopyJob()
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         self.assertEqual("synchronizing&hellip;", view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_queue(self):
@@ -2084,7 +2090,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # A copy job with an attached packageupload means the job is
         # waiting in the queues.
         removeSecurityProxy(pu).package_copy_job = pcj.id
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         expected = (
             'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
             % (canonical_url(dsd.derived_series), pu.status.value,
@@ -2099,7 +2107,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         pcj = self.factory.makePlainPackageCopyJob()
         self.factory.makePackageUpload(distroseries=dsd.derived_series,
                                        package_copy_job=pcj.id)
-        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        get_property_cache(view).pending_syncs = {
+            dsd.source_package_name.name: pcj,
+            }
         self.assertEqual(
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
@@ -2569,10 +2579,10 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
-        self.assertEqual(
-            "a moment ago by %s" % (
-                dsd.parent_source_package_release.creator.displayname,),
-            normalize_whitespace(creator_cell.text_content()))
+        matches = DocTestMatches(
+            "... ago by %s" % (
+                dsd.parent_source_package_release.creator.displayname,))
+        self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_last_changed_also_shows_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
@@ -2591,11 +2601,11 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
         parent_spr = dsd.parent_source_package_release
-        self.assertEqual(
-            "a moment ago by %s (uploaded by %s)" % (
+        matches = DocTestMatches(
+            "... ago by %s (uploaded by %s)" % (
                 parent_spr.creator.displayname,
-                parent_spr.dscsigningkey.owner.displayname),
-            normalize_whitespace(creator_cell.text_content()))
+                parent_spr.dscsigningkey.owner.displayname))
+        self.assertThat(creator_cell.text_content(), matches)
 
 
 class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
@@ -2717,3 +2727,22 @@ class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
             html, packageset_text, 'packagesets', 'Packagesets')
+
+
+class TestDistroSeriesEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_edit_full_functionality_sets_datereleased(self):
+        # Full functionality distributions (IE: Ubuntu) have datereleased
+        # set when the +edit view is used.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+        form = {
+            'field.actions.change': 'Change',
+            'field.status': 'CURRENT'
+            }
+        admin = login_celebrity('admin')
+        create_initialized_view(
+            distroseries, name='+edit', principal=admin, form=form)
+        self.assertIsNot(None, distroseries.datereleased)

@@ -18,9 +18,12 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'load_bz2_pickle',
     'obfuscate_email',
+    'obfuscate_structure',
     're_email_address',
     'run_capturing_output',
+    'save_bz2_pickle',
     'synchronize',
     'text_delta',
     'traceback_info',
@@ -28,16 +31,18 @@ __all__ = [
     'value_string',
     ]
 
+import bz2
 from datetime import datetime
 from itertools import tee
 import os
 import re
-from StringIO import StringIO
 import string
+from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import FunctionType
 
+import cPickle as pickle
 from fixtures import (
     Fixture,
     MonkeyPatch,
@@ -135,7 +140,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
+        yield a_list[i:i + size]
 
 
 def synchronize(source, target, add, remove):
@@ -245,7 +250,7 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
+    first, rest = (s + '\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
 
 
@@ -318,18 +323,63 @@ re_email_address = re.compile(r"""
     """, re.VERBOSE)              # ' <- font-lock turd
 
 
-def obfuscate_email(text_to_obfuscate):
+def obfuscate_email(text_to_obfuscate, replacement=None):
     """Obfuscate an email address.
 
-    The email address is obfuscated as <email address hidden>.
+    The email address is obfuscated as <email address hidden> by default,
+    or with the given replacement.
 
     The pattern used to identify an email address is not 2822. It strives
     to match any possible email address embedded in the text. For example,
     mailto:person@domain.dom and http://person:password@domain.dom both
     match, though the http match is in fact not an email address.
     """
+    if replacement is None:
+        replacement = '<email address hidden>'
     text = re_email_address.sub(
-        r'<email address hidden>', text_to_obfuscate)
+        replacement, text_to_obfuscate)
+    # Avoid doubled angle brackets.
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
+
+
+def save_bz2_pickle(obj, filename):
+    """Save a bz2 compressed pickle of `obj` to `filename`."""
+    fout = bz2.BZ2File(filename, "w")
+    try:
+        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
+    finally:
+        fout.close()
+
+
+def load_bz2_pickle(filename):
+    """Load and return a bz2 compressed pickle from `filename`."""
+    fin = bz2.BZ2File(filename, "r")
+    try:
+        return pickle.load(fin)
+    finally:
+        fin.close()
+
+
+def obfuscate_structure(o):
+    """Obfuscate the strings of a json-serializable structure.
+
+    Note: tuples are converted to lists because json encoders do not
+    distinguish between lists and tuples.
+
+    :param o: Any json-serializable object.
+    :return: a possibly-new structure in which all strings, list and tuple
+        elements, and dict keys and values have undergone obfuscate_email
+        recursively.
+    """
+    if isinstance(o, basestring):
+        return obfuscate_email(o)
+    elif isinstance(o, (list, tuple)):
+        return [obfuscate_structure(value) for value in o]
+    elif isinstance(o, (dict)):
+        return dict(
+            (obfuscate_structure(key), obfuscate_structure(value))
+            for key, value in o.iteritems())
+    else:
+        return o

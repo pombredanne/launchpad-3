@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,6 +18,7 @@ from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 class BuildFarmBuildJob(BuildFarmJobOld):
     """See `IBuildFaramBuildJob`."""
     implements(IBuildFarmBuildJob)
+
     def __init__(self, build):
         """Store the build for this package build farm job.
 

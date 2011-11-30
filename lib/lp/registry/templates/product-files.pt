@@ -16,7 +16,7 @@
 
   <p tal:condition="view/has_download_files">
     <a
-    href="/+help/verify-downloads.html" target="help">How do I verify a
+    href="/+help-registry/verify-downloads.html" target="help">How do I verify a
     download?</a>
   </p>
   <br />

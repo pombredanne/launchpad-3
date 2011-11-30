@@ -1265,7 +1265,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         The default URL for a team is to the mainsite. None is returned
         when the user does not have permission to review the team.
         """
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.LimitedView', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1273,7 +1273,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.LimitedView', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1286,7 +1286,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         when the user does not have permission to review the team.
         """
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return '<span class="sprite team">%s</span>' % cgi.escape(
@@ -1296,7 +1296,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def displayname(self, view_name, rootsite=None):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden
@@ -1305,7 +1305,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def unique_displayname(self, view_name):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden
@@ -2145,6 +2145,41 @@ class DateTimeFormatterAPI:
 
     def isodate(self):
         return self._datetime.isoformat()
+
+    @staticmethod
+    def _yearDelta(old, new):
+        """Return the difference in years between two datetimes.
+
+        :param old: The old date
+        :param new: The new date
+        """
+        year_delta = new.year - old.year
+        year_timedelta = datetime(new.year, 1, 1) - datetime(old.year, 1, 1)
+        if new - old < year_timedelta:
+            year_delta -= 1
+        return year_delta
+
+    def durationsince(self):
+        """How long since the datetime, as a string."""
+        now = self._now()
+        number = self._yearDelta(self._datetime, now)
+        unit = 'year'
+        if number < 1:
+            delta = now - self._datetime
+            if delta.days > 0:
+                number = delta.days
+                unit = 'day'
+            else:
+                number = delta.seconds / 60
+                if number == 0:
+                    return 'less than a minute'
+                unit = 'minute'
+                if number >= 60:
+                    number /= 60
+                    unit = 'hour'
+        if number != 1:
+            unit += 's'
+        return '%d %s' % (number, unit)
 
 
 class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -248,6 +248,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
+    access_policy = Attribute("Access policy")
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(
@@ -374,13 +375,17 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True)))
     users_affected_count_with_dupes = exported(
-      Int(title=_('The number of users affected by this bug '
-                  '(including duplicates)'),
-          required=True, readonly=True))
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates)'),
+        required=True, readonly=True))
+    other_users_affected_count_with_dupes = exported(
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates), excluding the current user'),
+        required=True, readonly=True))
     users_affected_with_dupes = exported(doNotSnapshot(CollectionField(
-            title=_('Users affected (including duplicates)'),
-            value_type=Reference(schema=IPerson),
-            readonly=True)))
+        title=_('Users affected (including duplicates)'),
+        value_type=Reference(schema=IPerson),
+        readonly=True)))
 
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
@@ -884,6 +889,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Return (private_changed, security_related_changed) tuple.
         """
 
+    def setAccessPolicy(policy_type):
+        """Set the `IAccessPolicy` that controls access to this bug."""
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -939,6 +947,25 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
+
+    def userCanSetCommentVisibility(user):
+        """Return True if `user` can set bug comment visibility.
+
+        This method is called by security adapters for authenticated users.
+
+        Users who can set bug comment visibility are:
+        - Admins and registry admins
+        - users in project roles on any bugtask:
+          - maintainer
+          - driver
+          - bug supervisor
+          - security contact
+
+        Additionally, the comment owners can hide their own comments but that
+        is not checked here - this method is to see if arbitrary users can
+        hide comments they did not make themselves.
+
+        """
 
     @operation_parameters(
         submission=Reference(

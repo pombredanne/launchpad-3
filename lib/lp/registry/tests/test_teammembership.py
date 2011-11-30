@@ -3,19 +3,21 @@
 
 __metaclass__ = type
 
+import bz2
 from datetime import (
     datetime,
     timedelta,
     )
+import os
+import pickle
 import re
 import subprocess
-from testtools.matchers import Equals
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestLoader
 
+from fixtures import TempDir
 import pytz
+from testtools.content import text_content
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -26,10 +28,6 @@ from canonical.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     sqlvalues,
-    )
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
@@ -53,19 +51,31 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (\
+from lp.registry.model.teammembership import (
     find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation_circular,
+    check_teamparticipation_consistency,
+    check_teamparticipation_self,
+    ConsistencyError,
+    fetch_team_participation_info,
+    )
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
+    login,
     login_celebrity,
+    login_person,
     person_logged_in,
+    StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
+from lp.testing.dbuser import dbuser
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.storm import reload_object
 
 
 class TestTeamMembershipSetScripts(TestCaseWithFactory):
@@ -95,15 +105,10 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         # Set expiration time to now
         now = datetime.now(pytz.UTC)
         removeSecurityProxy(teammembership).dateexpires = now
-        transaction.commit()
 
-        # Switch dbuser to the user running the membership flagging
-        # cronscript. Reload the membership object so we can assert against
-        # it.
-        self.layer.switchDbUser(config.expiredmembershipsflagger.dbuser)
-        reload_object(teammembership)
         janitor = getUtility(ILaunchpadCelebrities).janitor
-        membershipset.handleMembershipsExpiringToday(janitor)
+        with dbuser(config.expiredmembershipsflagger.dbuser):
+            membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
             teammembership.status, TeamMembershipStatus.APPROVED)
 
@@ -1047,21 +1052,28 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
 
 
 class TestCheckTeamParticipationScript(TestCase):
+
     layer = DatabaseFunctionalLayer
 
-    def _runScript(self, expected_returncode=0):
+    def _runScript(self, *args):
+        cmd = ["cronscripts/check-teamparticipation.py"]
+        cmd.extend(args)
         process = subprocess.Popen(
-            'cronscripts/check-teamparticipation.py', shell=True,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(process.returncode, expected_returncode, (out, err))
-        return out, err
+        out, err = process.communicate()
+        if out != "":
+            self.addDetail("stdout", text_content(out))
+        if err != "":
+            self.addDetail("stderr", text_content(err))
+        return process.poll(), out, err
 
     def test_no_output_if_no_invalid_entries(self):
         """No output if there's no invalid teamparticipation entries."""
-        out, err = self._runScript()
-        self.assertEqual((out, err), ('', ''))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
+        self.assertEqual(0, len(err))
 
     def test_report_invalid_teamparticipation_entries(self):
         """The script reports missing/spurious TeamParticipation entries.
@@ -1099,20 +1111,17 @@ class TestCheckTeamParticipationScript(TestCase):
                         LIMIT 1),
                     %s);
             """ % sqlvalues(TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
 
-        out, err = self._runScript()
-        self.assertEqual(out, '', (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
         self.failUnless(
-            re.search('missing TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('spurious TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('spurious TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err),
-            (out, err))
+            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1142,12 +1151,92 @@ class TestCheckTeamParticipationScript(TestCase):
                 TeamParticipation (person, team)
                 VALUES (9997, 9998);
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
-        out, err = self._runScript(expected_returncode=1)
-        self.assertEqual(out, '', (out, err))
-        self.failUnless(
-            re.search('Circular references found', err), (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(1, code)
+        self.assertEqual(0, len(out))
+        self.failUnless(re.search('Circular references found', err))
+
+    def test_report_spurious_participants_of_people(self):
+        """The script reports spurious participants of people.
+
+        Teams can have multiple participants, but only the person should be a
+        paricipant of him/herself.
+        """
+        # Create two new people and make both participate in the first.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6969, 'bobby', 'Dazzler', 1);
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6970, 'nobby', 'Jazzler', 1);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (6970, 6969);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertEqual(
+            [ConsistencyError("spurious", 6969, [6970])],
+            errors)
+
+    def test_load_and_save_team_participation(self):
+        """The script can load and save participation info."""
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        info = fetch_team_participation_info(logger)
+        tempdir = self.useFixture(TempDir()).path
+        filename_in = os.path.join(tempdir, "info.in")
+        filename_out = os.path.join(tempdir, "info.out")
+        fout = bz2.BZ2File(filename_in, "w")
+        try:
+            pickle.dump(info, fout, pickle.HIGHEST_PROTOCOL)
+        finally:
+            fout.close()
+        code, out, err = self._runScript(
+            "--load-participation-info", filename_in,
+            "--save-participation-info", filename_out)
+        self.assertEqual(0, code)
+        fin = bz2.BZ2File(filename_out, "r")
+        try:
+            saved_info = pickle.load(fin)
+        finally:
+            fin.close()
+        self.assertEqual(info, saved_info)
+
+
+class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_queries(self):
+        """The script does not overly tax the database.
+
+        The whole check_teamparticipation() run executes a constant low number
+        of queries.
+        """
+        # Create a deeply nested team and member structure.
+        team = self.factory.makeTeam()
+        for num in xrange(10):
+            another_team = self.factory.makeTeam()
+            another_person = self.factory.makePerson()
+            with person_logged_in(team.teamowner):
+                team.addMember(another_team, team.teamowner)
+                team.addMember(another_person, team.teamowner)
+            team = another_team
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        with StormStatementRecorder() as recorder:
+            check_teamparticipation_self(logger)
+            check_teamparticipation_circular(logger)
+            check_teamparticipation_consistency(
+                logger, fetch_team_participation_info(logger))
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 def test_suite():

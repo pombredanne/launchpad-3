@@ -73,11 +73,11 @@ simply appear on the top of the list.
     8: Printing doesn't work
 
 Only the bugs that the user has permission to view are shown in the
-list, so if we mark bug #2 as private, No Privileges won't see it, since
+list, so if we mark bug #4 as private, No Privileges won't see it, since
 he's not subscribed to it.
 
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> bug_4 = getUtility(IBugSet).get(4)
+    >>> bug_4.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
     >>> login('no-priv@canonical.com')
@@ -86,19 +86,19 @@ he's not subscribed to it.
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
+    2: Blackhole Trash folder
     8: Printing doesn't work
 
-If Sample Person get subscribed to bug #2, he can see it in the list.
+If Person David gets subscribed to bug #4, he can see it in the list.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> login('foo.bar@canonical.com')
-    >>> bug_two.subscribe(
-    ...     person_set.getByEmail('test@canonical.com'),
+    >>> bug_4.subscribe(
+    ...     person_set.getByEmail('david@canonical.com'),
     ...     person_set.getByEmail('foo.bar@canonical.com'))
     <lp.bugs.model.bugsubscription.BugSubscription ...>
-    >>> login('test@canonical.com')
+    >>> login('david@canonical.com')
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():

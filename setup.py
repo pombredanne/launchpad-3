@@ -37,6 +37,7 @@ setup(
         'FeedParser',
         'feedvalidator',
         'funkload',
+        'html5browser',
         'pygpgme',
         'launchpadlib',
         'lazr.batchnavigator',
@@ -51,6 +52,7 @@ setup(
         # Required for launchpadlib
         'keyring',
         'manuel',
+        'Markdown',
         'mechanize',
         'meliae',
         'mercurial',
@@ -85,6 +87,7 @@ setup(
         'timeline',
         'transaction',
         'Twisted',
+        'txfixtures',
         'txlongpollfixture',
         'wadllib',
         'z3c.pt',

@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import urllib
+import urllib2
 import urlparse
 import xmlrpclib
 
@@ -187,6 +188,7 @@ class RootApp:
         lp_server = get_lp_server(user, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
+
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
@@ -236,6 +238,40 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
+            base_api_url = config.appserver_root_url('api')
+            branch_api_url = '%s/%s/%s' % (
+                base_api_url,
+                'devel',
+                branch_name,
+                )
+            self.log.info('branch_api_url: %s', branch_api_url)
+            req = urllib2.Request(branch_api_url)
+            private = False
+            try:
+                # We need to determine if the branch is private
+                response = urllib2.urlopen(req)
+            except urllib2.HTTPError as response:
+                code = response.getcode()
+                if code in (400, 401, 403, 404):
+                    # There are several error codes that imply private data.
+                    # 400 (bad request) is a default error code from the API
+                    # 401 (unauthorized) should never be returned as the
+                    # requests are always from anon. If it is returned
+                    # however, the data is certainly private.
+                    # 403 (forbidden) is obviously private.
+                    # 404 (not found) implies privacy from a private team or
+                    # similar situation, which we hide as not existing rather
+                    # than mark as forbidden.
+                    self.log.info("Branch is private")
+                    private = True
+                self.log.info(
+                    "Branch state not determined; api error, return code: %s",
+                    code)
+                response.close()
+            else:
+                self.log.info("Branch is public")
+                response.close()
+
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
@@ -247,7 +283,7 @@ class RootApp:
                 view = BranchWSGIApp(
                     bzr_branch, branch_name, {'cachepath': cachepath},
                     self.graph_cache, branch_link=branch_link,
-                    served_url=None)
+                    served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
                 bzr_branch.unlock()

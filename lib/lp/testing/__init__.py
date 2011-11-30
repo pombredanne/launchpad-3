@@ -35,6 +35,7 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_process',
     'run_script',
     'run_with_login',
     'run_with_storm_debug',
@@ -827,7 +828,11 @@ class AbstractYUITestCase(TestCase):
 
     layer = None
     suite_name = ''
-    js_timeout = 30000
+    # 30 seconds for the suite.
+    suite_timeout = 30000
+    # By default we do not restrict per-test or times.  yuixhr tests do.
+    incremental_timeout = None
+    initial_timeout = None
     html_uri = None
     test_path = None
 
@@ -858,15 +863,21 @@ class AbstractYUITestCase(TestCase):
         # twisted tests to break because of gtk's initialize.
         import html5browser
         client = html5browser.Browser()
-        page = client.load_page(self.html_uri, timeout=self.js_timeout)
+        page = client.load_page(self.html_uri,
+                                timeout=self.suite_timeout,
+                                initial_timeout=self.initial_timeout,
+                                incremental_timeout=self.incremental_timeout)
+        report = None
+        if page.content:
+            report = simplejson.loads(page.content)
         if page.return_code == page.CODE_FAIL:
             self._yui_results = self.TIMEOUT
+            self._last_test_info = report
             return
         # Data['type'] is complete (an event).
         # Data['results'] is a dict (type=report)
         # with 1 or more dicts (type=testcase)
         # with 1 for more dicts (type=test).
-        report = simplejson.loads(page.content)
         if report.get('type', None) != 'complete':
             # Did not get a report back.
             self._yui_results = self.MISSING_REPORT
@@ -890,7 +901,22 @@ class AbstractYUITestCase(TestCase):
         from here.
         """
         if self._yui_results == self.TIMEOUT:
-            self.fail("js timed out.")
+            msg = 'JS timed out.'
+            if self._last_test_info is not None:
+                try:
+                    msg += ('  The last test that ran to '
+                            'completion before timing out was '
+                            '%(testCase)s:%(testName)s.  The test %(type)sed.'
+                            % self._last_test_info)
+                except (KeyError, TypeError):
+                    msg += ('  The test runner received an unexpected error '
+                            'when trying to show information about the last '
+                            'test to run.  The data it received was %r.'
+                            % (self._last_test_info,))
+            elif (self.incremental_timeout is not None or
+                  self.initial_timeout is not None):
+                msg += '  The test may never have started.'
+            self.fail(msg)
         elif self._yui_results == self.MISSING_REPORT:
             self.fail("The data returned by js is not a test report.")
         elif self._yui_results is None or len(self._yui_results) == 0:
@@ -1102,6 +1128,30 @@ def run_script(cmd_line, env=None):
     return out, err, process.returncode
 
 
+def run_process(cmd, env=None):
+    """Run the given command as a subprocess.
+
+    This differs from `run_script` in that it does not execute via a shell and
+    it explicitly connects stdin to /dev/null so that processes will not be
+    able to hang, waiting for user input.
+
+    :param cmd_line: A command suitable for passing to `subprocess.Popen`.
+    :param env: An optional environment dict. If none is given, the script
+        will get a copy of your present environment. Either way, PYTHONPATH
+        will be removed from it because it will break the script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
+    """
+    if env is None:
+        env = os.environ.copy()
+    env.pop('PYTHONPATH', None)
+    with open(os.devnull, "rb") as devnull:
+        process = subprocess.Popen(
+            cmd, stdin=devnull, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=env)
+        stdout, stderr = process.communicate()
+        return stdout, stderr, process.returncode
+
+
 def normalize_whitespace(string):
     """Replace all sequences of whitespace with a single space."""
     # In Python 2.4, splitting and joining a string to normalize
@@ -1297,7 +1347,9 @@ class ExpectedException(TTExpectedException):
 
 
 def extract_lp_cache(text):
-    match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
+    match = re.search(r'<script[^>]*>LP.cache = (\{.*\});</script>', text)
+    if match is None:
+        raise ValueError('No JSON cache found.')
     return simplejson.loads(match.group(1))
 
 
