@@ -22,12 +22,16 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution()
         removeSecurityProxy(self.distribution).official_malone = True
 
+    def openBugPage(self, bug):
+        browser = self.getUserBrowser()
+        browser.open(canonical_url(bug))
+        return browser
+
     def test_bug_alsoaffects_spn_exists(self):
         # If the source package name exists, there is no error.
         bug = self.factory.makeBug()
         spn = self.factory.makeSourcePackageName()
-        browser = self.getUserBrowser()
-        browser.open(canonical_url(bug))
+        browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]
         browser.getControl('Source Package Name').value = spn.name
@@ -42,8 +46,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
             distro_name=self.distribution.name, package_name='snarf',
             make_distro=False)
         with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            browser = self.getUserBrowser()
-            browser.open(canonical_url(bug))
+            browser = self.openBugPage(bug)
             browser.getLink(url='+distrotask').click()
             browser.getControl('Distribution').value = [distribution.name]
             browser.getControl('Source Package Name').value = (
@@ -58,8 +61,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
             distro_name=self.distribution.name, package_name='snarf',
             make_distro=False)
         with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            browser = self.getUserBrowser()
-            browser.open(canonical_url(bug))
+            browser = self.openBugPage(bug)
             browser.getLink(url='+distrotask').click()
             browser.getControl('Distribution').value = [distribution.name]
             browser.getControl('Source Package Name').value = (
@@ -77,8 +79,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=das, status=PackagePublishingStatus.PUBLISHED)
         self.assertTrue(self.distribution.has_published_binaries)
-        browser = self.getUserBrowser()
-        browser.open(canonical_url(bug))
+        browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]
         browser.getControl('Source Package Name').value = 'does-not-exist'
@@ -92,8 +93,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
     def test_bug_alsoaffects_spn_not_exists_with_no_binaries(self):
         # When the distribution has no binary packages published, we can't.
         bug = self.factory.makeBug()
-        browser = self.getUserBrowser()
-        browser.open(canonical_url(bug))
+        browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]
         browser.getControl('Source Package Name').value = 'does-not-exist'

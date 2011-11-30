@@ -62,6 +62,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(None, vocabulary.dsp)
 
     def test_setDistribution(self):
+        # Callsites can set the distribution after the vocabulary was
+        # instantiated.
         new_distro = self.factory.makeDistribution(name='fnord')
         vocabulary = DistributionSourcePackageVocabulary(None)
         vocabulary.setDistribution(new_distro)

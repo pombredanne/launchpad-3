@@ -2073,6 +2073,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         pass
 
     def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
         self.distribution = distribution
 
     def getDistributionAndPackageName(self, text):

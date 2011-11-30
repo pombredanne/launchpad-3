@@ -187,13 +187,13 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def test_getInputValue_package_spn(self):
         # The field value is the package when the package radio button
-        # is selected and the package sub field has valid input.
+        # is selected and the package sub field has official spn.
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_spn_dsp_picker_feature_flag(self):
         # The field value is the package when the package radio button
-        # is selected and the package sub field has valid input.
+        # is selected and the package sub field has a official dsp.
         self.widget.request = LaunchpadTestRequest(form=self.form)
         with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
             self.widget.setUpSubWidgets()
