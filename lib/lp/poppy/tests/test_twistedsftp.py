@@ -17,13 +17,15 @@ from lp.testing import TestCase
 class TestSFTPServer(TestCase):
 
     def setUp(self):
-        # XXX: GavinPanella 2011-11-29 bug=???: Having to set the umask might
-        # be indicative of a bug in twistedsftp. It should probably set umask
-        # or reset permissions after file creation (see SFTPFile.writeChunk).
-        self.addCleanup(os.umask, os.umask(0022))
         self.fs_root = self.useFixture(TempDir()).path
         self.sftp_server = SFTPServer(None, self.fs_root)
         super(TestSFTPServer, self).setUp()
+
+    def assertPermissions(self, expected, file_name):
+        observed = os.stat(file_name).st_mode
+        self.assertEqual(
+            expected, observed, "Expected %07o, got %07o, for %s" % (
+                expected, observed, file_name))
 
     def test_gotVersion(self):
         # gotVersion always returns an empty dict, since the server does not
@@ -38,8 +40,7 @@ class TestSFTPServer(TestCase):
             'foo')
         dir_name = os.path.join(self.sftp_server._current_upload, 'foo')
         self.assertEqual(os.listdir(dir_name)[0], 'bar')
-        self.assertEqual(
-            os.stat(os.path.join(dir_name, 'bar')).st_mode, 040775)
+        self.assertPermissions(040775, dir_name)
         self.sftp_server.removeDirectory('foo/bar')
         self.assertEqual(
             os.listdir(os.path.join(self.sftp_server._current_upload,
@@ -55,7 +56,7 @@ class TestSFTPServer(TestCase):
         test_file = open(file_name, 'r')
         self.assertEqual(test_file.read(), "This is a test")
         test_file.close()
-        self.assertEqual(os.stat(file_name).st_mode, 0100644)  # decimal:33188
+        self.assertPermissions(0100644, file_name)
         dir_name = os.path.join(self.sftp_server._current_upload, 'bar/foo')
         os.makedirs(dir_name)
         upload_file = self.sftp_server.openFile('bar/foo', None, None)
