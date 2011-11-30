@@ -30,7 +30,7 @@ it should be registered.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:lp="http://namespaces.canonical.com/lp">
     ...   <include package="lp.services.inlinehelp" file="meta.zcml" />
-    ...   <lp:help-folder folder="%s"/>
+    ...   <lp:help-folder folder="%s" name="+help"/>
     ... </configure>
     ... """ % help_folder)
 
@@ -52,26 +52,6 @@ The help folder is registered on the ILaunchpadRoot interface.
 
     >>> isinstance(help, HelpFolder)
     True
-
-The help folder can also be registered for a specific request type using the
-"type" attribute.
-
-    >>> from zope.publisher.interfaces.http import IHTTPRequest
-    >>> directlyProvides(request, IHTTPRequest)
-
-    >>> print queryMultiAdapter((rootObject, request), name="+help")
-    None
-    >>> zcmlcontext = xmlconfig.string("""
-    ... <configure
-    ...     xmlns:lp="http://namespaces.canonical.com/lp">
-    ...   <include package="lp.services.inlinehelp" file="meta.zcml" />
-    ...   <lp:help-folder folder="%s"
-    ...                   type="zope.publisher.interfaces.http.IHTTPRequest"/>
-    ... </configure>
-    ... """ % help_folder)
-
-    >>> queryMultiAdapter((rootObject, request), name="+help")
-    <lp.services...>
 
 
 Cleanup

@@ -73,7 +73,7 @@
         define="link context_menu/addupstream"
         condition="link/enabled"
         replace="structure link/render" />
-        <a href="/+help/also-affects-project-help.html"
+        <a href="/+help-bugs/also-affects-project-help.html"
            target="help"
            class="sprite maybe">&nbsp;
              <span class="invisible-link">(?)</span>

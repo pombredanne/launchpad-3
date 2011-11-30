@@ -9,6 +9,10 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from functools import partial
+from operator import (
+    attrgetter,
+    )
 
 from lazr.restful.utils import safe_hasattr
 from storm.expr import (
@@ -29,6 +33,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.sqlbase import quote
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -122,6 +127,7 @@ class GenericBranchCollection:
         if exclude_from_search is None:
             exclude_from_search = []
         self._exclude_from_search = exclude_from_search
+        self._user = None
 
     def count(self):
         """See `IBranchCollection`."""
@@ -218,6 +224,43 @@ class GenericBranchCollection:
             With("candidate_branches", SQL("SELECT id from scope_branches"))]
 
     @staticmethod
+    def preloadVisibleStackedOnBranches(branches, user=None):
+        """Preload the chains of stacked on branches related to the given list
+        of branches. Only the branches visible for the given user are
+        preloaded/returned.
+
+        """
+        if len(branches) == 0:
+            return
+        store = IStore(Branch)
+        result = store.execute("""
+            WITH RECURSIVE stacked_on_branches_ids AS (
+                SELECT column1 as id FROM (VALUES %s) AS temp
+                UNION
+                SELECT DISTINCT branch.stacked_on
+                FROM stacked_on_branches_ids, Branch AS branch
+                WHERE
+                    branch.id = stacked_on_branches_ids.id AND
+                    branch.stacked_on IS NOT NULL
+            )
+            SELECT id from stacked_on_branches_ids
+            """ % ', '.join(
+                ["(%s)" % quote(id)
+                 for id in map(attrgetter('id'), branches)]))
+        branch_ids = [res[0] for res in result.get_all()]
+        # Not really sure this is useful: if a given branch is visible by a
+        # user, then I think it means that the whole chain of branches on
+        # which is is stacked on is visible by this user
+        expressions = [Branch.id.is_in(branch_ids)]
+        if user is None:
+            collection = AnonymousBranchCollection(
+                branch_filter_expressions=expressions)
+        else:
+            collection = VisibleBranchCollection(
+                user=user, branch_filter_expressions=expressions)
+        return list(collection.getBranches())
+
+    @staticmethod
     def preloadDataForBranches(branches):
         """Preload branches cached associated product series and
         suite source packages."""
@@ -291,8 +334,9 @@ class GenericBranchCollection:
             for_branches is not None or
             target_branch is not None or
             merged_revnos is not None):
-            return self._naiveGetMergeProposals(statuses, for_branches,
-                target_branch, merged_revnos, eager_load=eager_load)
+            return self._naiveGetMergeProposals(
+                statuses, for_branches, target_branch, merged_revnos,
+                eager_load=eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
@@ -333,9 +377,9 @@ class GenericBranchCollection:
         if not eager_load:
             return resultset
         else:
-            return DecoratedResultSet(
-                resultset,
-                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def _scopedGetMergeProposals(self, statuses, eager_load=False):
         scope_tables = [Branch] + self._tables.values()
@@ -365,9 +409,9 @@ class GenericBranchCollection:
         if not eager_load:
             return resultset
         else:
-            return DecoratedResultSet(
-                resultset,
-                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getMergeProposalsForPerson(self, person, status=None,
                                    eager_load=False):
@@ -381,9 +425,9 @@ class GenericBranchCollection:
         if not eager_load:
             return resultset
         else:
-            return DecoratedResultSet(
-                resultset,
-                pre_iter_hook=BranchMergeProposal.preloadDataForBMPs)
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
