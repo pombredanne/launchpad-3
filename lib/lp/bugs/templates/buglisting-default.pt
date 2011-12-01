@@ -100,14 +100,69 @@
 
   <tal:side metal:fill-slot="side">
     <div id="bug-portlets" tal:condition="view/should_show_bug_information">
-      <div id="involvement" class="portlet involvement">
-        <ul>
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
           <li style="border: 0">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
             </a>
           </li>
+          <li tal:define="addquestion_url view/addquestion_url"
+              tal:condition="addquestion_url">
+            <a tal:attributes="href view/addquestion_url"
+               class="menu-link-filebug sprite answers">
+              Ask a question
+            </a>
+          </li>
         </ul>
+        <tal:bugtracker
+           define="link context/menu:bugs/configure_bugtracker|nothing"
+           condition="link">
+          <ul tal:condition="link/enabled"
+              style="padding-top: 1em">
+            <li>
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+          </ul>
+        </tal:bugtracker>
+
+      </div>
+      <div class="portlet">
+        <dl tal:define="bug_supervisor context/bug_supervisor"
+            id="bug-supervisor">
+          <dt>Bug supervisor:</dt>
+          <dd>
+            <tal:none condition="not:bug_supervisor">None set</tal:none>
+            <a tal:condition="bug_supervisor"
+               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+            <tal:edit-bug-supervisor
+                condition="context/menu:bugs/bugsupervisor|nothing">
+              <a tal:define="link context/menu:bugs/bugsupervisor"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-bug-supervisor>
+          </dd>
+        </dl>
+        <dl tal:define="securitycontact context/security_contact">
+          <dt id="bug-security">Security contact:</dt>
+          <dd>
+            <tal:none condition="not:securitycontact">None set</tal:none>
+            <a tal:condition="securitycontact"
+               tal:replace="structure securitycontact/fmt:link">
+              Billy Anderson
+            </a>
+            <tal:edit-securitycontact
+                condition="context/menu:bugs/securitycontact|nothing">
+              <a tal:define="link context/menu:bugs/securitycontact"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-securitycontact>
+          </dd>
+        </dl>
       </div>
       <tal:menu replace="structure view/@@+related-pages" />
       <tal:do_not_show_portlets_advanced_form
