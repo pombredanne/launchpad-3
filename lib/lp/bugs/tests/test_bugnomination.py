@@ -14,7 +14,6 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
-from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import (
@@ -22,7 +21,6 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
@@ -135,15 +133,10 @@ class TestCanApprove(TestCaseWithFactory):
 
     def test_privileged_users_can_approve(self):
         product = self.factory.makeProduct(driver=self.factory.makePerson())
-        supervisor = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        with person_logged_in(admin):
-            product.setBugSupervisor(supervisor, admin)
         nomination = self.factory.makeBugNomination(
             target=self.factory.makeProductSeries(product=product))
         self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
-        self.assertTrue(nomination.canApprove(supervisor))
 
     def publishSource(self, series, sourcepackagename, component):
         return self.factory.makeSourcePackagePublishingHistory(

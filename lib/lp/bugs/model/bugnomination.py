@@ -120,8 +120,12 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
-        for task in self.bug.bugtasks:
-            if task.userHasPrivileges(person):
+        if person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+        if person.inTeam(self.target.owner):
+            return True
+        for driver in self.target.drivers:
+            if person.inTeam(driver):
                 return True
 
         if self.distroseries is not None:
