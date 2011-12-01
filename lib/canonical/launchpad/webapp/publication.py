@@ -45,7 +45,6 @@ from zope.interface import (
     )
 from zope.publisher.interfaces import (
     IPublishTraverse,
-    NotFound,
     Retry,
     )
 from zope.publisher.interfaces.browser import (
@@ -53,7 +52,6 @@ from zope.publisher.interfaces.browser import (
     IDefaultSkin,
     )
 from zope.publisher.publish import mapply
-from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
@@ -62,7 +60,6 @@ from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
@@ -445,36 +442,6 @@ class LaunchpadBrowserPublication(
         # it will be a unicode string although it shouldn't.  To avoid
         # problems we encode it into ASCII.
         return pageid.encode('US-ASCII')
-
-    def traverseName(self, request, ob, name):
-        try:
-            super_instance = super(LaunchpadBrowserPublication, self)
-            error_raised = None
-            result = super_instance.traverseName(request,ob, name)
-        except (NotFound,  Unauthorized) as e:
-            error_raised = e
-        # If a user can see the final object in the traversal chain, then we
-        # allow them to traverse the private team. However, when an error
-        # occurs, or the final traversed object is itself a private team,
-        # we need to look at the traversed objects and if there's a
-        # private team the logged in user cannot see, by virtue of
-        # team membership or Launchpad administration, we need to raise a
-        # NotFound error for the team instead of the traversed object.
-        if len(request.stepstogo) == 0 or error_raised:
-            for x in range(1, len(request.traversed_objects)):
-                obj = request.traversed_objects[x]
-                # If there's been an error or we are at the end of the chain
-                # then check if the object is a private team the user can't
-                # see.
-                if (error_raised or x == len(request.traversed_objects)-1
-                    and (IPerson.providedBy(obj) and obj.is_team
-                    and not check_permission('launchpad.View', obj))):
-                    raise NotFound(request.traversed_objects[x-1], name)
-            # If we don't end up raising an error above, then raise any
-            # originally encountered error.
-            if error_raised:
-                raise error_raised
-        return result
 
     def callObject(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.

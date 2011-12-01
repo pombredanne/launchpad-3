@@ -10,17 +10,13 @@ from unittest import TestLoader, TestSuite
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
-from zope.publisher.interfaces import NotFound
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.publisher import (
     FakeRequest,
     LaunchpadView,
-    canonical_url)
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest, LaunchpadBrowserRequest
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import PersonVisibility
+    )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -31,8 +27,6 @@ from lp.testing import (
     )
 
 from canonical.launchpad.webapp import publisher
-from lp.testing._login import login_person
-from lp.testing.publication import test_traverse
 
 
 class TestLaunchpadView(TestCaseWithFactory):
@@ -293,33 +287,6 @@ class TestLaunchpadView(TestCaseWithFactory):
         LaunchpadView(object(), FakeRequest())
         # Or when no request at all is passed.
         LaunchpadView(object(), None)
-
-
-class TestPersonTraversal(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_private_team_visible_to_admin_and_members_only(self):
-        # Verify traversal to private teams.
-        name = 'private-team'
-        team = self.factory.makeTeam(name=name)
-        team_url = canonical_url(team)
-        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
-        login_person(admin)
-        team.visibility = PersonVisibility.PRIVATE
-
-        # Admins can traverse to the team.
-        obj, view, req = test_traverse(team_url)
-        self.assertEqual(team, obj)
-
-        # Members can traverse to the team.
-        login_person(team.teamowner)
-        obj, view, req = test_traverse(team_url)
-        self.assertEqual(team, obj)
-
-        # All other user cannot traverse to the team.
-        login_person(self.factory.makePerson())
-        self.assertRaises(NotFound, test_traverse, team_url)
 
 
 def test_suite():

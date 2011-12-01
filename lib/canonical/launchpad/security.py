@@ -67,6 +67,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
@@ -800,19 +801,6 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if (invitee.is_team and
                 invitee in user.person.getAdministratedTeams()):
                 return True
-
-        if (self.obj.is_team
-            and self.obj.visibility == PersonVisibility.PRIVATE):
-            # Grant visibility to people with subscriptions on a private
-            # team's private PPA.
-            subscriptions = getUtility(
-                IArchiveSubscriberSet).getBySubscriber(user.person)
-            subscriber_archive_ids = set(
-                sub.archive.id for sub in subscriptions)
-            team_ppa_ids = set(
-                ppa.id for ppa in self.obj.ppas if ppa.private)
-            if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
-                return True
         return False
 
 
@@ -834,12 +822,35 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
     def checkAuthenticated(self, user):
         """By default, we simply perform a View permission check.
 
-        The context in which the permission is required is
-        responsible for pre-caching the launchpad.LimitedView permission on
-        each team which requires it.
+        We also grant limited viewability to users who can see PPAs and
+        branches owned by the team. In other scenarios, the context in which
+        the permission is required is responsible for pre-caching the
+        launchpad.LimitedView permission on each team which requires it.
         """
-        return self.forwardCheckAuthenticated(
-            user, self.obj, 'launchpad.View')
+        if self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View'):
+            return True
+
+        if (self.obj.is_team
+            and self.obj.visibility == PersonVisibility.PRIVATE):
+            # Grant visibility to people with subscriptions on a private
+            # team's private PPA.
+            subscriptions = getUtility(
+                IArchiveSubscriberSet).getBySubscriber(user.person)
+            subscriber_archive_ids = set(
+                sub.archive.id for sub in subscriptions)
+            team_ppa_ids = set(
+                ppa.id for ppa in self.obj.ppas if ppa.private)
+            if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
+                return True
+
+            # Grant visibility to people with subscriptions to branches owned
+            # by the private team.
+            owned_branches = getUtility(IBranchCollection).ownedBy(self.obj)
+            if owned_branches.visibleByUser(user.person).count() > 0:
+                return True
+
+        return False
 
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
