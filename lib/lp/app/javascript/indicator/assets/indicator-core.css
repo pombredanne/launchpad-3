@@ -6,6 +6,9 @@
 }
 
 .yui3-overlayindicator img {
+    display: block;
+    margin: auto;
+    max-width: 100%;
     position: absolute;
 }
 
