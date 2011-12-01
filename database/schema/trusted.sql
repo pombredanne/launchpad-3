@@ -2123,12 +2123,15 @@ $$;
 COMMENT ON FUNCTION version_sort_key(text) IS
 'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';
 
-CREATE OR REPLACE FUNCTION check_email_address_person_account(person integer, new_account integer)
+CREATE OR REPLACE FUNCTION check_email_address_person_account(
+    person integer, new_account integer)
     RETURNS boolean
     LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     results = plpy.execute("""
         SELECT account FROM Person WHERE id = %s""" % person)
-    row = results[0]
-    return row['account'] == new_account
+    return results[0]['account'] == new_account
 $$;
+
+COMMENT ON FUNCTION check_email_address_person_account(integer, integer) IS
+'Check that the person to which an email address is linked has the same account as that email address.';
