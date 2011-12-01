@@ -28,7 +28,8 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     setupBrowser,
-    setupBrowserForUser)
+    setupBrowserForUser
+    )
 from lp.app.interfaces.headings import IRootContext
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
