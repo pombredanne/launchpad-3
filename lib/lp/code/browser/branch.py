@@ -540,15 +540,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     @cachedproperty
     def landing_targets(self):
         """Return a filtered list of landing targets."""
-        proposals = latest_proposals_for_each_branch(
-            self.context.landing_targets)
-        if self.user is not None:
-            reviewers = [
-            proposal.reviewer for proposal in proposals
-            if proposal.reviewer]
-            precache_permission_for_objects(
-                self.request, "launchpad.LimitedView", reviewers)
-        return proposals
+        return latest_proposals_for_each_branch(self.context.landing_targets)
 
     @property
     def latest_landing_candidates(self):
