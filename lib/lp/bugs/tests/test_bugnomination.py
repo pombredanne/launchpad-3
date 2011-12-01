@@ -29,7 +29,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class CanBeNominatedForTestMixin:
