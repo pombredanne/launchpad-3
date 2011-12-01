@@ -1,3 +1,14 @@
-.yui3-overlay-indicator-disabled {
+.yui3-overlayindicator {
+    background-color: rgb(238,238,238);
+    /* for css3 browsers we can limit opacity via alpha channel */
+    background-color: rgba(238,238,238,0.4);
+    z-index: 999;
+}
+
+.yui3-overlayindicator img {
+    position: absolute;
+}
+
+.yui3-overlayindicator-disabled {
     visibility: hidden;
 }
