@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'CaptureOops',
+    'DemoMode',
     'PGBouncerFixture',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
@@ -344,3 +345,21 @@ class CaptureTimeline(Fixture):
         self.timeline = get_request_timeline(
             get_current_browser_request())
         self.addCleanup(webapp.adapter.clear_request_started)
+
+
+class DemoMode(Fixture):
+    """Run with an is_demo configuration.
+
+    This changes the page styling, feature flag permissions, and perhaps
+    other things.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        config.push('demo-fixture', '''
+[launchpad]
+is_demo: true
+site_message = This is a demo site mmk. \
+<a href="http://example.com">File a bug</a>.
+            ''')
+        self.addCleanup(lambda: config.pop('demo-fixture'))

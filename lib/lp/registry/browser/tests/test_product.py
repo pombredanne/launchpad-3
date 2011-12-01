@@ -27,6 +27,9 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import (
+    DemoMode,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
@@ -164,10 +167,7 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertTrue(message is not None)
 
     def test_staging_message_is_demo(self):
-        config.push('staging-test', '''
-            [launchpad]
-            is_demo: true
-            ''')
+        self.useFixture(DemoMode())
         view = create_initialized_view(self.product_set, '+new')
         message = find_tag_by_id(view.render(), 'staging-message')
         self.assertEqual(None, message)
