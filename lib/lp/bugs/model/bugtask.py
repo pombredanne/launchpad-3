@@ -1364,7 +1364,7 @@ class BugTask(SQLBase):
 
     @classmethod
     def userHasDriverPrivileges(cls, context, user):
-        """Does the user have privileges for the given context?
+        """Does the user have driver privileges for the given context?
 
         :return: a boolean.
         """
@@ -1387,8 +1387,9 @@ class BugTask(SQLBase):
             role.isOwner(context.pillar) or role.isOneOfDrivers(context))
 
     @classmethod
-    def userHasPrivilegesContext(cls, context, user):
-        """Does the user have privileges for the given context?
+    def userHasBugSupervisorPrivileges(cls, context, user):
+        """Does the user have bug supervisor privileges for the given
+        context?
 
         :return: a boolean.
         """
@@ -1403,7 +1404,7 @@ class BugTask(SQLBase):
 
     def userHasPrivileges(self, user):
         """See `IBugTask`."""
-        return self.userHasPrivilegesContext(self.target, user)
+        return self.userHasBugSupervisorPrivileges(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)

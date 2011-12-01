@@ -2707,30 +2707,31 @@ class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
             bugtask.userHasPrivileges(self.factory.makePerson()))
 
 
-class TestBugTaskUserHasPrivilegesContext(TestCaseWithFactory):
+class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assert_userHasPrivilegesContext(self, obj):
+    def assert_userHasBugSupervisorPrivileges(self, obj):
         self.assertFalse(
-            BugTask.userHasPrivilegesContext(obj, self.factory.makePerson()))
+            BugTask.userHasBugSupervisorPrivileges(
+                obj, self.factory.makePerson()))
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.assert_userHasPrivilegesContext(distribution)
+        self.assert_userHasBugSupervisorPrivileges(distribution)
 
     def test_distributionsourcepackage(self):
         dsp = self.factory.makeDistributionSourcePackage()
-        self.assert_userHasPrivilegesContext(dsp)
+        self.assert_userHasBugSupervisorPrivileges(dsp)
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.assert_userHasPrivilegesContext(product)
+        self.assert_userHasBugSupervisorPrivileges(product)
 
     def test_productseries(self):
         productseries = self.factory.makeProductSeries()
-        self.assert_userHasPrivilegesContext(productseries)
+        self.assert_userHasBugSupervisorPrivileges(productseries)
 
     def test_sourcepackage(self):
         source = self.factory.makeSourcePackage()
-        self.assert_userHasPrivilegesContext(source)
+        self.assert_userHasBugSupervisorPrivileges(source)
