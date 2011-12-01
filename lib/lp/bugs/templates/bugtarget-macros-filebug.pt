@@ -342,13 +342,7 @@
             });
         </script>
     </tal:private>
-    <tal:not-private condition="not view/isPrivate">
-        <tal:comment replace="nothing">
-            If the bug isn't private by default, then we need to setup a
-            notifications for if the bug is marked a security bug (in which
-            case it will be private).
-        </tal:comment>
-
+    <tal:not-private condition="not:view/isPrivate">
         <script type="text/javascript">
             LPS.use('lp.app.privacy', 'lp.bugs.filebug_dupefinder', function(Y) {
                 Y.on('domready', function() {
