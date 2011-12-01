@@ -1363,7 +1363,7 @@ class BugTask(SQLBase):
             return None
 
     @classmethod
-    def userHasPrivilegesContext(cls, context, user):
+    def userHasDriverPrivileges(cls, context, user):
         """Does the user have privileges for the given context?
 
         :return: a boolean.
@@ -1382,10 +1382,23 @@ class BugTask(SQLBase):
             role.in_janitor):
             return True
 
-        # Otherwise, if you're a member of the pillar owner, drivers, or the
-        # bug supervisor, you can change bug details.
+        # If you're the owner or a driver, you can change bug details.
         return (
-            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+
+    @classmethod
+    def userHasPrivilegesContext(cls, context, user):
+        """Does the user have privileges for the given context?
+
+        :return: a boolean.
+        """
+        if not user:
+            return False
+        role = IPersonRoles(user)
+        # If you have driver privileges, or are the bug supervisor, you can
+        # change bug details.
+        return (
+            cls.userHasDriverPrivileges(context, user) or
             role.isBugSupervisor(context.pillar))
 
     def userHasPrivileges(self, user):

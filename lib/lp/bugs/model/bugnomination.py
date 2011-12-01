@@ -22,7 +22,6 @@ from sqlobject import (
     ForeignKey,
     SQLObjectNotFound,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -30,7 +29,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskAdded
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
@@ -120,13 +118,9 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
-        if person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        if self.bug.default_bugtask.userHasDriverPrivileges(
+            self.target, person):
             return True
-        if person.inTeam(self.target.owner):
-            return True
-        for driver in self.target.drivers:
-            if person.inTeam(driver):
-                return True
 
         if self.distroseries is not None:
             distribution = self.distroseries.distribution
