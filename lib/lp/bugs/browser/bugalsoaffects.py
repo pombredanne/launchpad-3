@@ -287,8 +287,10 @@ class BugTaskCreationStep(AlsoAffectsStep):
             task_target = data['distribution']
             if data.get('sourcepackagename') is not None:
                 spn_or_dsp = data['sourcepackagename']
-            if not IDistributionSourcePackage.providedBy(spn_or_dsp):
-                task_target = task_target.getSourcePackage(spn_or_dsp)
+                if IDistributionSourcePackage.providedBy(spn_or_dsp):
+                    task_target = spn_or_dsp
+                else:
+                    task_target = task_target.getSourcePackage(spn_or_dsp)
         self.task_added = self.context.bug.addTask(
             getUtility(ILaunchBag).user, task_target)
         task_added = self.task_added
