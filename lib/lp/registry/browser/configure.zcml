@@ -71,10 +71,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs-index"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+macros"
@@ -329,10 +325,6 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        name="+bugs"
-        layer="lp.bugs.publisher.BugsLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+specs"
         layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:defaultView
@@ -456,10 +448,6 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="lp.answers.publisher.AnswersLayer"
         name="+questions"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs"/>
     <browser:url
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         path_expression="string:+source/${name}"
@@ -787,10 +775,6 @@
             for="lp.registry.interfaces.person.IPerson"
             layer="lp.blueprints.publisher.BlueprintsLayer"
             name="+specs"/>
-        <browser:defaultView
-            for="lp.registry.interfaces.person.IPerson"
-            layer="lp.bugs.publisher.BugsLayer"
-            name="+bugs"/>
         <adapter
           factory="lp.registry.browser.person.PersonXHTMLRepresentation"
           name="lazr.restful.EntryResource" />
@@ -1377,10 +1361,6 @@
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.answers.publisher.AnswersLayer"
         name="+questions"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.product.IProduct"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs-index"/>
     <browser:navigation
         module="lp.registry.browser.product"
         classes="
@@ -1646,10 +1626,6 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+specs"
         layer="lp.blueprints.publisher.BlueprintsLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs-index"/>
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1782,10 +1758,6 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+specs"
         layer="lp.blueprints.publisher.BlueprintsLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distribution.IDistribution"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs-index"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.answers.publisher.AnswersLayer"
@@ -1993,10 +1965,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="lp.bugs.publisher.BugsLayer"
-        name="+bugs"/>
     <browser:navigation
         module="lp.registry.browser.sourcepackage"
         classes="
