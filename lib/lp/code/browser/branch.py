@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
-from zope.security.proxy import removeSecurityProxy
 
 __metaclass__ = type
 
@@ -97,7 +96,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission, precache_permission_for_objects
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpad import Hierarchy
