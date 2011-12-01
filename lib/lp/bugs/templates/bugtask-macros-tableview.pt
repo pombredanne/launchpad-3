@@ -691,7 +691,8 @@
             });
             var config_node = orderby.get('config_node');
             var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
-                srcNode: config_node
+                srcNode: config_node,
+                model: navigator.get('model')
             });
             list_util.render();
             Y.on('buglisting-config-util:fields-changed', function(e) {
