@@ -736,8 +736,8 @@ class LaunchpadRootNavigation(Navigation):
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person.is_team
-                    and not check_permission('launchpad.View', person)):
+                if (person.is_team and
+                    not check_permission('launchpad.LimitedView', person)):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
