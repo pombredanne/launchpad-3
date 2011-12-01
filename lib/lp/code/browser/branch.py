@@ -443,11 +443,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def initialize(self):
         self.branch = self.context
         self.notices = []
+        # Cache permission so private team owner can be rendered.
         authorised_people = [self.branch.owner]
         if self.user is not None:
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", authorised_people)
-
         # Replace our context with a decorated branch, if it is not already
         # decorated.
         if not isinstance(self.context, DecoratedBranch):

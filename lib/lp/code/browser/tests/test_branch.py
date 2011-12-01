@@ -550,10 +550,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
     """ Tests that branches with private team artifacts can be viewed.
 
     A Branch may be associated with a private team as follows:
-    - the owner
-    - a subscriber
-    - committed a revision
-    - be a code reviewer
+    - the owner is a private team
+    - a subscriber is a private team
 
     A logged in user who is not authorised to see the private team(s) still
     needs to be able to view the branch. The private team will be rendered in
@@ -571,26 +569,6 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
             login_person(user)
             return setupBrowserForUser(user=user)
 
-    def test_aaaa(self):
-        # A branch with a private owner is not rendered for anon users.
-        private_owner = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        # Viewing the branch results in an error.
-        url = canonical_url(removeSecurityProxy(private_owner))
-        user = self.factory.makePerson()
-        browser = self._getBrowser(user)
-        self.assertRaises(NotFound, browser.open, url)
-
-    def test_bbbb(self):
-        # A branch with a private owner is not rendered for anon users.
-        private_owner = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
-        # Viewing the branch results in an error.
-        url = canonical_url(branch, rootsite='code')
-        browser = self._getBrowser()
-        self.assertRaises(NotFound, browser.open, url)
-
     def test_view_branch_with_private_owner(self):
         # A branch with a private owner is rendered.
         private_owner = self.factory.makeTeam(
@@ -599,6 +577,22 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # Ensure the branch owner is rendered.
         url = canonical_url(branch, rootsite='code')
         user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNotNone(soup.find('a', text="PrivateTeam"))
+
+    def test_view_private_branch_with_private_owner(self):
+        # A private branch with a private owner is rendered.
+        private_owner = self.factory.makeTeam(
+            displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch(owner=private_owner)
+        # Ensure the branch owner is rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        # Subscribe the user so they can see the branch.
+        with person_logged_in(private_owner):
+            self.factory.makeBranchSubscription(branch, user, private_owner)
         browser = self._getBrowser(user)
         browser.open(url)
         soup = BeautifulSoup(browser.contents)
@@ -646,36 +640,6 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         soup = BeautifulSoup(browser.contents)
         self.assertIsNone(
             soup.find('div', attrs={'id': 'subscriber-privateteam'}))
-
-    def test_view_branch_with_private_reviewer(self):
-        # A branch with a private reviewer is rendered.
-        private_reviewer = self.factory.makeTeam(
-            displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch()
-        with person_logged_in(branch.owner):
-            self.factory.makeBranchMergeProposal(
-                source_branch=branch, reviewer=private_reviewer)
-        # Ensure the branch reviewer is rendered.
-        url = canonical_url(branch, rootsite='code')
-        user = self.factory.makePerson()
-        browser = self._getBrowser(user)
-        browser.open(url)
-        soup = BeautifulSoup(browser.contents)
-        self.assertIsNotNone(
-            soup.find('a', text="PrivateTeam"))
-
-    def test_anonymous_view_branch_with_private_reviewer(self):
-        # A branch with a private reviewer is not rendered for anon users.
-        private_reviewer = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch()
-        with person_logged_in(branch.owner):
-            self.factory.makeBranchMergeProposal(
-                source_branch=branch, reviewer=private_reviewer)
-        # Viewing the branch results in an error.
-        url = canonical_url(branch, rootsite='code')
-        browser = self._getBrowser()
-        self.assertRaises(NotFound, browser.open, url)
 
 
 class TestBranchAddView(TestCaseWithFactory):
