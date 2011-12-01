@@ -187,7 +187,6 @@
     At least ${log}
 
     Features: ${request/features/usedFlags}
-    in scopes ${request/features/usedScopes}
 
     r${revno}
   --&gt;" />
