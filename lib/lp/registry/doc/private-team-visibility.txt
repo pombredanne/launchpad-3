@@ -128,3 +128,20 @@ branch (and hence team) to be visible.
     >>> login_person(pub_member)
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
+
+Subscribers to the teams private PPA have limited view permission.
+
+    >>> archive = factory.makeArchive(private=True, owner=priv_team)
+    >>> archive_subscriber = factory.makePerson()
+    >>> login_person(priv_owner)
+    >>> sub = archive.newSubscription(
+    ...     archive_subscriber, registrant=archive.owner)
+
+    >>> login_person(archive_subscriber)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    True
+
+Anonymous users do not have permission.
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    False

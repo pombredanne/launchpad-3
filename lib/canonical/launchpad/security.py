@@ -4,7 +4,6 @@
 # pylint: disable-msg=F0401
 
 """Security policies for using content objects."""
-from lp.code.interfaces.branchcollection import IBranchCollection
 
 __metaclass__ = type
 __all__ = [
@@ -68,6 +67,7 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
