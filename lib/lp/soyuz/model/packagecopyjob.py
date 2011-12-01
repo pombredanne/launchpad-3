@@ -45,6 +45,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
@@ -236,24 +237,31 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
-    def _makeMetadata(cls, target_pocket, package_version, include_binaries):
+    def _makeMetadata(cls, target_pocket, package_version,
+                      include_binaries, sponsored=None):
         """Produce a metadata dict for this job."""
+        if sponsored:
+            sponsored_name = sponsored.name
+        else:
+            sponsored_name = None
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
             'include_binaries': bool(include_binaries),
+            'sponsored': sponsored_name,
         }
 
     @classmethod
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None,
+               sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -361,6 +369,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def include_binaries(self):
         return self.metadata['include_binaries']
+
+    @property
+    def sponsored(self):
+        name =  self.metadata['sponsored']
+        if name is None:
+            return None
+        return getUtility(IPersonSet).getByName(name)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(

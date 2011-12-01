@@ -30,6 +30,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
@@ -126,7 +127,8 @@ class IPlainPackageCopyJobSource(IJobSource):
     def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None,
+               sponsored=None):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -142,6 +144,7 @@ class IPlainPackageCopyJobSource(IJobSource):
             that is to be copied.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param requester: The user requesting the copy.
+        :param sponsored: The user who is being sponsored to make the copy.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
@@ -188,6 +191,10 @@ class IPlainPackageCopyJob(IRunnableJob):
 
     include_binaries = Bool(
         title=_("Copy binaries"),
+        required=False, readonly=True)
+
+    sponsored = Reference(
+        schema=IPerson, title=_('Sponsored Person'),
         required=False, readonly=True)
 
     def addSourceOverride(override):
