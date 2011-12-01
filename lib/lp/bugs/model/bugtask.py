@@ -846,7 +846,7 @@ class BugTask(SQLBase):
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
@@ -855,7 +855,7 @@ class BugTask(SQLBase):
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskImportance(
                 "User does not have sufficient permissions "
                 "to edit the bug task importance.")
@@ -926,7 +926,7 @@ class BugTask(SQLBase):
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
             return True
-        elif self.userHasPrivileges(user):
+        elif self.userHasBugSupervisorPrivileges(user):
             return True
         else:
             return (self.status not in (
@@ -1078,7 +1078,7 @@ class BugTask(SQLBase):
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return self.userHasPrivileges(user)
+            return self.userHasBugSupervisorPrivileges(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1088,7 +1088,8 @@ class BugTask(SQLBase):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self.userHasPrivileges(user))
+            user.inTeam(self.assignee) or
+            self.userHasBugSupervisorPrivileges(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -1363,7 +1364,7 @@ class BugTask(SQLBase):
             return None
 
     @classmethod
-    def userHasDriverPrivileges(cls, context, user):
+    def userHasDriverPrivilegesContext(cls, context, user):
         """Does the user have driver privileges for the given context?
 
         :return: a boolean.
@@ -1387,7 +1388,7 @@ class BugTask(SQLBase):
             role.isOwner(context.pillar) or role.isOneOfDrivers(context))
 
     @classmethod
-    def userHasBugSupervisorPrivileges(cls, context, user):
+    def userHasBugSupervisorPrivilegesContext(cls, context, user):
         """Does the user have bug supervisor privileges for the given
         context?
 
@@ -1399,12 +1400,16 @@ class BugTask(SQLBase):
         # If you have driver privileges, or are the bug supervisor, you can
         # change bug details.
         return (
-            cls.userHasDriverPrivileges(context, user) or
+            cls.userHasDriverPrivilegesContext(context, user) or
             role.isBugSupervisor(context.pillar))
 
-    def userHasPrivileges(self, user):
+    def userHasDriverPrivileges(self, user):
         """See `IBugTask`."""
-        return self.userHasBugSupervisorPrivileges(self.target, user)
+        return self.userHasDriverPrivilegesContext(self.target, user)
+
+    def userHasBugSupervisorPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasBugSupervisorPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)

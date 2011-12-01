@@ -2642,7 +2642,7 @@ class TestWebservice(TestCaseWithFactory):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
 
 
-class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
+class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -2653,7 +2653,8 @@ class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
     def test_admin_is_allowed(self):
         # An admin always has privileges.
         bugtask = self.factory.makeBugTask()
-        self.assertTrue(bugtask.userHasPrivileges(self.celebrities.admin))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(self.celebrities.admin))
 
     def test_bug_celebrities_are_allowed(self):
         # The three bug celebrities (bug watcher, bug importer and
@@ -2662,20 +2663,21 @@ class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
         for celeb in (
             self.celebrities.bug_watch_updater,
             self.celebrities.bug_importer, self.celebrities.janitor):
-            self.assertTrue(bugtask.userHasPrivileges(celeb))
+            self.assertTrue(bugtask.userHasBugSupervisorPrivileges(celeb))
 
     def test_pillar_owner_is_allowed(self):
         # The pillar owner has privileges.
         pillar = self.factory.makeProduct()
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(pillar.owner))
+        self.assertTrue(bugtask.userHasBugSupervisorPrivileges(pillar.owner))
 
     def test_pillar_driver_is_allowed(self):
         # The pillar driver has privileges.
         pillar = self.factory.makeProduct()
         removeSecurityProxy(pillar).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(pillar.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(pillar.driver))
 
     def test_pillar_bug_supervisor(self):
         # The pillar bug supervisor has privileges.
@@ -2684,54 +2686,58 @@ class TestBugTaskUserHasPrivileges(TestCaseWithFactory):
         removeSecurityProxy(pillar).setBugSupervisor(
             bugsupervisor, self.celebrities.admin)
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(bugsupervisor))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(bugsupervisor))
 
     def test_productseries_driver_is_allowed(self):
         # The series driver has privileges.
         series = self.factory.makeProductSeries()
         removeSecurityProxy(series).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=series)
-        self.assertTrue(bugtask.userHasPrivileges(series.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(series.driver))
 
     def test_distroseries_driver_is_allowed(self):
         # The series driver has privileges.
         distroseries = self.factory.makeDistroSeries()
         removeSecurityProxy(distroseries).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=distroseries)
-        self.assertTrue(bugtask.userHasPrivileges(distroseries.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(distroseries.driver))
 
     def test_random_has_no_privileges(self):
         # Joe Random has no privileges.
         bugtask = self.factory.makeBugTask()
         self.assertFalse(
-            bugtask.userHasPrivileges(self.factory.makePerson()))
+            bugtask.userHasBugSupervisorPrivileges(
+                self.factory.makePerson()))
 
 
-class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
+class TestBugTaskUserHasBugSupervisorPrivilegesContext(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assert_userHasBugSupervisorPrivileges(self, obj):
+    def assert_userHasBugSupervisorPrivilegesContext(self, obj):
         self.assertFalse(
-            BugTask.userHasBugSupervisorPrivileges(
+            BugTask.userHasBugSupervisorPrivilegesContext(
                 obj, self.factory.makePerson()))
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
-        self.assert_userHasBugSupervisorPrivileges(distribution)
+        self.assert_userHasBugSupervisorPrivilegesContext(distribution)
 
     def test_distributionsourcepackage(self):
         dsp = self.factory.makeDistributionSourcePackage()
-        self.assert_userHasBugSupervisorPrivileges(dsp)
+        self.assert_userHasBugSupervisorPrivilegesContext(dsp)
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.assert_userHasBugSupervisorPrivileges(product)
+        self.assert_userHasBugSupervisorPrivilegesContext(product)
 
     def test_productseries(self):
         productseries = self.factory.makeProductSeries()
-        self.assert_userHasBugSupervisorPrivileges(productseries)
+        self.assert_userHasBugSupervisorPrivilegesContext(productseries)
 
     def test_sourcepackage(self):
         source = self.factory.makeSourcePackage()
-        self.assert_userHasBugSupervisorPrivileges(source)
+        self.assert_userHasBugSupervisorPrivilegesContext(source)

@@ -118,9 +118,9 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
-        if self.bug.default_bugtask.userHasDriverPrivileges(
-            self.target, person):
-            return True
+        for task in self.bug.bugtasks:
+            if task.userHasDriverPrivileges(person):
+                return True
 
         if self.distroseries is not None:
             distribution = self.distroseries.distribution
