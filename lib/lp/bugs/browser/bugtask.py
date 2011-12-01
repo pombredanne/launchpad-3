@@ -160,6 +160,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -2643,6 +2644,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
             cache = IJSONRequestCache(self.request)
+            view_names = set(reg.name for reg
+                in iter_view_registrations(self.__class__))
+            if len(view_names) != 1:
+                raise AssertionError("Ambiguous view name.")
+            cache.objects['view_name'] = view_names.pop()
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (

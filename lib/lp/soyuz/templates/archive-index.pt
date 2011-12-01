@@ -8,6 +8,8 @@
   >
 <body>
   <tal:heading metal:fill-slot="heading">
+    <meta itemprop="name"
+      tal:attributes="content context/displayname">
     <h1 tal:condition="context/enabled"
         tal:replace="structure view/displayname_edit_widget">
       PPA for user
