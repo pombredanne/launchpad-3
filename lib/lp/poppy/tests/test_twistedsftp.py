@@ -11,12 +11,16 @@ from fixtures import TempDir
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory
-from lp.testing import TestCase
+from lp.testing import (
+    NestedTempfile,
+    TestCase,
+    )
 
 
 class TestSFTPServer(TestCase):
 
     def setUp(self):
+        self.useFixture(NestedTempfile())
         self.fs_root = self.useFixture(TempDir()).path
         self.sftp_server = SFTPServer(None, self.fs_root)
         super(TestSFTPServer, self).setUp()
