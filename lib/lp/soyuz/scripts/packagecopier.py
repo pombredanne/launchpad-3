@@ -532,7 +532,8 @@ class CopyChecker:
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
-            close_bugs=True, create_dsd_job=True, announce_from_person=None):
+            close_bugs=True, create_dsd_job=True,  announce_from_person=None,
+            sponsored=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -574,6 +575,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         copied publications should be closed.
     :param create_dsd_job: A boolean indicating whether or not a dsd job
          should be created for the new source publication.
+    :param sponsored: An `IPerson` representing the person who is
+        being sponsored for this copy. May be None, but if present will
+        affect the "From:" address on notifications and the creator of the
+        publishing record will be set to this person.
 
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -644,11 +649,16 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 old_version = existing.sourcepackagerelease.version
             else:
                 old_version = None
+            if sponsored is not None:
+                announce_from_person = sponsored
+                creator = sponsored
+            else:
+                creator = person
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=person)
+                close_bugs_since_version=old_version, creator=creator)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,

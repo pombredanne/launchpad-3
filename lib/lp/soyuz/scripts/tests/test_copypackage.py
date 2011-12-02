@@ -1499,6 +1499,33 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEqual(expected_text, body)
         self.assertEqual(expected_text, body)
 
+    def test_sponsored_copy_notification(self):
+        # If it's a sponsored copy then the From: address on the
+        # notification is changed to the sponsored person and the
+        # SPPH.creator is set to the same person.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby.changeslist = 'nobby-changes@example.com'
+        sponsored_person = self.factory.makePerson(
+            displayname="Sponsored", email="sponsored@example.com")
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+                    person=source.sourcepackagerelease.creator,
+                    check_permissions=False, send_email=True,
+                    sponsored=sponsored_person)
+        [notification, announcement] = pop_notifications()
+        self.assertEquals(
+            'Sponsored <sponsored@example.com>', announcement['From'])
+        self.assertEqual(sponsored_person, copied_source.creator)
+
     def test_copy_notification_contains_aggregate_change_log(self):
         # When copying a package that generates a notification,
         # the changelog should contain all of the changelog_entry texts for
