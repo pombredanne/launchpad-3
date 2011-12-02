@@ -1442,13 +1442,13 @@ class TestPersonBugs(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDistributionBugs, self).setUp()
+        super(TestPersonBugs, self).setUp()
         self.target = self.factory.makePerson()
 
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestDistributionBugs(TestCaseWithFactory):
@@ -1463,7 +1463,7 @@ class TestDistributionBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestDistroSeriesBugs(TestCaseWithFactory):
@@ -1478,7 +1478,7 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestDistributionSourcePackageBugs(TestCaseWithFactory):
@@ -1493,7 +1493,7 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
@@ -1508,7 +1508,7 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestProductBugs(TestCaseWithFactory):
@@ -1523,7 +1523,7 @@ class TestProductBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestProductSeriesBugs(TestCaseWithFactory):
@@ -1538,7 +1538,7 @@ class TestProductSeriesBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):
@@ -1642,7 +1642,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.projectgroup, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
 
 class TestBugActivityItem(TestCaseWithFactory):

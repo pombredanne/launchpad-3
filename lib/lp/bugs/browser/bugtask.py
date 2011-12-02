@@ -3050,8 +3050,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             ISourcePackage.providedBy(context))
 
     def shouldShowStructuralSubscriberWidget(self):
-        """Should the structural subscriber widget be shown on the page?"""
-        return True
+        """Should the structural subscriber widget be shown on the page?
+
+        Show the widget when there are subordinate structures.
+        """
+        return (IDistribution.providedBy(self.context)
+            or IDistroSeries.providedBy(self.context)
+            or IProduct.providedBy(self.context)
+            or IProjectGroup.providedBy(self.context)
+            or IPerson.providedBy(self.context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
