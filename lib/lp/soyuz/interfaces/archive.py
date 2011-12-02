@@ -1233,8 +1233,8 @@ class IArchiveView(IHasBuildRecords):
         :param person: the `IPerson` who requests the sync.
         :param sponsored: the `IPerson` who is being sponsored. Specifying
             this will ensure that the person's email address is used as the
-             "From:" on the announcement email and will also be recorded as
-              the creator of the new source publication.
+            "From:" on the announcement email and will also be recorded as
+            the creator of the new source publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
