@@ -214,4 +214,4 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(owner=eric, name='ppa', private=True)
         build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
         adapter = queryAdapter(build, IPathAdapter, 'fmt')
-        self.assertThat(adapter.link(None), Equals('private source'))
+        self.assertThat(adapter.link(None), Equals('private job'))
