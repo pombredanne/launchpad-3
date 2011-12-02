@@ -512,6 +512,7 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
 
         if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
             try:
+                self.context.vocabulary.setDistribution(distribution)
                 source = self.context.vocabulary.getTermByToken(input).value
             except NotFoundError:
                 raise ConversionError(

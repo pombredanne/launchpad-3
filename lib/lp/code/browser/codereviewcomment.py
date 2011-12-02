@@ -175,6 +175,10 @@ class CodeReviewCommentView(LaunchpadView):
         """The decorated code review comment."""
         return CodeReviewDisplayComment(self.context)
 
+    @property
+    def page_description(self):
+        return self.context.message_body
+
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?

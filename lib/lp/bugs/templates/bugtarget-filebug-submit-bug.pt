@@ -17,12 +17,10 @@
           });
       });
     </script>
+    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h1>Report a bug</h1>
   </div>
 
