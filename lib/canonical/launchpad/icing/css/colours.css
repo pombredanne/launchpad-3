@@ -130,8 +130,8 @@
 #client-listing .statusUNKNOWN, #client-listing .statusUNKNOWN a,
 #client-listing .statusNEW, #client-listing .statusNEW a,
 #client-listing .statusINCOMPLETE, #client-listing .statusINCOMPLETE a {
-        color: #464646;
-        background-color: #ddd;
+        color: #c63600;
+        background-color: #ffdabe;
     }
 #client-listing .statusCONFIRMED, #client-listing .statusCONFIRMED a,
 #client-listing .statusTRIAGED, #client-listing .statusTRIAGED a {
@@ -150,8 +150,8 @@
 #client-listing .statusINVALID, #client-listing .statusINVALID a,
 #client-listing .statusWONTFIX, #client-listing .statusWONTFIX a,
 #client-listing .statusOPINION, #client-listing .statusOPINION a {
-        color: #8b5600;
-        background-color: #ffd4c9;
+        color: #464646;
+        background-color: #ddd;
     }
 #client-listing .importanceCRITICAL, #client-listing .importanceCRITICAL a {
     background-color: #DF382C;
