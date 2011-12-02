@@ -221,6 +221,8 @@ def apply_patches_replicated():
         if sql != '':
             assert sql.endswith(';'), "SQL fragment not terminated with ';'"
             print >> combined_sql, sql
+            # Flush or we might lose statements from buffering.
+            combined_sql.flush()
 
     # Add a LaunchpadDatabaseUpdateLog record that we are starting patch
     # application.
@@ -245,9 +247,6 @@ def apply_patches_replicated():
 
     # Fix the start timestamps in LaunchpadDatabaseRevision.
     add_sql(FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
-
-    # Flush or we might lose statements from buffering.
-    combined_sql.flush()
 
     print >> outf, dedent("""\
         execute script (
