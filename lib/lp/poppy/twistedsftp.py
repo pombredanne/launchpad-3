@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Twisted SFTP implementation of the Poppy upload server."""
@@ -128,7 +128,7 @@ class SFTPFile:
     def writeChunk(self, offset, data):
         try:
             chunk_file = os.open(
-                self.filename, os.O_CREAT | os.O_WRONLY, 0664)
+                self.filename, os.O_CREAT | os.O_WRONLY, 0644)
         except OSError, e:
             if e.errno != errno.EISDIR:
                 raise

@@ -171,8 +171,6 @@ class YUITestFixtureControllerView(LaunchpadView):
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
           <style>
           /* Taken and customized from testlogger.css */
@@ -220,8 +218,6 @@ class YUITestFixtureControllerView(LaunchpadView):
           <title>YUI XHR Tests</title>
           <script type="text/javascript"
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>

@@ -695,6 +695,9 @@
                 model: navigator.get('model')
             });
             list_util.render();
+            Y.on('buglisting-config-util:fields-changed', function(e) {
+                navigator.change_fields(list_util.get('field_visibility'));
+            });
         });
     });
   </script>
