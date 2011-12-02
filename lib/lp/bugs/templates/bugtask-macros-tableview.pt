@@ -436,7 +436,8 @@
                   <tal:render-if condition="view/shouldShowStructuralSubscriberWidget">
                     <tr>
                       <td>
-                          <label for="field.structural_subscriber">Package subscriber:</label>
+                          <label for="field.structural_subscriber"
+                            tal:content="view/structural_subscriber_label" />
                       </td>
                     </tr>
                     <tr>

@@ -122,20 +122,12 @@ Entering an existing person shows all bugs that person has commented on.
 
 == Searching for a package subscriber's bugs ==
 
-On the advanced search there's a field for specifying a package subscriber.
+On the advanced search there's a field for specifying a project,
+distribution, package, or series subscriber.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl('Package subscriber') is not None
+    >>> anon_browser.getControl('Package, or series subscriber') is not None
     True
-
-If an non-existent person is entered there, an error message is
-displayed.
-
-    >>> anon_browser.getControl('Package subscriber').value = 'non-existent'
-    >>> anon_browser.getControl('Search', index=0).click()
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'.
 
 Entering an existing person shows all bugs for packages or products that the
 person is a package subscriber for. Since we're in the ubuntu context, only
@@ -143,7 +135,8 @@ bugs for Ubuntu packages will be returned. In Ubuntu, Foo Bar is a package
 subscriber for mozilla-firefox and pmount, but there aren't any bugs open for
 pmount.
 
-    >>> anon_browser.getControl('Package subscriber').value = 'foo.bar@canonical.com'
+    >>> anon_browser.getControl(
+    ...     'Package, or series subscriber').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
     >>> from lp.bugs.tests.bug import print_bugtasks
