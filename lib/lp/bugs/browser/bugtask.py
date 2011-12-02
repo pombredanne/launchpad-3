@@ -4332,11 +4332,23 @@ class BugActivityItem:
         """Return a formatted summary of the change."""
         if self.target is not None:
             # This is a bug task.  We want the attribute, as filtered out.
-            return self.attribute
+            summary = self.attribute
         else:
             # Otherwise, the attribute is more normalized than what we want.
             # Use "whatchanged," which sometimes is more descriptive.
-            return self.whatchanged
+            summary = self.whatchanged
+        better_summary = self.get_better_summary(summary)
+        return better_summary
+
+    def get_better_summary(self, item):
+        """For some activities, we want a different summary for the UI.
+
+        Some event names are more descriptive as data, but less relevant to 
+        users, who are unfamiliar with the lp code."""
+        better_summaries = {
+            'bug task deleted': 'no longer affects',
+            }
+        return better_summaries.get(item, item)
 
     @property
     def _formatted_tags_change(self):
@@ -4415,7 +4427,7 @@ class BugActivityItem:
                     return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'bug task deleted':
-            return 'no longer affects %s' % self.oldvalue
+            return self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.

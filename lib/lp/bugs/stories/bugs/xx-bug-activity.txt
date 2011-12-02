@@ -319,6 +319,6 @@ If a bug task is deleted the pillar no longer affected will be shown.
     >>> print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
-    bug task deleted:
-    no longer affects ubuntu
+    no longer affects:
+    ubuntu
     --------
