@@ -1436,6 +1436,21 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertTrue(notifications.pop().message.startswith(expected))
 
 
+class TestPersonBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distributions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionBugs, self).setUp()
+        self.target = self.factory.makePerson()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+
+
 class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
 
@@ -1478,7 +1493,7 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
 
 
 class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
@@ -1493,7 +1508,7 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
 
 
 class TestProductBugs(TestCaseWithFactory):
@@ -1523,7 +1538,7 @@ class TestProductSeriesBugs(TestCaseWithFactory):
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget)
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget)
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):
