@@ -4337,8 +4337,7 @@ class BugActivityItem:
             # Otherwise, the attribute is more normalized than what we want.
             # Use "whatchanged," which sometimes is more descriptive.
             summary = self.whatchanged
-        better_summary = self.get_better_summary(summary)
-        return better_summary
+        return self.get_better_summary(summary)
 
     def get_better_summary(self, summary):
         """For some activities, we want a different summary for the UI.
