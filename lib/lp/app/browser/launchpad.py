@@ -10,6 +10,7 @@ __all__ = [
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
+    'iter_view_registrations',
     'LaunchpadImageFolder',
     'LaunchpadGraphics',
     'LaunchpadRootNavigation',
@@ -37,6 +38,7 @@ from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryAdapter,
     )
@@ -965,6 +967,17 @@ def get_launchpad_views(cookies):
             # part of a page. Any other value is considered to be 'true'.
             views[key] = value != 'false'
     return views
+
+
+def iter_view_registrations(cls):
+    """Iterate through the AdapterRegistrations of a view.
+
+    The input must be the final registered form of the class, which is
+    typically a SimpleViewClass variant.
+    """
+    for registration in getGlobalSiteManager().registeredAdapters():
+        if registration.factory == cls:
+            yield registration
 
 
 class DoesNotExistView:

@@ -341,6 +341,10 @@ class BugCommentView(LaunchpadView):
             self.comment.index, self.context.bug.id)
 
     @property
+    def page_description(self):
+        return self.comment.text_contents
+
+    @property
     def privacy_notice_classes(self):
         if not self.context.bug.private:
             return 'hidden'

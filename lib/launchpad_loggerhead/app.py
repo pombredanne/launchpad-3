@@ -252,9 +252,16 @@ class RootApp:
                 response = urllib2.urlopen(req)
             except urllib2.HTTPError as response:
                 code = response.getcode()
-                if code in (400, 401, 403):
-                    # 400, 401, and 403 are the possible returns for api
-                    # requests on a private branch without authentication.
+                if code in (400, 401, 403, 404):
+                    # There are several error codes that imply private data.
+                    # 400 (bad request) is a default error code from the API
+                    # 401 (unauthorized) should never be returned as the
+                    # requests are always from anon. If it is returned
+                    # however, the data is certainly private.
+                    # 403 (forbidden) is obviously private.
+                    # 404 (not found) implies privacy from a private team or
+                    # similar situation, which we hide as not existing rather
+                    # than mark as forbidden.
                     self.log.info("Branch is private")
                     private = True
                 self.log.info(
