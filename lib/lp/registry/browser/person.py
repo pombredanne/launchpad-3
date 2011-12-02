@@ -1428,6 +1428,8 @@ def get_package_search_url(distributionsourcepackage, person_url,
         "field.distribution": distributionsourcepackage.distribution.name,
         "field.sourcepackagename": distributionsourcepackage.name,
         "search": "Search"}
+    if advanced:
+        params['advanced'] = '1'
 
     if extra_params is not None:
         # We must UTF-8 encode searchtext to play nicely with
@@ -1440,11 +1442,7 @@ def get_package_search_url(distributionsourcepackage, person_url,
 
     query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
-    if advanced:
-        return (person_url + '/+packagebugs-search?advanced=1&%s'
-                % query_string)
-    else:
-        return person_url + '/+packagebugs-search?%s' % query_string
+    return person_url + '/+packagebugs-search?%s' % query_string
 
 
 class BugSubscriberPackageBugsOverView(LaunchpadView):
