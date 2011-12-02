@@ -233,17 +233,22 @@ Unassigned, and In Progress bug lists.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> packagebugs_view = create_view(name12, name='+packagebugs')
 
-    >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getOpenBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
-    >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getCriticalBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
-    >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getUnassignedBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
 
-    >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getInProgressBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
 
 A helper method is used to calculate the package bug search URL for the
@@ -418,7 +423,7 @@ be shown on the advanced search form.
     ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
 
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     []
@@ -431,7 +436,7 @@ package bugs search view.
     >>> new_milestone = hoary_series.newMilestone(name='testing')
 
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     [{'checked': False,
@@ -442,7 +447,7 @@ If we deactivate our new milestone it'll disappear from the list again.
 
     >>> new_milestone.active = False
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     []
