@@ -379,36 +379,11 @@
                     </tr>
                   </tal:render-if>
 
-                  <tal:render-if condition="view/shouldShowSupervisorWidget">
-                    <tr>
-                      <td>
-                          <label for="field.bug_supervisor">Bug supervisor:</label>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="white-space: nowrap">
-                        <div class="field"
-                             tal:define="error
-                             python:view.getFieldError('bug_supervisor')">
-                          <div tal:attributes=
-                               "class python:error and 'error' or None">
-                            <span tal:content="structure
-                                               view/widgets/bug_supervisor"/>
-                            <div tal:condition="error"
-                                 class="message"
-                                 tal:content="error">An error on owner widget
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </tal:render-if>
-
                   <tal:render-if condition="view/shouldShowCommenterWidget">
                     <tr>
                       <td>
                           <label for="field.bug_commenter">
-                            Bug commenter:
+                            Commenter:
                           </label>
                       </td>
                     </tr>
@@ -435,7 +410,7 @@
                     <tr>
                       <td>
                           <label for="field.subscriber">
-                            Bug subscriber:
+                            Subscriber:
                           </label>
                       </td>
                     </tr>
@@ -448,6 +423,31 @@
                                "class python:error and 'error' or None">
                             <span tal:content="structure
                                                view/widgets/subscriber"/>
+                            <div tal:condition="error"
+                                 class="message"
+                                 tal:content="error">An error on owner widget
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowSupervisorWidget">
+                    <tr>
+                      <td>
+                          <label for="field.bug_supervisor">Package subscriber:</label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="white-space: nowrap">
+                        <div class="field"
+                             tal:define="error
+                             python:view.getFieldError('bug_supervisor')">
+                          <div tal:attributes=
+                               "class python:error and 'error' or None">
+                            <span tal:content="structure
+                                               view/widgets/bug_supervisor"/>
                             <div tal:condition="error"
                                  class="message"
                                  tal:content="error">An error on owner widget

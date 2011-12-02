@@ -1,7 +1,7 @@
 = Advanced searching using person-based filters =
 
 The advanced search form allows us to filter bugs based on the people
-related to them: assignees, commenters, bug supervisors and subscribers.
+related to them: assignees, commenters, package subscribers and subscribers.
 
 == Widget basics ==
 
@@ -97,13 +97,13 @@ and invalid searches don't OOPS:
 On the advanced search there's a field for specifying a bug commenter.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl('Bug commenter') is not None
+    >>> anon_browser.getControl('Commenter') is not None
     True
 
 If an non-existent person is entered there, an error message is
 displayed.
 
-    >>> anon_browser.getControl('Bug commenter').value = 'non-existent'
+    >>> anon_browser.getControl('Commenter').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -111,7 +111,7 @@ displayed.
 
 Entering an existing person shows all bugs that person has commented on.
 
-    >>> anon_browser.getControl('Bug commenter').value = 'foo.bar@canonical.com'
+    >>> anon_browser.getControl('Commenter').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
     >>> from lp.bugs.tests.bug import print_bugtasks
@@ -120,29 +120,30 @@ Entering an existing person shows all bugs that person has commented on.
       linux-source-2.6.15 Medium New
 
 
-== Searching for a bug supervisor's bugs ==
+== Searching for a package subscriber's bugs ==
 
-On the advanced search there's a field for specifying a bug supervisor.
+On the advanced search there's a field for specifying a package subscriber.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl('Bug supervisor') is not None
+    >>> anon_browser.getControl('Package subscriber') is not None
     True
 
 If an non-existent person is entered there, an error message is
 displayed.
 
-    >>> anon_browser.getControl('Bug supervisor').value = 'non-existent'
+    >>> anon_browser.getControl('Package subscriber').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
     There's no person with the name or email address 'non-existent'.
 
 Entering an existing person shows all bugs for packages or products that the
-person is a bug supervisor for. Since we're in the ubuntu context, only bugs
-for Ubuntu packages will be returned. In Ubuntu, Foo Bar is a bug supervisor
-for mozilla-firefox and pmount, but there aren't any bugs open for pmount.
+person is a package subscriber for. Since we're in the ubuntu context, only
+bugs for Ubuntu packages will be returned. In Ubuntu, Foo Bar is a package
+subscriber for mozilla-firefox and pmount, but there aren't any bugs open for
+pmount.
 
-    >>> anon_browser.getControl('Bug supervisor').value = 'foo.bar@canonical.com'
+    >>> anon_browser.getControl('Package subscriber').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
     >>> from lp.bugs.tests.bug import print_bugtasks
@@ -157,12 +158,12 @@ On the advanced search page there's a field for specifying a bug subscriber:
 
     >>> search_url = 'http://bugs.launchpad.dev/firefox/+bugs?advanced=1'
     >>> anon_browser.open(search_url)
-    >>> anon_browser.getControl('Bug subscriber') is not None
+    >>> anon_browser.getControl('Subscriber') is not None
     True
 
 If an non-existent person is entered there, an error message is displayed:
 
-    >>> anon_browser.getControl('Bug subscriber').value = 'non-existent'
+    >>> anon_browser.getControl('Subscriber').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -173,7 +174,7 @@ person is subscribed to. To demonstrate, we'll begin with a user who isn't
 subscribed to any bugs. In this case, no bugs are found:
 
     >>> subscriber = 'no-priv@canonical.com'
-    >>> anon_browser.getControl('Bug subscriber').value = subscriber
+    >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bugs : Mozilla Firefox ...
@@ -226,7 +227,7 @@ Now if we repeat our earlier search for bugs our user is subscribed to, we'll
 find our first bug within the results:
 
     >>> anon_browser.open(search_url)
-    >>> anon_browser.getControl('Bug subscriber').value = subscriber
+    >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> from lp.bugs.tests.bug import extract_bugtasks
     >>> for bugtask in extract_bugtasks(anon_browser.contents):
@@ -250,7 +251,7 @@ Finally, if we repeat our earlier search for bugs our user is subscribed to,
 we'll find both of our bugs within the results:
 
     >>> anon_browser.open(search_url)
-    >>> anon_browser.getControl('Bug subscriber').value = subscriber
+    >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for bugtask in extract_bugtasks(anon_browser.contents):
     ...     print 'Task:' + bugtask
