@@ -11,6 +11,8 @@ __all__ = [
     'DelegatedAuthorization',
     ]
 
+from functools import partial
+
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.security.permission import checkPermission
@@ -133,13 +135,21 @@ class DelegatedAuthorization(AuthorizationBase):
             for obj in self.iter_objects())
 
     def checkAuthenticated(self, user):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkAuthenticated(user):
-                return False
-        return True
+        adapt = partial(
+            queryAdapter, interface=IAuthorization, name=self.permission)
+        for obj in self.iter_objects():
+            adapter = adapt(obj)
+            if adapter is None:
+                yield obj, False
+            else:
+                yield obj, adapter.checkAuthenticated(user)
 
     def checkUnauthenticated(self):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkUnauthenticated():
-                return False
-        return True
+        adapt = partial(
+            queryAdapter, interface=IAuthorization, name=self.permission)
+        for obj in self.iter_objects():
+            adapter = adapt(obj)
+            if adapter is None:
+                yield obj, False
+            else:
+                yield obj, adapter.checkUnauthenticated()

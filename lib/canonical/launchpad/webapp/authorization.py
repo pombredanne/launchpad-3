@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from types import GeneratorType
 import warnings
 import weakref
 
@@ -172,13 +173,14 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         else:
             participation = participations[0]
             if IApplicationRequest.providedBy(participation):
-                wd = participation.annotations.setdefault(
+                participation_cache = participation.annotations.setdefault(
                     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
                     weakref.WeakKeyDictionary())
-                cache = wd.setdefault(objecttoauthorize, {})
+                cache = participation_cache.setdefault(objecttoauthorize, {})
                 if permission in cache:
                     return cache[permission]
             else:
+                participation_cache = None
                 cache = None
             principal = participation.principal
 
@@ -218,6 +220,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                         principal.account)
                 else:
                     result = authorization.checkUnauthenticated()
+                result = self.processAuthorization(
+                    permission, participation_cache, result)
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
@@ -225,6 +229,25 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 if cache is not None:
                     cache[permission] = result
                 return bool(result)
+
+    def processAuthorization(self, permission, participation_cache, result):
+        if isinstance(result, GeneratorType):
+            # Delegated permission.
+            for obj, result in result:
+                result = self.processAuthorization(
+                    permission, participation_cache, result)
+                if participation_cache is not None:
+                    if obj in participation_cache:
+                        participation_cache[obj][permission] = result
+                    else:
+                        participation_cache[obj] = {permission: result}
+                # Short circuit: it's a negative.
+                if not result:
+                    return False
+            # All delegated checks were positive.
+            return True
+        else:
+            return result
 
 
 def precache_permission_for_objects(participation, permission_name, objects):
