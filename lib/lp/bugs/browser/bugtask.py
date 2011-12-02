@@ -2672,6 +2672,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
     @property
+    def show_config_portlet(self):
+        if (IDistribution.providedBy(self.context) or
+            IProduct.providedBy(self.context)):
+            return True
+        else:
+            return False
+
+    @property
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
         upstream_context = self._upstreamContext()

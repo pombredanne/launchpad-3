@@ -115,6 +115,9 @@
             </a>
           </li>
         </ul>
+
+      </div>
+      <div class="portlet" tal:condition="view/show_config_portlet">
         <tal:bugtracker
            define="link context/menu:bugs/configure_bugtracker|nothing"
            condition="link">
@@ -125,9 +128,6 @@
             </li>
           </ul>
         </tal:bugtracker>
-
-      </div>
-      <div class="portlet">
         <dl tal:define="bug_supervisor context/bug_supervisor"
             id="bug-supervisor">
           <dt>Bug supervisor:</dt>
