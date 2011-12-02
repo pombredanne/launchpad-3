@@ -263,6 +263,9 @@ class IHasBugs(Interface):
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
 
+        The bug_supervisor param is deprecated. Use structural_subscriber,
+        which accurately described what is searched.
+
         In order to search bugs that are related to a given hardware
         device, you must specify the bus, the vendor ID, the product
         ID of the device and set at least one of
