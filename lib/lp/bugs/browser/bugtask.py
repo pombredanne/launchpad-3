@@ -4340,15 +4340,15 @@ class BugActivityItem:
         better_summary = self.get_better_summary(summary)
         return better_summary
 
-    def get_better_summary(self, item):
+    def get_better_summary(self, summary):
         """For some activities, we want a different summary for the UI.
 
-        Some event names are more descriptive as data, but less relevant to 
+        Some event names are more descriptive as data, but less relevant to
         users, who are unfamiliar with the lp code."""
         better_summaries = {
             'bug task deleted': 'no longer affects',
             }
-        return better_summaries.get(item, item)
+        return better_summaries.get(summary, summary)
 
     @property
     def _formatted_tags_change(self):
