@@ -2072,6 +2072,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
     def __len__(self):
         pass
 
+    def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
+        self.distribution = distribution
+
     def getDistributionAndPackageName(self, text):
         "Return the distribution and package name from the parsed text."
         # Match the toTerm() format, but also use it to select a distribution.
