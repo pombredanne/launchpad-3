@@ -525,7 +525,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
-            send_email=send_email, announce_from_person=self.requester)
+            send_email=send_email, announce_from_person=self.requester,
+            sponsored=self.sponsored)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if ancestry is not None:
