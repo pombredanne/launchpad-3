@@ -166,16 +166,31 @@ def report_patch_times(con, todays_patches):
 
 def apply_patches_normal(con):
     """Update a non replicated database."""
+    # On dev environments, until we create a fresh database baseline the
+    # LaunchpadDatabaseUpdateLog tables does not exist at this point (it
+    # will be created later via database patch). Don't try to update
+    # LaunchpadDatabaseUpdateLog if it does not exist.
+    cur = con.cursor()
+    cur.execute("""
+        SELECT EXISTS (
+            SELECT TRUE FROM information_schema.tables
+            WHERE
+                table_schema='public'
+                AND table_name='launchpaddatabaseupdatelog')
+            """)
+    updatelog_exists = cur.fetchone()[0]
+
     # Add a record to LaunchpadDatabaseUpdateLog that we are starting
     # an update.
-    con.cursor().execute(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
+    if updatelog_exists:
+        cur.execute(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
 
     # trusted.sql contains all our stored procedures, which may
     # be required for patches to apply correctly so must be run first.
     apply_other(con, 'trusted.sql')
 
     # Prepare to repair patch timestamps if necessary.
-    con.cursor().execute(FIX_PATCH_TIMES_PRE_SQL)
+    cur.execute(FIX_PATCH_TIMES_PRE_SQL)
 
     # Apply the patches
     patches = get_patchlist(con)
@@ -183,7 +198,7 @@ def apply_patches_normal(con):
         apply_patch(con, major, minor, patch, patch_file)
 
     # Repair patch timestamps if necessary.
-    con.cursor().execute(
+    cur.execute(
         FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
 
     # Update comments.
@@ -191,7 +206,8 @@ def apply_patches_normal(con):
 
     # Update the LaunchpadDatabaseUpdateLog record, stating the
     # completion time.
-    con.cursor().execute(FINISH_UPDATE_LOG_SQL)
+    if updatelog_exists:
+        cur.execute(FINISH_UPDATE_LOG_SQL)
 
 def apply_patches_replicated():
     """Update a Slony-I cluster."""
