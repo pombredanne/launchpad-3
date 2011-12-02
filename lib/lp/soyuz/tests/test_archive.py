@@ -2122,11 +2122,12 @@ class TestSyncSource(TestCaseWithFactory):
         # parameters.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
+        sponsored = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackage(
                 source_name, version, source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner)
+                person=target_archive.owner, sponsored=sponsored)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2146,6 +2147,7 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=to_series,
             target_pocket=to_pocket,
             include_binaries=False,
+            sponsored=sponsored,
             copy_policy=PackageCopyPolicy.INSECURE))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
@@ -2206,11 +2208,12 @@ class TestSyncSource(TestCaseWithFactory):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
 
+        sponsored = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackages(
                 [source_name], source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner)
+                person=target_archive.owner, sponsored=sponsored)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2228,6 +2231,7 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=to_series,
             target_pocket=to_pocket,
             include_binaries=False,
+            sponsored=sponsored,
             copy_policy=PackageCopyPolicy.MASS_SYNC))
 
     def test_copyPackages_with_multiple_packages(self):

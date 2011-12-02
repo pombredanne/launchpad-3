@@ -1204,11 +1204,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
                           " this source"),
-            required=False))
+            required=False),
+        sponsored=Reference(
+            schema=IPerson,
+            title=_("Sponsored Person"),
+            description=_("The person who is being sponsored for this copy."))
+        )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
-                    person, to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False,
+                    sponsored=None):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1225,6 +1231,10 @@ class IArchiveView(IHasBuildRecords):
             the published binaries for each given source should also be
             copied along with the source.
         :param person: the `IPerson` who requests the sync.
+        :param sponsored: the `IPerson` who is being sponsored. Specifying
+            this will ensure that the person's email address is used as the
+             "From:" on the announcement email and will also be recorded as
+              the creator of the new source publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1245,11 +1255,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
                           " this source"),
-            required=False))
+            required=False),
+        sponsored=Reference(
+            schema=IPerson,
+            title=_("Sponsored Person"),
+            description=_("The person who is being sponsored for this copy."))
+        )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
-                     to_series=None, include_binaries=False):
+                     to_series=None, include_binaries=False,
+                     sponsored=None):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1268,6 +1284,10 @@ class IArchiveView(IHasBuildRecords):
             the published binaries for each given source should also be
             copied along with the source.
         :param person: the `IPerson` who requests the sync.
+        :param sponsored: the `IPerson` who is being sponsored. Specifying
+            this will ensure that the person's email address is used as the
+            "From:" on the announcement email and will also be recorded as
+            the creator of the new source publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

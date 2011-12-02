@@ -276,7 +276,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
-                                  include_binaries, job_id, copy_task):
+                                  include_binaries, job_id, copy_task,
+                                  sponsored):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -291,7 +292,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             target_pocket,
         ) = copy_task
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -302,14 +303,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def createMultiple(cls, target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False):
+                       include_binaries=False, sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
-                task)
+                task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
         result = store.execute("""
             INSERT INTO PackageCopyJob (

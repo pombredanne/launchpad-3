@@ -1556,7 +1556,8 @@ class Archive(SQLBase):
                 "Not enabled for copying to PPAs yet.")
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
-                    person, to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False,
+                    sponsored=None):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1576,10 +1577,12 @@ class Archive(SQLBase):
             target_archive=self, target_distroseries=series,
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
-            copy_policy=PackageCopyPolicy.INSECURE, requester=person)
+            copy_policy=PackageCopyPolicy.INSECURE, requester=person,
+            sponsored=sponsored)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
-                     person, to_series=None, include_binaries=None):
+                     person, to_series=None, include_binaries=None,
+                     sponsored=None):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1620,7 +1623,7 @@ class Archive(SQLBase):
         job_source.createMultiple(
             series, copy_tasks, person,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            include_binaries=include_binaries)
+            include_binaries=include_binaries, sponsored=sponsored)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
