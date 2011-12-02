@@ -191,7 +191,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">%s recipe build [eric/ppa]</a>'
+                '<a href="%s">%s recipe build</a> [eric/ppa]'
                 % (canonical_url(build, path_only_if_possible=True),
                    build.recipe.base_branch.unique_name)))
 
@@ -206,5 +206,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">build for deleted recipe [eric/ppa]</a>'
+                '<a href="%s">build for deleted recipe</a> [eric/ppa]'
                 % (canonical_url(build, path_only_if_possible=True), )))
+
+    def test_link_no_permission(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa', private=True)
+        build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
+        self.assertThat(adapter.link(None), Equals('private source'))
