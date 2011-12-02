@@ -3054,11 +3054,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         Show the widget when there are subordinate structures.
         """
-        return (IDistribution.providedBy(self.context)
-            or IDistroSeries.providedBy(self.context)
-            or IProduct.providedBy(self.context)
-            or IProjectGroup.providedBy(self.context)
-            or IPerson.providedBy(self.context))
+        return self.structural_subscriber_label is not None
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -3100,6 +3096,21 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def shouldShowTeamPortlet(self):
         """Should the User's Teams portlet me shown in the results?"""
         return False
+
+    @property
+    def structural_subscriber_label(self):
+        if IDistribution.providedBy(self.context):
+            return 'Package, or series subscriber'
+        elif IDistroSeries.providedBy(self.context):
+            return 'Package subscriber'
+        elif IProduct.providedBy(self.context):
+            return 'Series subscriber'
+        elif IProjectGroup.providedBy(self.context):
+            return 'Project or series subscriber'
+        elif IPerson.providedBy(self.context):
+            return 'Project, distribution, package, or series subscriber'
+        else:
+            return None
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

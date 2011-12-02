@@ -1450,6 +1450,13 @@ class TestPersonBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project, distribution, package, or series subscriber',
+            view.structural_subscriber_label)
+
 
 class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
@@ -1465,6 +1472,12 @@ class TestDistributionBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package, or series subscriber', view.structural_subscriber_label)
+
 
 class TestDistroSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series."""
@@ -1479,6 +1492,12 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package subscriber', view.structural_subscriber_label)
 
 
 class TestDistributionSourcePackageBugs(TestCaseWithFactory):
@@ -1524,6 +1543,12 @@ class TestProductBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Series subscriber', view.structural_subscriber_label)
 
 
 class TestProductSeriesBugs(TestCaseWithFactory):
@@ -1643,6 +1668,12 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.projectgroup, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project or series subscriber', view.structural_subscriber_label)
 
 
 class TestBugActivityItem(TestCaseWithFactory):
