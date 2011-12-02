@@ -2524,7 +2524,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('assignee', PersonPickerWidget)
     custom_widget('bug_reporter', PersonPickerWidget)
     custom_widget('bug_commenter', PersonPickerWidget)
-    custom_widget('bug_supervisor', PersonPickerWidget)
+    custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
 
     @cachedproperty
@@ -3049,10 +3049,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
-    def shouldShowSupervisorWidget(self):
-        """
-        Should the bug supervisor widget be shown on the advanced search page?
-        """
+    def shouldShowStructuralSubscriberWidget(self):
+        """Should the structural subscriber widget be shown on the page?"""
         return True
 
     def shouldShowNoPackageWidget(self):
@@ -3198,7 +3196,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         error_message = _(
             "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_supervisor',
+        for name in ('assignee', 'bug_reporter', 'structural_subscriber',
                      'bug_commenter', 'subscriber'):
             if self.getFieldError(name):
                 self.setFieldError(

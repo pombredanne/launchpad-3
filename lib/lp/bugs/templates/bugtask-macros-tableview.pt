@@ -433,21 +433,21 @@
                     </tr>
                   </tal:render-if>
 
-                  <tal:render-if condition="view/shouldShowSupervisorWidget">
+                  <tal:render-if condition="view/shouldShowStructuralSubscriberWidget">
                     <tr>
                       <td>
-                          <label for="field.bug_supervisor">Package subscriber:</label>
+                          <label for="field.structural_subscriber">Package subscriber:</label>
                       </td>
                     </tr>
                     <tr>
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getFieldError('bug_supervisor')">
+                             python:view.getFieldError('structural_subscriber')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure
-                                               view/widgets/bug_supervisor"/>
+                                               view/widgets/structural_subscriber"/>
                             <div tal:condition="error"
                                  class="message"
                                  tal:content="error">An error on owner widget

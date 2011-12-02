@@ -159,7 +159,7 @@ The user opens a bookmark for "upstream status doesn't matter"
     ...     'assignee_option': 'any',
     ...     'field.assignee': '',
     ...     'field.bug_reporter': '',
-    ...     'field.bug_supervisor': '',
+    ...     'field.structural_subscriber': '',
     ...     'field.component-empty-marker': '1',
     ...     'field.omit_dupes.used': '',
     ...     'field.omit_dupes': 'on',
