@@ -68,7 +68,7 @@ URL.
 The URL is followed by a helpful link.
 
     >>> print user_browser.getLink('OpenID help').url
-    http://launchpad.dev/+help/openid.html
+    http://launchpad.dev/+help-registry/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
 

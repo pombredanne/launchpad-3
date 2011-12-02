@@ -248,7 +248,7 @@ The items in the breadcrumbs are linked, except for the last one which
 represents the current location.
 
     >>> print markup
-    <ol class="breadcrumbs">
+    <ol itemprop="breadcrumb" class="breadcrumbs">
       <li>
         <a href="http://launchpad.dev/joy-of-cooking">Joy of cooking</a>
       </li>

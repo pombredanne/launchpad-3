@@ -18,14 +18,25 @@
             Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
         });
     </script>
+    <tal:private condition="view/isPrivate">
+        <script type="text/javascript">
+            LPS.use('lp.app.privacy',  function(Y) {
+                Y.on('domready', function() {
+                    var cfg = {
+                        notification_text: "This report till be private, "
+                            + "though you can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.privacy.display_privacy_notification();
+                });
+            });
+        </script>
+    </tal:private>
     <meta http-equiv="refresh" content="10"
         tal:condition="view/extra_data_to_process"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h2>Report a bug</h2>
   </div>
 
@@ -138,14 +149,14 @@
             tal:define="widget nocall:view/widgets/product|nothing"
             tal:condition="not:widget">
           <div tal:condition="context/enable_bugfiling_duplicate_search"
-               id="filebug-form-container" class="transparent" style="opacity: 0; display: none">
+               id="filebug-form-container" class="transparent hidden">
             <tal:filebug-form define="launchpad_form_id string:filebug-form">
               <metal:display-similar-bugs
                   use-macro="context/@@+filebug-macros/inline-filebug-form" />
             </tal:filebug-form>
           </div>
         </tal:not_project_group>
-        <p style="display: none">
+        <p class="hidden">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"

@@ -238,8 +238,12 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
-            branch_api_url = urlparse.urljoin(
-                config.appserver_root_url('api'), 'devel', branch_name)
+            base_api_url = config.appserver_root_url('api')
+            branch_api_url = '%s/%s/%s' % (
+                base_api_url,
+                'devel',
+                branch_name,
+                )
             self.log.info('branch_api_url: %s', branch_api_url)
             req = urllib2.Request(branch_api_url)
             private = False
@@ -247,16 +251,26 @@ class RootApp:
                 # We need to determine if the branch is private
                 response = urllib2.urlopen(req)
             except urllib2.HTTPError as response:
-                if response.getcode() in (400, 403):
-                    ## 400 and 403 are the possible returns for api requests
-                    ## on a private branch without authentication.
+                code = response.getcode()
+                if code in (400, 401, 403, 404):
+                    # There are several error codes that imply private data.
+                    # 400 (bad request) is a default error code from the API
+                    # 401 (unauthorized) should never be returned as the
+                    # requests are always from anon. If it is returned
+                    # however, the data is certainly private.
+                    # 403 (forbidden) is obviously private.
+                    # 404 (not found) implies privacy from a private team or
+                    # similar situation, which we hide as not existing rather
+                    # than mark as forbidden.
                     self.log.info("Branch is private")
                     private = True
                 self.log.info(
                     "Branch state not determined; api error, return code: %s",
-                    response.getcode())
+                    code)
+                response.close()
             else:
                 self.log.info("Branch is public")
+                response.close()
 
             try:
                 bzr_branch = safe_open(

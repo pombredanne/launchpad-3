@@ -1,4 +1,3 @@
-lp/vostok
 lp/translations
 lp/testopenid
 lp/testing
@@ -27,4 +26,3 @@ canonical/launchpad
 canonical/database/testing
 canonical/database
 canonical/config
-canonical/buildd

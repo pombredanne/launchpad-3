@@ -292,7 +292,7 @@ wiki, which contains more documentation about the PPA installation
 procedure.
 
     >>> print anon_browser.getLink('Read about installing').url
-    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+    http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 The PPA owner reference is a link to its profile page.
 
@@ -601,12 +601,12 @@ links to the same help pop-up that describes how to add a PPA and
 its key to Ubuntu.
 
     >>> print anon_browser.getLink('Read about installing').url
-    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+    http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 And further down, next to the key id, we link to that same pop-up help:
 
     >>> print anon_browser.getLink('What is this?').url
-    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+    http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 
 == Single-publication PPAs ==

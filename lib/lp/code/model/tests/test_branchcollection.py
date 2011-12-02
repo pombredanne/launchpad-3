@@ -151,6 +151,51 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, [Branch.product == branch.product])
         self.assertEqual(1, collection.count())
 
+    def test_preloadVisibleStackedOnBranches_visible_private_branches(self):
+        person = self.factory.makePerson()
+        branch_number = 2
+        depth = 3
+        # Create private branches person can see.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    owner=person, private=True, depth=depth))
+        with person_logged_in(person):
+            all_branches = (
+                GenericBranchCollection.preloadVisibleStackedOnBranches(
+                    branches, person))
+        self.assertEqual(len(all_branches), branch_number * depth)
+
+    def test_preloadVisibleStackedOnBranches_anon_public_branches(self):
+        branch_number = 2
+        depth = 3
+        # Create public branches.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    private=False, depth=depth))
+        all_branches = (
+            GenericBranchCollection.preloadVisibleStackedOnBranches(branches))
+        self.assertEqual(len(all_branches), branch_number * depth)
+
+    def test_preloadVisibleStackedOnBranches_non_anon_public_branches(self):
+        person = self.factory.makePerson()
+        branch_number = 2
+        depth = 3
+        # Create public branches.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    owner=person, private=False, depth=depth))
+        with person_logged_in(person):
+            all_branches = (
+                GenericBranchCollection.preloadVisibleStackedOnBranches(
+                    branches, person))
+        self.assertEqual(len(all_branches), branch_number * depth)
+
 
 class TestBranchCollectionFilters(TestCaseWithFactory):
 

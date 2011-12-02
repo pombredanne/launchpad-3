@@ -323,6 +323,15 @@ class EC2TestRunner:
             # really wrong with the server or suite.
             user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
+        as_user("sudo mount -o remount,data=writeback,commit=3600,async,relatime /")
+        for d in ['/tmp', '/var/tmp']:
+            as_user('sudo mkdir -p %s && sudo mount -t tmpfs none %s' % (d, d))
+        as_user("sudo service postgresql-8.4 stop"
+            "; sudo mv /var/lib/postgresql /tmp/postgresql-tmp"
+            "&& sudo mkdir /var/lib/postgresql"
+            "&& sudo mount -t tmpfs none /var/lib/postgresql"
+            "&& sudo mv /tmp/postgresql-tmp/* /var/lib/postgresql"
+            "&& sudo service postgresql-8.4 start")
         as_user("sudo add-apt-repository ppa:bzr")
         as_user("sudo add-apt-repository ppa:launchpad")
         as_user("sudo aptitude update")
@@ -358,9 +367,11 @@ class EC2TestRunner:
         user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
+        user_connection.perform('sudo mkdir /var/launchpad/test '
+            '&& sudo mount -t tmpfs none /var/launchpad/test')
         # Get trunk.
         user_connection.run_with_ssh_agent(
-            'bzr branch %s /var/launchpad/test' % (self._trunk_branch,))
+            'bzr branch --use-existing-dir %s /var/launchpad/test' % (self._trunk_branch,))
         # Merge the branch in.
         if self._branch is not None:
             user_connection.run_with_ssh_agent(
@@ -378,8 +389,9 @@ class EC2TestRunner:
                 'bzr branch --standalone %s %s' % (src, fulldest))
         # prepare fresh copy of sourcecode and buildout sources for building
         p = user_connection.perform
-        p('rm -rf /var/launchpad/tmp')
-        p('mkdir /var/launchpad/tmp')
+        p('rm -rf /var/launchpad/tmp'
+            '&& mkdir /var/launchpad/tmp '
+            '&& sudo mount -t tmpfs none /var/launchpad/tmp')
         p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
         p('mkdir /var/launchpad/tmp/yui')

@@ -141,6 +141,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -179,6 +180,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):
@@ -1125,6 +1128,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
+        getUtility(IAccessPolicyArtifactSource).delete(self)
 
         # Now destroy the branch.
         branch_id = self.id

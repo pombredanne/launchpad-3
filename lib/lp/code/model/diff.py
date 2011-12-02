@@ -50,6 +50,11 @@ from lp.code.interfaces.diff import (
     IPreviewDiff,
     )
 from lp.codehosting.bzrutils import read_locked
+from lp.services.database.bulk import load_referencing
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class Diff(SQLBase):
@@ -342,9 +347,24 @@ class PreviewDiff(Storm):
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
 
-    branch_merge_proposal = Reference(
+    @staticmethod
+    def preloadData(preview_diffs):
+        # Circular imports.
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+        bmps = load_referencing(
+            BranchMergeProposal, preview_diffs, ['preview_diff_id'])
+        bmps_preview = dict((bmp.preview_diff_id, bmp) for bmp in bmps)
+        for preview_diff in preview_diffs:
+            cache = get_property_cache(preview_diff)
+            cache.branch_merge_proposal = bmps_preview[preview_diff.id]
+
+    _branch_merge_proposal = Reference(
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
+
+    @cachedproperty
+    def branch_merge_proposal(self):
+        return self._branch_merge_proposal
 
     @classmethod
     def fromBranchMergeProposal(cls, bmp):
