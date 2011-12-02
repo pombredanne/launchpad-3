@@ -72,6 +72,14 @@
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
       yui3-skin-sam">
+        <script type="text/javascript"
+          tal:condition="python: is_lpnet">
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-12833497-1']);
+          _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
+          _gaq.push(['_trackPageview']);
+        </script>
     <div class="yui-d0">
       <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
