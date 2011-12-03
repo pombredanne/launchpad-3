@@ -170,11 +170,6 @@ bugtask_choose_affected_product = bugtask_affects_new_product
 bugtask_confirm_bugtracker_creation = LaunchbagBugID(
     'Bug #%d - Record as affecting another software')
 
-bugtask_requestfix = LaunchbagBugID(
-    'Bug #%d - Record as affecting another distribution/package')
-
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
