@@ -823,7 +823,7 @@
             name="+index"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
-            class="canonical.launchpad.webapp.LaunchpadView"
+            class="lp.bugs.bugtracker.RemoteBugView"
             permission="zope.Public">
             <browser:page
                 name="+index"

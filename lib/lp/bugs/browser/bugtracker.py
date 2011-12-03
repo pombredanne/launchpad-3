@@ -574,6 +574,14 @@ class RemoteBug:
                                          self.bugtracker.title)
 
 
+class RemoteBugView(LaunchpadView):
+    """View a remove bug."""
+
+    @property
+    def page_title(self):
+        return self.context.title
+
+
 class BugTrackerNavigationMenu(NavigationMenu):
 
     usedfor = BugTrackerView

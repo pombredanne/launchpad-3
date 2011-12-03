@@ -240,8 +240,6 @@ productseries_translations_settings = 'Settings for translations'
 
 project_translations = ContextTitle('Translatable projects for %s')
 
-remotebug_index = ContextTitle('%s')
-
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
