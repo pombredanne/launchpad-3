@@ -224,7 +224,7 @@ reactivate a bug report.
 
     >>> user_browser.getLink('Convert back to a bug').click()
     >>> print user_browser.title
-    Bug #12 - Convert this...
+    Convert this...
 
 The 'Convert back to a bug' page explains what will happen if No
 Privileges Person chooses to reactivate the bug. There is an optional
@@ -292,7 +292,7 @@ remove.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+remove-question')
     >>> print user_browser.title
-    Bug #12 - Convert this...
+    Convert this...
 
     >>> find_main_content(user_browser.contents).p
     <p>
