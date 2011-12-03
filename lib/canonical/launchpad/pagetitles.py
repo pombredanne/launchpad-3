@@ -53,10 +53,6 @@ bazaar_index = 'Launchpad Branches'
 
 branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 
-
-def branchmergeproposal_index(context, view):
-    return 'Proposal to merge %s' % context.source_branch.bzr_identity
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_translations = ContextDisplayName('Translating %s')
