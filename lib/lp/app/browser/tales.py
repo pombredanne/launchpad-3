@@ -912,7 +912,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
+        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -1695,7 +1695,7 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name, rootsite=None):
         build = self._context
         if not check_permission('launchpad.View', build):
-            return 'private source'
+            return 'private job'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
         title = cgi.escape(build.title)

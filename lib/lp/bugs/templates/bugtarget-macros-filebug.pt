@@ -327,6 +327,46 @@
   </tr>
 </metal:bug_reporting_guidelines>
 
+<metal:privacy define-macro="bug-reporting-privacy">
+    <tal:private condition="view/isPrivate">
+        <script type="text/javascript">
+            LPS.use('lp.app.privacy',  function(Y) {
+                Y.on('domready', function() {
+                   var cfg = {
+                        notification_text: "This report will be private. "
+                            + "You can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.privacy.display_privacy_notification();
+                });
+            });
+        </script>
+    </tal:private>
+    <tal:not-private condition="not:view/isPrivate">
+        <script type="text/javascript">
+            LPS.use('lp.app.privacy', 'lp.bugs.filebug_dupefinder', function(Y) {
+                Y.on('domready', function() {
+                   var cfg = {
+                        notification_text: "This report will be private "
+                            + "because it is a security vulnerability. You "
+                            + "can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    var sec = Y.one('[id="field.security_related"]');
+                    sec.on('change', function() {
+                        var checked = sec.get('checked');
+                        if (checked) {
+                            Y.lp.app.privacy.display_privacy_notification();
+                        } else {
+                            Y.lp.app.privacy.hide_privacy_notification();
+                        }
+                    });
+                });
+            });
+        </script>
+    </tal:not-private>
+</metal:privacy>
+
 <metal:similar-bugs define-macro="display-similar-bugs">
   <tal:results-intro-with-summary condition="view/show_summary_in_results">
     <p id="filebug-query-heading">
