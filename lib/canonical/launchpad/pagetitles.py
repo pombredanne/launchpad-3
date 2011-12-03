@@ -187,10 +187,6 @@ def codeimport_machine_index(context, view):
 
 codeimport_new = ViewLabel()
 
-cveset_all = 'All CVE entries registered in Launchpad'
-
-cveset_index = 'Launchpad CVE tracker'
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
