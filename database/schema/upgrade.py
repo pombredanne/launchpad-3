@@ -116,6 +116,7 @@ FINISH_UPDATE_LOG_SQL = dedent("""\
     WHERE start_time = transaction_timestamp() AT TIME ZONE 'UTC';
     """)
 
+
 def to_seconds(td):
     """Convert a timedelta to seconds."""
     return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
@@ -209,6 +210,7 @@ def apply_patches_normal(con):
     if updatelog_exists:
         cur.execute(FINISH_UPDATE_LOG_SQL)
 
+
 def apply_patches_replicated():
     """Update a Slony-I cluster."""
 
@@ -232,10 +234,11 @@ def apply_patches_replicated():
     # All the SQL we need to run, combined into one file. This minimizes
     # Slony-I syncs and downtime.
     combined_sql = NamedTemporaryFile(prefix='dbupdate', suffix='.sql')
+
     def add_sql(sql):
         sql = sql.strip()
         if sql != '':
-            assert sql.endswith(';'), "SQL fragment not terminated with ';'"
+            assert sql.endswith(';'), "SQL not terminated with ';': %s" % sql
             print >> combined_sql, sql
             # Flush or we might lose statements from buffering.
             combined_sql.flush()
@@ -617,6 +620,7 @@ def apply_comments(con):
 
 _bzr_details_cache = None
 
+
 def get_bzr_details():
     """Return (branch_nick, revno, revision_id) of this Bazaar branch.
 
@@ -638,7 +642,7 @@ def get_bzr_details():
         out, err = p.communicate()
 
         if p.returncode == 0:
-            branch_nick, revno, revision_id = out.split(' ',3)
+            branch_nick, revno, revision_id = out.split(' ', 3)
             log.debug("branch-nick: %s", branch_nick)
             log.debug("revno: %s", revno)
             log.debug("revision-id: %s", revision_id)
