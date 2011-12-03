@@ -153,6 +153,8 @@ class BazaarProjectsRedirect(LaunchpadView):
 class BazaarProductView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
 
+    page_title = 'Projects with active branches'
+
     def _make_distribution_map(self, values, percentile_map):
         """Given some values and a map of percentiles to other values, return
         a function that will take a value in the same domain as 'values' and
