@@ -223,10 +223,6 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
-person_packagebugs_overview = ContextDisplayName("%s's package bug reports")
-
-person_packagebugs_search = ContextDisplayName("%s's package bug reports")
-
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
