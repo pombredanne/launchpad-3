@@ -162,14 +162,6 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_affects_new_product = LaunchbagBugID(
-    'Bug #%d - Record as affecting another project')
-
-bugtask_choose_affected_product = bugtask_affects_new_product
-
-bugtask_confirm_bugtracker_creation = LaunchbagBugID(
-    'Bug #%d - Record as affecting another software')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
