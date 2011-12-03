@@ -129,8 +129,6 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
-bugbranch_delete = 'Delete bug branch link'
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
