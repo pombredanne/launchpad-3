@@ -671,6 +671,7 @@ class ObjectFormatterAPI:
         then a view can still choose to override them by setting the attribute
         .override_title_breadcrumbs to True.
         """
+        ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
         module = canonical.launchpad.pagetitles
@@ -691,7 +692,7 @@ class ObjectFormatterAPI:
             if template is None:
                 template = getattr(view, 'index', None)
                 if template is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
+                    return ROOT_TITLE
             # There is no .page_title attribute on the view, so fallback to
             # looking for an an entry in pagetitles.py.  This is deprecated
             # though, so issue a warning.
@@ -715,7 +716,7 @@ class ObjectFormatterAPI:
             else:
                 title = title_object(view.context, view)
                 if title is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
+                    return ROOT_TITLE
                 else:
                     return title
         # Use the reverse breadcrumbs.
