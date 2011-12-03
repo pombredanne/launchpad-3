@@ -43,12 +43,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-class ViewLabel:
-    """Helper to use the view's label as the title."""
-    def __call__(self, context, view):
-        return view.label
-
-
 bazaar_index = 'Launchpad Branches'
 
 branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
