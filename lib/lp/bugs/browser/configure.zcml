@@ -887,7 +887,7 @@
         <browser:page
             name="+index"
             for="lp.bugs.interfaces.cve.ICve"
-            class="lp.bugs.browser.buglinktarget.BugLinksListingView"
+            class="lp.bugs.browser.cve.CveIndexView"
             template="../templates/cve-index.pt"
             permission="zope.Public"/>
         <browser:page
