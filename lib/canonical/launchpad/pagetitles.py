@@ -127,8 +127,6 @@ bug_nominate_for_series = ViewLabel()
 
 bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
-bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
