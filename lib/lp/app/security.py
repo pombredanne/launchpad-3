@@ -133,7 +133,7 @@ class DelegatedAuthorization(AuthorizationBase):
         yield self.forwarded_object
 
     def checkAuthenticated(self, user):
-        return izip(self.iter_objects, repeat(self.permission))
+        return izip(self.iter_objects(), repeat(self.permission))
 
     def checkUnauthenticated(self):
-        return izip(self.iter_objects, repeat(self.permission))
+        return izip(self.iter_objects(), repeat(self.permission))
