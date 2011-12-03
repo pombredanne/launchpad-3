@@ -103,6 +103,10 @@ class CodeImportMachineView(LaunchpadFormView):
     initial_values = {'reason': ''}
 
     @property
+    def page_title(self):
+        return 'Code Import machine "%s"' % self.context.hostname
+
+    @property
     def latest_events(self):
         """The ten most recent events for the machine."""
         return [DecoratedEvent(event) for event in self.context.events[:10]]
