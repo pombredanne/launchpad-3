@@ -45,8 +45,6 @@ class ContextTitle(SubstitutionHelper):
 
 bazaar_index = 'Launchpad Branches'
 
-branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_translations = ContextDisplayName('Translating %s')
