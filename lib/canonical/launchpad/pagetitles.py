@@ -10,6 +10,4 @@ __metaclass__ = type
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
-rosetta_index = 'Launchpad Translations'
-
 rosetta_products = 'Projects with Translations in Launchpad'

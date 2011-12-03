@@ -59,6 +59,8 @@ class TranslationsMixin:
 class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
 
+    page_title = 'Launchpad Translations'
+
     @property
     def ubuntu_translationseries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
