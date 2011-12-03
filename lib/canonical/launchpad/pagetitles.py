@@ -9,5 +9,3 @@ page_title attribute
 __metaclass__ = type
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
-
-rosetta_products = 'Projects with Translations in Launchpad'

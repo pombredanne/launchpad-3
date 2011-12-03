@@ -104,6 +104,7 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
 class TranslatableProductsView(LaunchpadView):
     """List of translatable products."""
     label = "Projects with translations in Launchpad"
+    page_title = label
 
     @cachedproperty
     def batchnav(self):
