@@ -186,7 +186,7 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
         return smartquote('Bug #%d - Edit attachment "%s"') % (
             self.context.bug.id, self.context.title)
 
-    page_title = label
+    page_title = 'Edit attachment'
 
 
 class BugAttachmentPatchConfirmationView(LaunchpadFormView):
@@ -216,7 +216,7 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
         return smartquote('Bug #%d - Confirm attachment type of "%s"') % (
             self.context.bug.id, self.context.title)
 
-    page_title = label
+    page_title = 'Confirm attachment type'
 
     @action('Change', name='change')
     def change_action(self, action, data):
