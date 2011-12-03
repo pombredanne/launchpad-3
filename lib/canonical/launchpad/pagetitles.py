@@ -114,8 +114,6 @@ bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
