@@ -183,8 +183,7 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
 
     @property
     def label(self):
-        return smartquote('Bug #%d - Edit attachment "%s"') % (
-            self.context.bug.id, self.context.title)
+        return smartquote('Edit attachment "%s"') % self.context.title
 
     page_title = 'Edit attachment'
 
@@ -213,8 +212,8 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
 
     @property
     def label(self):
-        return smartquote('Bug #%d - Confirm attachment type of "%s"') % (
-            self.context.bug.id, self.context.title)
+        return smartquote('Confirm attachment type of "%s"') % (
+            self.context.title)
 
     page_title = 'Confirm attachment type'
 
