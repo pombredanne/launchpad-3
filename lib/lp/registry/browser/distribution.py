@@ -50,6 +50,8 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -534,6 +536,10 @@ class DistributionPackageSearchView(PackageSearchViewBase):
                 non_exact_matches, tuple_to_package_cache)
 
         return non_exact_matches.config(distinct=True)
+
+    @property
+    def page_title(self):
+        return smartquote("Search %s's packages" % self.context.displayname)
 
     @property
     def search_by_binary_name(self):

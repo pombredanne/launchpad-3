@@ -8,9 +8,6 @@ page_title attribute
 """
 __metaclass__ = type
 
-from lazr.restful.utils import smartquote
-
-
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
@@ -38,8 +35,6 @@ class ContextTitle(SubstitutionHelper):
 
 
 distribution_translations = ContextDisplayName('Translating %s')
-
-distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
