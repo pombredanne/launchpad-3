@@ -22,20 +22,11 @@ class SubstitutionHelper:
         raise NotImplementedError
 
 
-class ContextDisplayName(SubstitutionHelper):
-    """Return the formatted string with context's displayname."""
-    def __call__(self, context, view):
-        return self.text % context.displayname
-
-
 class ContextTitle(SubstitutionHelper):
     """Return the formatted string with context's title."""
     def __call__(self, context, view):
         return self.text % context.title
 
-
-person_translations_to_review = ContextDisplayName(
-    'Translations for review by %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
