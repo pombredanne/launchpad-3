@@ -127,39 +127,54 @@
 .importanceUNDECIDED, .importanceUNDECIDED a {
     color: #999;
     }
+#client-listing .statusUNKNOWN, #client-listing .statusUNKNOWN a,
 #client-listing .statusNEW, #client-listing .statusNEW a,
-#client-listing .statusINCOMPLETE, #client-listing .statusINCOMPLETE a,
+#client-listing .statusINCOMPLETE, #client-listing .statusINCOMPLETE a {
+        color: #c63600;
+        background-color: #ffdabe;
+    }
 #client-listing .statusCONFIRMED, #client-listing .statusCONFIRMED a,
-#client-listing .statusTRIAGED, #client-listing .statusTRIAGED a,
-#client-listing .statusFIXCOMMITTED, #client-listing .statusFIXCOMMITTED a,
-#client-listing .statusFIXRELEASED, #client-listing .statusFIXRELEASED a,
+#client-listing .statusTRIAGED, #client-listing .statusTRIAGED a {
+        color: #896e00;
+        background-color: #f4f1a4;
+    }
+#client-listing .statusINPROGRESS, #client-listing .statusINPROGRESS a,
+#client-listing .statusFIXCOMMITTED, #client-listing .statusFIXCOMMITTED a {
+        color: #137587;
+        background-color: #cbe7ef;
+    }
+#client-listing .statusFIXRELEASED, #client-listing .statusFIXRELEASED a {
+        color: #4f7b10;
+        background-color: #cef1a0;
+    }
 #client-listing .statusINVALID, #client-listing .statusINVALID a,
 #client-listing .statusWONTFIX, #client-listing .statusWONTFIX a,
-#client-listing .statusUNKNOWN, #client-listing .statusUNKNOWN a {
-    color: #666;
+#client-listing .statusOPINION, #client-listing .statusOPINION a {
+        color: #464646;
+        background-color: #ddd;
     }
 #client-listing .importanceCRITICAL, #client-listing .importanceCRITICAL a {
-    background: #DF382C;
+    background-color: #DF382C;
     color: white;
     }
 #client-listing .importanceHIGH, #client-listing .importanceHIGH a {
-    background: #EFB73E;
+    background-color: #EFB73E;
     color: white;
     }
 #client-listing .importanceMEDIUM, #client-listing .importanceMEDIUM a {
-    background: #19B6EE;
+    background-color: #19B6EE;
     color: white;
     }
 #client-listing .importanceLOW, #client-listing .importanceLOW a {
-    background: #38B44A;
+    background-color: #38B44A;
     color: white;
     }
 #client-listing .importanceWISHLIST, #client-listing .importanceWISHLIST a {
-    background: #724dc8;
+    background-color: #724dc8;
     color: white;
     }
 #client-listing .importanceUNDECIDED, #client-listing .importanceUNDECIDED a {
-    background: #666666;
+    background-color: #666666;
     color: white;
     }
 
