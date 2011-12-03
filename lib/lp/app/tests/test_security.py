@@ -163,6 +163,9 @@ class TestDelegatedAuthorizationBase(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_DelegatedAuthorization_same_permissions(self):
+        # TODO: This is no longer how DelegatedAuthorization works. Instead,
+        # LaunchpadSecurityPolicy and iter_authorization do the work that's
+        # tested here.
 
         permission = self.factory.getUniqueString()
         fake_obj = FakeForwardedObject()
@@ -180,6 +183,10 @@ class TestDelegatedAuthorizationBase(TestCaseWithFactory):
             (1, inner_adapter.checkUnauthenticated.call_count))
 
     def test_DelegatedAuthorization_different_permissions(self):
+        # TODO: This is no longer how DelegatedAuthorization works. Instead,
+        # LaunchpadSecurityPolicy and iter_authorization do the work that's
+        # tested here.
+
         perm_inner = 'inner'
         perm_outer = 'outer'
         fake_obj = FakeForwardedObject()
