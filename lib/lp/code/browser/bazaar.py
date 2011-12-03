@@ -36,6 +36,8 @@ from lp.services.propertycache import cachedproperty
 
 class BazaarApplicationView(LaunchpadView):
 
+    page_title = 'Launchpad Branches'
+
     @property
     def branch_count(self):
         """Return the number of public branches."""

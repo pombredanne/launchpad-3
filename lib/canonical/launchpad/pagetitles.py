@@ -43,8 +43,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-bazaar_index = 'Launchpad Branches'
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_translations = ContextDisplayName('Translating %s')
