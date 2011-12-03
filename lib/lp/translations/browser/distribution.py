@@ -87,10 +87,6 @@ class DistributionView(LaunchpadView):
 
     label = "Translations overview"
 
-    @property
-    def page_title(self):
-        return 'Translating %s' % self.context.displayname
-
     @cachedproperty
     def translation_focus(self):
         """Return the IDistroSeries where the translators should work.

@@ -34,8 +34,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-distroseries_translations = ContextTitle('Translations of %s in Launchpad')
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 person_translations_to_review = ContextDisplayName(
