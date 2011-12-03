@@ -133,11 +133,6 @@ bugbranch_delete = 'Delete bug branch link'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
 
-
-def buglisting_embedded_advanced_search(context, view):
-    """Return the view's page heading."""
-    return view.getSearchPageHeading()
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
