@@ -31,12 +31,6 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
-class ContextId(SubstitutionHelper):
-    """Return the formatted string with context's id."""
-    def __call__(self, context, view):
-        return self.text % context.id
-
-
 class ContextTitle(SubstitutionHelper):
     """Return the formatted string with context's title."""
     def __call__(self, context, view):
