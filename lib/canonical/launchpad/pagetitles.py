@@ -230,8 +230,6 @@ person_packagebugs_search = ContextDisplayName("%s's package bug reports")
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
-product_cvereport = ContextTitle('CVE reports for %s')
-
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
 productseries_translations = ContextTitle('Translations overview for %s')
