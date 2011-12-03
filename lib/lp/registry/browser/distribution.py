@@ -663,6 +663,10 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
 class DistributionArchivesView(LaunchpadView):
 
     @property
+    def page_title(self):
+        return '%s Copy Archives' % self.context.title
+
+    @property
     def batchnav(self):
         """Return the batch navigator for the archives."""
         return BatchNavigator(self.archive_list, self.request)

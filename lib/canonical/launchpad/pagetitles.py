@@ -37,8 +37,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-distribution_archive_list = ContextTitle('%s Copy Archives')
-
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
