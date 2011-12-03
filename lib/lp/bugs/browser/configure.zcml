@@ -512,7 +512,7 @@
             template="../templates/bug-portlet-subscribers.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bug.BugView"
+            class="lp.bugs.browser.bug.BugActivity"
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>

@@ -110,8 +110,6 @@ branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
-bug_activity = ContextBugId('Bug #%s - Activity log')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'

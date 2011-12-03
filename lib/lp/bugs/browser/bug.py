@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugActivity',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -592,6 +593,11 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
+
+
+class BugActivity(BugView):
+
+    page_title = 'Activity log'
 
 
 class BugSubscriptionPortletDetails:
