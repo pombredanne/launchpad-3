@@ -28,10 +28,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-product_translations = ContextTitle('Translations of %s in Launchpad')
-
-productseries_translations = ContextTitle('Translations overview for %s')
-
 productseries_translations_settings = 'Settings for translations'
 
 project_translations = ContextTitle('Translatable projects for %s')
