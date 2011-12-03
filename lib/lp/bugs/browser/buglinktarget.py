@@ -50,6 +50,7 @@ class BugLinkView(LaunchpadFormView):
 
     label = _('Link a bug report')
     schema = IBugLinkForm
+    page_title = label
 
     focused_element_id = 'bug'
 
