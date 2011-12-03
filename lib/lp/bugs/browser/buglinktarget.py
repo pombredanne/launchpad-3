@@ -73,7 +73,7 @@ class BugLinkView(LaunchpadFormView):
             # XXX flacoste 2006-08-23 bug=57470: This should use proper _().
             self.setFieldError(
                 'bug',
-                'You are not allowed to link to private bug #%d.'% bug.id)
+                'You are not allowed to link to private bug #%d.' % bug.id)
             return
         bug_props = {'bugid': bug.id, 'title': bug.title}
         response.addNotification(
@@ -130,6 +130,7 @@ class BugsUnlinkView(LaunchpadFormView):
     label = _('Remove links to bug reports')
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
+    page_title = label
 
     @property
     def cancel_url(self):

@@ -195,8 +195,6 @@ cve_index = ContextDisplayName('%s')
 
 cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
-cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
