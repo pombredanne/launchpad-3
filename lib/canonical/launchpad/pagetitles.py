@@ -47,7 +47,6 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.malone import IMaloneApplication
 
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -101,17 +100,6 @@ class ViewLabel:
         return view.label
 
 
-def bugtarget_filebug_advanced(context, view):
-    """Return the page title for reporting a bug."""
-    if IMaloneApplication.providedBy(context):
-        # We're generating a title for a top-level, contextless bug
-        # filing page.
-        return 'Report a bug'
-    else:
-        # We're generating a title for a contextual bug filing page.
-        return 'Report a bug about %s' % context.title
-
-
 bazaar_index = 'Launchpad Branches'
 
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
@@ -157,10 +145,6 @@ def bugnomination_edit(context, view):
         context.bug.id, context.target.bugtargetdisplayname)
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
-
-bugtarget_filebug_search = bugtarget_filebug_advanced
-
-bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 code_in_branches = 'Projects with active branches'
 
