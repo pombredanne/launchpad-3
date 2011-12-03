@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-from types import GeneratorType
+from collections import (
+    deque,
+    Iterable,
+    )
+from functools import partial
 import warnings
 import weakref
 
@@ -204,50 +208,90 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         if (permission == 'launchpad.AnyPerson' and
             ILaunchpadPrincipal.providedBy(principal)):
             return True
-        else:
-            # Look for an IAuthorization adapter.  If there is no
-            # IAuthorization adapter then the permission is not granted.
-            #
-            # The IAuthorization is a named adapter from objecttoauthorize,
-            # providing IAuthorization, named after the permission.
-            authorization = queryAdapter(
-                objecttoauthorize, IAuthorization, permission)
-            if authorization is None:
-                return False
-            else:
-                if ILaunchpadPrincipal.providedBy(principal):
-                    result = authorization.checkAccountAuthenticated(
-                        principal.account)
-                else:
-                    result = authorization.checkUnauthenticated()
-                result = self.processAuthorization(
-                    permission, participation_cache, result)
-                if type(result) is not bool:
-                    warnings.warn(
-                        'authorization returning non-bool value: %r' %
-                        authorization)
-                if cache is not None:
-                    cache[permission] = result
-                return bool(result)
 
-    def processAuthorization(self, permission, participation_cache, result):
-        if isinstance(result, GeneratorType):
-            # Delegated permission.
-            for obj, result in result:
-                result = self.processAuthorization(
-                    permission, participation_cache, result)
-                if participation_cache is not None:
-                    if obj in participation_cache:
-                        participation_cache[obj][permission] = result
-                    else:
-                        participation_cache[obj] = {permission: result}
-                # Short circuit: it's a negative.
-                if not result:
-                    return False
-            # All delegated checks were positive.
-            return True
-        else:
-            return result
+        return all(
+            iter_authorization(
+                objecttoauthorize, permission, principal,
+                participation_cache, breadth_first=True))
+
+
+def iter_authorization(objecttoauthorize, permission, principal, cache,
+                       breadth_first=True):
+    """Work through `IAuthorization` adapters for `objecttoauthorize`.
+
+    Adapters are permitted to delegate checks to other adapters, and this
+    manages that delegation such that the minimum number of checks are made,
+    subject to a breath-first check of delegations.
+
+    This also updates `cache` as it goes along, though `cache` can be `None`
+    if no caching is desired. Only leaf values are cached; the results of a
+    delegated authorization are not cached.
+    """
+    # XXX: GavinPanella 2011-12-03 bug=???: Surely for delegated checks we
+    # still need to do a lot of the other stuff in checkPermission(), like
+    # privacy checks, and the other checks for zope.Public, etc.
+
+    # Check if this calculation has already been done.
+    if cache is not None and objecttoauthorize in cache:
+        if permission in cache[objecttoauthorize]:
+            # Result cached => yield and return.
+            yield cache[objecttoauthorize][permission]
+            return
+
+    # Create a check_auth function to call checkAccountAuthenticated or
+    # checkUnauthenticated as appropriate.
+    if ILaunchpadPrincipal.providedBy(principal):
+        account = principal.account
+        check_auth = lambda authorization: (
+            authorization.checkAccountAuthenticated(account))
+    else:
+        check_auth = lambda authorization: (
+            authorization.checkUnauthenticated())
+
+    # Create an function to get IAuthorization adapters for permission.
+    adapt = partial(queryAdapter, interface=IAuthorization, name=permission)
+
+    # Each entry in queue should be an iterable of (object, permission)
+    # tuples, upon which permission checks will be performed.
+    queue = deque()
+    enqueue = (queue.append if breadth_first else queue.appendleft)
+
+    # Enqueue the starting object and permission.
+    enqueue(((objecttoauthorize, permission),))
+
+    while len(queue) != 0:
+        for obj, permission in queue.popleft():
+            # First, check the cache.
+            if cache is not None:
+                if obj in cache and permission in cache[obj]:
+                    # Result cached => yield and skip to the next.
+                    yield cache[obj][permission]
+                    continue
+            # Get an IAuthorization for (obj, permission).
+            authorization = adapt(obj)
+            if authorization is None:
+                # No authorization adapter => denied.
+                yield False
+                continue
+            # We have an authorization adapter, so check it. This is one of
+            # the possibly-expensive bits that a cache can help with.
+            result = check_auth(authorization)
+            # Is the authorization adapter delegating to other objects?
+            if isinstance(result, Iterable):
+                enqueue(result)
+                continue
+            # We have a non-delegated result.
+            if result is not True or result is not False:
+                warnings.warn('%r returned %r' % (authorization, result))
+                result = bool(result)
+            # Update the cache if one has been provided.
+            if cache is not None:
+                if obj in cache:
+                    cache[obj][permission] = result
+                else:
+                    cache[obj] = {permission: result}
+            # Let the world know.
+            yield result
 
 
 def precache_permission_for_objects(participation, permission_name, objects):
