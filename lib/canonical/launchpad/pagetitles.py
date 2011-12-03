@@ -41,8 +41,6 @@ distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
-distroarchseries_index = ContextTitle('%s in Launchpad')
-
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 object_templates = ContextDisplayName('Translation templates for %s')
