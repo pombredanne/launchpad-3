@@ -53,8 +53,6 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
-distroseriessourcepackagerelease_index = ContextTitle('%s')
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 person_translations_to_review = ContextDisplayName(
