@@ -116,13 +116,6 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
-bug_edit = ContextBugId('Bug #%d - Edit')
-
-bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
-
-bug_mark_as_affecting_user = ContextBugId(
-    'Bug #%d - does this bug affect you?')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
