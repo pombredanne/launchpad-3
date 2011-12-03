@@ -67,8 +67,6 @@ codeimport_machines = ViewLabel()
 def codeimport_machine_index(context, view):
     return smartquote('Code Import machine "%s"' % context.hostname)
 
-codeimport_new = ViewLabel()
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_translations = ContextDisplayName('Translating %s')
