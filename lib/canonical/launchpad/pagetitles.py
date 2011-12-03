@@ -245,5 +245,3 @@ remotebug_index = ContextTitle('%s')
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
