@@ -281,8 +281,10 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
                 enqueue(result)
                 continue
             # We have a non-delegated result.
-            if result is not True or result is not False:
-                warnings.warn('%r returned %r' % (authorization, result))
+            if result is not True and result is not False:
+                warnings.warn(
+                    '%r returned %r (%r)' % (
+                        authorization, result, type(result)))
                 result = bool(result)
             # Update the cache if one has been provided.
             if cache is not None:
