@@ -125,8 +125,6 @@ bug_mark_as_affecting_user = ContextBugId(
 
 bug_nominate_for_series = ViewLabel()
 
-bug_secrecy = ContextBugId('Bug #%d - Set visibility')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
