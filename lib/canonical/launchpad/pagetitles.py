@@ -51,8 +51,6 @@ distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_queue = ContextTitle('Queue for %s')
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 person_translations_to_review = ContextDisplayName(
