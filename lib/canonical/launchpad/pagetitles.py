@@ -123,8 +123,6 @@ bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 bug_mark_as_affecting_user = ContextBugId(
     'Bug #%d - does this bug affect you?')
 
-bug_nominate_for_series = ViewLabel()
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
