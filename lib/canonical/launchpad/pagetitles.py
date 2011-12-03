@@ -112,8 +112,6 @@ def branchmergeproposal_index(context, view):
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
-bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
