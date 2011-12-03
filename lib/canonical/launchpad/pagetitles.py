@@ -10,27 +10,7 @@ __metaclass__ = type
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
-# Helpers.
-
-
-class SubstitutionHelper:
-    """An abstract class for substituting values into formatted strings."""
-    def __init__(self, text):
-        self.text = text
-
-    def __call__(self, context, view):
-        raise NotImplementedError
-
-
-class ContextTitle(SubstitutionHelper):
-    """Return the formatted string with context's title."""
-    def __call__(self, context, view):
-        return self.text % context.title
-
-
 productseries_translations_settings = 'Settings for translations'
-
-project_translations = ContextTitle('Translatable projects for %s')
 
 rosetta_index = 'Launchpad Translations'
 
