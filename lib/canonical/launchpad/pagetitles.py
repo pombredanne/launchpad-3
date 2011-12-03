@@ -144,8 +144,6 @@ def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
         context.bug.id, context.target.bugtargetdisplayname)
 
-bugtarget_bugs = ContextTitle('Bugs in %s')
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
