@@ -65,6 +65,7 @@ class CodeImportMachineSetView(LaunchpadView):
     """The view for the page that shows all the import machines."""
 
     label = "Import machines for Launchpad"
+    page_title = label
 
     @property
     def machines(self):

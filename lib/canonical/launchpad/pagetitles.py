@@ -59,10 +59,6 @@ def branchmergeproposal_index(context, view):
 
 code_in_branches = 'Projects with active branches'
 
-codeimport_list = 'Code Imports'
-
-codeimport_machines = ViewLabel()
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_translations = ContextDisplayName('Translating %s')
