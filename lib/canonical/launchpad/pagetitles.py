@@ -3,50 +3,12 @@
 
 """*** PLEASE STOP ADDING TO THIS FILE ***
 
-Use the page_title attribute of the view.
-
-This module is used as a last resort by the Launchpad webapp to determine
-titles for pages.
-
-https://launchpad.canonical.com/LaunchpadTitles
-
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
-put in webapp, because webapp is not domain-specific, and should not be
-put in browser, because this would make webapp depend on browser. SteveA
-has a plan to fix this overall soon.
-
-This module contains string or unicode literals assigned to names, or
-functions such as this one:
-
-  def bug_index(context, view):
-      return 'Bug %s: %s' % (context.id, context.title)
-
-The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the
-function bug_index given about is for the page template bug-index.pt.
-
-If the function needs to include details from the request, this is
-available from view.request.  However, these functions should not access
-view.request.  Instead, the view class should make a function or
-attribute available that provides the required information.
-
-If the function returns None, it means that the default page title for
-the whole of Launchpad should be used.  This is defined in the variable
-DEFAULT_LAUNCHPAD_TITLE.
-
-There are shortcuts for some common substitutions at the top of this
-module.
-
-The strings and functions for page titles are arranged in alphabetical
-order after the helpers.
-
+This module is used as a last resort when the view fails to provide a
+page_title attribute
 """
 __metaclass__ = type
 
 from lazr.restful.utils import smartquote
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -81,19 +43,6 @@ class ContextTitle(SubstitutionHelper):
         return self.text % context.title
 
 
-class LaunchbagBugID(SubstitutionHelper):
-    """Return the formatted string with the bug's id from LaunchBag."""
-    def __call__(self, context, view):
-        return self.text % getUtility(ILaunchBag).bug.id
-
-
-class ContextBugId(SubstitutionHelper):
-    """Helper to include the context's bug id in the title."""
-
-    def __call__(self, context, view):
-        return self.text % context.bug.id
-
-
 class ViewLabel:
     """Helper to use the view's label as the title."""
     def __call__(self, context, view):
@@ -101,8 +50,6 @@ class ViewLabel:
 
 
 bazaar_index = 'Launchpad Branches'
-
-branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 
