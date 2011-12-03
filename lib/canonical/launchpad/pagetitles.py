@@ -131,8 +131,6 @@ bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
 bugbranch_delete = 'Delete bug branch link'
 
-buglinktarget_unlinkbugs = 'Remove links to bug reports'
-
 code_in_branches = 'Projects with active branches'
 
 codeimport_list = 'Code Imports'
