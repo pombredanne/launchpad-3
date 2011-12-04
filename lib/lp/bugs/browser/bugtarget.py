@@ -1354,8 +1354,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """The display label for the view."""
         return 'Bugs in %s' % self.context.title
 
-    page_title = label
-
     def initialize(self):
         super(BugTargetBugsView, self).initialize()
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
