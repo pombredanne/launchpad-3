@@ -14,6 +14,7 @@ We will use a helper function for dumping publisher configurations.
     ...     'overrideroot',
     ...     'cacheroot',
     ...     'miscroot',
+    ...     'germinateroot',
     ...     'temproot',
     ... ]
 
@@ -38,6 +39,7 @@ We will use a helper function for dumping publisher configurations.
     overrideroot:    /var/tmp/archive/ubuntutest-overrides
     cacheroot:       /var/tmp/archive/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-misc
+    germinateroot:   /var/tmp/archive/ubuntutest-germinate
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
@@ -80,6 +82,7 @@ None, so they won't get created:
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 There is a separate location for private PPAs that is used if the
@@ -108,6 +111,7 @@ archive is marked as private:
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
@@ -131,6 +135,7 @@ archive.
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
@@ -155,6 +160,7 @@ modified to be clearly different than the PRIMARY one.
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
@@ -177,4 +183,5 @@ is of the form distroroot/distroname-archivename/distroname
     overrideroot:    /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-overrides
     cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
+    germinateroot:   /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-germinate
     temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp
