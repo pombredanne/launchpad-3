@@ -264,7 +264,7 @@ We can also edit the attachment details, let's navigate to that page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1'
 
-    >>> 'Bug #1 - Edit attachment' in user_browser.contents
+    >>> 'Edit attachment' in user_browser.contents
     True
 
 There's also an option to cancel, which takes you back to the bug
