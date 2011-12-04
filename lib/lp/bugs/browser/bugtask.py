@@ -3304,10 +3304,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
-    @property
-    def page_title(self):
-        return 'Bugs nominated for %s' % self. context.displayname
-
     def _getBatchNavigator(self, tasks):
         """See BugTaskSearchListingView."""
         batch_navigator = NominatedBugListingBatchNavigator(
