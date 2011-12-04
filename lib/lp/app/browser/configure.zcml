@@ -605,13 +605,6 @@
       />
 
   <adapter
-      for="dict"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.PageTemplateContextsAPI"
-      name="fmt"
-      />
-
-  <adapter
       for="int"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.DBSchemaAPI"
