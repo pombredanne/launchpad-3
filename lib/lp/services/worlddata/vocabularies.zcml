@@ -12,7 +12,7 @@
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="canonical.launchpad.vocabularies.CountryNameVocabulary">
+  <class class="lp.services.worlddata.vocabularies.CountryNameVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
@@ -25,7 +25,7 @@
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="canonical.launchpad.vocabularies.LanguageVocabulary">
+  <class class="lp.services.worlddata.vocabularies.LanguageVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
