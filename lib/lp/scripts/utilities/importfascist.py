@@ -36,7 +36,7 @@ permitted_database_imports = text_lines_to_set("""
     lp.code.feed.branch
     canonical.launchpad.interfaces.person
     lp.scripts.garbo
-    lp.bugs.vocabulary
+    lp.bugs.vocabularies
     lp.registry.vocabularies
     lp.services.worlddata.vocabularies
     lp.soyuz.vocabularies
