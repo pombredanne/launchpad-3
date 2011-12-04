@@ -500,7 +500,7 @@ Launchpad--it is not restricted to the user's preferred languages.
 
     >>> view = create_initialized_view(question_three, name='+edit')
     >>> view.widgets['language'].vocabulary
-    <lp.services.worlddata.vocabularies.dbobjects.LanguageVocabulary ...>
+    <lp.services.worlddata.vocabularies.LanguageVocabulary ...>
 
 In a similar manner, the sourcepackagename field can only be updated on
 a distribution question:
