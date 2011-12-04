@@ -248,9 +248,6 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
         check_auth = lambda authorization: (
             authorization.checkUnauthenticated())
 
-    # Create an function to get IAuthorization adapters for permission.
-    adapt = partial(queryAdapter, interface=IAuthorization, name=permission)
-
     # Each entry in queue should be an iterable of (object, permission)
     # tuples, upon which permission checks will be performed.
     queue = deque()
@@ -261,6 +258,8 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
     while len(queue) != 0:
         for obj, permission in queue.popleft():
+            # Unwrap object; see checkPermission for why.
+            obj = removeAllProxies(obj)
             # First, check the cache.
             if cache is not None:
                 if obj in cache and permission in cache[obj]:
@@ -268,7 +267,7 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
                     yield cache[obj][permission]
                     continue
             # Get an IAuthorization for (obj, permission).
-            authorization = adapt(obj)
+            authorization = queryAdapter(obj, IAuthorization, permission)
             if authorization is None:
                 # No authorization adapter => denied.
                 yield False
