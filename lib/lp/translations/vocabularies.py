@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.vocabulary import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.services.worlddata.model.vocabularies import LanguageVocabulary
+from lp.services.worlddata.vocabularies import LanguageVocabulary
 from lp.translations.enums import LanguagePackType
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.potemplate import POTemplate
