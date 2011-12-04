@@ -12,7 +12,11 @@ LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
 LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-/srv/launchpad.net/codelines/current}
+GENERATE_EXTRA_OVERRIDES=$LAUNCHPADROOT/cronscripts/generate-extra-overrides.py
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
+
+FLAVOURS="ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu"
+FLAVOURS="$FLAVOURS ubuntustudio"
 
 ## Check to see if another germinate run is in progress
 
@@ -28,134 +32,9 @@ cleanup () {
 
 trap cleanup EXIT
 
-suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
-archs=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py -s "$suite" archs`
-
-echo -n "Running germinate... "
 cd $GERMINATEROOT
 
-# Clean up temporary files
-rm -f \
-    germinate.output ALL ALL.sources \
-    UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-* \
-    UBUNTUSTUDIO-*
-rm -f all_* all.sources_*
-rm -rf dists
-
-# Grab local copies of Sources and Packages files, to avoid problems in case
-# the archive changes under our feet.
-for component in main universe restricted multiverse; do
-  base="dists/$suite/$component"
-  mkdir -p "$base/source"
-  zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
-  for arch in $archs; do
-    mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
-    zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
-      > "$base/binary-$arch/Packages"
-    zcat "$ARCHIVEROOT/$base/debian-installer/binary-$arch/Packages.gz" \
-      > "$base/debian-installer/binary-$arch/Packages"
-  done
-done
-
-> "$MISCROOT/more-extra.override.$suite.main.new"
-
-germinate_components=main,universe,restricted,multiverse
-for distro in \
-    ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu \
-    ubuntustudio
-do
-  DISTRO="$(echo $distro | tr a-z A-Z)"
-  germinate_suite="$distro.$suite"
-  for arch in $archs; do
-    # Run germinate
-    echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate \
-        --no-rdepends \
-        -m "file://$(pwd)/" \
-        -s "$germinate_suite" \
-        -d "$suite" \
-        -c "$germinate_components" \
-        -a $arch >> germinate.output 2>&1
-
-    # The structure file is generally useful; keep per distro/suite/arch
-    # copies for convenience
-    cp structure structure_"$distro"_"$suite"_"$arch"
-
-    # Keep per distro/suite/arch copies of 'all' and 'all.sources' for
-    # anastacia.
-    cp all all_"$distro"_"$suite"_"$arch"
-    cp all.sources all.sources_"$distro"_"$suite"_"$arch"
-
-    # Keep per distro/suite/arch copies of 'minimal' and 'standard' for
-    # jessica.
-    cp minimal minimal_"$distro"_"$suite"_"$arch"
-    cp standard standard_"$distro"_"$suite"_"$arch"
-
-    # Keep amalgamated copies of 'all' and 'all.sources', just for convenience
-    cat all >> ALL; cat all.sources >> ALL.sources
-
-    # We need to fetch a number of seeds so that we can generate Task fields
-    # for them. This changes over time and differs from derivative to
-    # derivative, so it's best to just fetch them all.
-    taskseeds="$(cut -d: -f1 structure | xargs -n1 | sort -u)"
-
-    for seed in $taskseeds; do
-      cp "$seed" "$seed"_"$distro"_"$suite"_"$arch"
-    done
-    echo " ********************************************************************** " >> germinate.output
-    echo "" >> germinate.output
-    echo -n "."
-
-    ## Generate apt-ftparchive 'extra' overrides for Task: fields
-    for seed in $taskseeds; do
-      if ! grep -iq '^Task-' "$seed.seedtext"; then
-	continue
-      fi
-      # If the seed contains Task-Name header, override the normal behavior
-      if grep -iq '^Task-Name:' "$seed.seedtext"; then
-	task=$(grep '^Task-Name:' "$seed.seedtext" | cut -d: -f2)
-      elif grep -iq '^Task-Per-Derivative:' "$seed.seedtext"; then
-	task="$distro-$seed"
-      else
-	# If a seed is not per-derivative, then we only honour it for Ubuntu,
-	# and its task name is archive-global.
-	if [ "$distro" = ubuntu ]; then
-	  task="$seed"
-	else
-	  continue
-	fi
-      fi
-      if grep -iq '^Task-Seeds:' "$seed.seedtext"; then
-          scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
-      else
-	scanseeds="$seed"
-      fi
-      for scanseed in $scanseeds; do
-          egrep -v -- \
-              "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" |
-          awk '{print $1}' |
-          sed -e "s,$,/$arch  Task  $task," |
-          sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
-      done
-    done
-
-    # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
-    if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
-        # Keep a copy, just for convenience
-        cp build-essential build-essential_"$distro"_"$suite"_"$arch"
-        egrep -v -- \
-            "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" |
-        awk '{print $1}' |
-        sed -e "s,$,/$arch  Build-Essential  yes," |
-        sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
-    fi
-  done
-done
-echo " done."
-
-mv -f \
-    "$MISCROOT/more-extra.override.$suite.main.new" \
-    "$MISCROOT/more-extra.override.$suite.main"
+$GENERATE_EXTRA_OVERRIDES $FLAVOURS
 
 # Now generate the Supported extra overrides for all supported distros.
 SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
