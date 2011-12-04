@@ -4,14 +4,6 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <class class="zope.schema.vocabulary.SimpleVocabulary">
-    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
-  </class>
-
-  <class class="zope.schema.vocabulary.SimpleTerm">
-    <allow interface="zope.schema.interfaces.ITitledTokenizedTerm"/>
-  </class>
-
   <securedutility
       name="Component"
       component="canonical.launchpad.vocabularies.ComponentVocabulary"
