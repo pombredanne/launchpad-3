@@ -60,3 +60,5 @@ class DistroSeriesSourcePackageReleaseView(LaunchpadView):
     @property
     def label(self):
         return smartquote(self.context.title)
+
+    page_title = label
