@@ -54,7 +54,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy
     )
 from canonical.launchpad.layers import LaunchpadLayer
-import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
@@ -666,14 +665,14 @@ class ObjectFormatterAPI:
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
-        If not available, then the view's .page_title attribute or entry in
-        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
-        then a view can still choose to override them by setting the attribute
-        .override_title_breadcrumbs to True.
+        If not available, then the view's .page_title attribut is used.
+        If breadcrumbs are available, then a view can still choose to
+        override them by setting the attribute .override_title_breadcrumbs
+        to True.
         """
+        ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
-        module = canonical.launchpad.pagetitles
         hierarchy_view = getMultiAdapter(
             (view.context, request), name='+hierarchy')
         override = getattr(view, 'override_title_breadcrumbs', False)
@@ -691,33 +690,7 @@ class ObjectFormatterAPI:
             if template is None:
                 template = getattr(view, 'index', None)
                 if template is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
-            # There is no .page_title attribute on the view, so fallback to
-            # looking for an an entry in pagetitles.py.  This is deprecated
-            # though, so issue a warning.
-            filename = os.path.basename(template.filename)
-            name, ext = os.path.splitext(filename)
-            title_name = name.replace('-', '_')
-            title_object = getattr(module, title_name, None)
-            # Page titles are mandatory.
-            assert title_object is not None, (
-                'No .page_title or pagetitles.py found for %s'
-                % template.filename)
-            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
-            ## force conversions from pagetitles.py; however tests will fail
-            ## because of this output.
-            ## warnings.warn('Old style pagetitles.py entry found for %s. '
-            ##               'Switch to using a .page_title attribute on the '
-            ##               'view instead.' % template.filename,
-            ##               DeprecationWarning)
-            if isinstance(title_object, basestring):
-                return title_object
-            else:
-                title = title_object(view.context, view)
-                if title is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
-                else:
-                    return title
+                    return ROOT_TITLE
         # Use the reverse breadcrumbs.
         return SEPARATOR.join(
             breadcrumb.text for breadcrumb
@@ -2414,57 +2387,6 @@ def clean_path_segments(request):
     clean_path = clean_url[len(proto_host_port):]
     clean_path_split = clean_path.split('/')
     return clean_path_split
-
-
-class PageTemplateContextsAPI:
-    """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
-
-    This is registered to be used for the dict type.
-    """
-    # 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references
-    # to it, and all instances of CONTEXTS/fmt:pagetitle
-    implements(ITraversable)
-
-    def __init__(self, contextdict):
-        self.contextdict = contextdict
-
-    def traverse(self, name, furtherPath):
-        if name == 'pagetitle':
-            return self.pagetitle()
-        else:
-            raise TraversalError(name)
-
-    def pagetitle(self):
-        """Return the string title for the page template CONTEXTS dict.
-
-        Take the simple filename without extension from
-        self.contextdict['template'].filename, replace any hyphens with
-        underscores, and use this to look up a string, unicode or
-        function in the module canonical.launchpad.pagetitles.
-
-        If no suitable object is found in canonical.launchpad.pagetitles, emit
-        a warning that this page has no title, and return the default page
-        title.
-        """
-        template = self.contextdict['template']
-        filename = os.path.basename(template.filename)
-        name, ext = os.path.splitext(filename)
-        name = name.replace('-', '_')
-        titleobj = getattr(canonical.launchpad.pagetitles, name, None)
-        if titleobj is None:
-            raise AssertionError(
-                 "No page title in canonical.launchpad.pagetitles "
-                 "for %s" % name)
-        elif isinstance(titleobj, basestring):
-            return titleobj
-        else:
-            context = self.contextdict['context']
-            view = self.contextdict['view']
-            title = titleobj(context, view)
-            if title is None:
-                return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
-            else:
-                return title
 
 
 class PermissionRequiredQuery:
