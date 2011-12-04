@@ -13,74 +13,6 @@
   </class>
 
   <securedutility
-    name="Bug"
-    component="canonical.launchpad.vocabularies.BugVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BugVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="BugNominatableSeries"
-    component="canonical.launchpad.vocabularies.BugNominatableSeriesVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BugNominatableProductSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-  <class class="canonical.launchpad.vocabularies.BugNominatableDistroSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="BugTracker"
-    component="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BugTrackerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="WebBugTracker"
-    component="canonical.launchpad.vocabularies.WebBugTrackerVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.WebBugTrackerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-  <securedutility
-    name="BugWatch"
-    component="canonical.launchpad.vocabularies.BugWatchVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BugWatchVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
       name="Component"
       component="canonical.launchpad.vocabularies.ComponentVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory"
@@ -102,19 +34,6 @@
   </securedutility>
 
   <class class="canonical.launchpad.vocabularies.CountryNameVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="DistributionUsingMalone"
-    component="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
@@ -222,14 +141,6 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
-  <securedutility
-    name="ProjectProductsUsingMalone"
-    component="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
 
   <securedutility
     name="TranslationGroup"

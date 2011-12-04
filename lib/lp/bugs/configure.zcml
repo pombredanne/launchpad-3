@@ -13,6 +13,7 @@
 
   <authorizations module=".security" />
 
+  <include file="vocabulary.zcml"/>
   <include package=".browser"/>
 
   <publisher
