@@ -11,12 +11,10 @@ __metaclass__ = type
 
 __all__ = [
     'ComponentVocabulary',
-    'CountryNameVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
-    'LanguageVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
     'ProcessorFamilyVocabulary',
@@ -29,7 +27,6 @@ __all__ = [
 
 from sqlobject import (
     AND,
-    SQLObjectNotFound,
     )
 from storm.expr import (
     SQL,
@@ -53,8 +50,7 @@ from canonical.launchpad.webapp.vocabulary import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.model.person import Person
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.services.worlddata.model.country import Country
-from lp.services.worlddata.model.language import Language
+from lp.services.worlddata.model.vocabularies import LanguageVocabulary
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
@@ -78,51 +74,6 @@ class ComponentVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
-
-
-# Country.name may have non-ASCII characters, so we can't use
-# NamedSQLObjectVocabulary here.
-
-class CountryNameVocabulary(SQLObjectVocabularyBase):
-    """A vocabulary for country names."""
-
-    _table = Country
-    _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
-
-
-class LanguageVocabulary(SQLObjectVocabularyBase):
-    """All the languages known by Launchpad."""
-
-    _table = Language
-    _orderBy = 'englishname'
-
-    def __contains__(self, language):
-        """See `IVocabulary`."""
-        assert ILanguage.providedBy(language), (
-            "'in LanguageVocabulary' requires ILanguage as left operand, "
-            "got %s instead." % type(language))
-        return super(LanguageVocabulary, self).__contains__(language)
-
-    def toTerm(self, obj):
-        """See `IVocabulary`."""
-        return SimpleTerm(obj, obj.code, obj.displayname)
-
-    def getTerm(self, obj):
-        """See `IVocabulary`."""
-        if obj not in self:
-            raise LookupError(obj)
-        return SimpleTerm(obj, obj.code, obj.displayname)
-
-    def getTermByToken(self, token):
-        """See `IVocabulary`."""
-        try:
-            found_language = Language.byCode(token)
-        except SQLObjectNotFound:
-            raise LookupError(token)
-        return self.getTerm(found_language)
 
 
 class TranslatableLanguageVocabulary(LanguageVocabulary):

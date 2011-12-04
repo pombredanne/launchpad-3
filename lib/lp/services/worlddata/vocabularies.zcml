@@ -3,6 +3,33 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
+
+  <securedutility
+      name="CountryName"
+      component="lp.services.worlddata.vocabularies.CountryNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.CountryNameVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
+    name="Language"
+    component="lp.services.worlddata.vocabularies.LanguageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.LanguageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
   <securedutility
     name="TimezoneName"
     component="lp.services.worlddata.vocabularies.TimezoneNameVocabulary"

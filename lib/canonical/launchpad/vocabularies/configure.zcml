@@ -26,19 +26,6 @@
 
 
   <securedutility
-      name="CountryName"
-      component="canonical.launchpad.vocabularies.CountryNameVocabulary"
-      provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.CountryNameVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
     name="FilteredDeltaLanguagePack"
     component="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
@@ -86,19 +73,6 @@
   </securedutility>
 
   <class class="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="Language"
-    component="canonical.launchpad.vocabularies.LanguageVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.LanguageVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
