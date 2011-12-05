@@ -55,6 +55,20 @@
                 config_slot: true
             });
             orderby.render();
+            orderby.updateVisibility({
+                id: true,
+                title: true,
+                importance: true,
+                status: true,
+                heat: true,
+                reporter: false,
+                assignee: false,
+                targetname: false,
+                milestone: false,
+                datecreated: false,
+                date_last_updated: false,
+                tag: false
+            });
             Y.on('orderbybar:sort', function(e) {
                 navigator.first_batch(e);
             });
