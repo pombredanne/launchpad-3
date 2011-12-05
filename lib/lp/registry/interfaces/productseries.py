@@ -189,9 +189,9 @@ class IProductSeriesPublic(
     displayname = exported(
         TextLine(
             title=_('Display Name'),
-            description=_('Display name, in this case we have removed the '
-                          'underlying database field, and this attribute '
-                          'just returns the name.')),
+            description=_(
+                "Display name.  In this case we have removed the underlying "
+                "database field, and this attribute just returns the name.")),
         exported_as='display_name')
 
     releases = exported(

@@ -302,7 +302,8 @@ refuse to commit to the branch.
     <BLANKLINE>
     DEBUG ...
     INFO Unlock.
-    ERROR Failure: ConcurrentUpdateError(...Simulated race condition...)
+    ERROR Failure in gazblachko/trunk:
+    ConcurrentUpdateError(...Simulated race condition...)
     INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
 
 
@@ -322,7 +323,8 @@ pending translations BranchJobs on the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    ERROR Failure: ConcurrentUpdateError(...Translations branch for
+    ERROR Failure in gazblachko/trunk:
+    ConcurrentUpdateError(...Translations branch for
     Gazblachko trunk series has pending translations changes.
     Not committing...)
     INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
