@@ -13,6 +13,7 @@
 
   <authorizations module=".security" />
 
+  <include file="vocabularies.zcml"/>
   <include package=".browser"/>
 
   <publisher
@@ -1177,7 +1178,7 @@
 
   <securedutility
     name="UsesBugsDistribution"
-    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    component="lp.bugs.vocabularies.UsesBugsDistributionVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
