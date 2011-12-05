@@ -165,26 +165,33 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # create a weak reference to our object in our security policy cache.
         objecttoauthorize = removeAllProxies(objecttoauthorize)
 
-        participations = [participation
-                          for participation in self.participations
-                          if participation.principal is not system_user]
+        participations = [
+            participation for participation in self.participations
+            if participation.principal is not system_user]
+
+        if len(participations) > 1:
+            raise RuntimeError("More than one principal participating.")
+
+        # The participation's cache of (object -> permission -> result), or
+        # None if the participation does not support caching.
+        participation_cache = None
+        # A cache of (permission -> result) for objecttoauthorize, or None if
+        # the participation does not support caching. This resides as a value
+        # of participation_cache.
+        object_cache = None
+
         if len(participations) == 0:
             principal = None
-            cache = None
-        elif len(participations) > 1:
-            raise RuntimeError("More than one principal participating.")
         else:
             participation = participations[0]
             if IApplicationRequest.providedBy(participation):
                 participation_cache = participation.annotations.setdefault(
                     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
                     weakref.WeakKeyDictionary())
-                cache = participation_cache.setdefault(objecttoauthorize, {})
-                if permission in cache:
-                    return cache[permission]
-            else:
-                participation_cache = None
-                cache = None
+                object_cache = participation_cache.setdefault(
+                    objecttoauthorize, {})
+                if permission in object_cache:
+                    return object_cache[permission]
             principal = participation.principal
 
         if (principal is not None and
