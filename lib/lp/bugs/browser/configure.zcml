@@ -1198,4 +1198,36 @@
         permission="zope.Public" />
 
     </facet>
+    <browser:defaultView
+        for="lp.registry.interfaces.distribution.IDistribution"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.person.IPerson"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.product.IProduct"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
+        name="+bugs"
+        layer="lp.bugs.publisher.BugsLayer"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
 </configure>

@@ -2460,8 +2460,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         bug_target = self.context.context
         if IDistribution.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IDistroSeries.providedBy(bug_target):
@@ -2471,8 +2469,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 )
         elif IProduct.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IProductSeries.providedBy(bug_target):
@@ -2674,6 +2670,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+    @property
+    def show_config_portlet(self):
+        if (IDistribution.providedBy(self.context) or
+            IProduct.providedBy(self.context)):
+            return True
+        else:
+            return False
 
     @property
     def columns_to_show(self):
