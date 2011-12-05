@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -321,12 +321,6 @@ class IBuildFarmJobSource(Interface):
 
 class IBuildFarmJobSet(Interface):
     """A utility representing a set of build farm jobs."""
-
-    def getSpecificJobs(jobs):
-        """Return the specific build jobs associated with each of the jobs
-        in the provided job list.
-
-        """
 
     def getBuildsForBuilder(builder_id, status=None, user=None):
         """Return `IBuildFarmJob` records touched by a builder.

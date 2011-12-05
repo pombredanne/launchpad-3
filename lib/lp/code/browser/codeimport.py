@@ -111,6 +111,8 @@ class CodeImportSetView(LaunchpadView):
     We present the CodeImportSet as a list of all imports.
     """
 
+    page_title = 'Code Imports'
+
     def initialize(self):
         """See `LaunchpadView.initialize`."""
         review_status_field = copy_field(

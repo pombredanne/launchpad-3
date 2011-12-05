@@ -87,6 +87,10 @@ class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
 
+    @property
+    def page_title(self):
+        return self.context.title
+
 
 class DistroArchSeriesAddView(LaunchpadFormView):
 
