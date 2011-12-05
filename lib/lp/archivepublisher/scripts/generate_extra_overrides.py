@@ -241,8 +241,8 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.setUp()
 
         series_name = self.series.name
-        series_architectures = [arch.architecturetag
-                                for arch in self.series.architectures]
+        series_architectures = sorted(
+            [arch.architecturetag for arch in self.series.architectures])
 
         # This takes a while.  Ensure that we do it without keeping a
         # database transaction open.
