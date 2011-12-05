@@ -15,7 +15,7 @@
 .yui3-orderbybar ul li {
     float: left;
     margin: 5px 3px;
-    padding: 0 6px;
+    padding: 0 8px;
     background: #DDD;
     border-radius: 10px;
     cursor: pointer;
@@ -27,7 +27,8 @@
 
 .yui3-orderbybar .sort-arr .sprite {
     vertical-align: middle;
-    margin-left: 5px;
+    margin-left: 2px;
+    padding-left: 12px;
     }
 
 .yui3-orderbybar .config-widget {
