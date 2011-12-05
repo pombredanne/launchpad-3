@@ -226,7 +226,7 @@ relevant listings:
     >>> milestone = find_tags_by_class(browser.contents, 'sprite milestone')
     >>> print milestone[0]
     <a href="http://launchpad.dev/debian/+milestone/3.1" alt="milestone 3.1"
-    title="Linked to milestone 3.1" class="sprite milestone"></a>
+    title="Linked to milestone 3.1" class="sprite milestone">&nbsp;</a>
 
 
 Patches also appear as badges in bug listings.

@@ -36,6 +36,8 @@ from lp.services.propertycache import cachedproperty
 
 class BazaarApplicationView(LaunchpadView):
 
+    page_title = 'Launchpad Branches'
+
     @property
     def branch_count(self):
         """Return the number of public branches."""
@@ -152,6 +154,8 @@ class BazaarProjectsRedirect(LaunchpadView):
 
 class BazaarProductView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
+
+    page_title = 'Projects with active branches'
 
     def _make_distribution_map(self, values, percentile_map):
         """Given some values and a map of percentiles to other values, return

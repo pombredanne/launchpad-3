@@ -1034,6 +1034,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return '%s in Launchpad' % self.context.displayname
 
     @property
+    def page_description(self):
+        return '\n'.filter(None, [self.context.summary, self.context.description])
+
+    @property
     def show_license_status(self):
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
 

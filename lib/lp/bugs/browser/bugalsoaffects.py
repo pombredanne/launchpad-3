@@ -17,7 +17,6 @@ from lazr.enum import (
     Item,
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
-from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError
@@ -287,8 +286,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
         else:
             task_target = data['distribution']
             if data.get('sourcepackagename') is not None:
-                task_target = task_target.getSourcePackage(
-                    data['sourcepackagename'])
+                spn_or_dsp = data['sourcepackagename']
+                if IDistributionSourcePackage.providedBy(spn_or_dsp):
+                    task_target = spn_or_dsp
+                else:
+                    task_target = task_target.getSourcePackage(spn_or_dsp)
         self.task_added = self.context.bug.addTask(
             getUtility(ILaunchBag).user, task_target)
         task_added = self.task_added
@@ -344,9 +346,25 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(task_added)
 
 
+class IAddDistroBugTaskForm(IAddBugTaskForm):
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+                      "Leave blank if you are not sure."),
+        vocabulary='DistributionSourcePackage')
+
+
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
+
+    @property
+    def schema(self):
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IAddDistroBugTaskForm
+        else:
+            return IAddBugTaskForm
 
     custom_widget(
         'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
@@ -355,17 +373,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
-
-    def setUpFields(self):
-        super(DistroBugTaskCreationStep, self).setUpFields()
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            # Replace the default field with a field that uses the better
-            # vocabulary.
-            self.form_fields = self.form_fields.omit('sourcepackagename')
-            new_sourcepackagename = copy_field(
-                IAddBugTaskForm['sourcepackagename'],
-                vocabulary='DistributionSourcePackage')
-            self.form_fields += form.Fields(new_sourcepackagename)
 
     @property
     def initial_values(self):
@@ -441,7 +448,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 distribution.displayname, entered_package,
                 binary_tracking)
             self.setFieldError('sourcepackagename', error)
-        else:
+        elif not IDistributionSourcePackage.providedBy(sourcepackagename):
             try:
                 target = distribution
                 if sourcepackagename:

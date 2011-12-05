@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -20,8 +23,14 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.launchpad import LaunchpadRootNavigation
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.app.browser.launchpad import (
+    iter_view_registrations,
+    LaunchpadRootNavigation,
+    )
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -424,3 +433,17 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
+
+
+class TestIterViewRegistrations(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_iter_view_registrations(self):
+        """iter_view_registrations provides only registrations of class."""
+        macros = getMultiAdapter(
+            (object(), LaunchpadTestRequest()), name='+base-layout-macros')
+        names = set(
+            reg.name for reg in iter_view_registrations(macros.__class__))
+        self.assertIn('+base-layout-macros', names)
+        self.assertNotIn('+related-pages', names)
