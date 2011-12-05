@@ -25,6 +25,11 @@
     background: #B8B8B8;
     }
 
+.yui3-orderbybar .sort-arr .sprite {
+    vertical-align: middle;
+    margin-left: 5px;
+    }
+
 .yui3-orderbybar .config-widget {
     float: right;
     border-left: 1px solid #EEE;
