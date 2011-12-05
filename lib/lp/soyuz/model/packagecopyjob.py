@@ -373,7 +373,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @property
     def sponsored(self):
-        name =  self.metadata['sponsored']
+        name = self.metadata['sponsored']
         if name is None:
             return None
         return getUtility(IPersonSet).getByName(name)

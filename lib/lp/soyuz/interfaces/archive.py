@@ -952,7 +952,6 @@ class IArchiveView(IHasBuildRecords):
             required=False),
         component_name=TextLine(title=_("Component name"), required=False),
         )
-
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @call_with(eager_load=True)

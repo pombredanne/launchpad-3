@@ -371,7 +371,7 @@ class TestCopyPackage(WebServiceTestCase):
         ws_target_archive.copyPackages(
             source_names=[source_name], from_archive=ws_source_archive,
             to_pocket=to_pocket.name, to_series=to_series.name,
-            include_binaries=False, sponsored = ws_sponsored_dude)
+            include_binaries=False, sponsored=ws_sponsored_dude)
         transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
