@@ -116,15 +116,20 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.germinate_logger.addHandler(handler)
         self.germinate_logger.propagate = False
 
-        self.seeds = {}
-        self.seed_structures = {}
+    def makeSeedStructures(self, series_name, flavours, seed_bases=None):
+        structures = {}
+        for flavour in flavours:
+            structures[flavour] = SeedStructure(
+                '%s.%s' % (flavour, series_name), seed_bases=seed_bases)
+        return structures
 
     def outputPath(self, flavour, series_name, arch, base):
         return os.path.join(
             self.config.germinateroot,
             '%s_%s_%s_%s' % (base, flavour, series_name, arch))
 
-    def runGerminate(self, override_file, series_name, arch, flavours):
+    def runGerminate(self, override_file, series_name, arch, flavours,
+                     structures):
         germinator = Germinator(arch)
 
         # Read archive metadata.
@@ -144,7 +149,7 @@ class GenerateExtraOverrides(LaunchpadScript):
                                        extra={'progress': True})
 
             # Expand dependencies.
-            structure = self.seed_structures[flavour]
+            structure = structures[flavour]
             germinator.plant_seeds(structure)
             germinator.grow(structure)
             germinator.add_extras(structure)
@@ -225,16 +230,16 @@ class GenerateExtraOverrides(LaunchpadScript):
 
     def generateExtraOverrides(self, series_name, series_architectures,
                                flavours, seed_bases=None):
-        for flavour in flavours:
-            self.seed_structures[flavour] = SeedStructure(
-                '%s.%s' % (flavour, series_name), seed_bases=seed_bases)
+        structures = self.makeSeedStructures(
+            series_name, flavours, seed_bases=seed_bases)
 
         override_path = os.path.join(
             self.config.miscroot,
             'more-extra.override.%s.main' % series_name)
         with AtomicFile(override_path) as override_file:
             for arch in series_architectures:
-                self.runGerminate(override_file, series_name, arch, flavours)
+                self.runGerminate(
+                    override_file, series_name, arch, flavours, structures)
 
     def process(self, seed_bases=None):
         """Do the bulk of the work."""
