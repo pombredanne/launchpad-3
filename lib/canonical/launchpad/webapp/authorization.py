@@ -180,7 +180,10 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     return cache[permission]
             else:
                 cache = None
-            principal = participation.principal
+            # As with objecttoauthorize, all proxies must be removed to
+            # avoid recursive calls because there is a a weak reference
+            # to our object in our security policy cache.
+            principal = removeAllProxies(participation.principal)
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
