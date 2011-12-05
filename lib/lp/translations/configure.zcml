@@ -12,6 +12,7 @@
     i18n_domain="launchpad">
 
   <include package=".browser"/>
+  <include file="vocabularies.zcml"/>
 
   <publisher
       name="translations"

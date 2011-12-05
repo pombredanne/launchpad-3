@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'CveContextMenu',
+    'CveIndexView',
     'CveLinkView',
     'CveSetContextMenu',
     'CveSetNavigation',
@@ -29,6 +30,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.validators.cve import valid_cve
+from lp.bugs.browser.buglinktarget import BugLinksListingView
 from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
@@ -68,6 +70,14 @@ class CveSetContextMenu(ContextMenu):
         text = 'Find CVEs'
         summary = 'Find CVEs in Launchpad'
         return Link('', text, summary)
+
+
+class CveIndexView(BugLinksListingView):
+    """CVE index page."""
+
+    @property
+    def page_title(self):
+        return self.context.displayname
 
 
 class CveLinkView(LaunchpadFormView):

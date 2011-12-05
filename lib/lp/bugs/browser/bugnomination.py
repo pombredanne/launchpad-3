@@ -223,6 +223,7 @@ class BugNominationEditView(LaunchpadFormView):
         return 'Approve or decline nomination for bug #%d in %s' % (
             self.context.bug.id, self.context.target.bugtargetdisplayname)
     label = title
+    page_title = title
 
     def initialize(self):
         self.current_bugtask = getUtility(ILaunchBag).bugtask
