@@ -107,3 +107,41 @@ about the team.
     ...
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
         'name', 'launchpad.LimitedView')
+
+A person with visibility to any of the branches owned by the private team will
+be granted limited view permission on the team.
+
+For private branches, a user needs to be subscribed to the branch for the
+branch (and hence team) to be visible.
+
+    >>> private_team_branch = factory.makeBranch(
+    ...     owner=priv_team, private=True)
+    >>> login_person(pub_member)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    False
+
+    >>> login_person(priv_owner)
+    >>> sub = factory.makeBranchSubscription(
+    ...     branch=private_team_branch, person=pub_member,
+    ...     subscribed_by=priv_owner)
+
+    >>> login_person(pub_member)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    True
+
+Subscribers to the teams private PPA have limited view permission.
+
+    >>> archive = factory.makeArchive(private=True, owner=priv_team)
+    >>> archive_subscriber = factory.makePerson()
+    >>> login_person(priv_owner)
+    >>> sub = archive.newSubscription(
+    ...     archive_subscriber, registrant=archive.owner)
+
+    >>> login_person(archive_subscriber)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    True
+
+Anonymous users do not have permission.
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    False

@@ -155,12 +155,16 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
     A user must have launchpad.LimitedView permission to use
     TestTalesFormatterAPI with private teams.
     """
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestTalesFormatterAPI, self).setUp()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        logo = self.factory.makeLibraryFileAlias(
+            filename='papa.png', content_type='image/png')
         self.team = self.factory.makeTeam(
-            name='team', displayname='a team',
+            name='team', displayname='a team', icon=icon, logo=logo,
             visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
@@ -175,10 +179,11 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
                 request, 'launchpad.LimitedView', [self.team])
         return formatter, request, any_person
 
-    def _tales_value(self, attr, request):
+    def _tales_value(self, attr, request, path='fmt'):
         # Evaluate the given formatted attribute value on team.
-        return test_tales(
-            "team/fmt:%s" % attr, team=self.team, request=request)
+        result = test_tales(
+            "team/%s:%s" % (path, attr), team=self.team, request=request)
+        return result
 
     def _test_can_view_attribute_no_login(self, attr, hidden=None):
         # Test attribute access with no login.
@@ -227,6 +232,26 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
 
     def test_can_view_url(self):
         self._test_can_view_attribute('url')
+
+    def test_can_view_icon(self):
+        # Any user can view private team icons so there's no need to set up
+        # launchpad.LimitedView permissions to test that.
+        formatter, request, ignore = self._make_formatter()
+        value = self._tales_value('icon', request)
+        self.assertEqual(
+            '<img src="%s" width="14" height="14" />'
+            % self.team.icon.http_url,
+            value)
+
+    def test_can_view_logo(self):
+        # Any user can view private team logos so there's no need to set up
+        # launchpad.LimitedView permissions to test that.
+        formatter, request, ignore = self._make_formatter()
+        value = self._tales_value('logo', request, 'image')
+        self.assertEqual(
+            '<img alt="" width="64" height="64" src="%s" />'
+            % self.team.logo.http_url,
+            value)
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):
