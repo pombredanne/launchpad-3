@@ -327,7 +327,8 @@ def clear_cache():
             # LaunchpadBrowserRequest provides a ``clearSecurityPolicyCache``
             # method, but it is not in an interface, and not implemented by
             # all classes that implement IApplicationRequest.
-            del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+            if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in p.annotations:
+                del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
 
 
 class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):

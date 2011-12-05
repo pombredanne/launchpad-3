@@ -117,6 +117,9 @@ from canonical.launchpad.webapp.adapter import (
     start_sql_logging,
     stop_sql_logging,
     )
+from canonical.launchpad.webapp.authorization import (
+    clear_cache as clear_permission_cache,
+    )
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
@@ -329,6 +332,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     # called after {item_creator} has been run {first_round_number}
     # times.
     flush_database_caches()
+    clear_permission_cache()
     with StormStatementRecorder() as recorder1:
         tested_method()
     # Run {item_creator} {second_round_number} more times.
@@ -338,6 +342,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
         item_creator()
     # Record again the number of queries issued.
     flush_database_caches()
+    clear_permission_cache()
     with StormStatementRecorder() as recorder2:
         tested_method()
     return recorder1, recorder2
