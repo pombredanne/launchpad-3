@@ -145,6 +145,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param requester: The user requesting the copy.
         :param sponsored: The user who is being sponsored to make the copy.
+            The person who is making this request then becomes the sponsor.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
