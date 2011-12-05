@@ -141,8 +141,23 @@ Subscribers to the teams private PPA have limited view permission.
     >>> login_person(archive_subscriber)
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
+
+Users with LimitedView can know identifying information like name,
+displayname, and unique_name, but cannot know other information like
+teamowner.
+
     >>> print priv_team.name
     priv-team
+
+    >>> print priv_team.displayname
+    Priv Team
+
+    >>> print priv_team.unique_displayname
+    Priv Team (priv-team)
+
+    >>> print priv_team.icon
+    None
+
     >>> print priv_team.teamowner
     Traceback (most recent call last):
     ...
