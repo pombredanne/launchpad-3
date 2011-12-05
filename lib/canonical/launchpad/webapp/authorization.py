@@ -7,7 +7,6 @@ from collections import (
     deque,
     Iterable,
     )
-from functools import partial
 import warnings
 import weakref
 
@@ -221,7 +220,7 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
     Adapters are permitted to delegate checks to other adapters, and this
     manages that delegation such that the minimum number of checks are made,
-    subject to a breath-first check of delegations.
+    subject to a breadth-first check of delegations.
 
     This also updates `cache` as it goes along, though `cache` can be `None`
     if no caching is desired. Only leaf values are cached; the results of a
