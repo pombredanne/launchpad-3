@@ -18,6 +18,10 @@ from germinate.seeds import SeedStructure
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.dbpolicy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -115,28 +119,28 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.seeds = {}
         self.seed_structures = {}
 
-    def outputPath(self, flavour, arch, base):
+    def outputPath(self, flavour, series_name, arch, base):
         return os.path.join(
             self.config.germinateroot,
-            '%s_%s_%s_%s' % (base, flavour, self.series.name, arch))
+            '%s_%s_%s_%s' % (base, flavour, series_name, arch))
 
-    def runGerminate(self, override_file, arch, flavours):
+    def runGerminate(self, override_file, series_name, arch, flavours):
         germinator = Germinator(arch)
 
         # Read archive metadata.
         archive = TagFile(
-            self.series.name, self.components, arch,
+            series_name, self.components, arch,
             'file:/%s' % self.config.archiveroot, cleanup=True)
         germinator.parse_archive(archive)
 
         for flavour in flavours:
             self.logger.info('Germinating for %s/%s/%s',
-                             flavour, self.series.name, arch)
+                             flavour, series_name, arch)
             # Add this to the germinate log as well so that that can be
             # debugged more easily.  Log a separator line first.
             self.germinate_logger.info('', extra={'progress': True})
             self.germinate_logger.info('Germinating for %s/%s/%s',
-                                       flavour, self.series.name, arch,
+                                       flavour, series_name, arch,
                                        extra={'progress': True})
 
             # Expand dependencies.
@@ -149,13 +153,15 @@ class GenerateExtraOverrides(LaunchpadScript):
 
             # The structure file makes it possible to figure out how the
             # other output files relate to each other.
-            structure.write(self.outputPath(flavour, arch, 'structure'))
+            structure.write(self.outputPath(
+                flavour, series_name, arch, 'structure'))
 
             # "all" and "all.sources" list the full set of binary and source
             # packages respectively for a given flavour/suite/architecture
             # combination.
-            all_path = self.outputPath(flavour, arch, 'all')
-            all_sources_path = self.outputPath(flavour, arch, 'all.sources')
+            all_path = self.outputPath(flavour, series_name, arch, 'all')
+            all_sources_path = self.outputPath(
+                flavour, series_name, arch, 'all.sources')
             germinator.write_all_list(structure, all_path)
             germinator.write_all_source_list(structure, all_sources_path)
 
@@ -164,7 +170,8 @@ class GenerateExtraOverrides(LaunchpadScript):
             # are useful for debugging, so it's best to just write them all.
             for seedname in structure.names:
                 germinator.write_full_list(
-                    structure, self.outputPath(flavour, arch, seedname),
+                    structure,
+                    self.outputPath(flavour, series_name, arch, seedname),
                     seedname)
 
             def writeOverrides(seedname, key, value):
@@ -216,16 +223,36 @@ class GenerateExtraOverrides(LaunchpadScript):
             if 'build-essential' in structure.names and flavour == flavours[0]:
                 writeOverrides('build-essential', 'Build-Essential', 'yes')
 
-    def main(self):
-        self.setUp()
-
-        for flavour in self.args:
+    def generateExtraOverrides(self, series_name, series_architectures,
+                               flavours):
+        for flavour in flavours:
             self.seed_structures[flavour] = SeedStructure(
-                '%s.%s' % (flavour, self.series.name))
+                '%s.%s' % (flavour, series_name))
 
         override_path = os.path.join(
             self.config.miscroot,
-            'more-extra.override.%s.main' % self.series.name)
+            'more-extra.override.%s.main' % series_name)
         with AtomicFile(override_path) as override_file:
-            for arch in self.series.architectures:
-                self.runGerminate(override_file, arch, self.args)
+            for arch in series_architectures:
+                self.runGerminate(override_file, series_name, arch, flavours)
+
+    def process(self):
+        """Do the bulk of the work."""
+        self.setUp()
+
+        series_name = self.series.name
+        series_architectures = [arch.architecturetag
+                                for arch in self.series.architectures]
+
+        # This takes a while.  Ensure that we do it without keeping a
+        # database transaction open.
+        self.txn.commit()
+        with DatabaseBlockedPolicy():
+            self.generateExtraOverrides(
+                series_name, series_architectures, self.args)
+
+    def main(self):
+        """See `LaunchpadScript`."""
+        # This code has no need to alter the database.
+        with SlaveOnlyDatabasePolicy():
+            self.process()
