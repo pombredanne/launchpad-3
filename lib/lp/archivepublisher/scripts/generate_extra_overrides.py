@@ -236,7 +236,7 @@ class GenerateExtraOverrides(LaunchpadScript):
             for arch in series_architectures:
                 self.runGerminate(override_file, series_name, arch, flavours)
 
-    def process(self):
+    def process(self, seed_bases=None):
         """Do the bulk of the work."""
         self.setUp()
 
@@ -249,7 +249,8 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.txn.commit()
         with DatabaseBlockedPolicy():
             self.generateExtraOverrides(
-                series_name, series_architectures, self.args)
+                series_name, series_architectures, self.args,
+                seed_bases=seed_bases)
 
     def main(self):
         """See `LaunchpadScript`."""
