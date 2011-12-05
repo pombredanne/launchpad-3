@@ -149,22 +149,20 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         self.assertEqual(expected, result)
 
 
-class TestTalesFormatterAPI(TestCaseWithFactory):
-    """ Test permissions required to access TalesFormatterAPI methods.
+class TestTeamFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TeamFormatterAPI methods.
 
     A user must have launchpad.LimitedView permission to use
-    TestTalesFormatterAPI with private teams.
+    TeamFormatterAPI with private teams.
     """
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestTalesFormatterAPI, self).setUp()
+        super(TestTeamFormatterAPI, self).setUp()
         icon = self.factory.makeLibraryFileAlias(
             filename='smurf.png', content_type='image/png')
-        logo = self.factory.makeLibraryFileAlias(
-            filename='papa.png', content_type='image/png')
         self.team = self.factory.makeTeam(
-            name='team', displayname='a team', icon=icon, logo=logo,
+            name='team', displayname='a team', icon=icon,
             visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
@@ -234,24 +232,8 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
         self._test_can_view_attribute('url')
 
     def test_can_view_icon(self):
-        # Any user can view private team icons so there's no need to set up
-        # launchpad.LimitedView permissions to test that.
-        formatter, request, ignore = self._make_formatter()
-        value = self._tales_value('icon', request)
-        self.assertEqual(
-            '<img src="%s" width="14" height="14" />'
-            % self.team.icon.http_url,
-            value)
-
-    def test_can_view_logo(self):
-        # Any user can view private team logos so there's no need to set up
-        # launchpad.LimitedView permissions to test that.
-        formatter, request, ignore = self._make_formatter()
-        value = self._tales_value('logo', request, 'image')
-        self.assertEqual(
-            '<img alt="" width="64" height="64" src="%s" />'
-            % self.team.logo.http_url,
-            value)
+        self._test_can_view_attribute(
+            'icon', '<span class="sprite team"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):

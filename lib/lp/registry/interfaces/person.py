@@ -661,9 +661,17 @@ class IPersonPublic(Interface):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
+    is_team = exported(
+        Bool(title=_('Is this object a team?'), readonly=True))
+
+    def isTeam():
+        """Deprecated.  Use IPerson.is_team instead.
+
+        True if this Person is actually a Team, otherwise False.
+        """
 
 
-class IPersonLimitedView(Interface):
+class IPersonLimitedView(IHasIcon, IHasLogo):
     """IPerson attributes that require launchpad.LimitedView permission."""
 
     name = exported(
@@ -683,26 +691,6 @@ class IPersonLimitedView(Interface):
         exported_as='display_name')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
-
-
-class IPersonViewRestricted(IHasBranches, IHasSpecifications,
-                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson):
-    """IPerson attributes that require launchpad.View permission."""
-    account = Object(schema=IAccount)
-    accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
-    karma = exported(
-        Int(title=_('Karma'), readonly=True,
-            description=_('The cached total karma for this person.')))
-    homepage_content = exported(
-        Text(title=_("Homepage Content"), required=False,
-            description=_(
-                "The content of your profile page. Use plain text, "
-                "paragraphs are preserved and URLs are linked in pages.")))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -727,6 +715,26 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                 "is a logo, a small picture or a personal mascot. It should "
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+
+
+class IPersonViewRestricted(IHasBranches, IHasSpecifications,
+                    IHasMergeProposals, IHasMugshot,
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings, IQuestionsPerson):
+    """IPerson attributes that require launchpad.View permission."""
+    account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
+    password = PasswordField(
+        title=_('Password'), required=True, readonly=False)
+    karma = exported(
+        Int(title=_('Karma'), readonly=True,
+            description=_('The cached total karma for this person.')))
+    homepage_content = exported(
+        Text(title=_("Homepage Content"), required=False,
+            description=_(
+                "The content of your profile page. Use plain text, "
+                "paragraphs are preserved and URLs are linked in pages.")))
 
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
@@ -792,8 +800,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
-    is_team = exported(
-        Bool(title=_('Is this object a team?'), readonly=True))
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = exported(
@@ -1175,12 +1181,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
         This method must not be called if this person is not an indirect
         member of the given team.
-        """
-
-    def isTeam():
-        """Deprecated.  Use IPerson.is_team instead.
-
-        True if this Person is actually a Team, otherwise False.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
