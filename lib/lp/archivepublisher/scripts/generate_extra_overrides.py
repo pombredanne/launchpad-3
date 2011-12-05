@@ -54,7 +54,7 @@ class GenerateExtraOverrides(LaunchpadScript):
     def add_my_options(self):
         """Add a 'distribution' context option."""
         self.parser.add_option(
-            '-d', '--distribution', dest='distribution_name',
+            '-d', '--distribution', dest='distribution',
             default='ubuntu', help='Context distribution name.')
 
     @property
@@ -68,7 +68,7 @@ class GenerateExtraOverrides(LaunchpadScript):
     def processOptions(self):
         try:
             self.distribution = getUtility(
-                IDistributionSet)[self.options.distribution_name]
+                IDistributionSet)[self.options.distribution]
         except NotFoundError, err:
             raise LaunchpadScriptFailure(
                 "Could not find distribution %s" % err)
@@ -83,7 +83,7 @@ class GenerateExtraOverrides(LaunchpadScript):
         else:
             raise LaunchpadScriptFailure(
                 'There is no DEVELOPMENT distroseries for %s' %
-                self.options.distribution_name)
+                self.options.distribution)
         self.series = series[0]
 
         # Even if DistroSeries.component_names starts including partner, we
@@ -101,7 +101,7 @@ class GenerateExtraOverrides(LaunchpadScript):
         else:
             raise LaunchpadScriptFailure(
                 'There is no PRIMARY archive for %s' %
-                self.options.distribution_name)
+                self.options.distribution)
 
     def setUp(self):
         """Process options, and set up internal state."""
