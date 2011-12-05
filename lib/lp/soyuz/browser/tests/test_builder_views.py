@@ -303,7 +303,7 @@ class TestBuilderHistoryView(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Private build icon', 'img', attrs={'src': '/@@/private'}))
         private_build_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag('Private build', 'td', text='private Build'))
+            soupmatchers.Tag('Private build', 'td', text='Private job'))
 
         self.assertThat(
             view.render(),
