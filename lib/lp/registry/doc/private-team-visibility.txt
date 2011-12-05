@@ -114,6 +114,7 @@ be granted limited view permission on the team.
 For private branches, a user needs to be subscribed to the branch for the
 branch (and hence team) to be visible.
 
+    >>> login_person(priv_owner)
     >>> private_team_branch = factory.makeBranch(
     ...     owner=priv_team, private=True)
     >>> login_person(pub_member)
@@ -131,15 +132,22 @@ branch (and hence team) to be visible.
 
 Subscribers to the teams private PPA have limited view permission.
 
+    >>> login_person(priv_owner)
     >>> archive = factory.makeArchive(private=True, owner=priv_team)
     >>> archive_subscriber = factory.makePerson()
-    >>> login_person(priv_owner)
     >>> sub = archive.newSubscription(
     ...     archive_subscriber, registrant=archive.owner)
 
     >>> login_person(archive_subscriber)
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
+    >>> print priv_team.name
+    priv-team
+    >>> print priv_team.teamowner
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>,
+        'teamowner', 'launchpad.View')
 
 Anonymous users do not have permission.
     >>> login(ANONYMOUS)

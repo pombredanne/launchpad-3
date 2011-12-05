@@ -911,8 +911,6 @@
             <allow
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
-                interface="lp.registry.interfaces.person.ITeamPublic"/>
-            <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
@@ -922,6 +920,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
+            <require
+                permission="launchpad.View"
+                interface="lp.registry.interfaces.person.ITeamPublic"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>

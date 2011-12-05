@@ -15,7 +15,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
-    'IPersonPublic',  # Required for a monkey patch in interfaces/archive.py
+    'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
@@ -657,14 +657,40 @@ class IPersonSettings(Interface):
         required=False, default=False)
 
 
-class IPersonPublic(IHasBranches, IHasSpecifications,
+class IPersonPublic(Interface):
+    """Public attributes for a Person."""
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+
+
+class IPersonLimitedView(Interface):
+    """IPerson attributes that require launchpad.LimitedView permission."""
+
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
+
+
+class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
                     IPersonSettings, IQuestionsPerson):
-    """Public attributes for a Person."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
+    """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
     password = PasswordField(
@@ -1468,32 +1494,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :return: a boolean.
         """
-
-
-class IPersonLimitedView(Interface):
-    """IPerson attributes that require launchpad.LimitedView permission."""
-
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-
-
-class IPersonViewRestricted(Interface):
-    """IPerson attributes that require launchpad.View permission."""
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
@@ -2571,18 +2571,19 @@ for name in [
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
-IPersonPublic['sub_teams'].value_type.schema = ITeam
-IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonViewRestricted['sub_teams'].value_type.schema = ITeam
+IPersonViewRestricted['super_teams'].value_type.schema = ITeam
 # XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
 # exported again.
-# IPersonPublic['teams_participated_in'].value_type.schema = ITeam
-# IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted['teams_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted[
+#   'teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
     # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
-    # (IPersonPublic['findPathToTeam'], 'team'),
-    # (IPersonPublic['inTeam'], 'team'),
+    # (IPersonViewRestricted['findPathToTeam'], 'team'),
+    # (IPersonViewRestricted['inTeam'], 'team'),
     (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
