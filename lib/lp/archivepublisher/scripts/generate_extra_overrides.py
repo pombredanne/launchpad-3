@@ -47,15 +47,19 @@ class AtomicFile:
 class GenerateExtraOverrides(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/generate-task-overrides.py."""
 
-    def __init__(self):
-        self.seeds = {}
-        self.seed_structures = {}
-
     def add_my_options(self):
         """Add a 'distribution' context option."""
         self.parser.add_option(
             '-d', '--distribution', dest='distribution_name',
             default='ubuntu', help='Context distribution name.')
+
+    @property
+    def name(self):
+        """See `LaunchpadScript`."""
+        # Include distribution name.  Clearer to admins, but also
+        # puts runs for different distributions under separate
+        # locks so that they can run simultaneously.
+        return "%s-%s" % (self._name, self.options.distribution)
 
     def processOptions(self):
         try:
@@ -77,8 +81,6 @@ class GenerateExtraOverrides(LaunchpadScript):
                 'There is no DEVELOPMENT distroseries for %s' %
                 self.options.distribution_name)
         self.series = series[0]
-
-        self.architectures = self.series.architectures
 
         # Even if DistroSeries.component_names starts including partner, we
         # don't want it; this applies to the primary archive only.
@@ -109,6 +111,9 @@ class GenerateExtraOverrides(LaunchpadScript):
         handler.setFormatter(GerminateFormatter())
         self.germinate_logger.addHandler(handler)
         self.germinate_logger.propagate = False
+
+        self.seeds = {}
+        self.seed_structures = {}
 
     def outputPath(self, flavour, arch, base):
         return os.path.join(
@@ -222,5 +227,5 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.miscroot,
             'more-extra.override.%s.main' % self.series.name)
         with AtomicFile(override_path) as override_file:
-            for arch in self.architectures:
+            for arch in self.series.architectures:
                 self.runGerminate(override_file, arch, self.args)
