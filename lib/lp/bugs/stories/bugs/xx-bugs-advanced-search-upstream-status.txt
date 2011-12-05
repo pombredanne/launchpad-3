@@ -1,5 +1,5 @@
-The advanced search page provides widgets for filtering bugtasks based on
-upstream status.
+The advanced search page provides widgets for filtering bugtasks based
+on upstream status.
 
 There are currently four bugs open in Ubuntu.
 
@@ -22,10 +22,13 @@ doesn't have a bug watch.
 
     # XXX: Bjorn Tillenius 2006-07-04 bug=51853:
     #      Can't click on the link due to bug 51853.
+
     >>> anon_browser.getLink('Advanced search').attrs['href']
     '?advanced=1'
+
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status = anon_browser.getControl(
+    ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
@@ -59,10 +62,12 @@ are not included in the report.
     Ubuntu Hoary, New
     mozilla-firefox (Debian), Invalid
     mozilla-firefox (Debian Woody), Invalid
+
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status = anon_browser.getControl(
+    ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
@@ -76,7 +81,8 @@ makes it easy for developers to ignore bugs that they've already passed
 on upstream, to focus instead on things they need to work on.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status = anon_browser.getControl(
+    ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are not known to affect upstream']
     >>> anon_browser.getControl('Search', index=0).click()
@@ -107,7 +113,8 @@ Now, if we choose to show only closed upstream task, only the bugs we
 modified and the sampledata we created above will show up.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status = anon_browser.getControl(
+    ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are resolved upstream']
     >>> anon_browser.getControl('Search', index=0).click()
@@ -119,11 +126,12 @@ modified and the sampledata we created above will show up.
     2 Blackhole Trash folder
       &mdash; Medium New
 
-If more than one filter for upstream status is selected, the search returns
-the union of the results for the individual filters.
+If more than one filter for upstream status is selected, the search
+returns the union of the results for the individual filters.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status = anon_browser.getControl(
+    ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are resolved upstream',
     ...     'Show bugs that are not known to affect upstream'
@@ -140,7 +148,9 @@ the union of the results for the individual filters.
     2 Blackhole Trash folder
       &mdash; Medium New
 
-== Backward-compatibility for old bookmars ==
+
+Backward-compatibility for old bookmars
+---------------------------------------
 
 Before Launchpad version 1.1.6, users could selected only one upstream
 status. Bookmarks of such searches work nevertheless.
@@ -227,9 +237,10 @@ Other values for status_upstream lead to an error.
     UnexpectedFormData: Unexpected value for field 'status_upstream'.
     Perhaps your bookmarks are out of date or you changed the URL by hand?
 
-
 Let's reset the statuses we set.
 
     >>> login('test@canonical.com')
     >>> test_helper.tearDownBugsElsewhereTests()
     >>> logout()
+
+
