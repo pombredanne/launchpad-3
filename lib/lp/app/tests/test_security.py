@@ -1,12 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from zope.component import (
-    getSiteManager,
-    queryAdapter,
-    )
+from zope.component import getSiteManager
 from zope.interface import (
     implements,
     Interface,
@@ -18,7 +15,10 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -145,63 +145,32 @@ class TestAuthorizationBase(TestCaseWithFactory):
             adapter.forwardCheckAuthenticated(None, Dummy()))
 
 
-class FakeDelegatedAuthorization(DelegatedAuthorization):
-    def __init__(self, obj, permission=None):
-        super(FakeDelegatedAuthorization, self).__init__(
-            obj, obj.child_obj, permission)
+class TestDelegatedAuthorization(TestCase):
+    """Tests for `DelegatedAuthorization`."""
 
+    def test_checkAuthenticated(self):
+        # DelegatedAuthorization.checkAuthenticated() punts the checks back up
+        # to the security policy by generating (object, permission) tuples.
+        # The security policy is in a much better position to, well, apply
+        # policy.
+        obj, delegated_obj = object(), object()
+        authorization = DelegatedAuthorization(
+            obj, delegated_obj, "dedicatemyselfto.Evil")
+        # By default DelegatedAuthorization.checkAuthenticated() ignores its
+        # user argument, so we pass None in below, but it is required for
+        # IAuthorization, and may be useful for subclasses.
+        self.assertEqual(
+            [(delegated_obj, "dedicatemyselfto.Evil")],
+            list(authorization.checkAuthenticated(None)))
 
-class FakeForwardedObject:
-    implements(IDummy)
-
-    def __init__(self):
-        self.child_obj = Dummy()
-
-
-class TestDelegatedAuthorizationBase(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_DelegatedAuthorization_same_permissions(self):
-        # TODO: This is no longer how DelegatedAuthorization works. Instead,
-        # LaunchpadSecurityPolicy and iter_authorization do the work that's
-        # tested here.
-
-        permission = self.factory.getUniqueString()
-        fake_obj = FakeForwardedObject()
-        outer_adapter = FakeDelegatedAuthorization(fake_obj)
-        outer_adapter.permission = permission
-
-        inner_adapter = FakeSecurityAdapter()
-        inner_adapter.permission = permission
-        registerFakeSecurityAdapter(IDummy, permission, inner_adapter)
-        user = object()
-        outer_adapter.checkAuthenticated(user)
-        outer_adapter.checkUnauthenticated()
-        self.assertVectorEqual(
-            (1, inner_adapter.checkAuthenticated.call_count),
-            (1, inner_adapter.checkUnauthenticated.call_count))
-
-    def test_DelegatedAuthorization_different_permissions(self):
-        # TODO: This is no longer how DelegatedAuthorization works. Instead,
-        # LaunchpadSecurityPolicy and iter_authorization do the work that's
-        # tested here.
-
-        perm_inner = 'inner'
-        perm_outer = 'outer'
-        fake_obj = FakeForwardedObject()
-        outer_adapter = FakeDelegatedAuthorization(fake_obj, perm_inner)
-        registerFakeSecurityAdapter(IDummy, perm_outer, outer_adapter)
-
-        inner_adapter = FakeSecurityAdapter()
-        inner_adapter.permission = perm_inner
-        registerFakeSecurityAdapter(IDummy, perm_inner, inner_adapter)
-
-        user = object()
-        adapter = queryAdapter(
-            FakeForwardedObject(), IAuthorization, perm_outer)
-        adapter.checkAuthenticated(user)
-        adapter.checkUnauthenticated()
-        self.assertVectorEqual(
-            (1, inner_adapter.checkAuthenticated.call_count),
-            (1, inner_adapter.checkUnauthenticated.call_count))
+    def test_checkUnauthenticated(self):
+        # DelegatedAuthorization.checkUnauthenticated() punts the checks back
+        # up to the security policy by generating (object, permission) tuples.
+        # The security policy is in a much better position to, well, apply
+        # policy.
+        obj, delegated_obj = object(), object()
+        authorization = DelegatedAuthorization(
+            obj, delegated_obj, "dedicatemyselfto.Evil")
+        self.assertEqual(
+            [(delegated_obj, "dedicatemyselfto.Evil")],
+            list(authorization.checkUnauthenticated()))

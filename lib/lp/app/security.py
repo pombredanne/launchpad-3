@@ -133,7 +133,9 @@ class DelegatedAuthorization(AuthorizationBase):
         yield self.forwarded_object
 
     def checkAuthenticated(self, user):
+        """See `IAuthorization`."""
         return izip(self.iter_objects(), repeat(self.permission))
 
     def checkUnauthenticated(self):
+        """See `IAuthorization`."""
         return izip(self.iter_objects(), repeat(self.permission))
