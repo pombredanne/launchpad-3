@@ -1,10 +1,10 @@
 == The Distribution Release Bugs Page ==
 
-The front page for a distribution release on the bugs domain presents
+The +bugs-index page for a distribution release on the bugs domain presents
 some basic information the bugs in it. It doesn't display the list of
 bugs.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty/+bugs-index')
     >>> anon_browser.title
     'Bugs : Warty'
 
