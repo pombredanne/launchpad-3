@@ -110,6 +110,7 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.adapter import (
     print_queries,
@@ -309,6 +310,37 @@ def record_statements(function, *args, **kwargs):
     with StormStatementRecorder() as recorder:
         ret = function(*args, **kwargs)
     return (ret, recorder.statements)
+
+
+def record_two_runs(tested_method, item_creator, first_round_number,
+                    second_round_number=None):
+    """A helper that returns the two storm statement recorders
+    obtained when running tested_method after having run the
+    method {item_creator} {first_round_number} times and then
+    again after having run the same method {second_round_number}
+    times.
+
+    :return: a tuple containing the two recorders obtained by the successive
+        runs.
+    """
+    for i in range(first_round_number):
+        item_creator()
+    # Record how many queries are issued when {tested_method} is
+    # called after {item_creator} has been run {first_round_number}
+    # times.
+    flush_database_caches()
+    with StormStatementRecorder() as recorder1:
+        tested_method()
+    # Run {item_creator} {second_round_number} more times.
+    if second_round_number is None:
+        second_round_number = first_round_number
+    for i in range(second_round_number):
+        item_creator()
+    # Record again the number of queries issued.
+    flush_database_caches()
+    with StormStatementRecorder() as recorder2:
+        tested_method()
+    return recorder1, recorder2
 
 
 def run_with_storm_debug(function, *args, **kwargs):
