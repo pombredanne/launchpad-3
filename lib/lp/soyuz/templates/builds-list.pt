@@ -113,10 +113,10 @@
         </tr>
         <tr class="build-row" tal:condition="not: build">
           <td class="left icon">
-            <img width="14" height="14" alt="[PRIVATE BUILD]"
+            <img width="14" height="14" alt="[PRIVATE JOB]"
                  title="Private" src="/@@/private" />
           </td>
-          <td tal:condition="not: build">private Build</td>
+          <td tal:condition="not: build">Private job</td>
         </tr>
       </tal:batch_repeat>
     </tbody>
