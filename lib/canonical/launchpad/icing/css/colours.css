@@ -147,6 +147,7 @@
         color: #4f7b10;
         background-color: #cef1a0;
     }
+#client-listing .statusEXPIRED, #client-listing .statusEXPIRED a,
 #client-listing .statusINVALID, #client-listing .statusINVALID a,
 #client-listing .statusWONTFIX, #client-listing .statusWONTFIX a,
 #client-listing .statusOPINION, #client-listing .statusOPINION a {
