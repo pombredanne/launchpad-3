@@ -224,10 +224,10 @@ class GenerateExtraOverrides(LaunchpadScript):
                 writeOverrides('build-essential', 'Build-Essential', 'yes')
 
     def generateExtraOverrides(self, series_name, series_architectures,
-                               flavours):
+                               flavours, seed_bases=None):
         for flavour in flavours:
             self.seed_structures[flavour] = SeedStructure(
-                '%s.%s' % (flavour, series_name))
+                '%s.%s' % (flavour, series_name), seed_bases=seed_bases)
 
         override_path = os.path.join(
             self.config.miscroot,
