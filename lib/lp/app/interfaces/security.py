@@ -36,5 +36,9 @@ class IAuthorization(Interface):
         optionally instead generate `(object, permission)` tuples. It is then
         the security policy's job of checking authorization of those pairs.
 
+        Typically all delegated authorizations must be allowed for the
+        top-level authorization to be allowed, but this is dependent on the
+        security policy in force.
+
         :param account: The account that is authenticated.
         """

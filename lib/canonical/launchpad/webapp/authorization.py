@@ -208,6 +208,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             ILaunchpadPrincipal.providedBy(principal)):
             return True
 
+        # If there are delegated authorizations they must *all* be allowed
+        # before permission to access objecttoauthorize is granted.
         return all(
             iter_authorization(
                 objecttoauthorize, permission, principal,
