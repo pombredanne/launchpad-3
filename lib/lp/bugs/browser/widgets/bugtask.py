@@ -73,7 +73,7 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
+from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField

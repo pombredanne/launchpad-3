@@ -285,6 +285,10 @@ class DistributionUpstreamBugReport(LaunchpadView):
     arrow_blank = "/@@/arrowBlank"
 
     @property
+    def page_title(self):
+        return 'Upstream Bug Report for %s' % self.context.title
+
+    @property
     def sort_order(self):
         """Return the sort order for the report.
 

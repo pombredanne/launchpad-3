@@ -65,6 +65,7 @@ class CodeImportMachineSetView(LaunchpadView):
     """The view for the page that shows all the import machines."""
 
     label = "Import machines for Launchpad"
+    page_title = label
 
     @property
     def machines(self):
@@ -101,6 +102,10 @@ class CodeImportMachineView(LaunchpadFormView):
 
     # The default reason is always the empty string.
     initial_values = {'reason': ''}
+
+    @property
+    def page_title(self):
+        return 'Code Import machine "%s"' % self.context.hostname
 
     @property
     def latest_events(self):
