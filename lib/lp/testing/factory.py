@@ -1130,7 +1130,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if registrant is None:
             if owner.is_team:
-                registrant = owner.teamowner
+                registrant = removeSecurityProxy(owner).teamowner
             else:
                 registrant = owner
 

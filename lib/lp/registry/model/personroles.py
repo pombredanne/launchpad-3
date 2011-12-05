@@ -30,7 +30,7 @@ class PersonRoles:
     def __init__(self, person):
         self.person = person
         self._celebrities = getUtility(ILaunchpadCelebrities)
-        # Use an unproxied inTeam() method for for security checks.
+        # Use an unproxied inTeam() method for security checks.
         self.inTeam = removeSecurityProxy(self.person).inTeam
 
     def __getattr__(self, name):

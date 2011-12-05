@@ -119,7 +119,8 @@ class IPersonRoles(Interface):
     def inTeam(team):
         """Is this person a member or the owner of `team`?
 
-        Passed through to the same method in 'IPersonViewRestricted'.
+        Passed through to the *unproxied* same method in
+        `IPersonViewRestricted`.
         """
 
     def isOwner(obj):
