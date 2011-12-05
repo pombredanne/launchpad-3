@@ -107,8 +107,7 @@
               Report a bug
             </a>
           </li>
-          <li tal:define="addquestion_url view/addquestion_url"
-              tal:condition="addquestion_url">
+          <li tal:condition="view/addquestion_url">
             <a tal:attributes="href view/addquestion_url"
                class="menu-link-filebug sprite answers">
               Ask a question
