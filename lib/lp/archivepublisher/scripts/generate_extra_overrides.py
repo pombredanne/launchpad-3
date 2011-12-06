@@ -8,8 +8,9 @@ __all__ = [
     'GenerateExtraOverrides',
     ]
 
-import os
 import logging
+from optparse import OptionValueError
+import os
 
 from germinate.germinator import Germinator
 from germinate.archive import TagFile
@@ -22,7 +23,6 @@ from canonical.launchpad.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )
-from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -55,7 +55,7 @@ class GenerateExtraOverrides(LaunchpadScript):
         """Add a 'distribution' context option."""
         self.parser.add_option(
             '-d', '--distribution', dest='distribution',
-            default='ubuntu', help='Context distribution name.')
+            help='Context distribution name.')
 
     @property
     def name(self):
@@ -66,12 +66,15 @@ class GenerateExtraOverrides(LaunchpadScript):
         return "%s-%s" % (self._name, self.options.distribution)
 
     def processOptions(self):
-        try:
-            self.distribution = getUtility(
-                IDistributionSet)[self.options.distribution]
-        except NotFoundError, err:
-            raise LaunchpadScriptFailure(
-                "Could not find distribution %s" % err)
+        """Handle command-line options."""
+        if self.options.distribution is None:
+            raise OptionValueError("Specify a distribution.")
+
+        self.distribution = getUtility(IDistributionSet).getByName(
+            self.options.distribution)
+        if self.distribution is None:
+            raise OptionValueError(
+                "Distribution '%s' not found." % self.options.distribution)
 
         series = None
         wanted_status = (SeriesStatus.DEVELOPMENT,

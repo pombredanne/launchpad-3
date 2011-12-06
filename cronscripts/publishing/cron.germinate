@@ -34,7 +34,7 @@ trap cleanup EXIT
 
 cd $GERMINATEROOT
 
-$GENERATE_EXTRA_OVERRIDES $FLAVOURS
+$GENERATE_EXTRA_OVERRIDES -d ubuntu $FLAVOURS
 
 # Now generate the Supported extra overrides for all supported distros.
 SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
