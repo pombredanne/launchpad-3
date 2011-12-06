@@ -2647,7 +2647,7 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTaskUserHasPrivileges, self).setUp()
+        super(TestBugTaskUserHasBugSupervisorPrivileges, self).setUp()
         self.celebrities = getUtility(ILaunchpadCelebrities)
 
     def test_admin_is_allowed(self):
