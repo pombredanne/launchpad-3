@@ -175,6 +175,7 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
+    BugTrackerFormatterAPI,
     DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -2552,6 +2553,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if self.external_bugtracker or uses_lp:
             return True
         return False
+
+    @property
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
+
+    @property
+    def bugtracker(self):
+        """Description of the context's bugtracker.
+
+        :returns: str which may contain HTML.
+        """
+        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+            return 'Launchpad'
+        elif self.external_bugtracker:
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
+        else:
+            return 'None specified'
 
     @property
     def upstream_launchpad_project(self):
