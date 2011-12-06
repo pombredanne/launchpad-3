@@ -931,7 +931,8 @@
                 interface="lp.registry.interfaces.person.IPersonEditRestricted"/>
             <require
                 permission="launchpad.Edit"
-                set_schema="lp.registry.interfaces.person.IPersonPublic
+                set_schema="lp.registry.interfaces.person.IPersonViewRestricted
+                            lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
                 set_attributes="displayname"/>
             <require
