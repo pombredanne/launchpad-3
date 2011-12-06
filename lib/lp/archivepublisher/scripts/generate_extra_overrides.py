@@ -221,7 +221,8 @@ class GenerateExtraOverrides(LaunchpadScript):
                     for line in seedtext:
                         if line.lower().startswith('task-') and ':' in line:
                             key, value = line.split(':', 1)
-                            key = key[5:].lower() # e.g. "Task-Name" => "name"
+                            # e.g. "Task-Name" => "name"
+                            key = key[5:].lower()
                             task_headers[key] = value.strip()
                 if not task_headers:
                     continue
@@ -251,7 +252,8 @@ class GenerateExtraOverrides(LaunchpadScript):
 
             # Generate apt-ftparchive "extra overrides" for Build-Essential
             # fields.
-            if 'build-essential' in structure.names and flavour == flavours[0]:
+            if ('build-essential' in structure.names and
+                flavour == flavours[0]):
                 writeOverrides('build-essential', 'Build-Essential', 'yes')
 
     def generateExtraOverrides(self, series_name, series_architectures,

@@ -187,7 +187,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 else:
                     print >>structure, '%s:' % seed_name
 
-    def makeSeed(self, flavour, series_name, seed_name, entries, headers=None):
+    def makeSeed(self, flavour, series_name, seed_name, entries,
+                 headers=None):
         """Create a simple seed file."""
         seed_path = os.path.join(
             self.seeddir, '%s.%s' % (flavour, series_name), seed_name)
@@ -295,7 +296,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             output)
 
     def runGerminate(self, script, series_name, arch, flavours):
-        """Helper function to call script.runGerminate and return overrides."""
+        """Helper to call script.runGerminate and return overrides."""
         structures = script.makeSeedStructures(
             series_name, flavours, seed_bases=['file://%s' % self.seeddir])
 
@@ -460,8 +461,10 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # prefixed.
         expected_overrides = [
             '%s/%s  Task  %s' % (package.name, arch, seed_one),
-            '%s/%s  Task  %s-%s' % (package.name, arch, flavour_one, seed_two),
-            '%s/%s  Task  %s-%s' % (package.name, arch, flavour_two, seed_two),
+            '%s/%s  Task  %s-%s' % (
+                package.name, arch, flavour_one, seed_two),
+            '%s/%s  Task  %s-%s' % (
+                package.name, arch, flavour_two, seed_two),
             ]
         self.assertContentEqual(expected_overrides, overrides)
 
