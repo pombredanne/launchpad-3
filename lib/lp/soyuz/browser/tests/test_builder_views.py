@@ -5,12 +5,19 @@ __metaclass__ = type
 
 from functools import partial
 
+import soupmatchers
 from storm.locals import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    MatchesAll,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
+from canonical.database.sqlbase import (
+    flush_database_caches,
+    flush_database_updates,
+    )
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -18,9 +25,15 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.browser.build import getSpecificJobs
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
+    celebrity_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -70,6 +83,84 @@ class TestBuilderEditView(TestCaseWithFactory):
         self.assertTrue(view.context.slaveStatusSentence.call_count == 0)
 
 
+class TestgetSpecificJobs(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def createTranslationTemplateBuild(self):
+        build_farm_job_source = getUtility(IBuildFarmJobSource)
+        build_farm_job = build_farm_job_source.new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        branch = self.factory.makeBranch()
+        return source.create(build_farm_job, branch)
+
+    def createSourcePackageRecipeBuild(self):
+        sprb = self.factory.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        return sprb
+
+    def createBinaryPackageBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        return build
+
+    def createBuilds(self):
+        builds = []
+        for i in xrange(2):
+            builds.append(self.createBinaryPackageBuild())
+            builds.append(self.createTranslationTemplateBuild())
+            builds.append(self.createSourcePackageRecipeBuild())
+        return builds
+
+    def test_getSpecificJobs(self):
+        builds = self.createBuilds()
+        specific_jobs = getSpecificJobs(
+            [build.build_farm_job for build in builds])
+        self.assertContentEqual(
+            builds, specific_jobs)
+
+    def test_getSpecificJobs_preserves_order(self):
+        builds = self.createBuilds()
+        specific_jobs = getSpecificJobs(
+            [build.build_farm_job for build in builds])
+        self.assertEqual(
+            [(build.id, build.__class__) for build in builds],
+            [(job.id, job.__class__) for job in specific_jobs])
+
+    def test_getSpecificJobs_duplicated_builds(self):
+        builds = self.createBuilds()
+        duplicated_builds = builds + builds
+        specific_jobs = getSpecificJobs(
+            [build.build_farm_job for build in duplicated_builds])
+        self.assertEqual(len(duplicated_builds), len(specific_jobs))
+
+    def test_getSpecificJobs_empty(self):
+        self.assertContentEqual([], getSpecificJobs([]))
+
+    def test_getSpecificJobs_sql_queries_count(self):
+        # getSpecificJobs issues a constant number of queries.
+        builds = self.createBuilds()
+        build_farm_jobs = [build.build_farm_job for build in builds]
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            getSpecificJobs(build_farm_jobs)
+        builds2 = self.createBuilds()
+        build_farm_jobs.extend([build.build_farm_job for build in builds2])
+        flush_database_updates()
+        with StormStatementRecorder() as recorder2:
+            getSpecificJobs(build_farm_jobs)
+        self.assertThat(recorder, HasQueryCount(Equals(recorder2.count)))
+
+    def test_getSpecificJobs_no_specific_job(self):
+        build_farm_job_source = getUtility(IBuildFarmJobSource)
+        build_farm_job = build_farm_job_source.new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
+        flush_database_updates()
+        self.assertRaises(
+            InconsistentBuildFarmJobError,
+            getSpecificJobs, [build_farm_job])
+
+
 class TestBuilderHistoryView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -91,12 +182,16 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         self.addFakeBuildLog(build)
         return build
 
-    def createRecipeBuildWithBuilder(self):
-        branch1 = self.factory.makeAnyBranch()
+    def createRecipeBuildWithBuilder(self, private_branch=False):
         branch2 = self.factory.makeAnyBranch()
+        branch1 = self.factory.makeAnyBranch()
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=self.factory.makeSourcePackageRecipe(
                 branches=[branch1, branch2]))
+        if private_branch:
+            with celebrity_logged_in('admin'):
+                branch1.setPrivate(
+                    True, getUtility(IPersonSet).getByEmail(ADMIN_EMAIL))
         Store.of(build).flush()
         removeSecurityProxy(build).builder = self.builder
         self.addFakeBuildLog(build)
@@ -191,3 +286,25 @@ class TestBuilderHistoryView(TestCaseWithFactory):
             self.createTranslationTemplateBuildWithBuilder)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_build_history_private_build_view(self):
+        self.createRecipeBuildWithBuilder()
+        self.createRecipeBuildWithBuilder(private_branch=True)
+        view = create_initialized_view(self.builder, '+history')
+        view.setupBuildList()
+
+        self.assertIn(None, view.complete_builds)
+
+    def test_build_history_private_build_display(self):
+        self.createRecipeBuildWithBuilder()
+        self.createRecipeBuildWithBuilder(private_branch=True)
+        view = create_initialized_view(self.builder, '+history')
+        private_build_icon_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Private build icon', 'img', attrs={'src': '/@@/private'}))
+        private_build_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag('Private build', 'td', text='Private job'))
+
+        self.assertThat(
+            view.render(),
+            MatchesAll(private_build_matcher, private_build_icon_matcher))

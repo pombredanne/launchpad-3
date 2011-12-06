@@ -58,7 +58,7 @@ class BugBranchAddView(LaunchpadFormView):
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
     for_input = True
-
+    page_title = 'Add branch'
     field_names = ['branch']
 
     @action(_('Continue'), name='continue')
