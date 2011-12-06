@@ -9,6 +9,8 @@ __all__ = [
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     LaunchpadView,
@@ -44,3 +46,7 @@ class DistroArchSeriesBinaryPackageReleaseView(LaunchpadView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

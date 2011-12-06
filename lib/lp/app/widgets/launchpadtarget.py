@@ -135,6 +135,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
+                if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                    self.package_widget.vocabulary.setDistribution(
+                        distribution)
                 try:
                     package_name = self.package_widget.getInputValue()
                 except ConversionError:
@@ -146,10 +149,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-                        vocab = self.package_widget.context.vocabulary
-                        name = package_name.name
-                        dsp = vocab.getTermByToken(name).value
+                    if IDistributionSourcePackage.providedBy(package_name):
+                        dsp = package_name
                     else:
                         source_name = (
                             distribution.guessPublishedSourcePackageName(
