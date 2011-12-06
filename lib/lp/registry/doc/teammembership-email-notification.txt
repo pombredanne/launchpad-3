@@ -449,43 +449,6 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
-    >>> kamion_on_ubuntu_team = membershipset.getByPersonAndTeam(
-    ...     kamion, ubuntu_team)
-    >>> kamion_on_ubuntu_team.setExpirationDate(
-    ...     utc_now + timedelta(days=9), mark)
-    >>> flush_database_updates()
-
-Kamion is an admin of the Ubuntu team, but team admins can't change the
-expiration date of their own memberships, so he still has to contact one of
-the other team admins.
-
-    >>> kamion_on_ubuntu_team.status.name
-    'ADMIN'
-    >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
-    >>> print_distinct_emails()
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com
-    Subject: Your membership in ubuntu-team is about to expire
-    <BLANKLINE>
-    On ..., 9 days from now, your membership
-    in the Ubuntu Team (ubuntu-team) Launchpad team
-    is due to expire.
-    <http://launchpad.dev/~ubuntu-team>
-    <BLANKLINE>
-    To prevent this membership from expiring, you should get in touch
-    with one of the team's administrators:
-    Alexander Limi (limi) <http://launchpad.dev/~limi>
-    Foo Bar (name16) <http://launchpad.dev/~name16>
-    Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
-    Mark Shuttleworth (mark) <http://launchpad.dev/~mark>
-    <BLANKLINE>
-    If your membership does expire, we'll send you one more message to let
-    you know it's happened.
-    <BLANKLINE>
-    Thanks for using Launchpad!
-    <BLANKLINE>
-    ----------------------------------------
 
 In the case of the beta-testers team, the email is sent only to the
 team's owner, which doesn't have the necessary rights to renew the
@@ -531,6 +494,10 @@ renew his own membership.
 
     >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
     >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> kamion_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     kamion, ubuntu_team)
+    >>> kamion_on_ubuntu_team.setExpirationDate(
+    ...     utc_now + timedelta(days=9), mark)
     >>> flush_database_updates()
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
