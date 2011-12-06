@@ -19,7 +19,6 @@ from optparse import OptionParser
 import re
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
-import subprocess
 
 from bzrlib.branch import Branch
 from bzrlib.errors import NotBranchError
