@@ -202,9 +202,6 @@ _replicate:
 	@echo Running upgrade.py `date`
 	${SHHH} ../schema/upgrade.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	@echo Running fti.py `date`
-	${SHHH} ../schema/fti.py \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running security.py `date`
 	./slon_ctl.py stop # security.py can deadlock with slony
 	${SHHH} ../schema/security.py --cluster -U slony \
