@@ -472,6 +472,9 @@
 
   <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <require
+        permission="zope.Public"
+        attributes="setDistribution"/>
   </class>
 
     <class

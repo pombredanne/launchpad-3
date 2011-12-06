@@ -22,7 +22,9 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
-# Load the normal plugin set. Lint complains but keep this in.
+# Load the normal plugin set.  Your linter may complain, and automated
+# imports formatting tools will rearrange this, but keep it above the
+# other Launchpad imports.
 import lp.codehosting
 
 from canonical.config import config
@@ -184,7 +186,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             master_branch = IMasterStore(branch).get(Branch, branch.id)
             master_branch.branchChanged(**get_db_branch_info(**e.info))
             self.logger.warning(
-                'Skipped %s due to stale DB info and scheduled scan.',
+                "Skipped %s due to stale DB info, and scheduled a new scan.",
                 branch.bzr_identity)
             if self.txn:
                 self.txn.commit()
@@ -266,7 +268,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     self.txn.commit()
             except Exception as e:
                 items_failed += 1
-                self.logger.error("Failure: %s" % repr(e))
+                self.logger.error(
+                    "Failure in %s/%s: %s", source.product.name, source.name,
+                    repr(e))
                 if self.txn:
                     self.txn.abort()
 
