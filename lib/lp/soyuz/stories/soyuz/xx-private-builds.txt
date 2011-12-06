@@ -69,7 +69,7 @@ building.
     >>> print extract_text(find_main_content(anon_browser.contents))
     The frog builder...
     Current status
-    Building private source
+    Building private job
     ...
 
 Launchpad Administrators are allowed to see the build:
@@ -89,7 +89,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder...
     Current status
-    Building private source
+    Building private job
     ...
 
 cprov is also allowed to see his own build:
@@ -215,7 +215,7 @@ Launchpad Buildd admins cannot see private builds.
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private source
+    frog  386        Building private job
     ...
 
 cprov can see his own private build:
@@ -238,7 +238,7 @@ Anonymous users cannot see the private build:
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private source
+    frog  386        Building private job
     ...
 
 

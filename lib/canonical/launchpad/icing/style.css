@@ -69,10 +69,11 @@ form.primary.search {
 }
 
 div#bugs-search-form.dynamic_bug_listing {
-    background: #EEE;
-    padding: 2px 15px;
-    border-radius: 10px;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    padding: 3px 0;
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: #EBEBEB;
 }
 
 form.primary.search.dynamic_bug_listing {
@@ -673,67 +674,6 @@ div#current_user_subscription {
 /* This lets us have a link that spans lines. */
 div#current_user_subscription a.sprite {
   display: inline;
-}
-
-/* Rules for CustomBugListings bug search result lists. */
-div#client-listing {
-    float: left;
-    color: #666;
-    }
-div.buglisting-row {
-    float: left;
-    margin-top: 5px;
-    border-bottom: 1px solid #EEE;
-    min-width: 585px;
-    width: 100%;
-    padding-bottom: 5px;
-    }
-div.buglisting-col1 {
-    width: 100px;
-    float: left;
-    padding-bottom: 8px;
-    }
-div.buglisting-col2 {
-    width: 70%;
-    float: left;
-    }
-div.buglisting-col3 {
-    width: 10%;
-    float: right;
-    }
-div#client-listing .importance {
-    height: 1.5em;
-    width: 65px;
-    font-size: .8em;
-    border-radius: 2px;
-    text-transform: uppercase;
-    line-height: 12px;
-    margin: 5px 50px 2px 0;
-    text-align: center;
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .buglisting-col2 {
-    position: relative;
-    top: 2px;
-    }
-div#client-listing .bug-related-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .bug-heat-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .status {
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .field {
-    display: inline-block;
-    min-width: 120px;
-    line-height: 16px;
-    margin-right: 5px;
 }
 
 /* Tags portlet */

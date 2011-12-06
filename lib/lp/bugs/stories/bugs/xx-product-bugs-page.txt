@@ -1,10 +1,10 @@
 The Product Bugs Page
 ---------------------
 
-The front page for a product on the bugs domain presents some basic
+The +bugs-index page for a product on the bugs domain presents some basic
 information the bugs in it. It doesn't display the list of bugs.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bugs-index')
     >>> anon_browser.title
     'Bugs : Mozilla Firefox'
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
@@ -21,7 +21,7 @@ The page has a link to see all open bugs.
 It also has a link to subscribe to bug mail (which is implemented in
 JavaScript so it doesn't actually go anywhere).
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bugs-index')
     >>> user_browser.getLink('Subscribe to bug mail').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+subscribe'
@@ -31,10 +31,10 @@ CVE Bugs
 
 It also displays the number of open bugs associated with a CVE.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/evolution')
+    >>> anon_browser.open('http://bugs.launchpad.dev/evolution/+bugs-index')
     >>> cve_bugs_link = anon_browser.getLink('Open CVE bugs')
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bugs-index')
     >>> cve_bugs_link = anon_browser.getLink('Open CVE bugs')
 
 The link takes you to the list of bugs with CVEs linked to them.
@@ -163,7 +163,7 @@ To demonstrate this, we create 10 bugs and adjust their heat values manually.
 For each bug we have the number, title, status, importance and the time
 since the last update.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bugs-index')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
         Summary                   Status   Importance    Last changed
@@ -213,6 +213,6 @@ than 10 hot bugs.
 Jokosher does not have more than 10 bugs and does not have a link
 to more hot bugs.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/+bugs-index')
     >>> find_tag_by_id(anon_browser.contents, 'more-hot-bugs') is None
     True

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the testing module."""
@@ -6,12 +6,14 @@
 __metaclass__ = type
 
 import os
+import tempfile
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,
+    NestedTempfile,
     set_feature_flag,
     TestCase,
     YUIUnitTestCase,
@@ -51,3 +53,31 @@ class TestYUIUnitTestCase(TestCase):
         test_path = os.path.join(config.root, "../bar/baz/../bob.html")
         test.initialize(test_path)
         self.assertEqual("../bar/bob.html", test.id())
+
+
+class NestedTempfileTest(TestCase):
+    """Tests for `NestedTempfile`."""
+
+    def test_normal(self):
+        # The temp directory is removed when the context is exited.
+        starting_tempdir = tempfile.gettempdir()
+        with NestedTempfile():
+            self.assertEqual(tempfile.tempdir, tempfile.gettempdir())
+            self.assertNotEqual(tempfile.tempdir, starting_tempdir)
+            self.assertTrue(os.path.isdir(tempfile.tempdir))
+            nested_tempdir = tempfile.tempdir
+        self.assertEqual(tempfile.tempdir, tempfile.gettempdir())
+        self.assertEqual(starting_tempdir, tempfile.tempdir)
+        self.assertFalse(os.path.isdir(nested_tempdir))
+
+    def test_exception(self):
+        # The temp directory is removed when the context is exited, even if
+        # the code running in context raises an exception.
+        class ContrivedException(Exception):
+            pass
+        try:
+            with NestedTempfile():
+                nested_tempdir = tempfile.tempdir
+                raise ContrivedException
+        except ContrivedException:
+            self.assertFalse(os.path.isdir(nested_tempdir))

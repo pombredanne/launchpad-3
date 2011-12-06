@@ -1,4 +1,4 @@
-A bugs home page for a project shows different information, depending
+A +bugs-index page for a project shows different information, depending
 on whether or not the project uses malone for bug tracking.
 
 By default, projects are created without using any bugtracker, malone
@@ -13,10 +13,11 @@ or otherwise.  To demonstrate this, a new project is created.
     ...     name='test-project', title='Simple Test Project', owner=foobar)
     >>> logout()
 
-The bugs home page for the project states that the project does
+The +bugs-index page for the project states that the project does
 not use Launchpad for bug tracking.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/test-project/+bugs-index')
     >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
     >>> print extract_text(uses_malone_p)
     Test-project must be configured in order for Launchpad to forward bugs to
@@ -28,13 +29,14 @@ for a project.
     >>> find_tag_by_id(anon_browser.contents, 'no-malone-edit') is None
     True
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> admin_browser.open(
+    ...   'http://bugs.launchpad.dev/test-project/+bugs-index')
     >>> enable_tracker = find_tag_by_id(
     ...     admin_browser.contents, 'no-malone-edit')
     >>> print extract_text(enable_tracker)
     Configure bug tracker
 
-The bugs home page for a project using Launchpad for bug tracking
+The +bugs-index page for a project using Launchpad for bug tracking
 shows controls for setting bug supervisor and states that no
 bugs have been filed.
 
@@ -44,7 +46,7 @@ bugs have been filed.
     ...     official_malone=True)
     >>> logout()
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone/+bugs-index')
     >>> bug_supervisor = find_tag_by_id(
     ...     anon_browser.contents, 'bug-supervisor')
     >>> print extract_text(bug_supervisor)
@@ -68,7 +70,7 @@ the message "There are currently no bugs filed..."
     >>> login('foo.bar@canonical.com')
     >>> bug = factory.makeBug(product=uses_malone)
     >>> logout()
-    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone/+bugs-index')
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'simple-bug-search'))
     by importance
@@ -94,7 +96,7 @@ and we see a message "no hot bugs" instead of the bug listing.
     ...     BugTaskStatus.FIXRELEASED, user=bug.owner)
     >>> logout()
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone/+bugs-index')
     >>> content = find_main_content(anon_browser.contents)
     >>> print find_tag_by_id(content, 'hot-bugs')
     None
@@ -112,14 +114,15 @@ But since the project has a bug, the search box is still visible.
     Advanced search
 
 Projects that use an external bug tracker will list the tracker on a
-bugs home page.
++bugs-index page.
 
     >>> login('foo.bar@canonical.com')
     >>> some_tracker = factory.makeBugTracker(
     ...     base_url='http://tracker.example.com/')
     >>> test_project.bugtracker = some_tracker
     >>> logout()
-    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> anon_browser.open(
+    ...   'http://bugs.launchpad.dev/test-project/+bugs-index')
     >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
     >>> print extract_text(tracker_text)
     Bugs are tracked in tracker.example.com/.
@@ -134,7 +137,8 @@ be reported on the project's source packages.
     ...     sourcepackagename='test-project-package',
     ...     in_ubuntu=True)
     >>> logout()
-    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> anon_browser.open(
+    ...   'http://bugs.launchpad.dev/test-project/+bugs-index')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
     Ubuntu also tracks bugs for packages derived from this project:
