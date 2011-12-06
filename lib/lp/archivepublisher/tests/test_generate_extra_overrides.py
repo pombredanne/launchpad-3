@@ -5,9 +5,18 @@
 
 __metaclass__ = type
 
+import logging
 from optparse import OptionValueError
 import os
 import tempfile
+
+from germinate import (
+    archive,
+    germinator,
+    seeds,
+    )
+
+import transaction
 
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
@@ -21,13 +30,13 @@ from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import DevNullLogger
-from lp.services.osutils import open_for_writing
+from lp.services.osutils import (
+    ensure_directory_exists,
+    open_for_writing,
+    )
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
 
@@ -68,28 +77,35 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGenerateExtraOverrides, self).setUp()
-        self._seeddir = self.makeTemporaryDirectory()
+        self.seeddir = self.makeTemporaryDirectory()
+        # XXX cjwatson 2011-12-06 bug=694140: Make sure germinate doesn't
+        # lose its loggers between tests, due to Launchpad's messing with
+        # global log state.
+        archive._logger = logging.getLogger('germinate.archive')
+        germinator._logger = logging.getLogger('germinate.germinator')
+        seeds._logger = logging.getLogger('germinate.seeds')
 
     def assertFilesEqual(self, expected_path, observed_path):
         self.assertEqual(
             file_contents(expected_path), file_contents(observed_path))
 
-    def makeDistro(self, purpose=ArchivePurpose.PRIMARY):
+    def makeDistro(self):
         """Create a distribution for testing.
 
         The distribution will have a root directory set up, which will
         be cleaned up after the test.  It will have an attached archive.
         """
-        distro = self.factory.makeDistribution(
+        return self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
-        self.factory.makeArchive(distribution=distro, purpose=purpose)
-        return distro
 
-    def makeScript(self, distribution=None, run_setup=True):
+    def makeScript(self, distribution, run_setup=True, flavours=None):
         """Create a script for testing."""
         if distribution is None:
             distribution = self.makeDistro()
-        script = GenerateExtraOverrides(test_args=['-d', distribution.name])
+        test_args = ['-d', distribution.name]
+        if flavours is not None:
+            test_args.extend(flavours)
+        script = GenerateExtraOverrides(test_args=test_args)
         script.logger = DevNullLogger()
         script.txn = FakeTransaction()
         if run_setup:
@@ -98,37 +114,46 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             script.distribution = distribution
         return script
 
-    def makePackage(self, dases, **kwargs):
+    def makePackage(self, component, dases, **kwargs):
         """Create a published source and binary package for testing."""
         package = self.factory.makeDistributionSourcePackage(
-            distroseries=dases[0].distroseries)
+            distribution=dases[0].distroseries.distribution)
         spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=dases[0].distroseries,
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED,
-            sourcepackagename=package.name)
+            sourcepackagename=package.name, component=component)
         for das in dases:
             build = self.factory.makeBinaryPackageBuild(
                 source_package_release=spph.sourcepackagerelease,
-                processor=das.default_processor)
+                distroarchseries=das, processor=das.default_processor)
             bpr = self.factory.makeBinaryPackageRelease(
-                binarypackagename=package.name, build=build, **kwargs)
+                binarypackagename=package.name, build=build,
+                component=component, **kwargs)
+            lfa = self.factory.makeLibraryFileAlias(
+                filename='%s.deb' % package.name)
+            transaction.commit()
+            bpr.addFile(lfa)
             self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das,
-                status=PackagePublishingStatus.RELEASE)
+                pocket=PackagePublishingPocket.RELEASE,
+                status=PackagePublishingStatus.PUBLISHED)
         return package
 
     def makeIndexFiles(self, script, distroseries):
         """Create a limited subset of index files for testing."""
+        ensure_directory_exists(script.config.temproot)
+
         for component in distroseries.components:
             index_root = os.path.join(
                 script.config.distsroot, distroseries.name, component.name)
 
             source_index_root = os.path.join(index_root, 'source')
             source_index = RepositoryIndexFile(
-                source_index_root, self._config.temproot, 'Packages')
+                source_index_root, script.config.temproot, 'Sources')
             for spp in distroseries.getSourcePackagePublishing(
-                PackagePublishingStatus.PUBLISHED, component=component):
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingPocket.RELEASE, component=component):
                 stanza = spp.getIndexStanza().encode('utf-8') + '\n\n'
                 source_index.write(stanza)
             source_index.close()
@@ -137,34 +162,42 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 package_index_root = os.path.join(
                     index_root, 'binary-%s' % arch.architecturetag)
                 package_index = RepositoryIndexFile(
-                    package_index_root, self._config.temproot, 'Packages')
+                    package_index_root, script.config.temproot, 'Packages')
                 for bpp in distroseries.getBinaryPackagePublishing(
-                    archtag=arch.architecturetag, component=component):
+                    archtag=arch.architecturetag,
+                    pocket=PackagePublishingPocket.RELEASE,
+                    component=component):
                     stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
                     package_index.write(stanza)
                 package_index.close()
 
-    def makeSeedStructure(self, flavour, seed_names, seed_inherit=None):
+    def makeSeedStructure(self, flavour, series_name, seed_names,
+                          seed_inherit=None):
         """Create a simple seed structure file."""
         if seed_inherit is None:
             seed_inherit = {}
 
-        structure_path = os.path.join(self._seeddir, flavour, 'STRUCTURE')
+        structure_path = os.path.join(
+            self.seeddir, '%s.%s' % (flavour, series_name), 'STRUCTURE')
         with open_for_writing(structure_path, 'w') as structure:
             for seed_name in seed_names:
-                print >>structure, '%s: %s' % (
-                    seed_name, seed_inherit[seed_name])
+                if seed_name in seed_inherit:
+                    print >>structure, '%s: %s' % (
+                        seed_name, ' '.join(seed_inherit[seed_name]))
+                else:
+                    print >>structure, '%s:' % seed_name
 
-    def makeSeed(self, flavour, seed_name, entries, headers=None):
+    def makeSeed(self, flavour, series_name, seed_name, entries, headers=None):
         """Create a simple seed file."""
-        seed_path = os.path.join(self._seeddir, flavour, seed_name)
+        seed_path = os.path.join(
+            self.seeddir, '%s.%s' % (flavour, series_name), seed_name)
         with open_for_writing(seed_path, 'w') as seed:
-            if headers is None:
+            if headers is not None:
                 for header in headers:
                     print >>seed, header
                 print >>seed
             for entry in entries:
-                print ' * %s' % entry
+                print >>seed, ' * %s' % entry
 
     def test_name_is_consistent(self):
         # Script instances for the same distro get the same name.
@@ -184,6 +217,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
     def test_requires_distro(self):
         # The --distribution or -d argument is mandatory.
         script = GenerateExtraOverrides(test_args=[])
+        script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
         self.assertRaises(OptionValueError, script.processOptions)
 
     def test_requires_real_distro(self):
@@ -191,12 +226,15 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # value.
         script = GenerateExtraOverrides(
             test_args=['-d', self.factory.getUniqueString()])
+        script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
         self.assertRaises(OptionValueError, script.processOptions)
 
     def test_looks_up_distro(self):
         # The script looks up and keeps the distribution named on the
         # command line.
         distro = self.makeDistro()
+        self.factory.makeDistroSeries(distro)
         script = self.makeScript(distro)
         self.assertEqual(distro, script.distribution)
 
@@ -240,13 +278,6 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         script = self.makeScript(distro)
         self.assertEqual(["main"], script.components)
 
-    def test_require_primary_archive(self):
-        # The script fails if no PRIMARY archive exists.
-        distro = self.makeDistro(purpose=ArchivePurpose.PARTNER)
-        script = self.makeScript(distro, run_setup=False)
-        script.processOptions()
-        self.assertRaises(LaunchpadScriptFailure, script.getConfig)
-
     def test_output_path_in_germinateroot(self):
         # Output files are written to the correct locations under
         # germinateroot.
@@ -266,15 +297,13 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
     def runGerminate(self, script, series_name, arch, flavours):
         """Helper function to call script.runGerminate and return overrides."""
         structures = script.makeSeedStructures(
-            series_name, flavours, seed_bases=[self._seeddir])
+            series_name, flavours, seed_bases=['file://%s' % self.seeddir])
 
         override_fd, override_path = tempfile.mkstemp()
-        try:
+        with os.fdopen(override_fd, 'w') as override_file:
             script.runGerminate(
-                override_fd, series_name, [arch], flavours, structures)
-        finally:
-            override_fd.close()
-        return file_contents(override_path)
+                override_file, series_name, arch, flavours, structures)
+        return file_contents(override_path).splitlines()
 
     def test_germinate_output(self):
         # A single call to runGerminate produces output for all flavours on
@@ -282,25 +311,30 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        one = self.makePackage([das])
-        two = self.makePackage([das])
+        one = self.makePackage(component, [das])
+        two = self.makePackage(component, [das])
+        script = self.makeScript(distro)
+        self.makeIndexFiles(script, distroseries)
 
         flavour_one = self.factory.getUniqueString()
         flavour_two = self.factory.getUniqueString()
         seed = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour_one, [seed])
-        self.makeSeed(flavour_one, seed, [one.name])
-        self.makeSeedStructure(flavour_two, [seed])
-        self.makeSeed(flavour_two, seed, [two.name])
+        self.makeSeedStructure(flavour_one, series_name, [seed])
+        self.makeSeed(flavour_one, series_name, seed, [one.name])
+        self.makeSeedStructure(flavour_two, series_name, [seed])
+        self.makeSeed(flavour_two, series_name, seed, [two.name])
 
-        script = self.makeScript(distro)
         overrides = self.runGerminate(
             script, series_name, arch, [flavour_one, flavour_two])
-        self.assertTrue('', overrides)
+        self.assertEqual([], overrides)
 
-        seed_dir_one = os.path.join(self._seeddir, flavour_one)
+        seed_dir_one = os.path.join(
+            self.seeddir, '%s.%s' % (flavour_one, series_name))
         self.assertFilesEqual(
             os.path.join(seed_dir_one, 'STRUCTURE'),
             script.outputPath(flavour_one, series_name, arch, 'structure'))
@@ -311,7 +345,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertTrue(file_exists(script.outputPath(
             flavour_one, series_name, arch, seed)))
 
-        seed_dir_two = os.path.join(self._seeddir, flavour_two)
+        seed_dir_two = os.path.join(
+            self.seeddir, '%s.%s' % (flavour_two, series_name))
         self.assertFilesEqual(
             os.path.join(seed_dir_two, 'STRUCTURE'),
             script.outputPath(flavour_two, series_name, arch, 'structure'))
@@ -327,55 +362,61 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        one = self.makePackage([das])
-        two = self.makePackage([das], depends=one.name)
-        three = self.makePackage([das])
-        self.makePackage([das])
+        one = self.makePackage(component, [das])
+        two = self.makePackage(component, [das], depends=one.name)
+        three = self.makePackage(component, [das])
+        self.makePackage(component, [das])
         script = self.makeScript(distro)
         self.makeIndexFiles(script, distroseries)
 
         flavour = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
         seed_two = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour, [seed_one, seed_two])
+        self.makeSeedStructure(flavour, series_name, [seed_one, seed_two])
         self.makeSeed(
-            flavour, seed_one, [two.name], headers=['Task-Description: one'])
+            flavour, series_name, seed_one, [two.name],
+            headers=['Task-Description: one'])
         self.makeSeed(
-            flavour, seed_two, [three.name], headers=['Task-Description: two'])
+            flavour, series_name, seed_two, [three.name],
+            headers=['Task-Description: two'])
 
-        overrides = self.runGerminate(script, series_name, [arch], [flavour])
+        overrides = self.runGerminate(script, series_name, arch, [flavour])
         expected_overrides = [
-            (one.name, '%s/%s  Task  %s' % (one.name, arch, seed_one)),
-            (two.name, '%s/%s  Task  %s' % (two.name, arch, seed_one)),
-            (three.name, '%s/%s  Task  %s' % (three.name, arch, seed_two)),
+            '%s/%s  Task  %s' % (one.name, arch, seed_one),
+            '%s/%s  Task  %s' % (two.name, arch, seed_one),
+            '%s/%s  Task  %s' % (three.name, arch, seed_two),
             ]
-        expected_overrides = map(
-            lambda x: x[1], sorted(expected_overrides, key=lambda x: x[0]))
-        self.assertEqual(expected_overrides, overrides)
+        self.assertContentEqual(expected_overrides, overrides)
 
     def test_germinate_output_task_name(self):
         # The Task-Name field is honoured.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        package = self.makePackage([das])
+        package = self.makePackage(component, [das])
         script = self.makeScript(distro)
         self.makeIndexFiles(script, distroseries)
 
         flavour = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
         task_one = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour, [seed_one])
+        self.makeSeedStructure(flavour, series_name, [seed_one])
         self.makeSeed(
-            flavour, seed_one, [package.name],
+            flavour, series_name, seed_one, [package.name],
             headers=['Task-Name: %s' % task_one])
 
-        overrides = self.runGerminate(script, series_name, [arch], [flavour])
-        self.assertEqual(
+        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        self.assertContentEqual(
             ['%s/%s  Task  %s' % (package.name, arch, task_one)], overrides)
 
     def test_germinate_output_task_per_derivative(self):
@@ -383,9 +424,12 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        package = self.makePackage([das])
+        package = self.makePackage(component, [das])
         script = self.makeScript(distro)
         self.makeIndexFiles(script, distroseries)
 
@@ -393,19 +437,23 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         flavour_two = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
         seed_two = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour_one, [seed_one, seed_two])
-        self.makeSeed(flavour_one, seed_one, [package.name])
+        self.makeSeedStructure(flavour_one, series_name, [seed_one, seed_two])
         self.makeSeed(
-            flavour_one, seed_two, [package.name],
+            flavour_one, series_name, seed_one, [package.name],
+            headers=['Task-Description: one'])
+        self.makeSeed(
+            flavour_one, series_name, seed_two, [package.name],
             headers=['Task-Per-Derivative: 1'])
-        self.makeSeedStructure(flavour_two, [seed_one, seed_two])
-        self.makeSeed(flavour_two, seed_one, [package.name])
+        self.makeSeedStructure(flavour_two, series_name, [seed_one, seed_two])
         self.makeSeed(
-            flavour_two, seed_two, [package.name],
+            flavour_two, series_name, seed_one, [package.name],
+            headers=['Task-Description: one'])
+        self.makeSeed(
+            flavour_two, series_name, seed_two, [package.name],
             headers=['Task-Per-Derivative: 1'])
 
         overrides = self.runGerminate(
-            script, series_name, [arch], [flavour_one, flavour_two])
+            script, series_name, arch, [flavour_one, flavour_two])
         # seed_one is not per-derivative, so it is honoured only for
         # flavour_one and has a global name.  seed_two is per-derivative, so
         # it is honoured for both flavours and has the flavour name
@@ -415,17 +463,20 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             '%s/%s  Task  %s-%s' % (package.name, arch, flavour_one, seed_two),
             '%s/%s  Task  %s-%s' % (package.name, arch, flavour_two, seed_two),
             ]
-        self.assertEqual(expected_overrides, overrides)
+        self.assertContentEqual(expected_overrides, overrides)
 
     def test_germinate_output_task_seeds(self):
         # The Task-Seeds field is honoured.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        one = self.makePackage([das])
-        two = self.makePackage([das])
+        one = self.makePackage(component, [das])
+        two = self.makePackage(component, [das])
         script = self.makeScript(distro)
         self.makeIndexFiles(script, distroseries)
 
@@ -433,74 +484,79 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         seed_one = self.factory.getUniqueString()
         seed_two = self.factory.getUniqueString()
         self.makeSeedStructure(
-            flavour, [seed_one, seed_two], seed_inherit={seed_two: seed_one})
-        self.makeSeed(flavour, seed_one, [one.name])
+            flavour, series_name, [seed_one, seed_two],
+            seed_inherit={seed_two: [seed_one]})
+        self.makeSeed(flavour, series_name, seed_one, [one.name])
         self.makeSeed(
-            flavour, seed_two, [two.name],
+            flavour, series_name, seed_two, [two.name],
             headers=['Task-Seeds: %s' % seed_one])
 
-        overrides = self.runGerminate(script, series_name, [arch], [flavour])
+        overrides = self.runGerminate(script, series_name, arch, [flavour])
         expected_overrides = [
-            (one.name, '%s/%s  Task  %s' % (one.name, arch, seed_two)),
-            (two.name, '%s/%s  Task  %s' % (two.name, arch, seed_two)),
+            '%s/%s  Task  %s' % (one.name, arch, seed_two),
+            '%s/%s  Task  %s' % (two.name, arch, seed_two),
             ]
-        expected_overrides = map(
-            lambda x: x[1], sorted(expected_overrides, key=lambda x: x[0]))
-        self.assertEqual(expected_overrides, overrides)
+        self.assertContentEqual(expected_overrides, overrides)
 
     def test_germinate_output_build_essential(self):
         # runGerminate produces Build-Essential extra overrides.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch = das.architecturetag
-        package = self.makePackage([das])
+        package = self.makePackage(component, [das])
         script = self.makeScript(distro)
         self.makeIndexFiles(script, distroseries)
 
         flavour = self.factory.getUniqueString()
         seed = "build-essential"
-        self.makeSeedStructure(flavour, [seed])
-        self.makeSeed(flavour, seed, [package.name])
+        self.makeSeedStructure(flavour, series_name, [seed])
+        self.makeSeed(flavour, series_name, seed, [package.name])
 
-        overrides = self.runGerminate(script, series_name, [arch], [flavour])
-        self.assertEqual(
+        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        self.assertContentEqual(
             ['%s/%s  Build-Essential  yes' % (package.name, arch)], overrides)
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
-        # output for all architectures.
+        # output for all architectures, and sends germinate's log output to
+        # a file.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
         das_one = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch_one = das_one.architecturetag
         das_two = self.factory.makeDistroArchSeries(distroseries=distroseries)
         arch_two = das_two.architecturetag
-        package = self.makePackage([das_one, das_two])
-        script = self.makeScript(distro)
+        package = self.makePackage(component, [das_one, das_two])
+        flavour = self.factory.getUniqueString()
+        script = self.makeScript(distro, flavours=[flavour])
         self.makeIndexFiles(script, distroseries)
 
-        flavour = self.factory.getUniqueString()
         seed = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour, [seed])
+        self.makeSeedStructure(flavour, series_name, [seed])
         self.makeSeed(
-            flavour, seed, [package.name], headers=['Task-Description: task'])
+            flavour, series_name, seed, [package.name],
+            headers=['Task-Description: task'])
 
-        self.process(seed_bases=[self._seeddir])
+        script.process(seed_bases=['file://%s' % self.seeddir])
         override_path = os.path.join(
             script.config.miscroot,
             "more-extra.override.%s.main" % series_name)
-        expected_overrides = []
-        for arch in sorted([arch_one, arch_two]):
-            expected_overrides.append(
-                '%s/%s  Task  %s' % (package.name, arch, seed))
-        self.assertEqual(expected_overrides, file_contents(override_path))
+        expected_overrides = [
+            '%s/%s  Task  %s' % (package.name, arch_one, seed),
+            '%s/%s  Task  %s' % (package.name, arch_two, seed),
+            ]
+        self.assertContentEqual(
+            expected_overrides, file_contents(override_path).splitlines())
 
-    def test_run_script(self):
-        # The script will run stand-alone.
-        from canonical.launchpad.scripts.tests import run_script
-        retval, out, err = run_script(
-            'cronscripts/generate-extra-overrides.py', ['-d', 'ubuntu', '-q'])
-        self.assertEqual(0, retval)
+        log_file = os.path.join(
+            script.config.germinateroot, 'germinate.output')
+        self.assertIn('Downloading file://', file_contents(log_file))
