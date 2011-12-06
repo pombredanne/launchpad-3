@@ -71,7 +71,6 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
 
-
     def test_iterReady(self):
         # The POFileStatsJob class provides a way to iterate over the jobs
         # that are ready to run.  Initially, there aren't any.
