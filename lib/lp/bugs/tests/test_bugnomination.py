@@ -130,10 +130,11 @@ class TestCanApprove(TestCaseWithFactory):
             target=self.factory.makeProductSeries())
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
 
-    def test_driver_can_approve(self):
+    def test_privileged_users_can_approve(self):
         product = self.factory.makeProduct(driver=self.factory.makePerson())
         nomination = self.factory.makeBugNomination(
             target=self.factory.makeProductSeries(product=product))
+        self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
 
     def publishSource(self, series, sourcepackagename, component):

@@ -913,7 +913,13 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         not a package task, returns None.
         """
 
-    def userHasPrivileges(user):
+    def userHasDriverPrivileges(user):
+        """Does the user have driver privledges on the current bugtask?
+
+        :return: A boolean.
+        """
+
+    def userHasBugSupervisorPrivileges(user):
         """Is the user a privledged one, allowed to changed details on a 
         bug?.
 

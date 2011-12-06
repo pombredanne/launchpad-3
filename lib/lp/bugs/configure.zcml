@@ -192,7 +192,8 @@
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userHasPrivileges
+                    userHasDriverPrivileges
+                    userHasBugSupervisorPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require
