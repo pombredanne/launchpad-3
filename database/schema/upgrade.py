@@ -648,6 +648,8 @@ def get_bzr_details():
             log.debug("revision-id: %s", revision_id)
         else:
             log.error("Failed to retrieve Bazaar branch details")
+            log.debug("stdout: %s", out)
+            log.debug("stderr: %s", err)
             revision_id, revno, branch_nick = None, None, None
 
         _bzr_details_cache = (branch_nick, revno, revision_id)
