@@ -757,7 +757,8 @@ If cprov is made an administrator of ubuntu_team, he'll only get one
 email notification.
 
     >>> cprov = personset.getByName('cprov')
-    >>> cprov_membership = membershipset.getByPersonAndTeam(cprov, ubuntu_team)
+    >>> cprov_membership = membershipset.getByPersonAndTeam(
+    ...     cprov, ubuntu_team)
     >>> login('mark@example.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=mark)
