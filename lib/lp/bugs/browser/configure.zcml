@@ -329,12 +329,6 @@
         template="../templates/distribution-upstream-bug-report.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.cvereport.CVEReportView"
         permission="zope.Public"
         name="+cve"
@@ -364,12 +358,6 @@
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
     <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
-    <browser:page
         name="+securitycontact"
         for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
         class="lp.bugs.browser.securitycontact.SecurityContactEditView"
@@ -385,12 +373,6 @@
         name="+configure-bugtracker"
         template="../../app/templates/generic-edit.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
@@ -430,12 +412,6 @@
         name="+filebug"
         class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
         permission="zope.Public"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
