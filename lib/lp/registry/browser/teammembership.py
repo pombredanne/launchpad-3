@@ -15,7 +15,6 @@ from datetime import datetime
 import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import InputErrors
-from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Date
 
@@ -26,7 +25,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.app.errors import UnexpectedFormData
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.date import DateWidget
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
@@ -96,13 +94,6 @@ class TeamMembershipEditView(LaunchpadView):
         return '%s member %s' % (prefix, self.context.person.displayname)
 
     # Boolean helpers
-    def userIsTeamOwnerOrLPAdmin(self):
-        return (self.user.inTeam(self.context.team.teamowner) or
-                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
-
-    def allowChangeAdmin(self):
-        return self.userIsTeamOwnerOrLPAdmin() or self.isAdmin()
-
     def isActive(self):
         return self.context.status in [TeamMembershipStatus.APPROVED,
                                        TeamMembershipStatus.ADMIN]
@@ -225,12 +216,7 @@ class TeamMembershipEditView(LaunchpadView):
                 context.status == TeamMembershipStatus.ADMIN):
                 new_status = TeamMembershipStatus.APPROVED
             elif (form.get('admin') == "yes" and
-                  context.status == TeamMembershipStatus.APPROVED
-                  # XXX: salgado 2005-03-15: The clause below is a hack
-                  # to make sure only the teamowner can promote a given
-                  # member to admin, while we don't have a specific
-                  # permission setup for this.
-                  and self.userIsTeamOwnerOrLPAdmin()):
+                  context.status == TeamMembershipStatus.APPROVED):
                 new_status = TeamMembershipStatus.ADMIN
             else:
                 # No status change will happen
