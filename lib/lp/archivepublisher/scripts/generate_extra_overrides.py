@@ -151,7 +151,7 @@ class GenerateExtraOverrides(LaunchpadScript):
         # Read archive metadata.
         archive = TagFile(
             series_name, self.components, arch,
-            'file:/%s' % self.config.archiveroot, cleanup=True)
+            'file://%s' % self.config.archiveroot, cleanup=True)
         germinator.parse_archive(archive)
 
         for flavour in flavours:
