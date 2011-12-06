@@ -17,6 +17,7 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model import pofilestatsjob
@@ -47,8 +48,8 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
-        LaunchpadZopelessLayer.switchDbUser(config.pofile_stats.dbuser)
-        job.run()
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
 
@@ -66,8 +67,8 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
-        LaunchpadZopelessLayer.switchDbUser(config.pofile_stats.dbuser)
-        job.run()
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
 
