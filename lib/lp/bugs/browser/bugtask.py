@@ -2460,8 +2460,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         bug_target = self.context.context
         if IDistribution.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IDistroSeries.providedBy(bug_target):
@@ -2471,8 +2469,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 )
         elif IProduct.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IProductSeries.providedBy(bug_target):
@@ -2524,7 +2520,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('assignee', PersonPickerWidget)
     custom_widget('bug_reporter', PersonPickerWidget)
     custom_widget('bug_commenter', PersonPickerWidget)
-    custom_widget('bug_supervisor', PersonPickerWidget)
+    custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
 
     @cachedproperty
@@ -2674,6 +2670,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+    @property
+    def show_config_portlet(self):
+        if (IDistribution.providedBy(self.context) or
+            IProduct.providedBy(self.context)):
+            return True
+        else:
+            return False
 
     @property
     def columns_to_show(self):
@@ -3049,11 +3053,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
-    def shouldShowSupervisorWidget(self):
+    def shouldShowStructuralSubscriberWidget(self):
+        """Should the structural subscriber widget be shown on the page?
+
+        Show the widget when there are subordinate structures.
         """
-        Should the bug supervisor widget be shown on the advanced search page?
-        """
-        return True
+        return self.structural_subscriber_label is not None
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -3095,6 +3100,21 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def shouldShowTeamPortlet(self):
         """Should the User's Teams portlet me shown in the results?"""
         return False
+
+    @property
+    def structural_subscriber_label(self):
+        if IDistribution.providedBy(self.context):
+            return 'Package, or series subscriber'
+        elif IDistroSeries.providedBy(self.context):
+            return 'Package subscriber'
+        elif IProduct.providedBy(self.context):
+            return 'Series subscriber'
+        elif IProjectGroup.providedBy(self.context):
+            return 'Project or series subscriber'
+        elif IPerson.providedBy(self.context):
+            return 'Project, distribution, package, or series subscriber'
+        else:
+            return None
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -3198,7 +3218,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         error_message = _(
             "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_supervisor',
+        for name in ('assignee', 'bug_reporter', 'structural_subscriber',
                      'bug_commenter', 'subscriber'):
             if self.getFieldError(name):
                 self.setFieldError(
