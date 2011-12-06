@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 
+from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
@@ -45,9 +47,30 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
+        LaunchpadZopelessLayer.switchDbUser(config.pofile_stats.dbuser)
         job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
+
+    def test_with_product(self):
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        productseries = self.factory.makeProductSeries(product=product)
+        potemplate = self.factory.makePOTemplate(productseries=productseries)
+        pofile = self.factory.makePOFile('en', potemplate)
+        # Create a message so we have something to have statistics about.
+        singular = self.factory.getUniqueString()
+        self.factory.makePOTMsgSet(pofile.potemplate, singular)
+        # The statistics are still at 0, even though there is a message.
+        self.assertEqual(potemplate.messageCount(), 0)
+        job = pofilestatsjob.schedule(pofile.id)
+        # Just scheduling the job doesn't update the statistics.
+        self.assertEqual(pofile.potemplate.messageCount(), 0)
+        LaunchpadZopelessLayer.switchDbUser(config.pofile_stats.dbuser)
+        job.run()
+        # Now that the job ran, the statistics have been updated.
+        self.assertEqual(pofile.potemplate.messageCount(), 1)
+
 
     def test_iterReady(self):
         # The POFileStatsJob class provides a way to iterate over the jobs
