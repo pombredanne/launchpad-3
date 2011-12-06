@@ -21,6 +21,9 @@ from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import subprocess
 
+from bzrlib.branch import Branch
+from bzrlib.errors import NotBranchError
+
 from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.database.sqlbase import (
     connect,
@@ -629,31 +632,14 @@ def get_bzr_details():
     """
     global _bzr_details_cache
     if _bzr_details_cache is None:
-        cmd = [
-            'bzr',
-            'version-info',
-            '--custom',
-            '--template={branch_nick} {revno} {revision_id}',
-            SCHEMA_DIR,
-            ]
-        p = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        out, err = p.communicate()
-
-        if p.returncode == 0:
-            branch_nick, revno, revision_id = out.split(' ', 3)
-            log.debug("branch-nick: %s", branch_nick)
-            log.debug("revno: %s", revno)
-            log.debug("revision-id: %s", revision_id)
-        else:
-            log.error("Failed to retrieve Bazaar branch details")
-            log.debug("stdout: %s", out)
-            log.debug("stderr: %s", err)
+        try:
+            branch = Branch.open_containing(SCHEMA_DIR)[0]
+            revno, revision_id = branch.last_revision_info()
+            branch_nick = branch.get_config().get_nickname()
+        except NotBranchError:
+            log.warning("Not a Bazaar branch - branch details unavailable")
             revision_id, revno, branch_nick = None, None, None
-
         _bzr_details_cache = (branch_nick, revno, revision_id)
-
     return _bzr_details_cache
 
 
