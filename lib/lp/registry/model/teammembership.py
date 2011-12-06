@@ -57,6 +57,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     ACTIVE_STATES,
     CyclicalTeamMembershipError,
@@ -199,17 +200,9 @@ class TeamMembership(SQLBase):
 
     def canChangeExpirationDate(self, person):
         """See `ITeamMembership`."""
-        person_is_admin = self.team in person.getAdministratedTeams()
-        if (person.inTeam(self.team.teamowner) or
-                person.inTeam(getUtility(ILaunchpadCelebrities).admin)):
-            # The team owner and Launchpad admins can change the expiration
-            # date of anybody's membership.
-            return True
-        elif person_is_admin and person != self.person:
-            # A team admin can only change other member's expiration date.
-            return True
-        else:
-            return False
+        person_is_team_admin = self.team in person.getAdministratedTeams()
+        person_is_lp_admin = IPersonRoles(person).in_admin
+        return person_is_team_admin or person_is_lp_admin
 
     def setExpirationDate(self, date, user):
         """See `ITeamMembership`."""
