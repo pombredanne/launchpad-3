@@ -661,6 +661,13 @@ class IPersonPublic(Interface):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
+    teamowner = exported(
+        PublicPersonChoice(
+            title=_('Team Owner'), required=False, readonly=False,
+            vocabulary='ValidTeamOwner'),
+        exported_as='team_owner')
+    teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
+                      readonly=True)
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
 
@@ -904,14 +911,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
-    teamowner = exported(
-        PublicPersonChoice(
-            title=_('Team Owner'), required=False, readonly=False,
-            vocabulary='ValidTeamOwner'),
-        exported_as='team_owner')
-    teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
-                      readonly=True)
-
     preferredemail = exported(
         Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
