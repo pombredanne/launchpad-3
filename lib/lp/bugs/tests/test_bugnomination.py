@@ -132,10 +132,14 @@ class TestCanApprove(TestCaseWithFactory):
 
     def test_privileged_users_can_approve(self):
         product = self.factory.makeProduct(driver=self.factory.makePerson())
+        series = self.factory.makeProductSeries(product=product)
+        with celebrity_logged_in('admin'):
+            series.driver = self.factory.makePerson()
         nomination = self.factory.makeBugNomination(
-            target=self.factory.makeProductSeries(product=product))
+            target=series)
         self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
+        self.assertTrue(nomination.canApprove(series.driver))
 
     def publishSource(self, series, sourcepackagename, component):
         return self.factory.makeSourcePackagePublishingHistory(
@@ -242,7 +246,7 @@ class TestApprovePerformance(TestCaseWithFactory):
         self.assertFalse(nomination.isApproved())
         # Statement patterns we're looking for:
         pattern = "^(SELECT Bug.heat|UPDATE .* max_bug_heat)"
-        matcher = re.compile(pattern , re.DOTALL | re.I).match
+        matcher = re.compile(pattern, re.DOTALL | re.I).match
         queries_heat = lambda statement: matcher(statement) is not None
         with person_logged_in(nomination.target.owner):
             flush_database_updates()

@@ -118,9 +118,11 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
-        for task in self.bug.bugtasks:
-            if task.userHasDriverPrivileges(person):
-                return True
+        # Use the class method to check permissions because there is not
+        # yet a bugtask instance with the this target.
+        BugTask = self.bug.bugtasks[0].__class__
+        if BugTask.userHasDriverPrivilegesContext(self.target, person):
+            return True
 
         if self.distroseries is not None:
             distribution = self.distroseries.distribution
