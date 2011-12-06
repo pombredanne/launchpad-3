@@ -266,12 +266,9 @@ class TeamMembership(SQLBase):
                     % (admin.unique_displayname, canonical_url(admin)))
             else:
                 for admin in admins:
-                    # Do not tell the member to contact himself when he can't
-                    # extend his membership.
-                    if admin != member:
-                        admins_names.append(
-                            "%s <%s>" % (admin.unique_displayname,
-                                         canonical_url(admin)))
+                    admins_names.append(
+                        "%s <%s>" % (admin.unique_displayname,
+                                        canonical_url(admin)))
 
                 how_to_renew = (
                     "To prevent this membership from expiring, you should "
