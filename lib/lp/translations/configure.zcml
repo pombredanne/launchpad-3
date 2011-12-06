@@ -12,6 +12,7 @@
     i18n_domain="launchpad">
 
   <include package=".browser"/>
+  <include file="vocabularies.zcml"/>
 
   <publisher
       name="translations"
@@ -21,8 +22,7 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="translations" />
 
-    <lp:help-folder
-        folder="help" type="lp.translations.publisher.TranslationsLayer" />
+    <lp:help-folder folder="help" name="+help-translations" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">

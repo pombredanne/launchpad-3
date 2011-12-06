@@ -19,7 +19,9 @@ from datetime import (
     )
 import httplib
 import unittest
+import urllib
 import urllib2
+import urlparse
 
 import mechanize
 from openid.consumer.consumer import (
@@ -28,6 +30,7 @@ from openid.consumer.consumer import (
     )
 from openid.extensions import sreg
 from openid.yadis.discover import DiscoveryFailure
+from testtools.matchers import Contains
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -661,22 +664,46 @@ class StubbedOpenIDLogin(OpenIDLogin):
         return FakeOpenIDConsumer()
 
 
-class TestOpenIDLogin(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
+class ForwardsCorrectly:
+    """Match query_strings which get forwarded correctly.
 
-    def test_return_to_with_non_ascii_chars(self):
-        # Sometimes the +login link will have non-ascii characters in the
-        # query string, and we need to include those in the return_to URL that
-        # we pass to the OpenID provider, so we must utf-encode them.
-        request = LaunchpadTestRequest(
-            form={'non_ascii_field': 'subproc\xc3\xa9s'})
+    Correctly is defined as the form parameters ending up simply urllib quoted
+    wrapped in the return_to url.
+    """
+
+    def match(self, query_string):
+        args = dict(urlparse.parse_qsl(query_string))
+        request = LaunchpadTestRequest(form=args)
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
         view = StubbedOpenIDLogin(object(), request)
         view()
-        self.assertIn(
-            'non_ascii_field%3Dsubproc%C3%A9s', view.openid_request.return_to)
+        escaped_args = tuple(map(urllib.quote, args.items()[0]))
+        expected_fragment = urllib.quote('%s=%s' % escaped_args)
+        return Contains(
+            expected_fragment).match(view.openid_request.return_to)
+
+    def __str__(self):
+        return 'ForwardsCorrectly()'
+
+
+class TestOpenIDLogin(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_return_to_with_non_ascii_value_bug_61171(self):
+        # Sometimes the +login link will have non-ascii characters in the
+        # query param values, and we need to include those in the return_to URL
+        # that we pass to the OpenID provider. The params may not be legimate
+        # utf8 even.
+        self.assertThat('key=value\x85', ForwardsCorrectly())
+
+    def test_return_to_with_non_ascii_key_bug_897039(self):
+        # Sometimes the +login link will have non-ascii characters in the
+        # query param keys, and we need to include those in the return_to URL
+        # that we pass to the OpenID provider. The params may not be legimate
+        # utf8 even.
+        self.assertThat('key\x85=value', ForwardsCorrectly())
 
     def test_sreg_fields(self):
         # We request the user's email address and Full Name (through the SREG

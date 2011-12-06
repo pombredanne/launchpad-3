@@ -1073,6 +1073,13 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             self.request.response.redirect(
                 config.malone.ubuntu_bug_filing_url)
 
+    @property
+    def page_title(self):
+        if IMaloneApplication.providedBy(self.context):
+            return 'Report a bug'
+        else:
+            return 'Report a bug about %s' % self.context.title
+
     @safe_action
     @action("Continue", name="projectgroupsearch",
             validator="validate_search")

@@ -6,12 +6,17 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <include
+        file="vocabularies.zcml"/>
     <authorizations module=".security" />
+
+    <lp:help-folder folder="help" name="+help-soyuz" />
 
     <!-- PackageCloner -->
 

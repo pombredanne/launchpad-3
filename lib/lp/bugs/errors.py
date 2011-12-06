@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugCannotBePrivate',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'SubscriptionPrivacyViolation',
@@ -30,3 +31,8 @@ class InvalidDuplicateValue(LaunchpadValidationError):
 @error_status(httplib.BAD_REQUEST)
 class SubscriptionPrivacyViolation(Exception):
     """The subscription would violate privacy policies."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class BugCannotBePrivate(Exception):
+    """The bug is not allowed to be private."""

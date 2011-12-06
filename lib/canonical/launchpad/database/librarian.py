@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -96,8 +96,8 @@ class LibraryFileAlias(SQLBase):
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
-            foreignKey='LibraryFileContent', dbName='content', notNull=False,
-            )
+        foreignKey='LibraryFileContent', dbName='content', notNull=False,
+        )
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)

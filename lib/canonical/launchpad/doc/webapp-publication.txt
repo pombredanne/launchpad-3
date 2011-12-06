@@ -83,10 +83,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://ubuntu-openid.launchpad.dev/
     althosts:
     ----
-    vostok @ vostok.dev
-    rooturl: http://vostok.dev/
-    althosts:
-    ----
     xmlrpc @ xmlrpc.launchpad.dev
     rooturl: http://launchpad.dev/
     althosts:
@@ -115,7 +111,6 @@ request is headed to one of the officialy-used Launchpad host names:
     testopenid.dev
     translations.launchpad.dev
     ubuntu-openid.launchpad.dev
-    vostok.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 

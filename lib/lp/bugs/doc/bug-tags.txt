@@ -363,6 +363,13 @@ in the specific package.
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
 Only bugs that the supplied user has access to will be counted:
+We need a feature flag so that multi-pillar bugs can be made private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> bug_nine.setPrivate(True, getUtility(ILaunchBag).user)
@@ -377,6 +384,10 @@ Only bugs that the supplied user has access to will be counted:
     True
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
     {u'crash': 1L}
+
+Clean up the feature flag.
+    >>> flags.cleanUp()
+
 
 When context doesn't have any tags getUsedBugTags() returns a empty list.
 

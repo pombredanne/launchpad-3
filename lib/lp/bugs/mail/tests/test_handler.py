@@ -208,24 +208,24 @@ class TestMaloneHandler(TestCaseWithFactory):
         # Private bugs are accessible by their subscribers.
         person = self.factory.makePerson()
         with celebrity_logged_in('admin'):
-            bug = getUtility(IBugSet).get(1)
+            bug = getUtility(IBugSet).get(4)
             bug.setPrivate(True, person)
             bug.subscribe(person, person)
         # Drop the notifications from celebrity_logged_in.
         pop_notifications()
         message = self.getFailureForMessage(
-            '1@bugs.launchpad.dev',
+            '4@bugs.launchpad.dev',
             from_address=removeSecurityProxy(person.preferredemail).email)
         self.assertIs(None, message)
 
     def test_inaccessible_private_bug_not_found(self):
         # Private bugs don't acknowledge their existence to non-subscribers.
         with celebrity_logged_in('admin'):
-            getUtility(IBugSet).get(1).setPrivate(
+            getUtility(IBugSet).get(4).setPrivate(
                 True, self.factory.makePerson())
-        message = self.getFailureForMessage('1@bugs.launchpad.dev')
+        message = self.getFailureForMessage('4@bugs.launchpad.dev')
         self.assertIn(
-            "There is no such bug in Launchpad: 1", message)
+            "There is no such bug in Launchpad: 4", message)
 
 
 class MaloneHandlerProcessTestCase(TestCaseWithFactory):
