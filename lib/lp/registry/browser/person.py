@@ -1472,7 +1472,7 @@ class BugSubscriberPackageBugsOverView(LaunchpadView):
         L = []
         package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, self.context.getBugSubscriberPackages())
-        person_url = canonical_url(self.user)
+        person_url = canonical_url(self.context)
         for package_counts in package_counts:
             package = package_counts['package']
             L.append({
