@@ -167,6 +167,11 @@ class PoppyFileWriter(ftp._FileWriter):
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 file(signed_file, "rb").read())
         except GPGVerificationError, error:
+            log = logging.getLogger("poppy-sftp")
+            log.info("GPGVerificationError, extra debug output follows:")
+            for attr in ("args", "code", "signatures", "source"):
+                if hasattr(error, attr):
+                    log.info("%s: %s" % (attr, error.attr))
             return ("Changes file must be signed with a valid GPG "
                     "signature: %s" % error)
 
