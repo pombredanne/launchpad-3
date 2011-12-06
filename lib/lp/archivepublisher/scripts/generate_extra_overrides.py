@@ -30,6 +30,7 @@ from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
     )
+from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 
 
@@ -106,10 +107,22 @@ class GenerateExtraOverrides(LaunchpadScript):
                 'There is no PRIMARY archive for %s' %
                 self.options.distribution)
 
+    def setUpDirs(self):
+        """Create output directories if they did not already exist."""
+        germinateroot = self.config.germinateroot
+        if not file_exists(germinateroot):
+            self.logger.debug("Creating germinate root %s.", germinateroot)
+            os.makedirs(germinateroot)
+        miscroot = self.config.miscroot
+        if not file_exists(miscroot):
+            self.logger.debug("Creating misc root %s.", miscroot)
+            os.makedirs(miscroot)
+
     def setUp(self):
         """Process options, and set up internal state."""
         self.processOptions()
         self.config = self.getConfig()
+        self.setUpDirs()
 
         self.germinate_logger = logging.getLogger('germinate')
         self.germinate_logger.setLevel(logging.INFO)
