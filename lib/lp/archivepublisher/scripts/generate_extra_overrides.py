@@ -52,6 +52,10 @@ class AtomicFile:
 class GenerateExtraOverrides(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/generate-task-overrides.py."""
 
+    def __init__(self, *args, **kwargs):
+        super(GenerateExtraOverrides, self).__init__(*args, **kwargs)
+        self.germinate_logger = None
+
     def add_my_options(self):
         """Add a 'distribution' context option."""
         self.parser.add_option(
@@ -118,11 +122,10 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.logger.debug("Creating misc root %s.", miscroot)
             os.makedirs(miscroot)
 
-    def setUp(self):
-        """Process options, and set up internal state."""
-        self.processOptions()
-        self.config = self.getConfig()
-        self.setUpDirs()
+    def addLogHandler(self):
+        """Send germinate's log output to a separate file."""
+        if self.germinate_logger is not None:
+            return
 
         self.germinate_logger = logging.getLogger('germinate')
         self.germinate_logger.setLevel(logging.INFO)
@@ -131,6 +134,13 @@ class GenerateExtraOverrides(LaunchpadScript):
         handler.setFormatter(GerminateFormatter())
         self.germinate_logger.addHandler(handler)
         self.germinate_logger.propagate = False
+
+    def setUp(self):
+        """Process options, and set up internal state."""
+        self.processOptions()
+        self.config = self.getConfig()
+        self.setUpDirs()
+        self.addLogHandler()
 
     def makeSeedStructures(self, series_name, flavours, seed_bases=None):
         structures = {}
