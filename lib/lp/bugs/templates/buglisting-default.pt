@@ -54,7 +54,9 @@
         </strong>
       </p>
 
-      <a class="sprite maybe" href="https://help.launchpad.net/Bugs">
+      <a id="getting-started-help"
+         class="sprite maybe"
+         href="https://help.launchpad.net/Bugs">
         Getting started with bug tracking in Launchpad</a>.
 
       <p tal:condition="context/required:launchpad.Edit"
