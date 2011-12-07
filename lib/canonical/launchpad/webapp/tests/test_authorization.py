@@ -424,8 +424,6 @@ class TestIterAuthorization(TestCase):
     authorization.
     """
 
-    # TODO: Show that cache is updated.
-
     layer = ZopelessLayer
 
     def setUp(self):
@@ -469,49 +467,67 @@ class TestIterAuthorization(TestCase):
 
     def test_normal_unauthenticated_no_adapter(self):
         # Authorization is denied when there's no adapter.
+        cache = {}
         expected = [False]
         observed = iter_authorization(
-            self.object, self.permission, principal=None, cache=None)
+            self.object, self.permission, principal=None, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is not updated when there's no adapter.
+        self.assertEqual({}, cache)
 
     def test_normal_unauthenticated_allowed(self):
         # The result of the registered IAuthorization adapter is returned.
         self.allow()
+        cache = {}
         expected = [True]
         observed = iter_authorization(
-            self.object, self.permission, principal=None, cache=None)
+            self.object, self.permission, principal=None, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result.
+        self.assertEqual({self.object: {self.permission: True}}, cache)
 
     def test_normal_unauthenticated_denied(self):
         # The result of the registered IAuthorization adapter is returned.
         self.deny()
+        cache = {}
         expected = [False]
         observed = iter_authorization(
-            self.object, self.permission, principal=None, cache=None)
+            self.object, self.permission, principal=None, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result.
+        self.assertEqual({self.object: {self.permission: False}}, cache)
 
     def test_normal_authenticated_no_adapter(self):
         # Authorization is denied when there's no adapter.
+        cache = {}
         expected = [False]
         observed = iter_authorization(
-            self.object, self.permission, self.principal, cache=None)
+            self.object, self.permission, self.principal, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is not updated when there's no adapter.
+        self.assertEqual({}, cache)
 
     def test_normal_authenticated_allowed(self):
         # The result of the registered IAuthorization adapter is returned.
         self.allow()
+        cache = {}
         expected = [True]
         observed = iter_authorization(
-            self.object, self.permission, self.principal, cache=None)
+            self.object, self.permission, self.principal, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result.
+        self.assertEqual({self.object: {self.permission: True}}, cache)
 
     def test_normal_authenticated_denied(self):
         # The result of the registered IAuthorization adapter is returned.
         self.deny()
+        cache = {}
         expected = [False]
         observed = iter_authorization(
-            self.object, self.permission, self.principal, cache=None)
+            self.object, self.permission, self.principal, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result.
+        self.assertEqual({self.object: {self.permission: False}}, cache)
 
     #
     # Non-delegated, cached checks.
