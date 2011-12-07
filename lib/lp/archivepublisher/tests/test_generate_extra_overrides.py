@@ -563,3 +563,14 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         log_file = os.path.join(
             script.config.germinateroot, 'germinate.output')
         self.assertIn('Downloading file://', file_contents(log_file))
+
+    def test_run_script(self):
+        # The script will run stand-alone.
+        from canonical.launchpad.scripts.tests import run_script
+        distro = self.makeDistro()
+        self.factory.makeDistroSeries(distro)
+        transaction.commit()
+        retval, out, err = run_script(
+            "cronscripts/generate-extra-overrides.py",
+            ["-d", distro.name, "-q"])
+        self.assertEqual(0, retval)
