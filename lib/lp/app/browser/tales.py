@@ -1428,7 +1428,7 @@ class PillarFormatterAPI(CustomizableFormatter):
         """
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
-    def _getLinkHTML(self, view_name, rootsite, 
+    def _getLinkHTML(self, view_name, rootsite,
         template, custom_icon_template):
         """Generates html, mapping a link context to given templates.
 
@@ -1437,10 +1437,10 @@ class PillarFormatterAPI(CustomizableFormatter):
         Named string substitution is used to render the final html
         (see below for a list of allowed keys).
 
-        The link context is a dict containing info about current 
-        Products or ProjectGroups. 
-        Keys are `url`, `name`, `displayname`, `custom_icon` (if present), 
-        `css_class` (if a custom icon does not exist), 
+        The link context is a dict containing info about current
+        Products or ProjectGroups.
+        Keys are `url`, `name`, `displayname`, `custom_icon` (if present),
+        `css_class` (if a custom icon does not exist),
         'summary' (see CustomizableFormatter._make_link_summary()).
         """
         context = self._context
@@ -1454,7 +1454,6 @@ class PillarFormatterAPI(CustomizableFormatter):
         if custom_icon is None:
             mapping['css_class'] = ObjectImageDisplayAPI(context).sprite_css()
             return template % mapping
-        # A custom icon exists.
         mapping['custom_icon'] = custom_icon
         return custom_icon_template % mapping
 
@@ -1470,11 +1469,11 @@ class PillarFormatterAPI(CustomizableFormatter):
             u'<a href="%(url)s" class="bg-image" '
             u'style="background-image: url(%(custom_icon)s)">%(summary)s</a>'
             )
-        return self._getLinkHTML(view_name, rootsite, 
-            template, custom_icon_template)
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
     def link_with_displayname(self, view_name, rootsite='mainsite'):
-        """The html to show a link to a Product, ProjectGroup or 
+        """The html to show a link to a Product, ProjectGroup or
         distribution, including displayname and name.
 
         In the case of Products or ProjectGroups we display the custom
@@ -1490,8 +1489,8 @@ class PillarFormatterAPI(CustomizableFormatter):
             u'style="background-image: url(%(custom_icon)s)">'
             u'%(displayname)s</a>&nbsp;(<a href="%(url)s">%(name)s</a>)'
             )
-        return self._getLinkHTML(view_name, rootsite, 
-            template, custom_icon_template)
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
 
 class DistroSeriesFormatterAPI(CustomizableFormatter):
