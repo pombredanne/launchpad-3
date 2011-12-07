@@ -13,7 +13,7 @@ one for all team admins and another for the member.
     >>> def setStatus(membership, status, reviewer=None, comment=None,
     ...               silent=False):
     ...     """Set the status of the given membership.
-    >>> 
+    ...
     ...     Also sets the reviewer and comment, calling flush_database_updates
     ...     and transaction.commit after, to ensure the changes are flushed to
     ...     the database.
