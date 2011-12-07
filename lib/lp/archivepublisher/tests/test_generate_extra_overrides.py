@@ -185,11 +185,9 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour, series_name, "STRUCTURE")
         with open_for_writing(structure_path, "w") as structure:
             for seed_name in seed_names:
-                if seed_name in seed_inherit:
-                    print >>structure, "%s: %s" % (
-                        seed_name, " ".join(seed_inherit[seed_name]))
-                else:
-                    print >>structure, "%s:" % seed_name
+                inherit = seed_inherit.get(seed_name, [])
+                line = "%s: %s" % (seed_name, " ".join(inherit))
+                print >>structure, line.strip()
 
     def makeSeed(self, flavour, series_name, seed_name, entries,
                  headers=None):
