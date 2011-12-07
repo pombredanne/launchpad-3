@@ -169,6 +169,36 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
+    def writeGerminateOutput(self, germinator, structure, flavour,
+                             series_name, arch):
+        """Write dependency-expanded output files.
+
+        These files are a reduced subset of those written by the germinate
+        command-line program.
+        """
+        # The structure file makes it possible to figure out how the other
+        # output files relate to each other.
+        structure.write(self.composeOutputPath(
+            flavour, series_name, arch, "structure"))
+
+        # "all" and "all.sources" list the full set of binary and source
+        # packages respectively for a given flavour/suite/architecture
+        # combination.
+        all_path = self.composeOutputPath(flavour, series_name, arch, "all")
+        all_sources_path = self.composeOutputPath(
+            flavour, series_name, arch, "all.sources")
+        germinator.write_all_list(structure, all_path)
+        germinator.write_all_source_list(structure, all_sources_path)
+
+        # Write the dependency-expanded output for each seed.  Several of these
+        # are used by archive administration tools, and others are useful for
+        # debugging, so it's best to just write them all.
+        for seedname in structure.names:
+            germinator.write_full_list(
+                structure,
+                self.composeOutputPath(flavour, series_name, arch, seedname),
+                seedname)
+
     def parseTaskHeaders(self, seedtext):
         """Parse a seed for Task headers.
 
@@ -220,30 +250,8 @@ class GenerateExtraOverrides(LaunchpadScript):
         germinator.grow(structure)
         germinator.add_extras(structure)
 
-        # Write output files.
-
-        # The structure file makes it possible to figure out how the other
-        # output files relate to each other.
-        structure.write(self.composeOutputPath(
-            flavour, series_name, arch, "structure"))
-
-        # "all" and "all.sources" list the full set of binary and source
-        # packages respectively for a given flavour/suite/architecture
-        # combination.
-        all_path = self.composeOutputPath(flavour, series_name, arch, "all")
-        all_sources_path = self.composeOutputPath(
-            flavour, series_name, arch, "all.sources")
-        germinator.write_all_list(structure, all_path)
-        germinator.write_all_source_list(structure, all_sources_path)
-
-        # Write the dependency-expanded output for each seed.  Several of these
-        # are used by archive administration tools, and others are useful for
-        # debugging, so it's best to just write them all.
-        for seedname in structure.names:
-            germinator.write_full_list(
-                structure,
-                self.composeOutputPath(flavour, series_name, arch, seedname),
-                seedname)
+        self.writeGerminateOutput(germinator, structure, flavour, series_name,
+                                  arch)
 
         def write_overrides(seedname, key, value):
             packages = germinator.get_full(structure, seedname)
