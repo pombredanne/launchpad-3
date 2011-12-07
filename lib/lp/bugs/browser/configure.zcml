@@ -448,20 +448,6 @@
             classes="
                 BugTaskNavigation
                 BugTaskSetNavigation"/>
-        <browser:pages
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskPortletView"
-            permission="launchpad.View">
-            <browser:page
-                name="+portlet-alsoreportedin"
-                template="../templates/bugtask-portlet-alsoreportedin.pt"/>
-            <browser:page
-                name="+portlet-status-details"
-                template="../templates/bugtask-status-portlet-details.pt"/>
-            <browser:page
-                name="+portlet-search"
-                template="../templates/bugtarget-portlet-search.pt"/>
-        </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugSubscriptionPortletView"

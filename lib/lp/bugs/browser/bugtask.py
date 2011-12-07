@@ -24,7 +24,6 @@ __all__ = [
     'BugTaskListingItem',
     'BugTaskListingView',
     'BugTaskNavigation',
-    'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
     'BugTasksAndNominationsView',
@@ -1187,20 +1186,6 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         """Return True if there are more camments and activity to load."""
         return (
             self.next_offset < (self.total_comments + self.total_activity))
-
-
-class BugTaskPortletView:
-    """A portlet for displaying a bug's bugtasks."""
-
-    def alsoReportedIn(self):
-        """Return a list of IUpstreamBugTasks in which this bug is reported.
-
-        If self.context is an IUpstreamBugTasks, it will be excluded
-        from this list.
-        """
-        return [
-            task for task in self.context.bug.bugtasks
-            if task.id is not self.context.id]
 
 
 def get_prefix(bugtask):
