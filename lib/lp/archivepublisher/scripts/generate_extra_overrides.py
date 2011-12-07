@@ -50,6 +50,19 @@ class AtomicFile:
             os.rename('%s.new' % self.filename, self.filename)
 
 
+def find_operable_series(distribution):
+    """Find a series we can operate on in this distribution.
+
+    We are allowed to modify DEVELOPMENT or FROZEN series, but should leave
+    series with any other status alone.
+    """
+    series = distribution.currentseries
+    if series.status in (SeriesStatus.DEVELOPMENT, SeriesStatus.FROZEN):
+        return series
+    else:
+        return None
+
+
 class GenerateExtraOverrides(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/generate-task-overrides.py."""
 
@@ -82,18 +95,11 @@ class GenerateExtraOverrides(LaunchpadScript):
             raise OptionValueError(
                 "Distribution '%s' not found." % self.options.distribution)
 
-        series = None
-        wanted_status = (SeriesStatus.DEVELOPMENT,
-                         SeriesStatus.FROZEN)
-        for status in wanted_status:
-            series = self.distribution.getSeriesByStatus(status)
-            if series.count() > 0:
-                break
-        else:
+        self.series = find_operable_series(self.distribution)
+        if self.series is None:
             raise LaunchpadScriptFailure(
                 'There is no DEVELOPMENT distroseries for %s' %
                 self.options.distribution)
-        self.series = series[0]
 
         # Even if DistroSeries.component_names starts including partner, we
         # don't want it; this applies to the primary archive only.
