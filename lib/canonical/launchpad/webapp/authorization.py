@@ -239,10 +239,6 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
     if no caching is desired. Only leaf values are cached; the results of a
     delegated authorization are not cached.
     """
-    # XXX: GavinPanella 2011-12-03 bug=???: Surely for delegated checks we
-    # still need to do a lot of the other stuff in checkPermission(), like
-    # privacy checks, and the other checks for zope.Public, etc.
-
     # Check if this calculation has already been done.
     if cache is not None and objecttoauthorize in cache:
         if permission in cache[objecttoauthorize]:
