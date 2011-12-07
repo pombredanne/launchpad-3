@@ -190,9 +190,9 @@ class GenerateExtraOverrides(LaunchpadScript):
         germinator.write_all_list(structure, path("all"))
         germinator.write_all_source_list(structure, path("all.sources"))
 
-        # Write the dependency-expanded output for each seed.  Several of these
-        # are used by archive administration tools, and others are useful for
-        # debugging, so it's best to just write them all.
+        # Write the dependency-expanded output for each seed.  Several of
+        # these are used by archive administration tools, and others are
+        # useful for debugging, so it's best to just write them all.
         for seedname in structure.names:
             germinator.write_full_list(structure, path(seedname), seedname)
 
@@ -274,7 +274,8 @@ class GenerateExtraOverrides(LaunchpadScript):
                     for scan_seed in scan_seeds:
                         write_overrides(scan_seed, "Task", task)
 
-        # Generate apt-ftparchive "extra overrides" for Build-Essential fields.
+        # Generate apt-ftparchive "extra overrides" for Build-Essential
+        # fields.
         if "build-essential" in structure.names and primary_flavour:
             write_overrides("build-essential", "Build-Essential", "yes")
 
