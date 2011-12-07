@@ -403,7 +403,7 @@ class AnotherObjectTwo:
     """Another arbitrary object."""
 
 
-class DelegateToAnotherObject(AuthorizationBase):
+class Delegate(AuthorizationBase):
     """An `IAuthorization` adapter that delegates to `AnotherObject`."""
 
     permission = "making.Hay"
@@ -425,7 +425,6 @@ class TestIterAuthorization(TestCase):
     """
 
     # TODO: Show that cache is updated.
-    # TODO: Use more tokens.
 
     layer = ZopelessLayer
 
@@ -451,19 +450,18 @@ class TestIterAuthorization(TestCase):
             ZopeAdapterFixture(Explode, [Object], name=self.permission))
 
     def delegate(self):
+        # Delegate auth for Object to AnotherObject{One,Two}.
         self.useFixture(
             ZopeAdapterFixture(
-                DelegateToAnotherObject, [Object], name=self.permission))
+                Delegate, [Object], name=self.permission))
         # Allow auth to AnotherObjectOne.
         self.useFixture(
             ZopeAdapterFixture(
-                Allow, [AnotherObjectOne], name=(
-                    DelegateToAnotherObject.permission)))
+                Allow, [AnotherObjectOne], name=Delegate.permission))
         # Deny auth to AnotherObjectTwo.
         self.useFixture(
             ZopeAdapterFixture(
-                Deny, [AnotherObjectTwo], name=(
-                    DelegateToAnotherObject.permission)))
+                Deny, [AnotherObjectTwo], name=Delegate.permission))
 
     #
     # Non-delegated, non-cached checks.
