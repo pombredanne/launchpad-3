@@ -155,7 +155,7 @@ class GenerateExtraOverrides(LaunchpadScript):
                 "%s.%s" % (flavour, series_name), seed_bases=seed_bases)
         return structures
 
-    def outputPath(self, flavour, series_name, arch, base):
+    def composeOutputPath(self, flavour, series_name, arch, base):
         return os.path.join(
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
@@ -190,14 +190,15 @@ class GenerateExtraOverrides(LaunchpadScript):
 
             # The structure file makes it possible to figure out how the
             # other output files relate to each other.
-            structure.write(self.outputPath(
+            structure.write(self.composeOutputPath(
                 flavour, series_name, arch, "structure"))
 
             # "all" and "all.sources" list the full set of binary and source
             # packages respectively for a given flavour/suite/architecture
             # combination.
-            all_path = self.outputPath(flavour, series_name, arch, "all")
-            all_sources_path = self.outputPath(
+            all_path = self.composeOutputPath(
+                flavour, series_name, arch, "all")
+            all_sources_path = self.composeOutputPath(
                 flavour, series_name, arch, "all.sources")
             germinator.write_all_list(structure, all_path)
             germinator.write_all_source_list(structure, all_sources_path)
@@ -208,7 +209,8 @@ class GenerateExtraOverrides(LaunchpadScript):
             for seedname in structure.names:
                 germinator.write_full_list(
                     structure,
-                    self.outputPath(flavour, series_name, arch, seedname),
+                    self.composeOutputPath(
+                        flavour, series_name, arch, seedname),
                     seedname)
 
             def writeOverrides(seedname, key, value):

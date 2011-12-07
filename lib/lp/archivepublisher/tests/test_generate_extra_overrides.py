@@ -279,7 +279,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         script = self.makeScript(distro)
         self.assertEqual(["main"], script.components)
 
-    def test_output_path_in_germinateroot(self):
+    def test_compose_output_path_in_germinateroot(self):
         # Output files are written to the correct locations under
         # germinateroot.
         distro = self.makeDistro()
@@ -288,7 +288,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         flavour = self.factory.getUniqueString()
         arch = self.factory.getUniqueString()
         base = self.factory.getUniqueString()
-        output = script.outputPath(flavour, distroseries.name, arch, base)
+        output = script.composeOutputPath(
+            flavour, distroseries.name, arch, base)
         self.assertEqual(
             "%s/%s_%s_%s_%s" % (
                 script.config.germinateroot, base, flavour, distroseries.name,
@@ -338,24 +339,26 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             self.seeddir, "%s.%s" % (flavour_one, series_name))
         self.assertFilesEqual(
             os.path.join(seed_dir_one, "STRUCTURE"),
-            script.outputPath(flavour_one, series_name, arch, "structure"))
-        self.assertTrue(file_exists(script.outputPath(
+            script.composeOutputPath(
+                flavour_one, series_name, arch, "structure"))
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_one, series_name, arch, "all")))
-        self.assertTrue(file_exists(script.outputPath(
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_one, series_name, arch, "all.sources")))
-        self.assertTrue(file_exists(script.outputPath(
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_one, series_name, arch, seed)))
 
         seed_dir_two = os.path.join(
             self.seeddir, "%s.%s" % (flavour_two, series_name))
         self.assertFilesEqual(
             os.path.join(seed_dir_two, "STRUCTURE"),
-            script.outputPath(flavour_two, series_name, arch, "structure"))
-        self.assertTrue(file_exists(script.outputPath(
+            script.composeOutputPath(
+                flavour_two, series_name, arch, "structure"))
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_two, series_name, arch, "all")))
-        self.assertTrue(file_exists(script.outputPath(
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_two, series_name, arch, "all.sources")))
-        self.assertTrue(file_exists(script.outputPath(
+        self.assertTrue(file_exists(script.composeOutputPath(
             flavour_two, series_name, arch, seed)))
 
     def test_germinate_output_task(self):
