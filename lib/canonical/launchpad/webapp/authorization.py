@@ -221,10 +221,18 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         # If there are delegated authorizations they must *all* be allowed
         # before permission to access objecttoauthorize is granted.
-        return all(
+        result = all(
             iter_authorization(
                 objecttoauthorize, permission, principal,
                 participation_cache, breadth_first=True))
+
+        # Cache the top-level result. Be warned that this result /may/ be
+        # based on 10s or 100s of delegated authorization checks, and so even
+        # small changes in the model data could invalidate this result.
+        if object_cache is not None:
+            object_cache[permission] = result
+
+        return result
 
 
 def iter_authorization(objecttoauthorize, permission, principal, cache,

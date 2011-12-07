@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from random import getrandbits
 import StringIO
-import unittest
 
 import transaction
 from zope.component import (
@@ -19,13 +18,14 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.testing.cleanup import CleanUp
+import zope.testing.cleanup
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
     check_permission,
     iter_authorization,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
     LaunchpadSecurityPolicy,
     precache_permission_for_objects,
     )
@@ -151,14 +151,16 @@ class FakeStoreSelector:
         pass
 
 
-class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
+class TestCheckPermissionCaching(TestCase):
     """Test the caching done by `LaunchpadSecurityPolicy.checkPermission`."""
 
     def setUp(self):
         """Register a new permission and a fake store selector."""
+        zope.testing.cleanup.cleanUp()
         super(TestCheckPermissionCaching, self).setUp()
         self.factory = ObjectFactory()
         provideUtility(FakeStoreSelector, IStoreSelector)
+        self.addCleanup(zope.testing.cleanup.cleanUp)
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
@@ -197,6 +199,37 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         policy.checkPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
+
+    def test_checkPermission_delegated_cache_unauthenticated(self):
+        # checkPermission caches the result of checkUnauthenticated for a
+        # particular object and permission, even if that object's
+        # authorization has been delegated.
+        request = self.makeRequest()
+        policy = LaunchpadSecurityPolicy(request)
+        # Delegate auth for Object to AnotherObject{One,Two}.
+        permission = self.factory.getUniqueString()
+        self.useFixture(
+            ZopeAdapterFixture(Delegate, [Object], name=permission))
+        # Allow auth to AnotherObjectOne.
+        self.useFixture(
+            ZopeAdapterFixture(
+                Allow, [AnotherObjectOne], name=Delegate.permission))
+        # Deny auth to AnotherObjectTwo.
+        self.useFixture(
+            ZopeAdapterFixture(
+                Deny, [AnotherObjectTwo], name=Delegate.permission))
+        # Calling checkPermission() populates the participation cache.
+        objecttoauthorize = Object()
+        policy.checkPermission(permission, objecttoauthorize)
+        # It contains results for objecttoauthorize and the two objects that
+        # its authorization was delegated to.
+        cache = request.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+        cache_expected = {
+            objecttoauthorize: {permission: False},
+            Delegate.object_one: {Delegate.permission: True},
+            Delegate.object_two: {Delegate.permission: False},
+            }
+        self.assertEqual(cache_expected, dict(cache))
 
     def test_checkPermission_cache_authenticated(self):
         # checkPermission caches the result of checkAuthenticated for a
@@ -280,15 +313,18 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
             checker_factory.calls)
 
 
-class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
-    CleanUp, unittest.TestCase):
+class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
 
     def setUp(self):
+        zope.testing.cleanup.cleanUp()
+        cls = TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel
+        super(cls, self).setUp()
         self.principal = LaunchpadPrincipal(
             'foo.bar@canonical.com', 'foo', 'foo', object())
         self.security = LaunchpadSecurityPolicy()
         provideAdapter(
             adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
+        self.addCleanup(zope.testing.cleanup.cleanUp)
 
     def test_no_scope(self):
         """Principal's access level is used when no scope is given."""
