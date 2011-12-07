@@ -2128,6 +2128,11 @@ CREATE OR REPLACE FUNCTION check_email_address_person_account(
     RETURNS boolean
     LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
+    # It's possible for an EmailAddress to be created without an
+    # account. If that happens, and this function is called, we return
+    # True so as to avoid breakages.
+    if new_account is None:
+        return True
     results = plpy.execute("""
         SELECT account FROM Person WHERE id = %s""" % person)
     return results[0]['account'] == new_account
