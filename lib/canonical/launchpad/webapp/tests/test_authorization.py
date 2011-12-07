@@ -434,9 +434,6 @@ class TestIterAuthorization(TestCase):
         self.object = Object()
         self.principal = FakeLaunchpadPrincipal()
         self.permission = "docking.Permission"
-        provideUtility(
-            PermissionAccessLevel(), ILaunchpadPermission,
-            self.permission)
 
     def allow(self):
         """Allow authorization for `Object` with `self.permission`."""
