@@ -158,11 +158,11 @@ teamowner.
     >>> print priv_team.icon
     None
 
-    >>> print priv_team.teamowner
+    >>> print priv_team.allmembers
     Traceback (most recent call last):
     ...
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
-        'teamowner', 'launchpad.View')
+        'allmembers', 'launchpad.View')
 
 Anonymous users do not have permission.
     >>> login(ANONYMOUS)
