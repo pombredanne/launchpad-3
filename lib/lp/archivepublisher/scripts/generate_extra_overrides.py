@@ -11,6 +11,7 @@ __all__ = [
 import logging
 from optparse import OptionValueError
 import os
+import re
 
 from germinate.germinator import Germinator
 from germinate.archive import TagFile
@@ -206,12 +207,13 @@ class GenerateExtraOverrides(LaunchpadScript):
         with keys canonicalised to lower-case.
         """
         task_headers = {}
+        task_header_regex = re.compile(
+            r"task-(.*?):(.*)", flags=re.IGNORECASE)
         for line in seedtext:
-            if line.lower().startswith("task-") and ":" in line:
-                key, value = line.split(":", 1)
-                # e.g. "Task-Name" => "name"
-                key = key[5:].lower()
-                task_headers[key] = value.strip()
+            match = task_header_regex.match(line)
+            if match is not None:
+                key, value = match.groups()
+                task_headers[key.lower()] = value.strip()
         return task_headers
 
     def getTaskName(self, task_headers, flavour, seedname, primary_flavour):
