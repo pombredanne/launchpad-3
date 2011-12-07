@@ -262,12 +262,6 @@
         permission="zope.Public"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
-        for="lp.registry.interfaces.person.IPerson"
-        name="+portlet-otherpackages"
-        permission="zope.Public"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
-        template="../templates/person-portlet-otherpackages.pt"/>
-    <browser:page
         name="+bugs"
         for="lp.registry.interfaces.person.IPerson"
         class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
@@ -300,7 +294,7 @@
     <browser:page
         name="+packagebugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        class="lp.registry.browser.person.BugSubscriberPackageBugsOverView"
         permission="zope.Public"
         template="../templates/person-packagebugs-overview.pt"/>
     <browser:page
