@@ -45,7 +45,7 @@
                     ['reporter', 'Reporter'],
                     ['assignee', 'Assignee'],
                     ['targetname', 'Package/Project/Series name'],
-                    ['milestone', 'Milestone'],
+                    ['milestone_name', 'Milestone'],
                     ['datecreated', 'Bug age'],
                     ['date_last_updated', 'Date bug last updated'],
                     ['tag', 'Bug Tags'],
@@ -69,6 +69,7 @@
                 date_last_updated: false,
                 tag: false
             });
+
             Y.on('orderbybar:sort', function(e) {
                 navigator.first_batch(e);
             });
@@ -78,6 +79,11 @@
                 model: navigator.get('model')
             });
             list_util.render();
+            navigator.get('model').get('history').after(
+                'change', function(e) {
+                     Y.lp.buglisting_utils.update_sort_button_visibility(
+                         orderby, e.newVal);
+                });
         });
     });
   </script>
