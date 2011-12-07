@@ -209,10 +209,8 @@ class GenerateExtraOverrides(LaunchpadScript):
                     package, arch, key, value)
 
         # Generate apt-ftparchive "extra overrides" for Task fields.
-        for seedname in structure.names:
-            if seedname == "extra":
-                continue
-
+        seednames = [name for name in structure.names if name != "extra"]
+        for seedname in seednames:
             task_headers = {}
             with structure[seedname] as seedtext:
                 for line in seedtext:
