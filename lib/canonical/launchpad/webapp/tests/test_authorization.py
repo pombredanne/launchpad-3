@@ -407,14 +407,16 @@ class Delegate(AuthorizationBase):
     """An `IAuthorization` adapter that delegates to `AnotherObject`."""
 
     permission = "making.Hay"
+    object_one = AnotherObjectOne()
+    object_two = AnotherObjectTwo()
 
     def checkUnauthenticated(self):
-        yield AnotherObjectOne(), self.permission
-        yield AnotherObjectTwo(), self.permission
+        yield self.object_one, self.permission
+        yield self.object_two, self.permission
 
     def checkAccountAuthenticated(self, account):
-        yield AnotherObjectOne(), self.permission
-        yield AnotherObjectTwo(), self.permission
+        yield self.object_one, self.permission
+        yield self.object_two, self.permission
 
 
 class TestIterAuthorization(TestCase):
@@ -589,16 +591,32 @@ class TestIterAuthorization(TestCase):
         # Authorization is delegated and we see the results of authorization
         # against the objects to which it has been delegated.
         self.delegate()
+        cache = {}
         expected = [True, False]
         observed = iter_authorization(
-            self.object, self.permission, principal=None, cache=None)
+            self.object, self.permission, principal=None, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result of the leaf checks and not the
+        # delegated check.
+        cache_expected = {
+            Delegate.object_one: {Delegate.permission: True},
+            Delegate.object_two: {Delegate.permission: False},
+            }
+        self.assertEqual(cache_expected, cache)
 
     def test_delegated_authenticated(self):
         # Authorization is delegated and we see the results of authorization
         # against the objects to which it has been delegated.
         self.delegate()
+        cache = {}
         expected = [True, False]
         observed = iter_authorization(
-            self.object, self.permission, self.principal, cache=None)
+            self.object, self.permission, self.principal, cache=cache)
         self.assertEqual(expected, list(observed))
+        # The cache is updated with the result of the leaf checks and not the
+        # delegated check.
+        cache_expected = {
+            Delegate.object_one: {Delegate.permission: True},
+            Delegate.object_two: {Delegate.permission: False},
+            }
+        self.assertEqual(cache_expected, cache)
