@@ -56,6 +56,36 @@ from lp.testing.factory import ObjectFactory
 from lp.testing.fixture import ZopeAdapterFixture
 
 
+class Allow(AuthorizationBase):
+    """An `IAuthorization` adapter allowing everything."""
+
+    def checkUnauthenticated(self):
+        return True
+
+    def checkAccountAuthenticated(self, account):
+        return True
+
+
+class Deny(AuthorizationBase):
+    """An `IAuthorization` adapter denying everything."""
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAccountAuthenticated(self, account):
+        return False
+
+
+class Explode(AuthorizationBase):
+    """An `IAuthorization` adapter that explodes when used."""
+
+    def checkUnauthenticated(self):
+        raise NotImplementedError()
+
+    def checkAccountAuthenticated(self, account):
+        raise NotImplementedError()
+
+
 class Checker(AuthorizationBase):
     """See `IAuthorization`.
 
@@ -108,6 +138,30 @@ class Object:
     For simplicity we implement `IObjectPrivacy` directly."""
     implements(IObjectPrivacy)
     is_private = False
+
+
+class AnotherObjectOne:
+    """Another arbitrary object."""
+
+
+class AnotherObjectTwo:
+    """Another arbitrary object."""
+
+
+class Delegate(AuthorizationBase):
+    """An `IAuthorization` adapter that delegates."""
+
+    permission = "making.Hay"
+    object_one = AnotherObjectOne()
+    object_two = AnotherObjectTwo()
+
+    def checkUnauthenticated(self):
+        yield self.object_one, self.permission
+        yield self.object_two, self.permission
+
+    def checkAccountAuthenticated(self, account):
+        yield self.object_one, self.permission
+        yield self.object_two, self.permission
 
 
 class PermissionAccessLevel:
@@ -399,60 +453,6 @@ class TestPrecachePermissionForObjects(TestCase):
         # Confirm that the objects have the permission set.
         self.assertTrue(check_permission('launchpad.View', objects[0]))
         self.assertTrue(check_permission('launchpad.View', objects[1]))
-
-
-class Allow(AuthorizationBase):
-    """An `IAuthorization` adapter allowing everything."""
-
-    def checkUnauthenticated(self):
-        return True
-
-    def checkAccountAuthenticated(self, account):
-        return True
-
-
-class Deny(AuthorizationBase):
-    """An `IAuthorization` adapter denying everything."""
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAccountAuthenticated(self, account):
-        return False
-
-
-class Explode(AuthorizationBase):
-    """An `IAuthorization` adapter that explodes when used."""
-
-    def checkUnauthenticated(self):
-        raise NotImplementedError()
-
-    def checkAccountAuthenticated(self, account):
-        raise NotImplementedError()
-
-
-class AnotherObjectOne:
-    """Another arbitrary object."""
-
-
-class AnotherObjectTwo:
-    """Another arbitrary object."""
-
-
-class Delegate(AuthorizationBase):
-    """An `IAuthorization` adapter that delegates to `AnotherObject`."""
-
-    permission = "making.Hay"
-    object_one = AnotherObjectOne()
-    object_two = AnotherObjectTwo()
-
-    def checkUnauthenticated(self):
-        yield self.object_one, self.permission
-        yield self.object_two, self.permission
-
-    def checkAccountAuthenticated(self, account):
-        yield self.object_one, self.permission
-        yield self.object_two, self.permission
 
 
 class TestIterAuthorization(TestCase):
