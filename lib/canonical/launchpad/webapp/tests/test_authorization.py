@@ -475,7 +475,7 @@ class TestIterAuthorization(TestCase):
         self.assertEqual(expected, list(observed))
 
     def test_normal_unauthenticated_allowed(self):
-        # Authorization is allowed when the adapter returns True.
+        # The result of the registered IAuthorization adapter is returned.
         self.allow()
         expected = [True]
         observed = iter_authorization(
@@ -483,7 +483,7 @@ class TestIterAuthorization(TestCase):
         self.assertEqual(expected, list(observed))
 
     def test_normal_unauthenticated_denied(self):
-        # Authorization is denied when the adapter returns True.
+        # The result of the registered IAuthorization adapter is returned.
         self.deny()
         expected = [False]
         observed = iter_authorization(
@@ -498,7 +498,7 @@ class TestIterAuthorization(TestCase):
         self.assertEqual(expected, list(observed))
 
     def test_normal_authenticated_allowed(self):
-        # Authorization is allowed when the adapter returns True.
+        # The result of the registered IAuthorization adapter is returned.
         self.allow()
         expected = [True]
         observed = iter_authorization(
@@ -506,7 +506,7 @@ class TestIterAuthorization(TestCase):
         self.assertEqual(expected, list(observed))
 
     def test_normal_authenticated_denied(self):
-        # Authorization is denied when the adapter returns True.
+        # The result of the registered IAuthorization adapter is returned.
         self.deny()
         expected = [False]
         observed = iter_authorization(
