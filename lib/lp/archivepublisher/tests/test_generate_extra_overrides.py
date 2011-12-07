@@ -98,17 +98,17 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         return self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
 
-    def makeScript(self, distribution, run_setup=True, flavours=None):
+    def makeScript(self, distribution, run_setup=True, extra_args=None):
         """Create a script for testing."""
-        if distribution is None:
-            distribution = self.makeDistro()
-        test_args = ["-d", distribution.name]
-        if flavours is not None:
-            test_args.extend(flavours)
+        test_args = []
+        if distribution is not None:
+            test_args.extend(["-d", distribution.name])
+        if extra_args is not None:
+            test_args.extend(extra_args)
         script = GenerateExtraOverrides(test_args=test_args)
         script.logger = DevNullLogger()
         script.txn = FakeTransaction()
-        if run_setup:
+        if distribution is not None and run_setup:
             script.setUp()
         else:
             script.distribution = distribution
@@ -236,18 +236,14 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def test_requires_distro(self):
         # The --distribution or -d argument is mandatory.
-        script = GenerateExtraOverrides(test_args=[])
-        script.logger = DevNullLogger()
-        script.txn = FakeTransaction()
+        script = self.makeScript(None)
         self.assertRaises(OptionValueError, script.processOptions)
 
     def test_requires_real_distro(self):
         # An incorrect distribution name is flagged as an invalid option
         # value.
-        script = GenerateExtraOverrides(
-            test_args=["-d", self.factory.getUniqueString()])
-        script.logger = DevNullLogger()
-        script.txn = FakeTransaction()
+        script = self.makeScript(
+            None, extra_args=["-d", self.factory.getUniqueString()])
         self.assertRaises(OptionValueError, script.processOptions)
 
     def test_looks_up_distro(self):
@@ -421,9 +417,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # The Task-Name field is honoured.
         series_name = self.factory.getUniqueString()
         package = self.factory.getUniqueString()
-        script = GenerateExtraOverrides(test_args=[])
-        script.logger = DevNullLogger()
-        script.txn = FakeTransaction()
+        script = self.makeScript(None)
 
         flavour = self.factory.getUniqueString()
         seed = self.factory.getUniqueString()
@@ -440,9 +434,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # The Task-Per-Derivative field is honoured.
         series_name = self.factory.getUniqueString()
         package = self.factory.getUniqueString()
-        script = GenerateExtraOverrides(test_args=[])
-        script.logger = DevNullLogger()
-        script.txn = FakeTransaction()
+        script = self.makeScript(None)
 
         flavour_one = self.factory.getUniqueString()
         flavour_two = self.factory.getUniqueString()
@@ -487,9 +479,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         series_name = self.factory.getUniqueString()
         one = self.getUniqueString()
         two = self.getUniqueString()
-        script = GenerateExtraOverrides(test_args=[])
-        script.logger = DevNullLogger()
-        script.txn = FakeTransaction()
+        script = self.makeScript(None)
 
         flavour = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
@@ -543,7 +533,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         arch_two = das_two.architecturetag
         package = self.makePackage(component, [das_one, das_two])
         flavour = self.factory.getUniqueString()
-        script = self.makeScript(distro, flavours=[flavour])
+        script = self.makeScript(distro, extra_args=[flavour])
         self.makeIndexFiles(script, distroseries)
 
         seed = self.factory.getUniqueString()
