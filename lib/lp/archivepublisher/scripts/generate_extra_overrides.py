@@ -8,6 +8,7 @@ __all__ = [
     'GenerateExtraOverrides',
     ]
 
+from functools import partial
 import logging
 from optparse import OptionValueError
 import os
@@ -177,28 +178,23 @@ class GenerateExtraOverrides(LaunchpadScript):
         These files are a reduced subset of those written by the germinate
         command-line program.
         """
+        path = partial(self.composeOutputPath, flavour, series_name, arch)
+
         # The structure file makes it possible to figure out how the other
         # output files relate to each other.
-        structure.write(self.composeOutputPath(
-            flavour, series_name, arch, "structure"))
+        structure.write(path("structure"))
 
         # "all" and "all.sources" list the full set of binary and source
         # packages respectively for a given flavour/suite/architecture
         # combination.
-        all_path = self.composeOutputPath(flavour, series_name, arch, "all")
-        all_sources_path = self.composeOutputPath(
-            flavour, series_name, arch, "all.sources")
-        germinator.write_all_list(structure, all_path)
-        germinator.write_all_source_list(structure, all_sources_path)
+        germinator.write_all_list(structure, path("all"))
+        germinator.write_all_source_list(structure, path("all.sources"))
 
         # Write the dependency-expanded output for each seed.  Several of these
         # are used by archive administration tools, and others are useful for
         # debugging, so it's best to just write them all.
         for seedname in structure.names:
-            germinator.write_full_list(
-                structure,
-                self.composeOutputPath(flavour, series_name, arch, seedname),
-                seedname)
+            germinator.write_full_list(structure, path(seedname), seedname)
 
     def parseTaskHeaders(self, seedtext):
         """Parse a seed for Task headers.
@@ -244,6 +240,13 @@ class GenerateExtraOverrides(LaunchpadScript):
             scan_seeds.update(task_headers["seeds"].split())
         return sorted(scan_seeds)
 
+    def writeOverrides(self, override_file, germinator, structure, arch,
+                       seedname, key, value):
+        packages = germinator.get_full(structure, seedname)
+        for package in sorted(packages):
+            print >>override_file, "%s/%s  %s  %s" % (
+                package, arch, key, value)
+
     def germinateArchFlavour(self, override_file, germinator, series_name,
                              arch, flavour, structure, primary_flavour):
         """Germinate seeds on a single flavour for a single architecture."""
@@ -255,11 +258,8 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.writeGerminateOutput(germinator, structure, flavour, series_name,
                                   arch)
 
-        def write_overrides(seedname, key, value):
-            packages = germinator.get_full(structure, seedname)
-            for package in sorted(packages):
-                print >>override_file, "%s/%s  %s  %s" % (
-                    package, arch, key, value)
+        write_overrides = partial(
+            self.writeOverrides, override_file, germinator, structure, arch)
 
         # Generate apt-ftparchive "extra overrides" for Task fields.
         seednames = [name for name in structure.names if name != "extra"]
