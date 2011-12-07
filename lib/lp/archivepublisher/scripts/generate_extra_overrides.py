@@ -202,7 +202,7 @@ class GenerateExtraOverrides(LaunchpadScript):
                 self.composeOutputPath(flavour, series_name, arch, seedname),
                 seedname)
 
-        def writeOverrides(seedname, key, value):
+        def write_overrides(seedname, key, value):
             packages = germinator.get_full(structure, seedname)
             for package in sorted(packages):
                 print >>override_file, "%s/%s  %s  %s" % (
@@ -244,11 +244,11 @@ class GenerateExtraOverrides(LaunchpadScript):
             if "seeds" in task_headers:
                 scan_seeds.update(task_headers["seeds"].split())
             for scan_seed in sorted(scan_seeds):
-                writeOverrides(scan_seed, "Task", task)
+                write_overrides(scan_seed, "Task", task)
 
         # Generate apt-ftparchive "extra overrides" for Build-Essential fields.
         if "build-essential" in structure.names and primary_flavour:
-            writeOverrides("build-essential", "Build-Essential", "yes")
+            write_overrides("build-essential", "Build-Essential", "yes")
 
     def germinateArch(self, override_file, series_name, arch, flavours,
                       structures):
