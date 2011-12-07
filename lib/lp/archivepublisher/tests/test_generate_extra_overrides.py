@@ -296,19 +296,19 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 arch),
             output)
 
-    def runGerminate(self, script, series_name, arch, flavours):
-        """Helper to call script.runGerminate and return overrides."""
+    def fetchGerminatedOverrides(self, script, series_name, arch, flavours):
+        """Helper to call script.germinateArch and return overrides."""
         structures = script.makeSeedStructures(
             series_name, flavours, seed_bases=["file://%s" % self.seeddir])
 
         override_fd, override_path = tempfile.mkstemp()
         with os.fdopen(override_fd, "w") as override_file:
-            script.runGerminate(
+            script.germinateArch(
                 override_file, series_name, arch, flavours, structures)
         return file_contents(override_path).splitlines()
 
     def test_germinate_output(self):
-        # A single call to runGerminate produces output for all flavours on
+        # A single call to germinateArch produces output for all flavours on
         # one architecture.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
@@ -331,7 +331,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour_two, series_name, [seed])
         self.makeSeed(flavour_two, series_name, seed, [two.name])
 
-        overrides = self.runGerminate(
+        overrides = self.fetchGerminatedOverrides(
             script, series_name, arch, [flavour_one, flavour_two])
         self.assertEqual([], overrides)
 
@@ -362,7 +362,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour_two, series_name, arch, seed)))
 
     def test_germinate_output_task(self):
-        # runGerminate produces Task extra overrides.
+        # germinateArch produces Task extra overrides.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
@@ -389,7 +389,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour, series_name, seed_two, [three.name],
             headers=["Task-Description: two"])
 
-        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        overrides = self.fetchGerminatedOverrides(
+            script, series_name, arch, [flavour])
         expected_overrides = [
             "%s/%s  Task  %s" % (one.name, arch, seed_one),
             "%s/%s  Task  %s" % (two.name, arch, seed_one),
@@ -419,7 +420,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour, series_name, seed_one, [package.name],
             headers=["Task-Name: %s" % task_one])
 
-        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        overrides = self.fetchGerminatedOverrides(
+            script, series_name, arch, [flavour])
         self.assertContentEqual(
             ["%s/%s  Task  %s" % (package.name, arch, task_one)], overrides)
 
@@ -456,7 +458,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour_two, series_name, seed_two, [package.name],
             headers=["Task-Per-Derivative: 1"])
 
-        overrides = self.runGerminate(
+        overrides = self.fetchGerminatedOverrides(
             script, series_name, arch, [flavour_one, flavour_two])
         # seed_one is not per-derivative, so it is honoured only for
         # flavour_one and has a global name.  seed_two is per-derivative, so
@@ -497,7 +499,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             flavour, series_name, seed_two, [two.name],
             headers=["Task-Seeds: %s" % seed_one])
 
-        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        overrides = self.fetchGerminatedOverrides(
+            script, series_name, arch, [flavour])
         expected_overrides = [
             "%s/%s  Task  %s" % (one.name, arch, seed_two),
             "%s/%s  Task  %s" % (two.name, arch, seed_two),
@@ -505,7 +508,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertContentEqual(expected_overrides, overrides)
 
     def test_germinate_output_build_essential(self):
-        # runGerminate produces Build-Essential extra overrides.
+        # germinateArch produces Build-Essential extra overrides.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         series_name = distroseries.name
@@ -523,7 +526,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour, series_name, [seed])
         self.makeSeed(flavour, series_name, seed, [package.name])
 
-        overrides = self.runGerminate(script, series_name, arch, [flavour])
+        overrides = self.fetchGerminatedOverrides(
+            script, series_name, arch, [flavour])
         self.assertContentEqual(
             ["%s/%s  Build-Essential  yes" % (package.name, arch)], overrides)
 

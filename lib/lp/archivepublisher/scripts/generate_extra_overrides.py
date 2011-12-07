@@ -160,8 +160,9 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
-    def runGerminate(self, override_file, series_name, arch, flavours,
-                     structures):
+    def germinateArch(self, override_file, series_name, arch, flavours,
+                      structures):
+        """Germinate seeds on all flavours for a single architecture."""
         germinator = Germinator(arch)
 
         # Read archive metadata.
@@ -274,7 +275,7 @@ class GenerateExtraOverrides(LaunchpadScript):
             "more-extra.override.%s.main" % series_name)
         with AtomicFile(override_path) as override_file:
             for arch in series_architectures:
-                self.runGerminate(
+                self.germinateArch(
                     override_file, series_name, arch, flavours, structures)
 
     def process(self, seed_bases=None):
