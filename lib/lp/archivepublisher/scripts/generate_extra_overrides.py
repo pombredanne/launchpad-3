@@ -154,11 +154,6 @@ class GenerateExtraOverrides(LaunchpadScript):
                 "%s.%s" % (flavour, series_name), seed_bases=seed_bases)
         return structures
 
-    def composeOutputPath(self, flavour, series_name, arch, base):
-        return os.path.join(
-            self.config.germinateroot,
-            "%s_%s_%s_%s" % (base, flavour, series_name, arch))
-
     def logGerminateProgress(self, *args):
         """Log a "progress" entry to the germinate log file.
 
@@ -168,6 +163,54 @@ class GenerateExtraOverrides(LaunchpadScript):
         printed without a prefix.
         """
         self.germinate_logger.info(*args, extra={"progress": True})
+
+    def composeOutputPath(self, flavour, series_name, arch, base):
+        return os.path.join(
+            self.config.germinateroot,
+            "%s_%s_%s_%s" % (base, flavour, series_name, arch))
+
+    def parseTaskHeaders(self, seedtext):
+        """Parse a seed for Task headers.
+
+        seedtext is a file-like object.  Return a dictionary of Task headers,
+        with keys canonicalised to lower-case.
+        """
+        task_headers = {}
+        for line in seedtext:
+            if line.lower().startswith("task-") and ":" in line:
+                key, value = line.split(":", 1)
+                # e.g. "Task-Name" => "name"
+                key = key[5:].lower()
+                task_headers[key] = value.strip()
+        return task_headers
+
+    def getTaskName(self, task_headers, flavour, seedname, primary_flavour):
+        """Work out the name of the Task to be generated from this seed.
+
+        If there is a Task-Name header, it wins; otherwise, seeds with a
+        Task-Per-Derivative header are honoured for all flavours and put in
+        an appropriate namespace, while other seeds are only honoured for
+        the first flavour and have archive-global names.
+        """
+        if "name" in task_headers:
+            return task_headers["name"]
+        elif "per-derivative" in task_headers:
+            return "%s-%s" % (flavour, seedname)
+        elif primary_flavour:
+            return seedname
+        else:
+            return None
+
+    def getTaskSeeds(self, task_headers, seedname):
+        """Return the list of seeds used to generate a task from this seed.
+
+        The list of packages in this task comes from this seed plus any
+        other seeds listed in a Task-Seeds header.
+        """
+        scan_seeds = set([seedname])
+        if "seeds" in task_headers:
+            scan_seeds.update(task_headers["seeds"].split())
+        return sorted(scan_seeds)
 
     def germinateArchFlavour(self, override_file, germinator, series_name,
                              arch, flavour, structure, primary_flavour):
@@ -211,38 +254,15 @@ class GenerateExtraOverrides(LaunchpadScript):
         # Generate apt-ftparchive "extra overrides" for Task fields.
         seednames = [name for name in structure.names if name != "extra"]
         for seedname in seednames:
-            task_headers = {}
             with structure[seedname] as seedtext:
-                for line in seedtext:
-                    if line.lower().startswith("task-") and ":" in line:
-                        key, value = line.split(":", 1)
-                        # e.g. "Task-Name" => "name"
-                        key = key[5:].lower()
-                        task_headers[key] = value.strip()
-            if not task_headers:
-                continue
-
-            # Work out the name of the Task to be generated from this seed.  If
-            # there is a Task-Name header, it wins; otherwise, seeds with a
-            # Task-Per-Derivative header are honoured for all flavours and put
-            # in an appropriate namespace, while other seeds are only honoured
-            # for the first flavour and have archive-global names.
-            if "name" in task_headers:
-                task = task_headers["name"]
-            elif "per-derivative" in task_headers:
-                task = "%s-%s" % (flavour, seedname)
-            elif primary_flavour:
-                task = seedname
-            else:
-                continue
-
-            # The list of packages in this task come from this seed plus any
-            # other seeds listed in a Task-Seeds header.
-            scan_seeds = set([seedname])
-            if "seeds" in task_headers:
-                scan_seeds.update(task_headers["seeds"].split())
-            for scan_seed in sorted(scan_seeds):
-                write_overrides(scan_seed, "Task", task)
+                task_headers = self.parseTaskHeaders(seedtext)
+            if task_headers:
+                task = self.getTaskName(
+                    task_headers, flavour, seedname, primary_flavour)
+                if task is not None:
+                    scan_seeds = self.getTaskSeeds(task_headers, seedname)
+                    for scan_seed in scan_seeds:
+                        write_overrides(scan_seed, "Task", task)
 
         # Generate apt-ftparchive "extra overrides" for Build-Essential fields.
         if "build-essential" in structure.names and primary_flavour:

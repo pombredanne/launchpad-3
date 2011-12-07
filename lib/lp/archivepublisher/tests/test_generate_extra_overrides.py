@@ -171,14 +171,18 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                     package_index.write(stanza)
                 package_index.close()
 
+    def composeSeedPath(self, flavour, series_name, seed_name):
+        return os.path.join(
+            self.seeddir, "%s.%s" % (flavour, series_name), seed_name)
+
     def makeSeedStructure(self, flavour, series_name, seed_names,
                           seed_inherit=None):
         """Create a simple seed structure file."""
         if seed_inherit is None:
             seed_inherit = {}
 
-        structure_path = os.path.join(
-            self.seeddir, "%s.%s" % (flavour, series_name), "STRUCTURE")
+        structure_path = self.composeSeedPath(
+            flavour, series_name, "STRUCTURE")
         with open_for_writing(structure_path, "w") as structure:
             for seed_name in seed_names:
                 if seed_name in seed_inherit:
@@ -190,8 +194,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
     def makeSeed(self, flavour, series_name, seed_name, entries,
                  headers=None):
         """Create a simple seed file."""
-        seed_path = os.path.join(
-            self.seeddir, "%s.%s" % (flavour, series_name), seed_name)
+        seed_path = self.composeSeedPath(flavour, series_name, seed_name)
         with open_for_writing(seed_path, "w") as seed:
             if headers is not None:
                 for header in headers:
@@ -199,6 +202,22 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 print >>seed
             for entry in entries:
                 print >>seed, " * %s" % entry
+
+    def getTaskNameFromSeed(self, script, flavour, series_name, seed,
+                            primary_flavour):
+        """Use script to parse a seed and return its task name."""
+        seed_path = self.composeSeedPath(flavour, series_name, seed)
+        with open(seed_path) as seed_text:
+            task_headers = script.parseTaskHeaders(seed_text)
+        return script.getTaskName(
+            task_headers, flavour, seed, primary_flavour)
+
+    def getTaskSeedsFromSeed(self, script, flavour, series_name, seed):
+        """Use script to parse a seed and return its task seed list."""
+        seed_path = self.composeSeedPath(flavour, series_name, seed)
+        with open(seed_path) as seed_text:
+            task_headers = script.parseTaskHeaders(seed_text)
+        return script.getTaskSeeds(task_headers, seed)
 
     def test_name_is_consistent(self):
         # Script instances for the same distro get the same name.
@@ -398,114 +417,91 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             ]
         self.assertContentEqual(expected_overrides, overrides)
 
-    def test_germinate_output_task_name(self):
+    def test_task_name(self):
         # The Task-Name field is honoured.
-        distro = self.makeDistro()
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        series_name = distroseries.name
-        component = self.factory.makeComponent()
-        self.factory.makeComponentSelection(
-            distroseries=distroseries, component=component)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        arch = das.architecturetag
-        package = self.makePackage(component, [das])
-        script = self.makeScript(distro)
-        self.makeIndexFiles(script, distroseries)
+        series_name = self.factory.getUniqueString()
+        package = self.factory.getUniqueString()
+        script = GenerateExtraOverrides(test_args=[])
+        script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
 
         flavour = self.factory.getUniqueString()
-        seed_one = self.factory.getUniqueString()
-        task_one = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour, series_name, [seed_one])
+        seed = self.factory.getUniqueString()
+        task = self.factory.getUniqueString()
         self.makeSeed(
-            flavour, series_name, seed_one, [package.name],
-            headers=["Task-Name: %s" % task_one])
+            flavour, series_name, seed, [package],
+            headers=["Task-Name: %s" % task])
 
-        overrides = self.fetchGerminatedOverrides(
-            script, series_name, arch, [flavour])
-        self.assertContentEqual(
-            ["%s/%s  Task  %s" % (package.name, arch, task_one)], overrides)
+        observed_task = self.getTaskNameFromSeed(
+            script, flavour, series_name, seed, True)
+        self.assertEqual(task, observed_task)
 
-    def test_germinate_output_task_per_derivative(self):
+    def test_task_per_derivative(self):
         # The Task-Per-Derivative field is honoured.
-        distro = self.makeDistro()
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        series_name = distroseries.name
-        component = self.factory.makeComponent()
-        self.factory.makeComponentSelection(
-            distroseries=distroseries, component=component)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        arch = das.architecturetag
-        package = self.makePackage(component, [das])
-        script = self.makeScript(distro)
-        self.makeIndexFiles(script, distroseries)
+        series_name = self.factory.getUniqueString()
+        package = self.factory.getUniqueString()
+        script = GenerateExtraOverrides(test_args=[])
+        script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
 
         flavour_one = self.factory.getUniqueString()
         flavour_two = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
         seed_two = self.factory.getUniqueString()
-        self.makeSeedStructure(flavour_one, series_name, [seed_one, seed_two])
         self.makeSeed(
-            flavour_one, series_name, seed_one, [package.name],
+            flavour_one, series_name, seed_one, [package],
             headers=["Task-Description: one"])
         self.makeSeed(
-            flavour_one, series_name, seed_two, [package.name],
+            flavour_one, series_name, seed_two, [package],
             headers=["Task-Per-Derivative: 1"])
-        self.makeSeedStructure(flavour_two, series_name, [seed_one, seed_two])
         self.makeSeed(
-            flavour_two, series_name, seed_one, [package.name],
+            flavour_two, series_name, seed_one, [package],
             headers=["Task-Description: one"])
         self.makeSeed(
-            flavour_two, series_name, seed_two, [package.name],
+            flavour_two, series_name, seed_two, [package],
             headers=["Task-Per-Derivative: 1"])
 
-        overrides = self.fetchGerminatedOverrides(
-            script, series_name, arch, [flavour_one, flavour_two])
+        observed_task_one_one = self.getTaskNameFromSeed(
+            script, flavour_one, series_name, seed_one, True)
+        observed_task_one_two = self.getTaskNameFromSeed(
+            script, flavour_one, series_name, seed_two, True)
+        observed_task_two_one = self.getTaskNameFromSeed(
+            script, flavour_two, series_name, seed_one, False)
+        observed_task_two_two = self.getTaskNameFromSeed(
+            script, flavour_two, series_name, seed_two, False)
+
         # seed_one is not per-derivative, so it is honoured only for
-        # flavour_one and has a global name.  seed_two is per-derivative, so
-        # it is honoured for both flavours and has the flavour name
-        # prefixed.
-        expected_overrides = [
-            "%s/%s  Task  %s" % (package.name, arch, seed_one),
-            "%s/%s  Task  %s-%s" % (
-                package.name, arch, flavour_one, seed_two),
-            "%s/%s  Task  %s-%s" % (
-                package.name, arch, flavour_two, seed_two),
-            ]
-        self.assertContentEqual(expected_overrides, overrides)
+        # flavour_one and has a global name.
+        self.assertEqual(seed_one, observed_task_one_one)
+        self.assertIsNone(observed_task_two_one)
 
-    def test_germinate_output_task_seeds(self):
+        # seed_two is per-derivative, so it is honoured for both flavours
+        # and has the flavour name prefixed.
+        self.assertEqual(
+            "%s-%s" % (flavour_one, seed_two), observed_task_one_two)
+        self.assertEqual(
+            "%s-%s" % (flavour_two, seed_two), observed_task_two_two)
+
+    def test_task_seeds(self):
         # The Task-Seeds field is honoured.
-        distro = self.makeDistro()
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        series_name = distroseries.name
-        component = self.factory.makeComponent()
-        self.factory.makeComponentSelection(
-            distroseries=distroseries, component=component)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        arch = das.architecturetag
-        one = self.makePackage(component, [das])
-        two = self.makePackage(component, [das])
-        script = self.makeScript(distro)
-        self.makeIndexFiles(script, distroseries)
+        series_name = self.factory.getUniqueString()
+        one = self.getUniqueString()
+        two = self.getUniqueString()
+        script = GenerateExtraOverrides(test_args=[])
+        script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
 
         flavour = self.factory.getUniqueString()
         seed_one = self.factory.getUniqueString()
         seed_two = self.factory.getUniqueString()
-        self.makeSeedStructure(
-            flavour, series_name, [seed_one, seed_two],
-            seed_inherit={seed_two: [seed_one]})
-        self.makeSeed(flavour, series_name, seed_one, [one.name])
+        self.makeSeed(flavour, series_name, seed_one, [one])
         self.makeSeed(
-            flavour, series_name, seed_two, [two.name],
+            flavour, series_name, seed_two, [two],
             headers=["Task-Seeds: %s" % seed_one])
 
-        overrides = self.fetchGerminatedOverrides(
-            script, series_name, arch, [flavour])
-        expected_overrides = [
-            "%s/%s  Task  %s" % (one.name, arch, seed_two),
-            "%s/%s  Task  %s" % (two.name, arch, seed_two),
-            ]
-        self.assertContentEqual(expected_overrides, overrides)
+        task_seeds = self.getTaskSeedsFromSeed(
+            script, flavour, series_name, seed_two)
+        self.assertContentEqual([seed_one, seed_two], task_seeds)
 
     def test_germinate_output_build_essential(self):
         # germinateArch produces Build-Essential extra overrides.
