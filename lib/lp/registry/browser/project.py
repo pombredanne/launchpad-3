@@ -354,15 +354,16 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
     def maintainer_widget(self):
         return InlinePersonEditPickerWidget(
             self.context, IProjectGroup['owner'],
-            format_link(self.context.owner),
+            format_link(self.context.owner, empty_value="Not yet selected"),
             header='Change maintainer', edit_view='+reassign',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer',
+            null_display_value="Not yet selected")
 
     @property
     def driver_widget(self):
         return InlinePersonEditPickerWidget(
             self.context, IProjectGroup['driver'],
-            format_link(self.context.driver),
+            format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+driver',
             step_title='Select a new driver',
             null_display_value="Not yet selected")
