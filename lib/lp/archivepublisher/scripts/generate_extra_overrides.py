@@ -159,6 +159,87 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
+    def germinateArchFlavour(self, override_file, germinator, series_name,
+                             arch, flavour, structure, primary_flavour):
+        """Germinate seeds on a single flavour for a single architecture."""
+        # Expand dependencies.
+        germinator.plant_seeds(structure)
+        germinator.grow(structure)
+        germinator.add_extras(structure)
+
+        # Write output files.
+
+        # The structure file makes it possible to figure out how the other
+        # output files relate to each other.
+        structure.write(self.composeOutputPath(
+            flavour, series_name, arch, "structure"))
+
+        # "all" and "all.sources" list the full set of binary and source
+        # packages respectively for a given flavour/suite/architecture
+        # combination.
+        all_path = self.composeOutputPath(flavour, series_name, arch, "all")
+        all_sources_path = self.composeOutputPath(
+            flavour, series_name, arch, "all.sources")
+        germinator.write_all_list(structure, all_path)
+        germinator.write_all_source_list(structure, all_sources_path)
+
+        # Write the dependency-expanded output for each seed.  Several of these
+        # are used by archive administration tools, and others are useful for
+        # debugging, so it's best to just write them all.
+        for seedname in structure.names:
+            germinator.write_full_list(
+                structure,
+                self.composeOutputPath(flavour, series_name, arch, seedname),
+                seedname)
+
+        def writeOverrides(seedname, key, value):
+            packages = germinator.get_full(structure, seedname)
+            for package in sorted(packages):
+                print >>override_file, "%s/%s  %s  %s" % (
+                    package, arch, key, value)
+
+        # Generate apt-ftparchive "extra overrides" for Task fields.
+        for seedname in structure.names:
+            if seedname == "extra":
+                continue
+
+            task_headers = {}
+            with structure[seedname] as seedtext:
+                for line in seedtext:
+                    if line.lower().startswith("task-") and ":" in line:
+                        key, value = line.split(":", 1)
+                        # e.g. "Task-Name" => "name"
+                        key = key[5:].lower()
+                        task_headers[key] = value.strip()
+            if not task_headers:
+                continue
+
+            # Work out the name of the Task to be generated from this seed.  If
+            # there is a Task-Name header, it wins; otherwise, seeds with a
+            # Task-Per-Derivative header are honoured for all flavours and put
+            # in an appropriate namespace, while other seeds are only honoured
+            # for the first flavour and have archive-global names.
+            if "name" in task_headers:
+                task = task_headers["name"]
+            elif "per-derivative" in task_headers:
+                task = "%s-%s" % (flavour, seedname)
+            elif primary_flavour:
+                task = seedname
+            else:
+                continue
+
+            # The list of packages in this task come from this seed plus any
+            # other seeds listed in a Task-Seeds header.
+            scan_seeds = set([seedname])
+            if "seeds" in task_headers:
+                scan_seeds.update(task_headers["seeds"].split())
+            for scan_seed in sorted(scan_seeds):
+                writeOverrides(scan_seed, "Task", task)
+
+        # Generate apt-ftparchive "extra overrides" for Build-Essential fields.
+        if "build-essential" in structure.names and primary_flavour:
+            writeOverrides("build-essential", "Build-Essential", "yes")
+
     def germinateArch(self, override_file, series_name, arch, flavours,
                       structures):
         """Germinate seeds on all flavours for a single architecture."""
@@ -171,98 +252,18 @@ class GenerateExtraOverrides(LaunchpadScript):
         germinator.parse_archive(archive)
 
         for flavour in flavours:
-            self.logger.info("Germinating for %s/%s/%s",
-                             flavour, series_name, arch)
+            self.logger.info(
+                "Germinating for %s/%s/%s", flavour, series_name, arch)
             # Add this to the germinate log as well so that that can be
             # debugged more easily.  Log a separator line first.
             self.germinate_logger.info("", extra={"progress": True})
-            self.germinate_logger.info("Germinating for %s/%s/%s",
-                                       flavour, series_name, arch,
-                                       extra={"progress": True})
+            self.germinate_logger.info(
+                "Germinating for %s/%s/%s", flavour, series_name, arch,
+                extra={"progress": True})
 
-            # Expand dependencies.
-            structure = structures[flavour]
-            germinator.plant_seeds(structure)
-            germinator.grow(structure)
-            germinator.add_extras(structure)
-
-            # Write output files.
-
-            # The structure file makes it possible to figure out how the
-            # other output files relate to each other.
-            structure.write(self.composeOutputPath(
-                flavour, series_name, arch, "structure"))
-
-            # "all" and "all.sources" list the full set of binary and source
-            # packages respectively for a given flavour/suite/architecture
-            # combination.
-            all_path = self.composeOutputPath(
-                flavour, series_name, arch, "all")
-            all_sources_path = self.composeOutputPath(
-                flavour, series_name, arch, "all.sources")
-            germinator.write_all_list(structure, all_path)
-            germinator.write_all_source_list(structure, all_sources_path)
-
-            # Write the dependency-expanded output for each seed.  Several
-            # of these are used by archive administration tools, and others
-            # are useful for debugging, so it's best to just write them all.
-            for seedname in structure.names:
-                germinator.write_full_list(
-                    structure,
-                    self.composeOutputPath(
-                        flavour, series_name, arch, seedname),
-                    seedname)
-
-            def writeOverrides(seedname, key, value):
-                packages = germinator.get_full(structure, seedname)
-                for package in sorted(packages):
-                    print >>override_file, "%s/%s  %s  %s" % (
-                        package, arch, key, value)
-
-            # Generate apt-ftparchive "extra overrides" for Task fields.
-            for seedname in structure.names:
-                if seedname == "extra":
-                    continue
-
-                task_headers = {}
-                with structure[seedname] as seedtext:
-                    for line in seedtext:
-                        if line.lower().startswith("task-") and ":" in line:
-                            key, value = line.split(":", 1)
-                            # e.g. "Task-Name" => "name"
-                            key = key[5:].lower()
-                            task_headers[key] = value.strip()
-                if not task_headers:
-                    continue
-
-                # Work out the name of the Task to be generated from this
-                # seed.  If there is a Task-Name header, it wins; otherwise,
-                # seeds with a Task-Per-Derivative header are honoured for
-                # all flavours and put in an appropriate namespace, while
-                # other seeds are only honoured for the first flavour and
-                # have archive-global names.
-                if "name" in task_headers:
-                    task = task_headers["name"]
-                elif "per-derivative" in task_headers:
-                    task = "%s-%s" % (flavour, seedname)
-                elif flavour == flavours[0]:
-                    task = seedname
-                else:
-                    continue
-
-                # The list of packages in this task come from this seed plus
-                # any other seeds listed in a Task-Seeds header.
-                scan_seeds = set([seedname])
-                if "seeds" in task_headers:
-                    scan_seeds.update(task_headers["seeds"].split())
-                for scan_seed in sorted(scan_seeds):
-                    writeOverrides(scan_seed, "Task", task)
-
-            # Generate apt-ftparchive "extra overrides" for Build-Essential
-            # fields.
-            if ("build-essential" in structure.names and
-                flavour == flavours[0]):
-                writeOverrides("build-essential", "Build-Essential", "yes")
+            self.germinateArchFlavour(
+                override_file, germinator, series_name, arch, flavour,
+                structures[flavour], flavour == flavours[0])
 
     def generateExtraOverrides(self, series_name, series_architectures,
                                flavours, seed_bases=None):
