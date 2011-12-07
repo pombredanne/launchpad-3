@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from random import getrandbits
 import StringIO
 import unittest
 
@@ -24,6 +25,7 @@ from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
     check_permission,
+    iter_authorization,
     LaunchpadSecurityPolicy,
     precache_permission_for_objects,
     )
@@ -39,7 +41,10 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
     )
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessLayer,
+    )
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import AuthorizationBase
 from lp.testing import (
@@ -48,6 +53,7 @@ from lp.testing import (
     TestCase,
     )
 from lp.testing.factory import ObjectFactory
+from lp.testing.fixture import ZopeAdapterFixture
 
 
 class Checker(AuthorizationBase):
@@ -357,3 +363,231 @@ class TestPrecachePermissionForObjects(TestCase):
         # Confirm that the objects have the permission set.
         self.assertTrue(check_permission('launchpad.View', objects[0]))
         self.assertTrue(check_permission('launchpad.View', objects[1]))
+
+
+class Allow(AuthorizationBase):
+    """An `IAuthorization` adapter allowing everything."""
+
+    def checkUnauthenticated(self):
+        return True
+
+    def checkAccountAuthenticated(self, account):
+        return True
+
+
+class Deny(AuthorizationBase):
+    """An `IAuthorization` adapter denying everything."""
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAccountAuthenticated(self, account):
+        return False
+
+
+class Explode(AuthorizationBase):
+    """An `IAuthorization` adapter that explodes when used."""
+
+    def checkUnauthenticated(self):
+        raise NotImplementedError()
+
+    def checkAccountAuthenticated(self, account):
+        raise NotImplementedError()
+
+
+class AnotherObjectOne:
+    """Another arbitrary object."""
+
+
+class AnotherObjectTwo:
+    """Another arbitrary object."""
+
+
+class DelegateToAnotherObject(AuthorizationBase):
+    """An `IAuthorization` adapter that delegates to `AnotherObject`."""
+
+    permission = "making.Hay"
+
+    def checkUnauthenticated(self):
+        yield AnotherObjectOne(), self.permission
+        yield AnotherObjectTwo(), self.permission
+
+    def checkAccountAuthenticated(self, account):
+        yield AnotherObjectOne(), self.permission
+        yield AnotherObjectTwo(), self.permission
+
+
+class TestIterAuthorization(TestCase):
+    """Tests for `iter_authorization`.
+
+    In the tests (and their names) below, "normal" refers to a non-delegated
+    authorization.
+    """
+
+    # TODO: Show that cache is updated.
+    # TODO: Use more tokens.
+
+    layer = ZopelessLayer
+
+    def setUp(self):
+        super(TestIterAuthorization, self).setUp()
+        self.object = Object()
+        self.principal = FakeLaunchpadPrincipal()
+        self.permission = "docking.Permission"
+        provideUtility(
+            PermissionAccessLevel(), ILaunchpadPermission,
+            self.permission)
+
+    def allow(self):
+        """Allow authorization for `Object` with `self.permission`."""
+        self.useFixture(
+            ZopeAdapterFixture(Allow, [Object], name=self.permission))
+
+    def deny(self):
+        """Deny authorization for `Object` with `self.permission`."""
+        self.useFixture(
+            ZopeAdapterFixture(Deny, [Object], name=self.permission))
+
+    def explode(self):
+        """Explode if auth for `Object` with `self.permission` is tried."""
+        self.useFixture(
+            ZopeAdapterFixture(Explode, [Object], name=self.permission))
+
+    def delegate(self):
+        self.useFixture(
+            ZopeAdapterFixture(
+                DelegateToAnotherObject, [Object], name=self.permission))
+        # Allow auth to AnotherObjectOne.
+        self.useFixture(
+            ZopeAdapterFixture(
+                Allow, [AnotherObjectOne], name=(
+                    DelegateToAnotherObject.permission)))
+        # Deny auth to AnotherObjectTwo.
+        self.useFixture(
+            ZopeAdapterFixture(
+                Deny, [AnotherObjectTwo], name=(
+                    DelegateToAnotherObject.permission)))
+
+    #
+    # Non-delegated, non-cached checks.
+    #
+
+    def test_normal_unauthenticated_no_adapter(self):
+        # Authorization is denied when there's no adapter.
+        expected = [False]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_unauthenticated_allowed(self):
+        # Authorization is allowed when the adapter returns True.
+        self.allow()
+        expected = [True]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_unauthenticated_denied(self):
+        # Authorization is denied when the adapter returns True.
+        self.deny()
+        expected = [False]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_authenticated_no_adapter(self):
+        # Authorization is denied when there's no adapter.
+        expected = [False]
+        observed = iter_authorization(
+            self.object, self.permission, self.principal, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_authenticated_allowed(self):
+        # Authorization is allowed when the adapter returns True.
+        self.allow()
+        expected = [True]
+        observed = iter_authorization(
+            self.object, self.permission, self.principal, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_authenticated_denied(self):
+        # Authorization is denied when the adapter returns True.
+        self.deny()
+        expected = [False]
+        observed = iter_authorization(
+            self.object, self.permission, self.principal, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    #
+    # Non-delegated, cached checks.
+    #
+
+    def test_normal_unauthenticated_no_adapter_cached(self):
+        # Authorization is taken from the cache even if an adapter is not
+        # registered. This situation - the cache holding a result for an
+        # object+permission for which there is no IAuthorization adapter -
+        # will not arise unless the cache is tampered with, so this test is
+        # solely for documentation.
+        token = getrandbits(32)
+        expected = [token]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None,
+            cache={self.object: {self.permission: token}})
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_unauthenticated_cached(self):
+        # Authorization is taken from the cache regardless of the presence of
+        # an adapter or its behaviour.
+        self.explode()
+        token = getrandbits(32)
+        expected = [token]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None,
+            cache={self.object: {self.permission: token}})
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_authenticated_no_adapter_cached(self):
+        # Authorization is taken from the cache even if an adapter is not
+        # registered. This situation - the cache holding a result for an
+        # object+permission for which there is no IAuthorization adapter -
+        # will not arise unless the cache is tampered with, so this test is
+        # solely for documentation.
+        token = getrandbits(32)
+        expected = [token]
+        observed = iter_authorization(
+            self.object, self.permission, self.principal,
+            cache={self.object: {self.permission: token}})
+        self.assertEqual(expected, list(observed))
+
+    def test_normal_authenticated_cached(self):
+        # Authorization is taken from the cache regardless of the presence of
+        # an adapter or its behaviour.
+        self.explode()
+        token = getrandbits(32)
+        expected = [token]
+        observed = iter_authorization(
+            self.object, self.permission, principal=self.principal,
+            cache={self.object: {self.permission: token}})
+        self.assertEqual(expected, list(observed))
+
+    #
+    # Delegated checks.
+    #
+
+    def test_delegated_unauthenticated(self):
+        # Authorization is delegated and we see the results of authorization
+        # against the objects to which it has been delegated.
+        self.delegate()
+        expected = [True, False]
+        observed = iter_authorization(
+            self.object, self.permission, principal=None, cache=None)
+        self.assertEqual(expected, list(observed))
+
+    def test_delegated_authenticated(self):
+        # Authorization is delegated and we see the results of authorization
+        # against the objects to which it has been delegated.
+        self.delegate()
+        expected = [True, False]
+        observed = iter_authorization(
+            self.object, self.permission, self.principal, cache=None)
+        self.assertEqual(expected, list(observed))
