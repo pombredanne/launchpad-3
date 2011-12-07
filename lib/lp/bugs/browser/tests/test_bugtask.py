@@ -1878,7 +1878,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Cache contains cookie-matching values for field_visibiliy."""
         task = self.factory.makeBugTask()
         cookie = (
-            'anon-buglist-fields=show_age=true&show_reporter=true'
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_bug_heat=true&show_tags=true'
@@ -1894,7 +1894,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Cookie values not present in defaults are ignored."""
         task = self.factory.makeBugTask()
         cookie = (
-            'anon-buglist-fields=show_age=true&show_reporter=true'
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_bug_heat=true&show_tags=true'
@@ -1910,7 +1910,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Where cookie values are missing, defaults are used"""
         task = self.factory.makeBugTask()
         cookie = (
-            'anon-buglist-fields=show_age=true&show_reporter=true'
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_bug_heat=true&show_tags=true'
@@ -2063,9 +2063,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_hiding_age(self):
         """Showing age shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_age', navigator.field_visibility)
+        self.assertIn('show_datecreated', navigator.field_visibility)
         self.assertNotIn('age1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_age'] = True
+        mustache_model['bugtasks'][0]['show_datecreated'] = True
         self.assertIn('age1', navigator.mustache)
 
     def test_hiding_tags(self):

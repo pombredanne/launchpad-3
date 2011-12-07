@@ -2273,7 +2273,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
-            'show_age': False,
+            'show_datecreated': False,
             'show_assignee': False,
             'show_bugtarget': True,
             'show_bug_heat': True,
