@@ -204,13 +204,17 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
-        # This check shouldn't be needed, strictly speaking.
-        # However, it is here as a "belt and braces".
-
+        # The following two checks shouldn't be needed, strictly speaking,
+        # because zope.Public is CheckerPublic, and the Zope security
+        # machinery shortcuts this to always allow it. However, it is here as
+        # a "belt and braces". It is also a bit of a lie: if the permission is
+        # zope.Public, privacy and access levels (checked above) will be
+        # irrelevant!
         if permission == 'zope.Public':
             return True
         if permission is CheckerPublic:
             return True
+
         if (permission == 'launchpad.AnyPerson' and
             ILaunchpadPrincipal.providedBy(principal)):
             return True
