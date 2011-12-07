@@ -46,7 +46,8 @@ class AtomicFile:
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.fd.close()
-        os.rename('%s.new' % self.filename, self.filename)
+        if exc_type is None:
+            os.rename('%s.new' % self.filename, self.filename)
 
 
 class GenerateExtraOverrides(LaunchpadScript):
