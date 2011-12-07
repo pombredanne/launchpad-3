@@ -233,9 +233,16 @@ def summarize_requests():
     return log
 
 
+# Truncate the in-page timeline after this many actions.
+IN_PAGE_TIMELINE_CAP = 200
+
+
 def get_timeline_actions():
-    """Return an iterable of timeline actions"""
-    return get_request_timeline(get_current_browser_request()).actions
+    """Return an iterable of timeline actions.
+    
+    """
+    return get_request_timeline(get_current_browser_request()).actions[
+        :IN_PAGE_TIMELINE_CAP]
 
 
 def store_sql_statements_and_request_duration(event):
