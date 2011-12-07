@@ -109,10 +109,9 @@ class GenerateExtraOverrides(LaunchpadScript):
 
     def getConfig(self):
         """Set up a configuration object for this archive."""
-        for archive in self.distribution.all_distro_archives:
-            # We only work on the primary archive.
-            if archive.purpose == ArchivePurpose.PRIMARY:
-                return getPubConfig(archive)
+        archive = self.distribution.main_archive
+        if archive:
+            return getPubConfig(archive)
         else:
             raise LaunchpadScriptFailure(
                 "There is no PRIMARY archive for %s." %
