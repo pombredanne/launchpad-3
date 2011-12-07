@@ -39,7 +39,7 @@ class AtomicFile:
 
     def __init__(self, filename):
         self.filename = filename
-        self.fd = open('%s.new' % self.filename, 'w')
+        self.fd = open("%s.new" % self.filename, "w")
 
     def __enter__(self):
         return self.fd
@@ -47,7 +47,7 @@ class AtomicFile:
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.fd.close()
         if exc_type is None:
-            os.rename('%s.new' % self.filename, self.filename)
+            os.rename("%s.new" % self.filename, self.filename)
 
 
 def find_operable_series(distribution):
@@ -73,8 +73,8 @@ class GenerateExtraOverrides(LaunchpadScript):
     def add_my_options(self):
         """Add a 'distribution' context option."""
         self.parser.add_option(
-            '-d', '--distribution', dest='distribution',
-            help='Context distribution name.')
+            "-d", "--distribution", dest="distribution",
+            help="Context distribution name.")
 
     @property
     def name(self):
@@ -98,14 +98,14 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.series = find_operable_series(self.distribution)
         if self.series is None:
             raise LaunchpadScriptFailure(
-                'There is no DEVELOPMENT distroseries for %s' %
+                "There is no DEVELOPMENT distroseries for %s." %
                 self.options.distribution)
 
         # Even if DistroSeries.component_names starts including partner, we
         # don't want it; this applies to the primary archive only.
         self.components = [component
                            for component in self.series.component_names
-                           if component != 'partner']
+                           if component != "partner"]
 
     def getConfig(self):
         """Set up a configuration object for this archive."""
@@ -115,7 +115,7 @@ class GenerateExtraOverrides(LaunchpadScript):
                 return getPubConfig(archive)
         else:
             raise LaunchpadScriptFailure(
-                'There is no PRIMARY archive for %s' %
+                "There is no PRIMARY archive for %s." %
                 self.options.distribution)
 
     def setUpDirs(self):
@@ -134,10 +134,10 @@ class GenerateExtraOverrides(LaunchpadScript):
         if self.germinate_logger is not None:
             return
 
-        self.germinate_logger = logging.getLogger('germinate')
+        self.germinate_logger = logging.getLogger("germinate")
         self.germinate_logger.setLevel(logging.INFO)
-        log_file = os.path.join(self.config.germinateroot, 'germinate.output')
-        handler = logging.FileHandler(log_file, mode='w')
+        log_file = os.path.join(self.config.germinateroot, "germinate.output")
+        handler = logging.FileHandler(log_file, mode="w")
         handler.setFormatter(GerminateFormatter())
         self.germinate_logger.addHandler(handler)
         self.germinate_logger.propagate = False
@@ -153,13 +153,13 @@ class GenerateExtraOverrides(LaunchpadScript):
         structures = {}
         for flavour in flavours:
             structures[flavour] = SeedStructure(
-                '%s.%s' % (flavour, series_name), seed_bases=seed_bases)
+                "%s.%s" % (flavour, series_name), seed_bases=seed_bases)
         return structures
 
     def outputPath(self, flavour, series_name, arch, base):
         return os.path.join(
             self.config.germinateroot,
-            '%s_%s_%s_%s' % (base, flavour, series_name, arch))
+            "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
     def runGerminate(self, override_file, series_name, arch, flavours,
                      structures):
@@ -168,18 +168,18 @@ class GenerateExtraOverrides(LaunchpadScript):
         # Read archive metadata.
         archive = TagFile(
             series_name, self.components, arch,
-            'file://%s' % self.config.archiveroot, cleanup=True)
+            "file://%s" % self.config.archiveroot, cleanup=True)
         germinator.parse_archive(archive)
 
         for flavour in flavours:
-            self.logger.info('Germinating for %s/%s/%s',
+            self.logger.info("Germinating for %s/%s/%s",
                              flavour, series_name, arch)
             # Add this to the germinate log as well so that that can be
             # debugged more easily.  Log a separator line first.
-            self.germinate_logger.info('', extra={'progress': True})
-            self.germinate_logger.info('Germinating for %s/%s/%s',
+            self.germinate_logger.info("", extra={"progress": True})
+            self.germinate_logger.info("Germinating for %s/%s/%s",
                                        flavour, series_name, arch,
-                                       extra={'progress': True})
+                                       extra={"progress": True})
 
             # Expand dependencies.
             structure = structures[flavour]
@@ -192,14 +192,14 @@ class GenerateExtraOverrides(LaunchpadScript):
             # The structure file makes it possible to figure out how the
             # other output files relate to each other.
             structure.write(self.outputPath(
-                flavour, series_name, arch, 'structure'))
+                flavour, series_name, arch, "structure"))
 
             # "all" and "all.sources" list the full set of binary and source
             # packages respectively for a given flavour/suite/architecture
             # combination.
-            all_path = self.outputPath(flavour, series_name, arch, 'all')
+            all_path = self.outputPath(flavour, series_name, arch, "all")
             all_sources_path = self.outputPath(
-                flavour, series_name, arch, 'all.sources')
+                flavour, series_name, arch, "all.sources")
             germinator.write_all_list(structure, all_path)
             germinator.write_all_source_list(structure, all_sources_path)
 
@@ -215,19 +215,19 @@ class GenerateExtraOverrides(LaunchpadScript):
             def writeOverrides(seedname, key, value):
                 packages = germinator.get_full(structure, seedname)
                 for package in sorted(packages):
-                    print >>override_file, '%s/%s  %s  %s' % (
+                    print >>override_file, "%s/%s  %s  %s" % (
                         package, arch, key, value)
 
             # Generate apt-ftparchive "extra overrides" for Task fields.
             for seedname in structure.names:
-                if seedname == 'extra':
+                if seedname == "extra":
                     continue
 
                 task_headers = {}
                 with structure[seedname] as seedtext:
                     for line in seedtext:
-                        if line.lower().startswith('task-') and ':' in line:
-                            key, value = line.split(':', 1)
+                        if line.lower().startswith("task-") and ":" in line:
+                            key, value = line.split(":", 1)
                             # e.g. "Task-Name" => "name"
                             key = key[5:].lower()
                             task_headers[key] = value.strip()
@@ -240,10 +240,10 @@ class GenerateExtraOverrides(LaunchpadScript):
                 # all flavours and put in an appropriate namespace, while
                 # other seeds are only honoured for the first flavour and
                 # have archive-global names.
-                if 'name' in task_headers:
-                    task = task_headers['name']
-                elif 'per-derivative' in task_headers:
-                    task = '%s-%s' % (flavour, seedname)
+                if "name" in task_headers:
+                    task = task_headers["name"]
+                elif "per-derivative" in task_headers:
+                    task = "%s-%s" % (flavour, seedname)
                 elif flavour == flavours[0]:
                     task = seedname
                 else:
@@ -252,16 +252,16 @@ class GenerateExtraOverrides(LaunchpadScript):
                 # The list of packages in this task come from this seed plus
                 # any other seeds listed in a Task-Seeds header.
                 scan_seeds = set([seedname])
-                if 'seeds' in task_headers:
-                    scan_seeds.update(task_headers['seeds'].split())
+                if "seeds" in task_headers:
+                    scan_seeds.update(task_headers["seeds"].split())
                 for scan_seed in sorted(scan_seeds):
-                    writeOverrides(scan_seed, 'Task', task)
+                    writeOverrides(scan_seed, "Task", task)
 
             # Generate apt-ftparchive "extra overrides" for Build-Essential
             # fields.
-            if ('build-essential' in structure.names and
+            if ("build-essential" in structure.names and
                 flavour == flavours[0]):
-                writeOverrides('build-essential', 'Build-Essential', 'yes')
+                writeOverrides("build-essential", "Build-Essential", "yes")
 
     def generateExtraOverrides(self, series_name, series_architectures,
                                flavours, seed_bases=None):
@@ -270,7 +270,7 @@ class GenerateExtraOverrides(LaunchpadScript):
 
         override_path = os.path.join(
             self.config.miscroot,
-            'more-extra.override.%s.main' % series_name)
+            "more-extra.override.%s.main" % series_name)
         with AtomicFile(override_path) as override_file:
             for arch in series_architectures:
                 self.runGerminate(

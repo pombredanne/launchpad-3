@@ -81,9 +81,9 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # XXX cjwatson 2011-12-06 bug=694140: Make sure germinate doesn't
         # lose its loggers between tests, due to Launchpad's messing with
         # global log state.
-        archive._logger = logging.getLogger('germinate.archive')
-        germinator._logger = logging.getLogger('germinate.germinator')
-        seeds._logger = logging.getLogger('germinate.seeds')
+        archive._logger = logging.getLogger("germinate.archive")
+        germinator._logger = logging.getLogger("germinate.germinator")
+        seeds._logger = logging.getLogger("germinate.seeds")
 
     def assertFilesEqual(self, expected_path, observed_path):
         self.assertEqual(
@@ -102,7 +102,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         """Create a script for testing."""
         if distribution is None:
             distribution = self.makeDistro()
-        test_args = ['-d', distribution.name]
+        test_args = ["-d", distribution.name]
         if flavours is not None:
             test_args.extend(flavours)
         script = GenerateExtraOverrides(test_args=test_args)
@@ -131,7 +131,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 binarypackagename=package.name, build=build,
                 component=component, **kwargs)
             lfa = self.factory.makeLibraryFileAlias(
-                filename='%s.deb' % package.name)
+                filename="%s.deb" % package.name)
             transaction.commit()
             bpr.addFile(lfa)
             self.factory.makeBinaryPackagePublishingHistory(
@@ -148,26 +148,26 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             index_root = os.path.join(
                 script.config.distsroot, distroseries.name, component.name)
 
-            source_index_root = os.path.join(index_root, 'source')
+            source_index_root = os.path.join(index_root, "source")
             source_index = RepositoryIndexFile(
-                source_index_root, script.config.temproot, 'Sources')
+                source_index_root, script.config.temproot, "Sources")
             for spp in distroseries.getSourcePackagePublishing(
                 PackagePublishingStatus.PUBLISHED,
                 PackagePublishingPocket.RELEASE, component=component):
-                stanza = spp.getIndexStanza().encode('utf-8') + '\n\n'
+                stanza = spp.getIndexStanza().encode("utf-8") + "\n\n"
                 source_index.write(stanza)
             source_index.close()
 
             for arch in distroseries.architectures:
                 package_index_root = os.path.join(
-                    index_root, 'binary-%s' % arch.architecturetag)
+                    index_root, "binary-%s" % arch.architecturetag)
                 package_index = RepositoryIndexFile(
-                    package_index_root, script.config.temproot, 'Packages')
+                    package_index_root, script.config.temproot, "Packages")
                 for bpp in distroseries.getBinaryPackagePublishing(
                     archtag=arch.architecturetag,
                     pocket=PackagePublishingPocket.RELEASE,
                     component=component):
-                    stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                    stanza = bpp.getIndexStanza().encode("utf-8") + "\n\n"
                     package_index.write(stanza)
                 package_index.close()
 
@@ -178,42 +178,42 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             seed_inherit = {}
 
         structure_path = os.path.join(
-            self.seeddir, '%s.%s' % (flavour, series_name), 'STRUCTURE')
-        with open_for_writing(structure_path, 'w') as structure:
+            self.seeddir, "%s.%s" % (flavour, series_name), "STRUCTURE")
+        with open_for_writing(structure_path, "w") as structure:
             for seed_name in seed_names:
                 if seed_name in seed_inherit:
-                    print >>structure, '%s: %s' % (
-                        seed_name, ' '.join(seed_inherit[seed_name]))
+                    print >>structure, "%s: %s" % (
+                        seed_name, " ".join(seed_inherit[seed_name]))
                 else:
-                    print >>structure, '%s:' % seed_name
+                    print >>structure, "%s:" % seed_name
 
     def makeSeed(self, flavour, series_name, seed_name, entries,
                  headers=None):
         """Create a simple seed file."""
         seed_path = os.path.join(
-            self.seeddir, '%s.%s' % (flavour, series_name), seed_name)
-        with open_for_writing(seed_path, 'w') as seed:
+            self.seeddir, "%s.%s" % (flavour, series_name), seed_name)
+        with open_for_writing(seed_path, "w") as seed:
             if headers is not None:
                 for header in headers:
                     print >>seed, header
                 print >>seed
             for entry in entries:
-                print >>seed, ' * %s' % entry
+                print >>seed, " * %s" % entry
 
     def test_name_is_consistent(self):
         # Script instances for the same distro get the same name.
         distro = self.factory.makeDistribution()
         self.assertEqual(
-            GenerateExtraOverrides(test_args=['-d', distro.name]).name,
-            GenerateExtraOverrides(test_args=['-d', distro.name]).name)
+            GenerateExtraOverrides(test_args=["-d", distro.name]).name,
+            GenerateExtraOverrides(test_args=["-d", distro.name]).name)
 
     def test_name_is_unique_for_each_distro(self):
         # Script instances for different distros get different names.
         self.assertNotEqual(
             GenerateExtraOverrides(
-                test_args=['-d', self.factory.makeDistribution().name]).name,
+                test_args=["-d", self.factory.makeDistribution().name]).name,
             GenerateExtraOverrides(
-                test_args=['-d', self.factory.makeDistribution().name]).name)
+                test_args=["-d", self.factory.makeDistribution().name]).name)
 
     def test_requires_distro(self):
         # The --distribution or -d argument is mandatory.
@@ -226,7 +226,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # An incorrect distribution name is flagged as an invalid option
         # value.
         script = GenerateExtraOverrides(
-            test_args=['-d', self.factory.getUniqueString()])
+            test_args=["-d", self.factory.getUniqueString()])
         script.logger = DevNullLogger()
         script.txn = FakeTransaction()
         self.assertRaises(OptionValueError, script.processOptions)
@@ -290,7 +290,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         base = self.factory.getUniqueString()
         output = script.outputPath(flavour, distroseries.name, arch, base)
         self.assertEqual(
-            '%s/%s_%s_%s_%s' % (
+            "%s/%s_%s_%s_%s" % (
                 script.config.germinateroot, base, flavour, distroseries.name,
                 arch),
             output)
@@ -298,10 +298,10 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
     def runGerminate(self, script, series_name, arch, flavours):
         """Helper to call script.runGerminate and return overrides."""
         structures = script.makeSeedStructures(
-            series_name, flavours, seed_bases=['file://%s' % self.seeddir])
+            series_name, flavours, seed_bases=["file://%s" % self.seeddir])
 
         override_fd, override_path = tempfile.mkstemp()
-        with os.fdopen(override_fd, 'w') as override_file:
+        with os.fdopen(override_fd, "w") as override_file:
             script.runGerminate(
                 override_file, series_name, arch, flavours, structures)
         return file_contents(override_path).splitlines()
@@ -335,26 +335,26 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertEqual([], overrides)
 
         seed_dir_one = os.path.join(
-            self.seeddir, '%s.%s' % (flavour_one, series_name))
+            self.seeddir, "%s.%s" % (flavour_one, series_name))
         self.assertFilesEqual(
-            os.path.join(seed_dir_one, 'STRUCTURE'),
-            script.outputPath(flavour_one, series_name, arch, 'structure'))
+            os.path.join(seed_dir_one, "STRUCTURE"),
+            script.outputPath(flavour_one, series_name, arch, "structure"))
         self.assertTrue(file_exists(script.outputPath(
-            flavour_one, series_name, arch, 'all')))
+            flavour_one, series_name, arch, "all")))
         self.assertTrue(file_exists(script.outputPath(
-            flavour_one, series_name, arch, 'all.sources')))
+            flavour_one, series_name, arch, "all.sources")))
         self.assertTrue(file_exists(script.outputPath(
             flavour_one, series_name, arch, seed)))
 
         seed_dir_two = os.path.join(
-            self.seeddir, '%s.%s' % (flavour_two, series_name))
+            self.seeddir, "%s.%s" % (flavour_two, series_name))
         self.assertFilesEqual(
-            os.path.join(seed_dir_two, 'STRUCTURE'),
-            script.outputPath(flavour_two, series_name, arch, 'structure'))
+            os.path.join(seed_dir_two, "STRUCTURE"),
+            script.outputPath(flavour_two, series_name, arch, "structure"))
         self.assertTrue(file_exists(script.outputPath(
-            flavour_two, series_name, arch, 'all')))
+            flavour_two, series_name, arch, "all")))
         self.assertTrue(file_exists(script.outputPath(
-            flavour_two, series_name, arch, 'all.sources')))
+            flavour_two, series_name, arch, "all.sources")))
         self.assertTrue(file_exists(script.outputPath(
             flavour_two, series_name, arch, seed)))
 
@@ -381,16 +381,16 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour, series_name, [seed_one, seed_two])
         self.makeSeed(
             flavour, series_name, seed_one, [two.name],
-            headers=['Task-Description: one'])
+            headers=["Task-Description: one"])
         self.makeSeed(
             flavour, series_name, seed_two, [three.name],
-            headers=['Task-Description: two'])
+            headers=["Task-Description: two"])
 
         overrides = self.runGerminate(script, series_name, arch, [flavour])
         expected_overrides = [
-            '%s/%s  Task  %s' % (one.name, arch, seed_one),
-            '%s/%s  Task  %s' % (two.name, arch, seed_one),
-            '%s/%s  Task  %s' % (three.name, arch, seed_two),
+            "%s/%s  Task  %s" % (one.name, arch, seed_one),
+            "%s/%s  Task  %s" % (two.name, arch, seed_one),
+            "%s/%s  Task  %s" % (three.name, arch, seed_two),
             ]
         self.assertContentEqual(expected_overrides, overrides)
 
@@ -414,11 +414,11 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour, series_name, [seed_one])
         self.makeSeed(
             flavour, series_name, seed_one, [package.name],
-            headers=['Task-Name: %s' % task_one])
+            headers=["Task-Name: %s" % task_one])
 
         overrides = self.runGerminate(script, series_name, arch, [flavour])
         self.assertContentEqual(
-            ['%s/%s  Task  %s' % (package.name, arch, task_one)], overrides)
+            ["%s/%s  Task  %s" % (package.name, arch, task_one)], overrides)
 
     def test_germinate_output_task_per_derivative(self):
         # The Task-Per-Derivative field is honoured.
@@ -441,17 +441,17 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour_one, series_name, [seed_one, seed_two])
         self.makeSeed(
             flavour_one, series_name, seed_one, [package.name],
-            headers=['Task-Description: one'])
+            headers=["Task-Description: one"])
         self.makeSeed(
             flavour_one, series_name, seed_two, [package.name],
-            headers=['Task-Per-Derivative: 1'])
+            headers=["Task-Per-Derivative: 1"])
         self.makeSeedStructure(flavour_two, series_name, [seed_one, seed_two])
         self.makeSeed(
             flavour_two, series_name, seed_one, [package.name],
-            headers=['Task-Description: one'])
+            headers=["Task-Description: one"])
         self.makeSeed(
             flavour_two, series_name, seed_two, [package.name],
-            headers=['Task-Per-Derivative: 1'])
+            headers=["Task-Per-Derivative: 1"])
 
         overrides = self.runGerminate(
             script, series_name, arch, [flavour_one, flavour_two])
@@ -460,10 +460,10 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         # it is honoured for both flavours and has the flavour name
         # prefixed.
         expected_overrides = [
-            '%s/%s  Task  %s' % (package.name, arch, seed_one),
-            '%s/%s  Task  %s-%s' % (
+            "%s/%s  Task  %s" % (package.name, arch, seed_one),
+            "%s/%s  Task  %s-%s" % (
                 package.name, arch, flavour_one, seed_two),
-            '%s/%s  Task  %s-%s' % (
+            "%s/%s  Task  %s-%s" % (
                 package.name, arch, flavour_two, seed_two),
             ]
         self.assertContentEqual(expected_overrides, overrides)
@@ -492,12 +492,12 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeed(flavour, series_name, seed_one, [one.name])
         self.makeSeed(
             flavour, series_name, seed_two, [two.name],
-            headers=['Task-Seeds: %s' % seed_one])
+            headers=["Task-Seeds: %s" % seed_one])
 
         overrides = self.runGerminate(script, series_name, arch, [flavour])
         expected_overrides = [
-            '%s/%s  Task  %s' % (one.name, arch, seed_two),
-            '%s/%s  Task  %s' % (two.name, arch, seed_two),
+            "%s/%s  Task  %s" % (one.name, arch, seed_two),
+            "%s/%s  Task  %s" % (two.name, arch, seed_two),
             ]
         self.assertContentEqual(expected_overrides, overrides)
 
@@ -522,7 +522,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
         overrides = self.runGerminate(script, series_name, arch, [flavour])
         self.assertContentEqual(
-            ['%s/%s  Build-Essential  yes' % (package.name, arch)], overrides)
+            ["%s/%s  Build-Essential  yes" % (package.name, arch)], overrides)
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
@@ -547,22 +547,22 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour, series_name, [seed])
         self.makeSeed(
             flavour, series_name, seed, [package.name],
-            headers=['Task-Description: task'])
+            headers=["Task-Description: task"])
 
-        script.process(seed_bases=['file://%s' % self.seeddir])
+        script.process(seed_bases=["file://%s" % self.seeddir])
         override_path = os.path.join(
             script.config.miscroot,
             "more-extra.override.%s.main" % series_name)
         expected_overrides = [
-            '%s/%s  Task  %s' % (package.name, arch_one, seed),
-            '%s/%s  Task  %s' % (package.name, arch_two, seed),
+            "%s/%s  Task  %s" % (package.name, arch_one, seed),
+            "%s/%s  Task  %s" % (package.name, arch_two, seed),
             ]
         self.assertContentEqual(
             expected_overrides, file_contents(override_path).splitlines())
 
         log_file = os.path.join(
-            script.config.germinateroot, 'germinate.output')
-        self.assertIn('Downloading file://', file_contents(log_file))
+            script.config.germinateroot, "germinate.output")
+        self.assertIn("Downloading file://", file_contents(log_file))
 
     def test_run_script(self):
         # The script will run stand-alone.
