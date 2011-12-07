@@ -1055,6 +1055,20 @@ class TestBranchMergeProposal(BrowserTestCase):
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 
+    def test_pending_diff_message_with_longpoll_enabled(self):
+        # If the longpoll feature flag is enabled then the message
+        # displayed for a pending diff indicates that it'll update
+        # automatically. See also
+        # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        bmp = self.factory.makeBranchMergeProposal()
+        browser = self.getViewBrowser(bmp)
+        self.assertIn(
+            "An updated diff is being calculated and will appear "
+                "automatically when ready.",
+            browser.contents)
+
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
     """Confirm that the latest branch is returned."""
