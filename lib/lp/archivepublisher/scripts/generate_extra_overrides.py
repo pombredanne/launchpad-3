@@ -31,7 +31,6 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
-from lp.soyuz.enums import ArchivePurpose
 
 
 class AtomicFile:
