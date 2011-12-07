@@ -159,6 +159,16 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
+    def logGerminateProgress(self, *args):
+        """Log a "progress" entry to the germinate log file.
+
+        Germinate logs quite a bit of detailed information.  To make it
+        easier to see the structure of its operation, GerminateFormatter
+        allows tagging some log entries as "progress" entries, which are
+        printed without a prefix.
+        """
+        self.germinate_logger.info(*args, extra={"progress": True})
+
     def germinateArchFlavour(self, override_file, germinator, series_name,
                              arch, flavour, structure, primary_flavour):
         """Germinate seeds on a single flavour for a single architecture."""
@@ -256,10 +266,9 @@ class GenerateExtraOverrides(LaunchpadScript):
                 "Germinating for %s/%s/%s", flavour, series_name, arch)
             # Add this to the germinate log as well so that that can be
             # debugged more easily.  Log a separator line first.
-            self.germinate_logger.info("", extra={"progress": True})
-            self.germinate_logger.info(
-                "Germinating for %s/%s/%s", flavour, series_name, arch,
-                extra={"progress": True})
+            self.logGerminateProgress("")
+            self.logGerminateProgress(
+                "Germinating for %s/%s/%s", flavour, series_name, arch)
 
             self.germinateArchFlavour(
                 override_file, germinator, series_name, arch, flavour,
