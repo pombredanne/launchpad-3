@@ -176,8 +176,13 @@
     in scopes ${request/features/usedScopes}
 
     r${revno}
-  --&gt;" />
+
+    --&gt;" />
 </tal:template>
+
+
+<metal:debug-timeline 
+  use-macro="context/@@+base-layout-macros/debug-timeline" />
 
 <tal:comment
     tal:condition="request/features/visible_render_time"
