@@ -116,7 +116,6 @@ class ScopeWithPerson(BaseScope):
 
     def __init__(self, get_person):
         self._get_person = get_person
-        self._person = None
 
     @cachedproperty
     def person(self):
