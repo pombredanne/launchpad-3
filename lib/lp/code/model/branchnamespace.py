@@ -152,7 +152,7 @@ class _BaseNamespace:
             return
         owner = self.owner
         if not registrant.inTeam(owner):
-            if owner.isTeam():
+            if owner.is_team:
                 raise BranchCreatorNotMemberOfOwnerTeam(
                     "%s is not a member of %s"
                     % (registrant.displayname, owner.displayname))

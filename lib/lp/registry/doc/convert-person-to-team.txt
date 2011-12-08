@@ -8,7 +8,7 @@ team and the name of the team owner as arguments.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
-    >>> matsubara.isTeam()
+    >>> matsubara.is_team
     False
     >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT...
@@ -34,7 +34,7 @@ team and the name of the team owner as arguments.
     >>> flush_database_caches()
 
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
-    >>> matsubara.isTeam()
+    >>> matsubara.is_team
     True
 
 We need to force a DB reset because the changes are done from an external

@@ -281,7 +281,7 @@ class FakePerson(FakeDatabaseObject):
     def inTeam(self, person_or_team):
         if self is person_or_team:
             return True
-        if not person_or_team.isTeam():
+        if not person_or_team.is_team:
             return False
         return self in person_or_team._members
 
