@@ -9,30 +9,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-<facet facet="overview">
-  <!-- OAuth-related pages. -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+request-token"
-      class="lp.services.oauth.browser.OAuthRequestTokenView"
-      permission="zope.Public" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+authorize-token"
-      class="lp.services.oauth.browser.OAuthAuthorizeTokenView"
-      template="../templates/oauth-authorize.pt"
-      permission="launchpad.AnyPerson" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+access-token"
-      class="lp.services.oauth.browser.OAuthAccessTokenView"
-      permission="zope.Public" />
-
-</facet>
-
-
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
