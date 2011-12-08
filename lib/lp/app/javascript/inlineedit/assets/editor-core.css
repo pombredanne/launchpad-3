@@ -10,9 +10,12 @@
 /* By default, input elements don't inherit these properties, but
  * in an inline editing context, it makes sense to do so.
  */
-.yui3-ieditor-input {
+.yui3-ieditor-input textarea {
+    background-color: #fafafa;
+    border: 0;
     color: inherit;
     font: inherit;
+    line-height: inherit;
 }
 
 /* Konqueror doesn't render the multiline editor's button if there's
