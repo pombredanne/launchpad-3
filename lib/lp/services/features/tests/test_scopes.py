@@ -8,15 +8,22 @@ __metaclass__ = type
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.testing import (
+    person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
-
+from lp.services.features import (
+    getFeatureFlag,
+    )
 from lp.services.features.scopes import (
     BaseScope,
     MultiScopeHandler,
     ScopesForScript,
     ScriptScope,
     UserSliceScope,
+    )
+from lp.services.features.testing import (
+    FeatureFixture,
     )
 
 
@@ -77,12 +84,15 @@ class TestScopes(TestCaseWithFactory):
         self.assertFalse(scopes.lookup("script:other"))
 
 
-class TestUserSliceScope(TestCaseWithFactory):
+class FakePerson(object):
 
-    layer = DatabaseFunctionalLayer
+    id = 7
 
-    def test_user_modulus(self):
-        person = self.factory.makePerson()
+
+class TestUserSliceScope(TestCase):
+
+    def test_user_slice(self):
+        person = FakePerson()
         # NB: scopes take a callable that returns the person, that in
         # production comes from the request.
         scope = UserSliceScope(lambda: person)
@@ -96,3 +106,27 @@ class TestUserSliceScope(TestCaseWithFactory):
             if scope.lookup(name):
                 matches.append(name)
         self.assertEquals(len(matches), 1, matches)
+
+
+class TestUserSliceScopeIntegration(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_user_slice_from_rules(self):
+        """Userslice matches against the real request user"""
+        person = self.factory.makePerson()
+        with FeatureFixture({}, full_feature_rules=[
+            dict(
+                flag='test_feature',
+                scope='userslice:0,1',
+                priority=999,
+                value=u'on'),
+            dict(
+                flag='test_not',
+                scope='userslice:1,1',
+                priority=999,
+                value=u'not_value'),
+            ]):
+            with person_logged_in(person):
+                self.assertEquals(getFeatureFlag('test_feature'), 'on')
+                self.assertEquals(getFeatureFlag('test_not'), None)
