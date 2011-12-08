@@ -25,7 +25,6 @@ the bug to series for which they are drivers.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
-    >>> logout()
 
     >>> login_person(nominator)
     >>> request = LaunchpadTestRequest()
