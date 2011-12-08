@@ -1880,7 +1880,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
-            '&show_milestone_name=true&show_last_updated=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true')
         with self.dynamic_listings():
@@ -1896,7 +1896,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
-            '&show_milestone_name=true&show_last_updated=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true&show_title=true')
         with self.dynamic_listings():
@@ -1912,7 +1912,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
-            '&show_milestone_name=true&show_last_updated=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_title=true')
         with self.dynamic_listings():
@@ -2087,9 +2087,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_hiding_last_updated(self):
         """Showing last_updated shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_last_updated', navigator.field_visibility)
+        self.assertIn('show_date_last_updated', navigator.field_visibility)
         self.assertNotIn('last updated updated1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_last_updated'] = True
+        mustache_model['bugtasks'][0]['show_date_last_updated'] = True
         self.assertIn('last updated updated1', navigator.mustache)
 
 
