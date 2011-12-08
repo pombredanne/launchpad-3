@@ -18,14 +18,12 @@
             Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
         });
     </script>
-    <meta http-equiv="refresh" content="10"
+    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy" />
+   <meta http-equiv="refresh" content="10"
         tal:condition="view/extra_data_to_process"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h2>Report a bug</h2>
   </div>
 

@@ -64,7 +64,7 @@
         <dd
           tal:attributes="title context/subscriptionpolicy/description">
           <span tal:replace="context/subscriptionpolicy/title" />
-          <a class="sprite maybe" href="/+help/team-subscription-policy.html"
+          <a class="sprite maybe" href="/+help-registry/team-subscription-policy.html"
             target="help">&nbsp;</a>
         </dd>
       </dl>

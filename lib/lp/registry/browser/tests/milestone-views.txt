@@ -252,7 +252,7 @@ the product release data for a milestone.
     ...     milestone, '+productrelease-data', principal=person)
     >>> content = find_tag_by_id(view.render(), 'release-data')
     >>> print find_tag_by_id(content, 'how-to-verify').a['href']
-    /+help/verify-downloads.html
+    /+help-registry/verify-downloads.html
 
     >>> print extract_text(find_tag_by_id(content, 'downloads'))
     File                 Description  Downloads  Delete

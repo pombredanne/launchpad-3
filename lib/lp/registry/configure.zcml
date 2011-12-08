@@ -275,9 +275,6 @@
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
 
-    <facet
-        facet="overview">
-
         <!-- CodeofConduct -->
 
         <class
@@ -334,7 +331,6 @@
 
         <!-- string:${id} because id is an int -->
 
-    </facet>
     <class
         class="lp.registry.model.person.IrcID">
         <allow
@@ -428,9 +424,6 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
-
-    <facet
-        facet="answers"/>
 
     <!-- ProjectGroupSet-->
 
@@ -631,8 +624,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <facet
-        facet="overview">
 
         <!-- Karma -->
 
@@ -707,9 +698,6 @@
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
         </securedutility>
-    </facet>
-    <facet
-        facet="overview">
 
         <!-- Poll -->
 
@@ -810,7 +798,6 @@
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCastSet"/>
         </securedutility>
-    </facet>
 
     <!-- Announcement -->
 
@@ -849,8 +836,6 @@
         <allow
             interface="lp.registry.interfaces.announcement.IAnnouncementSet"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- Person -->
 
@@ -993,7 +978,6 @@
             <allow
                 interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
         </securedutility>
-    </facet>
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
@@ -1760,8 +1744,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
+    <lp:help-folder folder="help" name="+help-registry" />
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">

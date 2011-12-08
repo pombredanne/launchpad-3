@@ -286,7 +286,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW, ])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ],
+            eager_load=True)
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -447,7 +448,8 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW])
+             BranchMergeProposalStatus.NEEDS_REVIEW],
+            eager_load=True)
 
         return proposals
 

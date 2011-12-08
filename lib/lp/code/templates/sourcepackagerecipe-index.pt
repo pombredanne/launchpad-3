@@ -83,7 +83,7 @@
         <div class="two-column-list">
           <dl id="build_daily">
             <dt>Build schedule:
-              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+              <a href="/+help-code/recipe-build-frequency.html" target="help" class="sprite maybe">
                 &nbsp;<span class="invisible-link">Tag help</span>
               </a>
             </dt>

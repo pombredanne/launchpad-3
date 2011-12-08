@@ -2188,6 +2188,22 @@ class TestTransitionToTarget(TestCaseWithFactory):
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
 
+    def test_access_policy_changed(self):
+        # If an access policy is set, changing the pillar also switches
+        # to the matching policy on the new pillar.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        new_policy = self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+            self.assertEqual(orig_policy, bug.access_policy)
+            bug.default_bugtask.transitionToTarget(new_product)
+            self.assertEqual(new_policy, bug.access_policy)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
@@ -2513,6 +2529,39 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             "Package %s not published in %s"
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
+
+    def test_present_access_policy_works(self):
+        # If an access policy is set, changing the pillar is permitted
+        # if the target has an access policy of the same type.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        # No exception is raised.
+        validate_target(bug, new_product)
+
+    def test_missing_access_policy_rejected(self):
+        # If the new pillar doesn't have a corresponding access policy,
+        # the transition is forbidden.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s doesn't have a %s access policy."
+            % (new_product.displayname, bug.access_policy.type.title),
+            validate_target, bug, new_product)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):

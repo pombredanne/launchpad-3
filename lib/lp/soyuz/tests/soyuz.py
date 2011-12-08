@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes for Soyuz tests."""
@@ -16,16 +16,14 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.ftests import (
-    import_public_test_keys,
-    )
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -96,6 +94,7 @@ class SoyuzTestHelper:
         for status, archive, pocket in self.sample_publishing_data:
             pub = SourcePackagePublishingHistory(
                 sourcepackagerelease=sourcepackagerelease,
+                sourcepackagename=sourcepackagerelease.sourcepackagename,
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
                 section=sourcepackagerelease.section,
@@ -119,6 +118,7 @@ class SoyuzTestHelper:
         for status, archive, pocket in self.sample_publishing_data:
             pub = BinaryPackagePublishingHistory(
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 distroarchseries=distroarchseries,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,

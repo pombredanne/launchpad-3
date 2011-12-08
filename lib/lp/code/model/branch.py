@@ -180,6 +180,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):

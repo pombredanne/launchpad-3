@@ -169,8 +169,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             db_branch.last_mirrored_id, tree.branch.last_revision())
         self.assertTrue(db_branch.pending_writes)
         matches = MatchesRegex(
-            '(.|\n)*WARNING Skipped .* due to stale DB info and scheduled'
-            ' scan.')
+            "(.|\n)*WARNING Skipped .* due to stale DB info, and scheduled a "
+            "new scan.")
         self.assertThat(exporter.logger.getLogBuffer(), matches)
 
     def test_exportToBranches_handles_nonascii_exceptions(self):

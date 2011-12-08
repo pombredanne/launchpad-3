@@ -67,6 +67,12 @@ class SearchTestBase:
     def setUp(self):
         super(SearchTestBase, self).setUp()
         self.bugtask_set = getUtility(IBugTaskSet)
+        # We need a feature flag so that multipillar bugs can be made private.
+        feature_flag = {
+                'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
 
     def assertSearchFinds(self, params, expected_bugtasks):
         # Run a search for the given search parameters and check if

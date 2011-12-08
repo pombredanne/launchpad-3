@@ -334,5 +334,5 @@ def print_bug_tag_anchors(anchors):
     """The the bug tags in the iterable of anchors."""
     for anchor in anchors:
         href = anchor['href']
-        if href != '+edit' and '/+help/tag-help.html' not in href:
+        if href != '+edit' and '/+help-bugs/tag-help.html' not in href:
             print anchor['class'], anchor.contents[0]

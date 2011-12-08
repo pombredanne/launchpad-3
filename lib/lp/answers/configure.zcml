@@ -255,8 +255,7 @@
   </class>
 
 
-  <lp:help-folder
-      folder="help" type="lp.answers.publisher.AnswersLayer" />
+  <lp:help-folder folder="help" name="+help-answers"/>
   <adapter
       name="answers"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

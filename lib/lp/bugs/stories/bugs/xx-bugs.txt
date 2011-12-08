@@ -3,14 +3,14 @@ specifically Hoary.
 
     >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
     >>> print browser.title
-    Bugs in The Hoary...
+    Bugs : Hoary : Hoary (5.04) : Ubuntu 
 
 This page checks that we can see a list of bugs on the distributions, in
 this case Ubuntu.
 
     >>> browser.open('http://localhost/ubuntu/+bugs')
     >>> print browser.title
-    Bugs in Ubuntu...
+    Bugs : Ubuntu...
 
 Comments are intended to be contributions to a bug report that further
 the goal of solving the problem at hand. Any logged in user can add a
