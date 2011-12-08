@@ -34,6 +34,7 @@ names = [
     'build/autocomplete/assets/skins/sam/autocomplete.css',
     'build/overlay/assets/skins/sam/pretty-overlay.css',
     'build/formoverlay/assets/formoverlay-core.css',
+    'build/indicator/assets/indicator-core.css',
     'build/confirmationoverlay/assets/confirmationoverlay-core.css',
     'build/picker/assets/skins/sam/picker.css',
     'build/activator/assets/skins/sam/activator.css',

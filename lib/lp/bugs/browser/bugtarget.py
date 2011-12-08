@@ -10,7 +10,6 @@ __all__ = [
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
-    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
@@ -56,13 +55,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
-    BugFeedLink,
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -81,7 +74,6 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -90,7 +82,6 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
-    IServiceUsage,
     )
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.product import (
@@ -99,7 +90,6 @@ from lp.app.widgets.product import (
     ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
@@ -107,7 +97,6 @@ from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
     )
-from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -123,8 +112,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -1073,6 +1060,13 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             self.request.response.redirect(
                 config.malone.ubuntu_bug_filing_url)
 
+    @property
+    def page_title(self):
+        if IMaloneApplication.providedBy(self.context):
+            return 'Report a bug'
+        else:
+            return 'Report a bug about %s' % self.context.title
+
     @safe_action
     @action("Continue", name="projectgroupsearch",
             validator="validate_search")
@@ -1309,100 +1303,6 @@ class BugCountDataItem:
             self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
         else:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
-
-
-class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
-    """View for the Bugs front page."""
-
-    # We have a custom searchtext widget here so that we can set the
-    # width of the search box properly.
-    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
-
-    # Only include <link> tags for bug feeds when using this view.
-    feed_types = (
-        BugFeedLink,
-        BugTargetLatestBugsFeedLink,
-        )
-
-    # XXX: Bjorn Tillenius 2007-02-13:
-    #      These colors should be changed. It's the same colors that are used
-    #      to color statuses in buglistings using CSS, but there should be one
-    #      unique color for each status in the pie chart
-    status_color = {
-        BugTaskStatus.NEW: '#993300',
-        BugTaskStatus.INCOMPLETE: 'red',
-        BugTaskStatus.CONFIRMED: 'orange',
-        BugTaskStatus.TRIAGED: 'black',
-        BugTaskStatus.INPROGRESS: 'blue',
-        BugTaskStatus.FIXCOMMITTED: 'green',
-        BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.INVALID: 'yellow',
-        BugTaskStatus.UNKNOWN: 'purple',
-    }
-
-    override_title_breadcrumbs = True
-
-    @property
-    def label(self):
-        """The display label for the view."""
-        return 'Bugs in %s' % self.context.title
-
-    def initialize(self):
-        super(BugTargetBugsView, self).initialize()
-        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
-        if IDistroSeries.providedBy(self.context):
-            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        expose_structural_subscription_data_to_js(
-            self.context, self.request, self.user)
-
-    @property
-    def can_have_external_bugtracker(self):
-        return (IProduct.providedBy(self.context)
-                or IProductSeries.providedBy(self.context))
-
-    @property
-    def bug_tracking_usage(self):
-        """Whether the context tracks bugs in launchpad.
-
-        :returns: ServiceUsage enum value
-        """
-        service_usage = IServiceUsage(self.context)
-        return service_usage.bug_tracking_usage
-
-    @property
-    def bugtracker(self):
-        """Description of the context's bugtracker.
-
-        :returns: str which may contain HTML.
-        """
-        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-            return 'Launchpad'
-        elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
-        else:
-            return 'None specified'
-
-    @cachedproperty
-    def hot_bugs_info(self):
-        """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
-        has_more_bugs = False
-        params = BugTaskSearchParams(
-            orderby=['-heat', 'task'], omit_dupes=True,
-            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # Use 4x as many tasks as bugs that are needed to improve performance.
-        bugtasks = self.context.searchTasks(params)[:40]
-        hot_bugtasks = []
-        hot_bugs = []
-        for task in bugtasks:
-            # Use hot_bugs list to ensure a bug is only listed once.
-            if task.bug not in hot_bugs:
-                if len(hot_bugtasks) < 10:
-                    hot_bugtasks.append(task)
-                    hot_bugs.append(task.bug)
-                else:
-                    has_more_bugs = True
-                    break
-        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugtasks}
 
 
 class BugTargetBugTagsView(LaunchpadView):

@@ -12,6 +12,8 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <include
+        file="vocabularies.zcml"/>
     <authorizations module=".security" />
 
     <lp:help-folder folder="help" name="+help-soyuz" />
