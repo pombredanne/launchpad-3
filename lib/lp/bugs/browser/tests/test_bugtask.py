@@ -2241,9 +2241,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Showing last_updated shows the text."""
         navigator, mustache_model = self.getNavigator()
         self.assertIn('show_last_updated', navigator.field_visibility)
-        self.assertNotIn('last updated updated1', navigator.mustache)
+        self.assertNotIn('Last updated updated1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_last_updated'] = True
-        self.assertIn('last updated updated1', navigator.mustache)
+        self.assertIn('Last updated updated1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
