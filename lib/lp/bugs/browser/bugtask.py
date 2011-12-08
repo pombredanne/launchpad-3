@@ -2283,7 +2283,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_milestone_name': False,
             'show_reporter': False,
             'show_status': True,
-            'show_tags': False,
+            'show_tag': False,
         }
         self.field_visibility = None
         self._setFieldVisibility()

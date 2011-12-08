@@ -1881,14 +1881,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true')
         with self.dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
-        self.assertTrue(field_visibility['show_tags'])
+        self.assertTrue(field_visibility['show_tag'])
 
     def test_exclude_unsupported_cookie_values(self):
         """Cookie values not present in defaults are ignored."""
@@ -1897,7 +1897,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true&show_title=true')
         with self.dynamic_listings():
             view = self.makeView(
@@ -1913,7 +1913,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_title=true')
         with self.dynamic_listings():
             view = self.makeView(
@@ -2071,9 +2071,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_hiding_tags(self):
         """Showing tags shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_tags', navigator.field_visibility)
+        self.assertIn('show_tag', navigator.field_visibility)
         self.assertNotIn('tags1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_tags'] = True
+        mustache_model['bugtasks'][0]['show_tag'] = True
         self.assertIn('tags1', navigator.mustache)
 
     def test_hiding_reporter(self):
