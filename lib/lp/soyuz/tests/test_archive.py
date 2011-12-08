@@ -2303,6 +2303,51 @@ class TestSyncSource(TestCaseWithFactory):
             person=person)
 
 
+class TestgetAllPublishedBinaries(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_returns_publication(self):
+        archive = self.factory.makeArchive()
+        publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive)
+        publications = archive.getAllPublishedBinaries()
+        self.assertEqual(1, publications.count())
+        self.assertEqual(publication, publications[0])
+
+    def test_created_since_date_newer(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        later_date = datecreated + timedelta(minutes=1)
+        publications = archive.getAllPublishedBinaries(created_since_date=later_date)
+        self.assertEqual(0, publications.count())
+
+    def test_created_since_date_older(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        earlier_date = datecreated - timedelta(minutes=1)
+        publications = archive.getAllPublishedBinaries(created_since_date=earlier_date)
+        self.assertEqual(1, publications.count())
+        self.assertEqual(publication, publications[0])
+
+    def test_created_since_date_middle(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        publication1 = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        middle_date = datecreated + timedelta(minutes=1)
+        later_date = middle_date + timedelta(minutes=1)
+        publication2 = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=later_date)
+        publications = archive.getAllPublishedBinaries(created_since_date=middle_date)
+        self.assertEqual(1, publications.count())
+        self.assertEqual(publication2, publications[0])
+
+
 class TestRemovingPermissions(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
