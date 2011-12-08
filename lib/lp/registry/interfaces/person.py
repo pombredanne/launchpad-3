@@ -662,7 +662,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
                     IPersonSettings, IQuestionsPerson):
-class IPersonPublic(IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -678,18 +677,6 @@ class IPersonPublic(IPrivacy):
             description=_(
                 "The content of your profile page. Use plain text, "
                 "paragraphs are preserved and URLs are linked in pages.")))
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. It is a summary of the team's visibility.
-    private = exported(Bool(
-            title=_("This team is private"),
-            readonly=True, required=False,
-            description=_("Private teams are visible only to "
-                          "their members.")))
-    is_valid_person = Bool(
-        title=_("This is an active user and not a team."), readonly=True)
-    is_valid_person_or_team = exported(
-        Bool(title=_("This is an active user or a team."), readonly=True),
-        exported_as='is_valid')
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -715,7 +702,6 @@ class IPersonPublic(IPrivacy):
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
-                    IHasBugs, IHasRecipes, IHasTranslationImports,
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
@@ -782,6 +768,11 @@ class IPersonPublic(IPrivacy):
         'The caches of karma scores, by karma category.')
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
+    is_valid_person = Bool(
+        title=_("This is an active user and not a team."), readonly=True)
+    is_valid_person_or_team = exported(
+        Bool(title=_("This is an active user or a team."), readonly=True),
+        exported_as='is_valid')
     is_probationary = exported(
         Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
@@ -995,6 +986,14 @@ class IPersonPublic(IPrivacy):
             title=_("Hardware submissions"),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))  # HWSubmission
+
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
 
     is_merge_pending = exported(Bool(
         title=_("Is this person due to be merged with another?"),
