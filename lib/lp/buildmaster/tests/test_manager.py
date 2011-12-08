@@ -25,8 +25,8 @@ from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -507,6 +507,10 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             FakeMethod(True))
 
     def test_interleaved_success_and_failure_do_not_interfere(self):
+        # It's possible for one builder to fail while another continues
+        # to function properly.  When that happens, the failed builder
+        # may cause database changes to be rolled back.  But that does
+        # not affect the functioning builder.
         clock = task.Clock()
 
         broken_builder = self.getFreshBuilder(
@@ -516,22 +520,24 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             slave=WaitingSlave(), name=FROG_THE_BUILDER_NAME)
         good_build = self.factory.makeBinaryPackageBuild(
             distroarchseries=self.factory.makeDistroArchSeries())
-        good_scanner = self._getScanner(
-            builder_name=good_builder.name, clock=clock)
-        buildqueue = good_build.queueBuild()
 
+        # The good build is being handled by the good builder.
+        buildqueue = good_build.queueBuild()
         buildqueue.builder = good_builder
+
         removeSecurityProxy(good_build.build_farm_job).date_started = UTC_NOW
 
-        # The good builder receives information from a successful build,
-        # and stores it.
+        # The good builder requests information from a successful build,
+        # and up receiving it, updates the build's metadata.
+        # Our dependencies string goes into the build, and its
+        # date_finished will be set.
         dependencies = self.factory.getUniqueString()
-        d = PackageBuild.storeBuildInfo(
+        PackageBuild.storeBuildInfo(
             good_build, None, {'dependencies': dependencies})
         clock.advance(1)
 
-        # The broken scanner experiences a failure while the good
-        # scanner is doing its work.  This aborts the ongoing
+        # The broken scanner experiences a failure before the good
+        # scanner is receiving its data.  This aborts the ongoing
         # transaction.
         # As a somewhat weird example, if the builder changed its own
         # title, that change will be rolled back.
@@ -539,9 +545,11 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         broken_builder.title = self.factory.getUniqueString()
         broken_scanner._scanFailed(self.makeFakeFailure())
 
-        # The work done by the good scanner is retained.
+        # The work done by the good scanner is retained.  The
+        # storeBuildInfo code committed it.
         self.assertEqual(dependencies, good_build.dependencies)
         self.assertIsNot(None, good_build.date_finished)
+
         # The work done by the broken scanner is rolled back.
         self.assertEqual(original_broken_builder_title, broken_builder.title)
 
