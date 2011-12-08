@@ -1,4 +1,5 @@
-= Converting people into teams =
+Converting people into teams
+============================
 
 There's a script which allows us to turn any person whose account_status is
 NOACCOUNT (which means the person has never actually logged into Launchpad)

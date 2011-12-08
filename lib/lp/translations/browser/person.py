@@ -450,20 +450,17 @@ class PersonTranslationView(LaunchpadView):
 
         return overall
 
-
     to_complete_template = ViewPageTemplateFile(
         '../templates/person-translations-to-complete-table.pt')
 
     def translations_to_complete_table(self):
         return self.to_complete_template(dict(view=self))
 
-
     to_review_template = ViewPageTemplateFile(
         '../templates/person-translations-to-review-table.pt')
 
     def translations_to_review_table(self):
         return self.to_review_template(dict(view=self))
-
 
 
 class PersonTranslationReviewView(PersonTranslationView):

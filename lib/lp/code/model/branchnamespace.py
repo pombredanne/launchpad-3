@@ -540,6 +540,7 @@ class BranchNamespaceSet:
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
         traversed_segments = []
+
         def get_next_segment():
             try:
                 result = segments.next()
@@ -549,6 +550,7 @@ class BranchNamespaceSet:
                 raise AssertionError("None segment passed to traverse()")
             traversed_segments.append(result)
             return result
+
         person_name = get_next_segment()
         person = self._findPerson(person_name)
         pillar_name = get_next_segment()
