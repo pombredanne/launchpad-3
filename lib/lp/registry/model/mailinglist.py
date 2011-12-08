@@ -567,9 +567,9 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         store = Store.of(self)
         clauses = [
-            MessageApproval.mailing_listID==self.id,
-            MessageApproval.status==PostedMessageStatus.NEW,
-            MessageApproval.messageID==Message.id,
+            MessageApproval.mailing_listID == self.id,
+            MessageApproval.status == PostedMessageStatus.NEW,
+            MessageApproval.messageID == Message.id,
             ]
         if message_id_filter is not None:
             clauses.append(Message.rfc822msgid.is_in(message_id_filter))
