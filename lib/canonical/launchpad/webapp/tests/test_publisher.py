@@ -170,7 +170,8 @@ class TestLaunchpadView(TestCaseWithFactory):
                     u'priority': 0,
                     u'value': u'on',
                     },
-                )))
+                ),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -207,7 +208,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         #     but have different values,
         # then the property related_feature_info contains this feature flag.
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -228,7 +230,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         #     and have the same values,
         # then is_beta is false.
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'on', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'on', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -245,7 +248,8 @@ class TestLaunchpadView(TestCaseWithFactory):
             related_features = ['test_feature']
 
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = TestView(object(), request)
         with person_logged_in(self.factory.makePerson()):
@@ -269,7 +273,8 @@ class TestLaunchpadView(TestCaseWithFactory):
             related_features = ['test_feature_2']
 
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = TestView(object(), request)
         TestView2(object(), request)
