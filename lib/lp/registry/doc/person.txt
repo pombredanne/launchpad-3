@@ -359,7 +359,6 @@ Non-administrators may not change a person's standing.
     ...
     Unauthorized: ...
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -1097,7 +1096,6 @@ The method does not return inactive projects.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')

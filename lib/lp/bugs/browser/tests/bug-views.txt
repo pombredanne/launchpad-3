@@ -504,7 +504,6 @@ for upstream and an Ubuntu series and see how the list changes.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
-    >>> logout()
 
 (Login as a bug supervisor to be able to nominate.)
 

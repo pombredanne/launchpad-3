@@ -37,7 +37,6 @@ HWDriver
     >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> login('test@canonical.com')
     >>> driver = getUtility(IHWDriverSet).search(name='sd')[0]
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(driver, 'name')
     Access for launchpad.anonymous denied
     Access for no-priv@canonical.com denied
@@ -49,7 +48,6 @@ HWDriverName
 
     >>> login('test@canonical.com')
     >>> driver_name = getUtility(IHWDriverSet).all_driver_names()[0]
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(driver_name, 'name')
     Access for launchpad.anonymous denied
     Access for no-priv@canonical.com denied
@@ -75,7 +73,6 @@ HWVendorID
     >>> login('test@canonical.com')
     >>> vendor_id = getUtility(IHWVendorIDSet).getByBusAndVendorID(
     ...     HWBus.PCI, '0x10de')
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(vendor_id, 'bus')
     Access for launchpad.anonymous denied
     Access for no-priv@canonical.com denied
@@ -89,7 +86,6 @@ HWDevice
     >>> login('test@canonical.com')
     >>> device = getUtility(IHWDeviceSet).getByDeviceID(
     ...     HWBus.PCI, '0x10de', '0x0455')
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(device, 'name')
     Access for launchpad.anonymous denied
     Access for no-priv@canonical.com denied
@@ -105,7 +101,6 @@ No-Priv is not (see above).
 
     >>> login('test@canonical.com')
     >>> device_class = device.getOrCreateDeviceClass(12, 3)
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(device_class, 'main_class')
     Access for launchpad.anonymous denied
     Access for no-priv@canonical.com denied
@@ -118,7 +113,6 @@ HWSubmissionDevice
     >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionDeviceSet
     >>> login('test@canonical.com')
     >>> submission_device = getUtility(IHWSubmissionDeviceSet).get(1)
-    >>> logout()
     >>> check_authorized_only_for_hwdb_team(
     ...     submission_device, 'hal_device_id')
     Access for launchpad.anonymous denied

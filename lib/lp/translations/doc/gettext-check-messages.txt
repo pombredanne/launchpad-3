@@ -45,7 +45,6 @@ points that would otherwise be in the output.
     ...         checker._commit_interval = commit_interval
     ...     checker.main()
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
 
     >>> pofile = factory.makePOFile()

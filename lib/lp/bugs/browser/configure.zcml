@@ -262,12 +262,6 @@
         permission="zope.Public"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
-        for="lp.registry.interfaces.person.IPerson"
-        name="+portlet-otherpackages"
-        permission="zope.Public"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
-        template="../templates/person-portlet-otherpackages.pt"/>
-    <browser:page
         name="+bugs"
         for="lp.registry.interfaces.person.IPerson"
         class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
@@ -300,7 +294,7 @@
     <browser:page
         name="+packagebugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        class="lp.registry.browser.person.BugSubscriberPackageBugsOverView"
         permission="zope.Public"
         template="../templates/person-packagebugs-overview.pt"/>
     <browser:page
@@ -327,12 +321,6 @@
         class="lp.bugs.browser.distribution_upstream_bug_report.DistributionUpstreamBugReport"
         permission="zope.Public"
         template="../templates/distribution-upstream-bug-report.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.cvereport.CVEReportView"
@@ -364,12 +352,6 @@
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
     <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
-    <browser:page
         name="+securitycontact"
         for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
         class="lp.bugs.browser.securitycontact.SecurityContactEditView"
@@ -385,12 +367,6 @@
         name="+configure-bugtracker"
         template="../../app/templates/generic-edit.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
@@ -430,12 +406,6 @@
         name="+filebug"
         class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
         permission="zope.Public"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+bugs-index"
-        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
-        permission="zope.Public"
-        template="../templates/bugtarget-bugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
@@ -1198,4 +1168,36 @@
         permission="zope.Public" />
 
     </facet>
+    <browser:defaultView
+        for="lp.registry.interfaces.distribution.IDistribution"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.person.IPerson"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.product.IProduct"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
+        name="+bugs"
+        layer="lp.bugs.publisher.BugsLayer"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        layer="lp.bugs.publisher.BugsLayer"
+        name="+bugs"/>
 </configure>
