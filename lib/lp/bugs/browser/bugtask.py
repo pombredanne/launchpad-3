@@ -2276,7 +2276,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_datecreated': False,
             'show_assignee': False,
             'show_bugtarget': True,
-            'show_bug_heat': True,
+            'show_heat': True,
             'show_id': True,
             'show_importance': True,
             'show_last_updated': False,

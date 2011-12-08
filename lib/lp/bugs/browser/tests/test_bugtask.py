@@ -1881,7 +1881,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_status=true')
         with self.dynamic_listings():
             view = self.makeView(
@@ -1897,7 +1897,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_status=true&show_title=true')
         with self.dynamic_listings():
             view = self.makeView(
@@ -1913,7 +1913,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
             '&show_id=true&show_bugtarget=true'
             '&show_milestone_name=true&show_last_updated=true'
-            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_title=true')
         with self.dynamic_listings():
             view = self.makeView(
@@ -2041,7 +2041,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator, mustache_model = self.getNavigator()
         self.assertIn('bug_heat_html1', navigator.mustache)
         self.assertIn('bug-heat-icons', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_bug_heat'] = False
+        mustache_model['bugtasks'][0]['show_heat'] = False
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
 
