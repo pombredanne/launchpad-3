@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for writing tests that use feature flags."""
@@ -9,6 +9,8 @@ __all__ = ['FeatureFixture']
 
 from fixtures import Fixture
 
+from lazr.restful.utils import get_current_browser_request
+
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -17,6 +19,9 @@ from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import (
     Rule,
     StormFeatureRuleSource,
+    )
+from lp.services.features.scopes import (
+    ScopesFromRequest,
     )
 
 
@@ -56,8 +61,13 @@ class FeatureFixture(Fixture):
         rule_source.setAllRules(self.makeNewRules())
 
         original_controller = get_relevant_feature_controller()
+
+        def scope_lookup(scope_name):
+            request = get_current_browser_request()
+            return ScopesFromRequest(request).lookup(scope_name)
+
         install_feature_controller(
-            FeatureController(lambda _: True, rule_source))
+            FeatureController(scope_lookup, rule_source))
         self.addCleanup(install_feature_controller, original_controller)
 
     def makeNewRules(self):
