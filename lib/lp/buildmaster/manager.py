@@ -112,13 +112,17 @@ class SlaveScanner:
     # algorithm for polling.
     SCAN_INTERVAL = 15
 
-    def __init__(self, builder_name, logger):
+    def __init__(self, builder_name, logger, clock=None):
         self.builder_name = builder_name
         self.logger = logger
+        if clock is None:
+            clock = reactor
+        self._clock = clock
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
         self.loop = LoopingCall(self.singleCycle)
+        self.loop.clock = self._clock
         self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
         return self.stopping_deferred
 

@@ -358,8 +358,8 @@ class PackageBuildDerived:
                     transaction.commit()
                 return self._release_builder_and_remove_queue_item()
 
-        # Explode before collect a binary that is denied in this
-        # distroseries/pocket
+        # Explode rather than collect a binary that is denied in this
+        # distroseries/pocket.
         if not self.archive.allowUpdatesToReleasePocket():
             assert self.distro_series.canUploadToPocket(self.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
