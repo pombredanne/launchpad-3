@@ -805,7 +805,8 @@ class Archive(SQLBase):
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
-                                   exact_match=False, created_since_date=None):
+                                   exact_match=False,
+                                   created_since_date=None):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,

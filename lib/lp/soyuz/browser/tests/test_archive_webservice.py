@@ -388,8 +388,7 @@ class TestgetPublishedBinaries(WebServiceTestCase):
         self.ws_version = 'beta'
         person = self.factory.makePerson()
         archive = self.factory.makeArchive()
-        publishing = self.factory.makeBinaryPackagePublishingHistory(
-                archive=archive)
+        self.factory.makeBinaryPackagePublishingHistory(archive=archive)
         ws_archive = self.wsObject(archive, user=person)
         self.assertEqual(1, len(ws_archive.getPublishedBinaries()))
 
@@ -399,8 +398,9 @@ class TestgetPublishedBinaries(WebServiceTestCase):
         archive = self.factory.makeArchive()
         datecreated = self.factory.getUniqueDate()
         later_date = datecreated + timedelta(minutes=1)
-        publishing = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
                 archive=archive, datecreated=datecreated)
         ws_archive = self.wsObject(archive, user=person)
-        publications = ws_archive.getPublishedBinaries(created_since_date=later_date)
+        publications = ws_archive.getPublishedBinaries(
+                created_since_date=later_date)
         self.assertEqual(0, len(publications))
