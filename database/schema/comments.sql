@@ -1223,6 +1223,9 @@ COMMENT ON COLUMN LaunchpadDatabaseRevision.major IS 'Major number. This is the 
 COMMENT ON COLUMN LaunchpadDatabaseRevision.minor IS 'Minor number. Patches made during development each increment the minor number.';
 COMMENT ON COLUMN LaunchpadDatabaseRevision.patch IS 'The patch number will hopefully always be ''0'', as it exists to support emergency patches made to the production server. eg. If production is running ''4.0.0'' and needs to have a patch applied ASAP, we would create a ''4.0.1'' patch and roll it out. We then may need to refactor all the existing ''4.x.0'' patches.';
 
+-- LaunchpadDatabaseUpdateLog
+COMMENT ON TABLE LaunchpadDatabaseUpdateLog IS 'Record of Launchpad database schema updates. When and what update.py was run.';
+
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
 COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';

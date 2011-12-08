@@ -389,6 +389,7 @@ The current references to the branch table are shown here.
     ...     ])
     >>> for name in listing:
     ...     print name
+    accesspolicyartifact.branch
     branch.stacked_on
     branchjob.branch
     branchmergeproposal.dependent_branch
