@@ -388,8 +388,8 @@ Teams
 
 As we said above, the Person class is overloaded to represent teams so
 we may have Person objects which are, in fact, teams. To find out
-whether a given object is a person or a team we can use the isTeam()
-method of IPerson or check if the object provides the ITeam interface.
+whether a given object is a person or a team we can use the is_team
+property of IPerson or check if the object provides the ITeam interface.
 
     >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')

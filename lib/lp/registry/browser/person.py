@@ -1369,7 +1369,7 @@ class PersonSpecWorkloadView(LaunchpadView):
         This batch does not test for whether the person has specifications or
         not.
         """
-        assert self.context.isTeam, (
+        assert self.context.is_team, (
             "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
         batch_nav = BatchNavigator(members, self.request, size=20)
