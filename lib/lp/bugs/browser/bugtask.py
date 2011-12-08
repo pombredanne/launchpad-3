@@ -2275,7 +2275,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.field_visibility_defaults = {
             'show_datecreated': False,
             'show_assignee': False,
-            'show_bugtarget': True,
+            'show_targetname': True,
             'show_heat': True,
             'show_id': True,
             'show_importance': True,

@@ -1879,7 +1879,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         task = self.factory.makeBugTask()
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
-            '&show_id=true&show_bugtarget=true'
+            '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_status=true')
@@ -1895,7 +1895,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         task = self.factory.makeBugTask()
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
-            '&show_id=true&show_bugtarget=true'
+            '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_status=true&show_title=true')
@@ -1911,7 +1911,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         task = self.factory.makeBugTask()
         cookie = (
             'anon-buglist-fields=show_datecreated=true&show_reporter=true'
-            '&show_id=true&show_bugtarget=true'
+            '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tags=true'
             '&show_importance=true&show_title=true')
@@ -2032,7 +2032,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator, mustache_model = self.getNavigator()
         self.assertIn('bugtarget1', navigator.mustache)
         self.assertIn('bugtarget_css1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_bugtarget'] = False
+        mustache_model['bugtasks'][0]['show_targetname'] = False
         self.assertNotIn('bugtarget1', navigator.mustache)
         self.assertNotIn('bugtarget_css1', navigator.mustache)
 
