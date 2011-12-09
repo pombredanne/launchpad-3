@@ -5,6 +5,17 @@
 
 __metaclass__ = type
 
+from itertools import izip
+import re
+
+from testtools.content import Content, UTF8_TEXT
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    Not,
+    )
+
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import (
     login,
     logout,
@@ -13,8 +24,11 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
+    person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class CanBeNominatedForTestMixin:
@@ -216,3 +230,55 @@ class TestCanApprove(TestCaseWithFactory):
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
         self.assertTrue(nomination.canApprove(package_perm.person))
         self.assertTrue(nomination.canApprove(comp_perm.person))
+
+
+class TestApprovePerformance(TestCaseWithFactory):
+    """Test the performance of `BugNomination.approve`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def check_heat_queries(self, nomination):
+        self.assertFalse(nomination.isApproved())
+        # Statement patterns we're looking for:
+        pattern = "^(SELECT Bug.heat|UPDATE .* max_bug_heat)"
+        matcher = re.compile(pattern , re.DOTALL | re.I).match
+        queries_heat = lambda statement: matcher(statement) is not None
+        with person_logged_in(nomination.target.owner):
+            flush_database_updates()
+            with StormStatementRecorder(queries_heat) as recorder:
+                nomination.approve(nomination.target.owner)
+        # Post-process the recorder to only have heat-related statements.
+        recorder.query_data = [
+            data for statement, data in izip(
+                recorder.statements, recorder.query_data)
+            if queries_heat(statement)]
+        self.addDetail(
+            "query_data", Content(UTF8_TEXT, lambda: [str(recorder)]))
+        # If there isn't at least one update to max_bug_heat it may mean that
+        # this test is no longer relevant.
+        self.assertThat(recorder, HasQueryCount(Not(Equals(0))))
+        # At present there are two updates to max_bug_heat because
+        # recalculateBugHeatCache is called twice, and, even though it is
+        # lazily evaluated, there are both explicit and implicit flushes in
+        # bugtask subscriber code.
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
+    def test_heat_queries_for_productseries(self):
+        # The number of heat-related queries when approving a product series
+        # nomination is as low as reasonably possible.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(product=series.product)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)
+
+    def test_heat_queries_for_distroseries(self):
+        # The number of heat-related queries when approving a distro series
+        # nomination is as low as reasonably possible.
+        series = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=series.distribution)
+        with person_logged_in(series.owner):
+            nomination = bug.addNomination(
+                target=series, owner=series.owner)
+        self.check_heat_queries(nomination)

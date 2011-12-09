@@ -62,6 +62,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
+    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -301,7 +302,11 @@ class PersonalNamespace(_BaseNamespace):
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
-        return False
+        private = False
+        if self.owner.is_team and (
+            self.owner.visibility == PersonVisibility.PRIVATE):
+            private = True
+        return private
 
     def canBranchesBePublic(self):
         """See `IBranchNamespace`."""

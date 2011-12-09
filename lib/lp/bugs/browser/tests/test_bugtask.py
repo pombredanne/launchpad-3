@@ -1,5 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from BeautifulSoup import BeautifulSoup
+from lp.registry.interfaces.person import PersonVisibility
 
 __metaclass__ = type
 
@@ -58,7 +60,6 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
-    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
@@ -122,7 +123,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder, HasQueryCount(LessThan(85)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -138,7 +139,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                86, self.factory.makePerson())
+                88, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -183,7 +184,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(bug.default_bugtask)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(100)))
+        self.assertThat(recorder, HasQueryCount(LessThan(101)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -192,7 +193,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 45),
+            LessThan(count_with_no_branches + 46),
             ))
 
     def test_interesting_activity(self):
@@ -335,19 +336,122 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_1, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
         self.bug.markUserAffected(other_user_2, True)
+        self.refresh()
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
         self.bug.markUserAffected(other_user_1, False)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
         self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
+
+    def makeDuplicate(self):
+        user2 = self.factory.makePerson()
+        self.bug2 = self.factory.makeBug()
+        self.bug2.markUserAffected(user2, True)
+        self.assertEqual(
+            2, self.bug2.users_affected_count)
+        self.bug2.markAsDuplicate(self.bug)
+        # After this there are three users already affected: the creators of
+        # the two bugs, plus user2.  The current user is not yet affected by
+        # any of them.
+
+    def test_counts_user_unaffected(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.assertEqual(
+            3, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # Now with you affected by the duplicate, but not the master.
+        self.bug2.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects 3 people. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        # And now with you also affected by the master.
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
+        self.assertEqual(
+            "This bug affects you and 3 other people",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 4 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_counts_affected_by_duplicate_not_by_master(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': ''}))
+        self.makeDuplicate()
+        self.bug2.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, False)
+        # You're not included in this count, even though you are affected by
+        # the dupe.
+        self.assertEqual(
+            "This bug affects 3 people, but not you",
+            self.view.affected_statement)
+        # It would be reasonable for Anon to see this bug cluster affecting
+        # either 3 or 4 people.  However at the moment the "No" answer on the
+        # master is more authoritative than the "Yes" on the dupe.
+        self.assertEqual(
+            "This bug affects 3 people",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            self.view.other_users_affected_count,
+            3)
+
+    def test_total_users_affected_count_without_dupes(self):
+        self.useFixture(FeatureFixture(
+            {'bugs.affected_count_includes_dupes.disabled': 'on'}))
+        self.makeDuplicate()
+        self.refresh()
+        # Does not count the two users of bug2, so just 1.
+        self.assertEqual(
+            1, self.view.total_users_affected_count)
+        self.assertEqual(
+            "This bug affects 1 person. Does this bug affect you?",
+            self.view.affected_statement)
+        self.assertEqual(
+            "This bug affects 1 person",
+            self.view.anon_affected_statement)
+        self.assertEqual(
+            1,
+            self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
@@ -628,6 +732,36 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             content)
         self.assertIn(series.product.displayname, content)
 
+    def test_bugtask_listing_for_private_assignees(self):
+        # Private assignees are rendered in the bug portal view.
+
+        # Create a bugtask with a private assignee.
+        product_foo = self.factory.makeProduct(name="foo")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        assignee = self.factory.makeTeam(
+            name="assignee",
+            visibility=PersonVisibility.PRIVATE)
+        foo_bug.default_bugtask.transitionToAssignee(assignee)
+
+        # Render the view.
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+        foo_bugtasks_and_nominations_view.initialize()
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        getUtility(ILaunchBag).add(foo_bug.default_bugtask)
+        self.assertEqual(1, len(task_and_nomination_views))
+        content = task_and_nomination_views[0]()
+
+        # Check the result.
+        soup = BeautifulSoup(content)
+        tag = soup.find('label', attrs={'for': "foo.assignee.assigned_to"})
+        tag_text = tag.renderContents().strip()
+        self.assertEqual(assignee.unique_displayname, tag_text)
+
 
 class TestBugTaskDeleteLinks(TestCaseWithFactory):
     """ Test that the delete icons/links are correctly rendered.
@@ -769,6 +903,24 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0].message)
 
+    def test_delete_only_bugtask(self):
+        # Test that the deleting the only bugtask results in an error message.
+        bug = self.factory.makeBug()
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bug.owner)
+            form = {
+                'field.actions.delete_bugtask': 'Delete',
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name='+delete', form=form,
+                principal=bug.owner)
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = view.request.response.notifications
+            self.assertEqual(1, len(notifications))
+            expected = ('Cannot delete only bugtask affecting: %s.'
+                % bug.default_bugtask.target.bugtargetdisplayname)
+            self.assertEqual(expected, notifications[0].message)
+
     def _create_bugtask_to_delete(self):
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
@@ -809,6 +961,38 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
                 view.request.response.getHeader('content-type'))
             expected_url = canonical_url(bug.default_bugtask, rootsite='bugs')
             self.assertEqual(dict(bugtask_url=expected_url), result_data)
+
+    def test_ajax_delete_only_bugtask(self):
+        # Test that deleting the only bugtask returns an empty JSON response
+        # with an error notification.
+        bug = self.factory.makeBug()
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bug.owner)
+            # Set up the request so that we correctly simulate an XHR call
+            # from the URL of the bugtask we are deleting.
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.delete_bugtask': 'Delete'
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name='+delete', server_url=server_url,
+                form=form, principal=bug.owner, **extra)
+            result_data = simplejson.loads(view.render())
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = simplejson.loads(
+                view.request.response.getHeader('X-Lazr-Notifications'))
+            self.assertEqual(1, len(notifications))
+            expected = ('Cannot delete only bugtask affecting: %s.'
+                % bug.default_bugtask.target.bugtargetdisplayname)
+            self.assertEqual(expected, notifications[0][1])
+            self.assertEqual(
+                'application/json',
+                view.request.response.getHeader('content-type'))
+            self.assertEqual(None, result_data)
 
     def test_ajax_delete_non_current_bugtask(self):
         # Test that deleting the non-current bugtask returns the new bugtasks
@@ -1252,8 +1436,138 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertTrue(notifications.pop().message.startswith(expected))
 
 
+class TestPersonBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distributions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonBugs, self).setUp()
+        self.target = self.factory.makePerson()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project, distribution, package, or series subscriber',
+            view.structural_subscriber_label)
+
+
+class TestDistributionBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distributions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionBugs, self).setUp()
+        self.target = self.factory.makeDistribution()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package, or series subscriber', view.structural_subscriber_label)
+
+
+class TestDistroSeriesBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distro series."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesBugs, self).setUp()
+        self.target = self.factory.makeDistroSeries()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package subscriber', view.structural_subscriber_label)
+
+
+class TestDistributionSourcePackageBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distribution source packages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionSourcePackageBugs, self).setUp()
+        self.target = self.factory.makeDistributionSourcePackage()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distro series source packages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesSourcePackageBugs, self).setUp()
+        self.target = self.factory.makeSourcePackage()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
+class TestProductBugs(TestCaseWithFactory):
+    """Test the bugs overview page for projects."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductBugs, self).setUp()
+        self.target = self.factory.makeProduct()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Series subscriber', view.structural_subscriber_label)
+
+
+class TestProductSeriesBugs(TestCaseWithFactory):
+    """Test the bugs overview page for project series."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesBugs, self).setUp()
+        self.target = self.factory.makeProductSeries()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
 class TestProjectGroupBugs(TestCaseWithFactory):
-    """Test the bugs overview page for Project Groups."""
+    """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1349,6 +1663,17 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project or series subscriber', view.structural_subscriber_label)
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -1525,7 +1850,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         'client-listing', True, attrs={'id': 'client-listing'})
 
     def makeView(self, bugtask=None, size=None, memo=None, orderby=None,
-                 forwards=True):
+                 forwards=True, cookie=None):
         """Make a BugTaskSearchListingView.
 
         :param bugtask: The task to use for searching.
@@ -1549,10 +1874,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             query_vars['direction'] = 'backwards'
         query_string = urllib.urlencode(query_vars)
         request = LaunchpadTestRequest(
-            QUERY_STRING=query_string, orderby=orderby)
+            QUERY_STRING=query_string, orderby=orderby, HTTP_COOKIE=cookie)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
-        view = BugTaskSearchListingView(bugtask.target, request)
+        view = getMultiAdapter((bugtask.target, request), name='+bugs')
         view.initialize()
         return view
 
@@ -1626,6 +1951,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
 
+    def test_provides_view_name(self):
+        """The IJSONRequestCache should provide the view's name."""
+        self.useContext(self.dynamic_listings())
+        view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('+bugs', cache.objects['view_name'])
+        person = self.factory.makePerson()
+        commentview = getMultiAdapter(
+            (person, LaunchpadTestRequest()), name='+commentedbugs')
+        commentview.initialize()
+        cache = IJSONRequestCache(commentview.request)
+        self.assertEqual('+commentedbugs', cache.objects['view_name'])
+
     def test_default_order_by(self):
         """order_by defaults to '-importance in JSONRequestCache"""
         task = self.factory.makeBugTask()
@@ -1678,7 +2016,73 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
-        self.assertTrue(field_visibility['show_title'])
+        self.assertTrue(field_visibility['show_id'])
+
+    def test_cache_cookie_name(self):
+        """The cookie name should be in cache for js code access."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        cookie_name = cache.objects['cbl_cookie_name']
+        self.assertEqual('anon-buglist-fields', cookie_name)
+
+    def test_cache_field_visibility_matches_cookie(self):
+        """Cache contains cookie-matching values for field_visibiliy."""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true'
+            '&show_milestone_name=true&show_last_updated=true'
+            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_importance=true&show_status=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertTrue(field_visibility['show_tags'])
+
+    def test_exclude_unsupported_cookie_values(self):
+        """Cookie values not present in defaults are ignored."""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true'
+            '&show_milestone_name=true&show_last_updated=true'
+            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_importance=true&show_status=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertNotIn('show_title', field_visibility)
+
+    def test_add_defaults_to_cookie_values(self):
+        """Where cookie values are missing, defaults are used"""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_age=true&show_reporter=true'
+            '&show_id=true&show_bugtarget=true'
+            '&show_milestone_name=true&show_last_updated=true'
+            '&show_assignee=true&show_bug_heat=true&show_tags=true'
+            '&show_importance=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertIn('show_status', field_visibility)
+
+    def test_cache_field_visibility_defaults(self):
+        """Cache contains sane-looking field_visibility_defaults values."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        field_visibility_defaults = cache.objects['field_visibility_defaults']
+        self.assertTrue(field_visibility_defaults['show_id'])
 
     def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
@@ -1702,7 +2106,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
-        return soupmatchers.Tag('bugnumber', 'a', text=bug_number_re)
+        return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
         """If the flag is missing, then no mustache features appear."""
@@ -1794,15 +2198,6 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
 
-    def test_hiding_bug_title(self):
-        """Hiding bug heat removes the text but link is still present."""
-        navigator, mustache_model = self.getNavigator()
-        self.assertIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_title'] = False
-        self.assertNotIn('title1', navigator.mustache)
-        self.assertIn('bug_url1', navigator.mustache)
-
     def test_hiding_milstone_name(self):
         """Showing milestone name shows the text."""
         navigator, mustache_model = self.getNavigator()
@@ -1846,9 +2241,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Showing last_updated shows the text."""
         navigator, mustache_model = self.getNavigator()
         self.assertIn('show_last_updated', navigator.field_visibility)
-        self.assertNotIn('last updated updated1', navigator.mustache)
+        self.assertNotIn('Last updated updated1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_last_updated'] = True
-        self.assertIn('last updated updated1', navigator.mustache)
+        self.assertIn('Last updated updated1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):

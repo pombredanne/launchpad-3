@@ -250,20 +250,17 @@ package caches (see doc/package-cache.txt).
     >>> from zope.component import getUtility
     >>> from canonical.config import config
     >>> from lp.services.log.logger import BufferLogger
-    >>> from canonical.testing.layers import reconnect_stores
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.model.distroseriespackagecache import (
     ...     DistroSeriesPackageCache)
+    >>> from lp.testing.dbuser import dbuser
     >>> login('foo.bar@canonical.com')
-    >>> transaction.commit()
-    >>> reconnect_stores(config.statistician.dbuser)
     >>> logger = BufferLogger()
     >>> ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
     >>> breezy_autotest = ubuntutest.getSeries('breezy-autotest')
-    >>> unused = DistroSeriesPackageCache.updateAll(
-    ...     breezy_autotest, ubuntutest.main_archive, logger, transaction)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
+    >>> with dbuser(config.statistician.dbuser):
+    ...     unused = DistroSeriesPackageCache.updateAll(
+    ...         breezy_autotest, ubuntutest.main_archive, logger, transaction)
     >>> logout()
 
     >>> anon_browser.reload()

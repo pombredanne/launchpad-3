@@ -29,7 +29,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.buildd.slave import BuilderStatus
+from lpbuildd.slave import BuilderStatus
+
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (

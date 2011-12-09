@@ -13,7 +13,6 @@ __all__ = [
     'TeamContactAddressView',
     'TeamEditMenu',
     'TeamEditView',
-    'TeamHierarchyView',
     'TeamIndexMenu',
     'TeamJoinView',
     'TeamLeaveView',
@@ -121,6 +120,7 @@ from lp.registry.browser.person import (
     PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
@@ -136,12 +136,14 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
@@ -291,6 +293,32 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
+
+    def setUpWidgets(self):
+        super(TeamEditView, self).setUpWidgets()
+        team = self.context
+        # Do we need to only show open subscription policy choices?
+        try:
+            team.checkClosedSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
+            # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
+            # it doesn't so we need to be a bit more verbose.
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                SimpleVocabulary([SimpleVocabulary.createTerm(
+                    policy, policy.name, policy.title)
+                    for policy in OPEN_TEAM_POLICY])
+                )
+        # Do we need to only show closed subscription policy choices?
+        try:
+            team.checkOpenSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
+            # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
+            # it doesn't so we need to be a bit more verbose.
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                SimpleVocabulary([SimpleVocabulary.createTerm(
+                    policy, policy.name, policy.title)
+                    for policy in CLOSED_TEAM_POLICY])
+                )
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -1223,34 +1251,6 @@ class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
 
 class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
     """An XML dump of the locations of limited number of team members."""
-
-
-class TeamHierarchyView(LaunchpadView):
-    """View for ~team/+teamhierarchy page."""
-
-    @property
-    def label(self):
-        return 'Team relationships for ' + self.context.displayname
-
-    @property
-    def has_sub_teams(self):
-        return self.context.sub_teams.count() > 0
-
-    @property
-    def has_super_teams(self):
-        return self.context.super_teams.count() > 0
-
-    @property
-    def has_only_super_teams(self):
-        return self.has_super_teams and not self.has_sub_teams
-
-    @property
-    def has_only_sub_teams(self):
-        return not self.has_super_teams and self.has_sub_teams
-
-    @property
-    def has_relationships(self):
-        return self.has_sub_teams or self.has_super_teams
 
 
 class TeamNavigation(PersonNavigation):

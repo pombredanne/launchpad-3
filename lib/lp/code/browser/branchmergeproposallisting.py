@@ -53,7 +53,10 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalListingBatchNavigator,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class BranchMergeProposalListingItem:
@@ -283,7 +286,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW, ])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ],
+            eager_load=True)
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -363,7 +367,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         # Sort each collection...
         for group in self.review_groups.values():
             group.sort(key=attrgetter('sort_key'))
-        self.proposal_count = len(proposals)
+        get_property_cache(self).proposal_count = len(proposals)
 
     @cachedproperty
     def headings(self):
@@ -444,7 +448,8 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW])
+             BranchMergeProposalStatus.NEEDS_REVIEW],
+            eager_load=True)
 
         return proposals
 

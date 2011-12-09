@@ -62,7 +62,7 @@ correctly, especially for the case of LIKE which uses % characters.
     ...     [u'fred'], noresult=True)
     >>> store.execute("SELECT * FROM person where name like '%d foo'||'%%'",
     ...     noresult=True)
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
@@ -103,7 +103,7 @@ statements.
     >>> store.execute('SELECT 1', noresult=True)
     >>> store.execute('SELECT 2', noresult=True)
     >>> store.execute('SELECT 3', noresult=True)
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 2
     SELECT 3
@@ -119,7 +119,7 @@ that aborted transactions are still in the status "Active".
     >>> transaction.commit()
     >>> store.execute('SELECT 3', noresult=True)
     >>> transaction.abort()
-    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    >>> for _, _, _, statement, _ in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
@@ -338,7 +338,7 @@ The request time limit was exceeded before the statement was issued to
 the database.
 
     >>> get_request_statements()
-    [(0, 0, 'SQL-main-master', 'SELECT 2')]
+    [(0, 0, 'SQL-main-master', 'SELECT 2', ...)]
 
 
 When a RequestExpired exception is raised, the current

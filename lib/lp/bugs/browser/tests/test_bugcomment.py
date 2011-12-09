@@ -13,7 +13,17 @@ from itertools import count
 
 from pytz import utc
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+
+from canonical.launchpad.ftests import (
+    login_person,
+    )
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugcomment import group_comments_with_activity
@@ -21,6 +31,7 @@ from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
@@ -220,12 +231,14 @@ class TestBugHideCommentControls(
 
     layer = DatabaseFunctionalLayer
 
-    def getContext(self):
+    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
+
+    def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
         with person_logged_in(administrator):
-            self.factory.makeBugComment(bug=bug)
+            self.factory.makeBugComment(bug=bug, owner=comment_owner)
         return bug
 
     def getView(self, context, user=None, no_login=False):
@@ -235,3 +248,71 @@ class TestBugHideCommentControls(
             user=user,
             no_login=no_login)
         return view
+
+    def _test_hide_link_visible(self, context, user):
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIs(None, hide_link)
+        with FeatureFixture(self.feature_flag):
+            view = self.getView(context=context, user=user)
+            hide_link = find_tag_by_id(view.contents, self.control_text)
+            self.assertIsNot(None, hide_link)
+
+    def test_comment_owner_sees_hide_control(self):
+        # The comment owner sees the hide control.
+        owner = self.factory.makePerson()
+        context = self.getContext(comment_owner=owner)
+        self._test_hide_link_visible(context, owner)
+
+    def test_pillar_owner_sees_hide_control(self):
+        # The pillar owner sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).owner = person
+        self._test_hide_link_visible(context, person)
+
+    def test_pillar_driver_sees_hide_control(self):
+        # The pillar driver sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).driver = person
+        self._test_hide_link_visible(context, person)
+
+    def test_pillar_bug_supervisor_sees_hide_control(self):
+        # The pillar bug supervisor sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
+        self._test_hide_link_visible(context, person)
+
+    def test_pillar_security_contact_sees_hide_control(self):
+        # The pillar security contact sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        naked_bugtask = removeSecurityProxy(context.default_bugtask)
+        removeSecurityProxy(naked_bugtask.pillar).security_contact = person
+        self._test_hide_link_visible(context, person)
+
+
+class TestBugCommentMicroformats(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_comment_metadata(self):
+        owner = self.factory.makePerson()
+        login_person(owner)
+        bug_comment = self.factory.makeBugComment()
+        browser = self.getViewBrowser(bug_comment)
+        iso_date = bug_comment.datecreated.isoformat()
+        self.assertThat(
+            browser.contents,
+            HTMLContains(Tag(
+                'comment time tag',
+                'time',
+                attrs=dict(
+                    itemprop='commentTime',
+                    title=True,
+                    datetime=iso_date))))

@@ -13,6 +13,8 @@ import signal
 import subprocess
 import sys
 
+from testtools.testresult.real import _details_to_str
+
 import fixtures
 from lazr.config import as_host_port
 from rabbitfixture.server import RabbitServerResources
@@ -368,15 +370,16 @@ def start_testapp(argv=list(sys.argv)):
         # here because we need to control fixtures within this process, and
         # because we want interactive tests to be as similar as possible to
         # tests run in the testrunner.
-        # Note that this changes the config instance-name, with the result that
-        # the configuration of utilities may become invalidated.
-        # XXX: Robert Collins - see bug 883980 about this. In short, we should
-        # inherit the other services from the test runner, rather than
-        # duplicating the work of test setup within the slave appserver. That
-        # will permit reuse of the librarian, DB, rabbit etc and
-        # correspondingly easier assertions and inspection of interactions with
-        # other services. That would mean we do not need to setup rabbit or the
-        # librarian here : the test runner would control and take care of that.
+        # Note that this changes the config instance-name, with the result
+        # that the configuration of utilities may become invalidated.
+        # XXX Robert Collins, bug=883980: In short, we should derive the
+        # other services from the test runner, rather than duplicating
+        # the work of test setup within the slave appserver. That will
+        # permit reuse of the librarian, DB, rabbit etc, and
+        # correspondingly easier assertions and inspection of interactions
+        # with other services. That would mean we do not need to set up rabbit
+        # or the librarian here: the test runner would control and take care
+        # of that.
         BaseLayer.setUp()
         teardowns.append(BaseLayer.tearDown)
         RabbitMQLayer.setUp()
@@ -432,20 +435,36 @@ def start_launchpad(argv=list(sys.argv), setup=None):
     if setup is not None:
         # This is the setup from start_testapp, above.
         setup()
-    with nested(*services):
-        # Store our process id somewhere
-        make_pidfile('launchpad')
-        if config.launchpad.launch:
-            main(argv)
-        else:
-            # We just need the foreground process to sit around forever
-            # waiting for the signal to shut everything down.  Normally,
-            # Zope itself would be this master process, but we're not
-            # starting that up, so we need to do something else.
-            try:
-                signal.pause()
-            except KeyboardInterrupt:
-                pass
+    try:
+        with nested(*services):
+            # Store our process id somewhere
+            make_pidfile('launchpad')
+            if config.launchpad.launch:
+                main(argv)
+            else:
+                # We just need the foreground process to sit around forever
+                # waiting for the signal to shut everything down.  Normally,
+                # Zope itself would be this master process, but we're not
+                # starting that up, so we need to do something else.
+                try:
+                    signal.pause()
+                except KeyboardInterrupt:
+                    pass
+    except Exception, e:
+        print >> sys.stderr, "stopping services on exception %r" % e
+        for service in services:
+            print >> sys.stderr, service, "fixture details:"
+            # There may be no details on some services if they haven't been
+            # initialized yet.
+            if getattr(service, '_details', None) is None:
+                print >> sys.stderr, "(not ready yet?)"
+                continue
+            details_str = _details_to_str(service.getDetails())
+            if details_str:
+                print >> sys.stderr, details_str
+            else:
+                print >> sys.stderr, "(no details present)"
+        raise
 
 
 def start_librarian():

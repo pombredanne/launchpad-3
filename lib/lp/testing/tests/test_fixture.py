@@ -12,12 +12,15 @@ import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
     adapts,
+    ComponentLookupError,
+    getGlobalSiteManager,
     queryAdapter,
     )
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import (
     config,
@@ -41,6 +44,7 @@ from lp.testing.fixture import (
     CaptureOops,
     PGBouncerFixture,
     ZopeAdapterFixture,
+    ZopeUtilityFixture,
     )
 
 
@@ -86,6 +90,27 @@ class TestZopeAdapterFixture(TestCase):
             self.assertIsInstance(adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
+
+
+class DummyMailer(object):
+
+    implements(IMailDelivery)
+
+
+class TestZopeUtilityFixture(TestCase):
+
+    layer = BaseLayer
+
+    def test_fixture(self):
+        def get_mailer():
+            return getGlobalSiteManager().getUtility(
+                IMailDelivery, 'Mail')
+        fake = DummyMailer()
+        # In BaseLayer there should be no mailer by default.
+        self.assertRaises(ComponentLookupError, get_mailer)
+        with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+            self.assertEquals(get_mailer(), fake)
+        self.assertRaises(ComponentLookupError, get_mailer)
 
 
 class TestPGBouncerFixtureWithCA(TestCase):

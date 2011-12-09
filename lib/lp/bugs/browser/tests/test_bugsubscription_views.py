@@ -14,6 +14,7 @@ from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
@@ -25,9 +26,11 @@ from lp.bugs.browser.bugsubscription import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
+    PersonVisibility,
     TeamSubscriptionPolicy,
     )
 from lp.testing import (
+    login_person,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -614,6 +617,80 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             }
         self.assertEqual(
             dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def _test_data_private_team_subscription(self, authenticated_user):
+        # For a private team subscription, the team name and url are rendered
+        # for authenticated users.
+        bug = self._makeBugWithNoSubscribers()
+
+        # Set up a private direct subscriber.
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
+        direct_subscriber = self.factory.makeTeam(
+            name='team', displayname='Team Name', owner=teamowner,
+            visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(direct_subscriber.teamowner):
+            bug.subscribe(direct_subscriber, direct_subscriber.teamowner,
+                          level=BugNotificationLevel.LIFECYCLE)
+
+        # Set up a private indirect subscriber.
+        indirect_teamowner = self.factory.makePerson(
+            name="indirect-team-owner", displayname="Indirect Team Owner")
+        indirect_subscriber = self.factory.makeTeam(
+            name='indirect-team', displayname='Indirect Team Name',
+            owner=indirect_teamowner, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(indirect_teamowner):
+            bug.default_bugtask.target.addSubscription(
+                indirect_subscriber, indirect_teamowner)
+
+        request = LaunchpadTestRequest()
+        expected_result = []
+        view = create_initialized_view(
+            bug, '+bug-portlet-subscribers-details', request=request)
+        if authenticated_user:
+            any_person = self.factory.makePerson()
+            login_person(any_person, request)
+            api_request = IWebServiceClientRequest(request)
+            naked_subscriber = removeSecurityProxy(direct_subscriber)
+            naked_indirect_subscriber = removeSecurityProxy(
+                indirect_subscriber)
+            expected_result = [{
+                'subscriber': {
+                    'name': 'team',
+                    'display_name': 'Team Name',
+                    'is_team': True,
+                    'can_edit': False,
+                    'web_link': canonical_url(naked_subscriber,
+                        rootsite='mainsite'),
+                    'self_link': absoluteURL(naked_subscriber, api_request),
+                    'display_subscribed_by': \
+                        'Subscribed by Team Owner (team-owner)',
+                    },
+                'subscription_level': "Lifecycle",
+                },
+                {
+                'subscriber': {
+                    'name': 'indirect-team',
+                    'display_name': 'Indirect Team Name',
+                    'is_team': True,
+                    'can_edit': False,
+                    'web_link': canonical_url(naked_indirect_subscriber,
+                        rootsite='mainsite'),
+                    'self_link': absoluteURL(
+                        naked_indirect_subscriber, api_request),
+                    },
+                'subscription_level': "Maybe",
+                }]
+        self.assertEqual(
+            dumps(expected_result), view.subscriber_data_js)
+
+    def test_data_private_team_subscription_authenticated_user(self):
+        # For a logged in user, private team subscriptions are rendered.
+        self._test_data_private_team_subscription(authenticated_user=True)
+
+    def test_data_private_team_subscription_no_user(self):
+        # For a user with no login, private team subscriptions are hidden.
+        self._test_data_private_team_subscription(authenticated_user=False)
 
     def test_data_team_subscription_owner_looks(self):
         # For a team subscription, subscriber_data_js has can_edit

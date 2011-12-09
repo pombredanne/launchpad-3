@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugActivity',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -75,7 +76,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
@@ -114,6 +118,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -541,6 +546,10 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
+
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""
@@ -584,6 +593,11 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
+
+
+class BugActivity(BugView):
+
+    page_title = 'Activity log'
 
 
 class BugSubscriptionPortletDetails:
@@ -688,6 +702,7 @@ class BugEditViewBase(LaunchpadEditFormView):
     """Base class for all bug edit pages."""
 
     schema = IBug
+    page_title = 'Edit'
 
     def setUpWidgets(self):
         """Set up the widgets using the bug as the context."""
@@ -782,6 +797,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
+    page_title = label
 
     def setUpFields(self):
         """Make the readonly version of duplicateof available."""
@@ -830,6 +846,15 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         security_related_field = copy_field(
             IBug['security_related'], readonly=False)
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        allow_multi_pillar_private = bool(features.getFeatureFlag(
+                'disclosure.allow_multipillar_private_bugs.enabled'))
+        if (not allow_multi_pillar_private
+                and len(self.context.bug.affected_pillars) > 1):
+            self.form_fields = self.form_fields.omit('private')
+
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
@@ -854,7 +879,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
         # recorded.
         bug = self.context.bug
-        private = data.pop('private')
+        private = data.pop('private', bug.private)
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
@@ -941,10 +966,27 @@ normalize_mime_type = re.compile(r'\s+')
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
 
+    def initialize(self):
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any subscribers.
+        authorised_people = []
+        for task in self.bugtasks:
+            if task.assignee is not None:
+                authorised_people.append(task.assignee)
+        authorised_people.extend(self.subscribers)
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
+
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
         return list(self.context.bugtasks)
+
+    @cachedproperty
+    def subscribers(self):
+        """Cache subscribers and avoid hitting the DB twice."""
+        return [sub.person for sub in self.context.subscriptions
+                if self.user or not sub.person.private]
 
     def bug_text(self):
 
@@ -994,8 +1036,8 @@ class BugTextView(LaunchpadView):
         text.append('tags: %s' % ' '.join(bug.tags))
 
         text.append('subscribers: ')
-        for subscription in bug.subscriptions:
-            text.append(' %s' % subscription.person.unique_displayname)
+        for subscriber in self.subscribers:
+            text.append(' %s' % subscriber.unique_displayname)
 
         return ''.join(line + '\n' for line in text)
 
@@ -1026,7 +1068,8 @@ class BugTextView(LaunchpadView):
         if component:
             text.append('component: %s' % component.name)
 
-        if task.assignee:
+        if (task.assignee
+            and check_permission('launchpad.LimitedView', task.assignee)):
             text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')
@@ -1136,6 +1179,7 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 
     field_names = ['affects']
     label = "Does this bug affect you?"
+    page_title = label
 
     custom_widget('affects', LaunchpadRadioWidgetWithDescription)
 

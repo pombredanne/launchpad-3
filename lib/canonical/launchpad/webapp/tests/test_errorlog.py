@@ -33,6 +33,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
+    attach_http_request,
     ErrorReport,
     ErrorReportingUtility,
     notify_publisher,
@@ -64,8 +65,8 @@ class TestErrorReport(testtools.TestCase):
         """Test ErrorReport.__init__()"""
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'traceback-text', 'username', 'url', 42,
-                            [('name1', 'value1'), ('name2', 'value2'),
-                             ('name1', 'value3')],
+                            {'name1': 'value1', 'name2': 'value2',
+                             'name3': 'value3'},
                             [(1, 5, 'store_a', 'SELECT 1'),
                              (5, 10, 'store_b', 'SELECT 2')],
                             topic='pageid',
@@ -80,10 +81,11 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(entry.duration, 42)
-        self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
-        self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
-        self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
+        self.assertEqual({
+            'name1': 'value1',
+            'name2': 'value2',
+            'name3': 'value3',
+            }, entry.req_vars)
         self.assertEqual(len(entry.timeline), 2)
         self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
         self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
@@ -120,12 +122,11 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.username, 'Sample User')
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
         self.assertEqual(entry.duration, 42)
-        self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ['HTTP_USER_AGENT',
-                                             'Mozilla/5.0'])
-        self.assertEqual(entry.req_vars[1], ['HTTP_REFERER',
-                                             'http://localhost:9000/'])
-        self.assertEqual(entry.req_vars[2], ['name=foo', 'hello\nworld'])
+        self.assertEqual({
+            'HTTP_USER_AGENT': 'Mozilla/5.0',
+            'HTTP_REFERER': 'http://localhost:9000/',
+            'name=foo': 'hello\nworld'},
+            entry.req_vars)
         self.assertEqual(len(entry.timeline), 2)
         self.assertEqual(entry.timeline[0], [1, 5, 'store_a', 'SELECT 1'])
         self.assertEqual(entry.timeline[1], [5, 10, 'store_b', 'SELECT 2'])
@@ -184,6 +185,27 @@ class TestErrorReportingUtility(testtools.TestCase):
         # - a notify publisher
         self.assertEqual(oops_config.publishers[2], notify_publisher)
 
+    def test_multiple_raises_in_request(self):
+        """An OOPS links to the previous OOPS in the request, if any."""
+        utility = ErrorReportingUtility()
+        del utility._oops_config.publishers[0]
+
+        request = TestRequestWithPrincipal()
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertFalse('last_oops' in report)
+        last_oopsid = request.oopsid
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+
+        self.assertTrue('last_oops' in report)
+        self.assertEqual(report['last_oops'], last_oopsid)
+
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()
@@ -222,7 +244,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             'lp': '<hidden>',
             'name1': 'value3 \xa7',
             'name2': 'value2',
-            }, dict(report['req_vars']))
+            }, report['req_vars'])
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, report['id'])
         self.assertEqual(request.oops, report)
@@ -238,7 +260,23 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             report = utility.raising(sys.exc_info(), request)
-        self.assertEqual(('xmlrpc args', (1, 2)), report['req_vars'][-1])
+        self.assertEqual("(1, 2)", report['req_vars']['xmlrpc args'])
+
+    def test_raising_non_utf8_request_param_key_bug_896959(self):
+        # When a form has a nonutf8 request param, the key in req_vars must
+        # still be unicode (or utf8).
+        request = TestRequest(form={'foo\x85': 'bar'})
+        utility = ErrorReportingUtility()
+        del utility._oops_config.publishers[:]
+        try:
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            report = utility.raising(sys.exc_info(), request)
+        for key in report['req_vars'].keys():
+            if isinstance(key, str):
+                key.decode('utf8')
+            else:
+                self.assertIsInstance(key, unicode)
 
     def test_raising_with_webservice_request(self):
         # Test ErrorReportingUtility.raising() with a WebServiceRequest
@@ -281,6 +319,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         utility = ErrorReportingUtility()
         del utility._oops_config.publishers[:]
 
+        # A list because code using ScriptRequest expects that - ScriptRequest
+        # translates it to a dict for now.
         req_vars = [
             ('name2', 'value2'),
             ('name1', 'value1'),
@@ -296,7 +336,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             report = utility.raising(sys.exc_info(), request)
 
         self.assertEqual(url, report['url'])
-        self.assertEqual(sorted(req_vars), report['req_vars'])
+        self.assertEqual(dict(req_vars), report['req_vars'])
 
     def test_raising_with_unprintable_exception(self):
         class UnprintableException(Exception):
@@ -509,7 +549,7 @@ class TestErrorReportingUtility(testtools.TestCase):
                 info = sys.exc_info()
                 oops = utility._oops_config.create(dict(exc_info=info))
                 self.assertEqual(
-                    [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
+                    {'<oops-message-0>': "{'a': 'b', 'c': 'd'}"},
                     oops['req_vars'])
 
     def test__makeErrorReport_combines_request_and_error_vars(self):
@@ -525,8 +565,8 @@ class TestErrorReportingUtility(testtools.TestCase):
                 oops = utility._oops_config.create(
                         dict(exc_info=info, http_request=request))
                 self.assertEqual(
-                    [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
-                    sorted(oops['req_vars']))
+                    {'<oops-message-0>': "{'a': 'b'}", 'c': 'd'},
+                    oops['req_vars'])
 
     def test_filter_session_statement(self):
         """Removes quoted strings if database_id is SQL-session."""
@@ -604,7 +644,7 @@ class TestOopsIgnoring(testtools.TestCase):
         del utility._oops_config.publishers[:]
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
-                'req_vars': [('HTTP_REFERER', 'example.com')]}
+                'req_vars': {'HTTP_REFERER': 'example.com'}}
         self.assertEqual(None, utility._oops_config.publish(report))
 
     def test_onsite_404_not_ignored(self):
@@ -614,7 +654,7 @@ class TestOopsIgnoring(testtools.TestCase):
         del utility._oops_config.publishers[:]
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
-                'req_vars': [('HTTP_REFERER', 'http://launchpad.dev/')]}
+                'req_vars': {'HTTP_REFERER': 'http://launchpad.dev/'}}
         self.assertNotEqual(None, utility._oops_config.publish(report))
 
     def test_404_without_referer_is_ignored(self):
@@ -624,7 +664,7 @@ class TestOopsIgnoring(testtools.TestCase):
         del utility._oops_config.publishers[:]
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
-                'req_vars': []}
+                'req_vars': {}}
         self.assertEqual(None, utility._oops_config.publish(report))
 
     def test_ignored_report_filtered(self):
@@ -715,3 +755,16 @@ class TestWrappedParameterConverter(testtools.TestCase):
         customize_get_converter(module)
         converter = module.get_converter('int')
         self.assertTrue(converter is None)
+
+
+class TestHooks(testtools.TestCase):
+
+    def test_attach_http_nonbasicvalue(self):
+        report = {'req_vars': {}}
+        complexthing = object()
+        context = {
+            'http_request': {'SIMPLE': 'string', 'COMPLEX': complexthing}}
+        attach_http_request(report, context)
+        self.assertEqual(
+            {'SIMPLE': 'string', 'COMPLEX': unicode(complexthing)},
+            report['req_vars'])

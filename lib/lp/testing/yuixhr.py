@@ -171,8 +171,6 @@ class YUITestFixtureControllerView(LaunchpadView):
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
           <style>
           /* Taken and customized from testlogger.css */
@@ -220,8 +218,6 @@ class YUITestFixtureControllerView(LaunchpadView):
           <title>YUI XHR Tests</title>
           <script type="text/javascript"
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
@@ -435,14 +431,16 @@ class YUIAppServerTestCase(AbstractYUITestCase):
     _testMethodName = 'runTest'
     # 5 minutes for the suite.  Hopefully we never get close to this.
     suite_timeout = 300000
-    # 6 seconds for each test.  Hopefully they are three or less for
-    # yuixhr tests, and less than one for pure JS tests.
-    incremental_timeout = 6000
-    # 30 seconds for the first test, to include warmup time.  We should
-    # work with html5browser to decrease this (such as making html5browser
-    # into a server that accepts URIs to run on a long-running browser
-    # process.)
-    initial_timeout = 30000
+    # 12 seconds for each test.  Hopefully they are three or less for
+    # yuixhr tests, and less than one for pure JS tests, but
+    # occasionally buildbot runs over six seconds even for tests that
+    # are well-behaved locally and on ec2, so we up the limit to 12..
+    incremental_timeout = 12000
+    # 45 seconds for the first test, to include warmup time.  These times
+    # are wildly large, and they are only necessary on buildbot.  ec2 and
+    # local instances are much, much faster.  We have not yet investigated
+    # why buildbot is so slow for these.
+    initial_timeout = 45000
 
     def __init__(self, module_name, facet='mainsite'):
         self.module_name = module_name

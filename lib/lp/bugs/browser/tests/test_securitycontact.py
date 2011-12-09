@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.app.form.interfaces import ConversionError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login,
     login_person,
@@ -26,7 +27,9 @@ class TestSecurityContactEditView(TestCaseWithFactory):
             name='splat', displayname='<splat />')
         self.product = self.factory.makeProduct(
             name="boing", displayname='<boing />', owner=self.owner)
-        self.team = self.factory.makeTeam(name='thud', owner=self.owner)
+        self.team = self.factory.makeTeam(
+            name='thud', owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         login_person(self.owner)
 
     def _makeForm(self, person):
@@ -96,7 +99,9 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_cannot_appoint_another_team(self):
-        team = self.factory.makeTeam(name='smack', displayname='<smack />')
+        team = self.factory.makeTeam(
+            name='smack', displayname='<smack />',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         form = self._makeForm(team)
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
@@ -143,7 +148,8 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertEqual(another_user, self.product.security_contact)
 
     def test_admin_appoint_another_team(self):
-        another_team = self.factory.makeTeam()
+        another_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         login('admin@canonical.com')
         form = self._makeForm(another_team)
         view = create_initialized_view(

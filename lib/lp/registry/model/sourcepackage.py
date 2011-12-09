@@ -528,6 +528,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IHasBugs`."""
         return self.distribution_sourcepackage.max_bug_heat
 
+    @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        return self.distroseries.drivers
+
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an

@@ -129,7 +129,7 @@
         <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
-      <div class="report">
+      <div itemprop="mainContentOfPage" class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
@@ -155,8 +155,8 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 35em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
+                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
+                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
                   LPS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
@@ -181,14 +181,14 @@
                   });
               </script>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
-                      id="edit-tags-ok" style="display: none"
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
+                      id="edit-tags-ok"
                       type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
-                      id="edit-tags-cancel" style="display: none"
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
+                      id="edit-tags-cancel"
                       type="button">Cancel</button>
            </form>
-           <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+           <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
              <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
@@ -197,7 +197,7 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+            <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
              <span class="invisible-link">Tag help</span></a>
           </div>
 

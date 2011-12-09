@@ -45,6 +45,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
@@ -236,24 +237,31 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
-    def _makeMetadata(cls, target_pocket, package_version, include_binaries):
+    def _makeMetadata(cls, target_pocket, package_version,
+                      include_binaries, sponsored=None):
         """Produce a metadata dict for this job."""
+        if sponsored:
+            sponsored_name = sponsored.name
+        else:
+            sponsored_name = None
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
             'include_binaries': bool(include_binaries),
+            'sponsored': sponsored_name,
         }
 
     @classmethod
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None,
+               sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -268,7 +276,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
-                                  include_binaries, job_id, copy_task):
+                                  include_binaries, job_id, copy_task,
+                                  sponsored):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -283,7 +292,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             target_pocket,
         ) = copy_task
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -294,14 +303,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def createMultiple(cls, target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False):
+                       include_binaries=False, sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
-                task)
+                task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
         result = store.execute("""
             INSERT INTO PackageCopyJob (
@@ -361,6 +370,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def include_binaries(self):
         return self.metadata['include_binaries']
+
+    @property
+    def sponsored(self):
+        name = self.metadata['sponsored']
+        if name is None:
+            return None
+        return getUtility(IPersonSet).getByName(name)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
@@ -510,14 +526,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
-            send_email=send_email, announce_from_person=self.requester)
+            send_email=send_email, announce_from_person=self.requester,
+            sponsored=self.sponsored)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if ancestry is not None:
             to_sourcepackagerelease = ancestry.sourcepackagerelease
             copied_source = copied_sources[0]
             try:
-                diff = to_sourcepackagerelease.requestDiffTo(
+                to_sourcepackagerelease.requestDiffTo(
                     self.requester, copied_source.sourcepackagerelease)
             except PackageDiffAlreadyRequested:
                 pass

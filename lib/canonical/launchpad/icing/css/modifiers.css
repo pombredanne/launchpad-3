@@ -1,0 +1,208 @@
+div.left, div.right {
+    width: 50%;
+    }
+div.left, .cves {
+    clear: both;
+    float: left;
+    }
+div.right {
+    clear: right;
+    float: right;
+    }
+div.centered {
+    text-align: center;
+    }
+div.centered table {
+    margin: 0 auto;
+    text-align: left;
+    }
+div.see-all {
+    text-align: right;
+    }
+span.nolink {
+    font-weight: bold;
+    }
+span.see-all {
+    float: right;
+    }
+.see-all a {
+    padding-left: 8px;
+    background: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    }
+.unseen, .hidden {
+    display: none;
+    }
+.invisible-link {
+    display: none;
+    }
+.invisible {
+    left: -9999em;
+    display: block;
+    }
+.transparent {
+  opacity: 0;
+  filter: alpha(opacity=0);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+}
+.rss-right {
+    background: url(/@@/rss.png) right center no-repeat;
+    }
+.logo {
+    float: left;
+    display: inline;
+    width: 64px;
+    height: 64px;
+    margin: 0 5px 0 0;
+    }
+.registered {
+    color: #666;
+    }
+.description {
+    clear: both;
+    }
+.search-results {
+    margin-top: 1em;
+    }
+.top-portlet .summary {
+    margin: 0 0 1em 0;
+    font-size: 16px; /* Same as h3, this appears under a h1. */
+    }
+.main-portlet {
+    margin: 1em 0 1em 0;
+    }
+.pre {
+    white-space: pre;
+    }
+.clearfix:after {
+    /* use class="clearfix" whenever floats should be enclosed */
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+    }
+* html .clearfix {
+    /* Work around float bug in MSIE */
+    height: 1%;
+    }
+div.beta {
+    background-color: #c24848;
+    margin-bottom: 7px;
+    margin-top: 7px;
+    height: 10px;
+    width: 175px;
+    }
+div.beta img {
+    height: 10px;
+    }
+.exception {
+    color: #cc0000;
+    }
+.highlight {
+    background: #ddd;
+    border: 1px solid #ddd;
+    }
+.lowlight {
+    opacity: .5;
+    filter: alpha(opacity=50);
+    -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
+.status :link, .importance :link {
+    text-decoration: none;
+    }
+
+.discreet, .lesser, .duplicate-details {
+    font-size: 10px;
+    clear: left;
+    }
+pre.changelog, table.diff,
+.bug-comment, .bug-activity, .codereviewcomment {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    }
+.cloud-size-smallest {
+    font-size: 10px;
+    }
+.cloud-size-small {
+    font-size: 12px;
+    }
+.cloud-size-medium {
+    font-size: 14px;
+    }
+.cloud-size-large {
+    font-size: 16px;
+    }
+.cloud-size-largest {
+    font-size: 18px;
+    }
+.cloud-dark {
+    color: #00f;
+    }
+.cloud-medium {
+    color: #7878ff;
+    }
+.cloud-light {
+    color: #b8b8ff;
+    }
+
+/* =========================
+   Universal presentation
+   Sprites
+*/
+.sprite {
+    padding: 0px 0 0px 18px;
+    line-height: 18px;
+    }
+.sprite-after {
+    padding: 2px 18px 0 0;
+    }
+h1 a.sprite, h2 a.sprite, h3 a.sprite {
+    font-size: 12px;
+    }
+.icon-only {
+    border: 0;
+    padding: 0;
+    width: 14px;
+    }
+div.icon-only {
+    height: 14px;
+    }
+input[type="submit"].icon-only {
+    height: 14px;
+    background-color: inherit;
+    cursor: pointer;
+    }
+span.icon-only {
+    padding-right: 14px;
+    line-height: 14px;
+    }
+.vertical .sprite {
+    /* XXX: EdwinGrubbs 2009-10-29 bug=463032
+       The reduced padding is only necessary to prevent parts of the
+       adjacent sprites in the consolidated image from appearing
+       when the line wraps and the default font size is 16.
+    */
+    padding-bottom: 0px;
+    display: inline-block;
+    min-height: 16px;
+    width: 90%;
+    }
+.vertical .sprite:first-line {
+    line-height: 12px;
+    }
+body.tab-bugs #portlet-subscribers .sprite {
+    /* XXX: mars 2009-11-22 bug=484848
+      Override the styling in the Bug Subscribers portlet.  Trying to display
+      as inline-block is of little use, as the maximum name width is 20
+      characters, and we are unlikely to wrap the text. Not to mention that
+      setting the display in this way breaks the icons.
+    */
+    display: inline;
+    }
+body.tab-bugs #duplicate-actions .sprite {
+    /* Override sprite style for edit icon on "Mark as duplicate"
+       to make the text not appear on a second line.
+    */
+    display: inline;
+    }

@@ -24,8 +24,11 @@ from devscripts.ec2test.session import EC2SessionName
 import paramiko
 
 
-DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
-AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
+DEFAULT_INSTANCE_TYPE = 'm2.xlarge'
+DEFAULT_REGION = 'us-east-1'
+AVAILABLE_INSTANCE_TYPES = (
+    'm1.large', 'm1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge',
+    'c1.xlarge', 'cc1.4xlarge', 'cc1.8xlarge')
 
 
 class AcceptAllPolicy:
@@ -71,16 +74,29 @@ from_scratch_root = """
 # -e  Exit immediately if a command exits with a non-zero status.
 set -xe
 
+# They end up as just one stream; this avoids ordering problems.
+exec 2>&1
+
 sed -ie 's/main universe/main universe multiverse/' /etc/apt/sources.list
 
 . /etc/lsb-release
 
+mount -o remount,data=writeback,commit=3600,async,relatime /
+
 cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
-deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
-deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF
+
+export DEBIAN_FRONTEND=noninteractive
+
+# PPA keys
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af # launchpad
+apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd # bzr
+
+aptitude update
+LANG=C aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
+aptitude -y full-upgrade
 
 # This next part is cribbed from rocketfuel-setup
 dev_host() {
@@ -124,15 +140,7 @@ echo '
 127.0.0.99      bazaar.launchpad.dev
 ' >> /etc/hosts
 
-# Add the keys for the three PPAs added to sources.list above.
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f65461405572d1ffb6c0a5174af
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd
-apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f6bb3ebaf723d37b19b80
-
-aptitude update
-aptitude -y full-upgrade
-
-DEBIAN_FRONTEND=noninteractive apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 # Create the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
@@ -154,6 +162,9 @@ from_scratch_ec2test = """
 # -x  Print commands and their arguments as they are executed.
 # -e  Exit immediately if a command exits with a non-zero status.
 set -xe
+
+# They end up as just one stream; this avoids ordering problems.
+exec 2>&1
 
 bzr launchpad-login %(launchpad-login)s
 bzr init-repo --2a /var/launchpad
@@ -181,7 +192,7 @@ class EC2Instance:
 
     @classmethod
     def make(cls, name, instance_type, machine_id, demo_networks=None,
-             credentials=None):
+             credentials=None, region=None):
         """Construct an `EC2Instance`.
 
         :param name: The name to use for the key pair and security group for
@@ -196,6 +207,7 @@ class EC2Instance:
         :param demo_networks: A list of networks to add to the security group
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
+        :param region: A string region name eg 'us-east-1'.
         """
         # This import breaks in the test environment.  Do it here so
         # that unit tests (which don't use this factory) can still
@@ -209,15 +221,13 @@ class EC2Instance:
         from devscripts.ec2test.credentials import EC2Credentials
 
         assert isinstance(name, EC2SessionName)
-        if instance_type not in AVAILABLE_INSTANCE_TYPES:
-            raise ValueError('unknown instance_type %s' % (instance_type,))
 
         # We call this here so that it has a chance to complain before the
         # instance is started (which can take some time).
         user_key = get_user_key()
 
         if credentials is None:
-            credentials = EC2Credentials.load_from_file()
+            credentials = EC2Credentials.load_from_file(region_name=region)
 
         # Make the EC2 connection.
         account = credentials.connect(name)
@@ -245,12 +255,14 @@ class EC2Instance:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
 
-        return EC2Instance(
+        instance = EC2Instance(
             name, image, instance_type, demo_networks, account,
-            from_scratch, user_key, login)
+            from_scratch, user_key, login, region)
+        instance._credentials = credentials
+        return instance
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 from_scratch, user_key, launchpad_login):
+                 from_scratch, user_key, launchpad_login, region):
         self._name = name
         self._image = image
         self._account = account
@@ -260,6 +272,7 @@ class EC2Instance:
         self._from_scratch = from_scratch
         self._user_key = user_key
         self._launchpad_login = launchpad_login
+        self._region = region
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -296,7 +309,8 @@ class EC2Instance:
             self._ec2test_user_has_keys = False
         else:
             raise BzrCommandError(
-                'failed to start: %s\n' % self._boto_instance.state)
+                'failed to start: %s: %r\n' % (
+                    self._boto_instance.state, self._boto_instance.state_reason))
 
     def shutdown(self):
         """Shut down the instance."""
@@ -305,9 +319,10 @@ class EC2Instance:
             return
         self._boto_instance.update()
         if self._boto_instance.state not in ('shutting-down', 'terminated'):
-            # terminate instance
-            self._boto_instance.stop()
+            self.log("terminating %s..." % self._boto_instance)
+            self._boto_instance.terminate()
             self._boto_instance.update()
+            self.log(" done\n")
         self.log('instance %s\n' % (self._boto_instance.state,))
 
     @property
@@ -320,24 +335,28 @@ class EC2Instance:
         """Connect to the instance as `user`. """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(AcceptAllPolicy())
+        self.log('ssh connect to %s: ' % self.hostname)
         connect_args = {
             'username': username,
             'pkey': self.private_key,
             'allow_agent': False,
             'look_for_keys': False,
             }
-        for count in range(10):
+        for count in range(20):
             try:
                 ssh.connect(self.hostname, **connect_args)
-            except (socket.error, paramiko.AuthenticationException), e:
-                self.log('_connect: %r\n' % (e,))
+            except (socket.error, paramiko.AuthenticationException, EOFError), e:
+                self.log('.')
+                if getattr(e, 'errno', None) not in (
+                        errno.ECONNREFUSED, errno.ETIMEDOUT, errno.EHOSTUNREACH):
+                    self.log('ssh _connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
-                    self.log('retrying...')
                 else:
                     raise
             else:
                 break
+        self.log(' ok!\n')
         return EC2InstanceConnection(self, username, ssh)
 
     def _upload_local_key(self, conn, remote_filename):
@@ -399,6 +418,7 @@ class EC2Instance:
                 from_scratch_ec2test
                 % {'launchpad-login': self._launchpad_login})
             self._from_scratch = False
+            self.log('done running from_scratch setup\n')
             return conn
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
@@ -492,13 +512,9 @@ class EC2Instance:
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
-    def check_bundling_prerequisites(self, name, credentials):
+    def check_bundling_prerequisites(self, name):
         """Check, as best we can, that all the files we need to bundle exist.
         """
-        if subprocess.call(['which', 'ec2-register']):
-            raise BzrCommandError(
-                '`ec2-register` command not found.  '
-                'Try `sudo apt-get install ec2-api-tools`.')
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
             raise BzrCommandError(
@@ -516,12 +532,21 @@ class EC2Instance:
         # The bucket `name` needs to exist and be accessible. We create it
         # here to reserve the name. If the bucket already exists and conforms
         # to the above requirements, this is a no-op.
-        credentials.connect_s3().create_bucket(name)
+        # 
+        # The API for region creation is a little quirky: you apparently can't
+        # explicitly ask for 'us-east-1' you must just say '', etc.
+        location = self._credentials.region_name
+        if location.startswith('us-east'):
+            location = ''
+        elif location.startswith('eu'):
+            location = 'EU'
+        self._credentials.connect_s3().create_bucket(
+            name, location=location)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
 
-        :param name: The name-to-be of the new AMI.
+        :param name: The name-to-be of the new AMI, eg 'launchpad-ec2test500'.
         :param credentials: An `EC2Credentials` object.
         """
         connection = self.connect()
@@ -571,21 +596,20 @@ class EC2Instance:
         mfilename = os.path.basename(manifest)
         manifest_path = os.path.join(name, mfilename)
 
-        env = os.environ.copy()
-        if 'JAVA_HOME' not in os.environ:
-            env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
         now = datetime.strftime(datetime.utcnow(), "%Y-%m-%d %H:%M:%S UTC")
-        description = "Created %s" % now
-        cmd = [
-            'ec2-register',
-            '--private-key=%s' % self.local_pk,
-            '--cert=%s' % self.local_cert,
-            '--name=%s' % (name,),
-            '--description=%s' % description,
-            manifest_path,
-            ]
-        self.log("Executing command: %s" % ' '.join(cmd))
-        subprocess.check_call(cmd, env=env)
+        description = "launchpad ec2test created %s by %r on %s" % (
+            now,
+            os.environ.get('EMAIL', '<unknown>'),
+            socket.gethostname())
+
+        self.log('registering image: ')
+        image_id = credentials.connect('bundle').conn.register_image(
+            name=name,
+            description=description,
+            image_location=manifest_path,
+            )
+        self.log('ok\n')
+        self.log('** new instance: %r\n' % (image_id,))
 
 
 class EC2InstanceConnection:
@@ -601,6 +625,8 @@ class EC2InstanceConnection:
     def sftp(self):
         if self._sftp is None:
             self._sftp = self._ssh.open_sftp()
+        if self._sftp is None:
+            raise AssertionError("failed to open sftp connection")
         return self._sftp
 
     def perform(self, cmd, ignore_failure=False, out=None, err=None):

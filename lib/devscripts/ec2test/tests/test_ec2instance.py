@@ -67,10 +67,12 @@ class TestEC2Instance(TestCase):
         from_scratch = None
         user_key = None
         login = None
+        region = None
 
         instance = EC2Instance(
             session_name, image, instance_type, demo_networks, account,
-            from_scratch, user_key, login)
+            from_scratch, user_key, login,
+            region)
 
         instance.shutdown = FakeMethod()
         instance._report_traceback = FakeMethod()

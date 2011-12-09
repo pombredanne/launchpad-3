@@ -135,6 +135,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -155,6 +156,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -162,6 +164,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -390,7 +393,8 @@ def validate_assignee(self, attr, value):
 def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
-    Checks that no conflicting tasks already exist.
+    Checks that no conflicting tasks already exist, and that the new
+    target's pillar supports the bug's access policy.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -422,6 +426,14 @@ def validate_target(bug, target, retarget_existing=True):
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
+
+    if (bug.access_policy is not None and
+        bug.access_policy.pillar != target.pillar and
+        not getUtility(IAccessPolicySource).getByPillarAndType(
+            target.pillar, bug.access_policy.type)):
+        raise IllegalTarget(
+            "%s doesn't have a %s access policy."
+            % (target.pillar.displayname, bug.access_policy.type.title))
 
 
 def validate_new_target(bug, target):
@@ -639,19 +651,29 @@ class BugTask(SQLBase):
         return self._status in RESOLVED_BUGTASK_STATUSES
 
     def canBeDeleted(self):
+        try:
+            self.checkCanBeDeleted()
+        except Exception:
+            return False
+        return True
+
+    def checkCanBeDeleted(self):
         num_bugtasks = Store.of(self).find(
             BugTask, bug=self.bug).count()
 
-        return num_bugtasks > 1
+        if num_bugtasks < 2:
+            raise CannotDeleteBugtask(
+                "Cannot delete only bugtask affecting: %s."
+                % self.target.bugtargetdisplayname)
 
     def delete(self, who=None):
         """See `IBugTask`."""
         if who is None:
             who = getUtility(ILaunchBag).user
 
-        if not self.canBeDeleted():
-            raise CannotDeleteBugtask(
-                "Cannot delete bugtask: %s" % self.title)
+        # Raise an error if the bugtask cannot be deleted.
+        self.checkCanBeDeleted()
+
         bug = self.bug
         target = self.target
         notify(ObjectDeletedEvent(self, who))
@@ -824,7 +846,7 @@ class BugTask(SQLBase):
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
-        if not self.userCanEditMilestone(user):
+        if not self.userHasPrivileges(user):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
@@ -833,7 +855,7 @@ class BugTask(SQLBase):
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
-        if not self.userCanEditImportance(user):
+        if not self.userHasPrivileges(user):
             raise UserCannotEditBugTaskImportance(
                 "User does not have sufficient permissions "
                 "to edit the bug task importance.")
@@ -901,15 +923,10 @@ class BugTask(SQLBase):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         new_status = normalize_bugtask_status(new_status)
-        celebrities = getUtility(ILaunchpadCelebrities)
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
             return True
-        elif (user.inTeam(self.pillar.bug_supervisor) or
-              user.inTeam(self.pillar.owner) or
-              user.id == celebrities.bug_watch_updater.id or
-              user.id == celebrities.bug_importer.id or
-              user.id == celebrities.janitor.id):
+        elif self.userHasPrivileges(user):
             return True
         else:
             return (self.status not in (
@@ -1054,20 +1071,6 @@ class BugTask(SQLBase):
         if new_status < BugTaskStatus.FIXRELEASED:
             self.date_fix_released = None
 
-    def _userCanSetAssignee(self, user):
-        """Used by methods to check if user can assign or unassign bugtask."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (
-            user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.inTeam(self.pillar.driver) or
-            (self.distroseries is not None and
-             user.inTeam(self.distroseries.driver)) or
-            (self.productseries is not None and
-             user.inTeam(self.productseries.driver)) or
-            user.inTeam(celebrities.admin)
-            or user == celebrities.bug_importer)
-
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
         if user is None:
@@ -1075,7 +1078,7 @@ class BugTask(SQLBase):
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return self._userCanSetAssignee(user)
+            return self.userHasPrivileges(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1085,7 +1088,7 @@ class BugTask(SQLBase):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self._userCanSetAssignee(user))
+            user.inTeam(self.assignee) or self.userHasPrivileges(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -1230,6 +1233,12 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self.updateTargetNameCache()
 
+        # If there's a policy set and we're changing to a another
+        # pillar, recalculate the access policy.
+        if (self.bug.access_policy is not None and
+            self.bug.access_policy.pillar != target.pillar):
+            self.bug.setAccessPolicy(self.bug.access_policy.type)
+
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
@@ -1353,25 +1362,35 @@ class BugTask(SQLBase):
         else:
             return None
 
-    def _userIsPillarEditor(self, user):
-        """Can the user edit this tasks's pillar?"""
-        if user is None:
+    @classmethod
+    def userHasPrivilegesContext(cls, context, user):
+        """Does the user have privileges for the given context?
+
+        :return: a boolean.
+        """
+        if not user:
             return False
-        pillar = self.pillar
-        return ((pillar.bug_supervisor is not None and
-                 user.inTeam(pillar.bug_supervisor)) or
-                pillar.userCanEdit(user))
+        role = IPersonRoles(user)
+        # Admins can always change bug details.
+        if role.in_admin:
+            return True
 
-    def userCanEditMilestone(self, user):
-        """See `IBugTask`."""
-        return self._userIsPillarEditor(user)
+        # Similar to admins, the Bug Watch Updater, Bug Importer and
+        # Janitor can always change bug details.
+        if (
+            role.in_bug_watch_updater or role.in_bug_importer or
+            role.in_janitor):
+            return True
 
-    def userCanEditImportance(self, user):
+        # Otherwise, if you're a member of the pillar owner, drivers, or the
+        # bug supervisor, you can change bug details.
+        return (
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isBugSupervisor(context.pillar))
+
+    def userHasPrivileges(self, user):
         """See `IBugTask`."""
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self._userIsPillarEditor(user) or
-                user == celebs.bug_watch_updater or
-                user == celebs.bug_importer)
+        return self.userHasPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
@@ -2194,22 +2213,19 @@ class BugTaskSet:
         # is not for subscription to notifications.
         # See bug #191809
         if params.bug_supervisor:
-            bug_supervisor_clause = """BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, Product
-                WHERE BugTask.product = Product.id
-                    AND Product.bug_supervisor = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id
-                FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distribution = StructuralSubscription.distribution
-                    AND BugTask.sourcepackagename =
-                        StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, Distribution
-                WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+            bug_supervisor_clause = """(
+                BugTask.product IN (
+                    SELECT id FROM Product
+                    WHERE Product.bug_supervisor = %(bug_supervisor)s)
+                OR
+                ((BugTask.distribution, Bugtask.sourcepackagename) IN
+                    (SELECT distribution,  sourcepackagename FROM
+                     StructuralSubscription
+                     WHERE subscriber = %(bug_supervisor)s))
+                OR
+                BugTask.distribution IN (
+                    SELECT id from Distribution WHERE
+                    Distribution.bug_supervisor = %(bug_supervisor)s)
                 )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
             extra_clauses.append(bug_supervisor_clause)
 
@@ -2298,7 +2314,8 @@ class BugTaskSet:
                 "BugTask.datecreated > %s" % (
                     sqlvalues(params.created_since,)))
 
-        orderby_arg = self._processOrderBy(params)
+        orderby_arg, extra_joins = self._processOrderBy(params)
+        join_tables.extend(extra_joins)
 
         query = " AND ".join(extra_clauses)
 
@@ -3161,27 +3178,90 @@ class BugTaskSet:
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""
         if BugTaskSet._ORDERBY_COLUMN is None:
-            # Local import of Bug to avoid import loop.
-            from lp.bugs.model.bug import Bug
+            # Avoid circular imports.
+            from lp.bugs.model.bug import (
+                Bug,
+                BugTag,
+                )
+            from lp.registry.model.milestone import Milestone
+            from lp.registry.model.person import Person
+            Assignee = ClassAlias(Person)
+            Reporter = ClassAlias(Person)
             BugTaskSet._ORDERBY_COLUMN = {
-                "task": BugTask.id,
-                "id": BugTask.bugID,
-                "importance": BugTask.importance,
+                "task": (BugTask.id, []),
+                "id": (BugTask.bugID, []),
+                "importance": (BugTask.importance, []),
                 # TODO: sort by their name?
-                "assignee": BugTask.assigneeID,
-                "targetname": BugTask.targetnamecache,
-                "status": BugTask._status,
-                "title": Bug.title,
-                "milestone": BugTask.milestoneID,
-                "dateassigned": BugTask.date_assigned,
-                "datecreated": BugTask.datecreated,
-                "date_last_updated": Bug.date_last_updated,
-                "date_closed": BugTask.date_closed,
-                "number_of_duplicates": Bug.number_of_duplicates,
-                "message_count": Bug.message_count,
-                "users_affected_count": Bug.users_affected_count,
-                "heat": BugTask.heat,
-                "latest_patch_uploaded": Bug.latest_patch_uploaded,
+                "assignee": (
+                    Assignee.name,
+                    [
+                        (Assignee,
+                         LeftJoin(Assignee, BugTask.assignee == Assignee.id))
+                        ]),
+                "targetname": (BugTask.targetnamecache, []),
+                "status": (BugTask._status, []),
+                "title": (Bug.title, []),
+                "milestone": (BugTask.milestoneID, []),
+                "dateassigned": (BugTask.date_assigned, []),
+                "datecreated": (BugTask.datecreated, []),
+                "date_last_updated": (Bug.date_last_updated, []),
+                "date_closed": (BugTask.date_closed, []),
+                "number_of_duplicates": (Bug.number_of_duplicates, []),
+                "message_count": (Bug.message_count, []),
+                "users_affected_count": (Bug.users_affected_count, []),
+                "heat": (BugTask.heat, []),
+                "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+                "milestone_name": (
+                    Milestone.name,
+                    [
+                        (Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))
+                        ]),
+                "reporter": (
+                    Reporter.name,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (Reporter, Join(Reporter, Bug.owner == Reporter.id))
+                        ]),
+                "tag": (
+                    BugTag.tag,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (BugTag,
+                         LeftJoin(
+                             BugTag,
+                             BugTag.bug == Bug.id and
+                             # We want at most one tag per bug. Select the
+                             # tag that comes first in alphabetic order.
+                             BugTag.id == SQL("""
+                                 SELECT id FROM BugTag AS bt
+                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                                 """))),
+                        ]
+                    ),
+                "specification": (
+                    Specification.name,
+                    [
+                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                        (Specification,
+                         LeftJoin(
+                             Specification,
+                             # We want at most one specification per bug.
+                             # Select the specification that comes first
+                             # in alphabetic order.
+                             Specification.id == SQL("""
+                                 SELECT Specification.id
+                                 FROM SpecificationBug
+                                 JOIN Specification
+                                     ON SpecificationBug.specification=
+                                         Specification.id
+                                 WHERE SpecificationBug.bug=Bug.id
+                                 ORDER BY Specification.name
+                                 LIMIT 1
+                                 """))),
+                        ]
+                    ),
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
 
@@ -3230,16 +3310,33 @@ class BugTaskSet:
 
         # Translate orderby keys into corresponding Table.attribute
         # strings.
+        extra_joins = []
         ambiguous = True
+        # Sorting by milestone only is a very "coarse" sort order.
+        # If no additional sort order is specified, add the bug task
+        # importance as a secondary sort order.
+        if len(orderby) == 1:
+            if orderby[0] == 'milestone_name':
+                # We want the most important bugtasks first; these have
+                # larger integer values.
+                orderby.append('-importance')
+            elif orderby[0] == '-milestone_name':
+                orderby.append('importance')
+            else:
+                # Other sort orders don't need tweaking.
+                pass
+
         for orderby_col in orderby:
             if isinstance(orderby_col, SQLConstant):
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col = self.getOrderByColumnDBName(orderby_col[1:])
+                col, sort_joins = self.getOrderByColumnDBName(orderby_col[1:])
+                extra_joins.extend(sort_joins)
                 order_clause = Desc(col)
             else:
-                col = self.getOrderByColumnDBName(orderby_col)
+                col, sort_joins = self.getOrderByColumnDBName(orderby_col)
+                extra_joins.extend(sort_joins)
                 order_clause = col
             if col in unambiguous_cols:
                 ambiguous = False
@@ -3251,7 +3348,7 @@ class BugTaskSet:
             else:
                 orderby_arg.append(BugTask.id)
 
-        return tuple(orderby_arg)
+        return tuple(orderby_arg), extra_joins
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

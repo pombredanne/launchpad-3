@@ -913,11 +913,12 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         not a package task, returns None.
         """
 
-    def userCanEditMilestone(user):
-        """Can the user edit the Milestone field?"""
+    def userHasPrivileges(user):
+        """Is the user a priviledged one, allowed to changed details on a
+        bug?.
 
-    def userCanEditImportance(user):
-        """Can the user edit the Importance field?"""
+        :return: A boolean.
+        """
 
 
 # Set schemas that were impossible to specify during the definition of
@@ -1016,10 +1017,11 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_supervisor = Choice(
-        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs in packages this person or team '
-                      'is subscribed to.'),
+    structural_subscriber = Choice(
+        title=_('Structural Subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_(
+            'Show only bugs in projects, series, distributions, and packages '
+            'that this person or team is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',

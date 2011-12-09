@@ -40,11 +40,9 @@ from operator import (
     isSequenceType,
     )
 import os
-from random import randint
 from StringIO import StringIO
 import sys
 from textwrap import dedent
-from threading import local
 from types import InstanceType
 import warnings
 
@@ -176,6 +174,12 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -281,6 +285,9 @@ from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -300,6 +307,7 @@ from lp.testing import (
     time_counter,
     with_celebrity_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.enums import (
     LanguagePackType,
     RosettaImportStatus,
@@ -394,9 +402,9 @@ class ObjectFactory:
 
     __metaclass__ = AutoDecorate(default_master_store)
 
-    def __init__(self):
-        # Initialize the unique identifier.
-        self._local = local()
+    # This allocates process-wide unique integers.  We count on Python doing
+    # only cooperative threading to make this safe across threads.
+    _unique_int_counter = count(100000)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
@@ -407,11 +415,7 @@ class ObjectFactory:
         For each thread, this will be a series of increasing numbers, but the
         starting point will be unique per thread.
         """
-        counter = getattr(self._local, 'integer', None)
-        if counter is None:
-            counter = count(randint(0, 1000000))
-            self._local.integer = counter
-        return counter.next()
+        return ObjectFactory._unique_int_counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -609,7 +613,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False, member_of=(),
+        homepage_content=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -646,6 +651,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
         naked_person._password_cleartext_cached = password
+        if homepage_content is not None:
+            naked_person.homepage_content = homepage_content
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -1080,6 +1087,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ISprintSet).new(
             owner=owner, name=name, title=title, time_zone=time_zone,
             time_starts=time_starts, time_ends=time_ends, summary=summary)
+
+    def makeStackedOnBranchChain(self, depth=5, **kwargs):
+        branch = None
+        for i in xrange(depth):
+            branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
+        return branch
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
@@ -1524,11 +1537,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u''):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
         diff = self.makeDiff()
-        bmp = self.makeBranchMergeProposal()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff.branch_merge_proposal = bmp
+        preview_diff._branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
@@ -2706,7 +2720,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         Note: the builder returned will not be able to actually build -
         we currently have a build slave setup for 'bob' only in the
         test environment.
-        See lib/canonical/buildd/tests/buildd-slave-test.conf
         """
         if processor is None:
             processor_fam = ProcessorFamilySet().getByName('x86')
@@ -4035,6 +4048,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution, sourcepackagename, False)
         return package
 
+    def makeDSPCache(self, distro_name, package_name, make_distro=True,
+                     official=True, binary_names=None, archive=None):
+        if make_distro:
+            distribution = self.makeDistribution(name=distro_name)
+        else:
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        dsp = self.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename=package_name,
+            with_db=official)
+        if archive is None:
+            archive = dsp.distribution.main_archive
+        else:
+            archive = self.makeArchive(
+                distribution=distribution, purpose=archive)
+        if official:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distribution.currentseries,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive)
+        with dbuser('statistician'):
+            DistributionSourcePackageCache(
+                distribution=dsp.distribution,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive,
+                name=package_name,
+                binpkgnames=binary_names)
+        return distribution, dsp
+
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
         """Make an email message with possible attachments.
@@ -4324,6 +4365,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
+        if pillar is None:
+            pillar = self.makeProduct()
+        policy = getUtility(IAccessPolicySource).create(pillar, type)
+        IStore(policy).flush()
+        return policy
+
+    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
+        if concrete is None:
+            concrete = self.makeBranch()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact.policy = policy
+        IStore(artifact).flush()
+        return artifact
+
+    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        if object is None:
+            object = self.makeAccessPolicy()
+        grant = getUtility(IAccessPolicyGrantSource).grant(
+            grantee, grantor, object)
+        IStore(grant).flush()
+        return grant
 
 
 # Some factory methods return simple Python types. We don't add

@@ -70,6 +70,7 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model import pofilestatsjob
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
     )
@@ -892,10 +893,8 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
-        # XXX: kiko 2006-09-27:
-        # Isn't this a hell of a performance issue, hitting this
-        # same table for every submit?
-        self.pofile.updateStatistics()
+        # Schedule this POFile to have its statistics updated.
+        pofilestatsjob.schedule(self.pofile)
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the

@@ -8,6 +8,12 @@
     id="zope.Public" title="Public stuff" access_level="read" />
   <permission
     id="launchpad.View" title="Viewing something" access_level="read" />
+  <!-- This permission allows users to know that an entity exists.
+  ie they can traverse to its URL, and they can see basic information like
+  name, displayname
+  -->
+  <permission
+    id="launchpad.LimitedView" title="View basic details like name, URL" access_level="read" />
 
   <permission
     id="launchpad.AnyPerson" title="Any Authenticated Person"

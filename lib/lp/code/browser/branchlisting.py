@@ -1274,9 +1274,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
-        self.product = self.context
         revision_cache = getUtility(IRevisionCache)
-        self.revision_cache = revision_cache.inProduct(self.product)
+        self.revision_cache = revision_cache.inProduct(self.context)
 
     @property
     def branch(self):

@@ -44,7 +44,6 @@ LPMAIN_SEED = frozenset([
     ('public', 'openidnonce'),
     ('public', 'openidassociation'),
     ('public', 'person'),
-    ('public', 'launchpaddatabaserevision'),
     ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
@@ -63,6 +62,16 @@ LPMAIN_SEED = frozenset([
     # suggestivepotemplate.potemplate foreign key constraint exists on
     # production.
     ('public', 'suggestivepotemplate'),
+    # These are odd. They are updated via slonik & EXECUTE SCRIPT, and
+    # the contents of these tables will be different on each node
+    # because we store timestamps when the patches were applied.
+    # However, we want the tables listed as replicated so that, when
+    # building a new replica, the data that documents the schema patch
+    # level matches the schema patch level and upgrade.py does the right
+    # thing. This is a bad thing to do, but we are safe in this
+    # particular case.
+    ('public', 'launchpaddatabaserevision'),
+    ('public', 'launchpaddatabaseupdatelog'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the

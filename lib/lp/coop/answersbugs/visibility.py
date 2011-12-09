@@ -61,7 +61,7 @@ class TestHideMessageControlMixin:
 
     control_text = 'mark-spam-1'
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """To be overwridden by subclasses.
 
         This method must create and return a message bearing object

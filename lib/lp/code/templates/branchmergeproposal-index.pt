@@ -230,7 +230,7 @@
                 {srcNode: Y.one('#diff-area')});
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
                 if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
-		    updater.update();
+                    updater.update();
                 }
             });
             updater.on(updater.NAME + '.updated', function() {

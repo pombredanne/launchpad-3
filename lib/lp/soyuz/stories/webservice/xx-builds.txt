@@ -46,13 +46,15 @@ of properties:
     can_be_rescored: False
     can_be_retried: True
     changesfile_url: None
-    current_source_publication_link: u'http://.../beta/~cprov/+archive/ppa/+sourcepub/27'
+    current_source_publication_link:
+    u'http://.../beta/~cprov/+archive/ppa/+sourcepub/27'
     date_created: u'2007-07-08T00:00:00+00:00'
     date_finished: u'2007-07-08T00:00:01+00:00'
     date_first_dispatched: None
     dependencies: None
     distribution_link: u'http://.../beta/ubuntu'
-    log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
+    log_url:
+    u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
     pocket: u'Release'
     resource_type_link: u'http://api.launchpad.dev/beta/#build'
     score: None
@@ -66,17 +68,19 @@ Whereas the 1.0 webservice for builds maintains the old property names
 (without underscores):
 
     >>> builds_1_0 = webservice.named_get(
-    ...     source_pub['self_link'].replace('beta', '1.0'), 'getBuilds').jsonBody()
-    >>> pprint_entry(builds_1_0['entries'][0])
+    ...     source_pub['self_link'].replace('beta', '1.0'), 'getBuilds')
+    >>> pprint_entry(builds_1_0.jsonBody()['entries'][0])
     arch_tag: u'i386'
     archive_link: u'http://.../~cprov/+archive/ppa'
-    build_log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
+    build_log_url:
+    u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
     buildstate: u'Failed to build'
     can_be_cancelled: False
     can_be_rescored: False
     can_be_retried: True
     changesfile_url: None
-    current_source_publication_link: u'http://.../~cprov/+archive/ppa/+sourcepub/27'
+    current_source_publication_link:
+    u'http://.../~cprov/+archive/ppa/+sourcepub/27'
     date_first_dispatched: None
     datebuilt: u'2007-07-08T00:00:01+00:00'
     datecreated: u'2007-07-08T00:00:00+00:00'

@@ -15,6 +15,11 @@ from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
+from canonical.launchpad.webapp.authorization import (
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -28,7 +33,9 @@ from lp.app.browser.tales import (
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    login_person,
     test_tales,
     TestCase,
     TestCaseWithFactory,
@@ -140,6 +147,86 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
             formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
+
+
+class TestTalesFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TalesFormatterAPI methods.
+
+    A user must have launchpad.LimitedView permission to use
+    TestTalesFormatterAPI with private teams.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTalesFormatterAPI, self).setUp()
+        self.team = self.factory.makeTeam(
+            name='team', displayname='a team',
+            visibility=PersonVisibility.PRIVATE)
+
+    def _make_formatter(self, cache_permission=False):
+        # Helper to create the formatter and optionally cache the permission.
+        formatter = getAdapter(self.team, IPathAdapter, 'fmt')
+        clear_cache()
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        if cache_permission:
+            login_person(any_person, request)
+            precache_permission_for_objects(
+                request, 'launchpad.LimitedView', [self.team])
+        return formatter, request, any_person
+
+    def _tales_value(self, attr, request):
+        # Evaluate the given formatted attribute value on team.
+        return test_tales(
+            "team/fmt:%s" % attr, team=self.team, request=request)
+
+    def _test_can_view_attribute_no_login(self, attr, hidden=None):
+        # Test attribute access with no login.
+        formatter, request, ignore = self._make_formatter()
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_no_permission(self, attr, hidden=None):
+        # Test attribute access when user has no permission.
+        formatter, request, any_person = self._make_formatter()
+        login_person(any_person, request)
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_with_permission(self, attr):
+        # Test attr access when user has launchpad.LimitedView permission.
+        formatter, request, any_person = self._make_formatter(
+            cache_permission=True)
+        self.assertNotEqual(
+            formatter.hidden, self._tales_value(attr, request))
+
+    def _test_can_view_attribute(self, attr, hidden=None):
+        # Test the visibility of the given attribute
+        self._test_can_view_attribute_no_login(attr, hidden)
+        self._test_can_view_attribute_no_permission(attr, hidden)
+        self._test_can_view_attribute_with_permission(attr)
+
+    def test_can_view_displayname(self):
+        self._test_can_view_attribute('displayname')
+
+    def test_can_view_unique_displayname(self):
+        self._test_can_view_attribute('unique_displayname')
+
+    def test_can_view_link(self):
+        self._test_can_view_attribute(
+            'link', u'<span class="sprite team">&lt;hidden&gt;</span>')
+
+    def test_can_view_api_url(self):
+        self._test_can_view_attribute('api_url')
+
+    def test_can_view_url(self):
+        self._test_can_view_attribute('url')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):

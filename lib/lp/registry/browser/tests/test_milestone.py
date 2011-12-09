@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test milestone views."""
@@ -7,10 +7,7 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from testtools.matchers import (
-    LessThan,
-    Matcher,
-    )
+from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from canonical.config import config

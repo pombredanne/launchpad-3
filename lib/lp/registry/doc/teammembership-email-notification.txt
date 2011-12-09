@@ -42,6 +42,8 @@ for the member.
     >>> kamion = personset.getByName('kamion')
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> open_team = factory.makeTeam(
+    ...     subscription_policy=TeamSubscriptionPolicy.OPEN)
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> admin_person = personset.getByEmail(ADMIN_EMAIL)
 
@@ -49,27 +51,21 @@ for the member.
 In open teams joining and leaving the team generates no notifications.
 
     >>> login_person(admin_person)
-    >>> ubuntu_team_policy = ubuntu_team.subscriptionpolicy
-    >>> ubuntu_team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
     >>> base_mails = len(stub.test_emails)
     >>> new_person = factory.makePerson()
     >>> login_person(new_person)
-    >>> new_person.join(ubuntu_team)
-    >>> membership = membershipset.getByPersonAndTeam(new_person, ubuntu_team)
+    >>> new_person.join(open_team)
+    >>> membership = membershipset.getByPersonAndTeam(new_person, open_team)
     >>> membership.status.title
     'Approved'
     >>> run_mail_jobs()
     >>> len(stub.test_emails) - base_mails
     0
-    >>> new_person.leave(ubuntu_team)
+    >>> new_person.leave(open_team)
     >>> run_mail_jobs()
     >>> len(stub.test_emails) - base_mails
     0
 
-Put ubuntu back to the original status:
-
-    >>> login_person(admin_person)
-    >>> ubuntu_team.subscriptionpolicy = ubuntu_team_policy
 
 Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.

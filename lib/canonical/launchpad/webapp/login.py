@@ -10,7 +10,6 @@ from datetime import (
     )
 import urllib
 
-from BeautifulSoup import UnicodeDammit
 from openid.consumer.consumer import (
     CANCEL,
     Consumer,
@@ -252,6 +251,10 @@ class OpenIDLogin(LaunchpadView):
 
         Exclude things such as 'loggingout' and starting with 'openid.', which
         we don't want.
+
+        Coerces all keys and values to be ascii decode safe - either by making
+        them unicode or by url quoting them. keys are known to be urldecoded 
+        bytestrings, so are simply re urlencoded.
         """
         for name, value in self.request.form.items():
             if name == 'loggingout' or name.startswith('openid.'):
@@ -260,10 +263,23 @@ class OpenIDLogin(LaunchpadView):
                 value_list = value
             else:
                 value_list = [value]
+            def restore_url(element):
+                """Restore a form item to its original url representation.
+
+                The form items are byte strings simply url decoded and
+                sometimes utf8 decoded (for special confusion). They may fail
+                to coerce to unicode as they can include arbitrary
+                bytesequences after url decoding. We can restore their original
+                url value by url quoting them again if they are a bytestring,
+                with a pre-step of utf8 encoding if they were successfully
+                decoded to unicode.
+                """
+                if isinstance(element, unicode):
+                    element = element.encode('utf8')
+                return urllib.quote(element)
             for value_list_item in value_list:
-                # Thanks to apport (https://launchpad.net/bugs/61171), we need
-                # to do this here.
-                value_list_item = UnicodeDammit(value_list_item).markup
+                value_list_item = restore_url(value_list_item)
+                name = restore_url(name)
                 yield "%s=%s" % (name, value_list_item)
 
 

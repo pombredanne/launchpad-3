@@ -292,9 +292,9 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIsNot(None, filebug_form)
         filebug_form_container = filebug_form.findParents(
             id='filebug-form-container')[0]
-        style_attrs = [item.strip()
-                       for item in filebug_form_container['style'].split(";")]
-        self.assertTrue('display: none' in style_attrs)
+        class_attrs = [item.strip()
+                       for item in filebug_form_container['class'].split(" ")]
+        self.assertTrue('hidden' in class_attrs)
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for

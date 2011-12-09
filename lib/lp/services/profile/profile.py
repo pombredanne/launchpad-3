@@ -368,11 +368,13 @@ def end_request(event):
         trace = da.stop_sql_logging() or ()
         # The trace is a list of dicts, each with the keys "sql" and "stack".
         # "sql" is a tuple of start time, stop time, database name (with a
-        # "SQL-" prefix), and sql statement.  "stack" is None or a tuple of
-        # filename, line number, function name, text, module name, optional
-        # supplement dict, and optional info string.  The supplement dict has
-        # keys 'source_url', 'line', 'column', 'expression', 'warnings' (an
-        # iterable), and 'extra', any of which may be None.
+        # "SQL-" prefix), sql statement and possibly a backtrace (backtraces
+        # are included when the timeline storm trace is installed).  "stack" is
+        # None or a tuple of filename, line number, function name, text, module
+        # name, optional supplement dict, and optional info string.  The
+        # supplement dict has keys 'source_url', 'line', 'column',
+        # 'expression', 'warnings' (an iterable), and 'extra', any of which may
+        # be None.
         top_sql = []
         top_python = []
         triggers = {}
@@ -383,7 +385,12 @@ def end_request(event):
             # Set up an identifier for each trace step.
             step['id'] = ix
             step['sql'] = dict(zip(
-                ('start', 'stop', 'name', 'statement'), step['sql']))
+                ('start', 'stop', 'name', 'statement', 'backtrace'),
+                step['sql']))
+            # NB: step['sql']['backtrace'] is a string backtrace, not a live
+            # stack: less flexible than what the profiler gathers, but cheaper
+            # to keep alive as it holds no references. For now, its not usable
+            # here.
             if step['stack'] is not None:
                 # Divide up the stack into the more unique (app) and less
                 # unique (db) bits.

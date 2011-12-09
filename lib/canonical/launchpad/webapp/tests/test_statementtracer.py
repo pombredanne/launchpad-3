@@ -115,7 +115,8 @@ class TestLoggingOutsideOfRequest(TestCase):
         self.assertIs(None, result[0]['stack'])
         self.assertIs(None, result[0]['exception'])
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42',
+             None),
             result[0]['sql'])
 
     def test_data_logging_with_stacktrace(self):
@@ -128,7 +129,8 @@ class TestLoggingOutsideOfRequest(TestCase):
         self.assertIsNot(None, result[0]['stack'])
         self.assertIs(None, result[0]['exception'])
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42',
+             None),
             result[0]['sql'])
 
     def test_data_logging_with_conditional_stacktrace(self):
@@ -168,7 +170,8 @@ class TestLoggingOutsideOfRequest(TestCase):
         self.assertIsNot(None, result[0]['stack'])
         self.assertEqual((ValueError, error), result[0]['exception'])
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42',
+             None),
             result[0]['sql'])
 
     def test_print_queries_with_tracebacks(self):
@@ -224,10 +227,12 @@ class TestLoggingOutsideOfRequest(TestCase):
         self.assertIs(None, logger.query_data[0]['stack'])
         self.assertIs(None, logger.query_data[0]['exception'])
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42',
+             None),
             logger.query_data[0]['sql'])
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42',
+             None),
             logger.queries[0])
         self.assertEqual(
             'SELECT * FROM bar WHERE bing = 42',
@@ -253,7 +258,8 @@ class TestLoggingOutsideOfRequest(TestCase):
             self.execute(statement='SELECT * FROM bar WHERE bing = %s',
                          params=(142,))
         self.assertEqual(
-            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 142'),
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 142',
+             None),
             logger.query_data[0]['sql'])
 
 

@@ -227,8 +227,8 @@ class BazaarBranchStore:
                     upgrade_url, format=required_format)
             else:
                 old_branch = None
-        # This can be done safely, since only modern formats are used to import
-        # to.
+        # This can be done safely, since only modern formats are used to
+        # import to.
         if stacked_on_url is not None:
             remote_branch.set_stacked_on_url(stacked_on_url)
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=C0324
 
@@ -8,10 +8,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from storm.store import Store
-from storm.sqlobject import SQLObjectNotFound
 
 from pytz import utc
+from storm.sqlobject import SQLObjectNotFound
+from storm.store import Store
 from zope import component
 from zope.component import (
     getGlobalSiteManager,
@@ -85,7 +85,7 @@ def nth_builder(test, bq, n):
     builder = None
     builders = test.builders.get(builder_key(bq), [])
     try:
-        for builder in builders[n-1:]:
+        for builder in builders[n - 1:]:
             if builder.builderok:
                 break
     except IndexError:

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
     IPublishingSet,
     )
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -49,8 +50,7 @@ class PackageClonerTests(TestCaseWithFactory):
         expected_set = set([(info.name, info.version) for info in expected])
         sources = archive.getPublishedSources(
             distroseries=distroseries,
-            status=(PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED))
+            status=active_publishing_status)
         actual_set = set()
         for source in sources:
             source = removeSecurityProxy(source)
@@ -94,8 +94,7 @@ class PackageClonerTests(TestCaseWithFactory):
         archive = distroseries.distribution.main_archive
         sources = archive.getPublishedSources(
             distroseries=distroseries,
-            status=(PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED),
+            status=active_publishing_status,
             name=info.name, exact_match=True)
         for src in sources:
             src.supersede()
@@ -515,6 +514,17 @@ class PackageClonerTests(TestCaseWithFactory):
             target_distroseries, PackagePublishingPocket.RELEASE)
         cloner = getUtility(IPackageCloner)
         return cloner.mergeCopy(source_location, target_location)
+
+    def test_mergeCopy_initializes_sourcepackagename(self):
+        copy_archive, distroseries = self.makeCopyArchive([])
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        self.createSourcePublications([package_info], distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        [spph] = copy_archive.getPublishedSources()
+        self.assertEqual(
+            spph.sourcepackagerelease.sourcepackagename,
+            spph.sourcepackagename)
 
     def testMergeCopyNoChanges(self):
         package_info = PackageInfo(

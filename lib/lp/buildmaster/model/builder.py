@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -18,7 +18,6 @@ import logging
 import os
 import socket
 import tempfile
-import transaction
 import xmlrpclib
 
 from lazr.restful.utils import safe_hasattr
@@ -34,6 +33,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+import transaction
 from twisted.internet import (
     defer,
     reactor as default_reactor,
@@ -43,7 +43,6 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -79,9 +78,12 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.twistedsupport import cancel_on_timeout
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -313,7 +315,7 @@ def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
-    # two status we care about. See see lib/canonical/buildd/slave.py
+    # two status we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -328,7 +330,6 @@ def rescueBuilderIfLost(builder, logger=None):
         Always return status_sentence.
         """
         # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
         # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 
@@ -528,18 +529,24 @@ class Builder(SQLBase):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    _testing_slave = None
+
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute is used to allow tests to replace
-        # the slave object, which is usually an XMLRPC client, with a
-        # stub object that removes the need to actually create a buildd
-        # slave in various states - which can be hard to create.
+        # When testing it's possible to substitute the slave object, which is
+        # usually an XMLRPC client, with a stub object that removes the need
+        # to actually create a buildd slave in various states - which can be
+        # hard to create. We cannot use the property cache because it is
+        # cleared on transaction boundaries, hence the low tech approach.
+        if self._testing_slave is not None:
+            return self._testing_slave
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
-        self.slave = proxy
+        self._testing_slave = proxy
+        del get_property_cache(self).slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
@@ -692,7 +699,7 @@ class Builder(SQLBase):
             return False
 
         def check_available(status):
-            return status[0] == BuilderStatus.IDLE
+            return status[0] == 'BuilderStatus.IDLE'
         return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):

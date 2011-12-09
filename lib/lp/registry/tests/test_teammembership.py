@@ -73,9 +73,9 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.storm import reload_object
 
 
 class TestTeamMembershipSetScripts(TestCaseWithFactory):
@@ -105,15 +105,10 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         # Set expiration time to now
         now = datetime.now(pytz.UTC)
         removeSecurityProxy(teammembership).dateexpires = now
-        transaction.commit()
 
-        # Switch dbuser to the user running the membership flagging
-        # cronscript. Reload the membership object so we can assert against
-        # it.
-        self.layer.switchDbUser(config.expiredmembershipsflagger.dbuser)
-        reload_object(teammembership)
         janitor = getUtility(ILaunchpadCelebrities).janitor
-        membershipset.handleMembershipsExpiringToday(janitor)
+        with dbuser(config.expiredmembershipsflagger.dbuser):
+            membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
             teammembership.status, TeamMembershipStatus.APPROVED)
 

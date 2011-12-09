@@ -966,7 +966,7 @@ All valid persons and teams are also valid owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them. There's also the ircperson
+search for 'team' will give us some of them. There's also the ircperson
 created earlier with an icr nickname of 'team':
 
     >>> sorted(person.name for person in vocab.search('team'))
@@ -975,6 +975,28 @@ created earlier with an icr nickname of 'team':
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
+ValidPillarOwner
+..........
+
+Valid persons and closed teams are valid pillar owners.
+
+    >>> login(ANONYMOUS)
+    >>> vocab = get_naked_vocab(None, "ValidPillarOwner")
+    >>> vocab.step_title
+    'Search for a restricted team, a moderated team, or a person'
+
+    >>> list(vocab.search(None))
+    []
+
+Almost all teams have the word 'team' as part of their names, so a
+search for 'team' will give us some of them. Only restricted or moderated
+teams will be returned in the search results. There's also the ircperson
+created earlier with an icr nickname of 'team':
+
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'hwdb-team', u'ircperson', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam',
+     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
 
 ValidTeam
 .........

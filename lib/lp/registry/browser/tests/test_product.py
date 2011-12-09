@@ -8,20 +8,15 @@ __metaclass__ = type
 import datetime
 
 import pytz
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.testing.pages import (
-    find_tag_by_id,
-    )
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
-from lp.registry.browser.product import (
-    ProductLicenseMixin,
-    )
+from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (
     License,
     IProductSet,

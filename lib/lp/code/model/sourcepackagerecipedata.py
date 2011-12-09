@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -12,6 +12,8 @@ interfaces.
 
 __metaclass__ = type
 __all__ = ['SourcePackageRecipeData']
+
+from itertools import groupby
 
 from bzrlib.plugins.builder.recipe import (
     BaseRecipeBranch,
@@ -48,6 +50,15 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branch import Branch
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    clear_property_cache,
+    get_property_cache,
+    )
 
 
 class InstructionType(DBEnumeratedType):
@@ -276,6 +287,7 @@ class SourcePackageRecipeData(Storm):
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
+        clear_property_cache(self)
         if builder_recipe.format > MAX_RECIPE_FORMAT:
             raise TooNewRecipeFormat(builder_recipe.format, MAX_RECIPE_FORMAT)
         branch_map = self._scanInstructions(builder_recipe)
@@ -306,13 +318,41 @@ class SourcePackageRecipeData(Storm):
         self.sourcepackage_recipe = sourcepackage_recipe
         self.sourcepackage_recipe_build = sourcepackage_recipe_build
 
+    @staticmethod
+    def preLoadReferencedBranches(sourcepackagerecipedatas):
+        # Load the related Branch, _SourcePackageRecipeDataInstruction.
+        load_related(
+            Branch, sourcepackagerecipedatas, ['base_branch_id'])
+        sprd_instructions = load_referencing(
+            _SourcePackageRecipeDataInstruction,
+            sourcepackagerecipedatas, ['recipe_data_id'])
+        sub_branches = load_related(
+            Branch, sprd_instructions, ['branch_id'])
+        # Store the pre-fetched objects on the sourcepackagerecipedatas
+        # objects.
+        branch_to_recipe_data = dict([
+            (instr.branch_id, instr.recipe_data_id)
+                for instr in sprd_instructions])
+        caches = dict((sprd.id, [sprd, get_property_cache(sprd)])
+            for sprd in sourcepackagerecipedatas)
+        for unused, [sprd, cache] in caches.items():
+            cache._referenced_branches = [sprd.base_branch]
+        for recipe_data_id, branches in groupby(
+            sub_branches, lambda branch: branch_to_recipe_data[branch.id]):
+            cache = caches[recipe_data_id][1]
+            cache._referenced_branches.extend(list(branches))
+
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.
         """
-        yield self.base_branch
+        return self._referenced_branches
+
+    @cachedproperty
+    def _referenced_branches(self):
+        referenced_branches = [self.base_branch]
         sub_branches = IStore(self).find(
             Branch,
             _SourcePackageRecipeDataInstruction.recipe_data == self,
             Branch.id == _SourcePackageRecipeDataInstruction.branch_id)
-        for branch in sub_branches:
-            yield branch
+        referenced_branches.extend(sub_branches)
+        return referenced_branches
