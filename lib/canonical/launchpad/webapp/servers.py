@@ -67,11 +67,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivateApplication,
     IWebServiceApplication,
     )
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet,
-    IOAuthSignedRequest,
-    TokenException,
-    )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
@@ -110,6 +105,11 @@ from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
 from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    TokenException,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 

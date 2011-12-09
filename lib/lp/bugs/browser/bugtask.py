@@ -24,7 +24,6 @@ __all__ = [
     'BugTaskListingItem',
     'BugTaskListingView',
     'BugTaskNavigation',
-    'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
     'BugTasksAndNominationsView',
@@ -175,6 +174,7 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
+    BugTrackerFormatterAPI,
     DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -1186,20 +1186,6 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         """Return True if there are more camments and activity to load."""
         return (
             self.next_offset < (self.total_comments + self.total_activity))
-
-
-class BugTaskPortletView:
-    """A portlet for displaying a bug's bugtasks."""
-
-    def alsoReportedIn(self):
-        """Return a list of IUpstreamBugTasks in which this bug is reported.
-
-        If self.context is an IUpstreamBugTasks, it will be excluded
-        from this list.
-        """
-        return [
-            task for task in self.context.bug.bugtasks
-            if task.id is not self.context.id]
 
 
 def get_prefix(bugtask):
@@ -2552,6 +2538,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if self.external_bugtracker or uses_lp:
             return True
         return False
+
+    @property
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
+
+    @property
+    def bugtracker(self):
+        """Description of the context's bugtracker.
+
+        :returns: str which may contain HTML.
+        """
+        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+            return 'Launchpad'
+        elif self.external_bugtracker:
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
+        else:
+            return 'None specified'
 
     @property
     def upstream_launchpad_project(self):
@@ -4352,11 +4356,22 @@ class BugActivityItem:
         """Return a formatted summary of the change."""
         if self.target is not None:
             # This is a bug task.  We want the attribute, as filtered out.
-            return self.attribute
+            summary = self.attribute
         else:
             # Otherwise, the attribute is more normalized than what we want.
             # Use "whatchanged," which sometimes is more descriptive.
-            return self.whatchanged
+            summary = self.whatchanged
+        return self.get_better_summary(summary)
+
+    def get_better_summary(self, summary):
+        """For some activities, we want a different summary for the UI.
+
+        Some event names are more descriptive as data, but less relevant to
+        users, who are unfamiliar with the lp code."""
+        better_summaries = {
+            'bug task deleted': 'no longer affects',
+            }
+        return better_summaries.get(summary, summary)
 
     @property
     def _formatted_tags_change(self):
@@ -4435,7 +4450,7 @@ class BugActivityItem:
                     return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'bug task deleted':
-            return 'no longer affects %s' % self.oldvalue
+            return self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.

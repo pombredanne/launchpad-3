@@ -132,7 +132,7 @@ class ProductBugs(ProductView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupView(_TestStructSubs):
@@ -192,7 +192,7 @@ class ProductSeriesBugs(ProductSeriesView):
     """Test structural subscriptions on the product series bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def setUp(self):
         super(ProductSeriesBugs, self).setUp()
@@ -306,7 +306,7 @@ class DistroBugs(DistroView):
     """Test structural subscriptions on the distro bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def test_subscribe_link_owner(self):
         self._create_scenario(self.target.owner)
@@ -473,7 +473,7 @@ class ProductDoesNotUseLPBugs(ProductDoesNotUseLPView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupDoesNotUseLPView(_DoesNotUseLP):
@@ -584,7 +584,7 @@ class DistroDoesNotUseLPView(DistroView):
 
 class DistroDoesNotUseLPBugs(DistroDoesNotUseLPView):
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):

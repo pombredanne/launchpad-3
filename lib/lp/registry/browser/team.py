@@ -13,7 +13,6 @@ __all__ = [
     'TeamContactAddressView',
     'TeamEditMenu',
     'TeamEditView',
-    'TeamHierarchyView',
     'TeamIndexMenu',
     'TeamJoinView',
     'TeamLeaveView',
@@ -1252,34 +1251,6 @@ class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
 
 class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
     """An XML dump of the locations of limited number of team members."""
-
-
-class TeamHierarchyView(LaunchpadView):
-    """View for ~team/+teamhierarchy page."""
-
-    @property
-    def label(self):
-        return 'Team relationships for ' + self.context.displayname
-
-    @property
-    def has_sub_teams(self):
-        return self.context.sub_teams.count() > 0
-
-    @property
-    def has_super_teams(self):
-        return self.context.super_teams.count() > 0
-
-    @property
-    def has_only_super_teams(self):
-        return self.has_super_teams and not self.has_sub_teams
-
-    @property
-    def has_only_sub_teams(self):
-        return not self.has_super_teams and self.has_sub_teams
-
-    @property
-    def has_relationships(self):
-        return self.has_sub_teams or self.has_super_teams
 
 
 class TeamNavigation(PersonNavigation):
