@@ -13,7 +13,7 @@ Files related with an Soyuz upload are modelled as:
 
 Import the test keys so we have them ready for verification
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 We need to be logged into the security model in order to get any further
