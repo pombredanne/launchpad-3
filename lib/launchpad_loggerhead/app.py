@@ -324,4 +324,4 @@ def oops_middleware(app):
     """
     error_utility = make_error_utility()
     return oops_wsgi.make_app(app, error_utility._oops_config,
-            template=_oops_html_template)
+            template=_oops_html_template, soft_start_timeout=7000)
