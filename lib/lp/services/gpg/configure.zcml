@@ -9,25 +9,25 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <class class="canonical.launchpad.utilities.GPGHandler">
+    <class class="lp.services.gpg.handler.GPGHandler">
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.utilities.GPGHandler"
+        class="lp.services.gpg.handler.GPGHandler"
         provides="lp.services.gpg.interfaces.IGPGHandler">
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
     </securedutility>
 
-    <class class="canonical.launchpad.utilities.PymeSignature">
+    <class class="lp.services.gpg.handler.PymeSignature">
         <allow interface="lp.services.gpg.interfaces.IPymeSignature" />
     </class>
 
-    <class class="canonical.launchpad.utilities.PymeKey">
+    <class class="lp.services.gpg.handler.PymeKey">
         <allow interface="lp.services.gpg.interfaces.IPymeKey" />
     </class>
 
-    <class class="canonical.launchpad.utilities.PymeUserId">
+    <class class="lp.services.gpg.handler.PymeUserId">
         <allow interface="lp.services.gpg.interfaces.IPymeUserId" />
     </class>
 

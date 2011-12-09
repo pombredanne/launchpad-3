@@ -6,6 +6,3 @@
 from canonical.launchpad.utilities.looptuner import *
 from canonical.launchpad.utilities.orderingcheck import *
 from lp.app.utilities.celebrities import *
-from lp.services.gpg.handler import *
-
-
