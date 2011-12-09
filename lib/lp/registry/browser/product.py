@@ -1056,7 +1056,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @property
     def page_description(self):
-        return '\n'.filter(None, [self.context.summary, self.context.description])
+        return '\n'.filter(
+            None,
+            [self.context.summary, self.context.description])
 
     @property
     def show_license_status(self):
