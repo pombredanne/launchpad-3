@@ -23,11 +23,11 @@
             <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
         </div>
         <div class="buginfo-extras">
-            {{#show_bugtarget}}
+            {{#show_targetname}}
                 <span class="{{bugtarget_css}} field">
                     {{bugtarget}}
                 </span>
-            {{/show_bugtarget}}
+            {{/show_targetname}}
             {{#show_milestone_name}}
                 <span class="sprite milestone field">
                     {{#milestone_name}}
@@ -38,11 +38,11 @@
                     {{/milestone_name}}
                 </span>
             {{/show_milestone_name}}
-            {{#show_last_updated}}
+            {{#show_date_last_updated}}
                 <span class="sprite milestone field">
                     Last updated {{last_updated}}
                 </span>
-            {{/show_last_updated}}
+            {{/show_date_last_updated}}
             {{#show_assignee}}
                 <span class="sprite person field">
                     {{#assignee}}Assignee: {{assignee}}{{/assignee}}
@@ -54,26 +54,26 @@
                     Reporter: {{reporter}}
                 </span>
             {{/show_reporter}}
-            {{#show_age}}
+            {{#show_datecreated}}
                 <span class="sprite milestone field">
                     {{age}}
                 </span>
-            {{/show_age}}
-            {{#show_tags}}
+            {{/show_datecreated}}
+            {{#show_tag}}
                 <span class="field">Tags:
                   {{#tags}}{{tags}}{{/tags}}
                   {{^tags}}None{{/tags}}
                 </span>
-            {{/show_tags}}
+            {{/show_tag}}
         </div>
     </div>
 
     <div class="buglisting-col3">
-        {{#show_bug_heat}}
+        {{#show_heat}}
             <span class="bug-heat-icons">
                  {{{bug_heat_html}}}
             </span>
-        {{/show_bug_heat}}
+        {{/show_heat}}
         <span class="bug-related-icons">
             {{{badges}}}
         </span>
