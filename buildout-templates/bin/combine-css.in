@@ -24,6 +24,7 @@ target = os.path.join(icing, 'combo.css')
 # including lots of styles that we don't need/want, so keeping this hard-coded
 # list seems like the best option for now.
 names = [
+    'ubuntu-webfonts.css',
     'style.css',
     'yui/cssreset/reset.css',
     # Use the old cssgrids instead of the new cssgrids.
