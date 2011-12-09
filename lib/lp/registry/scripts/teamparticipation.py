@@ -9,6 +9,7 @@ __all__ = [
     "check_teamparticipation_consistency",
     "check_teamparticipation_self",
     "fetch_team_participation_info",
+    "fix_teamparticipation_consistency",
     ]
 
 from collections import (
@@ -209,3 +210,10 @@ def check_teamparticipation_consistency(log, info):
             get_repr(error.team), error.type, people_repr)
 
     return errors
+
+
+def fix_teamparticipation_consistency(log, errors):
+    """Fix missing or spurious participations.
+
+    :param errors: An iterable of `ConsistencyError` tuples.
+    """
