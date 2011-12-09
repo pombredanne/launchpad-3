@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
-    keys_for_tests,
     login,
     logout,
     )
@@ -35,6 +34,12 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.testing import TestCase
+from lp.testing.gpgkeys import (
+    iter_test_key_emails,
+    import_secret_test_key,
+    test_keyrings,
+    test_pubkey_from_email,
+    )
 from lp.testing.keyserver import KeyServerTac
 
 
@@ -58,8 +63,8 @@ class TestImportKeyRing(TestCase):
         super(TestImportKeyRing, self).tearDown()
 
     def populateKeyring(self):
-        for email in keys_for_tests.iter_test_key_emails():
-            pubkey = keys_for_tests.test_pubkey_from_email(email)
+        for email in iter_test_key_emails():
+            pubkey = test_pubkey_from_email(email)
             self.gpg_handler.importPublicKey(pubkey)
 
     # This sequence might fit better as a doctest. Hmm.
@@ -112,7 +117,7 @@ class TestImportKeyRing(TestCase):
             list(self.gpg_handler.localKeys(secret=True)), [])
 
         # Import a secret key and look it up.
-        keys_for_tests.import_secret_test_key()
+        import_secret_test_key()
         secret_target_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
         filtered_keys = self.gpg_handler.localKeys(secret=True)
@@ -149,7 +154,7 @@ class TestImportKeyRing(TestCase):
 
     def testTestkeyrings(self):
         """Do we have the expected test keyring files"""
-        self.assertEqual(len(list(keys_for_tests.test_keyrings())), 1)
+        self.assertEqual(len(list(test_keyrings())), 1)
 
     def testHomeDirectoryJob(self):
         """Does the job to touch the home work."""

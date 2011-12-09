@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+from lp.testing.gpgkeys import gpgkeysdir
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool

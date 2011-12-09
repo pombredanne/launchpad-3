@@ -53,7 +53,7 @@ The same happens for bogus content.
 Let's recover some coherent data and verify if it works as expected:
 
     >>> import os
-    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+    >>> from lp.testing.gpgkeys import gpgkeysdir
     >>> filepath = os.path.join(gpgkeysdir, 'test@canonical.com.pub')
     >>> pubkey = open(filepath).read()
     >>> key = gpghandler.importPublicKey(pubkey)

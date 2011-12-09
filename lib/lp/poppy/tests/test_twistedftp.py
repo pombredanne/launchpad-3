@@ -13,7 +13,7 @@ from twisted.protocols import ftp
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+from lp.testing.gpgkeys import gpgkeysdir
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.poppy.twistedftp import PoppyFileWriter
 from lp.registry.interfaces.gpg import (

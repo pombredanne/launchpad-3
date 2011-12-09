@@ -156,8 +156,8 @@ policy in process-upload.py.
 So, load the GPG key:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
     >>> from lp.services.gpg.interfaces import IGPGHandler
+    >>> from lp.testing.gpgkeys import gpgkeysdir
     >>> gpg_handler = getUtility(IGPGHandler)
     >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
     >>> key_data = open(key_path).read()

@@ -33,7 +33,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.gpg.interfaces import IGPGHandler
 
 
-gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
+gpgkeysdir = os.path.join(os.path.dirname(__file__), 'data')
 
 
 def import_public_key(email_addr):
