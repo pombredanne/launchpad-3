@@ -143,10 +143,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError,
-    IGPGHandler,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
@@ -268,6 +264,10 @@ from lp.registry.model.milestone import (
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,

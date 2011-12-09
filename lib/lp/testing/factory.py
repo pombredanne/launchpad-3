@@ -80,7 +80,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -243,6 +242,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage

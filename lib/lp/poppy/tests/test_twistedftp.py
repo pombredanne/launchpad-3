@@ -7,23 +7,21 @@ __metaclass__ = type
 
 import os
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.protocols import ftp
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing.layers import ZopelessDatabaseLayer
-
 from lp.poppy.twistedftp import PoppyFileWriter
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
-    IGPGKeySet)
+    IGPGKeySet,
+    )
 from lp.services.database.isolation import check_no_transaction
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.testing import TestCaseWithFactory
 from lp.testing.keyserver import KeyServerTac
 

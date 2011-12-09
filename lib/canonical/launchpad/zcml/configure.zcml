@@ -24,11 +24,4 @@
     <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />
 
-    <!-- System homepages -->
-
-    <!-- Event configuration -->
-
-    <!-- Special Utilities -->
-    <include file="gpghandler.zcml" />
-
 </configure>

@@ -226,7 +226,7 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 The generated key UID follows the "Launchpad PPA for %(person.displayname)s"
 format.
 
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
 
     >>> retrieved_key = gpghandler.retrieveKey(

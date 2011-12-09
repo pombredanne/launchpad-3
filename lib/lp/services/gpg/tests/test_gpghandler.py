@@ -11,13 +11,12 @@ import os
 from time import time
 
 from pytz import UTC
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-from testtools.matchers import (
-    Not,
-    LessThan,
-    )
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -25,16 +24,16 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyDoesNotExistOnServer,
-    GPGKeyTemporarilyNotFoundError,
-    IGPGHandler,
-    )
 from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
     )
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.gpg.interfaces import (
+    GPGKeyDoesNotExistOnServer,
+    GPGKeyTemporarilyNotFoundError,
+    IGPGHandler,
+    )
 from lp.testing import TestCase
 from lp.testing.keyserver import KeyServerTac
 

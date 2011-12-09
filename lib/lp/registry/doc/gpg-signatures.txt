@@ -20,7 +20,7 @@ OpenPGP Signature Verification
     u'name12'
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
 
 The text below was "clear signed" by 0xDFD20543 master key:

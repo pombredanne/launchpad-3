@@ -9,6 +9,7 @@
   <include package=".fields" />
   <include package=".geoip" />
   <include package=".googlesearch" />
+  <include package=".gpg" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".longpoll" />

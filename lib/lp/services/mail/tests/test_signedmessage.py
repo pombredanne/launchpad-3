@@ -21,9 +21,9 @@ from canonical.launchpad.ftests import (
     import_public_test_keys,
     import_secret_test_key,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.mail.incoming import (
     authenticateEmail,
     canonicalise_line_endings,
