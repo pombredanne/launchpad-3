@@ -498,7 +498,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
             info[target] = record
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
-            is_team = subscriber.isTeam()
+            is_team = subscriber.is_team
             user_is_team_admin = (
                 is_team and subscriber in administered_teams)
             team_has_contact_address = (

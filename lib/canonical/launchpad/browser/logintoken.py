@@ -35,13 +35,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyExpired,
-    GPGKeyNotFoundError,
-    GPGKeyRevoked,
-    GPGVerificationError,
-    IGPGHandler,
-    )
 from canonical.launchpad.interfaces.logintoken import (
     IGPGKeyValidationForm,
     ILoginTokenSet,
@@ -69,6 +62,13 @@ from lp.registry.browser.team import HasRenewalPolicyMixin
 from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
+    )
+from lp.services.gpg.interfaces import (
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGVerificationError,
+    IGPGHandler,
     )
 
 

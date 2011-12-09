@@ -705,6 +705,15 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # utf8 even.
         self.assertThat('key\x85=value', ForwardsCorrectly())
 
+    def test_unicode_form_params_bug_898638(self):
+        # Sometimes the form params are unicode because a decode('utf8') worked
+        # in the form machinery... and if so they cannot be trivially quoted
+        # but must be encoded first.
+        key = urllib.quote(u'key\xf3'.encode('utf8'))
+        value = urllib.quote(u'value\xf3'.encode('utf8'))
+        query_string = "%s=%s" % (key, value)
+        self.assertThat(query_string, ForwardsCorrectly())
+
     def test_sreg_fields(self):
         # We request the user's email address and Full Name (through the SREG
         # extension) to the OpenID provider so that we can automatically

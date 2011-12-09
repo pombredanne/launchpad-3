@@ -22,14 +22,14 @@ Any Person object (either a person or a team) implements IPerson...
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> foobar.isTeam()
+    >>> foobar.is_team
     False
 
     >>> verifyObject(IPerson, foobar)
     True
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.isTeam()
+    >>> ubuntu_team.is_team
     True
 
     >>> verifyObject(IPerson, ubuntu_team)
@@ -359,7 +359,6 @@ Non-administrators may not change a person's standing.
     ...
     Unauthorized: ...
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -388,19 +387,19 @@ Teams
 
 As we said above, the Person class is overloaded to represent teams so
 we may have Person objects which are, in fact, teams. To find out
-whether a given object is a person or a team we can use the isTeam()
-method of IPerson or check if the object provides the ITeam interface.
+whether a given object is a person or a team we can use the is_team
+property of IPerson or check if the object provides the ITeam interface.
 
     >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
-    >>> ddaa.isTeam()
+    >>> ddaa.is_team
     False
 
     >>> ITeam.providedBy(ddaa)
     False
 
     >>> landscape_devs = personset.getByName('landscape-developers')
-    >>> landscape_devs.isTeam()
+    >>> landscape_devs.is_team
     True
 
     >>> ITeam.providedBy(landscape_devs)
@@ -466,7 +465,7 @@ entries into teams.
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
     ...     comment='when the ed package was imported into Ubuntu Feisty')
     >>> transaction.commit()
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     False
 
     >>> not_a_person.is_valid_person
@@ -483,7 +482,7 @@ entries into teams.
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     True
 
     >>> ITeam.providedBy(not_a_person)
@@ -1097,7 +1096,6 @@ The method does not return inactive projects.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')

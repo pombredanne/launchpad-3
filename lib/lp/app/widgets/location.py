@@ -62,10 +62,6 @@ class LocationWidget(BrowserWidget, InputWidget):
     __call__ = ViewPageTemplateFile("templates/location.pt")
 
     def __init__(self, context, request):
-        # This widget makes use of javascript for googlemaps and
-        # json-handling, so we flag that in the request so that our
-        # base-layout includes the necessary javascript files.
-        request.needs_json = True
         super(LocationWidget, self).__init__(context, request)
         fields = form.Fields(
             Float(__name__='latitude', title=_('Latitude'), required=False),

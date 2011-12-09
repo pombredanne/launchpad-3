@@ -298,7 +298,6 @@ Upload a new "bar" source so we can accept it later.
 
   >>> bar_src.package_upload.setNew()
   >>> bar_queue_id = bar_src.package_upload.id
-  >>> logout()
 
 Swallow any email generated at the upload:
 
@@ -309,6 +308,7 @@ Swallow any email generated at the upload:
 Set up a second browser on the same page to simulate accidentally posting to the
 form twice.
 
+  >>> logout()
   >>> duplicate_submission_browser = setupBrowser(
   ...       auth="Basic test@canonical.com:test")
   >>> duplicate_submission_browser.open(

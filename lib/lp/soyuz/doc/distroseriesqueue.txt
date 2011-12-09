@@ -39,7 +39,7 @@ binaries + custom, other only source.
 First up, we need to actually process an upload to get it into the
 queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 We need some setup for the upload handler.

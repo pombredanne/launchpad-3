@@ -105,7 +105,6 @@ project used in these tests.
     >>> jokosher = getUtility(IProductSet).getByName('jokosher')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> jokosher.setBugSupervisor(foobar, foobar)
-    >>> logout()
 
 To avoid any confusion, the option to assign somebody else is only
 shown if the user has sufficient privileges to assign anybody or if
@@ -114,6 +113,8 @@ any team and hence does no see the option to asign somebody else.
 
     >>> no_priv.teams_participated_in.count()
     0
+
+    >>> logout()
     >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
     >>> assignee_control = user_browser.getControl(
     ...     name="jokosher.assignee.option", index=0)

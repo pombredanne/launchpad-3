@@ -193,7 +193,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
                 template_params['rationale'] = (
                     'You are receiving this email as you are subscribed '
                     'to the branch.')
-                if not subscription.person.isTeam():
+                if not subscription.person.is_team:
                     # Give the users a link to unsubscribe.
                     template_params['unsubscribe'] = (
                         "\nTo unsubscribe from this branch go to "

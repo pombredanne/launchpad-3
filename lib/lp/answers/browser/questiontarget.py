@@ -795,7 +795,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         response = self.request.response
         english = getUtility(ILaunchpadCelebrities).english
-        if person_or_team.isTeam():
+        if person_or_team.is_team:
             person_or_team.addLanguage(english)
             team_mapping = {'name': person_or_team.name,
                             'displayname': person_or_team.displayname}

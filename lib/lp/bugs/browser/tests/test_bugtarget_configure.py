@@ -10,7 +10,6 @@ from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login_person,
-    logout,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -58,7 +57,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
 
     def test_bug_supervisor_view_attributes(self):
-        logout()
         login_person(self.bug_supervisor)
         view = create_initialized_view(
             self.product, name='+configure-bugtracker')
@@ -179,7 +177,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             'new guidelines', self.product.bug_reporting_guidelines)
 
     def test_bug_supervisor_can_edit(self):
-        logout()
         login_person(self.bug_supervisor)
         form = self._makeForm()
         # Only the bug_reporting_guidelines are different.

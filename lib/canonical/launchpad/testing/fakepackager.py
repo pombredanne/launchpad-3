@@ -20,13 +20,13 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import PackageUploadStatus
+from lp.testing.gpgkeys import import_secret_test_key
 
 
 changelog_entry_template = (

@@ -50,7 +50,7 @@ consumer keys.
 
     >>> from canonical.launchpad.testing.pages import (
     ...     LaunchpadWebServiceCaller)
-    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
 
     >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
     >>> response = caller.get(root)

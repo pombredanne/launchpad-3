@@ -197,11 +197,11 @@ The user cprov is a buildd admin.
     >>> login('foo.bar@canonical.com')
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> logout()
 
     >>> cprov.inTeam(buildd_admins)
     True
 
+    >>> logout()
     >>> print cprov_webservice.named_post(
     ...     a_build['self_link'], 'rescore', score=1000)
     HTTP/1.1 200 Ok
