@@ -26,7 +26,10 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
@@ -491,3 +494,36 @@ class TestBugCanonicalUrl(BrowserTestCase):
                 'link rel=canonical',
                 'link',
                 dict(rel='canonical', href=expected_url))))
+
+
+class TestBugMessageAddFormView(TestCaseWithFactory):
+    """Tests for the add message to bug view."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_whitespaces_message(self):
+        # Ensure that a message only containing whitespaces is not
+        # considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            }
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        expected_error = u'Either a comment or attachment must be provided.'
+        self.assertEquals(view.errors[0], expected_error)
+
+    def test_whitespaces_message_with_attached_file(self):
+        # If the message only contains whitespaces but a file
+        # is attached then the request have to be considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            'field.filecontent': self.factory.makeFakeFileUpload(),
+            'field.patch.used': u'',
+            }
+        login_person(self.factory.makePerson())
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        self.assertFalse(view.errors)
