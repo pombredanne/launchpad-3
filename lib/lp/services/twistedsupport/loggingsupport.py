@@ -36,13 +36,13 @@ from canonical.launchpad.webapp import errorlog
 from canonical.librarian.utils import copy_and_close
 
 
-def set_up_logging_for_script(options, name):
+def set_up_logging_for_script(options, name, logfile):
     """Create a `Logger` object and configure twisted to use it.
 
     This also configures oops reporting to use the section named
     'name'."""
     logger_object = logger(options, name)
-    observer = set_up_oops_reporting(name, name)
+    observer = set_up_oops_reporting(name, name, logfile)
     log.startLoggingWithObserver(observer)
     return logger_object
 
