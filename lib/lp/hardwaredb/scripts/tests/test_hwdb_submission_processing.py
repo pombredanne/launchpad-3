@@ -5101,7 +5101,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     def getSampleData(self, filename):
         """Return the submission data of a short valid submission."""
         sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'simple_valid_hwdb_submission.xml')
         return open(sample_data_path).read()
 

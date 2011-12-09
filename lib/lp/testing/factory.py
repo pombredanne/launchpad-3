@@ -4209,7 +4209,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             system = self.getUniqueString('system-fingerprint')
         if submission_data is None:
             sample_data_path = os.path.join(
-                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
                 'tests', 'simple_valid_hwdb_submission.xml')
             submission_data = open(sample_data_path).read()
         filename = self.getUniqueString('submission-file')
