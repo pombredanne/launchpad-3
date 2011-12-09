@@ -2124,14 +2124,14 @@ COMMENT ON FUNCTION version_sort_key(text) IS
 'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';
 
 CREATE OR REPLACE FUNCTION check_email_address_person_account(
-    person integer, new_account integer)
+    person integer, account integer)
     RETURNS boolean
     LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     # It's possible for an EmailAddress to be created without an
     # account. If that happens, and this function is called, we return
     # True so as to avoid breakages.
-    if new_account is None:
+    if account is None:
         return True
     results = plpy.execute("""
         SELECT account FROM Person WHERE id = %s""" % person)
@@ -2140,8 +2140,33 @@ $$
     # referential integrity will prevent this from causing bugs later.
     if results.nrows() == 0:
         return True
-    return results[0]['account'] == new_account
+    return results[0]['account'] == account
 $$;
 
 COMMENT ON FUNCTION check_email_address_person_account(integer, integer) IS
 'Check that the person to which an email address is linked has the same account as that email address.';
+
+CREATE OR REPLACE FUNCTION check_person_email_address_account(
+    person integer, account integer)
+    RETURNS boolean
+    LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # It's possible for a Person to be created without an account. If
+    # that happens, return True so that things don't break.
+    if account is None:
+        return True
+    email_address_accounts = plpy.execute("""
+        SELECT account FROM EmailAddress WHERE
+            person = %s AND account IS NOT NULL""" % person)
+    # If there are no email address accounts to check, we're done.
+    if email_address_accounts.nrows() == 0:
+        return True
+    for email_account_row in email_address_accounts:
+        if email_account_row['account'] != account:
+            return False
+    return True
+$$;
+
+COMMENT ON FUNCTION check_person_email_address_account(integer, integer) IS
+'Check that the email addresses linked to a person have the same account ID as that person.';
+
