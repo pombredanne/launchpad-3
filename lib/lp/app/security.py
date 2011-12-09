@@ -11,6 +11,11 @@ __all__ = [
     'DelegatedAuthorization',
     ]
 
+from itertools import (
+    izip,
+    repeat,
+    )
+
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.security.permission import checkPermission
@@ -127,19 +132,10 @@ class DelegatedAuthorization(AuthorizationBase):
                 "Either set forwarded_object or override iter_objects.")
         yield self.forwarded_object
 
-    def iter_adapters(self):
-        return (
-            queryAdapter(obj, IAuthorization, self.permission)
-            for obj in self.iter_objects())
-
     def checkAuthenticated(self, user):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkAuthenticated(user):
-                return False
-        return True
+        """See `IAuthorization`."""
+        return izip(self.iter_objects(), repeat(self.permission))
 
     def checkUnauthenticated(self):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkUnauthenticated():
-                return False
-        return True
+        """See `IAuthorization`."""
+        return izip(self.iter_objects(), repeat(self.permission))

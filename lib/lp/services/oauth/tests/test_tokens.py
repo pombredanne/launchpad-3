@@ -19,7 +19,6 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.ftests import (
     login_person,
-    logout,
     )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
@@ -240,7 +239,7 @@ class TestRequestTokens(TestOAuth):
         """It's possible to get a person's request tokens."""
         person = self.factory.makePerson()
         self.assertEquals(person.oauth_request_tokens.count(), 0)
-        for i in range(0,3):
+        for i in range(0, 3):
             self.factory.makeOAuthRequestToken(reviewed_by=person)
         self.assertEquals(person.oauth_request_tokens.count(), 3)
 
@@ -252,7 +251,6 @@ class TestRequestTokens(TestOAuth):
 
         login_person(person)
         request_token.date_expires = self.a_long_time_ago
-        logout()
 
         self.assertEquals(person.oauth_request_tokens.count(), 0)
 
@@ -338,19 +336,20 @@ class TestAccessTokens(TestOAuth):
     def test_write_permission(self):
         """An access token can only be modified by its creator."""
         access_token = self.factory.makeOAuthAccessToken()
+
         def try_to_set():
             access_token.permission = AccessLevel.WRITE_PUBLIC
+
         self.assertRaises(Unauthorized, try_to_set)
 
         login_person(access_token.person)
         try_to_set()
-        logout()
 
     def test_get_access_tokens_for_person(self):
         """It's possible to get a person's access tokens."""
         person = self.factory.makePerson()
         self.assertEquals(person.oauth_access_tokens.count(), 0)
-        for i in range(0,3):
+        for i in range(0, 3):
             self.factory.makeOAuthAccessToken(self.consumer, person)
         self.assertEquals(person.oauth_access_tokens.count(), 3)
 
@@ -363,7 +362,6 @@ class TestAccessTokens(TestOAuth):
 
         login_person(access_token.person)
         access_token.date_expires = self.a_long_time_ago
-        logout()
         self.assertEquals(person.oauth_access_tokens.count(), 0)
 
 
@@ -378,7 +376,7 @@ class TestHelperFunctions(TestOAuth):
         # one is created.
         person = self.factory.makePerson()
         self.assertEquals(person.oauth_access_tokens.count(), 0)
-        access_token = oauth_access_token_for(
+        oauth_access_token_for(
             self.consumer.key, person, OAuthPermission.WRITE_PUBLIC,
             self.context)
         self.assertEquals(person.oauth_access_tokens.count(), 1)

@@ -10,7 +10,6 @@
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
-    icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
     features request/features;
     feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};

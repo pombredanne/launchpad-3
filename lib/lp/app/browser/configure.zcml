@@ -133,14 +133,6 @@
       permission="zope.Public"
       />
 
-    <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+icing-contrib"
-      class="lp.app.browser.launchpad.IcingContribFolder"
-      attribute="__call__"
-      permission="zope.Public"
-      />
-
     <!-- A page to list all the icons in LP -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"

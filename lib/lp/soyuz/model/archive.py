@@ -1970,7 +1970,7 @@ class Archive(SQLBase):
             admin = getUtility(ILaunchpadCelebrities).admin
             if not person.inTeam(commercial) and not person.inTeam(admin):
                 return '%s is not allowed to make private PPAs' % person.name
-        if person.isTeam() and (
+        if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
@@ -1984,7 +1984,7 @@ class Archive(SQLBase):
             return None
         else:
             text = "You already have a PPA named '%s'." % proposed_name
-            if person.isTeam():
+            if person.is_team:
                 text = "%s already has a PPA named '%s'." % (
                     person.displayname, proposed_name)
             return text

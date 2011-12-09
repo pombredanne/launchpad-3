@@ -271,23 +271,22 @@ class FakeBranch(FakeDatabaseObject):
 
 class FakePerson(FakeDatabaseObject):
     """Fake person object."""
+    is_team = False
 
     def __init__(self, name):
         self.name = self.displayname = name
 
-    def isTeam(self):
-        return False
-
     def inTeam(self, person_or_team):
         if self is person_or_team:
             return True
-        if not person_or_team.isTeam():
+        if not person_or_team.is_team:
             return False
         return self in person_or_team._members
 
 
 class FakeTeam(FakePerson):
     """Fake team."""
+    is_team = True
 
     def __init__(self, name, members=None):
         super(FakeTeam, self).__init__(name)
@@ -295,9 +294,6 @@ class FakeTeam(FakePerson):
             self._members = []
         else:
             self._members = list(members)
-
-    def isTeam(self):
-        return True
 
 
 class FakeProduct(FakeDatabaseObject):

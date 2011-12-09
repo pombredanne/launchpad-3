@@ -1420,7 +1420,7 @@ class QuestionTargetMixin:
         for person in contacts:
             reason_start = (
                 "You received this question notification because you are ")
-            if person.isTeam():
+            if person.is_team:
                 reason = reason_start + (
                     'a member of %s, which is an answer contact for %s.' % (
                         person.displayname, self.displayname))
