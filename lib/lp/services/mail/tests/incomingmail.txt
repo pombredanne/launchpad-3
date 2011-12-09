@@ -74,7 +74,7 @@ Since the User gets authenticated using OpenPGP signatures we have to
 import the keys before handleMail is called.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)

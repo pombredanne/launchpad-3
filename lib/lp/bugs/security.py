@@ -197,7 +197,7 @@ class EditBugSubscription(AuthorizationBase):
          - They are the owner of the team that owns the subscription.
          - They are an admin of the team that owns the subscription.
         """
-        if self.obj.person.isTeam():
+        if self.obj.person.is_team:
             return (
                 self.obj.person.teamowner == user.person or
                 user.person in self.obj.person.adminmembers)

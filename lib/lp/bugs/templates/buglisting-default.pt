@@ -31,6 +31,46 @@
 <body>
 
   <div metal:fill-slot="main">
+    <div
+      tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+      class="top-portlet">
+      <p id="no-malone"
+        tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
+        <strong tal:condition="view/can_have_external_bugtracker">
+          <tal:displayname replace="context/displayname" />
+          must be configured in order for Launchpad to forward bugs to
+          the project's developers.
+        </strong>
+        <strong tal:condition="not: view/can_have_external_bugtracker">
+          <tal:displayname replace="context/displayname" />
+          does not use Launchpad for bug tracking.
+        </strong>
+      </p>
+
+      <p tal:condition="view/external_bugtracker"
+        id="bugtracker">
+        <strong>Bugs are tracked in
+          <tal:bugtracker replace="structure view/bugtracker" />.
+        </strong>
+      </p>
+
+      <a id="getting-started-help"
+         class="sprite maybe"
+         href="https://help.launchpad.net/Bugs">
+        Getting started with bug tracking in Launchpad</a>.
+
+      <p tal:condition="context/required:launchpad.Edit"
+         tal:define="configure_bugtracker context/menu:overview/configure_bugtracker | nothing"
+         id="no-malone-edit"
+         >
+        <a tal:condition="configure_bugtracker"
+          tal:replace="structure configure_bugtracker/fmt:link"/>
+        <a class="sprite edit"
+          tal:condition="not: configure_bugtracker"
+          tal:attributes="href string:${context/fmt:url/+edit}">
+          Enable bug tracking.</a>
+      </p>
+    </div>
     <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
          class="top-portlet">
       <tal:is_project_group condition="view/_projectContext">
@@ -81,20 +121,6 @@
         <div id="structural-subscription-content-box"></div>
       </div>
 
-    </div>
-    <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"
-          class="top-portlet">
-      <p>
-        <strong>
-          <tal:displayname replace="context/displayname" />
-          does not use Launchpad for bug tracking.
-        </strong>
-      </p>
-      <p id="getting-started-help">
-        <a class="sprite maybe"
-          href="https://help.launchpad.net/Bugs">Getting started
-        with bug tracking in Launchpad</a>.
-      </p>
     </div>
   </div>
 

@@ -20,12 +20,12 @@ can see a link to edit the details.
 
     >>> hosted_branch = factory.makeAnyBranch()
     >>> hosted_branch_location = str(canonical_url(hosted_branch))
-    >>> logout()
 
     # Must remove the security proxy because IEmailAddress.email is protected.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> email = removeSecurityProxy(registrant.preferredemail).email
     >>> import_browser = setupBrowser(auth='Basic %s:test' % str(email))
+    >>> logout()
 
 
 == Import details on the branch page ==
@@ -92,8 +92,7 @@ imports.
 
     >>> login('david.allouche@canonical.com')
     >>> from canonical.launchpad.testing.codeimporthelpers import (
-    ...     make_finished_import, get_import_for_branch_name,
-    ...     make_running_import)
+    ...     make_finished_import, get_import_for_branch_name)
     >>> from datetime import datetime
     >>> import pytz
     >>> date_finished = datetime(2007, 9, 10, 12, tzinfo=pytz.UTC)

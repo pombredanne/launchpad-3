@@ -1366,7 +1366,6 @@ projects are returned.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)

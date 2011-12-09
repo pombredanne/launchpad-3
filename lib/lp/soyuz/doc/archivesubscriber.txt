@@ -29,7 +29,6 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
-    >>> logout()
     >>> from lp.testing.mail_helpers import print_emails
 
 

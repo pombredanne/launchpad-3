@@ -196,8 +196,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
             svn_branch_url='http://svn.example.org/branch')
         login_person(product.owner)
         product.development_focus.branch = code_import.branch
-        logout()
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        logout()
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')

@@ -25,7 +25,7 @@ Redeem a voucher and check that the commercial_subscription
 attribute is correct.
 
     >>> owner = bzr.owner
-    >>> owner.isTeam()
+    >>> owner.is_team
     False
     >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
     >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
@@ -560,7 +560,6 @@ access it.
     >>> registry_member = factory.makePerson()
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)

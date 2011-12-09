@@ -1015,7 +1015,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        if person.icon is not None and not person.isTeam():
+        if person.icon is not None and not person.is_team:
             raise Invalid('Only teams can have an icon.')
 
     def convertToTeam(team_owner):
@@ -1149,12 +1149,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         This method must not be called if this person is not an indirect
         member of the given team.
-        """
-
-    def isTeam():
-        """Deprecated.  Use IPerson.is_team instead.
-
-        True if this Person is actually a Team, otherwise False.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
@@ -1904,7 +1898,7 @@ class ITeamPublic(Interface):
         renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
         """
         # The person arg is a zope.formlib.form.FormData instance.
-        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # Instead of checking 'not person.is_team' or 'person.teamowner',
         # we check for a field in the schema to identify this as a team.
         try:
             renewal_policy = person.renewal_policy
