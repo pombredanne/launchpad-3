@@ -16,6 +16,7 @@
   <include package=".memcache" />
   <include package=".messages" />
   <include package=".messaging" />
+  <include package=".oauth" />
   <include package=".openid" />
   <include package=".profile" />
   <include package=".salesforce" />

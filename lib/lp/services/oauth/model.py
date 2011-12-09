@@ -14,8 +14,8 @@ from datetime import (
     datetime,
     timedelta,
     )
-
 import re
+
 import pytz
 from sqlobject import (
     BoolCol,
@@ -23,7 +23,10 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import And
-from storm.locals import Int, Reference
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -34,17 +37,6 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.components.tokens import (
     create_token,
     create_unique_token_for_table,
-    )
-from canonical.launchpad.interfaces.oauth import (
-    ClockSkew,
-    IOAuthAccessToken,
-    IOAuthConsumer,
-    IOAuthConsumerSet,
-    IOAuthNonce,
-    IOAuthRequestToken,
-    IOAuthRequestTokenSet,
-    NonceAlreadyUsed,
-    TimestampOrderingError,
     )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
@@ -60,6 +52,17 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.stormbase import StormBase
+from lp.services.oauth.interfaces import (
+    ClockSkew,
+    IOAuthAccessToken,
+    IOAuthConsumer,
+    IOAuthConsumerSet,
+    IOAuthNonce,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 2
