@@ -685,12 +685,6 @@ class IPersonPublic(IPrivacy):
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
 
-    def isTeam():
-        """Deprecated.  Use IPerson.is_team instead.
-
-        True if this Person is actually a Team, otherwise False.
-        """
-
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
     """IPerson attributes that require launchpad.LimitedView permission."""
