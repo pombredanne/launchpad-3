@@ -32,10 +32,6 @@ from canonical.launchpad.ftests import (
     login,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet,
-    IOAuthSignedRequest,
-    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file,
@@ -65,6 +61,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    )
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
     )
 from lp.testing import (
     TestCase,
