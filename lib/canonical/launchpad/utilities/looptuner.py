@@ -118,6 +118,8 @@ class LoopTuner:
 
     def run(self):
         """Run the loop to completion."""
+        # Cleanup function, if we have one.
+        cleanup = getattr(self.operation, 'cleanUp', lambda: None)
         try:
             chunk_size = self.minimum_chunk_size
             iteration = 0
@@ -169,9 +171,20 @@ class LoopTuner:
                 "average size %f (%s/s)",
                 total_size, iteration, total_time, average_size,
                 average_speed)
-        finally:
-            if safe_hasattr(self.operation, 'cleanUp'):
-                self.operation.cleanUp()
+        except Exception:
+            # Should we be logging this? Raising an exception might be a
+            # way of escaping the loop early, although making isDone
+            # signal termination is probably better.
+            self.log.exception("Unhandled exception")
+            try:
+                cleanup()
+            except Exception:
+                self.log.exception("Unhandled exception in cleanUp")
+            raise
+        try:
+            cleanup()
+        except Exception:
+            self.log.exception("Unhandled exception in cleanUp")
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.
