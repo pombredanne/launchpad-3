@@ -5,10 +5,6 @@
 
 __all__ = [
     'ANONYMOUS',
-    'decrypt_content',
-    'import_public_key',
-    'import_public_test_keys',
-    'import_secret_test_key',
     'LaunchpadFormHarness',
     'login',
     'login_person',
@@ -24,9 +20,5 @@ from lp.testing import (
     login_person,
     logout,
     )
-from lp.testing.gpgkeys import (
-    decrypt_content,
-    import_public_key,
-    import_public_test_keys,
-    import_secret_test_key,
-    )
+
+

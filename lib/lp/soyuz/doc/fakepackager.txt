@@ -225,7 +225,7 @@ In order to upload packages we have to be logged in as an administrator.
 It also requires the public test gpg keys to be imported in the
 database.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 The default upload target is ubuntu/hoary and since we will deal with

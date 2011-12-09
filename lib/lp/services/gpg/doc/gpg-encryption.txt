@@ -5,7 +5,7 @@ This document describes the current procedure to encrypt and
 decrypt contents in Launchpad, and demonstrates that the methods
 can support Unicode contents.
 
-    >>> from canonical.launchpad.ftests import (
+    >>> from lp.testing.gpgkeys import (
     ...     import_public_test_keys, import_secret_test_key, decrypt_content)
     >>> import transaction
     >>> import_public_test_keys()

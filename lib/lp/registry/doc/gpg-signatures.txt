@@ -1,7 +1,7 @@
 OpenPGP Signature Verification
 ==============================
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import transaction
     >>> import_public_test_keys()
 

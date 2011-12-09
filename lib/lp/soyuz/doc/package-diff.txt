@@ -143,7 +143,7 @@ sampledata to create valid packages.
 
 And setup the test_keys in order to build and upload signed packages.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 When the first version of 'biscuit' is uploaded, since there is no

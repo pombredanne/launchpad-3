@@ -12,8 +12,8 @@ emails:
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.gpgkeys import import_public_test_keys
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import_public_test_keys()

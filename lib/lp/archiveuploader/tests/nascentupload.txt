@@ -3,7 +3,7 @@ NascentUpload
 
 Import the test keys so we have them ready for verification
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 We need to be logged into the security model in order to get any further
@@ -743,7 +743,7 @@ and DSC, should be signed.
 
 Import the test keys again since the transaction was aborted before.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 When using 'insecure' policy, NascentUpload instace stores the DSC
