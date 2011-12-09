@@ -1163,7 +1163,8 @@ class TestCheckTeamParticipationScript(TestCase):
         Teams can have multiple participants, but only the person should be a
         paricipant of him/herself.
         """
-        # Create two new people and make both participate in the first.
+        # Create two new people. Make both participate in the first, and
+        # remove the first's participation in self.
         cursor().execute("""
             INSERT INTO
                 Person (id, name, displayname, creation_rationale)
@@ -1174,15 +1175,21 @@ class TestCheckTeamParticipationScript(TestCase):
             INSERT INTO
                 TeamParticipation (person, team)
                 VALUES (6970, 6969);
+            DELETE FROM
+                TeamParticipation
+                WHERE person = 6969
+                  AND team = 6969;
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
         transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
             logger, fetch_team_participation_info(logger))
-        self.assertEqual(
-            [ConsistencyError("spurious", 6969, [6970])],
-            errors)
+        errors_expected = [
+            ConsistencyError("spurious", 6969, [6970]),
+            ConsistencyError("missing", 6969, [6969]),
+            ]
+        self.assertContentEqual(errors_expected, errors)
 
     def test_load_and_save_team_participation(self):
         """The script can load and save participation info."""
