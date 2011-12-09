@@ -661,8 +661,8 @@ class IPersonPublic(IPrivacy):
     """Public attributes for a Person.
 
     Very few attributes on a person can be public because private teams
-    are also persons. The public attributes are are generally information
-    needed by the system when it needs to determine if the current
+    are also persons. The public attributes are generally information
+    needed by the system to determine if the principal in the current
     interaction can work with the object.
     """
 
