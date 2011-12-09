@@ -2410,13 +2410,13 @@ class ViewSourcePackageRecipeBuild(DelegatedAuthorization):
         yield self.obj.archive
 
 
-class ViewSourcePackagePublishingHistory(ViewArchive):
+class ViewSourcePackagePublishingHistory(DelegatedAuthorization):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def __init__(self, obj):
-        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
+    def iter_objects(self):
+        yield self.obj.archive
 
 
 class EditPublishing(DelegatedAuthorization):
