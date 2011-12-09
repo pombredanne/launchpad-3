@@ -23,7 +23,6 @@ import _pythonpath
 from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_circular,
     check_teamparticipation_consistency,
-    check_teamparticipation_self,
     fetch_team_participation_info,
     )
 from lp.services.scripts.base import LaunchpadScript
@@ -53,7 +52,6 @@ class CheckTeamParticipationScript(LaunchpadScript):
         if self.options.load_info:
             participation_info = load_bz2_pickle(self.options.load_info)
         else:
-            check_teamparticipation_self(self.logger)
             check_teamparticipation_circular(self.logger)
             participation_info = fetch_team_participation_info(self.logger)
         if self.options.save_info:
