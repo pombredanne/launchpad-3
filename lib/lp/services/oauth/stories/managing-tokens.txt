@@ -110,7 +110,7 @@ that's the case, the description of the authorization granted will
 include that.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> login('salgado@ubuntu.com')
     >>> token = getUtility(IOAuthConsumerSet).getByKey(
     ...     'launchpad-library').newRequestToken()

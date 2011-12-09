@@ -148,7 +148,6 @@ from canonical.launchpad.interfaces.launchpad import (
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -272,6 +271,7 @@ from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,

@@ -23,7 +23,7 @@ Here's a quick demonstration of the behavior.
 
 - We can use a nonce.
 
-    >>> from canonical.launchpad.interfaces.oauth import IOAuthNonce
+    >>> from lp.services.oauth.interfaces import IOAuthNonce
     >>> import time
     >>> now = time.time() - 1
     >>> nonce1 = access_token.checkNonceAndTimestamp('boo', now)
@@ -70,7 +70,7 @@ channel such as HTTP.
 Launchpad relaxes the constraint on the timestamp. Rather than accepting any
 request within the same second, Launchpad accepts any request within the past
 60 seconds (or, as defined by the code, within the past number of seconds
-specified by canonical.launchpad.database.oauth.TIMESTAMP_ACCEPTANCE_WINDOW).
+specified by lp.services.oauth.model.TIMESTAMP_ACCEPTANCE_WINDOW).
 
 For instance, in Launchpad, if a client sends a timestamp of
 2009-02-24T13:43:08Z, a subsequent request of any time up to 60 seconds prior
@@ -83,7 +83,7 @@ Here's a quick demonstration of the behavior.
 - Within the TIMESTAMP_ACCEPTANCE_WINDOW, we can create a nonce with an
   earlier time.
 
-    >>> from canonical.launchpad.database.oauth import (
+    >>> from lp.services.oauth.model import (
     ...     TIMESTAMP_ACCEPTANCE_WINDOW)
     >>> TIMESTAMP_ACCEPTANCE_WINDOW
     60
@@ -120,7 +120,7 @@ Here's a quick demonstration of the behavior.
 
 - We can access the system with a timestamp 55 minutes in the future.
 
-    >>> from canonical.launchpad.database.oauth import (
+    >>> from lp.services.oauth.model import (
     ...     TIMESTAMP_SKEW_WINDOW)
     >>> TIMESTAMP_SKEW_WINDOW
     3600

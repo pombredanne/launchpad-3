@@ -9,7 +9,7 @@ consumer's request to access Launchpad on his behalf.
 
     # Define some things we're going to use throughout this test.
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces.oauth import (
+    >>> from lp.services.oauth.interfaces import (
     ...     IOAuthConsumerSet, OAuthPermission)
     >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -46,7 +46,7 @@ token will have an appropriate expiration date set.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> from canonical.launchpad.browser.oauth import (
+    >>> from lp.services.oauth.browser import (
     ...     TemporaryIntegrations)
     >>> view, token = get_view_with_fresh_token({})
     >>> view.reviewToken(
