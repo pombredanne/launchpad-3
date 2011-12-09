@@ -131,10 +131,6 @@ from canonical.launchpad.database.emailaddress import (
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthRequestToken,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -284,6 +280,10 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
     TeamParticipation,
+    )
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthRequestToken,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
