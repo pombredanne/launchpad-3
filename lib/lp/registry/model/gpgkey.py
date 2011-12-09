@@ -21,12 +21,12 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKey,
     IGPGKeySet,
     )
+from lp.services.gpg.interfaces import IGPGHandler
 
 
 class GPGKey(SQLBase):

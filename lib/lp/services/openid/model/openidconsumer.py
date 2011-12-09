@@ -8,12 +8,12 @@ __all__ = ['OpenIDConsumerNonce']
 
 from zope.interface import implements
 
-from canonical.launchpad.database.baseopenidstore import (
+from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
+from lp.services.openid.model.baseopenidstore import (
     BaseStormOpenIDAssociation,
     BaseStormOpenIDNonce,
     BaseStormOpenIDStore,
     )
-from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 
 
 class OpenIDConsumerAssociation(BaseStormOpenIDAssociation):

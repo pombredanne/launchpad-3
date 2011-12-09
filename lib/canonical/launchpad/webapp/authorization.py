@@ -192,7 +192,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     objecttoauthorize, {})
                 if permission in object_cache:
                     return object_cache[permission]
-            principal = participation.principal
+            principal = removeAllProxies(participation.principal)
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
@@ -343,7 +343,8 @@ def clear_cache():
             # LaunchpadBrowserRequest provides a ``clearSecurityPolicyCache``
             # method, but it is not in an interface, and not implemented by
             # all classes that implement IApplicationRequest.
-            del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+            if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in p.annotations:
+                del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
 
 
 class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):

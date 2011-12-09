@@ -10,21 +10,19 @@ import os
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
+from lp.archiveuploader.tests.test_uploadprocessor import (
+    TestUploadProcessorBase,
+    )
+from lp.archiveuploader.uploadprocessor import UploadHandler
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase,
-    )
-from lp.archiveuploader.uploadprocessor import (
-    UploadHandler,
-    )
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.testing.gpgkeys import import_public_test_keys
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

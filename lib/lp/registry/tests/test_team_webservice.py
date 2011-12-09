@@ -5,8 +5,6 @@ __metaclass__ = type
 
 import httplib
 
-from zope.security.proxy import removeSecurityProxy
-
 from lazr.restfulclient.errors import HTTPError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -79,8 +77,9 @@ class TestTeamJoining(TestCaseWithFactory):
         # Calling person.join with a team that has an open membership
         # subscription policy should add that that user to the team.
         self.person = self.factory.makePerson(name='test-person')
-        self.team = self.factory.makeTeam(name='test-team')
-        login_person(self.team.teamowner)
+        owner = self.factory.makePerson()
+        self.team = self.factory.makeTeam(name='test-team', owner=owner)
+        login_person(owner)
         self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
         logout()
 
@@ -88,7 +87,7 @@ class TestTeamJoining(TestCaseWithFactory):
         test_person = launchpad.people['test-person']
         test_team = launchpad.people['test-team']
         test_person.join(team=test_team.self_link)
-        login_person(self.team.teamowner)
+        login_person(owner)
         self.assertEqual(
             ['test-team'],
             [membership.team.name
