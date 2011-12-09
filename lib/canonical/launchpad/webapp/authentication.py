@@ -37,7 +37,6 @@ from zope.session.interfaces import ISession
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     BasicAuthLoggedInEvent,
@@ -50,6 +49,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.services.oauth.interfaces import OAUTH_CHALLENGE
 
 
 class PlacelessAuthUtility:

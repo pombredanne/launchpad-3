@@ -24,12 +24,6 @@ from zope.formlib.form import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet,
-    IOAuthRequestToken,
-    IOAuthRequestTokenSet,
-    OAUTH_CHALLENGE,
-    )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
@@ -40,6 +34,12 @@ from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    OAUTH_CHALLENGE,
+    )
 
 
 class JSONTokenMixin:

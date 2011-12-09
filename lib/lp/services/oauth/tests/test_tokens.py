@@ -21,19 +21,19 @@ from canonical.launchpad.ftests import (
     login_person,
     logout,
     )
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthAccessToken,
-    IOAuthConsumer,
-    IOAuthConsumerSet,
-    IOAuthRequestToken,
-    IOAuthRequestTokenSet,
-    )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.oauth.interfaces import (
+    IOAuthAccessToken,
+    IOAuthConsumer,
+    IOAuthConsumerSet,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    )
 from lp.testing import (
     oauth_access_token_for,
     TestCaseWithFactory,
