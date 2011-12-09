@@ -6,7 +6,6 @@
 # or similar.  Refer to the twistd(1) man page for details.
 
 import logging
-import sys
 
 from twisted.application import service
 from twisted.conch.interfaces import ISession
