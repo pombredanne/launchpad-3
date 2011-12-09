@@ -46,7 +46,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
@@ -78,6 +77,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.log.logger import PrefixFilter
+from lp.services.oauth.model import OAuthNonce
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,

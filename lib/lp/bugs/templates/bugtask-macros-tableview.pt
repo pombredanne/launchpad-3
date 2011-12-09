@@ -662,6 +662,13 @@
             if (Y.Lang.isNull(navigator)){
               return;
             }
+            var active_sort_key = LP.cache.order_by;
+            var sort_order = 'asc';
+            if (active_sort_key.charAt(0) === '-') {
+                active_sort_key = active_sort_key.substring(
+                    1, active_sort_key.length);
+                sort_order = 'desc';
+            }
             var orderby = new Y.lp.ordering.OrderByBar({
                 srcNode: Y.one('#bugs-orderby'),
                 sort_keys: [
@@ -669,16 +676,28 @@
                     ['title', 'Bug title'],
                     ['importance', 'Importance'],
                     ['status', 'Status'],
-                    ['heat', 'Bug heat']
+                    ['heat', 'Bug heat'],
+                    ['reporter', 'Reporter'],
+                    ['assignee', 'Assignee'],
+                    ['targetname', 'Package/Project/Series name'],
+                    ['milestone_name', 'Milestone'],
+                    ['datecreated', 'Bug age'],
+                    ['date_last_updated', 'Date bug last updated'],
+                    ['tag', 'Bug Tags']
                 ],
-                active: 'importance',
-                sort_order: 'desc',
+                active: active_sort_key,
+                sort_order: sort_order,
                 config_slot: true
             });
             orderby.render();
             Y.on('orderbybar:sort', function(e) {
                 navigator.first_batch(e);
             });
+            navigator.get('model').get('history').after(
+                'change', function(e) {
+                     Y.lp.buglisting_utils.update_sort_button_visibility(
+                         orderby, e.newVal);
+                });
             var config_node = orderby.get('config_node');
             var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
                 srcNode: config_node,
@@ -688,6 +707,8 @@
             Y.on('buglisting-config-util:fields-changed', function(e) {
                 navigator.change_fields(list_util.get('field_visibility'));
             });
+            Y.lp.buglisting_utils.update_sort_button_visibility(
+                 orderby, navigator.get('model').get_field_visibility());
         });
     });
   </script>

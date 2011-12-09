@@ -22,10 +22,6 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthAccessToken,
-    IOAuthRequestToken,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -159,6 +155,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.messages.interfaces.message import IMessage
+from lp.services.oauth.interfaces import (
+    IOAuthAccessToken,
+    IOAuthRequestToken,
+    )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
