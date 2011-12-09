@@ -1269,10 +1269,10 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def icon(self, view_name):
         team = self._context
         if not check_permission('launchpad.LimitedView', team):
-            css_class = ObjectImageDisplayAPI(self._context).sprite_css()
+            css_class = ObjectImageDisplayAPI(team).sprite_css()
             return '<span class="' + css_class + '"></span>'
         else:
-            super(TeamFormatterAPI, self).icon(view_name)
+            return super(TeamFormatterAPI, self).icon(view_name)
 
     def displayname(self, view_name, rootsite=None):
         """See `PersonFormatterAPI`."""
