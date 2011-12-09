@@ -377,11 +377,11 @@
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_merge_proposed"/>
+      handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed"/>
+      handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
   <adapter
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
@@ -494,7 +494,7 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_created"/>
+      handler="lp.code.subscribers.karma.branch_created"/>
   <subscriber
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
@@ -644,7 +644,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            lp.code.interfaces.event.INewCodeReviewCommentEvent"
-      handler="canonical.launchpad.subscribers.karma.code_review_comment_added"/>
+      handler="lp.bugs.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
