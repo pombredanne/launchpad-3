@@ -121,39 +121,6 @@ def bugtask_modified(bugtask, event):
 
 
 @block_implicit_flushes
-def spec_created(spec, event):
-    """Assign karma to the user who created the spec."""
-    IPerson(event.user).assignKarma(
-        'addspec', product=spec.product, distribution=spec.distribution)
-
-
-@block_implicit_flushes
-def spec_modified(spec, event):
-    """Check changes made to the spec and assign karma if needed."""
-    user = IPerson(event.user)
-    spec_delta = event.object.getDelta(event.object_before_modification, user)
-    if spec_delta is None:
-        return
-
-    # easy 1-1 mappings from attribute changing to karma
-    attrs_actionnames = {
-        'title': 'spectitlechanged',
-        'summary': 'specsummarychanged',
-        'specurl': 'specurlchanged',
-        'priority': 'specpriority',
-        'productseries': 'specseries',
-        'distroseries': 'specseries',
-        'milestone': 'specmilestone',
-        }
-
-    for attr, actionname in attrs_actionnames.items():
-        if getattr(spec_delta, attr, None) is not None:
-            user.assignKarma(
-                actionname, product=spec.product,
-                distribution=spec.distribution)
-
-
-@block_implicit_flushes
 def branch_created(branch, event):
     """Assign karma to the user who registered the branch."""
     branch.target.assignKarma(branch.registrant, 'branchcreated')
@@ -164,13 +131,6 @@ def bug_branch_created(bug_branch, event):
     """Assign karma to the user who linked the bug to the branch."""
     bug_branch.branch.target.assignKarma(
         bug_branch.registrant, 'bugbranchcreated')
-
-
-@block_implicit_flushes
-def spec_branch_created(spec_branch, event):
-    """Assign karma to the user who linked the spec to the branch."""
-    spec_branch.branch.target.assignKarma(
-        spec_branch.registrant, 'specbranchcreated')
 
 
 @block_implicit_flushes
