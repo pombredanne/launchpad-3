@@ -18,6 +18,10 @@
     line-height: inherit;
 }
 
+.yui3-ieditor-input textarea:focus {
+    outline: none;
+}
+
 /* Konqueror doesn't render the multiline editor's button if there's
  * no apparent content in it (the sprite we use is a background image).
  * This bit of CSS is meaningless; it sets the edit link's content to
