@@ -111,7 +111,6 @@
               <dl id="driver">
                 <dt>Driver:</dt>
                 <dd tal:content="structure view/driver_widget" />
-                </dd>
               </dl>
 
               <dl id="dev-focus"

@@ -77,7 +77,8 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.registry.browser import (
-    add_subscribe_link, BaseRdfView,
+    add_subscribe_link,
+    BaseRdfView,
     )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView

@@ -133,7 +133,6 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
-    DateTimeFormatterAPI,
     format_link,
     MenuAPI,
     )
@@ -1018,7 +1017,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def driver_widget(self):
         return InlinePersonEditPickerWidget(
             self.context, IProduct['driver'],
-            format_link(self.context.driver),
+            format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+edit-people',
             step_title='Select a new driver',
             null_display_value="Not yet selected")
