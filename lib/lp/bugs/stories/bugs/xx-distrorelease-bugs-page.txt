@@ -1,14 +1,13 @@
-== The Distribution Release Bugs Page ==
+== The Distribution Series Bugs Page ==
 
-The front page for a distribution release on the bugs domain presents
-some basic information the bugs in it. It doesn't display the list of
-bugs.
+The +bugs page for a distribution series presents some basic information the
+bugs, as well as a listing.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty/+bugs')
     >>> anon_browser.title
-    'Bugs : Warty'
+    'Bugs : Warty (4.10) : Ubuntu'
 
-    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
+    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
     True
 
 The page has a link to see all open bugs.

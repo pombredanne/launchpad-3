@@ -7,7 +7,6 @@ from collections import (
     deque,
     Iterable,
     )
-from functools import partial
 import warnings
 import weakref
 
@@ -166,26 +165,33 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # create a weak reference to our object in our security policy cache.
         objecttoauthorize = removeAllProxies(objecttoauthorize)
 
-        participations = [participation
-                          for participation in self.participations
-                          if participation.principal is not system_user]
+        participations = [
+            participation for participation in self.participations
+            if participation.principal is not system_user]
+
+        if len(participations) > 1:
+            raise RuntimeError("More than one principal participating.")
+
+        # The participation's cache of (object -> permission -> result), or
+        # None if the participation does not support caching.
+        participation_cache = None
+        # A cache of (permission -> result) for objecttoauthorize, or None if
+        # the participation does not support caching. This resides as a value
+        # of participation_cache.
+        object_cache = None
+
         if len(participations) == 0:
             principal = None
-            cache = None
-        elif len(participations) > 1:
-            raise RuntimeError("More than one principal participating.")
         else:
             participation = participations[0]
             if IApplicationRequest.providedBy(participation):
                 participation_cache = participation.annotations.setdefault(
                     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
                     weakref.WeakKeyDictionary())
-                cache = participation_cache.setdefault(objecttoauthorize, {})
-                if permission in cache:
-                    return cache[permission]
-            else:
-                participation_cache = None
-                cache = None
+                object_cache = participation_cache.setdefault(
+                    objecttoauthorize, {})
+                if permission in object_cache:
+                    return object_cache[permission]
             principal = participation.principal
 
         if (principal is not None and
@@ -198,21 +204,35 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
-        # This check shouldn't be needed, strictly speaking.
-        # However, it is here as a "belt and braces".
-
+        # The following two checks shouldn't be needed, strictly speaking,
+        # because zope.Public is CheckerPublic, and the Zope security
+        # machinery shortcuts this to always allow it. However, it is here as
+        # a "belt and braces". It is also a bit of a lie: if the permission is
+        # zope.Public, privacy and access levels (checked above) will be
+        # irrelevant!
         if permission == 'zope.Public':
             return True
         if permission is CheckerPublic:
             return True
+
         if (permission == 'launchpad.AnyPerson' and
             ILaunchpadPrincipal.providedBy(principal)):
             return True
 
-        return all(
+        # If there are delegated authorizations they must *all* be allowed
+        # before permission to access objecttoauthorize is granted.
+        result = all(
             iter_authorization(
                 objecttoauthorize, permission, principal,
                 participation_cache, breadth_first=True))
+
+        # Cache the top-level result. Be warned that this result /may/ be
+        # based on 10s or 100s of delegated authorization checks, and so even
+        # small changes in the model data could invalidate this result.
+        if object_cache is not None:
+            object_cache[permission] = result
+
+        return result
 
 
 def iter_authorization(objecttoauthorize, permission, principal, cache,
@@ -221,16 +241,12 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
     Adapters are permitted to delegate checks to other adapters, and this
     manages that delegation such that the minimum number of checks are made,
-    subject to a breath-first check of delegations.
+    subject to a breadth-first check of delegations.
 
     This also updates `cache` as it goes along, though `cache` can be `None`
     if no caching is desired. Only leaf values are cached; the results of a
     delegated authorization are not cached.
     """
-    # XXX: GavinPanella 2011-12-03 bug=???: Surely for delegated checks we
-    # still need to do a lot of the other stuff in checkPermission(), like
-    # privacy checks, and the other checks for zope.Public, etc.
-
     # Check if this calculation has already been done.
     if cache is not None and objecttoauthorize in cache:
         if permission in cache[objecttoauthorize]:

@@ -355,7 +355,6 @@ Test /people traversals.
 
 This is for a team:
 
->>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
 >>> check("/~name18/+members")
 >>> check_redirect("/~name18/+projects", status=301)

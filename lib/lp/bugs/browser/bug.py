@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugActivity',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -594,6 +595,11 @@ class BugView(LaunchpadView, BugViewMixin):
             attachment.libraryfile, attachment).http_url
 
 
+class BugActivity(BugView):
+
+    page_title = 'Activity log'
+
+
 class BugSubscriptionPortletDetails:
     """A mixin used to collate bug subscription details for a view."""
 
@@ -696,6 +702,7 @@ class BugEditViewBase(LaunchpadEditFormView):
     """Base class for all bug edit pages."""
 
     schema = IBug
+    page_title = 'Edit'
 
     def setUpWidgets(self):
         """Set up the widgets using the bug as the context."""
@@ -790,6 +797,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
+    page_title = label
 
     def setUpFields(self):
         """Make the readonly version of duplicateof available."""
@@ -1171,6 +1179,7 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 
     field_names = ['affects']
     label = "Does this bug affect you?"
+    page_title = label
 
     custom_widget('affects', LaunchpadRadioWidgetWithDescription)
 
