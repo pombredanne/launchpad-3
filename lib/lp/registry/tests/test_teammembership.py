@@ -1183,7 +1183,6 @@ class TestCheckTeamParticipationScript(TestCase):
         paricipant of him/herself.
         """
         cursor().execute(self.script_create_inconsistent_participation)
-        transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
