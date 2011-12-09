@@ -487,6 +487,7 @@
                 latest_overall_publication
                 name
                 official_bug_tags
+                personHasDriverRights
                 publishing_history
                 releases
                 sourcepackagename

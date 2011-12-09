@@ -25,7 +25,7 @@ Redeem a voucher and check that the commercial_subscription
 attribute is correct.
 
     >>> owner = bzr.owner
-    >>> owner.isTeam()
+    >>> owner.is_team
     False
     >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
     >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)

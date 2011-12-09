@@ -717,7 +717,7 @@ class ObjectImageDisplayAPI:
         elif IProjectGroup.providedBy(context):
             return 'sprite project'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return 'sprite team'
             else:
                 if context.is_valid_person:
@@ -752,7 +752,7 @@ class ObjectImageDisplayAPI:
         if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return '/@@/team-logo'
             else:
                 if context.is_valid_person:
@@ -774,7 +774,7 @@ class ObjectImageDisplayAPI:
         if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return '/@@/team-mugshot'
             else:
                 if context.is_valid_person:

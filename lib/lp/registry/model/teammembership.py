@@ -165,7 +165,7 @@ class TeamMembership(SQLBase):
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s renewed automatically' % member.name
 
-        if member.isTeam():
+        if member.is_team:
             member_addrs = get_contact_email_addresses(member.teamowner)
             template_name = 'membership-auto-renewed-bulk.txt'
         else:
@@ -247,7 +247,7 @@ class TeamMembership(SQLBase):
             return
         member = self.person
         team = self.team
-        if member.isTeam():
+        if member.is_team:
             recipient = member.teamowner
             templatename = 'membership-expiration-warning-bulk.txt'
             subject = '%s will expire soon from %s' % (member.name, team.name)
@@ -619,7 +619,7 @@ def _fillTeamParticipation(member, accepting_team):
     of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
-    if member.isTeam():
+    if member.is_team:
         # The submembers will be all the members of the team that is
         # being added as a member. The superteams will be all the teams
         # that the accepting_team belongs to, so all the members will

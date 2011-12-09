@@ -402,7 +402,7 @@ class MailingList(SQLBase):
         if not self.is_usable:
             raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
-        if person.isTeam():
+        if person.is_team:
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
         if address is not None and address.personID != person.id:
@@ -567,9 +567,9 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         store = Store.of(self)
         clauses = [
-            MessageApproval.mailing_listID==self.id,
-            MessageApproval.status==PostedMessageStatus.NEW,
-            MessageApproval.messageID==Message.id,
+            MessageApproval.mailing_listID == self.id,
+            MessageApproval.status == PostedMessageStatus.NEW,
+            MessageApproval.messageID == Message.id,
             ]
         if message_id_filter is not None:
             clauses.append(Message.rfc822msgid.is_in(message_id_filter))
@@ -603,7 +603,7 @@ class MailingListSet:
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
-        assert team.isTeam(), (
+        assert team.is_team, (
             'Cannot register a list for a person who is not a team')
         if registrant is None:
             registrant = team.teamowner

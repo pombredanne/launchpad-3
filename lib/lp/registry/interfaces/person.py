@@ -1050,7 +1050,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        if person.icon is not None and not person.isTeam():
+        if person.icon is not None and not person.is_team:
             raise Invalid('Only teams can have an icon.')
 
     def convertToTeam(team_owner):
@@ -1907,7 +1907,7 @@ class ITeamPublic(Interface):
         renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
         """
         # The person arg is a zope.formlib.form.FormData instance.
-        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # Instead of checking 'not person.is_team' or 'person.teamowner',
         # we check for a field in the schema to identify this as a team.
         try:
             renewal_policy = person.renewal_policy

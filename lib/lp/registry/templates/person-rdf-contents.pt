@@ -4,7 +4,7 @@
         xmlns:metal="http://xml.zope.org/namespaces/metal"
         xmlns:lp="https://launchpad.net/rdf/launchpad#"
         xmlns:wot="http://xmlns.com/wot/0.1/">
-  <tal:is-person condition="not:context/isTeam" define="person context">
+  <tal:is-person condition="not:context/is_team" define="person context">
       <foaf:Person>
         <foaf:name tal:content="person/displayname">Display Name</foaf:name>
         <foaf:nick tal:content="person/name">Nick name</foaf:nick>
@@ -31,7 +31,7 @@
       </foaf:Person>
   </tal:is-person>
   <tal:public tal:condition="context/name|nothing">
-    <foaf:Group tal:condition="context/isTeam">
+    <foaf:Group tal:condition="context/is_team">
         <foaf:name tal:content="context/displayname">
             Team Display Name
         </foaf:name>

@@ -3,17 +3,20 @@
 
 start_twistd() {
     # Start twistd for service $1.
-    mkdir -p "/var/tmp/$1"
-    echo "Starting $1."
+    name=$1
+    tac=$2
+    shift 2
+    mkdir -p "/var/tmp/$name"
+    echo "Starting $name."
     bin/twistd \
-        --logfile "/var/tmp/development-$1.log" \
-        --pidfile "/var/tmp/development-$1.pid" \
-        -y "$2"
+        --logfile "/var/tmp/development-$name.log" \
+        --pidfile "/var/tmp/development-$name.pid" \
+        -y "$tac" $@
 }
 
 start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
 start_twistd buildd-manager daemons/buildd-manager.tac
-mkdir -p /var/tmp/poppy
+mkdir -p /var/tmp/poppy/incoming
 export POPPY_ROOT=/var/tmp/poppy/incoming
 start_twistd poppy-sftp daemons/poppy-sftp.tac
 
