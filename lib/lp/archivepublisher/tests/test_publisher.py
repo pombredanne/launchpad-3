@@ -23,8 +23,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -44,6 +42,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -58,6 +57,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
+from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
 
 

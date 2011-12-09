@@ -7,11 +7,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.database.tests.test_baseopenidstore import (
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
+from lp.services.openid.tests.test_baseopenidstore import (
     BaseStormOpenIDStoreTestsMixin,
     )
-from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCase
 
 

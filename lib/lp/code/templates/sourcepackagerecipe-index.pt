@@ -13,7 +13,7 @@
       padding-left: 2em;
     }
     div#edit-recipe_text, div#edit-description {
-      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      font-family: "Ubuntu Mono",monospace;
       margin: 1em 0;
     }
     div#edit-recipe_text.yui3-editable_text-content,
