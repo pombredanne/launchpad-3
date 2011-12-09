@@ -2253,7 +2253,7 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_dynamic_bugs_expirable(self):
-        """With dyamic listings enabled, expirable bugs listing works."""
+        """With dynamic listings enabled, expirable bugs listing works."""
         product = self.factory.makeProduct(official_malone=True)
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
