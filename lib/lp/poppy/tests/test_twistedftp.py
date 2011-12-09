@@ -13,7 +13,6 @@ from twisted.protocols import ftp
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.testing.gpgkeys import gpgkeysdir
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.poppy.twistedftp import PoppyFileWriter
 from lp.registry.interfaces.gpg import (
@@ -23,6 +22,7 @@ from lp.registry.interfaces.gpg import (
 from lp.services.database.isolation import check_no_transaction
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.testing import TestCaseWithFactory
+from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
 
 

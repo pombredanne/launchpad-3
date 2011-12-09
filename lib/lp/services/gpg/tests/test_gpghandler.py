@@ -35,8 +35,8 @@ from lp.services.gpg.interfaces import (
     )
 from lp.testing import TestCase
 from lp.testing.gpgkeys import (
-    iter_test_key_emails,
     import_secret_test_key,
+    iter_test_key_emails,
     test_keyrings,
     test_pubkey_from_email,
     )
