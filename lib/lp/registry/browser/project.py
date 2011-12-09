@@ -367,7 +367,8 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
             format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+driver',
             step_title='Select a new driver',
-            null_display_value="Not yet selected")
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
 
     def initialize(self):
         super(ProjectView, self).initialize()

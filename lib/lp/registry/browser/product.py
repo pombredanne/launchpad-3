@@ -1020,7 +1020,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+edit-people',
             step_title='Select a new driver',
-            null_display_value="Not yet selected")
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)

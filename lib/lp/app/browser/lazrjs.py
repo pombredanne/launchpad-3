@@ -353,7 +353,8 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
                  remove_person_text='Remove person',
                  remove_team_text='Remove team',
                  null_display_value='None',
-                 edit_view="+edit", edit_url=None, edit_title=''):
+                 edit_view="+edit", edit_url=None, edit_title='',
+                 help_link=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -382,6 +383,7 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
+        self.help_link = help_link
 
     @property
     def picker_type(self):
