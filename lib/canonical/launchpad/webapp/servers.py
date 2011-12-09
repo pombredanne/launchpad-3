@@ -565,7 +565,6 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
-        self.needs_json = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -860,11 +859,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.needs_datepicker_iframe
     False
 
-    And for JSON:
-
-    >>> request.needs_json
-    False
-
     """
     implements(
         INotificationRequest, IBasicLaunchpadRequest, IParticipation,
@@ -882,7 +876,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
-        self.needs_json = False
         # Use an existing feature controller if one exists, otherwise use the
         # null controller.
         self.features = get_relevant_feature_controller()
