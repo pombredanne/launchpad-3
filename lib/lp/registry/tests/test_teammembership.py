@@ -1174,7 +1174,7 @@ class TestCheckTeamParticipationScript(TestCase):
             TeamParticipation
             WHERE person = 6969
               AND team = 6969;
-        """ % sqlvalues(approved=TeamMembershipStatus.APPROVED)
+        """
 
     def test_check_teamparticipation_consistency(self):
         """The script reports spurious participants of people.
@@ -1183,6 +1183,7 @@ class TestCheckTeamParticipationScript(TestCase):
         paricipant of him/herself.
         """
         cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
@@ -1199,6 +1200,7 @@ class TestCheckTeamParticipationScript(TestCase):
         `ConsistencyError`s and attempts to repair the data.
         """
         cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
