@@ -2082,11 +2082,9 @@ class BugsStatsMixin(BugsInfoMixin):
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
         """
-        days_old = config.malone.days_before_expiration
-
         if target_has_expirable_bugs_listing(self.context):
             return getUtility(IBugTaskSet).findExpirableBugTasks(
-                days_old, user=self.user, target=self.context).count()
+                0, user=self.user, target=self.context).count()
         else:
             return None
 
@@ -4346,10 +4344,9 @@ class BugTaskExpirableListingView(LaunchpadView):
     @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
-        days_old = config.malone.days_before_expiration
         bugtaskset = getUtility(IBugTaskSet)
         bugtasks = bugtaskset.findExpirableBugTasks(
-            days_old, user=self.user, target=self.context)
+            user=self.user, target=self.context, min_days_old=0)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
