@@ -1176,7 +1176,7 @@ class TestCheckTeamParticipationScript(TestCase):
               AND team = 6969;
         """ % sqlvalues(approved=TeamMembershipStatus.APPROVED)
 
-    def test_report_spurious_participants_of_people(self):
+    def test_check_teamparticipation_consistency(self):
         """The script reports spurious participants of people.
 
         Teams can have multiple participants, but only the person should be a
