@@ -119,7 +119,7 @@ div.beta img {
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
     font-size: 10px;
