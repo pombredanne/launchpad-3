@@ -205,7 +205,7 @@ The user_counts property is the count items assigned to the current user.
 
 The user_counts property is an empty list if the user is None.
 
-    >>> logout()
+    >>> login_person(None)
     >>> view = create_view(milestone, '+index')
     >>> view.user_counts
     []

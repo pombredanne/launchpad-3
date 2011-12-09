@@ -21,7 +21,7 @@ from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing import (
-    logout,
+    login_as,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -108,7 +108,7 @@ class TestLaunchpadView(TestCaseWithFactory):
     def test_getCache_anonymous_obfuscated(self):
         request = LaunchpadTestRequest()
         branch = self.factory.makeBranch(name='user@domain')
-        logout()
+        login_as(None)
         view = LaunchpadView(branch, request)
         self.assertIs(None, view.user)
         self.assertNotIn('user@domain', view.getCacheJSON())
