@@ -59,7 +59,6 @@ from lp.registry.model.teammembership import (
 from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_circular,
     check_teamparticipation_consistency,
-    check_teamparticipation_self,
     ConsistencyError,
     fetch_team_participation_info,
     fix_teamparticipation_consistency,
@@ -1121,8 +1120,6 @@ class TestCheckTeamParticipationScript(TestCase):
             re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
             re.search('spurious TeamParticipation entries for zzzzz', err))
-        self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1259,11 +1256,10 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         with StormStatementRecorder() as recorder:
-            check_teamparticipation_self(logger)
             check_teamparticipation_circular(logger)
             check_teamparticipation_consistency(
                 logger, fetch_team_participation_info(logger))
-        self.assertThat(recorder, HasQueryCount(Equals(6)))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
 
 def test_suite():

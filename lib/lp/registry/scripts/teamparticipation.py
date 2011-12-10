@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     "check_teamparticipation_circular",
     "check_teamparticipation_consistency",
-    "check_teamparticipation_self",
     "fetch_team_participation_info",
     "fix_teamparticipation_consistency",
     ]
@@ -55,26 +54,6 @@ def get_slave_store():
     Errors in `TeamPartipation` can be detected using a replicated copy.
     """
     return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-
-
-def check_teamparticipation_self(log):
-    """Check self-participation.
-
-    All people and teams should participate in themselves.
-    """
-    query = """
-        SELECT id, name
-          FROM Person
-         WHERE id NOT IN (
-            SELECT person FROM TeamParticipation
-             WHERE person = team)
-           AND merged IS NULL
-        """
-    non_self_participants = list(get_slave_store().execute(query))
-    if len(non_self_participants) > 0:
-        log.warn(
-            "Some people/teams are not members of themselves: %s",
-            non_self_participants)
 
 
 def check_teamparticipation_circular(log):
