@@ -3843,6 +3843,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
+                                           datecreated=None,
                                            pocket=None, archive=None,
                                            source_package_release=None,
                                            sourcepackagename=None):
@@ -3884,6 +3885,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 section_name=section_name,
                 priority=priority)
 
+        if datecreated is None:
+            datecreated = self.getUniqueDate()
+
         bpph = getUtility(IPublishingSet).newBinaryPublication(
             archive, binarypackagerelease, distroarchseries,
             binarypackagerelease.component, binarypackagerelease.section,
@@ -3891,6 +3895,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_bpph = removeSecurityProxy(bpph)
         naked_bpph.status = status
         naked_bpph.dateremoved = dateremoved
+        naked_bpph.datecreated = datecreated
         naked_bpph.scheduleddeletiondate = scheduleddeletiondate
         naked_bpph.priority = priority
         if status == PackagePublishingStatus.PUBLISHED:
