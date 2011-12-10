@@ -326,14 +326,15 @@ class TestReferenceOpener(TestCaseWithTransport):
         reference_value = 'http://example.com/branch'
         reference_url = self.createBranchReference(reference_value)
         self.assertEqual(
-            reference_value, opener.followReference(reference_url))
+            reference_value, opener.followReference(
+                reference_url, BzrDir.open))
 
     def testFollowReferenceNone(self):
         # SafeBranchOpener.followReference gives None for a normal branch.
         self.make_branch('repo')
         branch_url = self.get_url('repo')
         opener = SafeBranchOpener(BranchOpenPolicy())
-        self.assertIs(None, opener.followReference(branch_url))
+        self.assertIs(None, opener.followReference(branch_url, BzrDir.open))
 
 
 class TestMirroredBranchPolicy(TestCase):

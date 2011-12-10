@@ -225,7 +225,7 @@ class SafeBranchOpener(object):
                 raise BranchLoopError()
             self._seen_urls.add(url)
             self.policy.checkOneURL(url)
-            next_url = self.followReference(url, open_dir=open_dir)
+            next_url = self.followReference(url, open_dir)
             if next_url is None:
                 return url
             url = next_url
@@ -266,13 +266,11 @@ class SafeBranchOpener(object):
             # spurious loop exceptions.
             self._seen_urls = set()
 
-    def followReference(self, url, open_dir=None):
+    def followReference(self, url, open_dir):
         """Get the branch-reference value at the specified url.
 
         This exists as a separate method only to be overriden in unit tests.
         """
-        if open_dir is None:
-            open_dir = BzrDir.open
         bzrdir = open_dir(url)
         return bzrdir.get_branch_reference()
 
