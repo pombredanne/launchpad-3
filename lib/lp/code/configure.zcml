@@ -644,7 +644,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            lp.code.interfaces.event.INewCodeReviewCommentEvent"
-      handler="lp.bugs.subscribers.karma.code_review_comment_added"/>
+      handler="lp.code.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
