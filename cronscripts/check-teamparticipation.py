@@ -25,6 +25,7 @@ from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_consistency,
     check_teamparticipation_self,
     fetch_team_participation_info,
+    fix_teamparticipation_consistency,
     )
 from lp.services.scripts.base import LaunchpadScript
 from lp.services.utils import (
@@ -59,8 +60,9 @@ class CheckTeamParticipationScript(LaunchpadScript):
         if self.options.save_info:
             save_bz2_pickle(participation_info, self.options.save_info)
         else:
-            check_teamparticipation_consistency(
+            errors = check_teamparticipation_consistency(
                 self.logger, participation_info)
+            fix_teamparticipation_consistency(self.logger, errors)
 
 
 if __name__ == '__main__':

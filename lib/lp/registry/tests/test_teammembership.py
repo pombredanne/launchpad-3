@@ -62,6 +62,7 @@ from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_self,
     ConsistencyError,
     fetch_team_participation_info,
+    fix_teamparticipation_consistency,
     )
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -1157,32 +1158,58 @@ class TestCheckTeamParticipationScript(TestCase):
         self.assertEqual(0, len(out))
         self.failUnless(re.search('Circular references found', err))
 
-    def test_report_spurious_participants_of_people(self):
+    # A script to create two new people, where both participate in the first,
+    # and first is missing a self-participation.
+    script_create_inconsistent_participation = """
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6969, 'bobby', 'Dazzler', 1);
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6970, 'nobby', 'Jazzler', 1);
+        INSERT INTO
+            TeamParticipation (person, team)
+            VALUES (6970, 6969);
+        DELETE FROM
+            TeamParticipation
+            WHERE person = 6969
+              AND team = 6969;
+        """
+
+    def test_check_teamparticipation_consistency(self):
         """The script reports spurious participants of people.
 
         Teams can have multiple participants, but only the person should be a
         paricipant of him/herself.
         """
-        # Create two new people and make both participate in the first.
-        cursor().execute("""
-            INSERT INTO
-                Person (id, name, displayname, creation_rationale)
-                VALUES (6969, 'bobby', 'Dazzler', 1);
-            INSERT INTO
-                Person (id, name, displayname, creation_rationale)
-                VALUES (6970, 'nobby', 'Jazzler', 1);
-            INSERT INTO
-                TeamParticipation (person, team)
-                VALUES (6970, 6969);
-            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        cursor().execute(self.script_create_inconsistent_participation)
         transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
             logger, fetch_team_participation_info(logger))
-        self.assertEqual(
-            [ConsistencyError("spurious", 6969, [6970])],
-            errors)
+        errors_expected = [
+            ConsistencyError("spurious", 6969, [6970]),
+            ConsistencyError("missing", 6969, [6969]),
+            ]
+        self.assertContentEqual(errors_expected, errors)
+
+    def test_fix_teamparticipation_consistency(self):
+        """
+        `fix_teamparticipation_consistency` takes an iterable of
+        `ConsistencyError`s and attempts to repair the data.
+        """
+        cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertNotEqual([], errors)
+        fix_teamparticipation_consistency(logger, errors)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertEqual([], errors)
 
     def test_load_and_save_team_participation(self):
         """The script can load and save participation info."""
