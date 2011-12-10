@@ -68,13 +68,15 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
     def testCheckInitialURL(self):
         # checkSource rejects all URLs that are not allowed.
         opener = self.makeBranchOpener(None, [], set(['a']))
-        self.assertRaises(BadUrl, opener.checkAndFollowBranchReference, 'a')
+        self.assertRaises(
+            BadUrl, opener.checkAndFollowBranchReference, 'a', BzrDir.open)
 
     def testNotReference(self):
         # When branch references are forbidden, checkAndFollowBranchReference
         # does not raise on non-references.
         opener = self.makeBranchOpener(False, ['a', None])
-        self.assertEquals('a', opener.checkAndFollowBranchReference('a'))
+        self.assertEquals(
+            'a', opener.checkAndFollowBranchReference('a', BzrDir.open))
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
@@ -84,7 +86,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         opener = self.makeBranchOpener(False, ['a', 'b'])
         self.assertRaises(
             BranchReferenceForbidden,
-            opener.checkAndFollowBranchReference, 'a')
+            opener.checkAndFollowBranchReference, 'a', BzrDir.open)
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
@@ -92,7 +94,8 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # is allowed and the source URL points to a branch reference to a
         # permitted location.
         opener = self.makeBranchOpener(True, ['a', 'b', None])
-        self.assertEquals('b', opener.checkAndFollowBranchReference('a'))
+        self.assertEquals(
+            'b', opener.checkAndFollowBranchReference('a', BzrDir.open))
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
@@ -100,7 +103,8 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # to is safe.
         opener = self.makeBranchOpener(
             True, ['a', 'b', None], unsafe_urls=set('b'))
-        self.assertRaises(BadUrl, opener.checkAndFollowBranchReference, 'a')
+        self.assertRaises(
+            BadUrl, opener.checkAndFollowBranchReference, 'a', BzrDir.open)
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
@@ -109,7 +113,8 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # self-referencing branch reference.
         opener = self.makeBranchOpener(True, ['a', 'a'])
         self.assertRaises(
-            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a',
+            BzrDir.open)
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
@@ -119,7 +124,8 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         references = ['a', 'b', 'a']
         opener = self.makeBranchOpener(True, references)
         self.assertRaises(
-            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a',
+            BzrDir.open)
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
 

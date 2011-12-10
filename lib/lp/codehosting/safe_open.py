@@ -205,7 +205,7 @@ class SafeBranchOpener(object):
             cls.transformFallbackLocationHook,
             'SafeBranchOpener.transformFallbackLocationHook')
 
-    def checkAndFollowBranchReference(self, url, open_dir=None):
+    def checkAndFollowBranchReference(self, url, open_dir):
         """Check URL (and possibly the referenced URL) for safety.
 
         This method checks that `url` passes the policy's `checkOneURL`
@@ -214,8 +214,8 @@ class SafeBranchOpener(object):
         also -- recursively, until a real branch is found.
 
         :param url: URL to check
-        :param open_dir: Optional function to use for opening control
-            directories (defaults to BzrDir.open)
+        :param open_dir: Function to use for opening control
+            directories
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
             references.
@@ -247,7 +247,7 @@ class SafeBranchOpener(object):
         new_url, check = opener.policy.transformFallbackLocation(branch, url)
         if check:
             return opener.checkAndFollowBranchReference(new_url,
-                getattr(cls._threading_data, "open_dir"))
+                cls._threading_data.open_dir)
         else:
             return new_url
 
@@ -283,9 +283,9 @@ class SafeBranchOpener(object):
         :param open_dir: Optional function to use for opening control
             directories (defaults to BzrDir.open)
         """
-        url = self.checkAndFollowBranchReference(url, open_dir=open_dir)
         if open_dir is None:
             open_dir = BzrDir.open
+        url = self.checkAndFollowBranchReference(url, open_dir)
 
         def open_branch(url):
             dir = open_dir(url)
