@@ -7,10 +7,21 @@ __metaclass__ = type
 
 import threading
 
-from bzrlib import urlutils
+from bzrlib import (
+    trace,
+    errors,
+    urlutils,
+    )
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import (
+    BzrProber,
+    RemoteBzrProber,
+    )
 from lazr.uri import URI
+from bzrlib.transport import (
+    do_catching_redirections,
+    get_transport_from_url,
+    )
 
 
 __all__ = [
@@ -184,9 +195,19 @@ class SafeBranchOpener(object):
 
     _threading_data = threading.local()
 
-    def __init__(self, policy):
+    def __init__(self, policy, probers=None):
+        """Create a new SafeBranchOpener.
+
+        :param policy: opener policy to use
+        :param probers: Optional list of probers to allow.
+            Defaults to local and remote bzr probers.
+        """
         self.policy = policy
         self._seen_urls = set()
+        if probers is None:
+            self.probers = [BzrProber, RemoteBzrProber]
+        else:
+            self.probers = probers
 
     @classmethod
     def install_hook(cls):
@@ -274,24 +295,50 @@ class SafeBranchOpener(object):
         bzrdir = open_dir(url)
         return bzrdir.get_branch_reference()
 
-    def open(self, url, open_dir=None):
+    def _open_dir(self, url):
+        """Simple BzrDir.open clone that only uses specific probers.
+
+        :param url: URL to open
+        :return: ControlDir instance
+        """
+        def redirected(transport, e, redirection_notice):
+            self.policy.checkOneURL(e.target)
+            redirected_transport = transport._redirected_to(
+                e.source, e.target)
+            if redirected_transport is None:
+                raise errors.NotBranchError(e.source)
+            trace.info('%s is%s redirected to %s',
+                 transport.base, e.permanently, redirected_transport.base)
+            return redirected_transport
+
+        def find_format(transport):
+            last_error = None
+            for prober_kls in self.probers:
+                prober = prober_kls()
+                try:
+                    return transport, prober.probe_transport(transport)
+                except errors.NotBranchError, e:
+                    last_error = e
+            else:
+                raise last_error
+        transport = get_transport_from_url(url)
+        transport, format = do_catching_redirections(find_format, transport,
+            redirected)
+        return format.open(transport)
+
+    def open(self, url, probers=None):
         """Open the Bazaar branch at url, first checking for safety.
 
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
-
-        :param open_dir: Optional function to use for opening control
-            directories (defaults to BzrDir.open)
         """
-        if open_dir is None:
-            open_dir = BzrDir.open
-        url = self.checkAndFollowBranchReference(url, open_dir)
+        url = self.checkAndFollowBranchReference(url, self._open_dir)
 
         def open_branch(url):
-            dir = open_dir(url)
+            dir = self._open_dir(url)
             return dir.open_branch()
         return self.runWithTransformFallbackLocationHookInstalled(
-            open_dir, open_branch, url)
+            self._open_dir, open_branch, url)
 
 
 def safe_open(allowed_scheme, url):
