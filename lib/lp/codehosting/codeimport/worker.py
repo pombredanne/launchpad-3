@@ -65,6 +65,7 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
+import lp.codehosting # for bzr plugins
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
@@ -720,8 +721,7 @@ class PullingImportWorker(ImportWorker):
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             try:
-                remote_branch = opener.open(
-                    self.source_details.url)
+                remote_branch = opener.open(self.source_details.url)
             except TooManyRedirections:
                 self._logger.info("Too many redirections.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID

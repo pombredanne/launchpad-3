@@ -20,7 +20,7 @@ from bzrlib.bzrdir import (
 from lazr.uri import URI
 from bzrlib.transport import (
     do_catching_redirections,
-    get_transport_from_url,
+    get_transport,
     )
 
 
@@ -226,7 +226,7 @@ class SafeBranchOpener(object):
             cls.transformFallbackLocationHook,
             'SafeBranchOpener.transformFallbackLocationHook')
 
-    def checkAndFollowBranchReference(self, url, open_dir):
+    def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
 
         This method checks that `url` passes the policy's `checkOneURL`
@@ -235,8 +235,6 @@ class SafeBranchOpener(object):
         also -- recursively, until a real branch is found.
 
         :param url: URL to check
-        :param open_dir: Function to use for opening control
-            directories
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
             references.
@@ -246,7 +244,7 @@ class SafeBranchOpener(object):
                 raise BranchLoopError()
             self._seen_urls.add(url)
             self.policy.checkOneURL(url)
-            next_url = self.followReference(url, open_dir)
+            next_url = self.followReference(url)
             if next_url is None:
                 return url
             url = next_url
@@ -267,32 +265,29 @@ class SafeBranchOpener(object):
             return url
         new_url, check = opener.policy.transformFallbackLocation(branch, url)
         if check:
-            return opener.checkAndFollowBranchReference(new_url,
-                cls._threading_data.open_dir)
+            return opener.checkAndFollowBranchReference(new_url)
         else:
             return new_url
 
     def runWithTransformFallbackLocationHookInstalled(
-            self, open_dir, callable, *args, **kw):
+            self, callable, *args, **kw):
         assert (self.transformFallbackLocationHook in
                 Branch.hooks['transform_fallback_location'])
         self._threading_data.opener = self
-        self._threading_data.open_dir = open_dir
         try:
             return callable(*args, **kw)
         finally:
-            del self._threading_data.open_dir
             del self._threading_data.opener
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()
 
-    def followReference(self, url, open_dir):
+    def followReference(self, url):
         """Get the branch-reference value at the specified url.
 
         This exists as a separate method only to be overriden in unit tests.
         """
-        bzrdir = open_dir(url)
+        bzrdir = self._open_dir(url)
         return bzrdir.get_branch_reference()
 
     def _open_dir(self, url):
@@ -307,7 +302,7 @@ class SafeBranchOpener(object):
                 e.source, e.target)
             if redirected_transport is None:
                 raise errors.NotBranchError(e.source)
-            trace.info('%s is%s redirected to %s',
+            trace.note('%s is%s redirected to %s',
                  transport.base, e.permanently, redirected_transport.base)
             return redirected_transport
 
@@ -321,24 +316,24 @@ class SafeBranchOpener(object):
                     last_error = e
             else:
                 raise last_error
-        transport = get_transport_from_url(url)
+        transport = get_transport(url)
         transport, format = do_catching_redirections(find_format, transport,
             redirected)
         return format.open(transport)
 
-    def open(self, url, probers=None):
+    def open(self, url):
         """Open the Bazaar branch at url, first checking for safety.
 
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
         """
-        url = self.checkAndFollowBranchReference(url, self._open_dir)
+        url = self.checkAndFollowBranchReference(url)
 
         def open_branch(url):
             dir = self._open_dir(url)
             return dir.open_branch()
         return self.runWithTransformFallbackLocationHookInstalled(
-            self._open_dir, open_branch, url)
+            open_branch, url)
 
 
 def safe_open(allowed_scheme, url):

@@ -17,7 +17,6 @@ __all__ = [
 import os
 
 import bzrlib
-from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config

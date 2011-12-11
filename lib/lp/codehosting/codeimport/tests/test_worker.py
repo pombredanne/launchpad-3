@@ -57,6 +57,7 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
+import lp.codehosting
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,

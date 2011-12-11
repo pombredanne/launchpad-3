@@ -14,6 +14,7 @@ from bzrlib.branch import (
 from bzrlib.bzrdir import (
     BzrDir,
     BzrDirMetaFormat1,
+    BzrProber,
     )
 from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import TestCaseWithTransport
@@ -55,7 +56,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
                 self._reference_values[references[i]] = references[i + 1]
             self.follow_reference_calls = []
 
-        def followReference(self, url, open_dir):
+        def followReference(self, url):
             self.follow_reference_calls.append(url)
             return self._reference_values[url]
 
@@ -69,14 +70,14 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # checkSource rejects all URLs that are not allowed.
         opener = self.makeBranchOpener(None, [], set(['a']))
         self.assertRaises(
-            BadUrl, opener.checkAndFollowBranchReference, 'a', BzrDir.open)
+            BadUrl, opener.checkAndFollowBranchReference, 'a')
 
     def testNotReference(self):
         # When branch references are forbidden, checkAndFollowBranchReference
         # does not raise on non-references.
         opener = self.makeBranchOpener(False, ['a', None])
         self.assertEquals(
-            'a', opener.checkAndFollowBranchReference('a', BzrDir.open))
+            'a', opener.checkAndFollowBranchReference('a'))
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
@@ -86,7 +87,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         opener = self.makeBranchOpener(False, ['a', 'b'])
         self.assertRaises(
             BranchReferenceForbidden,
-            opener.checkAndFollowBranchReference, 'a', BzrDir.open)
+            opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
@@ -95,7 +96,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # permitted location.
         opener = self.makeBranchOpener(True, ['a', 'b', None])
         self.assertEquals(
-            'b', opener.checkAndFollowBranchReference('a', BzrDir.open))
+            'b', opener.checkAndFollowBranchReference('a'))
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
@@ -104,7 +105,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         opener = self.makeBranchOpener(
             True, ['a', 'b', None], unsafe_urls=set('b'))
         self.assertRaises(
-            BadUrl, opener.checkAndFollowBranchReference, 'a', BzrDir.open)
+            BadUrl, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
@@ -135,9 +136,9 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         super(TestSafeBranchOpenerStacking, self).setUp()
         SafeBranchOpener.install_hook()
 
-    def makeBranchOpener(self, allowed_urls):
+    def makeBranchOpener(self, allowed_urls, probers=None):
         policy = WhitelistPolicy(True, allowed_urls, True)
-        return SafeBranchOpener(policy)
+        return SafeBranchOpener(policy, probers)
 
     def makeBranch(self, path, branch_format, repository_format):
         """Make a Bazaar branch at 'path' with the given formats."""
@@ -243,12 +244,16 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         b.set_stacked_on_url(a.base)
         seen_urls = set()
 
-        def open_dir(url):
-            seen_urls.add(url)
-            return BzrDir.open(url)
+        class TrackingProber(BzrProber):
 
-        opener = self.makeBranchOpener([a.base, b.base])
-        opener.open(b.base, open_dir=open_dir)
+            @classmethod
+            def probe_transport(klass, transport):
+                seen_urls.add(transport.base)
+                return BzrProber.probe_transport(transport)
+
+        opener = self.makeBranchOpener(
+            [a.base, b.base], probers=[TrackingProber])
+        opener.open(b.base)
         self.assertEquals(seen_urls, set([b.base, a.base]))
 
     def testCustomOpenerWithBranchReference(self):
@@ -258,12 +263,15 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         b = BranchReferenceFormat().initialize(b_dir, target_branch=a)
         seen_urls = set()
 
-        def open_dir(url):
-            seen_urls.add(url)
-            return BzrDir.open(url)
+        class TrackingProber(BzrProber):
 
-        opener = self.makeBranchOpener([a.base, b.base])
-        opener.open(b.base, open_dir=open_dir)
+            @classmethod
+            def probe_transport(klass, transport):
+                seen_urls.add(transport.base)
+                return BzrProber.probe_transport(transport)
+
+        opener = self.makeBranchOpener([a.base, b.base], probers=[TrackingProber])
+        opener.open(b.base)
         self.assertEquals(seen_urls, set([b.base, a.base]))
 
 
