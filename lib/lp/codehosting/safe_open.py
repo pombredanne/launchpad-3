@@ -307,7 +307,7 @@ class SafeBranchOpener(object):
             return redirected_transport
 
         def find_format(transport):
-            last_error = None
+            last_error = errors.NotBranchError(transport.base)
             for prober_kls in self.probers:
                 prober = prober_kls()
                 try:
