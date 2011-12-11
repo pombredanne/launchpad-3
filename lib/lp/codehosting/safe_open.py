@@ -40,6 +40,10 @@ __all__ = [
 # TODO JelmerVernooij 2011-08-06: This module is generic enough to be
 # in bzrlib, and may be of use to others. bug=850843
 
+# These are the default probers that SafeBranchOpener will try to use,
+# unless a different set was specified.
+
+DEFAULT_PROBERS = [BzrProber, RemoteBzrProber]
 
 class BadUrl(Exception):
     """Tried to access a branch from a bad URL."""
@@ -205,7 +209,7 @@ class SafeBranchOpener(object):
         self.policy = policy
         self._seen_urls = set()
         if probers is None:
-            self.probers = [BzrProber, RemoteBzrProber]
+            self.probers = list(DEFAULT_PROBERS)
         else:
             self.probers = probers
 
