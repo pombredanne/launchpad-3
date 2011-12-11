@@ -173,10 +173,18 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         ControlDirFormat.register_prober(TrackingProber)
         # Open a location without any branches, so that all probers are
         # tried.
+        # First, check that the TrackingProber tracks correctly.
         opener = self.makeBranchOpener(["."], probers=[TrackingProber])
         self.assertRaises(NotBranchError, opener.open, ".")
         self.assertEquals(1, len(TrackingProber.calls))
         TrackingProber.calls = []
+        # And make sure it's registered in such a way that BzrDir.open would
+        # use it.
+        self.assertRaises(NotBranchError, BzrDir.open, ".")
+        self.assertEquals(1, len(TrackingProber.calls))
+        TrackingProber.calls = []
+        # Make sure that SafeBranchOpener doesn't use it if no
+        # probers were specified
         opener = self.makeBranchOpener(["."])
         self.assertRaises(NotBranchError, opener.open, ".")
         self.assertEquals(0, len(TrackingProber.calls))
