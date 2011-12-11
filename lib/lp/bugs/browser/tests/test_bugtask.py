@@ -1476,7 +1476,7 @@ class TestDistributionBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
-            'Package, or series subscriber', view.structural_subscriber_label)
+            'Package or series subscriber', view.structural_subscriber_label)
 
 
 class TestDistroSeriesBugs(TestCaseWithFactory):

@@ -2121,11 +2121,23 @@ class BugTaskSet:
                         Or(BugTask.sourcepackagename ==
                             SQL('ss4.sourcepackagename'),
                            SQL('ss4.sourcepackagename IS NULL'))))))
+            if params.distroseries is not None:
+                parent_distro_id = params.distroseries.distributionID
+            else:
+                parent_distro_id = 0
             join_tables.append(
                 (None,
                  LeftJoin(
                     SQL('ss ss5'),
-                    BugTask.distroseries == SQL('ss5.distroseries'))))
+                    Or(BugTask.distroseries == SQL('ss5.distroseries'),
+                        # There is a mismatch between BugTask and
+                        # StructuralSubscription. SS does not support
+                        # distroseries. This clause works because other
+                        # joins ensure the match bugtask is the right
+                        # series.
+                        And(parent_distro_id == SQL('ss5.distribution'),
+                            BugTask.sourcepackagename == SQL(
+                                'ss5.sourcepackagename'))))))
             join_tables.append(
                 (None,
                  LeftJoin(
