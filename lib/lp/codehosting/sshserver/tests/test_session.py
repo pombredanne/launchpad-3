@@ -290,8 +290,12 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         AvatarTestCase.setUp(self)
         self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz %(user_id)s'
+            raise ForbiddenCommand("Not allowed to execute %r." % command)
         self.session = RestrictedExecOnlySession(
-            self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
+            self.avatar, self.reactor, lookup_template)
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
@@ -302,9 +306,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             % (self.session,))
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
-        self.assertEqual('foo', self.session.allowed_command)
         self.assertEqual('bar baz %(user_id)s',
-                         self.session.executed_command_template)
+                         self.session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            self.session.lookup_command_template, 'notfoo')
 
     def test_execCommandRejectsUnauthorizedCommands(self):
         # execCommand rejects all commands except for the command specified in
@@ -336,8 +341,12 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # RestrictedExecOnlySession can be easily registered as an adapter for
         # Conch avatars.
         from twisted.internet import reactor
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz'
+            raise ForbiddenCommand(command)
         adapter = RestrictedExecOnlySession.getAvatarAdapter(
-            allowed_command='foo', executed_command_template='bar baz')
+            lookup_template)
         session = adapter(self.avatar)
         self.failUnless(
             isinstance(session, RestrictedExecOnlySession),
@@ -345,8 +354,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             "Got %r instead." % (session,))
         self.assertIs(self.avatar, session.avatar)
         self.assertIs(reactor, session.reactor)
-        self.assertEqual('foo', session.allowed_command)
-        self.assertEqual('bar baz', session.executed_command_template)
+        self.assertEqual('bar baz',
+                         session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            session.lookup_command_template, 'notfoo')
 
 
 class TestSessionIntegration(AvatarTestCase):
