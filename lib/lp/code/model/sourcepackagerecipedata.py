@@ -306,7 +306,10 @@ class SourcePackageRecipeData(Storm):
         self._recordInstructions(
             builder_recipe, parent_insn=None, branch_map=branch_map)
         self.base_branch = base_branch
-        self.deb_version_template = unicode(builder_recipe.deb_version)
+        if builder_recipe.deb_version is None:
+            self.deb_version_template = None
+        else:
+            self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
     def __init__(self, recipe, sourcepackage_recipe=None,

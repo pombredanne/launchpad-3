@@ -923,7 +923,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_without_debversion(self):
         recipe_text = '''\
-        # bzr-builder format 0.3
+        # bzr-builder format 0.4
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
