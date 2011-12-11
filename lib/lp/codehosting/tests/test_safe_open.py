@@ -16,6 +16,8 @@ from bzrlib.bzrdir import (
     BzrDirMetaFormat1,
     BzrProber,
     )
+from bzrlib.controldir import ControlDirFormat
+from bzrlib.errors import NotBranchError
 from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import chroot
@@ -114,8 +116,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # self-referencing branch reference.
         opener = self.makeBranchOpener(True, ['a', 'a'])
         self.assertRaises(
-            BranchLoopError, opener.checkAndFollowBranchReference, 'a',
-            BzrDir.open)
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
@@ -125,8 +126,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         references = ['a', 'b', 'a']
         opener = self.makeBranchOpener(True, references)
         self.assertRaises(
-            BranchLoopError, opener.checkAndFollowBranchReference, 'a',
-            BzrDir.open)
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
 
@@ -147,6 +147,39 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         bzrdir = self.make_bzrdir(path, format=bzrdir_format)
         repository_format.initialize(bzrdir)
         return bzrdir.create_branch()
+
+    def testProbers(self):
+        # Only the specified probers should be used
+        b = self.make_branch('branch')
+        opener = self.makeBranchOpener([b.base], probers=[])
+        self.assertRaises(NotBranchError, opener.open, b.base)
+        opener = self.makeBranchOpener([b.base], probers=[BzrProber])
+        self.assertEquals(b.base, opener.open(b.base).base)
+
+    def testDefaultProbers(self):
+        # If no probers are specified to the constructor
+        # of SafeBranchOpener, then a safe set will be used,
+        # rather than all probers registered in bzr.
+        class TrackingProber(BzrProber):
+
+            calls = []
+
+            @classmethod
+            def probe_transport(klass, transport):
+                klass.calls.append(transport)
+                return BzrProber.probe_transport(transport)
+
+        self.addCleanup(ControlDirFormat.unregister_prober, TrackingProber)
+        ControlDirFormat.register_prober(TrackingProber)
+        # Open a location without any branches, so that all probers are
+        # tried.
+        opener = self.makeBranchOpener(["."], probers=[TrackingProber])
+        self.assertRaises(NotBranchError, opener.open, ".")
+        self.assertEquals(1, len(TrackingProber.calls))
+        TrackingProber.calls = []
+        opener = self.makeBranchOpener(["."])
+        self.assertRaises(NotBranchError, opener.open, ".")
+        self.assertEquals(0, len(TrackingProber.calls))
 
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
@@ -270,7 +303,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
                 seen_urls.add(transport.base)
                 return BzrProber.probe_transport(transport)
 
-        opener = self.makeBranchOpener([a.base, b.base], probers=[TrackingProber])
+        opener = self.makeBranchOpener(
+            [a.base, b.base], probers=[TrackingProber])
         opener.open(b.base)
         self.assertEquals(seen_urls, set([b.base, a.base]))
 
