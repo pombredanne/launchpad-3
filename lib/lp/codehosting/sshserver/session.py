@@ -22,8 +22,7 @@ from twisted.internet import (
     interfaces,
     process,
     )
-from twisted.python import log, failure
-from twisted.internet.main import CONNECTION_LOST, CONNECTION_DONE
+from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
