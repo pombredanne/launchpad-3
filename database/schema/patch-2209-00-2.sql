@@ -6,4 +6,4 @@ SET client_min_messages=ERROR;
 -- deb-version in recipes is optional in newer versions of bzr-builder:
 ALTER TABLE SourcePackageRecipeData ALTER COLUMN deb_version_template DROP NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 01, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 0, 2);
