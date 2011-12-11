@@ -35,6 +35,7 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_process',
     'run_script',
     'run_with_login',
     'run_with_storm_debug',
@@ -86,6 +87,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.tales import test_tales
 from lazr.restful.testing.webservice import FakeRequest
 import oops_datedir_repo.serializer_rfc822
 import pytz
@@ -108,11 +110,15 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.adapter import (
     print_queries,
     start_sql_logging,
     stop_sql_logging,
+    )
+from canonical.launchpad.webapp.authorization import (
+    clear_cache as clear_permission_cache,
     )
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -150,7 +156,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
     launchpadlib_credentials_for,
@@ -308,6 +313,39 @@ def record_statements(function, *args, **kwargs):
     with StormStatementRecorder() as recorder:
         ret = function(*args, **kwargs)
     return (ret, recorder.statements)
+
+
+def record_two_runs(tested_method, item_creator, first_round_number,
+                    second_round_number=None):
+    """A helper that returns the two storm statement recorders
+    obtained when running tested_method after having run the
+    method {item_creator} {first_round_number} times and then
+    again after having run the same method {second_round_number}
+    times.
+
+    :return: a tuple containing the two recorders obtained by the successive
+        runs.
+    """
+    for i in range(first_round_number):
+        item_creator()
+    # Record how many queries are issued when {tested_method} is
+    # called after {item_creator} has been run {first_round_number}
+    # times.
+    flush_database_caches()
+    clear_permission_cache()
+    with StormStatementRecorder() as recorder1:
+        tested_method()
+    # Run {item_creator} {second_round_number} more times.
+    if second_round_number is None:
+        second_round_number = first_round_number
+    for i in range(second_round_number):
+        item_creator()
+    # Record again the number of queries issued.
+    flush_database_caches()
+    clear_permission_cache()
+    with StormStatementRecorder() as recorder2:
+        tested_method()
+    return recorder1, recorder2
 
 
 def run_with_storm_debug(function, *args, **kwargs):
@@ -1127,6 +1165,30 @@ def run_script(cmd_line, env=None):
     return out, err, process.returncode
 
 
+def run_process(cmd, env=None):
+    """Run the given command as a subprocess.
+
+    This differs from `run_script` in that it does not execute via a shell and
+    it explicitly connects stdin to /dev/null so that processes will not be
+    able to hang, waiting for user input.
+
+    :param cmd_line: A command suitable for passing to `subprocess.Popen`.
+    :param env: An optional environment dict. If none is given, the script
+        will get a copy of your present environment. Either way, PYTHONPATH
+        will be removed from it because it will break the script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
+    """
+    if env is None:
+        env = os.environ.copy()
+    env.pop('PYTHONPATH', None)
+    with open(os.devnull, "rb") as devnull:
+        process = subprocess.Popen(
+            cmd, stdin=devnull, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=env)
+        stdout, stderr = process.communicate()
+        return stdout, stderr, process.returncode
+
+
 def normalize_whitespace(string):
     """Replace all sequences of whitespace with a single space."""
     # In Python 2.4, splitting and joining a string to normalize
@@ -1262,6 +1324,17 @@ def ws_object(launchpad, obj):
     """
     api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
     return launchpad.load(canonical_url(obj, request=api_request))
+
+
+class NestedTempfile(fixtures.Fixture):
+    """Nest all temporary files and directories inside a top-level one."""
+
+    def setUp(self):
+        super(NestedTempfile, self).setUp()
+        tempdir = fixtures.TempDir()
+        self.useFixture(tempdir)
+        patch = fixtures.MonkeyPatch("tempfile.tempdir", tempdir.path)
+        self.useFixture(patch)
 
 
 @contextmanager

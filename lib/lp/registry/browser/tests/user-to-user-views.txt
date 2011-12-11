@@ -226,7 +226,6 @@ Salgado decides to hide his email addresses.
 Anne contacts Salgado even though his email addresses are hidden.
 
     >>> anne = factory.makePerson(email='anne@example.com', name='anne')
-    >>> logout()
     >>> login_person(anne)
 
     >>> view = create_view(

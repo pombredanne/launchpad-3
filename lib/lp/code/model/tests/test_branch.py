@@ -1070,7 +1070,6 @@ class TestBzrIdentity(TestCaseWithFactory):
         registrant = branch.sourcepackage.distribution.owner
         login_person(registrant)
         linked_branch.setBranch(branch, registrant)
-        logout()
         login(ANONYMOUS)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 

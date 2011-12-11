@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUpload functionality."""
@@ -65,6 +65,8 @@ class TestMatchDDEBs(TestCase):
         self.addFile('blah_1.0_all.deb')
         self.addFile('libblah_1.0_i386.deb')
         self.addFile('libblah-dbgsym_1.0_i386.ddeb')
+        self.addFile('libfooble_1.0_i386.udeb')
+        self.addFile('libfooble-dbgsym_1.0_i386.ddeb')
         self.assertMatchDDEBErrors([])
         self.assertIs(None, self.changes.files[0].ddeb_file)
         self.assertIs(self.changes.files[2], self.changes.files[1].ddeb_file)

@@ -1,4 +1,4 @@
-# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -18,7 +18,6 @@ import logging
 import os
 import socket
 import tempfile
-import transaction
 import xmlrpclib
 
 from lazr.restful.utils import safe_hasattr
@@ -34,6 +33,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+import transaction
 from twisted.internet import (
     defer,
     reactor as default_reactor,
@@ -76,11 +76,15 @@ from lp.buildmaster.model.buildqueue import (
     specific_job_classes,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.twistedsupport import cancel_on_timeout
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -526,18 +530,26 @@ class Builder(SQLBase):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    _testing_slave = None
+
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute is used to allow tests to replace
-        # the slave object, which is usually an XMLRPC client, with a
-        # stub object that removes the need to actually create a buildd
-        # slave in various states - which can be hard to create.
+        # When testing it's possible to substitute the slave object, which is
+        # usually an XMLRPC client, with a stub object that removes the need
+        # to actually create a buildd slave in various states - which can be
+        # hard to create. We cannot use the property cache because it is
+        # cleared on transaction boundaries, hence the low tech approach.
+        if self._testing_slave is not None:
+            return self._testing_slave
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
-        self.slave = proxy
+        # XXX JeroenVermeulen 2011-11-09, bug=888010: Don't use this.
+        # It's a trap.  See bug for details.
+        self._testing_slave = proxy
+        del get_property_cache(self).slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
@@ -664,10 +676,13 @@ class Builder(SQLBase):
                 bytes_written = out_file.tell()
                 out_file.seek(0)
 
-                library_file = getUtility(ILibraryFileAliasSet).create(
-                    filename, bytes_written, out_file,
-                    contentType=filenameToContentType(filename),
-                    restricted=private)
+                transaction.commit()
+                with DatabaseTransactionPolicy(read_only=False):
+                    library_file = getUtility(ILibraryFileAliasSet).create(
+                        filename, bytes_written, out_file,
+                        contentType=filenameToContentType(filename),
+                        restricted=private)
+                    transaction.commit()
             finally:
                 # Remove the temporary file.  getFile() closes the file
                 # object.
@@ -705,7 +720,7 @@ class Builder(SQLBase):
     def acquireBuildCandidate(self):
         """Acquire a build candidate in an atomic fashion.
 
-        When retrieiving a candidate we need to mark it as building
+        When retrieving a candidate we need to mark it as building
         immediately so that it is not dispatched by another builder in the
         build manager.
 
@@ -715,12 +730,15 @@ class Builder(SQLBase):
         can be in this code at the same time.
 
         If there's ever more than one build manager running at once, then
-        this code will need some sort of mutex.
+        this code will need some sort of mutex, or run in a single
+        transaction.
         """
         candidate = self._findBuildCandidate()
         if candidate is not None:
-            candidate.markAsBuilding(self)
             transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                candidate.markAsBuilding(self)
+                transaction.commit()
         return candidate
 
     def _findBuildCandidate(self):

@@ -66,6 +66,7 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackage,
     ISourcePackageFactory,
     )
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.soyuz.enums import (
@@ -195,7 +196,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin,
+                    HasDriversMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -527,6 +529,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     def max_bug_heat(self):
         """See `IHasBugs`."""
         return self.distribution_sourcepackage.max_bug_heat
+
+    @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        return self.distroseries.drivers
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

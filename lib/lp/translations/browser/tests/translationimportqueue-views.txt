@@ -221,8 +221,7 @@ available for selection.
 
 The drop-down list is fed from a vocabulary.
 
-    >>> from canonical.launchpad.vocabularies import (
-    ...     TranslationTemplateVocabulary)
+    >>> from lp.translations.vocabularies import TranslationTemplateVocabulary
     >>> vocab = TranslationTemplateVocabulary(po_entry)
     >>> for term in vocab:
     ...     print term.title

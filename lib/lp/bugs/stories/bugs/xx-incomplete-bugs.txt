@@ -149,7 +149,7 @@ bugs that can expire.
 
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.title
-    'Bugs in Jokosher Audio Editor'
+    'Bugs : Jokosher'
 
     >>> expirable_bugs_link = user_browser.getLink('Incomplete bugs')
 

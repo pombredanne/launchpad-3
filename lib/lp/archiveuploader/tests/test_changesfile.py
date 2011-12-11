@@ -10,7 +10,6 @@ import os
 from debian.deb822 import Changes
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import import_public_test_keys
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -36,6 +35,7 @@ from lp.archiveuploader.uploadpolicy import InsecureUploadPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
+from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.keyserver import KeyServerTac
 
 

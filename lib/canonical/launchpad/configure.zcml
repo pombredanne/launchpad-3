@@ -11,7 +11,6 @@
   <include package="grokcore.component" file="meta.zcml" />
 
   <include package="canonical.launchpad.webapp" />
-  <include package="canonical.launchpad.vocabularies" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
@@ -30,7 +29,6 @@
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
-  <include package="lp.vostok" />
 
   <browser:url
     for="lp.registry.interfaces.person.IPersonSet"

@@ -125,10 +125,9 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
                 Branch, rows, ['branch_id'])
             load_related(
                 Product, branches, ['productID'])
-            branch_collection = GenericBranchCollection()
             # Preload branches cached associated product series and
             # suite source packages for all the related branches.
-            branch_collection._preloadDataForBranches(branches)
+            GenericBranchCollection.preloadDataForBranches(branches)
 
         resultset = store.find(
             TranslationTemplatesBuild,

@@ -129,7 +129,7 @@
         <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
-      <div class="report">
+      <div itemprop="mainContentOfPage" class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
@@ -188,7 +188,7 @@
                       id="edit-tags-cancel"
                       type="button">Cancel</button>
            </form>
-           <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+           <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
              <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
@@ -197,7 +197,7 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+            <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
              <span class="invisible-link">Tag help</span></a>
           </div>
 

@@ -136,6 +136,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         requester = self.factory.makePerson()
+        sponsored = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
@@ -143,7 +144,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            requester=requester)
+            requester=requester, sponsored=sponsored)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -156,6 +157,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEquals(False, job.include_binaries)
         self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
         self.assertEqual(requester, job.requester)
+        self.assertEqual(sponsored, job.sponsored)
 
     def test_createMultiple_creates_one_job_per_copy(self):
         mother = self.factory.makeDistroSeriesParent()

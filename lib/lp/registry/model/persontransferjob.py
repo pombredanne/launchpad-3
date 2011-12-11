@@ -316,7 +316,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # self.members, and in this case we won't have a single email
         # address to send this notification to.
         if self.member_email and self.reviewer != self.member:
-            if self.member.isTeam():
+            if self.member.is_team:
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name

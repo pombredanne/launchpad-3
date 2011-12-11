@@ -83,10 +83,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://ubuntu-openid.launchpad.dev/
     althosts:
     ----
-    vostok @ vostok.dev
-    rooturl: http://vostok.dev/
-    althosts:
-    ----
     xmlrpc @ xmlrpc.launchpad.dev
     rooturl: http://launchpad.dev/
     althosts:
@@ -115,7 +111,6 @@ request is headed to one of the officialy-used Launchpad host names:
     testopenid.dev
     translations.launchpad.dev
     ubuntu-openid.launchpad.dev
-    vostok.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
@@ -959,7 +954,7 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
-    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -1249,7 +1244,7 @@ with this same token and timestamp.
 The timestamp must not be older than TIMESTAMP_ACCEPTANCE_WINDOW from the most
 recent request for this token.
 
-    >>> from canonical.launchpad.database.oauth import (
+    >>> from lp.services.oauth.model import (
     ...     TIMESTAMP_ACCEPTANCE_WINDOW)
     >>> form2 = form.copy()
     >>> form2['oauth_timestamp'] -= (TIMESTAMP_ACCEPTANCE_WINDOW-5)
@@ -1267,7 +1262,7 @@ recent request for this token.
 Last but not least, the timestamp must not be too far in the future, as
 defined by TIMESTAMP_SKEW_WINDOW.
 
-    >>> from canonical.launchpad.database.oauth import (
+    >>> from lp.services.oauth.model import (
     ...     TIMESTAMP_SKEW_WINDOW)
     >>> form2 = form.copy()
     >>> form2['oauth_timestamp'] += (TIMESTAMP_SKEW_WINDOW+10)

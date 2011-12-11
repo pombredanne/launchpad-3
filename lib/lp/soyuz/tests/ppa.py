@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes to be used when testing Personal Package Archives.
@@ -13,12 +13,12 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -103,6 +103,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
     SourcePackagePublishingHistory(
         distroseries=distroseries,
         sourcepackagerelease=sourcepackagerelease,
+        sourcepackagename=sourcepackagename,
         component=main_component,
         section=sourcepackagerelease.section,
         status=publishing_status,
@@ -120,6 +121,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
         distroarchseries = distroseries[arch]
         BinaryPackagePublishingHistory(
             binarypackagerelease=binarypackagerelease,
+            binarypackagename=binarypackagename,
             distroarchseries=distroarchseries,
             component=main_component,
             section=sourcepackagerelease.section,

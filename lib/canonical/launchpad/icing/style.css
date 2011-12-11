@@ -27,7 +27,7 @@
  */
 div#edit-description,
 div#edit-commit_message {
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Ubuntu Mono', monospace;
     margin: 1em 0;
     }
 
@@ -69,10 +69,11 @@ form.primary.search {
 }
 
 div#bugs-search-form.dynamic_bug_listing {
-    background: #EEE;
-    padding: 2px 15px;
-    border-radius: 10px;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    padding: 3px 0;
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: #EBEBEB;
 }
 
 form.primary.search.dynamic_bug_listing {
@@ -460,7 +461,7 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Ubuntu Mono', monospace;
     -moz-border-radius: 5px;
     -o-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -675,62 +676,21 @@ div#current_user_subscription a.sprite {
   display: inline;
 }
 
-/* Rules for CustomBugListings bug search result lists. */
-div#client-listing {
-    float: left;
-    color: #666;
+/* Tags portlet */
+.tag-list {
+    margin-bottom: 0.5em;
     }
-div.buglisting-row {
-    float: left;
-    margin-top: 5px;
-    border-bottom: 1px solid #EEE;
-    min-width: 585px;
-    width: 100%;
+.tag-list li {
+    padding-bottom: 0;
     }
-div.buglisting-col1 {
-    width: 100px;
-    float: left;
-    padding-bottom: 8px;
+.tag-count {
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: right;
+    padding-right: 0.25em;
     }
-div.buglisting-col2 {
-    width: 70%;
-    float: left;
-    }
-div.buglisting-col3 {
-    width: 10%;
-    float: right;
-    }
-div#client-listing .importance {
-    height: 1.5em;
-    width: 6em;
-    font-size: .8em;
-    padding: 0 5px;
-    border-radius: 2px;
-    text-transform: uppercase;
-    line-height: 1.25em;
-    margin: 5px 50px 2px 0;
-    text-align: center;
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .buglisting-col2 {
-    position: relative;
-    top: 2px;
-    }
-div#client-listing .bug-related-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .bug-heat-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .status {
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .field {
-    margin-left: 1em;
+.edit-official-tags {
+    margin-top: 1em;
 }
 
 /* === Translations === */

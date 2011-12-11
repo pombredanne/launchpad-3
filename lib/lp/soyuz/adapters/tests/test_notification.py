@@ -21,6 +21,7 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
@@ -332,7 +333,7 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         uploader = self.factory.makePerson()
-        removeSecurityProxy(uploader).preferredemail = None
+        get_property_cache(uploader).preferredemail = None
         email = '%s <foo@example.com>' % uploader.displayname
         changes = {'Changed-By': email, 'Maintainer': email}
         logger = BufferLogger()

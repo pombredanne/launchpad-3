@@ -60,7 +60,6 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
-    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
@@ -1437,8 +1436,138 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertTrue(notifications.pop().message.startswith(expected))
 
 
+class TestPersonBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distributions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonBugs, self).setUp()
+        self.target = self.factory.makePerson()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project, distribution, package, or series subscriber',
+            view.structural_subscriber_label)
+
+
+class TestDistributionBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distributions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionBugs, self).setUp()
+        self.target = self.factory.makeDistribution()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package, or series subscriber', view.structural_subscriber_label)
+
+
+class TestDistroSeriesBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distro series."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesBugs, self).setUp()
+        self.target = self.factory.makeDistroSeries()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Package subscriber', view.structural_subscriber_label)
+
+
+class TestDistributionSourcePackageBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distribution source packages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionSourcePackageBugs, self).setUp()
+        self.target = self.factory.makeDistributionSourcePackage()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
+    """Test the bugs overview page for distro series source packages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesSourcePackageBugs, self).setUp()
+        self.target = self.factory.makeSourcePackage()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
+class TestProductBugs(TestCaseWithFactory):
+    """Test the bugs overview page for projects."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductBugs, self).setUp()
+        self.target = self.factory.makeProduct()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Series subscriber', view.structural_subscriber_label)
+
+
+class TestProductSeriesBugs(TestCaseWithFactory):
+    """Test the bugs overview page for project series."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesBugs, self).setUp()
+        self.target = self.factory.makeProductSeries()
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+
 class TestProjectGroupBugs(TestCaseWithFactory):
-    """Test the bugs overview page for Project Groups."""
+    """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1534,6 +1663,17 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+    def test_shouldShowStructuralSubscriberWidget(self):
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+
+    def test_structural_subscriber_label(self):
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(
+            'Project or series subscriber', view.structural_subscriber_label)
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -1710,7 +1850,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         'client-listing', True, attrs={'id': 'client-listing'})
 
     def makeView(self, bugtask=None, size=None, memo=None, orderby=None,
-                 forwards=True):
+                 forwards=True, cookie=None):
         """Make a BugTaskSearchListingView.
 
         :param bugtask: The task to use for searching.
@@ -1734,10 +1874,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             query_vars['direction'] = 'backwards'
         query_string = urllib.urlencode(query_vars)
         request = LaunchpadTestRequest(
-            QUERY_STRING=query_string, orderby=orderby)
+            QUERY_STRING=query_string, orderby=orderby, HTTP_COOKIE=cookie)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
-        view = BugTaskSearchListingView(bugtask.target, request)
+        view = getMultiAdapter((bugtask.target, request), name='+bugs')
         view.initialize()
         return view
 
@@ -1811,6 +1951,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
 
+    def test_provides_view_name(self):
+        """The IJSONRequestCache should provide the view's name."""
+        self.useContext(self.dynamic_listings())
+        view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('+bugs', cache.objects['view_name'])
+        person = self.factory.makePerson()
+        commentview = getMultiAdapter(
+            (person, LaunchpadTestRequest()), name='+commentedbugs')
+        commentview.initialize()
+        cache = IJSONRequestCache(commentview.request)
+        self.assertEqual('+commentedbugs', cache.objects['view_name'])
+
     def test_default_order_by(self):
         """order_by defaults to '-importance in JSONRequestCache"""
         task = self.factory.makeBugTask()
@@ -1863,7 +2016,64 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
-        self.assertTrue(field_visibility['show_title'])
+        self.assertTrue(field_visibility['show_id'])
+
+    def test_cache_cookie_name(self):
+        """The cookie name should be in cache for js code access."""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        cookie_name = cache.objects['cbl_cookie_name']
+        self.assertEqual('anon-buglist-fields', cookie_name)
+
+    def test_cache_field_visibility_matches_cookie(self):
+        """Cache contains cookie-matching values for field_visibiliy."""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
+            '&show_id=true&show_targetname=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
+            '&show_importance=true&show_status=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertTrue(field_visibility['show_tag'])
+
+    def test_exclude_unsupported_cookie_values(self):
+        """Cookie values not present in defaults are ignored."""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
+            '&show_id=true&show_targetname=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
+            '&show_importance=true&show_status=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertNotIn('show_title', field_visibility)
+
+    def test_add_defaults_to_cookie_values(self):
+        """Where cookie values are missing, defaults are used"""
+        task = self.factory.makeBugTask()
+        cookie = (
+            'anon-buglist-fields=show_datecreated=true&show_reporter=true'
+            '&show_id=true&show_targetname=true'
+            '&show_milestone_name=true&show_date_last_updated=true'
+            '&show_assignee=true&show_heat=true&show_tag=true'
+            '&show_importance=true&show_title=true')
+        with self.dynamic_listings():
+            view = self.makeView(
+                task, memo=1, forwards=False, size=1, cookie=cookie)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertIn('show_status', field_visibility)
 
     def test_cache_field_visibility_defaults(self):
         """Cache contains sane-looking field_visibility_defaults values."""
@@ -1872,7 +2082,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility_defaults = cache.objects['field_visibility_defaults']
-        self.assertTrue(field_visibility_defaults['show_title'])
+        self.assertTrue(field_visibility_defaults['show_id'])
 
     def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
@@ -1975,7 +2185,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator, mustache_model = self.getNavigator()
         self.assertIn('bugtarget1', navigator.mustache)
         self.assertIn('bugtarget_css1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_bugtarget'] = False
+        mustache_model['bugtasks'][0]['show_targetname'] = False
         self.assertNotIn('bugtarget1', navigator.mustache)
         self.assertNotIn('bugtarget_css1', navigator.mustache)
 
@@ -1984,7 +2194,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator, mustache_model = self.getNavigator()
         self.assertIn('bug_heat_html1', navigator.mustache)
         self.assertIn('bug-heat-icons', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_bug_heat'] = False
+        mustache_model['bugtasks'][0]['show_heat'] = False
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
 
@@ -2006,17 +2216,17 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_hiding_age(self):
         """Showing age shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_age', navigator.field_visibility)
+        self.assertIn('show_datecreated', navigator.field_visibility)
         self.assertNotIn('age1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_age'] = True
+        mustache_model['bugtasks'][0]['show_datecreated'] = True
         self.assertIn('age1', navigator.mustache)
 
     def test_hiding_tags(self):
         """Showing tags shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_tags', navigator.field_visibility)
+        self.assertIn('show_tag', navigator.field_visibility)
         self.assertNotIn('tags1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_tags'] = True
+        mustache_model['bugtasks'][0]['show_tag'] = True
         self.assertIn('tags1', navigator.mustache)
 
     def test_hiding_reporter(self):
@@ -2030,10 +2240,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_hiding_last_updated(self):
         """Showing last_updated shows the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('show_last_updated', navigator.field_visibility)
-        self.assertNotIn('last updated updated1', navigator.mustache)
-        mustache_model['bugtasks'][0]['show_last_updated'] = True
-        self.assertIn('last updated updated1', navigator.mustache)
+        self.assertIn('show_date_last_updated', navigator.field_visibility)
+        self.assertNotIn('Last updated updated1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_date_last_updated'] = True
+        self.assertIn('Last updated updated1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):

@@ -3,16 +3,18 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import _pythonpath
+
 import logging
 
-# pylint: disable-msg=W0403
-import _pythonpath
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from lp.bugs.scripts.bugimport import BugImporter
 from lp.registry.interfaces.product import IProductSet
 from lp.services.scripts.base import LaunchpadScript
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class BugImportScript(LaunchpadScript):
@@ -37,10 +39,30 @@ class BugImportScript(LaunchpadScript):
             '--dont-verify-users', dest='verify_users',
             help="Don't verify newly created users", action='store_false',
             default=True)
+        self.parser.add_option(
+            '--testing', dest="testing", action="store_true", help=(
+                "Testing mode; if --product=name is omitted, create a "
+                "product with Launchpad's test object factory. Do *not* "
+                "use in production!"),
+            default=False)
+
+    def create_test_product(self):
+        """Create a test product with `LaunchpadObjectFactory`.
+
+        Returns the new object's name.
+        """
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct(official_malone=True)
+        transaction.commit()
+        return product.name
 
     def main(self):
         if self.options.product is None:
-            self.parser.error('No product specified')
+            if self.options.testing:
+                self.options.product = self.create_test_product()
+                self.logger.info("Product %s created", self.options.product)
+            else:
+                self.parser.error('No product specified')
         if len(self.args) != 1:
             self.parser.error('Please specify a bug XML file to import')
         bugs_filename = self.args[0]

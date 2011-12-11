@@ -28,7 +28,6 @@ First, ensure that the archives we'll be using are private:
     >>> mark_private_ppa = factory.makeArchive(
     ...     owner=mark, private=True, name='pppa')
     >>> transaction.commit()
-    >>> logout()
 
 The view includes a label property.
 

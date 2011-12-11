@@ -1263,9 +1263,9 @@ through the API.
     >>> print mmm.commercial_subscription.product.name
     mega-money-maker
 
-    >>> logout()
-
     >>> ws_uncache(mmm)
+
+    >>> logout()
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker

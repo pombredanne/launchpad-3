@@ -1075,7 +1075,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address is
 replaced with the message '<email address hidden>'.
 
-    >>> logout() # Pretend we're unauthenticated.
+    >>> login(ANONYMOUS)
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
 
