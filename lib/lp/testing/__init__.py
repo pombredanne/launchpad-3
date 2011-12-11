@@ -961,7 +961,7 @@ class AbstractYUITestCase(TestCase):
         failures = []
         for test_name in self._yui_results:
             result = self._yui_results[test_name]
-            if result['result'] != 'pass':
+            if result['result'] not in ('pass', 'ignore'):
                 failures.append(
                     'Failure in %s.%s: %s' % (
                     self.test_path, test_name, result['message']))
