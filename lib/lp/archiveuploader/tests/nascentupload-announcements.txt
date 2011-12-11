@@ -51,7 +51,7 @@ Helper functions to examine emails that were sent:
 
 Import the test keys to use 'insecure' policy.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 For the purpose of this test, hoary needs to be an open (development)

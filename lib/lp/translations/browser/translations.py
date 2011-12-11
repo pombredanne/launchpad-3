@@ -59,6 +59,8 @@ class TranslationsMixin:
 class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
 
+    page_title = 'Launchpad Translations'
+
     @property
     def ubuntu_translationseries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -102,6 +104,7 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
 class TranslatableProductsView(LaunchpadView):
     """List of translatable products."""
     label = "Projects with translations in Launchpad"
+    page_title = label
 
     @cachedproperty
     def batchnav(self):

@@ -24,7 +24,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
@@ -90,6 +89,7 @@ from lp.testing.factory import (
     GPGSigningContext,
     LaunchpadObjectFactory,
     )
+from lp.testing.gpgkeys import import_secret_test_key
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):

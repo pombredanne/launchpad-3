@@ -12,10 +12,12 @@
     </div>
   </tal:good-attachments>
 
-  <div class="replyLink">
-    <tal:reply tal:define="link context/menu:context/reply"
-               tal:condition="link/enabled"
-               tal:replace="structure link/render">
+  <div class="replyLink" itemprop="replyToUrl" 
+    tal:define="link context/menu:context/reply"
+    tal:condition="link/enabled"
+    tal:attributes="url link/fmt:url">
+    <tal:reply 
+      tal:replace="structure link/render">
       Reply
     </tal:reply>
   </div>

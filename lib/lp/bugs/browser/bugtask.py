@@ -24,7 +24,6 @@ __all__ = [
     'BugTaskListingItem',
     'BugTaskListingView',
     'BugTaskNavigation',
-    'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
     'BugTasksAndNominationsView',
@@ -160,6 +159,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -174,6 +174,7 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
+    BugTrackerFormatterAPI,
     DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -1185,20 +1186,6 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         """Return True if there are more camments and activity to load."""
         return (
             self.next_offset < (self.total_comments + self.total_activity))
-
-
-class BugTaskPortletView:
-    """A portlet for displaying a bug's bugtasks."""
-
-    def alsoReportedIn(self):
-        """Return a list of IUpstreamBugTasks in which this bug is reported.
-
-        If self.context is an IUpstreamBugTasks, it will be excluded
-        from this list.
-        """
-        return [
-            task for task in self.context.bug.bugtasks
-            if task.id is not self.context.id]
 
 
 def get_prefix(bugtask):
@@ -2273,17 +2260,17 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
-            'show_age': False,
+            'show_datecreated': False,
             'show_assignee': False,
-            'show_bugtarget': True,
-            'show_bug_heat': True,
+            'show_targetname': True,
+            'show_heat': True,
             'show_id': True,
             'show_importance': True,
-            'show_last_updated': False,
+            'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
             'show_status': True,
-            'show_tags': False,
+            'show_tag': False,
         }
         self.field_visibility = None
         self._setFieldVisibility()
@@ -2459,8 +2446,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         bug_target = self.context.context
         if IDistribution.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IDistroSeries.providedBy(bug_target):
@@ -2470,8 +2455,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 )
         elif IProduct.providedBy(bug_target):
             return (
-                'bugsupervisor',
-                'securitycontact',
                 'cve',
                 )
         elif IProductSeries.providedBy(bug_target):
@@ -2523,7 +2506,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('assignee', PersonPickerWidget)
     custom_widget('bug_reporter', PersonPickerWidget)
     custom_widget('bug_commenter', PersonPickerWidget)
-    custom_widget('bug_supervisor', PersonPickerWidget)
+    custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
 
     @cachedproperty
@@ -2555,6 +2538,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if self.external_bugtracker or uses_lp:
             return True
         return False
+
+    @property
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
+
+    @property
+    def bugtracker(self):
+        """Description of the context's bugtracker.
+
+        :returns: str which may contain HTML.
+        """
+        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+            return 'Launchpad'
+        elif self.external_bugtracker:
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
+        else:
+            return 'None specified'
 
     @property
     def upstream_launchpad_project(self):
@@ -2643,6 +2644,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
             cache = IJSONRequestCache(self.request)
+            view_names = set(reg.name for reg
+                in iter_view_registrations(self.__class__))
+            if len(view_names) != 1:
+                raise AssertionError("Ambiguous view name.")
+            cache.objects['view_name'] = view_names.pop()
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
             cache.objects['field_visibility'] = (
@@ -2668,6 +2674,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+    @property
+    def show_config_portlet(self):
+        if (IDistribution.providedBy(self.context) or
+            IProduct.providedBy(self.context)):
+            return True
+        else:
+            return False
 
     @property
     def columns_to_show(self):
@@ -3043,11 +3057,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
-    def shouldShowSupervisorWidget(self):
+    def shouldShowStructuralSubscriberWidget(self):
+        """Should the structural subscriber widget be shown on the page?
+
+        Show the widget when there are subordinate structures.
         """
-        Should the bug supervisor widget be shown on the advanced search page?
-        """
-        return True
+        return self.structural_subscriber_label is not None
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -3089,6 +3104,21 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def shouldShowTeamPortlet(self):
         """Should the User's Teams portlet me shown in the results?"""
         return False
+
+    @property
+    def structural_subscriber_label(self):
+        if IDistribution.providedBy(self.context):
+            return 'Package, or series subscriber'
+        elif IDistroSeries.providedBy(self.context):
+            return 'Package subscriber'
+        elif IProduct.providedBy(self.context):
+            return 'Series subscriber'
+        elif IProjectGroup.providedBy(self.context):
+            return 'Project or series subscriber'
+        elif IPerson.providedBy(self.context):
+            return 'Project, distribution, package, or series subscriber'
+        else:
+            return None
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -3192,7 +3222,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         error_message = _(
             "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_supervisor',
+        for name in ('assignee', 'bug_reporter', 'structural_subscriber',
                      'bug_commenter', 'subscriber'):
             if self.getFieldError(name):
                 self.setFieldError(
@@ -4326,11 +4356,22 @@ class BugActivityItem:
         """Return a formatted summary of the change."""
         if self.target is not None:
             # This is a bug task.  We want the attribute, as filtered out.
-            return self.attribute
+            summary = self.attribute
         else:
             # Otherwise, the attribute is more normalized than what we want.
             # Use "whatchanged," which sometimes is more descriptive.
-            return self.whatchanged
+            summary = self.whatchanged
+        return self.get_better_summary(summary)
+
+    def get_better_summary(self, summary):
+        """For some activities, we want a different summary for the UI.
+
+        Some event names are more descriptive as data, but less relevant to
+        users, who are unfamiliar with the lp code."""
+        better_summaries = {
+            'bug task deleted': 'no longer affects',
+            }
+        return better_summaries.get(summary, summary)
 
     @property
     def _formatted_tags_change(self):
@@ -4409,7 +4450,7 @@ class BugActivityItem:
                     return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'bug task deleted':
-            return 'no longer affects %s' % self.oldvalue
+            return self.oldvalue
 
         else:
             # Our default state is to just return oldvalue and newvalue.

@@ -176,6 +176,12 @@ class TestFactory(TestCaseWithFactory):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         self.assertNotEqual(None, bpph.datecreated)
 
+    def test_makeBinaryPackagePublishingHistory_uses_datecreated(self):
+        datecreated = self.factory.getUniqueDate()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            datecreated=datecreated)
+        self.assertEqual(datecreated, bpph.datecreated)
+
     def test_makeBinaryPackagePublishingHistory_sets_datepub_PENDING(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             status=PackagePublishingStatus.PENDING)

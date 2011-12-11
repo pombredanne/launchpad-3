@@ -594,7 +594,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
-    label = "Proposal to merge branch"
     schema = ClaimButton
 
     def initialize(self):
@@ -675,6 +674,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def label(self):
+        return "Merge %s into %s" % (
+            self.context.source_branch.bzr_identity,
+            self.context.target_branch.bzr_identity)
 
     @property
     def pending_diff(self):

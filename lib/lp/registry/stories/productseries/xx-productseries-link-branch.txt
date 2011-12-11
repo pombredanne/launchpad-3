@@ -11,7 +11,7 @@ bazaar branch.
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
     >>> link.click()
-    
+
 This page allows the user to import code from various source control systems  
 
     >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')

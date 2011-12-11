@@ -10,7 +10,6 @@
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
-    icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
     features request/features;
     feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
@@ -79,12 +78,6 @@
           _gaq.push(['_setDomainName', '.launchpad.net']);
           _gaq.push(['_setAllowHash', false]);
           _gaq.push(['_trackPageview']);
-
-          (function() {
-            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
-          })();
         </script>
     <div class="yui-d0">
       <div id="locationbar" class="login-logout">

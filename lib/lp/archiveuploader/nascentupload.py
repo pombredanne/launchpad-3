@@ -33,6 +33,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DdebBinaryUploadFile,
     DebBinaryUploadFile,
     SourceUploadFile,
+    UdebBinaryUploadFile,
     UploadError,
     UploadWarning,
     )
@@ -348,9 +349,11 @@ class NascentUpload:
                     unmatched_ddebs[ddeb_key] = uploaded_file
 
         for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+            is_deb = isinstance(uploaded_file, DebBinaryUploadFile)
+            is_udeb = isinstance(uploaded_file, UdebBinaryUploadFile)
+            is_ddeb = isinstance(uploaded_file, DdebBinaryUploadFile)
+            # We need exactly a DEB or UDEB, not a DDEB.
+            if (is_deb or is_udeb) and not is_ddeb:
                 try:
                     matching_ddeb = unmatched_ddebs.pop(
                         (uploaded_file.package + '-dbgsym',

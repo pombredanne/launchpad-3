@@ -41,6 +41,11 @@ class BugTaskCve:
 
 class CVEReportView(LaunchpadView):
     """View that builds data to be displayed in CVE reports."""
+
+    @property
+    def page_title(self):
+        return 'CVE reports for %s' % self.context.title
+
     @cachedproperty
     def open_cve_bugtasks(self):
         """Return BugTaskCves for bugs with open bugtasks in the context."""

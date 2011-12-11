@@ -125,7 +125,6 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the owner.
-        logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
         view.initialize()
@@ -146,7 +145,6 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the other person.
-        logout()
         login('other@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
         view.initialize()

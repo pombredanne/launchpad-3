@@ -9,7 +9,7 @@
   <body>
     <metal:block fill-slot="head_epilogue">
     </metal:block>
-    <div metal:fill-slot="main" tal:define="comment view/comment">
+    <div metal:fill-slot="main" itemprop="mainContentOfPage" tal:define="comment view/comment">
       <h1 tal:content="view/page_title">Foo doesn't work</h1>
       <tal:comment replace="structure comment/@@+box-expanded-reply">
       </tal:comment>
