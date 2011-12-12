@@ -19,7 +19,6 @@ Set Up
     >>> soyuz_team = factory.makeTeam(
     ...     name='soyuz-team',
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-    >>> soyuz_team_owner = soyuz_team.teamowner
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
     >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)
     >>> removeSecurityProxy(parent_series).nominatedarchindep = arch
@@ -42,7 +41,7 @@ Set Up
     >>> logout()
 
     >>> soyuz_team_webservice = webservice_for_person(
-    ...     soyuz_team_owner, permission=OAuthPermission.WRITE_PUBLIC)
+    ...     soyuz_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
 
 
 Calling
