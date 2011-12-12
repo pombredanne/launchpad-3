@@ -26,11 +26,9 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
     def setUp(self):
         """Create a test archive."""
         super(TestArchiveSubscriptions, self).setUp()
-        self.owner = self.factory.makePerson()
         self.private_team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE,
-            name="subscribertest", owner=self.owner)
-        login_person(self.owner)
+            visibility=PersonVisibility.PRIVATE, name="subscribertest")
+        login_person(self.private_team.teamowner)
         self.archive = self.factory.makeArchive(
             private=True, owner=self.private_team)
         self.subscriber = self.factory.makePerson()
@@ -47,7 +45,7 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         login_person(self.subscriber)
         self.assertRaises(Unauthorized, get_name)
 
-        login_person(self.owner)
+        login_person(self.private_team.teamowner)
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)
 

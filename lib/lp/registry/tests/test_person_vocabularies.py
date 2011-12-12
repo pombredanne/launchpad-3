@@ -311,10 +311,9 @@ class TestValidTeamMemberVocabulary(TeamMemberVocabularyTestBase,
     def test_private_team_cannot_be_a_member_of_itself(self):
         # A private team should be filtered by the vocab.extra_clause
         # when provided a search term.
-        owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            owner=owner, visibility=PersonVisibility.PRIVATE)
-        login_person(owner)
+            visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
 
