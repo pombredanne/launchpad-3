@@ -302,8 +302,14 @@ class BuildView(LaunchpadView):
         return self.context.buildqueue_record
 
     @cachedproperty
-    def component(self):
-        return self.context.current_component
+    def component_name(self):
+        # Production has some buggy historic builds without
+        # source publications.
+        component = self.context.current_component
+        if component is not None:
+            return component.name
+        else:
+            return 'Unknown'
 
     @cachedproperty
     def files(self):
