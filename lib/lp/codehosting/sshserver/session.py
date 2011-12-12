@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'launch_smart_server',
-    'lookup_command_template',
     ]
 
 import os
@@ -381,9 +380,10 @@ class ExecOnlySession(DoNothingSession):
 
 
 class RestrictedExecOnlySession(ExecOnlySession):
-    """Conch session that only allows a single command to be executed."""
+    """Conch session that only allows specific commands to be executed."""
 
-    def __init__(self, avatar, reactor, lookup_command_template, environment=None):
+    def __init__(self, avatar, reactor, lookup_command_template,
+            environment=None):
         """Construct a RestrictedExecOnlySession.
 
         :param avatar: See `ExecOnlySession`.
@@ -460,6 +460,7 @@ def lookup_command_template(command):
 
     if command == 'bzr serve --inet --directory=/ --allow-writes':
         return command_template
+    # At the moment, only bzr branch serving is allowed.
     raise ForbiddenCommand("Not allowed to execute %r." % (command,))
 
 
