@@ -77,6 +77,12 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         login_person(self.subscriber)
         self.assertIn(self.archive.displayname, view.render())
 
+        # Just to double check, by default, the subscriber still can't see the
+        # +packages view which requires extra permissions.
+        self.assertRaises(
+            Unauthorized, create_initialized_view,
+            self.archive, '+packages', principal=self.subscriber)
+
     def test_new_subscription_sends_email(self):
         # Creating a new subscription sends an email to all members
         # of the person or team subscribed.
