@@ -67,11 +67,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivateApplication,
     IWebServiceApplication,
     )
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet,
-    IOAuthSignedRequest,
-    TokenException,
-    )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
@@ -110,6 +105,11 @@ from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
 from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    TokenException,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
@@ -565,7 +565,6 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
-        self.needs_json = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -860,11 +859,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.needs_datepicker_iframe
     False
 
-    And for JSON:
-
-    >>> request.needs_json
-    False
-
     """
     implements(
         INotificationRequest, IBasicLaunchpadRequest, IParticipation,
@@ -882,7 +876,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
-        self.needs_json = False
         # Use an existing feature controller if one exists, otherwise use the
         # null controller.
         self.features = get_relevant_feature_controller()

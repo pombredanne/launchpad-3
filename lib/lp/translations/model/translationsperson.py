@@ -128,7 +128,7 @@ class TranslationsPerson:
 
     def getReviewableTranslationFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
-        if self.person.isTeam():
+        if self.person.is_team:
             # A team as such does not work on translations.  Skip the
             # search for ones the team has worked on.
             return []
@@ -178,7 +178,7 @@ class TranslationsPerson:
         :param languages: Optional set of languages to restrict search to.
         :return: An unsorted query yielding `POFile`s.
         """
-        if self.person.isTeam():
+        if self.person.is_team:
             return []
 
         tables = self._composePOFileReviewerJoins(

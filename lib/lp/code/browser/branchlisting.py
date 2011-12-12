@@ -1314,13 +1314,13 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def person_owner_count(self):
         """The number of individual people who own branches."""
         return len([person for person in self._branch_owners
-                    if not person.isTeam()])
+                    if not person.is_team])
 
     @cachedproperty
     def team_owner_count(self):
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
-                    if person.isTeam()])
+                    if person.is_team])
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""

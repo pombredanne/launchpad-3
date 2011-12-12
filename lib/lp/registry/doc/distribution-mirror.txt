@@ -896,7 +896,6 @@ tracked in Launchpad.
     ...     official_candidate=True)
     >>> de_archive_mirror.status = MirrorStatus.OFFICIAL
     >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive_mirror)
-    >>> logout()
 
 Normal users can access country_dns_mirror, can see if a mirror is eligible
 for the status, however, they may not change it:
@@ -909,7 +908,6 @@ for the status, however, they may not change it:
     ...
     Unauthorized: (<DistributionMirror at ...>, 'transitionToCountryMirror',
       'launchpad.Admin')
-    >>> logout()
 
 Mirror listing administrators may change the status however:
 
@@ -922,7 +920,6 @@ again:
     >>> de_archive_mirror.canTransitionToCountryMirror()
     False
     >>> de_archive_mirror.transitionToCountryMirror(True)
-    >>> logout()
 
 There cannot be multiple country mirrors of one type for one country:
 
@@ -966,7 +963,6 @@ Mirrors which have not been probed may not be marked as country mirrors:
     ...
     MirrorNotProbed: This mirror may not be set as a country mirror as it has
       not been probed.
-    >>> logout()
 
 Mirrors which are not official or do not have an HTTP URL may not be set as
 country mirrors:

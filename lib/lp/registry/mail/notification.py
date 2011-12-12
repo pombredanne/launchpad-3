@@ -65,7 +65,7 @@ def notify_invitation_to_join_team(event):
     to be sent to users as well, but for now we only use it for teams.
     """
     member = event.member
-    assert member.isTeam()
+    assert member.is_team
     team = event.team
     membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
         member, team)
@@ -131,7 +131,7 @@ def notify_team_join(event):
         member_addrs = get_contact_email_addresses(person)
 
         headers = {}
-        if person.isTeam():
+        if person.is_team:
             templatename = 'new-member-notification-for-teams.txt'
             subject = '%s joined %s' % (person.name, team.name)
             header_rational = "Indirect member (%s)" % team.name
@@ -215,7 +215,7 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        if recipient.isTeam():
+        if recipient.is_team:
             header_rationale = 'Admin (%s via %s)' % (
                 team.name, recipient.name)
             footer_rationale = (

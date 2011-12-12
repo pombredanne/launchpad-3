@@ -115,7 +115,6 @@ anyone in Launchpad..
 
     >>> mark.hide_email_addresses
     False
-    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor

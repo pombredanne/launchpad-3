@@ -621,7 +621,7 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         val = sock.recv(4096)
         self.assertEqual('exited\n%s\n' % (signal.SIGALRM,), val)
         # The master process should clean up after the now deceased child.
-        self.failIfExists(path)
+        self.assertPathDoesNotExist(path)
 
 
 class TestCaseWithLPForkingServiceDaemon(
