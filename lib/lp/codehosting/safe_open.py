@@ -202,7 +202,7 @@ class SafeBranchOpener(object):
     def __init__(self, policy, probers=None):
         """Create a new SafeBranchOpener.
 
-        :param policy: opener policy to use
+        :param policy: The opener policy to use.
         :param probers: Optional list of probers to allow.
             Defaults to local and remote bzr probers.
         """
