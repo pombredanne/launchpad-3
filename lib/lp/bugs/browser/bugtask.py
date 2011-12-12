@@ -1285,7 +1285,7 @@ class BugTaskPrivilegeMixin:
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userHasPrivileges(self.user)
+        return self.context.userHasBugSupervisorPrivileges(self.user)
 
 
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
