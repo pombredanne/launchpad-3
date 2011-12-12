@@ -77,6 +77,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -881,6 +882,9 @@ class IDifferencesFormSchema(Interface):
         description=_("Select the differences for syncing."),
         required=True)
 
+    sponsored_person = Choice(
+        vocabulary='ValidPerson', required=False,)
+
 
 class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                                      PackageCopyingMixin,
@@ -888,9 +892,12 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     """Base class for all pages presenting differences between
     a derived series and its parent."""
     schema = IDifferencesFormSchema
-    field_names = ['selected_differences']
+    field_names = ['selected_differences', 'sponsored_person']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
     custom_widget('package_type', LaunchpadRadioWidget)
+    custom_widget(
+        'sponsored_person', PersonPickerWidget,
+        header="Select person being sponsored", show_assign_me_button=False)
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -909,7 +916,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
-
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
