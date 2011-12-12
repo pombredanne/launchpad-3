@@ -211,11 +211,10 @@ autonomously.
     >>> group_owner = factory.makePerson('go@example.com', password='test')
     >>> translation_group = factory.makeTranslationGroup(group_owner)
     >>> ubuntu.translationgroup = translation_group
-    >>> logout()
-
     >>> template_admin_url = str(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/%s/+pots/%s/+admin' % (package.name, template.name))
+    >>> logout()
 
 A distribution's owner can manage the distribution's templates.
 

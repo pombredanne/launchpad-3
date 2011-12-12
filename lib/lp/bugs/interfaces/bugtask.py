@@ -921,7 +921,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
 
     def userHasBugSupervisorPrivileges(user):
         """Is the user a privledged one, allowed to changed details on a 
-        bug?.
+        bug?
 
         :return: A boolean.
         """
@@ -1023,10 +1023,11 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_supervisor = Choice(
-        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs in packages this person or team '
-                      'is subscribed to.'),
+    structural_subscriber = Choice(
+        title=_('Structural Subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_(
+            'Show only bugs in projects, series, distributions, and packages '
+            'that this person or team is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',

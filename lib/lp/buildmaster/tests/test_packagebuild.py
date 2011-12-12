@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
@@ -22,9 +22,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.archiveuploader.uploadprocessor import (
-    parse_build_upload_leaf_name,
-    )
+from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -34,12 +32,11 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     login,
     login_person,
@@ -285,10 +282,7 @@ class TestGetUploadMethodsMixin:
 
 
 class TestHandleStatusMixin:
-    """Tests for `IPackageBuild`s handleStatus method.
-
-    This should be run with a Trial TestCase.
-    """
+    """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
 
@@ -307,7 +301,7 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        builder.setSlaveForTesting(self.slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -348,7 +342,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
+            self.assertIs(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
@@ -390,14 +384,10 @@ class TestHandleStatusMixin:
 
         def got_status(ignored):
             if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
+                self.assertNotEqual(
+                    0, len(pop_notifications()), "No notifications received.")
             else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
-
+                self.assertContentEqual([], pop_notifications())
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
 

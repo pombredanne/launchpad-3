@@ -1844,8 +1844,7 @@ class PublishingSet:
 
         return result_set
 
-    def getChangesFilesForSources(
-        self, one_or_more_source_publications):
+    def getChangesFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Import PackageUpload and PackageUploadSource locally
         # to avoid circular imports, since PackageUpload uses

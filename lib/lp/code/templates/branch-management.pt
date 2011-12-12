@@ -19,7 +19,7 @@
   <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
     <div id="upload-directions">
       <tal:not-logged-in condition="not:view/user">
-        <tal:individual condition="not:context/owner/isTeam">
+        <tal:individual condition="not:context/owner/is_team">
             Only
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/displayname">Person</a>
@@ -27,7 +27,7 @@
             <tal:branch-owner replace="context/owner/displayname"/>
             please <a href="+login">log in</a> for upload directions.
         </tal:individual>
-        <tal:team tal:condition="context/owner/isTeam">
+        <tal:team tal:condition="context/owner/is_team">
             Members of
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/displayname">Team</a>
@@ -53,13 +53,13 @@
         </tal:can-upload>
 
         <tal:cannot-upload condition="not:view/user_can_upload">
-          <div id="upload-directions" tal:condition="not:context/owner/isTeam">
+          <div id="upload-directions" tal:condition="not:context/owner/is_team">
             You cannot upload to this branch. Only
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/displayname">Person</a>
             can upload to this branch.
           </div>
-          <div id="upload-directions" tal:condition="context/owner/isTeam">
+          <div id="upload-directions" tal:condition="context/owner/is_team">
             You cannot upload to this branch. Members of
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/displayname">Team</a>
