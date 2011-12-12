@@ -135,8 +135,7 @@ class TestCanApprove(TestCaseWithFactory):
         series = self.factory.makeProductSeries(product=product)
         with celebrity_logged_in('admin'):
             series.driver = self.factory.makePerson()
-        nomination = self.factory.makeBugNomination(
-            target=series)
+        nomination = self.factory.makeBugNomination(target=series)
         self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
         self.assertTrue(nomination.canApprove(series.driver))
