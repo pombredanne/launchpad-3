@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'launch_smart_server',
+    'lookup_command_template',
     ]
 
 import os
@@ -443,9 +444,13 @@ class ForkingRestrictedExecOnlySession(RestrictedExecOnlySession):
                                       arguments, env, protocol)
 
 
-def launch_smart_server(avatar):
-    from twisted.internet import reactor
+def lookup_command_template(command):
+    """Map a command to a command template.
 
+    :param command: Command requested by the user
+    :return: Command template
+    :raise ForbiddenCommand: Raised when command isn't allowed
+    """
     python_command = "%(root)s/bin/py %(bzr)s" % {
             'root': config.root,
             'bzr': get_bzr_path(),
@@ -453,12 +458,19 @@ def launch_smart_server(avatar):
     args = " lp-serve --inet %(user_id)s"
     command_template = python_command + args
 
+    if command == 'bzr serve --inet --directory=/ --allow-writes':
+        return command_template
+    raise ForbiddenCommand("Not allowed to execute %r." % (command,))
+
+
+def launch_smart_server(avatar):
+    from twisted.internet import reactor
+
     environment = dict(os.environ)
 
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
-    klass = RestrictedExecOnlySession
     # TODO: Use a FeatureFlag to enable this in a more fine-grained approach.
     #       If the forking daemon has been spawned, then we can use it if the
     #       feature is set to true for the given user, etc.
@@ -468,9 +480,8 @@ def launch_smart_server(avatar):
     #       forking daemon.
     if config.codehosting.use_forking_daemon:
         klass = ForkingRestrictedExecOnlySession
+    else:
+        klass = RestrictedExecOnlySession
 
-    def lookup_command_template(command):
-        if command == 'bzr serve --inet --directory=/ --allow-writes':
-            return command_template
-        raise ForbiddenCommand("Not allowed to execute %r." % (command,))
-    return klass(avatar, reactor, lookup_command_template, environment=environment)
+    return klass(avatar, reactor, lookup_command_template,
+        environment=environment)

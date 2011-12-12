@@ -24,6 +24,7 @@ from lp.codehosting.sshserver.session import (
     ForkingRestrictedExecOnlySession,
     RestrictedExecOnlySession,
     _WaitForExit,
+    lookup_command_template,
     )
 from lp.codehosting.tests.helpers import AvatarTestCase
 from lp.testing import TestCase
@@ -422,3 +423,16 @@ class TestSessionIntegration(AvatarTestCase):
              ['bzr', 'lp-serve',
               '--inet', str(self.avatar.user_id)],
              list(arguments))
+
+
+class TestLookupCommand(TestCase):
+
+    def test_other(self):
+        self.assertRaises(ForbiddenCommand, lookup_command_template, 'foo')
+
+    def test_bzr(self):
+        self.assertEquals(
+            config.root + '/bin/py ' + get_bzr_path() +
+            ' lp-serve --inet %(user_id)s',
+            lookup_command_template(
+                'bzr serve --inet --directory=/ --allow-writes'))
