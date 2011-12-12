@@ -909,7 +909,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def archive_description_html(self):
         """The archive's description as HTML."""
         linkify_text = True
-        if self.context.is_ppa:
+        if self.context.is_ppa and not self.context.owner.is_team:
             linkify_text = not self.context.owner.is_probationary
         archive = self.context
         description = IArchive['description']

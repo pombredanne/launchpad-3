@@ -56,6 +56,27 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         login_person(self.subscriber)
         self.assertEqual(self.archive.owner.name, "subscribertest")
 
+    def test_subscriber_can_browse_private_team_ppa(self):
+        # As per bug 597783, we need to make sure a subscriber can see
+        # a private team's PPA after they have been given a subscription.
+        # This test ensures the subscriber can correctly load the PPA's view,
+        # thus ensuring that all attributes necessary to render the view have
+        # the necessary security permissions.
+
+        # Before a subscription, accessing the view name will raise.
+        login_person(self.subscriber)
+        view = create_initialized_view(
+            self.archive, '+index', principal=self.subscriber)
+        self.assertRaises(Unauthorized, view.render)
+
+        login_person(self.owner)
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+
+        # When a subscription exists, it's fine.
+        login_person(self.subscriber)
+        self.assertIn(self.archive.displayname, view.render())
+
     def test_new_subscription_sends_email(self):
         # Creating a new subscription sends an email to all members
         # of the person or team subscribed.

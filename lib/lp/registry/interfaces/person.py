@@ -731,6 +731,9 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
@@ -956,9 +959,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             "is set on the Person referencing the destination Person. If "
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
-
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute('Person Page Title')
 
     archive = exported(
         Reference(
