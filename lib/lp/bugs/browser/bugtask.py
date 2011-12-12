@@ -1285,7 +1285,7 @@ class BugTaskPrivilegeMixin:
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userHasPrivileges(self.user)
+        return self.context.userHasBugSupervisorPrivileges(self.user)
 
 
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
@@ -3108,7 +3108,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     @property
     def structural_subscriber_label(self):
         if IDistribution.providedBy(self.context):
-            return 'Package, or series subscriber'
+            return 'Package or series subscriber'
         elif IDistroSeries.providedBy(self.context):
             return 'Package subscriber'
         elif IProduct.providedBy(self.context):

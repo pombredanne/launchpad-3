@@ -391,8 +391,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields:
-            include_extra_fields = BugTask.userHasPrivilegesContext(
-                context, self.user)
+            include_extra_fields = (
+                BugTask.userHasBugSupervisorPrivilegesContext(
+                    context, self.user))
 
         if include_extra_fields:
             field_names.extend(
@@ -616,7 +617,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             params.private = extra_data.private
 
         # Apply any extra options given by privileged users.
-        if BugTask.userHasPrivilegesContext(context, self.user):
+        if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
             if 'assignee' in data:
                 params.assignee = data['assignee']
             if 'status' in data:

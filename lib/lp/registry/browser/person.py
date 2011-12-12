@@ -143,10 +143,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError,
-    IGPGHandler,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
@@ -267,6 +263,10 @@ from lp.registry.model.milestone import (
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
@@ -1369,8 +1369,6 @@ class PersonSpecWorkloadView(LaunchpadView):
         This batch does not test for whether the person has specifications or
         not.
         """
-        assert self.context.isTeam, (
-            "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
         batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
@@ -2451,17 +2449,17 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def openpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getOpenPolls()
 
     @cachedproperty
     def closedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getClosedPolls()
 
     @cachedproperty
     def notyetopenedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
     @cachedproperty
@@ -2624,7 +2622,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
+        assert self.context.is_team
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
@@ -2675,7 +2673,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
             emails = [self.context.preferredemail.email]
-            if not self.context.isTeam():
+            if not self.context.is_team:
                 emails.extend(sorted(
                     email.email for email in self.context.validatedemails))
             return emails

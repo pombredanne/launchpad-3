@@ -714,7 +714,7 @@ class Archive(SQLBase):
 
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
-        pocket=None, exact_match=False):
+        pocket=None, exact_match=False, created_since_date=None):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -781,15 +781,21 @@ class Archive(SQLBase):
                 BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
+        if created_since_date is not None:
+            clauses.append(
+                "BinaryPackagePublishingHistory.datecreated >= %s"
+                % sqlvalues(created_since_date))
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False):
+                                exact_match=False, created_since_date=None):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
-            distroarchseries=distroarchseries, exact_match=exact_match)
+            distroarchseries=distroarchseries, exact_match=exact_match,
+            created_since_date=created_since_date)
 
         all_binaries = BinaryPackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables,
@@ -799,11 +805,13 @@ class Archive(SQLBase):
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
-                                   exact_match=False):
+                                   exact_match=False,
+                                   created_since_date=None):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
-            distroarchseries=distroarchseries, exact_match=exact_match)
+            distroarchseries=distroarchseries, exact_match=exact_match,
+            created_since_date=created_since_date)
 
         clauses.append("""
             BinaryPackagePublishingHistory.distroarchseries =
@@ -1970,7 +1978,7 @@ class Archive(SQLBase):
             admin = getUtility(ILaunchpadCelebrities).admin
             if not person.inTeam(commercial) and not person.inTeam(admin):
                 return '%s is not allowed to make private PPAs' % person.name
-        if person.isTeam() and (
+        if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
@@ -1984,7 +1992,7 @@ class Archive(SQLBase):
             return None
         else:
             text = "You already have a PPA named '%s'." % proposed_name
-            if person.isTeam():
+            if person.is_team:
                 text = "%s already has a PPA named '%s'." % (
                     person.displayname, proposed_name)
             return text

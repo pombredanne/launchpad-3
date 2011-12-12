@@ -41,7 +41,6 @@ from zope.session.interfaces import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountSuspendedError
-from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -60,6 +59,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
 

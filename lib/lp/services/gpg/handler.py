@@ -28,7 +28,17 @@ from lazr.restful.utils import get_current_browser_request
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.gpghandler import (
+from canonical.launchpad.webapp import errorlog
+from canonical.lazr.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
+from lp.app.validators.email import valid_email
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    valid_fingerprint,
+    )
+from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
     GPGKeyNotFoundError,
@@ -42,16 +52,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     IPymeUserId,
     MoreThanOneGPGKeyFound,
     SecretGPGKeyImportDetected,
-    )
-from canonical.launchpad.webapp import errorlog
-from canonical.lazr.timeout import (
-    TimeoutError,
-    urlfetch,
-    )
-from lp.app.validators.email import valid_email
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm,
-    valid_fingerprint,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
 

@@ -179,7 +179,6 @@ returning None if there isn't one.
     ...     http_url="http://mirror.showa.antarctica.org/ubuntu",
     ...     official_candidate=True)
     >>> showa_station_log = factory.makeMirrorProbeRecord(showa_station)
-    >>> logout()
 
     >>> login(ANONYMOUS)
     >>> karl_db = getUtility(IPersonSet).getByName('karl')

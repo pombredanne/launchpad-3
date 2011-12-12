@@ -22,13 +22,19 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -258,3 +264,40 @@ class TestPPAPackages(TestCaseWithFactory):
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
         self.assertThat(collector, HasQueryCount(Equals(expected_count)))
+
+
+class TestP3APackagesQueryCount(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestP3APackagesQueryCount, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_person(self.team.teamowner)
+        self.person = self.factory.makePerson()
+
+        self.private_ppa = self.factory.makeArchive(
+            owner=self.team, private=True)
+        self.private_ppa.newSubscription(
+            self.person, registrant=self.team.teamowner)
+
+    def createPackage(self):
+        with celebrity_logged_in('admin'):
+            pkg = self.factory.makeBinaryPackagePublishingHistory(
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.private_ppa)
+        return pkg
+
+    def test_ppa_index_queries_count(self):
+        def ppa_index_render():
+            with person_logged_in(self.person):
+                view = create_initialized_view(
+                    self.private_ppa, '+index',
+                    principal=self.person)
+                view.page_title = "title"
+                view.render()
+        recorder1, recorder2 = record_two_runs(
+            ppa_index_render, self.createPackage, 2, 3)
+
+        self.assertThat(
+            recorder2, HasQueryCount(LessThan(recorder1.count + 1)))

@@ -433,17 +433,9 @@ Check legacy URL redirects
 >>> check_redirect("/products/ubuntu-product", status=301)
 >>> check_redirect("/people/stub", status=301)
 
-
 Check redirects of Unicode URLs works
 
 >>> check_not_found("/ubuntu/foo%C3%A9")
-
-
-Icing resources.
-
->>> from lp.app.versioninfo import revno
->>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
->>> check("/+icing-contrib/rev%s/json2.js" % revno)
 
 Image resources are available from all the virtual hosts.
 

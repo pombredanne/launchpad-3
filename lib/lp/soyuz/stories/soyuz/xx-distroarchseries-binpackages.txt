@@ -135,7 +135,7 @@ not be linked.
     >>> transaction.commit()
     >>> logout()
 
-    Now reload the page to see the deleted file without the link.
+Now reload the page to see the deleted file without the link.
 
     >>> browser.reload()
     >>> files_element = find_tag_by_id(browser.contents, 'files')
