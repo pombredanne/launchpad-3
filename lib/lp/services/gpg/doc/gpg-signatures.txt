@@ -190,7 +190,7 @@ The GPGVerificationError exception object has some additional attributes
 with information about the error.  These come directly from the gpgme module
 itself.
 
-    >>> from canonical.launchpad.interfaces.gpghandler import GPGVerificationError
+    >>> from lp.services.gpg.interfaces import GPGVerificationError
     >>> content = """
     ... -----BEGIN PGP SIGNED MESSAGE-----
     ... Hash: SHA1
