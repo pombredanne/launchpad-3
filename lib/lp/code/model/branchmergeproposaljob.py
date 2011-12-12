@@ -363,16 +363,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             raise BranchHasPendingWrites(
                 'The source branch has pending writes.')
 
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IUpdatePreviewDiffJobSource`."""
-        errorlog.globalErrorUtility.configure('update_preview_diffs')
-        server = get_ro_server()
-        server.start_server()
-        yield
-        server.stop_server()
-
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
 
