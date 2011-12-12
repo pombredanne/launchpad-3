@@ -192,7 +192,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     objecttoauthorize, {})
                 if permission in object_cache:
                     return object_cache[permission]
-            principal = removeAllProxies(participation.principal)
+            principal = participation.principal
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
