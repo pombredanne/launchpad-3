@@ -844,13 +844,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def _do_premerge(self, from_person, to_person):
         # Do the pre merge work performed by the LoginToken.
-        login('admin@canonical.com')
-        email = from_person.preferredemail
-        email.status = EmailAddressStatus.NEW
-        email.person = to_person
-        email.account = to_person.account
+        with celebrity_logged_in('admin'):
+            email = from_person.preferredemail
+            email.status = EmailAddressStatus.NEW
+            email.person = to_person
+            email.account = to_person.account
         transaction.commit()
-        logout()
 
     def _do_merge(self, from_person, to_person, reviewer=None):
         # Perform the merge as the db user that will be used by the jobs.

@@ -1274,9 +1274,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
-        self.product = self.context
         revision_cache = getUtility(IRevisionCache)
-        self.revision_cache = revision_cache.inProduct(self.product)
+        self.revision_cache = revision_cache.inProduct(self.context)
 
     @property
     def branch(self):
@@ -1315,13 +1314,13 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def person_owner_count(self):
         """The number of individual people who own branches."""
         return len([person for person in self._branch_owners
-                    if not person.isTeam()])
+                    if not person.is_team])
 
     @cachedproperty
     def team_owner_count(self):
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
-                    if person.isTeam()])
+                    if person.is_team])
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""

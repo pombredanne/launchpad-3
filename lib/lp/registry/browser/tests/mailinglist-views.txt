@@ -129,7 +129,6 @@ Mailman side.
     >>> login('no-priv@canonical.com')
     >>> list_one.deactivate()
     >>> mailman.act()
-    >>> logout()
     >>> transaction.commit()
 
 The team owner can purge his list, as well as a Launchpad administrator and

@@ -135,6 +135,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -392,7 +393,8 @@ def validate_assignee(self, attr, value):
 def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
-    Checks that no conflicting tasks already exist.
+    Checks that no conflicting tasks already exist, and that the new
+    target's pillar supports the bug's access policy.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -424,6 +426,14 @@ def validate_target(bug, target, retarget_existing=True):
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
+
+    if (bug.access_policy is not None and
+        bug.access_policy.pillar != target.pillar and
+        not getUtility(IAccessPolicySource).getByPillarAndType(
+            target.pillar, bug.access_policy.type)):
+        raise IllegalTarget(
+            "%s doesn't have a %s access policy."
+            % (target.pillar.displayname, bug.access_policy.type.title))
 
 
 def validate_new_target(bug, target):
@@ -836,7 +846,7 @@ class BugTask(SQLBase):
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
@@ -845,7 +855,7 @@ class BugTask(SQLBase):
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskImportance(
                 "User does not have sufficient permissions "
                 "to edit the bug task importance.")
@@ -916,7 +926,7 @@ class BugTask(SQLBase):
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
             return True
-        elif self.userHasPrivileges(user):
+        elif self.userHasBugSupervisorPrivileges(user):
             return True
         else:
             return (self.status not in (
@@ -1068,7 +1078,7 @@ class BugTask(SQLBase):
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return self.userHasPrivileges(user)
+            return self.userHasBugSupervisorPrivileges(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1078,7 +1088,8 @@ class BugTask(SQLBase):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self.userHasPrivileges(user))
+            user.inTeam(self.assignee) or
+            self.userHasBugSupervisorPrivileges(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -1223,6 +1234,12 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self.updateTargetNameCache()
 
+        # If there's a policy set and we're changing to a another
+        # pillar, recalculate the access policy.
+        if (self.bug.access_policy is not None and
+            self.bug.access_policy.pillar != target.pillar):
+            self.bug.setAccessPolicy(self.bug.access_policy.type)
+
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
@@ -1346,8 +1363,12 @@ class BugTask(SQLBase):
         else:
             return None
 
-    def userHasPrivileges(self, user):
-        """See `IBugTask`."""
+    @classmethod
+    def userHasDriverPrivilegesContext(cls, context, user):
+        """Does the user have driver privileges for the given context?
+
+        :return: a boolean.
+        """
         if not user:
             return False
         role = IPersonRoles(user)
@@ -1355,22 +1376,40 @@ class BugTask(SQLBase):
         if role.in_admin:
             return True
 
-        # Similar to admins, the Bug Watch Updater, Bug Importer and 
+        # Similar to admins, the Bug Watch Updater, Bug Importer and
         # Janitor can always change bug details.
         if (
             role.in_bug_watch_updater or role.in_bug_importer or
             role.in_janitor):
             return True
 
-        # Otherwise, if you're a member of the pillar owner, drivers, or the
-        # bug supervisor, you can change bug details.
+        # If you're the owner or a driver, you can change bug details.
         return (
-            role.isOwner(self.pillar) or role.isOneOfDrivers(self.pillar) or
-            role.isBugSupervisor(self.pillar) or
-            (self.distroseries is not None and
-                role.isDriver(self.distroseries)) or
-            (self.productseries is not None and
-                role.isDriver(self.productseries)))
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+
+    @classmethod
+    def userHasBugSupervisorPrivilegesContext(cls, context, user):
+        """Does the user have bug supervisor privileges for the given
+        context?
+
+        :return: a boolean.
+        """
+        if not user:
+            return False
+        role = IPersonRoles(user)
+        # If you have driver privileges, or are the bug supervisor, you can
+        # change bug details.
+        return (
+            cls.userHasDriverPrivilegesContext(context, user) or
+            role.isBugSupervisor(context.pillar))
+
+    def userHasDriverPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasDriverPrivilegesContext(self.target, user)
+
+    def userHasBugSupervisorPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasBugSupervisorPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
@@ -2101,11 +2140,23 @@ class BugTaskSet:
                         Or(BugTask.sourcepackagename ==
                             SQL('ss4.sourcepackagename'),
                            SQL('ss4.sourcepackagename IS NULL'))))))
+            if params.distroseries is not None:
+                parent_distro_id = params.distroseries.distributionID
+            else:
+                parent_distro_id = 0
             join_tables.append(
                 (None,
                  LeftJoin(
                     SQL('ss ss5'),
-                    BugTask.distroseries == SQL('ss5.distroseries'))))
+                    Or(BugTask.distroseries == SQL('ss5.distroseries'),
+                        # There is a mismatch between BugTask and
+                        # StructuralSubscription. SS does not support
+                        # distroseries. This clause works because other
+                        # joins ensure the match bugtask is the right
+                        # series.
+                        And(parent_distro_id == SQL('ss5.distribution'),
+                            BugTask.sourcepackagename == SQL(
+                                'ss5.sourcepackagename'))))))
             join_tables.append(
                 (None,
                  LeftJoin(
@@ -2193,22 +2244,19 @@ class BugTaskSet:
         # is not for subscription to notifications.
         # See bug #191809
         if params.bug_supervisor:
-            bug_supervisor_clause = """BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, Product
-                WHERE BugTask.product = Product.id
-                    AND Product.bug_supervisor = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id
-                FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distribution = StructuralSubscription.distribution
-                    AND BugTask.sourcepackagename =
-                        StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, Distribution
-                WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+            bug_supervisor_clause = """(
+                BugTask.product IN (
+                    SELECT id FROM Product
+                    WHERE Product.bug_supervisor = %(bug_supervisor)s)
+                OR
+                ((BugTask.distribution, Bugtask.sourcepackagename) IN
+                    (SELECT distribution,  sourcepackagename FROM
+                     StructuralSubscription
+                     WHERE subscriber = %(bug_supervisor)s))
+                OR
+                BugTask.distribution IN (
+                    SELECT id from Distribution WHERE
+                    Distribution.bug_supervisor = %(bug_supervisor)s)
                 )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
             extra_clauses.append(bug_supervisor_clause)
 

@@ -234,6 +234,11 @@ def attach_http_request(report, context):
             value = '<hidden>'
         if not isinstance(value, basestring):
             value = oops.createhooks.safe_unicode(value)
+        # keys need to be unicode objects. The form items (a subset of
+        # request.items) are generally just the url query_string url decoded,
+        # which means the keys may be invalid in bson docs (bson requires that
+        # they be unicode).
+        key = oops.createhooks.safe_unicode(key)
         report['req_vars'][key] = value
     if IXMLRPCRequest.providedBy(request):
         args = request.getPositionalArguments()

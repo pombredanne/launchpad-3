@@ -5,10 +5,6 @@
 
 __all__ = [
     'ANONYMOUS',
-    'decrypt_content',
-    'import_public_key',
-    'import_public_test_keys',
-    'import_secret_test_key',
     'LaunchpadFormHarness',
     'login',
     'login_person',
@@ -18,15 +14,11 @@ __all__ = [
 from canonical.launchpad.ftests._launchpadformharness import (
     LaunchpadFormHarness,
     )
-from canonical.launchpad.ftests.keys_for_tests import (
-    decrypt_content,
-    import_public_key,
-    import_public_test_keys,
-    import_secret_test_key,
-    )
 from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     logout,
     )
+
+

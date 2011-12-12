@@ -81,7 +81,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
-            if person.isTeam():
+            if person.is_team:
                 message = '%s team has been subscribed to this bug.'
             else:
                 message = '%s has been subscribed to this bug.'
@@ -159,6 +159,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    page_title = 'Subscription options'
 
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.

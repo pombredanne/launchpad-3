@@ -51,6 +51,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
+    BugTask,
     BugTaskSet,
     build_tag_search_clause,
     IllegalTarget,
@@ -2187,6 +2188,22 @@ class TestTransitionToTarget(TestCaseWithFactory):
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
 
+    def test_access_policy_changed(self):
+        # If an access policy is set, changing the pillar also switches
+        # to the matching policy on the new pillar.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        new_policy = self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+            self.assertEqual(orig_policy, bug.access_policy)
+            bug.default_bugtask.transitionToTarget(new_product)
+            self.assertEqual(new_policy, bug.access_policy)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
@@ -2513,6 +2530,39 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
 
+    def test_present_access_policy_works(self):
+        # If an access policy is set, changing the pillar is permitted
+        # if the target has an access policy of the same type.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        # No exception is raised.
+        validate_target(bug, new_product)
+
+    def test_missing_access_policy_rejected(self):
+        # If the new pillar doesn't have a corresponding access policy,
+        # the transition is forbidden.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s doesn't have a %s access policy."
+            % (new_product.displayname, bug.access_policy.type.title),
+            validate_target, bug, new_product)
+
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
 
@@ -2592,18 +2642,19 @@ class TestWebservice(TestCaseWithFactory):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
 
 
-class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
+class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTaskUserHasPriviliges, self).setUp()
+        super(TestBugTaskUserHasBugSupervisorPrivileges, self).setUp()
         self.celebrities = getUtility(ILaunchpadCelebrities)
 
     def test_admin_is_allowed(self):
         # An admin always has privileges.
         bugtask = self.factory.makeBugTask()
-        self.assertTrue(bugtask.userHasPrivileges(self.celebrities.admin))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(self.celebrities.admin))
 
     def test_bug_celebrities_are_allowed(self):
         # The three bug celebrities (bug watcher, bug importer and
@@ -2612,20 +2663,21 @@ class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
         for celeb in (
             self.celebrities.bug_watch_updater,
             self.celebrities.bug_importer, self.celebrities.janitor):
-            self.assertTrue(bugtask.userHasPrivileges(celeb))
+            self.assertTrue(bugtask.userHasBugSupervisorPrivileges(celeb))
 
     def test_pillar_owner_is_allowed(self):
         # The pillar owner has privileges.
         pillar = self.factory.makeProduct()
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(pillar.owner))
+        self.assertTrue(bugtask.userHasBugSupervisorPrivileges(pillar.owner))
 
     def test_pillar_driver_is_allowed(self):
         # The pillar driver has privileges.
         pillar = self.factory.makeProduct()
         removeSecurityProxy(pillar).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(pillar.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(pillar.driver))
 
     def test_pillar_bug_supervisor(self):
         # The pillar bug supervisor has privileges.
@@ -2634,24 +2686,58 @@ class TestBugTaskUserHasPriviliges(TestCaseWithFactory):
         removeSecurityProxy(pillar).setBugSupervisor(
             bugsupervisor, self.celebrities.admin)
         bugtask = self.factory.makeBugTask(target=pillar)
-        self.assertTrue(bugtask.userHasPrivileges(bugsupervisor))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(bugsupervisor))
 
     def test_productseries_driver_is_allowed(self):
         # The series driver has privileges.
         series = self.factory.makeProductSeries()
         removeSecurityProxy(series).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=series)
-        self.assertTrue(bugtask.userHasPrivileges(series.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(series.driver))
 
     def test_distroseries_driver_is_allowed(self):
         # The series driver has privileges.
         distroseries = self.factory.makeDistroSeries()
         removeSecurityProxy(distroseries).driver = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(target=distroseries)
-        self.assertTrue(bugtask.userHasPrivileges(distroseries.driver))
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(distroseries.driver))
 
     def test_random_has_no_privileges(self):
         # Joe Random has no privileges.
         bugtask = self.factory.makeBugTask()
         self.assertFalse(
-            bugtask.userHasPrivileges(self.factory.makePerson()))
+            bugtask.userHasBugSupervisorPrivileges(
+                self.factory.makePerson()))
+
+
+class TestBugTaskUserHasBugSupervisorPrivilegesContext(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assert_userHasBugSupervisorPrivilegesContext(self, obj):
+        self.assertFalse(
+            BugTask.userHasBugSupervisorPrivilegesContext(
+                obj, self.factory.makePerson()))
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.assert_userHasBugSupervisorPrivilegesContext(distribution)
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assert_userHasBugSupervisorPrivilegesContext(dsp)
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assert_userHasBugSupervisorPrivilegesContext(product)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.assert_userHasBugSupervisorPrivilegesContext(productseries)
+
+    def test_sourcepackage(self):
+        source = self.factory.makeSourcePackage()
+        self.assert_userHasBugSupervisorPrivilegesContext(source)

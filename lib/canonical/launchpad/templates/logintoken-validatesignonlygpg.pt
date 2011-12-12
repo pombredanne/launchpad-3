@@ -22,7 +22,9 @@
 
       <div metal:fill-slot="extra_top">
         <p>
-          Please paste a clear-signed copy of the following paragraph into the box beneath it. (<a href="/+help/pgp-key-clearsign.html" target="help">How do I do that?</a>)
+          Please paste a clear-signed copy of the following paragraph
+          into the box beneath it.
+          (<a href="/+help-registry/pgp-key-clearsign.html" target="help">How do I do that?</a>)
         </p>
 
         <pre tal:content="context/validation_phrase">

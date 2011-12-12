@@ -180,6 +180,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):
@@ -942,7 +944,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            if subscription.person.isTeam():
+            if subscription.person.is_team:
                 rationale = 'Subscriber @%s' % subscription.person.name
             else:
                 rationale = 'Subscriber'

@@ -26,7 +26,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -104,6 +103,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.mail_helpers import pop_notifications
 
 

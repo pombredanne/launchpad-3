@@ -62,10 +62,10 @@ permission to read private and non-private objects (READ_PRIVATE).
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
-    >>> bug_1 = getUtility(IBugSet).get(1)
-    >>> bug_1.setPrivate(True, sample_person)
+    >>> bug_4 = getUtility(IBugSet).get(4)
+    >>> bug_4.setPrivate(True, sample_person)
     True
-    >>> check_permission('launchpad.View', bug_1)
+    >>> check_permission('launchpad.View', bug_4)
     True
 
 A principal with permission to read only non-private objects won't have
@@ -74,7 +74,7 @@ access to that bug, though.
     >>> logout()
     >>> principal.access_level = AccessLevel.READ_PUBLIC
     >>> setupInteraction(principal)
-    >>> check_permission('launchpad.View', bug_1)
+    >>> check_permission('launchpad.View', bug_4)
     False
 
 A token used for desktop integration has a level of permission
@@ -82,7 +82,7 @@ equivalent to WRITE_PUBLIC.
 
     >>> principal.access_level = AccessLevel.DESKTOP_INTEGRATION
     >>> setupInteraction(principal)
-    >>> check_permission('launchpad.View', bug_1)
+    >>> check_permission('launchpad.View', bug_4)
     True
 
     >>> check_permission('launchpad.Edit', sample_person)

@@ -231,7 +231,6 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
 compile: $(PY) $(BZR_VERSION_INFO)
-	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -432,14 +431,11 @@ copy-apache-config:
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache \
-		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
-	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

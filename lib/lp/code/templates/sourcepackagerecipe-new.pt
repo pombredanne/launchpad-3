@@ -54,7 +54,7 @@
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
             <tal:widget define="widget nocall:view/widgets/build_daily;
-                                widget_help_link string:/+help/recipe-build-frequency.html">
+                                widget_help_link string:/+help-code/recipe-build-frequency.html">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 

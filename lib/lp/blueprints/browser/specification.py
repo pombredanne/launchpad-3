@@ -562,6 +562,10 @@ class SpecificationView(SpecificationSimpleView):
     def page_title(self):
         return self.label
 
+    @property
+    def page_description(self):
+        return self.context.summary
+
     def initialize(self):
         # The review that the user requested on this spec, if any.
         self.notices = []

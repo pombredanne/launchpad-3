@@ -494,6 +494,22 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             expected, sourcepackage.getSharingDetailPermissions())
 
+    def test_drivers_are_distroseries(self):
+        # SP.drivers returns the drivers for the distroseries.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        self.assertNotEqual([], distroseries.drivers)
+        self.assertEqual(sourcepackage.drivers, distroseries.drivers)
+
+    def test_personHasDriverRights(self):
+        # A distroseries driver has driver permissions on source packages.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        driver = distroseries.drivers[0]
+        self.assertTrue(sourcepackage.personHasDriverRights(driver))
+
 
 class TestSourcePackageWebService(WebServiceTestCase):
 

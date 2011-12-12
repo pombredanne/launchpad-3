@@ -27,10 +27,6 @@ from zope.interface import (
     )
 
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -46,6 +42,10 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,

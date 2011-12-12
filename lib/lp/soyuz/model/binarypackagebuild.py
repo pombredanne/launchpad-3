@@ -877,12 +877,6 @@ class BinaryPackageBuildSet:
 
         def eager_load(rows):
             # Circular imports.
-            from lp.registry.model.sourcepackagename import (
-                SourcePackageName
-                )
-            from lp.soyuz.model.sourcepackagerelease import (
-                SourcePackageRelease
-                )
             from lp.soyuz.model.distroarchseries import (
                 DistroArchSeries
                 )
@@ -893,16 +887,14 @@ class BinaryPackageBuildSet:
                 Distribution
                 )
             from lp.soyuz.model.archive import Archive
-            sprs = load_related(
-                SourcePackageRelease, rows, ['source_package_release_id'])
-            load_related(
-                SourcePackageName, sprs, ['sourcepackagenameID'])
+            from lp.registry.model.person import Person
+            self._prefetchBuildData(rows)
             distro_arch_series = load_related(
                 DistroArchSeries, rows, ['distro_arch_series_id'])
             package_builds = load_related(
                 PackageBuild, rows, ['package_build_id'])
-            load_related(
-                Archive, package_builds, ['archive_id'])
+            archives = load_related(Archive, package_builds, ['archive_id'])
+            load_related(Person, archives, ['ownerID'])
             distroseries = load_related(
                 DistroSeries, distro_arch_series, ['distroseriesID'])
             load_related(

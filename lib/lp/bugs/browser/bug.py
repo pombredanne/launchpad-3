@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugActivity',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -117,6 +118,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -593,6 +595,11 @@ class BugView(LaunchpadView, BugViewMixin):
             attachment.libraryfile, attachment).http_url
 
 
+class BugActivity(BugView):
+
+    page_title = 'Activity log'
+
+
 class BugSubscriptionPortletDetails:
     """A mixin used to collate bug subscription details for a view."""
 
@@ -695,6 +702,7 @@ class BugEditViewBase(LaunchpadEditFormView):
     """Base class for all bug edit pages."""
 
     schema = IBug
+    page_title = 'Edit'
 
     def setUpWidgets(self):
         """Set up the widgets using the bug as the context."""
@@ -789,6 +797,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
+    page_title = label
 
     def setUpFields(self):
         """Make the readonly version of duplicateof available."""
@@ -837,6 +846,15 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         security_related_field = copy_field(
             IBug['security_related'], readonly=False)
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        allow_multi_pillar_private = bool(features.getFeatureFlag(
+                'disclosure.allow_multipillar_private_bugs.enabled'))
+        if (not allow_multi_pillar_private
+                and len(self.context.bug.affected_pillars) > 1):
+            self.form_fields = self.form_fields.omit('private')
+
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
@@ -861,7 +879,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
         # recorded.
         bug = self.context.bug
-        private = data.pop('private')
+        private = data.pop('private', bug.private)
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
@@ -1161,6 +1179,7 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 
     field_names = ['affects']
     label = "Does this bug affect you?"
+    page_title = label
 
     custom_widget('affects', LaunchpadRadioWidgetWithDescription)
 

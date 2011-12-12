@@ -56,7 +56,6 @@ from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
@@ -86,6 +85,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
+from lp.services.oauth.interfaces import IOAuthSignedRequest
 from lp.services.osutils import open_for_writing
 
 

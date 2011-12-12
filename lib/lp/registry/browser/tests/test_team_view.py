@@ -24,6 +24,7 @@ from lp.registry.interfaces.person import (
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_person,
@@ -31,8 +32,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -170,7 +171,7 @@ class TestTeamEditView(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=owner)
         archive = self.factory.makeArchive(owner=team)
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
-        removeSecurityProxy(team).archive = archive
+        get_property_cache(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
@@ -185,7 +186,7 @@ class TestTeamEditView(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         removeSecurityProxy(archive).status = ArchiveStatus.DELETED
-        removeSecurityProxy(team).archive = archive
+        get_property_cache(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertFalse(view.form_fields['name'].for_display)
@@ -224,7 +225,7 @@ class TestTeamEditView(TestCaseWithFactory):
         self.factory.makeMailingList(team, owner)
         archive = self.factory.makeArchive(owner=team)
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
-        removeSecurityProxy(team).archive = archive
+        get_property_cache(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)

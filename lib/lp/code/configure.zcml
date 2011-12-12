@@ -739,8 +739,6 @@
       for="lp.code.interfaces.codeimport.ICodeImport
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.mail.codeimport.new_import"/>
-  <facet
-      facet="branches"/>
 
   <!-- CodeImportSet -->
 
@@ -868,8 +866,7 @@
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
-  <lp:help-folder
-      folder="help" type="lp.code.publisher.CodeLayer" />
+  <lp:help-folder folder="help" name="+help-code" />
 
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">

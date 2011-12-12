@@ -291,7 +291,8 @@ answerer back to None.
     True
 
     >>> bestAnswer.first('div', 'boardCommentBody')
-    <div class="boardCommentBody"><p>New version of the firefox package
+    <div class="boardCommentBody" itemprop="commentText"><p>New version
+    of the firefox package
     are available with SVG support enabled. You can use apt-get or adept to
     upgrade.</p></div>
 
@@ -355,8 +356,13 @@ The answer's message is also highlighted as the best answer.
     >>> print extract_text(answerer)
     No Privileges Person (no-priv)
 
-    >>> message = bestAnswer.parent.parent.find(
+    >>> message = soup.find(
     ...     'div', 'boardCommentBody highlighted')
+    >>> print message
+    <div class="boardCommentBody highlighted"
+    itemprop="commentText"><p>New version of the firefox package are
+    available with SVG support enabled. You can use apt-get or adept to
+    upgrade.</p></div>
     >>> print extract_text(message)
     New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.

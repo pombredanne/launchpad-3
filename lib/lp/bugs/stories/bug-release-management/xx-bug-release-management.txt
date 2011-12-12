@@ -146,7 +146,7 @@ approved and targeted to the release.
     ...     (dsp.name, bug_task.bug.id))
 
     >>> admin_browser.getControl("Hydro").selected = True
-    >>> admin_browser.getControl("Nominate").click()
+    >>> admin_browser.getControl("Target").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag
