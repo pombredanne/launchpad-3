@@ -54,7 +54,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
         # Ensure either a comment or filecontent was provide, but only
         # if no errors have already been noted.
         if len(self.errors) == 0:
-            comment = data.get('comment', None) or u''
+            comment = data.get('comment') or u''
             filecontent = data.get('filecontent', None)
             if not comment.strip() and not filecontent:
                 self.addError("Either a comment or attachment "

@@ -515,7 +515,7 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
 
     def test_whitespaces_message_with_attached_file(self):
         # If the message only contains whitespaces but a file
-        # is attached then the request have to be considered valid.
+        # is attached then the request has to be considered valid.
         bug = self.factory.makeBug()
         form = {
             'field.comment': u' ',
@@ -526,4 +526,4 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         view = create_initialized_view(
             bug.default_bugtask, '+addcomment', form=form)
-        self.assertFalse(view.errors)
+        self.assertEqual(0, len(view.errors))
