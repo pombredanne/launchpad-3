@@ -60,7 +60,6 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
-    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
@@ -1737,7 +1736,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             QUERY_STRING=query_string, orderby=orderby, HTTP_COOKIE=cookie)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
-        view = BugTaskSearchListingView(bugtask.target, request)
+        view = getMultiAdapter((bugtask.target, request), name='+bugs')
         view.initialize()
         return view
 
@@ -1810,6 +1809,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task2, size=1, memo=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
+
+    def test_provides_view_name(self):
+        """The IJSONRequestCache should provide the view's name."""
+        self.useContext(self.dynamic_listings())
+        view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('+bugs', cache.objects['view_name'])
+        person = self.factory.makePerson()
+        commentview = getMultiAdapter(
+            (person, LaunchpadTestRequest()), name='+commentedbugs')
+        commentview.initialize()
+        cache = IJSONRequestCache(commentview.request)
+        self.assertEqual('+commentedbugs', cache.objects['view_name'])
 
     def test_default_order_by(self):
         """order_by defaults to '-importance in JSONRequestCache"""

@@ -512,7 +512,7 @@
             template="../templates/bug-portlet-subscribers.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bug.BugView"
+            class="lp.bugs.browser.bug.BugActivity"
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>
@@ -823,7 +823,7 @@
             name="+index"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
-            class="canonical.launchpad.webapp.LaunchpadView"
+            class="lp.bugs.browser.bugtracker.RemoteBugView"
             permission="zope.Public">
             <browser:page
                 name="+index"
@@ -887,7 +887,7 @@
         <browser:page
             name="+index"
             for="lp.bugs.interfaces.cve.ICve"
-            class="lp.bugs.browser.buglinktarget.BugLinksListingView"
+            class="lp.bugs.browser.cve.CveIndexView"
             template="../templates/cve-index.pt"
             permission="zope.Public"/>
         <browser:page

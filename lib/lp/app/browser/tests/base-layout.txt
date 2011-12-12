@@ -20,8 +20,7 @@ YUI grid classes for positioning.
     ...     PATH_INFO='/~waffles/+layout')
     >>> request.setPrincipal(user)
 
-The view can define the template's title in the page_title property, or
-define it in the pagetitles module (this latter is deprecated).
+The view can define the template's title in the page_title property.
 
     >>> class MainSideView(LaunchpadView):
     ...     """A simple view to test base-layout."""

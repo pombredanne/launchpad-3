@@ -10,6 +10,7 @@ __all__ = [
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
+    'iter_view_registrations',
     'LaunchpadImageFolder',
     'LaunchpadGraphics',
     'LaunchpadRootNavigation',
@@ -37,6 +38,7 @@ from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryAdapter,
     )
@@ -97,15 +99,9 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-# XXX SteveAlexander 2005-09-22: this is imported here because there is no
-#     general timedelta to duration format adapter available.  This should
-#     be factored out into a generally available adapter for both this
-#     code and for TALES namespace code to use.
-#     Same for MenuAPI.
 from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
-    PageTemplateContextsAPI,
     )
 from lp.app.errors import (
     GoneError,
@@ -316,13 +312,6 @@ class Hierarchy(LaunchpadView):
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
-            if title is None or title == '':
-                template = getattr(view, 'template', None)
-                if template is None:
-                    template = view.index
-                template_api = PageTemplateContextsAPI(
-                    dict(context=obj, template=template, view=view))
-                title = template_api.pagetitle()
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
             breadcrumb = Breadcrumb(None)
@@ -965,6 +954,17 @@ def get_launchpad_views(cookies):
             # part of a page. Any other value is considered to be 'true'.
             views[key] = value != 'false'
     return views
+
+
+def iter_view_registrations(cls):
+    """Iterate through the AdapterRegistrations of a view.
+
+    The input must be the final registered form of the class, which is
+    typically a SimpleViewClass variant.
+    """
+    for registration in getGlobalSiteManager().registeredAdapters():
+        if registration.factory == cls:
+            yield registration
 
 
 class DoesNotExistView:
