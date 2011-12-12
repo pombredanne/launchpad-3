@@ -58,10 +58,8 @@ def set_up_test_user(test_user, test_team):
 
 class CodeHostingTac(TacTestSetup):
 
-    def __init__(self, hosted_area, mirrored_area):
+    def __init__(self, mirrored_area):
         super(CodeHostingTac, self).__init__()
-        # The hosted area.
-        self._hosted_root = hosted_area
         # The mirrored area.
         self._mirror_root = mirrored_area
         # Where the pidfile, logfile etc will go.
@@ -69,9 +67,6 @@ class CodeHostingTac(TacTestSetup):
 
     def clear(self):
         """Clear the branch areas."""
-        if os.path.isdir(self._hosted_root):
-            shutil.rmtree(self._hosted_root)
-        os.makedirs(self._hosted_root, 0700)
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
@@ -80,7 +75,6 @@ class CodeHostingTac(TacTestSetup):
         self.clear()
 
     def tearDownRoot(self):
-        shutil.rmtree(self._hosted_root)
         shutil.rmtree(self._server_root)
 
     @property

@@ -102,39 +102,12 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         super(PullerBranchTestCase, self).setUp()
         self.disable_directory_isolation()
 
-    def getHostedPath(self, branch):
-        """Return the path of 'branch' in the upload area."""
-        return os.path.join(
-            config.codehosting.hosted_branches_root,
-            branch_id_to_path(branch.id))
-
-    def getMirroredPath(self, branch):
-        """Return the path of 'branch' in the supermirror area."""
-        return os.path.join(
-            config.codehosting.mirrored_branches_root,
-            branch_id_to_path(branch.id))
-
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path)
         self.addCleanup(shutil.rmtree, path)
-
-    def pushToBranch(self, branch, tree):
-        """Push a Bazaar branch to a given Launchpad branch's hosted area.
-
-        Use this to test mirroring a hosted branch.
-
-        :param branch: A Launchpad Branch object.
-        """
-        hosted_path = self.getHostedPath(branch)
-        out, err = self.run_bzr(
-            ['push', '--create-prefix', '-d',
-             urlutils.local_path_from_url(tree.branch.base), hosted_path],
-            retcode=None)
-        # We want to be sure that a new branch was indeed created.
-        self.assertEqual("Created new branch.\n", err)
 
     def serveOverHTTP(self):
         """Serve the current directory over HTTP, returning the server URL."""

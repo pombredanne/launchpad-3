@@ -39,8 +39,8 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 def main(argv):
     os.environ['BZR_HOME'] = tempfile.mkdtemp()
-    if os.path.exists(config.codehosting.hosted_branches_root):
-        shutil.rmtree(config.codehosting.hosted_branches_root)
+    if os.path.exists(config.codehosting.mirrored_branches_root):
+        shutil.rmtree(config.codehosting.mirrored_branches_root)
     execute_zcml_for_scripts()
     try:
         branches = Branch.select(
