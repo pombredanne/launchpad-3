@@ -719,7 +719,6 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
-
     logo = exported(
         LogoImageUpload(
             title=_("Logo"), required=False,
@@ -730,9 +729,10 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
                 "is a logo, a small picture or a personal mascot. It should "
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
-
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
 
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
@@ -818,8 +818,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
-    is_probationary = exported(
-        Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
     Bool(title=_("Signed Ubuntu Code of Conduct"),
             readonly=True))
