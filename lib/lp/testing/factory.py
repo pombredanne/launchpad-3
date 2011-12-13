@@ -1564,7 +1564,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = merge_proposal.source_branch
 
         def make_revision(parent=None):
-            sequence = source_branch.revno() + 1
+            sequence = source_branch.revision_history.count() + 1
             if parent is None:
                 parent_ids = []
             else:
