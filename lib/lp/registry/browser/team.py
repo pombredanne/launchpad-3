@@ -83,7 +83,10 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
 from canonical.launchpad.webapp.batching import (
     ActiveBatchNavigator,
     InactiveBatchNavigator,
@@ -2045,7 +2048,9 @@ class TeamReassignmentView(ObjectReassignmentView):
 
     def __init__(self, context, request):
         super(TeamReassignmentView, self).__init__(context, request)
-        self.callback = self._addOwnerAsMember
+        self.callback = self._afterOwnerChange
+        self.teamdisplayname = self.contextName
+        self._next_url = canonical_url(self.context)
 
     def validateOwner(self, new_owner):
         """Display error if the owner is not valid.
@@ -2077,7 +2082,11 @@ class TeamReassignmentView(ObjectReassignmentView):
     def contextName(self):
         return self.context.displayname
 
-    def _addOwnerAsMember(self, team, oldOwner, newOwner):
+    @property
+    def next_url(self):
+        return self._next_url
+
+    def _afterOwnerChange(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.
 
         When a user creates a new team, he is added as an administrator of
@@ -2097,6 +2106,17 @@ class TeamReassignmentView(ObjectReassignmentView):
             team.addMember(
                 oldOwner, reviewer=oldOwner,
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
+
+        # If the current logged in user cannot see the team anymore as a
+        # result of the ownership change, we don't want them to get a nasty
+        # error page. So we redirect to launchpad.net with a notification.
+        clear_cache()
+        if not check_permission('launchpad.LimitedView', team):
+            self.request.response.addNotification(
+                "The owner of team %s was successfully changed but you are "
+                "now no longer authorised to view the team."
+                    % self.teamdisplayname)
+            self._next_url = canonical_url(self.user)
 
 
 class ITeamIndexMenu(Interface):
