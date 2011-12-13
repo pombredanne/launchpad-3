@@ -53,7 +53,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
     echo -n "-- Created using " >> $(2) && \
     pg_dump --version >> $(2) && \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
-    | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+    | grep -v "\( TOC \|INSERT INTO launchpaddatabase\|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
     | $(PYTHON) sort_sql.py >> $(2) && \
     $(PYTHON) fti.py --force -d ${1} -q
 
