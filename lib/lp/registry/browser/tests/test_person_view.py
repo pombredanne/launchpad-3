@@ -144,6 +144,7 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
         html = view()
         superteams = find_tag_by_id(html, 'subteam-of')
         self.assertIs(None, superteams)
+        self.assertEqual([], view.super_teams)
 
     def test_private_superteams_hidden(self):
         # If the viewer has no permission to see any superteams, the portlet
@@ -155,7 +156,8 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
                 team, '+index', server_url=canonical_url(team), path_info='',
                 principal=viewer)
             html = view()
-        superteams = find_tag_by_id(html, 'subteam-of')
+            self.assertEqual([], view.super_teams)
+            superteams = find_tag_by_id(html, 'subteam-of')
         self.assertIs(None, superteams)
 
     def test_private_superteams_shown(self):
@@ -166,6 +168,7 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
                 team, '+index', server_url=canonical_url(team), path_info='',
                 principal=team.teamowner)
             html = view()
+            self.assertEqual(view.super_teams, list(team.super_teams))
             superteams = find_tag_by_id(html, 'subteam-of')
         self.assertFalse('&lt;hidden&gt;' in superteams)
         self.assertEqual(
