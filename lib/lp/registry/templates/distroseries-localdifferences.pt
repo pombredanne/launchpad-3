@@ -103,7 +103,7 @@
             tal:define="sponsored_person nocall:view/widgets/sponsored_person;
                         field_name sponsored_person/context/__name__;
                         error python:view.getFieldError(field_name);">
-            <label tal:attributes="for field_name">Person being sponsored (optional):</label>
+            <label>Person being sponsored (optional):</label>
             <tal:sponsored replace="structure sponsored_person"/>
           </span>
         </div>
