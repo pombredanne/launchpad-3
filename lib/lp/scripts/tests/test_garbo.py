@@ -44,11 +44,6 @@ from canonical.database.constants import (
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
-from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
@@ -100,6 +95,11 @@ from lp.scripts.garbo import (
 from lp.services.job.model.job import Job
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthNonce,
+    )
+from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,

@@ -42,7 +42,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def makeDuplicates(self, count=1, subscriber=None):
         if subscriber is None:
             subscriber = self.subscriber
-        if subscriber.isTeam():
+        if subscriber.is_team:
             subscribed_by = subscriber.teamowner
         else:
             subscribed_by = subscriber

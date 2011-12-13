@@ -11,11 +11,10 @@ __all__ = [
 from twisted.application.service import Service
 from twisted.internet import task
 from twisted.internet.error import AlreadyCancelled
-
 from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from lp.services.gpg.interfaces import IGPGHandler
 
 
 class GPGHandlerConfigResetJob(Service):

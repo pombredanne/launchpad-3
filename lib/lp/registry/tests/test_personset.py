@@ -27,8 +27,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.model.person import PersonSet
 from lp.testing import (
-    login_person,
-    logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -149,9 +148,9 @@ class TestPersonSetMerge(TestCaseWithFactory):
             MailingListAutoSubscribePolicy.ALWAYS)
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
-        login_person(self.team.teamowner)
-        self.team.addMember(self.from_person, reviewer=self.team.teamowner)
-        logout()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(
+                self.from_person, reviewer=self.team.teamowner)
         transaction.commit()
         self.person_set._mergeMailingListSubscriptions(
             self.cur, self.from_person.id, self.to_person.id)
@@ -177,7 +176,6 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         person = self.factory.makePerson(email=email)
         openid_ident = removeSecurityProxy(
             person.account).openid_identifiers.any().identifier
-        person_set = getUtility(IPersonSet)
 
         result, db_updated = self.callGetOrCreate(openid_ident, email=email)
 

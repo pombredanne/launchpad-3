@@ -39,7 +39,7 @@ class TestPersonRoles(TestCaseWithFactory):
     def _get_person_celebrities(self, is_team):
         for name in ILaunchpadCelebrities.names():
             attr = getattr(self.celebs, name)
-            if IPerson.providedBy(attr) and attr.isTeam() == is_team:
+            if IPerson.providedBy(attr) and attr.is_team == is_team:
                 yield (name, attr)
 
     def test_in_teams(self):

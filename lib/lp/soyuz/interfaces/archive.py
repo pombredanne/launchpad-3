@@ -1004,6 +1004,11 @@ class IArchiveView(IHasBuildRecords):
             # Really PackagePublishingPocket, circular import fixed below.
             vocabulary=DBEnumeratedType,
             required=False, readonly=True),
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
+                          "than or equal to this date."),
+            required=False),
         exact_match=Bool(
             description=_("Whether or not to filter binary names by exact "
                           "matching."),
@@ -1015,7 +1020,7 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False):
+                                exact_match=False, created_since_date=None):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
         :param: name: binary name filter (exact match or SQL LIKE controlled
@@ -1026,6 +1031,8 @@ class IArchiveView(IHasBuildRecords):
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
+        :param: created_since_date: a filter on teh `date_created` of the
+                                    publishing record.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """

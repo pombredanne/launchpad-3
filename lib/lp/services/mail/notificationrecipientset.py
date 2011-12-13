@@ -110,7 +110,7 @@ class NotificationRecipientSet:
                 # no association or if the previous one was to a team and
                 # the newer one is to a person.
                 if (old_person is None
-                    or (old_person.isTeam() and not person.isTeam())):
+                    or (old_person.is_team and not person.is_team)):
                     self._emailToPerson[email] = person
 
     def remove(self, persons):

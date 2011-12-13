@@ -80,13 +80,11 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
@@ -243,6 +241,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
@@ -250,6 +249,7 @@ from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate
@@ -3837,6 +3837,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
+                                           datecreated=None,
                                            pocket=None, archive=None,
                                            source_package_release=None,
                                            sourcepackagename=None):
@@ -3878,6 +3879,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 section_name=section_name,
                 priority=priority)
 
+        if datecreated is None:
+            datecreated = self.getUniqueDate()
+
         bpph = getUtility(IPublishingSet).newBinaryPublication(
             archive, binarypackagerelease, distroarchseries,
             binarypackagerelease.component, binarypackagerelease.section,
@@ -3885,6 +3889,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_bpph = removeSecurityProxy(bpph)
         naked_bpph.status = status
         naked_bpph.dateremoved = dateremoved
+        naked_bpph.datecreated = datecreated
         naked_bpph.scheduleddeletiondate = scheduleddeletiondate
         naked_bpph.priority = priority
         if status == PackagePublishingStatus.PUBLISHED:
@@ -4209,7 +4214,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             system = self.getUniqueString('system-fingerprint')
         if submission_data is None:
             sample_data_path = os.path.join(
-                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
                 'tests', 'simple_valid_hwdb_submission.xml')
             submission_data = open(sample_data_path).read()
         filename = self.getUniqueString('submission-file')

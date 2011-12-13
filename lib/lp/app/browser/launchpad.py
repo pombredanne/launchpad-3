@@ -8,7 +8,6 @@ __all__ = [
     'AppFrontPageSearchView',
     'DoesNotExistView',
     'Hierarchy',
-    'IcingContribFolder',
     'IcingFolder',
     'iter_view_registrations',
     'LaunchpadImageFolder',
@@ -850,15 +849,6 @@ class LaunchpadImageFolder(ExportedImageFolder):
 
     folder = os.path.join(
         config.root, 'lib/canonical/launchpad/images/')
-
-
-class IcingContribFolder(ExportedFolder):
-    """Export the contrib icing."""
-
-    export_subdirectories = True
-
-    folder = os.path.join(
-        config.root, 'lib/canonical/launchpad/icing-contrib/')
 
 
 class LaunchpadTourFolder(ExportedFolder):

@@ -81,7 +81,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
-            if person.isTeam():
+            if person.is_team:
                 message = '%s team has been subscribed to this bug.'
             else:
                 message = '%s has been subscribed to this bug.'

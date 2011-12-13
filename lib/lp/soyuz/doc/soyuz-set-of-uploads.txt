@@ -68,7 +68,7 @@ relevant launchpad person.
 
 Import public keyring into current LPDB.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Having set up that infrastructure we need to prepare a breezy distroseries

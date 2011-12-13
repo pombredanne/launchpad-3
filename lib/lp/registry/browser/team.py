@@ -1112,7 +1112,7 @@ class TeamMemberAddView(LaunchpadFormView):
         newmember = data.get('newmember')
         error = None
         if newmember is not None:
-            if newmember.isTeam() and not newmember.activemembers:
+            if newmember.is_team and not newmember.activemembers:
                 error = _("You can't add a team that doesn't have any active"
                           " members.")
             elif newmember in self.context.activemembers:
@@ -1338,7 +1338,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
                     % (canonical_url(context.team),
                        context.team.unique_displayname))
         elif context.dateexpires is None or context.dateexpires > date_limit:
-            if context.person.isTeam():
+            if context.person.is_team:
                 link_text = "Somebody else has already renewed it."
             else:
                 link_text = (

@@ -31,10 +31,6 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
 from canonical.launchpad.webapp import canonical_url
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
@@ -45,6 +41,10 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,

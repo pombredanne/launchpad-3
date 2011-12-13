@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'Import',
+    'Importer',
     ]
 
 
@@ -65,7 +65,7 @@ class Importer:
             if not address:
                 continue
             person = person_set.getByEmail(address)
-            if person is None or person.isTeam():
+            if person is None or person.is_team:
                 self.log.error('No person for address: %s', address)
                 continue
             email = email_set.getByEmail(address)

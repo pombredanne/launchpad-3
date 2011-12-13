@@ -1285,7 +1285,7 @@ class BugTaskPrivilegeMixin:
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userHasPrivileges(self.user)
+        return self.context.userHasBugSupervisorPrivileges(self.user)
 
 
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
@@ -2260,17 +2260,17 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
-            'show_age': False,
+            'show_datecreated': False,
             'show_assignee': False,
-            'show_bugtarget': True,
-            'show_bug_heat': True,
+            'show_targetname': True,
+            'show_heat': True,
             'show_id': True,
             'show_importance': True,
-            'show_last_updated': False,
+            'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
             'show_status': True,
-            'show_tags': False,
+            'show_tag': False,
         }
         self.field_visibility = None
         self._setFieldVisibility()
@@ -3108,7 +3108,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     @property
     def structural_subscriber_label(self):
         if IDistribution.providedBy(self.context):
-            return 'Package, or series subscriber'
+            return 'Package or series subscriber'
         elif IDistroSeries.providedBy(self.context):
             return 'Package subscriber'
         elif IProduct.providedBy(self.context):

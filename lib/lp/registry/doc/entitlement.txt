@@ -231,7 +231,6 @@ security adapters.
 
     >>> entitlement = ubuntu_team.entitlements[0]
     >>> entitlement.quota = 50
-    >>> logout()
     >>> login(ANONYMOUS)
     >>> entitlement.quota
     Traceback (most recent call last):
@@ -243,7 +242,6 @@ security adapters.
     Traceback (most recent call last):
       ...
     Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
-    >>> logout()
 
 Authenticated Launchpad users who are not the owner or team member are
 similarly restricted.
