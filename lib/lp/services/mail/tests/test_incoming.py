@@ -64,7 +64,8 @@ class TestIncoming(TestCaseWithFactory):
         self.assertIn(
             "An error occurred while processing a mail you sent to "
             "Launchpad's email\ninterface.\n\n\n"
-            "Error message:\n\nSignature couldn't be verified: No data",
+            "Error message:\n\nSignature couldn't be verified: "
+            "(7, 58, u'No data')",
             body)
 
     def test_invalid_to_addresses(self):
