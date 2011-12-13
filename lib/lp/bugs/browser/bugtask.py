@@ -2242,7 +2242,7 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': ' '.join(self.bug.tags),
+            'tags': [{'tag': tag} for tag in self.bug.tags],
             'title': self.bug.title,
             }
 
