@@ -160,18 +160,14 @@ class BzrSync:
         bzr_last = bzr_last_revinfo[1]
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
-            graph = self._getRevisionGraph(bzr_branch, NULL_REVISION)
-            bzr_branch.lock_read()
-            try:
-                added_ancestry = set([
-                    r for (r, ps) in graph.iter_ancestry([bzr_last])])
-            finally:
-                bzr_branch.unlock()
-            removed_ancestry = set()
-        else:
-            graph = self._getRevisionGraph(bzr_branch, db_last)
+            db_last = NULL_REVISION
+        graph = self._getRevisionGraph(bzr_branch, db_last)
+        bzr_branch.lock_read()
+        try:
             added_ancestry, removed_ancestry = (
                 graph.find_difference(bzr_last, db_last))
+        finally:
+            bzr_branch.unlock()
         added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 

@@ -430,7 +430,7 @@ class TestBzrSync(BzrSyncTestCase):
                 bzr_branch.set_last_revision_info(revno, bzr_rev)
                 delta_branch = bzr_branch
             return sync.getAncestryDelta(
-                delta_branch, bzr_branch.last_revision_info())
+                delta_branch, delta_branch.last_revision_info())
 
         added_ancestry, removed_ancestry = get_delta('merge', None)
         # All revisions are new for an unscanned branch
