@@ -497,8 +497,7 @@ class RevisionsAddedJob(BranchJobDerived):
             last_revid, (NULL_REVISION, None))
         for distance, revid in enumerate(history):
             if revid in added_revisions:
-                break
-            yield repository.get_revision(revid), last_revno - distance
+                yield repository.get_revision(revid), last_revno - distance
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
