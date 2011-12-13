@@ -684,6 +684,12 @@ class IPersonPublic(IPrivacy):
         required=False, default=False))
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=True, vocabulary=AccountStatus)
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=True)
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -806,14 +812,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                 title=_('List of SSH keys'),
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
-
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=True)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
