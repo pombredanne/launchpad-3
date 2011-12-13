@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Builder features."""
@@ -8,13 +8,14 @@ import signal
 import tempfile
 import xmlrpclib
 
+from lpbuildd.slave import BuilderStatus
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-
+import transaction
 from twisted.internet.defer import (
     CancelledError,
     DeferredList,
@@ -22,14 +23,11 @@ from twisted.internet.defer import (
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
-
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
-
-from lpbuildd.slave import BuilderStatus
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
@@ -45,6 +43,7 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
+    CannotResumeHost,
     IBuilder,
     IBuilderSet,
     )
@@ -52,7 +51,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.interfaces.builder import CannotResumeHost
 from lp.buildmaster.model.builder import (
     BuilderSlave,
     ProxyWithConnectionTimeout,
@@ -74,6 +72,8 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehavior,
     WaitingSlave,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
@@ -533,6 +533,26 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # And the old_candidate is superseded:
         self.assertEqual(BuildStatus.SUPERSEDED, build.status)
+
+    def test_findBuildCandidate_postprocesses_in_read_write_policy(self):
+        # _findBuildCandidate invokes BuildFarmJob.postprocessCandidate,
+        # which may modify the database.  This happens in a read-write
+        # transaction even if _findBuildCandidate itself runs in a
+        # read-only transaction policy.
+
+        # PackageBuildJob.postprocessCandidate will attempt to delete
+        # security builds.
+        pub = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=self.factory.makeArchive(),
+            pocket=PackagePublishingPocket.SECURITY)
+        pub.createMissingBuilds()
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=True):
+            removeSecurityProxy(self.frog_builder)._findBuildCandidate()
+            # The test is that this passes without a "transaction is
+            # read-only" error.
+            transaction.commit()
 
     def test_acquireBuildCandidate_marks_building(self):
         # acquireBuildCandidate() should call _findBuildCandidate and

@@ -809,6 +809,7 @@ class Builder(SQLBase):
                 candidate_approved = job_class.postprocessCandidate(
                     candidate, logger)
                 if candidate_approved:
+                    transaction.commit()
                     return candidate
             transaction.commit()
 
