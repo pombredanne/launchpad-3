@@ -85,8 +85,7 @@ class BzrSync:
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
-        bzr_history = bzr_branch.revision_history()
-        last_revision_info = (len(bzr_history), bzr_history[-1])
+        last_revision_info = bzr_branch.last_revision_info()
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -95,7 +94,7 @@ class BzrSync:
 
         (new_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_history, db_ancestry, db_history)
+            bzr_branch, last_revision_info, db_ancestry, db_history)
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
@@ -171,9 +170,12 @@ class BzrSync:
             added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
-    def getHistoryDelta(self, bzr_history, db_history):
+    def getHistoryDelta(self, bzr_graph, bzr_last_revinfo, db_history):
         self.logger.info("Calculating history delta.")
-        common_len = min(len(bzr_history), len(db_history))
+        common_len = min(bzr_last_revinfo[0], len(db_history))
+        bzr_history = list(bzr_graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
+            (NULL_REVISION, )))
+        bzr_history.reverse()
         while common_len > 0:
             # The outer conditional improves efficiency. Without it, the
             # algorithm is O(history-size * change-size), which can be
@@ -191,7 +193,7 @@ class BzrSync:
         added_history = bzr_history[common_len:]
         return added_history, removed_history
 
-    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
+    def planDatabaseChanges(self, bzr_branch, bzr_last_revinfo, db_ancestry,
                             db_history):
         """Plan database changes to synchronize with bzrlib data.
 
@@ -201,7 +203,7 @@ class BzrSync:
         self.logger.info("Planning changes.")
         # Find the length of the common history.
         added_history, removed_history = self.getHistoryDelta(
-            bzr_history, db_history)
+            bzr_branch.repository.get_graph(), bzr_last_revinfo, db_history)
         added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
 
         notify(
@@ -217,7 +219,7 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        last_revno = len(bzr_history)
+        last_revno = bzr_last_revinfo[0]
         revids_to_insert = dict(
             self.revisionsToInsert(
                 added_history, last_revno, added_ancestry))
