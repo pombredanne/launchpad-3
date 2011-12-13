@@ -898,8 +898,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
         :return: tuple of three items.
             1. Ancestry set of bzr revision-ids.
-            2. History list of bzr revision-ids. Similar to the result of
-               bzrlib.Branch.revision_history().
+            2. History list of bzr revision-ids, oldest first.
             3. Dictionnary mapping bzr bzr revision-ids to the database ids of
                the corresponding BranchRevision rows for this branch.
         """
