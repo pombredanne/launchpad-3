@@ -5,19 +5,69 @@
     <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
       Edit
     </button>
+
+    <a tal:condition="view/help_link"
+       tal:attributes="href view/help_link"
+       target="help"
+       class="sprite maybe">&nbsp;
+       <span class="invisible-link">Driver help</span>
+    </a>
+
     <noscript tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="sprite edit"></a>
+      <a tal:condition="view/help_link"
+         tal:attributes="href view/help_link"
+         target="help"
+         class="sprite maybe">&nbsp;
+         <span class="invisible-link">Driver help</span>
+      </a>
     </noscript>
     <div class="yui3-activator-message-box yui3-activator-hidden"></div>
 </span>
+
 <script tal:condition="view/can_write"
         tal:content="structure string:
-LPS.use('lp.app.picker', function(Y) {
+LPS.use('lp.app.picker', 'lp.client', function(Y) {
     if (Y.UA.ie) {
         return;
     }
+
+    var picker_config = ${view/json_config}
+
+    var check_disclosure_callback = function(
+        picker, picker_result, do_save, do_cancel) {
+        var client = new Y.lp.client.Launchpad();
+        var private = null;
+        config = {
+        on: {
+                success: function (person) {
+                    console.dir(LP.cache.context);
+                    private_person = person.get('private'); 
+                    public_context = true;
+                    if (LP.cache.context.private !== undefined) {
+                        public_context = !(LP.cache.context.private); 
+                    } 
+
+                    if (private_person && public_context) {
+                        var yesno_content =
+                            '<p>The team you are assigning to this role is private; ' +
+                            ' continuing will expose the existence of this team.</p>' +
+                            '<p>Do you wish to continue?</p>'
+                        Y.lp.app.picker.yesno_save_confirmation(
+                                picker, yesno_content, 'Yes', 'Choose Again',
+                                do_save, do_cancel);
+                    } else {
+                        do_save(); 
+                    }
+                }
+            }
+        }
+        client.get(picker_result.api_uri, config);
+
+    };
+    picker_config.validate_callback = check_disclosure_callback;
 
     Y.on('load', function(e) {
       Y.lp.app.picker.addPickerPatcher(
@@ -25,7 +75,7 @@ LPS.use('lp.app.picker', function(Y) {
         ${view/json_resource_uri},
         ${view/json_attribute},
         ${view/json_content_box_id},
-        ${view/json_config});
+        picker_config);
       }, window);
 });
 "/>

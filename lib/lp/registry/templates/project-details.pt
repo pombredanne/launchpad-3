@@ -20,24 +20,11 @@
     </dl>
     <dl id="maintainer">
       <dt>Maintainer:</dt>
-      <dd>
-        <a tal:replace="structure context/owner/fmt:link" />
-        <tal:edit-maintainer
-          content="structure overview_menu/reassign/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/maintainer_widget" />
     </dl>
     <dl id="driver">
       <dt>Driver:</dt>
-      <dd>
-        <tal:no-driver condition="not:context/driver">
-          Not yet appointed
-        </tal:no-driver>
-        <tal:has-driver condition="context/driver">
-          <a tal:replace="structure context/driver/fmt:link">Driver</a>
-        </tal:has-driver>
-        <tal:edit-maintainer
-          content="structure overview_menu/driver/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/driver_widget" />
     </dl>
     <dl id="bug-tracker">
       <dt>Bug tracker:</dt>

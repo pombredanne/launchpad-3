@@ -33,6 +33,7 @@ from zope.schema.interfaces import (
     )
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
@@ -243,7 +244,8 @@ class InlineEditPickerWidget(WidgetBase):
                  content_box_id=None, header='Select an item',
                  step_title='Search',
                  null_display_value='None',
-                 edit_view="+edit", edit_url=None, edit_title=''):
+                 edit_view="+edit", edit_url=None, edit_title='',
+                 help_link=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -268,6 +270,7 @@ class InlineEditPickerWidget(WidgetBase):
         self.header = header
         self.step_title = step_title
         self.null_display_value = null_display_value
+        self.help_link = help_link
 
         # JSON encoded attributes.
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
@@ -353,7 +356,8 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
                  remove_person_text='Remove person',
                  remove_team_text='Remove team',
                  null_display_value='None',
-                 edit_view="+edit", edit_url=None, edit_title=''):
+                 edit_view="+edit", edit_url=None, edit_title='',
+                 help_link=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -373,11 +377,13 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
+        :param help_link: Used to set a link for help for the widget.
+        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
             step_title, null_display_value,
-            edit_view, edit_url, edit_title)
+            edit_view, edit_url, edit_title, help_link)
 
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
