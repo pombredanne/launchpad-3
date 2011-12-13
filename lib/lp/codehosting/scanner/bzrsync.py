@@ -170,27 +170,22 @@ class BzrSync:
             added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
-    def getHistoryDelta(self, bzr_graph, bzr_last_revinfo, db_history):
+    def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, db_history):
         self.logger.info("Calculating history delta.")
         common_len = min(bzr_last_revinfo[0], len(db_history))
-        bzr_history = list(bzr_graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
-            (NULL_REVISION, )))
-        bzr_history.reverse()
+        common_revid = NULL_REVISION
         while common_len > 0:
-            # The outer conditional improves efficiency. Without it, the
-            # algorithm is O(history-size * change-size), which can be
-            # excessive if a long branch is replaced by another long branch
-            # with a distant (or no) common mainline parent. The inner
-            # conditional is needed for correctness with branches where the
-            # history does not follow the line of leftmost parents.
-            if db_history[common_len - 1] == bzr_history[common_len - 1]:
-                if db_history[:common_len] == bzr_history[:common_len]:
-                    break
+            if db_history[common_len - 1] == bzr_branch.get_rev_id(common_len - 1):
+                common_revid = db_history[common_len - 1]
+                break
             common_len -= 1
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
         removed_history = db_history[common_len:]
-        added_history = bzr_history[common_len:]
+        bzr_graph = bzr_branch.repository.get_graph()
+        added_history = list(bzr_graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
+            (common_revid, )))
+        added_history.reverse()
         return added_history, removed_history
 
     def planDatabaseChanges(self, bzr_branch, bzr_last_revinfo, db_ancestry,
@@ -203,7 +198,7 @@ class BzrSync:
         self.logger.info("Planning changes.")
         # Find the length of the common history.
         added_history, removed_history = self.getHistoryDelta(
-            bzr_branch.repository.get_graph(), bzr_last_revinfo, db_history)
+            bzr_branch, bzr_last_revinfo, db_history)
         added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
 
         notify(
