@@ -63,7 +63,7 @@ class TestBuildViews(TestCaseWithFactory):
         removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
         view = create_initialized_view(build, name="+index")
-        self.assertIsNot('Universe', view.component_name)
+        self.assertEqual('multiverse', view.component_name)
 
     def test_view_without_component(self):
         # Production has some buggy builds without source publications.
@@ -73,7 +73,7 @@ class TestBuildViews(TestCaseWithFactory):
         build = spph.sourcepackagerelease.createBuild(
             other_das, PackagePublishingPocket.RELEASE, spph.archive)
         view = create_initialized_view(build, name="+index")
-        self.assertIs('Unknown', view.component_name)
+        self.assertEqual('unknown', view.component_name)
 
     def test_build_menu_primary(self):
         # The menu presented in the build page depends on the targeted

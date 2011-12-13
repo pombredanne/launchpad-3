@@ -309,7 +309,7 @@ class BuildView(LaunchpadView):
         if component is not None:
             return component.name
         else:
-            return 'Unknown'
+            return 'unknown'
 
     @cachedproperty
     def files(self):
