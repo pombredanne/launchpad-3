@@ -27,15 +27,9 @@ a 3-0 page to ensure that both display the correct demo/lp-net
 information and styles.
 
     # Set config to pretend we're on a demo site:
-    >>> from textwrap import dedent
-    >>> site_message = ('This is a demo site mmk. '
-    ...                 '<a href="http://example.com">File a bug</a>.')
-    >>> test_data = dedent("""
-    ...     [launchpad]
-    ...     is_demo: True
-    ...     site_message: %s
-    ...     """ % site_message)
-    >>> config.push('test_data', test_data)
+    >>> from lp.testing.fixture import DemoMode
+    >>> demo_mode_fixture = DemoMode()
+    >>> demo_mode_fixture.setUp()
     >>> print config.launchpad.is_demo
     True
 
@@ -61,8 +55,7 @@ For a 3-0 page:
 
 When you are not on a demo site, the text no longer appears.
 
-    >>> # Restore the previous config:
-    >>> config_data = config.pop('test_data')
+    >>> demo_mode_fixture.cleanUp()
     >>> print config.launchpad.is_demo
     False
 

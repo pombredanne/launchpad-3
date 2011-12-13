@@ -71,7 +71,7 @@ class AbstractSubscriptionInfoCollection:
         if sameProxiedObjects(principal, self.person):
             collection = self.personal
         else:
-            assert principal.isTeam(), (principal, self.person)
+            assert principal.is_team, (principal, self.person)
             if principal.id in self.administrated_team_ids:
                 collection = self.as_team_admin
             else:

@@ -21,7 +21,6 @@ common external bug tracker.
     >>> login('admin@canonical.com')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> logout()
     >>> login('test@canonical.com')
     >>> transaction.commit()
 

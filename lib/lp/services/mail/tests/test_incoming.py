@@ -14,7 +14,6 @@ import transaction
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
-from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -31,6 +30,7 @@ from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
+from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -64,7 +64,8 @@ class TestIncoming(TestCaseWithFactory):
         self.assertIn(
             "An error occurred while processing a mail you sent to "
             "Launchpad's email\ninterface.\n\n\n"
-            "Error message:\n\nSignature couldn't be verified: No data",
+            "Error message:\n\nSignature couldn't be verified: "
+            "(7, 58, u'No data')",
             body)
 
     def test_invalid_to_addresses(self):

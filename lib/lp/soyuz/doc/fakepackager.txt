@@ -160,7 +160,7 @@ basically checking we pass the right arguments to it.
     >>> content = open(changesfile_path).read()
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
@@ -225,7 +225,7 @@ In order to upload packages we have to be logged in as an administrator.
 It also requires the public test gpg keys to be imported in the
 database.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 The default upload target is ubuntu/hoary and since we will deal with

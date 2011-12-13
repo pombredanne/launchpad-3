@@ -49,7 +49,6 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
-from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
@@ -742,7 +741,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
-        load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path, use_server=False)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
@@ -755,7 +753,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
-        load_optional_plugin('hg')
         self.hg_server = MercurialServer(self.repo_path, use_server=False)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)

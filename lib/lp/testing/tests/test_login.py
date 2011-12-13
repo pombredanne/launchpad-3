@@ -273,7 +273,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
@@ -284,7 +284,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         logged_in = f()
         self.assertEqual(person, logged_in)
 
