@@ -487,12 +487,12 @@ class RevisionsAddedJob(BranchJobDerived):
         """Iterate through revisions added to the mainline."""
         repository = self.bzr_branch.repository
         graph = repository.get_graph()
+        (last_revno, last_revid) = self.bzr_branch.last_revision_info()
         added_revisions = graph.find_unique_ancestors(
             self.last_revision_id, [self.last_scanned_id])
         # Avoid hitting the database since bzrlib makes it easy to check.
         # There are possibly more efficient ways to get the mainline
         # revisions, but this is simple and it works.
-        (last_revno, last_revid) = self.bzr_branch.last_revision_info()
         history = graph.iter_lefthand_ancestry(
             last_revid, (NULL_REVISION, None))
         for distance, revid in enumerate(history):
