@@ -772,7 +772,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
-                 description=None, icon=None, logo=None,
+                 description=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -783,11 +783,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param description: Team team's description.
-        :type description string:
+        :type string:
         :param email: The email address to use as the team's contact address.
         :type email: string
-        :param icon: The team's icon.
-        :param logo: The team's logo.
         :param subscription_policy: The subscription policy of the team.
         :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
@@ -812,19 +810,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, teamdescription=description,
             subscriptionpolicy=subscription_policy)
-        naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
-            naked_team.visibility = visibility
+            removeSecurityProxy(team).visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
-        if icon is not None:
-            naked_team.icon = icon
-        if logo is not None:
-            naked_team.logo = logo
         if members is not None:
+            naked_team = removeSecurityProxy(team)
             for member in members:
                 naked_team.addMember(member, owner)
         return team
@@ -1130,7 +1124,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if registrant is None:
             if owner.is_team:
-                registrant = removeSecurityProxy(owner).teamowner
+                registrant = owner.teamowner
             else:
                 registrant = owner
 
