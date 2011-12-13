@@ -4749,7 +4749,7 @@ ALTER TABLE launchpaddatabaserevision ENABLE TRIGGER ALL;
 
 ALTER TABLE launchpaddatabaseupdatelog DISABLE TRIGGER ALL;
 
-INSERT INTO launchpaddatabaseupdatelog (id, start_time, end_time, branch_nick, revno, revid) VALUES (1, '2011-12-09 08:30:06.461335', '2011-12-09 08:30:06.656736', 'db-devel', 11209, 'launchpad@pqm.canonical.com-20111209075642-yqplc74achf8h6mc');
+INSERT INTO launchpaddatabaseupdatelog (id, start_time, end_time, branch_nick, revno, revid) VALUES (1, '2011-12-13 07:55:04.685269', '2011-12-13 07:55:04.987424', 'db-devel', 11217, 'launchpad@pqm.canonical.com-20111212222744-g9esz8h7rv6zejcz');
 
 
 ALTER TABLE launchpaddatabaseupdatelog ENABLE TRIGGER ALL;
