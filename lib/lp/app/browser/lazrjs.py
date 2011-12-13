@@ -243,7 +243,8 @@ class InlineEditPickerWidget(WidgetBase):
                  content_box_id=None, header='Select an item',
                  step_title='Search',
                  null_display_value='None',
-                 edit_view="+edit", edit_url=None, edit_title=''):
+                 edit_view="+edit", edit_url=None, edit_title='',
+                 help_link=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -268,6 +269,7 @@ class InlineEditPickerWidget(WidgetBase):
         self.header = header
         self.step_title = step_title
         self.null_display_value = null_display_value
+        self.help_link = help_link
 
         # JSON encoded attributes.
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
@@ -378,12 +380,11 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
             step_title, null_display_value,
-            edit_view, edit_url, edit_title)
+            edit_view, edit_url, edit_title, help_link)
 
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
-        self.help_link = help_link
 
     @property
     def picker_type(self):
