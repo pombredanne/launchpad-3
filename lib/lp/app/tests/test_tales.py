@@ -149,20 +149,18 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         self.assertEqual(expected, result)
 
 
-class TestTeamFormatterAPI(TestCaseWithFactory):
-    """ Test permissions required to access TeamFormatterAPI methods.
+class TestTalesFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TalesFormatterAPI methods.
 
     A user must have launchpad.LimitedView permission to use
-    TeamFormatterAPI with private teams.
+    TestTalesFormatterAPI with private teams.
     """
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestTeamFormatterAPI, self).setUp()
-        icon = self.factory.makeLibraryFileAlias(
-            filename='smurf.png', content_type='image/png')
+        super(TestTalesFormatterAPI, self).setUp()
         self.team = self.factory.makeTeam(
-            name='team', displayname='a team', icon=icon,
+            name='team', displayname='a team',
             visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
@@ -177,11 +175,10 @@ class TestTeamFormatterAPI(TestCaseWithFactory):
                 request, 'launchpad.LimitedView', [self.team])
         return formatter, request, any_person
 
-    def _tales_value(self, attr, request, path='fmt'):
+    def _tales_value(self, attr, request):
         # Evaluate the given formatted attribute value on team.
-        result = test_tales(
-            "team/%s:%s" % (path, attr), team=self.team, request=request)
-        return result
+        return test_tales(
+            "team/fmt:%s" % attr, team=self.team, request=request)
 
     def _test_can_view_attribute_no_login(self, attr, hidden=None):
         # Test attribute access with no login.
@@ -230,10 +227,6 @@ class TestTeamFormatterAPI(TestCaseWithFactory):
 
     def test_can_view_url(self):
         self._test_can_view_attribute('url')
-
-    def test_can_view_icon(self):
-        self._test_can_view_attribute(
-            'icon', '<span class="sprite team"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):
