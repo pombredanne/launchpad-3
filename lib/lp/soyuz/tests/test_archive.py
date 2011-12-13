@@ -2122,11 +2122,12 @@ class TestSyncSource(TestCaseWithFactory):
         # parameters.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
+        sponsored = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackage(
                 source_name, version, source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner)
+                person=target_archive.owner, sponsored=sponsored)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2146,6 +2147,7 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=to_series,
             target_pocket=to_pocket,
             include_binaries=False,
+            sponsored=sponsored,
             copy_policy=PackageCopyPolicy.INSECURE))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
@@ -2206,11 +2208,12 @@ class TestSyncSource(TestCaseWithFactory):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
 
+        sponsored = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackages(
                 [source_name], source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner)
+                person=target_archive.owner, sponsored=sponsored)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2228,6 +2231,7 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=to_series,
             target_pocket=to_pocket,
             include_binaries=False,
+            sponsored=sponsored,
             copy_policy=PackageCopyPolicy.MASS_SYNC))
 
     def test_copyPackages_with_multiple_packages(self):
@@ -2297,6 +2301,54 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
+
+
+class TestgetAllPublishedBinaries(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_returns_publication(self):
+        archive = self.factory.makeArchive()
+        publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive)
+        publications = archive.getAllPublishedBinaries()
+        self.assertEqual(1, publications.count())
+        self.assertEqual(publication, publications[0])
+
+    def test_created_since_date_newer(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        later_date = datecreated + timedelta(minutes=1)
+        publications = archive.getAllPublishedBinaries(
+            created_since_date=later_date)
+        self.assertEqual(0, publications.count())
+
+    def test_created_since_date_older(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        earlier_date = datecreated - timedelta(minutes=1)
+        publications = archive.getAllPublishedBinaries(
+            created_since_date=earlier_date)
+        self.assertEqual(1, publications.count())
+        self.assertEqual(publication, publications[0])
+
+    def test_created_since_date_middle(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        middle_date = datecreated + timedelta(minutes=1)
+        later_date = middle_date + timedelta(minutes=1)
+        later_publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=later_date)
+        publications = archive.getAllPublishedBinaries(
+            created_since_date=middle_date)
+        self.assertEqual(1, publications.count())
+        self.assertEqual(later_publication, publications[0])
 
 
 class TestRemovingPermissions(TestCaseWithFactory):

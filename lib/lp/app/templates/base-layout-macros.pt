@@ -91,18 +91,11 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      icingroot_contrib string:/+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-  <tal:needs_json tal:condition="request/needs_json">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-  </tal:needs_json>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 

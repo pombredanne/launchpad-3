@@ -23,8 +23,6 @@ calling IBug.addNomination.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
-    >>> logout()
-
     >>> login_person(nominator)
 
 The BugNomination class implements IBugNomination.

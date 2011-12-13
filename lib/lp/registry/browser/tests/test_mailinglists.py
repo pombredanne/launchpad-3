@@ -28,11 +28,12 @@ class MailingListTestCase(TestCaseWithFactory):
     """Verify the content in +mailing-list-portlet."""
 
     def makeTeamWithMailingList(self, name=None, owner=None, visibility=None):
+        if owner is None:
+            owner = self.factory.makePerson()
         team = self.factory.makeTeam(
             name=name, owner=owner, visibility=visibility)
-        login_person(team.teamowner)
-        team_list = self.factory.makeMailingList(
-            team=team, owner=team.teamowner)
+        login_person(owner)
+        self.factory.makeMailingList(team=team, owner=owner)
         return team
 
 
@@ -129,10 +130,11 @@ class TestTeamMailingListConfigurationView(MailingListTestCase):
 
     def test_private_message_message_without_list(self):
         # Private teams have private archives.
+        owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        login_person(team.teamowner)
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        login_person(owner)
         view = create_initialized_view(
-            team, name='+mailinglist', principal=team.teamowner)
+            team, name='+mailinglist', principal=owner)
         element = find_tag_by_id(view(), 'mailing-list-archive')
         self.assertEqual('private', extract_text(element))

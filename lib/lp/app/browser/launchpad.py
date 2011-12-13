@@ -8,7 +8,6 @@ __all__ = [
     'AppFrontPageSearchView',
     'DoesNotExistView',
     'Hierarchy',
-    'IcingContribFolder',
     'IcingFolder',
     'iter_view_registrations',
     'LaunchpadImageFolder',
@@ -725,8 +724,8 @@ class LaunchpadRootNavigation(Navigation):
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person.is_team
-                    and not check_permission('launchpad.View', person)):
+                if (person.is_team and
+                    not check_permission('launchpad.LimitedView', person)):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
@@ -850,15 +849,6 @@ class LaunchpadImageFolder(ExportedImageFolder):
 
     folder = os.path.join(
         config.root, 'lib/canonical/launchpad/images/')
-
-
-class IcingContribFolder(ExportedFolder):
-    """Export the contrib icing."""
-
-    export_subdirectories = True
-
-    folder = os.path.join(
-        config.root, 'lib/canonical/launchpad/icing-contrib/')
 
 
 class LaunchpadTourFolder(ExportedFolder):

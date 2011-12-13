@@ -263,9 +263,6 @@
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public">
             <browser:page
-                name="+listing-column"
-                template="../templates/specification-listing-column.pt"/>
-            <browser:page
                 name="+listing-simple"
                 template="../templates/specification-listing-simple.pt"/>
             <browser:page

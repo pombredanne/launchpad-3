@@ -201,7 +201,7 @@ Teams can be owners of submissions.
     >>> team_form['field.submission_key'] = u'unique-id-68'
     >>> valid_sample_data_path = os.path.join(
     ...     config.root,
-    ...     'lib/canonical/launchpad/scripts/tests/'
+    ...     'lib/lp/hardwaredb/scripts/tests/'
     ...     'simple_valid_hwdb_submission.xml')
     >>> valid_sample_data = StringIO(open(valid_sample_data_path).read())
     >>> valid_sample_data.filename = 'simple_valid_hwdb_submission.xml'

@@ -487,6 +487,7 @@
                 latest_overall_publication
                 name
                 official_bug_tags
+                personHasDriverRights
                 publishing_history
                 releases
                 sourcepackagename
@@ -911,8 +912,6 @@
             <allow
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
-                interface="lp.registry.interfaces.person.ITeamPublic"/>
-            <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
@@ -923,6 +922,9 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
+                permission="launchpad.View"
+                interface="lp.registry.interfaces.person.ITeamPublic"/>
+            <require
                 permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
@@ -930,9 +932,10 @@
                 interface="lp.registry.interfaces.person.IPersonEditRestricted"/>
             <require
                 permission="launchpad.Edit"
-                set_schema="lp.registry.interfaces.person.IPersonPublic
+                set_schema="lp.registry.interfaces.person.IPersonViewRestricted
+                            lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname"/>
+                set_attributes="displayname icon logo"/>
             <require
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
