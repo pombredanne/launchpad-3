@@ -534,11 +534,9 @@ class TestPersonParticipationView(TestCaseWithFactory):
 
     def test_active_participations_with_direct_private_team(self):
         # Users cannot see private teams that they are not members of.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=owner, visibility=PersonVisibility.PRIVATE)
-        login_person(owner)
-        team.addMember(self.user, owner)
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
         # The team is included in active_participations.
         login_person(self.user)
         view = create_view(
@@ -553,13 +551,11 @@ class TestPersonParticipationView(TestCaseWithFactory):
 
     def test_active_participations_with_indirect_private_team(self):
         # Users cannot see private teams that they are not members of.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=owner, visibility=PersonVisibility.PRIVATE)
-        direct_team = self.factory.makeTeam(owner=owner)
-        login_person(owner)
-        direct_team.addMember(self.user, owner)
-        team.addMember(direct_team, owner)
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=team.teamowner)
+        login_person(team.teamowner)
+        direct_team.addMember(self.user, team.teamowner)
+        team.addMember(direct_team, team.teamowner)
         # The team is included in active_participations.
         login_person(self.user)
         view = create_view(
