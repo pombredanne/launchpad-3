@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from lazr.restfulclient.errors import (
     BadRequest,
     NotFound,
@@ -377,3 +379,28 @@ class TestCopyPackage(WebServiceTestCase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(target_archive, copy_job.target_archive)
+
+
+class TestgetPublishedBinaries(WebServiceTestCase):
+    """test getPublishedSources."""
+
+    def test_getPublishedBinaries(self):
+        self.ws_version = 'beta'
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive()
+        self.factory.makeBinaryPackagePublishingHistory(archive=archive)
+        ws_archive = self.wsObject(archive, user=person)
+        self.assertEqual(1, len(ws_archive.getPublishedBinaries()))
+
+    def test_getPublishedBinaries_created_since_date(self):
+        self.ws_version = 'beta'
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        later_date = datecreated + timedelta(minutes=1)
+        self.factory.makeBinaryPackagePublishingHistory(
+                archive=archive, datecreated=datecreated)
+        ws_archive = self.wsObject(archive, user=person)
+        publications = ws_archive.getPublishedBinaries(
+                created_since_date=later_date)
+        self.assertEqual(0, len(publications))

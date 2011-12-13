@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,11 +9,11 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
 import datetime
 import logging
 import os.path
 
-from cStringIO import StringIO
 from lazr.delegates import delegates
 import pytz
 from storm.expr import Desc
@@ -24,6 +24,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -43,8 +44,8 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
@@ -57,9 +58,8 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobDerived,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
@@ -179,19 +179,24 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def storeBuildInfo(build, librarian, slave_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
+            dependencies = slave_status.get('dependencies')
+            if dependencies is not None:
+                dependencies = unicode(dependencies)
+
             # log, builder and date_finished are read-only, so we must
             # currently remove the security proxy to set them.
             naked_build = removeSecurityProxy(build)
-            naked_build.log = lfa_id
-            naked_build.builder = build.buildqueue_record.builder
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-            if slave_status.get('dependencies') is not None:
-                build.dependencies = unicode(slave_status.get('dependencies'))
-            else:
-                build.dependencies = None
+
+            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                naked_build.log = lfa_id
+                naked_build.builder = build.buildqueue_record.builder
+                # XXX cprov 20060615 bug=120584: Currently buildduration
+                # includes the scanner latency.  It should really be asking
+                # the slave for the duration spent building locally.
+                naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+                build.dependencies = dependencies
+                transaction.commit()
 
         d = build.getLogFromSlave(build)
         return d.addCallback(got_log)
@@ -292,22 +297,41 @@ class PackageBuildDerived:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
+        # Avoid circular imports.
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
-            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, self.buildqueue_record.builder.url))
-            return
+            logger.critical(
+                "Unknown BuildStatus '%s' for builder '%s'",
+                status, self.buildqueue_record.builder.url)
+            return None
+
         d = method(librarian, slave_status, logger, send_notification)
         return d
+
+    def _destroy_buildqueue_record(self, unused_arg):
+        """Destroy this build's `BuildQueue` record."""
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            self.buildqueue_record.destroySelf()
+            transaction.commit()
 
     def _release_builder_and_remove_queue_item(self):
         # Release the builder for another job.
         d = self.buildqueue_record.builder.cleanSlave()
         # Remove BuildQueue record.
-        return d.addCallback(lambda x: self.buildqueue_record.destroySelf())
+        return d.addCallback(self._destroy_buildqueue_record)
+
+    def _notify_if_appropriate(self, appropriate=True, extra_info=None):
+        """If `appropriate`, call `self.notify` in a write transaction."""
+        if appropriate:
+            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                self.notify(extra_info=extra_info)
+                transaction.commit()
 
     def _handleStatus_OK(self, librarian, slave_status, logger,
                          send_notification):
@@ -323,16 +347,19 @@ class PackageBuildDerived:
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
 
-        # If this is a binary package build, discard it if its source is
-        # no longer published.
+        # If this is a binary package build for a source that is no
+        # longer published, discard it.
         if self.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = self.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                build.status = BuildStatus.SUPERSEDED
+                transaction.commit()
+                with DatabaseTransactionPolicy(read_only=False):
+                    build.status = BuildStatus.SUPERSEDED
+                    transaction.commit()
                 return self._release_builder_and_remove_queue_item()
 
-        # Explode before collect a binary that is denied in this
-        # distroseries/pocket
+        # Explode rather than collect a binary that is denied in this
+        # distroseries/pocket.
         if not self.archive.allowUpdatesToReleasePocket():
             assert self.distro_series.canUploadToPocket(self.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
@@ -377,28 +404,32 @@ class PackageBuildDerived:
             # files from the slave.
             if successful_copy_from_slave:
                 logger.info(
-                    "Gathered %s %d completely. Moving %s to uploader queue."
-                    % (self.__class__.__name__, self.id, upload_leaf))
+                    "Gathered %s %d completely. "
+                    "Moving %s to uploader queue.",
+                    self.__class__.__name__, self.id, upload_leaf)
                 target_dir = os.path.join(root, "incoming")
-                self.status = BuildStatus.UPLOADING
+                resulting_status = BuildStatus.UPLOADING
             else:
                 logger.warning(
-                    "Copy from slave for build %s was unsuccessful.", self.id)
-                self.status = BuildStatus.FAILEDTOUPLOAD
-                if send_notification:
-                    self.notify(
-                        extra_info='Copy from slave was unsuccessful.')
+                    "Copy from slave for build %s was unsuccessful.",
+                    self.id)
                 target_dir = os.path.join(root, "failed")
+                resulting_status = BuildStatus.FAILEDTOUPLOAD
+
+            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                self.status = resulting_status
+                transaction.commit()
+
+            if not successful_copy_from_slave:
+                self._notify_if_appropriate(
+                    send_notification, "Copy from slave was unsuccessful.")
 
             if not os.path.exists(target_dir):
                 os.mkdir(target_dir)
 
             # Release the builder for another job.
             d = self._release_builder_and_remove_queue_item()
-
-            # Commit so there are no race conditions with archiveuploader
-            # about self.status.
-            Store.of(self).commit()
 
             # Move the directory used to grab the binaries into
             # the incoming directory so the upload processor never
@@ -423,14 +454,15 @@ class PackageBuildDerived:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        self.status = BuildStatus.FAILEDTOBUILD
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            self.status = BuildStatus.FAILEDTOBUILD
+            transaction.commit()
 
         def build_info_stored(ignored):
-            if send_notification:
-                self.notify()
+            self._notify_if_appropriate(send_notification)
             d = self.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.buildqueue_record.destroySelf())
+            return d.addCallback(self._destroy_buildqueue_record)
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
@@ -448,11 +480,9 @@ class PackageBuildDerived:
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
                             % self.buildqueue_record.builder.name)
-            if send_notification:
-                self.notify()
+            self._notify_if_appropriate(send_notification)
             d = self.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.buildqueue_record.destroySelf())
+            return d.addCallback(self._destroy_buildqueue_record)
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
@@ -468,16 +498,23 @@ class PackageBuildDerived:
         self.status = BuildStatus.CHROOTWAIT
 
         def build_info_stored(ignored):
-            logger.critical("***** %s is CHROOTWAIT *****" %
-                            self.buildqueue_record.builder.name)
-            if send_notification:
-                self.notify()
+            logger.critical(
+                "***** %s is CHROOTWAIT *****",
+                self.buildqueue_record.builder.name)
+
+            self._notify_if_appropriate(send_notification)
             d = self.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.buildqueue_record.destroySelf())
+            return d.addCallback(self._destroy_buildqueue_record)
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
+
+    def _reset_buildqueue_record(self, ignored_arg=None):
+        """Reset the `BuildQueue` record, in a write transaction."""
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            self.buildqueue_record.reset()
+            transaction.commit()
 
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
                                   send_notification):
@@ -492,11 +529,8 @@ class PackageBuildDerived:
         self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
 
-        def build_info_stored(ignored):
-            # simply reset job
-            self.buildqueue_record.reset()
         d = self.storeBuildInfo(self, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        return d.addCallback(self._reset_buildqueue_record)
 
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
                                 send_notification):
@@ -516,7 +550,7 @@ class PackageBuildDerived:
             # the next Paris Summit, infinity has some ideas about how
             # to use this content. For now we just ensure it's stored.
             d = self.buildqueue_record.builder.cleanSlave()
-            self.buildqueue_record.reset()
+            self._reset_buildqueue_record()
             return d
 
         d = self.storeBuildInfo(self, librarian, slave_status)

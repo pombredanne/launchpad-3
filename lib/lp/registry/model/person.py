@@ -131,10 +131,6 @@ from canonical.launchpad.database.emailaddress import (
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthRequestToken,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -284,6 +280,10 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
     TeamParticipation,
+    )
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthRequestToken,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
@@ -1029,10 +1029,6 @@ class Person(
         """See `IPerson`."""
         return self.teamownerID is not None
 
-    def isTeam(self):
-        """Deprecated. Use is_team instead."""
-        return self.is_team
-
     @property
     def mailing_list(self):
         """See `IPerson`."""
@@ -1320,7 +1316,7 @@ class Person(
     def is_valid_person_or_team(self):
         """See `IPerson`."""
         # Teams are always valid
-        if self.isTeam():
+        if self.is_team:
             return True
 
         return self.is_valid_person
@@ -1344,7 +1340,7 @@ class Person(
         Users without karma have not demostrated their intentions may not
         have the same privileges as users who have made contributions.
         """
-        return not self.isTeam() and self.karma == 0
+        return not self.is_team and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -1479,12 +1475,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):
@@ -4370,7 +4369,7 @@ class PersonSet:
             return
 
         # Inform the user of the merge changes.
-        if to_person.isTeam():
+        if to_person.is_team:
             mail_text = get_email_template(
                 'team-merged.txt', app='registry')
             subject = 'Launchpad teams merged'

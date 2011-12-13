@@ -10,7 +10,6 @@ even exists.
     >>> login('test@canonical.com')
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_owner = factory.makePerson(name="private-team-owner")
-    >>> logout()
     >>> login_person(team_owner)
     >>> member1 = factory.makePerson(name='member-one')
     >>> private_team = factory.makeTeam(

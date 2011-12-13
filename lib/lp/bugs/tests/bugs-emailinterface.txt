@@ -1194,7 +1194,6 @@ nominate bugs for a release.
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu = removeSecurityProxy(ubuntu)
     >>> ubuntu.bug_supervisor = sample_person
-    >>> logout()
 
     >>> login(sampledata.USER_EMAIL)
 
@@ -1391,7 +1390,6 @@ will be created if one doesn't exist.
     >>> evolution = getUtility(IProductSet).getByName("evolution")
     >>> evolution = removeSecurityProxy(evolution)
     >>> evolution.bug_supervisor = no_priv
-    >>> logout()
 
     >>> login('no-priv@canonical.com')
     >>> bug = new_firefox_bug()
