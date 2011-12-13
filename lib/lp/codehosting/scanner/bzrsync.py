@@ -160,12 +160,18 @@ class BzrSync:
         bzr_last = bzr_last_revinfo[1]
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
-            db_last = NULL_REVISION
-            graph = bzr_branch.repository.get_graph()
+            graph = self._getRevisionGraph(bzr_branch, NULL_REVISION)
+            bzr_branch.lock_read()
+            try:
+                added_ancestry = set([
+                    r for (r, ps) in graph.iter_ancestry([bzr_last])])
+            finally:
+                bzr_branch.unlock()
+            removed_ancestry = set()
         else:
             graph = self._getRevisionGraph(bzr_branch, db_last)
-        added_ancestry, removed_ancestry = (
-            graph.find_difference(bzr_last, db_last))
+            added_ancestry, removed_ancestry = (
+                graph.find_difference(bzr_last, db_last))
         added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
@@ -214,10 +220,9 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        last_revno = bzr_last_revinfo[0]
         revids_to_insert = dict(
             self.revisionsToInsert(
-                added_history, last_revno, added_ancestry))
+                added_history, bzr_last_revinfo[0], added_ancestry))
         # We must remove any stray BranchRevisions that happen to already be
         # present.
         existing_branchrevisions = Store.of(self.db_branch).find(
