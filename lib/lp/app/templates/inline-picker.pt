@@ -28,7 +28,6 @@
 </span>
 
 <script tal:condition="view/can_write"
-        tal:define="needs_check python: view.needs_disclosure_check(True)"
         tal:content="structure string:
 LPS.use('lp.app.picker', 'lp.client', function(Y) {
     if (Y.UA.ie) {
@@ -37,34 +36,38 @@ LPS.use('lp.app.picker', 'lp.client', function(Y) {
 
     var picker_config = ${view/json_config}
 
-    if (${needs_check}) {
-        var check_disclosure_callback = function(
-            picker, picker_result, do_save, do_cancel) {
-            var client = new Y.lp.client.Launchpad();
-            var private = null;
-            config = {
-            on: {
-                    success: function (person) {
-                        private = person.get('private'); 
-                        if (private) {
-                            var yesno_content =
-                                '<p>The team you are assigning to this role is private; ' +
-                                ' continuing will expose the existence of this team.</p>' +
-                                '<p>Do you wish to continue?</p>'
-                            Y.lp.app.picker.yesno_save_confirmation(
-                                    picker, yesno_content, 'Yes', 'Choose Again',
-                                    do_save, do_cancel);
-                        } else {
-                            do_save(); 
-                        }
+    var check_disclosure_callback = function(
+        picker, picker_result, do_save, do_cancel) {
+        var client = new Y.lp.client.Launchpad();
+        var private = null;
+        config = {
+        on: {
+                success: function (person) {
+                    console.dir(LP.cache.context);
+                    private_person = person.get('private'); 
+                    public_context = true;
+                    if (LP.cache.context.private !== undefined) {
+                        public_context = !(LP.cache.context.private); 
+                    } 
+
+                    if (private_person && public_context) {
+                        var yesno_content =
+                            '<p>The team you are assigning to this role is private; ' +
+                            ' continuing will expose the existence of this team.</p>' +
+                            '<p>Do you wish to continue?</p>'
+                        Y.lp.app.picker.yesno_save_confirmation(
+                                picker, yesno_content, 'Yes', 'Choose Again',
+                                do_save, do_cancel);
+                    } else {
+                        do_save(); 
                     }
                 }
             }
-            client.get(picker_result.api_uri, config);
+        }
+        client.get(picker_result.api_uri, config);
 
-        };
-        picker_config.validate_callback = check_disclosure_callback;
-    }
+    };
+    picker_config.validate_callback = check_disclosure_callback;
 
     Y.on('load', function(e) {
       Y.lp.app.picker.addPickerPatcher(

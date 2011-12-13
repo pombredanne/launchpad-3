@@ -355,7 +355,7 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
                  remove_team_text='Remove team',
                  null_display_value='None',
                  edit_view="+edit", edit_url=None, edit_title='',
-                 help_link=None, target=None):
+                 help_link=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -387,7 +387,6 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
         self.help_link = help_link
-        self.target = target
 
     @property
     def picker_type(self):
@@ -404,17 +403,6 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
-
-    def needs_disclosure_check(self, json=False):
-        """Checks if we need to setup a validator for disclosure check.
-       
-        The check only needs to happen if the person being selected will be
-        added to a role on a public context.
-        """
-        val = getattr(self.target, 'private', True)
-        if json:
-            val = simplejson.dumps(val)
-        return val
 
     def getConfig(self):
         config = super(InlinePersonEditPickerWidget, self).getConfig()
