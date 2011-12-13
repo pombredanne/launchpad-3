@@ -629,7 +629,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         direct_subscriber = self.factory.makeTeam(
             name='team', displayname='Team Name', owner=teamowner,
             visibility=PersonVisibility.PRIVATE)
-        with person_logged_in(teamowner):
+        with person_logged_in(direct_subscriber.teamowner):
             bug.subscribe(direct_subscriber, direct_subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
 
