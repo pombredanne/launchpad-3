@@ -486,15 +486,19 @@ class RevisionsAddedJob(BranchJobDerived):
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
         repository = self.bzr_branch.repository
-        added_revisions = repository.get_graph().find_unique_ancestors(
+        graph = repository.get_graph()
+        added_revisions = graph.find_unique_ancestors(
             self.last_revision_id, [self.last_scanned_id])
         # Avoid hitting the database since bzrlib makes it easy to check.
         # There are possibly more efficient ways to get the mainline
         # revisions, but this is simple and it works.
-        history = self.bzr_branch.revision_history()
-        for num, revid in enumerate(history):
+        (last_revno, last_revid) = self.bzr_branch.last_revision_info()
+        history = graph.iter_lefthand_ancestry(
+            last_revid, (NULL_REVISION, None))
+        for distance, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num + 1
+                break
+            yield repository.get_revision(revid), last_revno - distance
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -515,7 +519,7 @@ class RevisionsAddedJob(BranchJobDerived):
 
         self.bzr_branch.lock_read()
         try:
-            for revision, revno in self.iterAddedMainline():
+            for revision, revno in reversed(list(self.iterAddedMainline())):
                 assert revno is not None
                 mailer = self.getMailerForRevision(
                     revision, revno, self.generateDiffs())
