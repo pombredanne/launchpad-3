@@ -430,7 +430,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         job.bzr_branch.lock_read()
         self.addCleanup(job.bzr_branch.unlock)
-        [(revision, revno)] = list(job.iterAddedMainline())
+        [(revision_id, revno)] = list(job.iterAddedMainline())
         self.assertEqual(2, revno)
 
     def test_iterAddedNonMainline(self):
@@ -444,10 +444,10 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         with override_environ(BZR_EMAIL='me@example.com'):
             tree.commit('rev3a', rev_id='rev3a')
         self.updateDBRevisions(branch, tree.branch, ['rev3', 'rev3a'])
-        job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         job.bzr_branch.lock_read()
         self.addCleanup(job.bzr_branch.unlock)
-        out = [x.revision_id for x, y in job.iterAddedMainline()]
+        out = [x for x, y in job.iterAddedMainline()]
         self.assertEqual(['rev2'], out)
 
     def test_iterAddedMainline_order(self):
@@ -459,9 +459,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.addCleanup(job.bzr_branch.unlock)
         # Since we've gone from rev1 to rev3, we've added rev2 and rev3.
         [(rev3, revno3), (rev2, revno2)] = list(job.iterAddedMainline())
-        self.assertEqual('rev2', rev2.revision_id)
+        self.assertEqual('rev2', rev2)
         self.assertEqual(2, revno2)
-        self.assertEqual('rev3', rev3.revision_id)
+        self.assertEqual('rev3', rev3)
         self.assertEqual(3, revno3)
 
     def makeBranchWithCommit(self):
