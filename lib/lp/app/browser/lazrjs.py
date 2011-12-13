@@ -33,6 +33,7 @@ from zope.schema.interfaces import (
     )
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
@@ -354,7 +355,7 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
                  remove_team_text='Remove team',
                  null_display_value='None',
                  edit_view="+edit", edit_url=None, edit_title='',
-                 help_link=None):
+                 help_link=None, target=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -374,6 +375,8 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
+        :param help_link: Used to set a link for help for the widget.
+        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
@@ -384,6 +387,7 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
         self.help_link = help_link
+        self.target = target
 
     @property
     def picker_type(self):
@@ -400,6 +404,17 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
+
+    def needs_disclosure_check(self, json=False):
+        """Checks if we need to setup a validator for disclosure check.
+       
+        The check only needs to happen if the person being selected will be
+        added to a role on a public context.
+        """
+        val = getattr(self.target, 'private', True)
+        if json:
+            val = simplejson.dumps(val)
+        return val
 
     def getConfig(self):
         config = super(InlinePersonEditPickerWidget, self).getConfig()

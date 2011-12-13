@@ -1011,7 +1011,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+edit-people',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer',
+            target=self)
 
     @property
     def driver_widget(self):
@@ -1021,7 +1022,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             header='Change driver', edit_view='+edit-people',
             step_title='Select a new driver',
             null_display_value="Not yet selected",
-            help_link="/+help-registry/driver.html")
+            help_link="/+help-registry/driver.html",
+            target=self)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)

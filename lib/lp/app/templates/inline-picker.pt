@@ -26,11 +26,30 @@
     </noscript>
     <div class="yui3-activator-message-box yui3-activator-hidden"></div>
 </span>
+
 <script tal:condition="view/can_write"
+        tal:define="needs_check python: view.needs_disclosure_check(True)"
         tal:content="structure string:
 LPS.use('lp.app.picker', function(Y) {
     if (Y.UA.ie) {
         return;
+    }
+
+    var picker_config = ${view/json_config}
+
+    if (${needs_check}) {
+        var check_disclosure_callback = function(
+            picker, picker_result, do_save, do_cancel) {
+
+            var yesno_content =
+                '<p>The team you are assigning to this role is private; ' +
+                ' continuing will expose the existence of this team.</p>' +
+                '<p>Do you wish to continue?</p>'
+            Y.lp.app.picker.yesno_save_confirmation(
+                    picker, yesno_content, 'Yes', 'Choose Again',
+                    do_save, do_cancel);
+        };
+        picker_config['validate_callback'] = check_disclosure_callback;
     }
 
     Y.on('load', function(e) {
@@ -39,7 +58,7 @@ LPS.use('lp.app.picker', function(Y) {
         ${view/json_resource_uri},
         ${view/json_attribute},
         ${view/json_content_box_id},
-        ${view/json_config});
+        picker_config);
       }, window);
 });
 "/>
