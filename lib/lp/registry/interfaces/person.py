@@ -740,6 +740,20 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
     is_probationary = exported(
         Bool(title=_("Is this a probationary user?"), readonly=True))
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface)  # Really IArchive.
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists.
+
+        :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
+
+        :return: a PPA `IArchive` record corresponding to the name.
+        """
+
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
@@ -1436,20 +1450,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                 themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
-        """
-
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface)  # Really IArchive.
-    @export_read_operation()
-    @operation_for_version("beta")
-    def getPPAByName(name):
-        """Return a PPA with the given name if it exists.
-
-        :param name: A string with the exact name of the ppa being looked up.
-        :raises: `NoSuchPPA` if a suitable PPA could not be found.
-
-        :return: a PPA `IArchive` record corresponding to the name.
         """
 
     @operation_parameters(
