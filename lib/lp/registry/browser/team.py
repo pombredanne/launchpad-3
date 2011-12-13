@@ -1718,6 +1718,13 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
     """
 
     @property
+    def super_teams(self):
+        """Return only the super teams that the viewer is able to see."""
+        return [
+            team for team in self.context.super_teams
+            if check_permission('launchpad.View', team)]
+
+    @property
     def can_show_subteam_portlet(self):
         """Only show the subteam portlet if there is info to display.
 
@@ -1726,7 +1733,7 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
         link so that the invitation can be accepted.
         """
         try:
-            return (self.context.super_teams.count() > 0
+            return (len(self.super_teams) > 0
                     or (self.context.open_membership_invitations
                         and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
