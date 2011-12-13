@@ -86,6 +86,7 @@ class BzrSync:
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
         bzr_history = bzr_branch.revision_history()
+        last_revision_info = (len(bzr_history), bzr_history[-1])
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -126,7 +127,7 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
-        self.updateBranchStatus(bzr_history)
+        self.updateBranchStatus(last_revision_info)
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, self.logger, new_ancestry))
@@ -297,12 +298,10 @@ class BzrSync:
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
-    def updateBranchStatus(self, bzr_history):
+    def updateBranchStatus(self, (revision_count, last_revision)):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        revision_count = len(bzr_history)
         if revision_count > 0:
-            last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
         else:
             revision = None
