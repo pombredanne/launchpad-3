@@ -156,18 +156,17 @@ class BzrSync:
 
         return bzr_branch.repository.get_graph(PPSource)
 
-    def getAncestryDelta(self, bzr_branch):
-        bzr_last = bzr_branch.last_revision()
+    def getAncestryDelta(self, bzr_branch, bzr_last_revinfo):
+        bzr_last = bzr_last_revinfo[1]
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
-            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
-            added_ancestry.discard(None)
-            removed_ancestry = set()
+            db_last = NULL_REVISION
+            graph = bzr_branch.repository.get_graph()
         else:
             graph = self._getRevisionGraph(bzr_branch, db_last)
-            added_ancestry, removed_ancestry = (
-                graph.find_difference(bzr_last, db_last))
-            added_ancestry.discard(NULL_REVISION)
+        added_ancestry, removed_ancestry = (
+            graph.find_difference(bzr_last, db_last))
+        added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
     def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, db_history):
@@ -199,7 +198,8 @@ class BzrSync:
         # Find the length of the common history.
         added_history, removed_history = self.getHistoryDelta(
             bzr_branch, bzr_last_revinfo, db_history)
-        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
+        added_ancestry, removed_ancestry = self.getAncestryDelta(
+            bzr_branch, bzr_last_revinfo)
 
         notify(
             events.RevisionsRemoved(

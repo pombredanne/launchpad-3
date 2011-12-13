@@ -429,7 +429,8 @@ class TestBzrSync(BzrSyncTestCase):
             else:
                 bzr_branch.set_last_revision_info(revno, bzr_rev)
                 delta_branch = bzr_branch
-            return sync.getAncestryDelta(delta_branch)
+            return sync.getAncestryDelta(
+                delta_branch, bzr_branch.last_revision_info())
 
         added_ancestry, removed_ancestry = get_delta('merge', None)
         # All revisions are new for an unscanned branch
@@ -473,7 +474,8 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
         bzr_history = ['rev-1']
-        added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
+        added_ancestry = bzrsync.getAncestryDelta(
+            self.bzr_branch, self.bzr_branch.last_revision_info())[0]
         result = bzrsync.revisionsToInsert(
             bzr_history, self.bzr_branch.revno(), added_ancestry)
         self.assertEqual({'rev-1': 1}, dict(result))
@@ -485,7 +487,8 @@ class TestBzrSync(BzrSyncTestCase):
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
         bzr_history = ['base', 'trunk', 'merge']
-        added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
+        added_ancestry = bzrsync.getAncestryDelta(
+            bzr_tree.branch, bzr_tree.branch.last_revision_info())[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(
             expected, dict(bzrsync.revisionsToInsert(bzr_history,
