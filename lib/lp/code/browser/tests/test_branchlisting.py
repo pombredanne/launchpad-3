@@ -613,14 +613,13 @@ class TestPersonBranchesPage(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _make_branch_for_private_team(self):
-        owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
-            name='shh', displayname='Shh', owner=owner,
+            name='shh', displayname='Shh',
             visibility=PersonVisibility.PRIVATE)
         member = self.factory.makePerson(
             email='member@example.com', password='test')
-        with person_logged_in(owner):
-            private_team.addMember(member, owner)
+        with person_logged_in(private_team.teamowner):
+            private_team.addMember(member, private_team.teamowner)
         branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 

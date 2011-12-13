@@ -11,7 +11,6 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -30,8 +29,7 @@ class PersonRoles:
     def __init__(self, person):
         self.person = person
         self._celebrities = getUtility(ILaunchpadCelebrities)
-        # Use an unproxied inTeam() method for security checks.
-        self.inTeam = removeSecurityProxy(self.person).inTeam
+        self.inTeam = self.person.inTeam
 
     def __getattr__(self, name):
         """Handle all in_* attributes."""
@@ -41,7 +39,7 @@ class PersonRoles:
             raise AttributeError(errortext)
         attribute = name[len(prefix):]
         try:
-            return self.inTeam(getattr(self._celebrities, attribute))
+            return self.person.inTeam(getattr(self._celebrities, attribute))
         except AttributeError:
             raise AttributeError(errortext)
 
@@ -51,28 +49,28 @@ class PersonRoles:
 
     def isOwner(self, obj):
         """See IPersonRoles."""
-        return self.inTeam(obj.owner)
+        return self.person.inTeam(obj.owner)
 
     def isBugSupervisor(self, obj):
         """See IPersonRoles."""
         return (IHasBugSupervisor.providedBy(obj)
-                and self.inTeam(obj.bug_supervisor))
+                and self.person.inTeam(obj.bug_supervisor))
 
     def isSecurityContact(self, obj):
         """See IPersonRoles."""
         return (IHasSecurityContact.providedBy(obj)
-                and self.inTeam(obj.security_contact))
+                and self.person.inTeam(obj.security_contact))
 
     def isDriver(self, obj):
         """See IPersonRoles."""
-        return self.inTeam(obj.driver)
+        return self.person.inTeam(obj.driver)
 
     def isOneOfDrivers(self, obj):
         """See IPersonRoles."""
         if not IHasDrivers.providedBy(obj):
             return self.isDriver(obj)
         for driver in obj.drivers:
-            if self.inTeam(driver):
+            if self.person.inTeam(driver):
                 return True
         return False
 
@@ -80,6 +78,6 @@ class PersonRoles:
         """See IPersonRoles."""
         for attr in attributes:
             role = getattr(obj, attr)
-            if self.inTeam(role):
+            if self.person.inTeam(role):
                 return True
         return False
