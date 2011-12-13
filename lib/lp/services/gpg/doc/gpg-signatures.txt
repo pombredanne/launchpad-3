@@ -181,3 +181,49 @@ information for the 3 failures.
     ["(7, 9, u'No public key')",
      "(7, 9, u'No public key')",
      "(7, 9, u'No public key')"]
+
+
+Debugging exceptions
+--------------------
+
+The GPGVerificationError exception object has some additional attributes
+with information about the error.  These come directly from the gpgme module
+itself.
+
+    >>> from lp.services.gpg.interfaces import GPGVerificationError
+    >>> content = """
+    ... -----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Test Message.
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.4.1 (GNU/Linux)
+    ...
+    ... iD8DBQFD3xV52yWXVgK6XvYRAtJQAJ4ojuLC4aap4R9T0og17RkPYoND+ACfbCA3
+    ... yrZD6MZcqzyaGNy1s28Co2Q=
+    ... =5QGd
+    ... -----END PGP SIGNATURE-----
+    ... -----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Some data appended by foo.bar@canonical.com
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.4.1 (GNU/Linux)
+    ...
+    ... iD8DBQFD3xWpjn63CGxkqMURAmi6AJ4yHAnhIpt49VlYDG1uxpGy9BmHwwCeKbFM
+    ... aHIJLqhWVf8bGLHZBIH5odw=
+    ... =iUSC
+    ... -----END PGP SIGNATURE-----
+    ... """
+    >>> try:
+    ...     gpghandler.getVerifiedSignature(content)
+    ... except GPGVerificationError, e:
+    ...     print e.args
+    ...     print e.code
+    ...     print e.signatures
+    ...     print e.source
+    (7, 89, u'Bad data')
+    89
+    [<gpgme.Signature object at ...>]
+    7
+

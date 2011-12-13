@@ -42,7 +42,7 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
-    log = set_up_logging_for_script(options, 'supermirror_puller')
+    log = set_up_logging_for_script(options, 'supermirror_puller', options.log_file)
     manager = scheduler.JobScheduler(
         LoggingProxy(config.codehosting.codehosting_endpoint, log), log,
         options.branch_type)
