@@ -57,7 +57,7 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
-from lp.codehosting import load_optional_plugin
+import lp.codehosting
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
@@ -1143,7 +1143,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def setUp(self):
         super(TestGitImport, self).setUp()
-        load_optional_plugin('git')
         self.setUpImport()
 
     def tearDown(self):
@@ -1220,7 +1219,6 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
     def setUp(self):
         super(TestMercurialImport, self).setUp()
-        load_optional_plugin('hg')
         self.setUpImport()
 
     def tearDown(self):
@@ -1302,7 +1300,6 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
 
     def setUp(self):
         super(TestBzrSvnImport, self).setUp()
-        load_optional_plugin('svn')
         self.setUpImport()
 
     def makeImportWorker(self, source_details, opener_policy):

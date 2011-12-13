@@ -15,7 +15,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
-    'IPersonPublic',  # Required for a monkey patch in interfaces/archive.py
+    'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
@@ -657,26 +657,61 @@ class IPersonSettings(Interface):
         required=False, default=False)
 
 
-class IPersonPublic(IHasBranches, IHasSpecifications,
-                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson):
-    """Public attributes for a Person."""
+class IPersonPublic(IPrivacy):
+    """Public attributes for a Person.
+
+    Very few attributes on a person can be public because private teams
+    are also persons. The public attributes are generally information
+    needed by the system to determine if the principal in the current
+    interaction can work with the object.
+    """
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    account = Object(schema=IAccount)
-    accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
-    karma = exported(
-        Int(title=_('Karma'), readonly=True,
-            description=_('The cached total karma for this person.')))
-    homepage_content = exported(
-        Text(title=_("Homepage Content"), required=False,
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
+    is_valid_person = Bool(
+        title=_("This is an active user and not a team."), readonly=True)
+    is_valid_person_or_team = exported(
+        Bool(title=_("This is an active user or a team."), readonly=True),
+        exported_as='is_valid')
+    is_merge_pending = exported(Bool(
+        title=_("Is this person due to be merged with another?"),
+        required=False, default=False))
+    is_team = exported(
+        Bool(title=_('Is this object a team?'), readonly=True))
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=True, vocabulary=AccountStatus)
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=True)
+
+
+class IPersonLimitedView(IHasIcon, IHasLogo):
+    """IPerson attributes that require launchpad.LimitedView permission."""
+
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
             description=_(
-                "The content of your profile page. Use plain text, "
-                "paragraphs are preserved and URLs are linked in pages.")))
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -690,7 +725,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
-
     logo = exported(
         LogoImageUpload(
             title=_("Logo"), required=False,
@@ -701,6 +735,30 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                 "is a logo, a small picture or a personal mascot. It should "
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
+
+
+class IPersonViewRestricted(IHasBranches, IHasSpecifications,
+                    IHasMergeProposals, IHasMugshot,
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings, IQuestionsPerson):
+    """IPerson attributes that require launchpad.View permission."""
+    account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
+    password = PasswordField(
+        title=_('Password'), required=True, readonly=False)
+    karma = exported(
+        Int(title=_('Karma'), readonly=True,
+            description=_('The cached total karma for this person.')))
+    homepage_content = exported(
+        Text(title=_("Homepage Content"), required=False,
+            description=_(
+                "The content of your profile page. Use plain text, "
+                "paragraphs are preserved and URLs are linked in pages.")))
 
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
@@ -755,26 +813,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
 
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=True)
-
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
-    is_team = exported(
-        Bool(title=_('Is this object a team?'), readonly=True))
-    is_valid_person = Bool(
-        title=_("This is an active user and not a team."), readonly=True)
-    is_valid_person_or_team = exported(
-        Bool(title=_("This is an active user or a team."), readonly=True),
-        exported_as='is_valid')
-    is_probationary = exported(
-        Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
     Bool(title=_("Signed Ubuntu Code of Conduct"),
             readonly=True))
@@ -879,7 +920,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-
     preferredemail = exported(
         Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
@@ -915,9 +955,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             "is set on the Person referencing the destination Person. If "
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
-
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute('Person Page Title')
 
     archive = exported(
         Reference(
@@ -986,18 +1023,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             title=_("Hardware submissions"),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))  # HWSubmission
-
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. It is a summary of the team's visibility.
-    private = exported(Bool(
-            title=_("This team is private"),
-            readonly=True, required=False,
-            description=_("Private teams are visible only to "
-                          "their members.")))
-
-    is_merge_pending = exported(Bool(
-        title=_("Is this person due to be merged with another?"),
-        required=False, default=False))
 
     administrated_teams = Attribute(
         u"the teams that this person/team is an administrator of.")
@@ -1462,32 +1487,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :return: a boolean.
         """
-
-
-class IPersonLimitedView(Interface):
-    """IPerson attributes that require launchpad.LimitedView permission."""
-
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-
-
-class IPersonViewRestricted(Interface):
-    """IPerson attributes that require launchpad.View permission."""
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
@@ -2565,18 +2564,19 @@ for name in [
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
-IPersonPublic['sub_teams'].value_type.schema = ITeam
-IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonViewRestricted['sub_teams'].value_type.schema = ITeam
+IPersonViewRestricted['super_teams'].value_type.schema = ITeam
 # XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
 # exported again.
-# IPersonPublic['teams_participated_in'].value_type.schema = ITeam
-# IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted['teams_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted[
+#   'teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
     # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
-    # (IPersonPublic['findPathToTeam'], 'team'),
-    # (IPersonPublic['inTeam'], 'team'),
+    # (IPersonViewRestricted['findPathToTeam'], 'team'),
+    # (IPersonViewRestricted['inTeam'], 'team'),
     (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),

@@ -209,7 +209,12 @@ class GPGHandler:
                 msg = e.strerror
             else:
                 msg = e.message
-            raise GPGVerificationError(msg)
+            error = GPGVerificationError(msg)
+            for attr in ("args", "code", "signatures", "source"):
+                if hasattr(e, attr):
+                    value = getattr(e, attr)
+                    setattr(error, attr, value)
+            raise error
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
