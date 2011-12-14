@@ -1266,6 +1266,14 @@ class TeamFormatterAPI(PersonFormatterAPI):
                 self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
+    def icon(self, view_name):
+        team = self._context
+        if not check_permission('launchpad.LimitedView', team):
+            css_class = ObjectImageDisplayAPI(team).sprite_css()
+            return '<span class="' + css_class + '"></span>'
+        else:
+            return super(TeamFormatterAPI, self).icon(view_name)
+
     def displayname(self, view_name, rootsite=None):
         """See `PersonFormatterAPI`."""
         person = self._context
