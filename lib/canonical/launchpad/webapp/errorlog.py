@@ -173,8 +173,9 @@ def attach_feature_info(report, context):
     """Attach info about the active features and scopes."""
     request = context.get('http_request')
     features = getattr(request, 'features', None)
-    report['features.usedFlags'] = u'%r' % features.usedFlags()
-    report['features.usedScopes'] = u'%r' % features.usedScopes()
+    if features is not None:
+        report['features.usedFlags'] = u'%r' % features.usedFlags()
+        report['features.usedScopes'] = u'%r' % features.usedScopes()
 
 
 def attach_http_request(report, context):
