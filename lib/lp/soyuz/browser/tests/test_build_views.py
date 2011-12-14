@@ -57,8 +57,7 @@ class TestBuildViews(TestCaseWithFactory):
             self.assertEquals(build_view.user_can_retry_build, expected)
 
     def test_view_with_component(self):
-        # Production has some buggy builds without source publications.
-        # current_component used by the view returns None in that case.
+        # The component name is provided when the component is known.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
