@@ -2668,11 +2668,17 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['order_by'] = ','.join(
                 get_sortorder_from_request(self.request))
             cache.objects['forwards'] = batch_navigator.batch.range_forwards
+
             # We have to do some work here to avoid the batch nav
             # doing an expensive count() twice.
-            cache.objects['total'] = batch_navigator.batch.listlength
-            last_batch = batch_navigator.batch.lastBatch()
-            cache.objects['last_start'] = last_batch.startNumber() - 1
+            total_size = batch_navigator.batch.listlength
+            cache.objects['total'] = total_size
+            batch_size = batch_navigator.batch.size
+            last_batch_size = total_size % batch_size
+            if last_batch_size == 0:
+                last_batch_size = batch_size
+            cache.objects['last_start'] = total_size - last_batch_size
+
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
     @property
