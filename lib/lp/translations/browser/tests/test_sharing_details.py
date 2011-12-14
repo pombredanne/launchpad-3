@@ -1006,6 +1006,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
 
             def link_matcher(url):
+                if url is None:
+                    return False
                 return re.search(match, url)
         else:
             link_matcher = '#'
