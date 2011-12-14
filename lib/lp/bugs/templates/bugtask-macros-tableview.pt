@@ -671,12 +671,19 @@
                 sort_order = 'desc';
             }
             var unknown_sort_key = true;
+            /*xxxxxxxxxxxxxxx
             for (var i = 0; i < sort_keys.length; i++) {
                 if (sort_keys[i][0] === active_sort_key) {
                     unknown_sort_key = false;
                     break;
                 }
             }
+            */
+            Y.each(sort_keys, function(sort_key) {
+                if (sort_key[0] === active_sort_key) {
+                    unknown_sort_key = false;
+                }
+            });
             if (unknown_sort_key) {
                 active_sort_key = 'importance';
             }
