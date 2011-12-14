@@ -43,7 +43,6 @@ LPS.use('lp.app.picker', 'lp.client', function(Y) {
         config = {
         on: {
                 success: function (person) {
-                    console.dir(LP.cache.context);
                     private_person = person.get('private'); 
                     public_context = true;
                     if (LP.cache.context.private !== undefined) {
