@@ -5,10 +5,24 @@
     <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
       Edit
     </button>
+
+    <a tal:condition="view/help_link"
+       tal:attributes="href view/help_link"
+       target="help"
+       class="sprite maybe">&nbsp;
+       <span class="invisible-link">Driver help</span>
+    </a>
+
     <noscript tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="sprite edit"></a>
+      <a tal:condition="view/help_link"
+         tal:attributes="href view/help_link"
+         target="help"
+         class="sprite maybe">&nbsp;
+         <span class="invisible-link">Driver help</span>
+      </a>
     </noscript>
     <div class="yui3-activator-message-box yui3-activator-hidden"></div>
 </span>
