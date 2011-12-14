@@ -197,9 +197,9 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -1003,6 +1003,8 @@ class Bug(SQLBase):
         # the regular proxied object.
         return sorted(
             indirect_subscribers,
+            # XXX: GavinPanella 2011-12-12 bug=???: Should probably use
+            # person_sort_key.
             key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
@@ -1031,14 +1033,13 @@ class Bug(SQLBase):
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
-
         if recipients is not None:
-            # Pre-load duplicate bugs.
-            list(self.duplicates)
+            list(self.duplicates)  # Pre-load duplicate bugs.
+            info.duplicate_only_subscribers  # Pre-load subscribers.
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-        return info.duplicate_only_subscriptions.subscribers.sorted
+        return info.duplicate_only_subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -2415,6 +2416,8 @@ def get_also_notified_subscribers(
     # Remove security proxy for the sort key, but return
     # the regular proxied object.
     return sorted(also_notified_subscribers,
+                  # XXX: GavinPanella 2011-12-12 bug=???: Should probably use
+                  # person_sort_key.
                   key=lambda x: removeSecurityProxy(x).displayname)
 
 
@@ -2428,7 +2431,8 @@ def load_people(*where):
         `ValidPersonCache` records are loaded simultaneously.
     """
     return PersonSet()._getPrecachedPersons(
-        origin=[Person], conditions=where, need_validity=True)
+        origin=[Person], conditions=where, need_validity=True,
+        need_preferred_email=True)
 
 
 class BugSubscriberSet(frozenset):
@@ -2563,7 +2567,7 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
-    def old_direct_subscriptions(self):
+    def direct_subscriptions(self):
         """The bug's direct subscriptions."""
         return IStore(BugSubscription).find(
             BugSubscription,
@@ -2572,30 +2576,9 @@ class BugSubscriptionInfo:
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
-    @cachedproperty
-    def direct_subscriptions_and_subscribers(self):
-        """The bug's direct subscriptions."""
-        res = IStore(BugSubscription).find(
-            (BugSubscription, Person),
-            BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug,
-            BugSubscription.person_id == Person.id,
-            Not(In(BugSubscription.person_id,
-                   Select(BugMute.person_id,
-                          BugMute.bug_id == self.bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
-
-    @cachedproperty
-    @freeze(BugSubscriptionSet)
-    def direct_subscriptions(self):
-        return self.direct_subscriptions_and_subscribers[0]
-
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+    @property
     def direct_subscribers(self):
-        return self.direct_subscriptions_and_subscribers[1]
+        return self.direct_subscriptions.subscribers
 
     @cachedproperty
     def duplicate_subscriptions_and_subscribers(self):
@@ -2628,7 +2611,7 @@ class BugSubscriptionInfo:
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscriptions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug only.
 
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
@@ -2640,6 +2623,15 @@ class BugSubscriptionInfo:
         return (
             subscription for subscription in self.duplicate_subscriptions
             if subscription.person not in higher_precedence)
+
+    @property
+    def duplicate_only_subscribers(self):
+        """Subscribers to duplicates of the bug only.
+
+        Excludes subscribers who have a direct subscription or are also
+        notified for another reason.
+        """
+        return self.duplicate_only_subscriptions.subscribers
 
     @cachedproperty
     @freeze(StructuralSubscriptionSet)
