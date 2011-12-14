@@ -795,6 +795,9 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         if user.in_admin or user.in_commercial_admin or user.inTeam(self.obj):
             return True
+        # Private team owners have visibility.
+        if self.obj.is_team and user.inTeam(self.obj.teamowner):
+            return True
         # We also grant visibility of the private team to administrators of
         # other teams that have been invited to join the private team.
         for invitee in self.obj.invited_members:
