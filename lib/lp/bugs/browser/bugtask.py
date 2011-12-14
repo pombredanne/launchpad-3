@@ -2067,11 +2067,9 @@ class BugsStatsMixin(BugsInfoMixin):
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
         """
-        days_old = config.malone.days_before_expiration
-
         if target_has_expirable_bugs_listing(self.context):
             return getUtility(IBugTaskSet).findExpirableBugTasks(
-                days_old, user=self.user, target=self.context).count()
+                0, user=self.user, target=self.context).count()
         else:
             return None
 
@@ -4106,6 +4104,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             (user is None or user.teams_participated_in.count() == 0))
         cx = self.context
         return dict(
+            id=cx.id,
             row_id=self.data['row_id'],
             form_row_id=self.data['form_row_id'],
             bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
@@ -4305,7 +4304,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
     page_title = label
 
 
-class BugTaskExpirableListingView(LaunchpadView):
+class BugTaskExpirableListingView(BugTaskSearchListingView):
     """View for listing Incomplete bugs that can expire."""
 
     @property
@@ -4328,13 +4327,11 @@ class BugTaskExpirableListingView(LaunchpadView):
         else:
             return ['id', 'summary', 'date_last_updated', 'heat']
 
-    @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
-        days_old = config.malone.days_before_expiration
         bugtaskset = getUtility(IBugTaskSet)
         bugtasks = bugtaskset.findExpirableBugTasks(
-            days_old, user=self.user, target=self.context)
+            user=self.user, target=self.context, min_days_old=0)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
