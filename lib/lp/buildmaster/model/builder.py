@@ -801,13 +801,17 @@ class Builder(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         candidate_jobs = store.execute(query).get_all()
 
-        for (candidate_id,) in candidate_jobs:
-            candidate = getUtility(IBuildQueueSet).get(candidate_id)
-            job_class = job_classes[candidate.job_type]
-            candidate_approved = job_class.postprocessCandidate(
-                candidate, logger)
-            if candidate_approved:
-                return candidate
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            for (candidate_id,) in candidate_jobs:
+                candidate = getUtility(IBuildQueueSet).get(candidate_id)
+                job_class = job_classes[candidate.job_type]
+                candidate_approved = job_class.postprocessCandidate(
+                    candidate, logger)
+                if candidate_approved:
+                    transaction.commit()
+                    return candidate
+            transaction.commit()
 
         return None
 
