@@ -2250,8 +2250,7 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': [{'tag': tag} for tag in self.bug.tags],
-            'tag_urls': [{'url': base_tag_url + tag, 'tag': tag}
+            'tags': [{'url': base_tag_url + tag, 'tag': tag}
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }
