@@ -288,7 +288,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
 
-
     #
     # Useful properties.
     #

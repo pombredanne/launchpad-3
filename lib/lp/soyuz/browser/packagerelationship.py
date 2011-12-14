@@ -87,4 +87,3 @@ class PackageRelationshipSet:
     def __iter__(self):
         return iter(sorted(
             self.contents, key=std_operator.attrgetter('name')))
-

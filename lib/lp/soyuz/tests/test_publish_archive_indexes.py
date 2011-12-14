@@ -59,7 +59,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
-        """Check just-created source publication Index stanza 
+        """Check just-created source publication Index stanza
         with custom fields (Python-Version).
         """
         pub_source = self.getPubSource(
@@ -404,7 +404,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
     Provides an method to format the option in a ready-to-use string.
     """
-
 
     def test_simple(self):
         fields = IndexStanzaFields()

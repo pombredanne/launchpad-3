@@ -76,13 +76,13 @@ UNSUPPORTED_DISTRO_RELEASED = [
 
 # germinate output base directory
 BASE_URL = os.environ.get(
-    "MAINTENANCE_CHECK_BASE_URL", 
+    "MAINTENANCE_CHECK_BASE_URL",
     "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
 HINTS_DIR_URL = os.environ.get(
-    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
+    "MAINTENANCE_CHECK_HINTS_DIR_URL",
     "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
@@ -206,7 +206,7 @@ def get_packages_for_seeds(name, distro, seeds):
     """
     pkgs_in_seeds = {}
     for bseed in seeds:
-        for seed in [bseed]: #, bseed+".build-depends", bseed+".seed"]:
+        for seed in [bseed]:  # , bseed+".build-depends", bseed+".seed"]:
             pkgs_in_seeds[seed] = set()
             seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
             logging.debug("looking for '%s'" % seedurl)
@@ -286,7 +286,6 @@ def get_packages_support_time(structure, name, pkg_support_time,
                     pkg_support_time[pkg] += " (%s)" % ", ".join(
                         what_seeds(pkg, pkgs_in_seeds))
 
-
     return pkg_support_time
 
 
@@ -347,7 +346,7 @@ if __name__ == "__main__":
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
     for arch in PRIMARY_ARCHES:
-        rootdir="./aptroot.%s" % distro
+        rootdir = "./aptroot.%s" % distro
         apt_pkg.config.set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
