@@ -124,7 +124,7 @@ class TestBuildViews(TestCaseWithFactory):
             (build, self.empty_request), name="+index")
         self.assertFalse(build_view.is_ppa)
         self.assertEquals(build_view.buildqueue, None)
-        self.assertEquals(build_view.component.name, 'multiverse')
+        self.assertEquals(build_view.component_name, 'multiverse')
         self.assertFalse(build.can_be_retried)
         self.assertFalse(build_view.user_can_retry_build)
 
