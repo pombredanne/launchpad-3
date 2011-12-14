@@ -295,7 +295,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             bugtask,
             badge_property['has_branch'],
             badge_property['has_specification'],
-            badge_property['has_patch'])
+            badge_property['has_patch'],
+            self.request)
 
     @cachedproperty
     def bugtasks(self):

@@ -1839,6 +1839,7 @@ def make_bug_task_listing_item(factory):
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
+        LaunchpadTestRequest(),
         target_context=bugtask.target)
 
 
@@ -2328,7 +2329,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
             item.bug.tags = ['tag1', 'tag2']
-            self.assertEqual('tag1 tag2', item.model['tags'])
+            self.assertEqual(
+                [{'tag': u'tag1'}, {'tag': u'tag2'}],
+                item.model['tags'])
 
     def test_model_reporter(self):
         """Model contains bug reporter."""

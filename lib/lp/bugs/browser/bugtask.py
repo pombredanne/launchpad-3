@@ -2184,7 +2184,7 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, request=None,
+                 has_specification, has_patch, request,
                  target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
