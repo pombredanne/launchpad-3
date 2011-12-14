@@ -2228,7 +2228,7 @@ class BugTaskListingItem:
             assignee = self.assignee.displayname
 
         def build_tag_url(tag):
-            """Generate a url for the tag based on the current request ctx"""
+            """Generate a url for the tag based on the current request ctx."""
             return "%s/?field.tag=%s" % (
                 canonical_url(self.bugtask.target, view_name="+bugs"),
                 tag)

@@ -61,7 +61,9 @@
             {{/show_datecreated}}
             {{#show_tag}}
                 <span class="field">Tags:
-                  {{#tag_urls}}<a href="{{url}}" class="tag">{{tag}}</a> {{/tag_urls}}
+                  {{#tag_urls}}
+                    <a href="{{url}}" class="tag">{{tag}}</a>&nbsp;
+                  {{/tag_urls}}
                   {{^tags}}None{{/tags}}
                 </span>
             {{/show_tag}}
