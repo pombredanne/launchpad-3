@@ -275,7 +275,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
 
     def test_all_pillar_owners_without_bug_supervisors(self):
         # The set of owners of pillars for which no bug supervisor is
-        # configured.
+        # configured and which use Launchpad for bug tracking.
         [bugtask] = self.bug.bugtasks
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)
@@ -284,12 +284,24 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # Clear the supervisor for the first bugtask's target.
         with person_logged_in(bugtask.target.owner):
             bugtask.target.setBugSupervisor(None, bugtask.owner)
+            bugtask.pillar.official_malone = False
+        # The pillar does not use Launchpad, so the collection is still empty.
+        found_owners = (
+            self.getInfo().all_pillar_owners_without_bug_supervisors)
+        self.assertEqual(set(), found_owners)
+        self.assertEqual((), found_owners.sorted)
+        # When a pillar does use Launchpad the collection includes the
+        # pillar's owner.
+        with person_logged_in(bugtask.target.owner):
+            bugtask.pillar.official_malone = True
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)
         self.assertEqual(set([bugtask.pillar.owner]), found_owners)
         self.assertEqual((bugtask.pillar.owner,), found_owners.sorted)
-        # Add another bugtask with a bug supervisor.
-        target2 = self.factory.makeProduct(bug_supervisor=None)
+        # Add another bugtask for a pillar that uses Launchpad but without a
+        # bug supervisor.
+        target2 = self.factory.makeProduct(
+            bug_supervisor=None, official_malone=True)
         bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)

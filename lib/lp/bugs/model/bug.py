@@ -2652,7 +2652,7 @@ class BugSubscriptionInfo:
         """Owners of pillars for which no Bug supervisor is configured."""
         for bugtask in self.bug.bugtasks:
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None:
+            if pillar.bug_supervisor is None and pillar.official_malone:
                 yield pillar.owner
 
     @cachedproperty
