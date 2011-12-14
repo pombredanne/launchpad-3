@@ -170,25 +170,6 @@ class TestBug(TestCaseWithFactory):
             self.assertThat(len(subscribers), Equals(10 + 1))
             self.assertThat(recorder, HasQueryCount(Equals(1)))
 
-    def test_get_direct_subscribers_with_recipients_query_count(self):
-        # getDirectSubscribers() uses a constant number of queries when given
-        # a recipients argument regardless of the number of subscribers.
-        bug = self.factory.makeBug()
-
-        def create_subscriber():
-            subscriber = self.factory.makePerson()
-            with person_logged_in(subscriber):
-                bug.subscribe(subscriber, subscriber)
-
-        def get_subscribers():
-            recipients = BugNotificationRecipients()
-            bug.getDirectSubscribers(recipients=recipients)
-
-        recorder1, recorder2 = record_two_runs(
-            get_subscribers, create_subscriber, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
-
     def test_mark_as_duplicate_query_count(self):
         bug = self.factory.makeBug()
         # Make lots of duplicate bugs.
@@ -496,6 +477,74 @@ class TestBug(TestCaseWithFactory):
             self.assertThat(recorder, HasQueryCount(LessThan(7)))
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
+
+    def test_get_direct_subscribers_with_recipients_query_count(self):
+        # getDirectSubscribers() uses a constant number of queries when given
+        # a recipients argument regardless of the number of subscribers.
+        bug = self.factory.makeBug()
+
+        def create_subscriber():
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            bug.getDirectSubscribers(recipients=recipients)
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_subscriber, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_get_subscribers_from_dupes_with_recipients_query_count(self):
+        # getSubscribersFromDuplicates() uses a constant number of queries
+        # when given a recipients argument regardless of the number of
+        # subscribers.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+
+        def create_subscriber():
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                duplicate_bug.subscribe(subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            bug.getSubscribersFromDuplicates(recipients=recipients)
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_subscriber, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_get_also_notified_subscribers_with_recipients_query_count(self):
+        # getAlsoNotifiedSubscribers() uses a constant number of queries when
+        # given a recipients argument regardless of the number of subscribers.
+        bug = self.factory.makeBug()
+
+        def create_stuff():
+            # Subscribe someone else, create a new bugtask, set its assignee,
+            # and set its pillar's official_malone=True.
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+            bugtask = self.factory.makeBugTask(bug=bug)
+            with person_logged_in(bugtask.owner):
+                bugtask.transitionToAssignee(bugtask.owner)
+            with person_logged_in(bugtask.pillar.owner):
+                bugtask.pillar.official_malone = True
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            bug.getAlsoNotifiedSubscribers(recipients=recipients)
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_stuff, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesMixin:
