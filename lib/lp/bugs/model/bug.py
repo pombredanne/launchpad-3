@@ -949,9 +949,10 @@ class Bug(SQLBase):
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
+    def getSubscriptionInfo(self, level=None):
         """See `IBug`."""
-        return BugSubscriptionInfo(self, level)
+        return BugSubscriptionInfo(
+            self, BugNotificationLevel.LIFECYCLE if level is None else level)
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
@@ -2637,7 +2638,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return list(get_structural_subscriptions_for_bug(self.bug))
+        return get_structural_subscriptions_for_bug(self.bug)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
@@ -2669,7 +2670,7 @@ class BugSubscriptionInfo:
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscribers).difference(muted)
+                self.direct_subscribers, muted)
 
     @cachedproperty
     def indirect_subscribers(self):
