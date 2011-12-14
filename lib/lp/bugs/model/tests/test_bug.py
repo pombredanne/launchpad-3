@@ -168,7 +168,7 @@ class TestBug(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             subscribers = list(bug.getDirectSubscribers())
             self.assertThat(len(subscribers), Equals(10 + 1))
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_mark_as_duplicate_query_count(self):
         bug = self.factory.makeBug()
