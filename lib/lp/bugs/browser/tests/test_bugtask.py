@@ -2148,7 +2148,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'milestone_name': 'milestone_name1',
             'status': 'status1',
             'reporter': 'reporter1',
-            'tags': 'tags1',
+            'tags': [{'tag': 'tags1'}],
+            'tag_urls': [{'url': '', 'tag': 'tags1'}],
             'title': 'title1',
         }
         bugtask.update(navigator.field_visibility)
