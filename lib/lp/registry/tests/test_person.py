@@ -19,7 +19,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.account import (
@@ -847,8 +847,17 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         with celebrity_logged_in('admin'):
             email = from_person.preferredemail
             email.status = EmailAddressStatus.NEW
-            email.person = to_person
-            email.account = to_person.account
+            store = IMasterStore(EmailAddress)
+            # EmailAddress.acount and .person need to be updated at the
+            # same time to prevent the constraints on the account field
+            # from kicking the change out.
+            store.execute("""
+                UPDATE EmailAddress SET
+                    person = %s,
+                    account = %s
+                WHERE id = %s
+                """ % sqlvalues(
+                to_person.id, to_person.accountID, email.id))
         transaction.commit()
 
     def _do_merge(self, from_person, to_person, reviewer=None):

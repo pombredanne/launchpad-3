@@ -2135,11 +2135,14 @@ $$
         return True
     results = plpy.execute("""
         SELECT account FROM Person WHERE id = %s""" % person)
-    # If there are no accounts with that Person in the DB, return
-    # success anyway. This helps avoid the PGRestore breaking (and
-    # referential integrity will prevent this from causing bugs later.
-    if results.nrows() == 0:
+    # If there are no accounts with that Person in the DB, or the Person
+    # is new and hasn't yet been linked to an account, return success
+    # anyway. This helps avoid the PGRestore breaking (and referential
+    # integrity will prevent this from causing bugs later.
+    if results.nrows() == 0 or results[0]['account'] is None:
         return True
+    if results[0]['account'] != account:
+        return False
     return results[0]['account'] == account
 $$;
 
