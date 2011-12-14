@@ -70,6 +70,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -346,7 +348,27 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
+
     implements(IProjectGroupActionMenu)
+
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProjectGroup['owner'],
+            format_link(self.context.owner, empty_value="Not yet selected"),
+            header='Change maintainer', edit_view='+reassign',
+            step_title='Select a new maintainer',
+            null_display_value="Not yet selected")
+
+    @property
+    def driver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProjectGroup['driver'],
+            format_link(self.context.driver, empty_value="Not yet selected"),
+            header='Change driver', edit_view='+driver',
+            step_title='Select a new driver',
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
 
     def initialize(self):
         super(ProjectView, self).initialize()

@@ -4404,6 +4404,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(grant).flush()
         return grant
 
+    def makeFakeFileUpload(self, filename=None, content=None):
+        """Return a zope.publisher.browser.FileUpload like object.
+
+        This can be useful while testing multipart form submission.
+        """
+        if filename is None:
+            filename = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        fileupload = StringIO(content)
+        fileupload.filename = filename
+        fileupload.headers = {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%s"' % filename
+            }
+        return fileupload
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by

@@ -108,67 +108,6 @@ about the team.
     Unauthorized: (<Person at ... priv-team (Priv Team)>,
         'name', 'launchpad.LimitedView')
 
-A person with visibility to any of the branches owned by the private team will
-be granted limited view permission on the team.
-
-For private branches, a user needs to be subscribed to the branch for the
-branch (and hence team) to be visible.
-
-    >>> login_person(priv_owner)
-    >>> private_team_branch = factory.makeBranch(
-    ...     owner=priv_team, private=True)
-    >>> login_person(pub_member)
-    >>> check_permission('launchpad.LimitedView', priv_team)
-    False
-
-    >>> login_person(priv_owner)
-    >>> sub = factory.makeBranchSubscription(
-    ...     branch=private_team_branch, person=pub_member,
-    ...     subscribed_by=priv_owner)
-
-    >>> login_person(pub_member)
-    >>> check_permission('launchpad.LimitedView', priv_team)
-    True
-
-Subscribers to the teams private PPA have limited view permission.
-
-    >>> login_person(priv_owner)
-    >>> archive = factory.makeArchive(private=True, owner=priv_team)
-    >>> archive_subscriber = factory.makePerson()
-    >>> sub = archive.newSubscription(
-    ...     archive_subscriber, registrant=archive.owner)
-
-    >>> login_person(archive_subscriber)
-    >>> check_permission('launchpad.LimitedView', priv_team)
-    True
-
-Users with LimitedView can know identifying information like name,
-displayname, and unique_name, but cannot know other information like
-teamowner.
-
-    >>> print priv_team.name
-    priv-team
-
-    >>> print priv_team.displayname
-    Priv Team
-
-    >>> print priv_team.unique_displayname
-    Priv Team (priv-team)
-
-    >>> print priv_team.icon
-    None
-
-    >>> print priv_team.allmembers
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<Person at ... priv-team (Priv Team)>,
-        'allmembers', 'launchpad.View')
-
-Anonymous users do not have permission.
-    >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.LimitedView', priv_team)
-    False
-
 A team owner must be able to access the team even if they are not a team
 member. When a team is created, the owner is automatically made an admin
 member. So we revoke that membership and check that they still have access.
@@ -185,4 +124,3 @@ member. So we revoke that membership and check that they still have access.
     False
     >>> check_permission('launchpad.View', priv_team)
     True
-
