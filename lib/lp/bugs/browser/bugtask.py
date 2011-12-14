@@ -2227,11 +2227,12 @@ class BugTaskListingItem:
         if self.assignee is not None:
             assignee = self.assignee.displayname
 
+        base_tag_url = "%s/?field.tag=" % canonical_url(
+            self.bugtask.target,
+            view_name="+bugs")
+
         def build_tag_url(tag):
             """Generate a url for the tag based on the current request ctx."""
-            return "%s/?field.tag=%s" % (
-                canonical_url(self.bugtask.target, view_name="+bugs"),
-                tag)
 
         return {
             'age': age,
@@ -2250,7 +2251,7 @@ class BugTaskListingItem:
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
             'tags': [{'tag': tag} for tag in self.bug.tags],
-            'tag_urls': [{'url': build_tag_url(tag), 'tag': tag}
+            'tag_urls': [{'url': base_tag_url + tag, 'tag': tag}
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }
