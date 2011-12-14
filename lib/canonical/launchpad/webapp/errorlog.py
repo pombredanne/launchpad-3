@@ -169,6 +169,15 @@ def attach_previous_oopsid(report, context):
         report['last_oops'] = last_oopsid
 
 
+def attach_feature_info(report, context):
+    """Attach info about the active features and scopes."""
+    request = context.get('http_request')
+    features = getattr(request, 'features', None)
+    if features is not None:
+        report['features.usedFlags'] = u'%r' % features.usedFlags()
+        report['features.usedScopes'] = u'%r' % features.usedScopes()
+
+
 def attach_http_request(report, context):
     """Add request metadata into the error report.
 
@@ -341,6 +350,8 @@ class ErrorReportingUtility:
         self._oops_config.on_create.append(attach_adapter_duration)
         # Any previous OOPS reports generated this request.
         self._oops_config.on_create.append(attach_previous_oopsid)
+        # And any active feature flags.
+        self._oops_config.on_create.append(attach_feature_info)
 
         def add_publisher(publisher):
             if publisher_adapter is not None:
@@ -434,13 +445,35 @@ class ErrorReportingUtility:
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
-        """Add an oops message to be included in oopses from this context."""
-        key = self._oops_message_key_iter.next()
-        self._oops_messages[key] = message
+        """Add an oops message to be included in oopses from this context.
+
+        The message will be removed when the scope is exited, so this is
+        useful for messages that are relevant only to errors raised during
+        part of the request.
+
+        Warning: This is not threadsafe at present, because there is only one
+        ErrorReportingUtility per process.
+
+        :param message: Unicode message.
+        """
+        key = self.addOopsMessage(message)
         try:
             yield
         finally:
             del self._oops_messages[key]
+
+    def addOopsMessage(self, message):
+        """Add a message to the current oops accumulator.
+
+        Warning: This is not threadsafe at present, because there is only one
+        ErrorReportingUtility per process.
+
+        :param message: Unicode message.
+        :returns: Key for this message.
+        """
+        key = self._oops_message_key_iter.next()
+        self._oops_messages[key] = message
+        return key
 
 
 globalErrorUtility = ErrorReportingUtility()
