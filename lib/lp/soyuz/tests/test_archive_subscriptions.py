@@ -15,6 +15,7 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -131,21 +132,21 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         self.private_team = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE,
             name="subscribertest", owner=self.owner)
-        login_person(self.owner)
-        self.archive = self.factory.makeArchive(
-            private=True, owner=self.private_team)
+        with person_logged_in(self.owner):
+            self.archive = self.factory.makeArchive(
+                private=True, owner=self.private_team)
         self.subscriber = self.factory.makePerson()
 
     def test_traverse_view_private_team_archive_subscriber(self):
         # A subscriber can traverse and view the archive.
-        login_person(self.owner)
-        self.archive.newSubscription(
-            self.subscriber, registrant=self.archive.owner)
-        login_person(self.subscriber)
-        url = canonical_url(self.archive)
+        with person_logged_in(self.owner):
+            self.archive.newSubscription(
+                self.subscriber, registrant=self.archive.owner)
+        with person_logged_in(self.subscriber):
+            url = canonical_url(self.archive)
         browser = setupBrowserForUser(self.subscriber)
         browser.open(url)
-        content = find_tag_by_id(browser.contents, 'maincontent')
+        content = find_tag_by_id(browser.contents, 'document')
         self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
         self.assertIsNotNone(
             find_tag_by_id(content, 'portlet-latest-updates'))
