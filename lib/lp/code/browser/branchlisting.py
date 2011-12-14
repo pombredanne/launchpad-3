@@ -89,7 +89,6 @@ from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
     )
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
-from lp.bugs.model.bugtask import BugTask
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
@@ -1417,9 +1416,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def configure_codehosting(self):
         """Get the menu link for configuring code hosting."""
-        if not BugTask.userHasDriverPrivilegesContext(
-            self.context, self.user):
-            return False
+        if not check_permission(
+            'launchpad.Edit', self.context.development_focus):
+            return None
         series_menu = MenuAPI(self.context.development_focus).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure code hosting'
