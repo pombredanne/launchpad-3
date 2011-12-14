@@ -983,10 +983,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
-        sponsored = None
-        sponsored_person = data.get("sponsored_person")
-        if sponsored_person:
-            sponsored = getUtility(IPersonSet).getByName(sponsored_person)
+        sponsored = data.get("sponsored_person")
 
         # When syncing we *must* do it asynchronously so that a package
         # copy job is created.  This gives the job a chance to inspect
@@ -1021,8 +1018,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             self.setFieldError(
                 'selected_differences', 'No differences selected.')
 
-        sponsored = getUtility(IPersonSet).getByName(
-            data.get("sponsored_person"))
+        sponsored = data.get("sponsored_person")
         if sponsored is None:
             self.setFieldError("sponsored_person", "Invalid person")
 
