@@ -2226,6 +2226,11 @@ class BugTaskListingItem:
         assignee = None
         if self.assignee is not None:
             assignee = self.assignee.displayname
+
+        def build_tag_url(tag):
+            """Generate a url for the tag based on the current request ctx"""
+            return "%s/?field.tag=%s" % (self.request.getURL(), tag)
+
         return {
             'age': age,
             'assignee': assignee,
@@ -2243,6 +2248,8 @@ class BugTaskListingItem:
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
             'tags': [{'tag': tag} for tag in self.bug.tags],
+            'tag_urls': [{'url': build_tag_url(tag), 'tag': tag}
+                for tag in self.bug.tags],
             'title': self.bug.title,
             }
 
