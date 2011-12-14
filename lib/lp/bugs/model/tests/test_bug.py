@@ -24,6 +24,7 @@ from lp.bugs.enum import (
 from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
@@ -36,6 +37,7 @@ from lp.testing import (
     feature_flags,
     login_person,
     person_logged_in,
+    record_two_runs,
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -167,6 +169,25 @@ class TestBug(TestCaseWithFactory):
             subscribers = list(bug.getDirectSubscribers())
             self.assertThat(len(subscribers), Equals(10 + 1))
             self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_get_direct_subscribers_with_recipients_query_count(self):
+        # getDirectSubscribers() uses a constant number of queries when given
+        # a recipients argument regardless of the number of subscribers.
+        bug = self.factory.makeBug()
+
+        def create_subscriber():
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            bug.getDirectSubscribers(recipients=recipients)
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_subscriber, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_mark_as_duplicate_query_count(self):
         bug = self.factory.makeBug()
