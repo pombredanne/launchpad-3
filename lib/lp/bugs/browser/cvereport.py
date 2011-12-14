@@ -84,9 +84,9 @@ class CVEReportView(LaunchpadView):
             # queries being issues when trying to render the badges.
             bugtask = BugTaskListingItem(
                 bugtask,
-                badges['has_branch'],
-                badges['has_specification'],
-                badges['has_patch'])
+                has_bug_branch=badges['has_branch'],
+                has_specification=badges['has_specification'],
+                has_patch=badges['has_patch'])
             if not bugtaskcves.has_key(bugtask.bug.id):
                 bugtaskcves[bugtask.bug.id] = BugTaskCve()
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
