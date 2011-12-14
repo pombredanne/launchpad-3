@@ -526,16 +526,17 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
 
         def create_stuff():
-            # Subscribe someone else, create a new bugtask, set its assignee,
-            # and set its pillar's official_malone=True.
-            subscriber = self.factory.makePerson()
-            with person_logged_in(subscriber):
-                bug.subscribe(subscriber, subscriber)
+            # Create a new bugtask, set its assignee, set its pillar's
+            # official_malone=True, and subscribe someone to its target.
             bugtask = self.factory.makeBugTask(bug=bug)
             with person_logged_in(bugtask.owner):
                 bugtask.transitionToAssignee(bugtask.owner)
             with person_logged_in(bugtask.pillar.owner):
                 bugtask.pillar.official_malone = True
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bugtask.target.addSubscription(
+                    subscriber, subscriber)
 
         def get_subscribers():
             recipients = BugNotificationRecipients()
