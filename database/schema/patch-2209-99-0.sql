@@ -42,7 +42,8 @@ $$
     if email_address_accounts.nrows() == 0:
         return True
     for email_account_row in email_address_accounts:
-        if email_account_row['account'] != account:
+        email_account = email_account_row['account']
+        if email_account is not None and email_account != account:
             return False
     return True
 $$;
@@ -55,4 +56,4 @@ ALTER TABLE EmailAddress ADD CONSTRAINT valid_account_for_person
 ALTER TABLE Person ADD CONSTRAINT valid_account_for_emailaddresses
     CHECK (check_person_email_address_account(id, account));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
