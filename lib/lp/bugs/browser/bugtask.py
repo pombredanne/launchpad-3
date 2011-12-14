@@ -2184,7 +2184,7 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, request,
+                 has_specification, has_patch, request=None,
                  target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
@@ -2229,7 +2229,9 @@ class BugTaskListingItem:
 
         def build_tag_url(tag):
             """Generate a url for the tag based on the current request ctx"""
-            return "%s/?field.tag=%s" % (self.request.getURL(), tag)
+            return "%s/?field.tag=%s" % (
+                canonical_url(self.bugtask.target, view_name="+bugs"),
+                tag)
 
         return {
             'age': age,

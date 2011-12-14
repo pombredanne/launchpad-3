@@ -1839,7 +1839,6 @@ def make_bug_task_listing_item(factory):
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
-        LaunchpadTestRequest(),
         target_context=bugtask.target)
 
 
