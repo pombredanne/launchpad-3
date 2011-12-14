@@ -1073,7 +1073,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The child doesn't have this package.  Treat that as the
             # parent being newer.
             return False
-        comparison = apt_pkg.VersionCompare(
+        comparison = apt_pkg.version_compare(
             dsd.parent_source_version, dsd.source_version)
         return comparison < 0
 

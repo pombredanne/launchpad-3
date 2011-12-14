@@ -504,8 +504,8 @@ class CopyChecker:
         if ancestry is not None:
             ancestry_version = ancestry.sourcepackagerelease.version
             copy_version = source.sourcepackagerelease.version
-            apt_pkg.InitSystem()
-            if apt_pkg.VersionCompare(copy_version, ancestry_version) < 0:
+            apt_pkg.init_system()
+            if apt_pkg.version_compare(copy_version, ancestry_version) < 0:
                 raise CannotCopy(
                     "version older than the %s published in %s" %
                     (ancestry.displayname, ancestry.distroseries.name))

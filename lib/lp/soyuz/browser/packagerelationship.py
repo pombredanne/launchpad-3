@@ -41,6 +41,12 @@ def relationship_builder(relationship_line, parser, getter):
             url = canonical_url(target_object)
         else:
             url = None
+        # The apt_pkg 0.8 API returns '<' and '>' rather than the '<<' and
+        # '>>' form used in control files.
+        if operator == '<':
+            operator = '<<'
+        elif operator == '>':
+            operator = '>>'
         relationship_set.add(name, operator, version, url)
 
     return relationship_set

@@ -6,13 +6,7 @@
 #  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
 # (where it will vanish once taken here)
 
-# this warning filter is only needed on older versions of python-apt,
-# once the machine runs lucid it can be removed
-import warnings
-warnings.filterwarnings("ignore", "apt API not stable yet")
 import apt
-warnings.resetwarnings()
-
 import apt_pkg
 import logging
 import os
@@ -107,9 +101,9 @@ def get_binaries_for_source_pkg(srcname):
     :return: A list of binary package names.
     """
     pkgnames = set()
-    recs = apt_pkg.GetPkgSrcRecords()
-    while recs.Lookup(srcname):
-        for binary in recs.Binaries:
+    recs = apt_pkg.SourceRecords()
+    while recs.lookup(srcname):
+        for binary in recs.binaries:
             pkgnames.add(binary)
     return pkgnames
 
@@ -168,7 +162,7 @@ def create_and_update_deb_src_source_list(distroseries):
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     try:
-        cache.update(apt.progress.FetchProgress())
+        cache.update()
     except SystemError:
         logging.exception("cache.update() failed")
 
@@ -354,13 +348,13 @@ if __name__ == "__main__":
     # they are not in any seed and got added manually into "main"
     for arch in PRIMARY_ARCHES:
         rootdir="./aptroot.%s" % distro
-        apt_pkg.Config.Set("APT::Architecture", arch)
+        apt_pkg.config.set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
-            cache.update(apt.progress.FetchProgress())
+            cache.update()
         except SystemError:
             logging.exception("cache.update() failed")
-        cache.open(apt.progress.OpProgress())
+        cache.open()
         for pkg in cache:
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]

@@ -506,7 +506,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             ]
         spphs = make_spphs_for_versions(self.factory, versions)
 
-        debian_sorted_versions = sorted(versions, cmp=apt_pkg.VersionCompare)
+        debian_sorted_versions = sorted(versions, cmp=apt_pkg.version_compare)
 
         # Assumption: in this case, Debian version ordering is not the
         # same as alphabetical version ordering.
@@ -515,7 +515,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         # The compare method produces the Debian ordering.
         sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
         self.assertEqual(
-            sorted(versions, cmp=apt_pkg.VersionCompare),
+            sorted(versions, cmp=apt_pkg.version_compare),
             list_source_versions(sorted_spphs))
 
     def test_compare_breaks_tie_with_creation_date(self):

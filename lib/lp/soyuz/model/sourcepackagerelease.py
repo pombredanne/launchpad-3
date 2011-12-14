@@ -639,7 +639,7 @@ class SourcePackageRelease(SQLBase):
         if self.changelog is None:
             return None
 
-        apt_pkg.InitSystem()
+        apt_pkg.init_system()
         chunks = []
         changelog = self.changelog
         # The python-debian API for parsing changelogs is pretty awful. The
@@ -649,7 +649,7 @@ class SourcePackageRelease(SQLBase):
             for block in Changelog(changelog.read()):
                 version = block._raw_version
                 if (since_version and
-                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    apt_pkg.version_compare(version, since_version) <= 0):
                     break
                 # Poking in private attributes is not nice but again the
                 # API is terrible.  We want to ensure that the name/date
