@@ -1383,8 +1383,7 @@ class PackageCopyingMixin:
 
         :return: True if the copying worked, False otherwise.
         """
-        assert(
-            force_async or not sponsored,
+        assert force_async or not sponsored, (
             "sponsored must be None for sync copies")
         try:
             if (force_async == False and
