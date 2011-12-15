@@ -16,7 +16,10 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -125,7 +128,11 @@ class TestBaseLayout(TestCaseWithFactory):
             'registering', document.find(True, id='registration')['class'])
         self.assertEqual(
             'Registered on 2005-09-16 by Illuminati',
-            document.find(True, id='registration').string.strip())
+            document.find(True, id='registration').string.strip(),
+            )
+        self.assertEndsWith(
+            extract_text(document.find(True, id='maincontent')),
+            'Main content of the page.')
         self.assertEqual(
             'yui-b side', document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)

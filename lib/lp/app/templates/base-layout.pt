@@ -117,9 +117,6 @@
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
-              <tal:XXX condition="nothing">
-                # XXX sinzui 2011-12-14: this must not render for limitedview.
-              </tal:XXX>
               <div id="registration" class="registering"
                 tal:condition="context/required:launchpad.View">
                 <metal:registering define-slot="registering" />
@@ -136,10 +133,14 @@
                   use-macro="context/@@+base-layout-macros/notifications"/>
               </tal:notifications>
             </div>
-            <tal:XXX condition="nothing">
-              # XXX sinzui 2011-12-14: this must not render for limitedview.
-            </tal:XXX>
+
             <metal:main define-slot="main" />
+<!--            <tal:view condition="context/required:launchpad.View">-->
+<!--              <metal:main define-slot="main" />-->
+<!--            </tal:view>-->
+<!--            <tal:view condition="not context/required:launchpad.View">-->
+<!--              The information in this page is not shared with you.-->
+<!--            </tal:view>-->
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
