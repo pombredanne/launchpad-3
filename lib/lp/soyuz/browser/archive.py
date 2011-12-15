@@ -1352,7 +1352,8 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True, force_async=False, sponsored=None):
+                check_permissions=True, force_async=False,
+                sponsored_person=None):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1378,12 +1379,12 @@ class PackageCopyingMixin:
             requester's permissions to copy should be checked.
         :param force_async: Force the copy to create package copy jobs and
             perform the copy asynchronously.
-        :param sponsored: An IPerson representing the person being sponsored
-            (for asynchronous copies only).
+        :param sponsored_person: An IPerson representing the person being
+            sponsored (for asynchronous copies only).
 
         :return: True if the copying worked, False otherwise.
         """
-        assert force_async or not sponsored, (
+        assert force_async or not sponsored_person, (
             "sponsored must be None for sync copies")
         try:
             if (force_async == False and
@@ -1398,7 +1399,8 @@ class PackageCopyingMixin:
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,
                     dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions, sponsored=sponsored)
+                    check_permissions=check_permissions,
+                    sponsored=sponsored_person)
         except CannotCopy, error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))
