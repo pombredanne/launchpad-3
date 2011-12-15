@@ -109,13 +109,6 @@ class LowerBatchNavigationView(UpperBatchNavigationView):
 
     css_class = "lower-batch-nav"
 
-    def render(self):
-        if (self.context.currentBatch() and
-            (self.context.nextBatchURL() or
-            self.context.prevBatchURL())):
-            return LaunchpadView.render(self)
-        return u""
-
 
 class BatchNavigator(lazr.batchnavigator.BatchNavigator):
 
