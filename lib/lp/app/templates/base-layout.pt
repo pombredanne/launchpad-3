@@ -142,9 +142,6 @@
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <tal:XXX condition="nothing">
-          # XXX sinzui 2011-12-14: this must not render for limitedview.
-        </tal:XXX>
         <tal:view condition="context/required:launchpad.View">
           <div id="side-portlets" class="yui-b side"
             tal:condition="view/macro:pagehas/portlets">

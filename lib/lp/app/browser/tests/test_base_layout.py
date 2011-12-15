@@ -122,6 +122,11 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(classes, document['class'].split())
         self.verify_watermark(document)
         self.assertEqual(
+            'registering', document.find(True, id='registration')['class'])
+        self.assertEqual(
+            'Registered on 2005-09-16 by Illuminati',
+            document.find(True, id='registration').string.strip())
+        self.assertEqual(
             'yui-b side', document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
