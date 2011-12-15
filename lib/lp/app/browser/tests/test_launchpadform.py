@@ -56,7 +56,7 @@ class TestView(LaunchpadFormView):
 
 class TestHasStructuredDoc(TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def _widget_annotation(self, widget):
         return widget.context.queryTaggedValue('has_structured_doc')
@@ -73,7 +73,7 @@ class TestHasStructuredDoc(TestCase):
 
 class TestQueryTalesForHasStructuredDoc(TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_query_tales(self):
         # Test that query:has-structured-doc gets sets the field annotation.
@@ -167,7 +167,7 @@ class TestWidgetDivView(LaunchpadFormView):
         join(dirname(__file__), "test-widget-div.pt"))
 
 
-class TestWidgetDiv(TestCaseWithFactory):
+class TestWidgetDiv(TestCase):
     """Tests for the `widget_div` template macro."""
 
     layer = FunctionalLayer
