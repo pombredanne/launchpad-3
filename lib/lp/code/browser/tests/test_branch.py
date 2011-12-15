@@ -51,7 +51,8 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
     BranchVisibilityRule,
-    CodeReviewVote)
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
