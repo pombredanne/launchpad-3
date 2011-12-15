@@ -219,20 +219,11 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 
-        # Set up some completed reviews.
-        public_person2 = self.factory.makePerson()
-        team_owner = self.factory.makePerson()
-        private_team2 = self.factory.makeTeam(
-            owner=team_owner, visibility=PersonVisibility.PRIVATE)
-        self._createComment(public_person2, CodeReviewVote.APPROVE)
-        login_person(team_owner)
-        self._createComment(private_team2, CodeReviewVote.APPROVE)
-        return private_team1, private_team2, public_person1, public_person2
+        return private_team1, public_person1
 
     def testPrivateVotesNotVisibleIfBranchNotVisible(self):
         # User can't see votes for private teams if they can't see the branch.
-        (private_team1, private_team2,
-         public_person1, public_person2) = self._createPrivateVotes(False)
+        private_team1, public_person1 = self._createPrivateVotes(False)
         login_person(self.factory.makePerson())
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
@@ -243,17 +234,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [public_person1],
             [review.reviewer for review in requested_reviews])
 
-        # Check the current reviews.
-        current_reviews = view.current_reviews
-        self.assertEqual(1, len(current_reviews))
-        self.assertContentEqual(
-            [public_person2],
-            [review.reviewer for review in current_reviews])
-
     def testPrivateVotesVisibleIfBranchVisible(self):
         # User can see votes for private teams if they can see the branch.
-        (private_team1, private_team2,
-         public_person1, public_person2) = self._createPrivateVotes()
+        private_team1, public_person1 = self._createPrivateVotes()
         login_person(self.factory.makePerson())
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
@@ -263,13 +246,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertContentEqual(
             [public_person1, private_team1],
             [review.reviewer for review in requested_reviews])
-
-        # Check the current reviews.
-        current_reviews = view.current_reviews
-        self.assertEqual(2, len(current_reviews))
-        self.assertContentEqual(
-            [public_person2, private_team2],
-            [review.reviewer for review in current_reviews])
 
     def testRequestedOrdering(self):
         # No votes should return empty lists

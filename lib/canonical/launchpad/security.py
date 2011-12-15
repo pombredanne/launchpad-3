@@ -856,8 +856,8 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if team_branches.visibleByUser(user.person).count() > 0:
                 return True
 
-            # Grant visibility to branches visible to the user and which are
-            # being reviewed by the private team.
+            # Grant visibility to branches visible to the user and which have
+            # review requests for the private team.
             branches = getUtility(IAllBranches)
             visible_branches = branches.visibleByUser(user.person)
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
