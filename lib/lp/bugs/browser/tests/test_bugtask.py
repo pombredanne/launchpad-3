@@ -2246,6 +2246,22 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['items'][0]['show_date_last_updated'] = True
         self.assertIn('Last updated updated1', navigator.mustache)
 
+    def test_sort_keys_in_json_cache(self):
+        # The JSON cache of a search listing view provides a sequence
+        # that describes all sort orders implemented by
+        # BugTaskSet.search() and no sort orders that are not implemented.
+        with dynamic_listings():
+            view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        json_sort_keys = cache.objects['sort_keys']
+        json_sort_keys = set(key[0] for key in json_sort_keys)
+        valid_keys = set(getUtility(IBugTaskSet).orderby_expression.keys())
+        self.assertEqual(
+            valid_keys, json_sort_keys,
+            "Existing sort order values not available in JSON cache: %r; "
+            "keys present in JSON cache but not defined: %r"
+            % (valid_keys - json_sort_keys, json_sort_keys - valid_keys))
+
 
 class TestBugTaskExpirableListingView(BrowserTestCase):
     """Test BugTaskExpirableListingView."""

@@ -2478,6 +2478,33 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link('+nominations', 'Review nominations', icon='bug')
 
 
+# All sort orders supported by BugTaskSet.search() and a title for
+# them.
+SORT_KEYS = [
+    ('id', 'Bug number'),
+    ('title', 'Bug title'),
+    ('importance', 'Importance'),
+    ('status', 'Status'),
+    ('heat', 'Bug heat'),
+    ('reporter', 'Reporter'),
+    ('assignee', 'Assignee'),
+    ('targetname', 'Package/Project/Series name'),
+    ('milestone_name', 'Milestone'),
+    ('datecreated', 'Bug age'),
+    ('date_last_updated', 'Date bug last updated'),
+    ('tag', 'Bug Tags'),
+    ('date_closed', 'Date bug closed'),
+    ('dateassigned', 'Date when the bug task was assigned'),
+    ('number_of_duplicates', 'Number of duplicates'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded'),
+    ('message_count', 'Number of comments'),
+    ('milestone', 'Milestone ID'),
+    ('specification', 'Linked blueprint'),
+    ('task', 'Bug task ID'),
+    ('users_affected_count', 'Number of affected users'),
+    ]
+
+
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
@@ -2672,6 +2699,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+            cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
@@ -2743,7 +2771,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.getOrderByColumnDBName(orderby_col)
+                bugset.orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
