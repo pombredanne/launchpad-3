@@ -39,7 +39,7 @@ class TestPageMacroDispatcher(TestCase):
         # The base template defines a 'master' macro as the adapter expects.
         self.assertIn('master', adapter.base.macros.keys())
 
-    def test_page_type(self):
+    def test_page(self):
         # A view can be adpated to a page macro object.
         page_macro = test_tales('view/macro:page/main_side', view=self.view)
         self.assertEqual('main_side', self.view.__pagetype__)
@@ -49,11 +49,21 @@ class TestPageMacroDispatcher(TestCase):
         self.assertEqual(
             '/templates/base-layout.pt', source_file[1].split('..')[1])
 
-    def test_page_type_unknown_type(self):
+    def test_page_unknown_type(self):
         # An error is raised of the pagetype is not defined.
         self.assertRaisesWithContent(
             LocationError, "'unknown pagetype: not-defined'",
             self._call_test_tales, 'view/macro:page/not-defined')
+
+    def test_pagetype(self):
+        # The pagetype is 'unset', until macro:page is called.
+        self.assertIs(None, getattr(self.view, '__pagetype__', None))
+        self.assertEqual(
+            'unset', test_tales('view/macro:pagetype', view=self.view))
+        test_tales('view/macro:page/main_side', view=self.view)
+        self.assertEqual('main_side', self.view.__pagetype__)
+        self.assertEqual(
+            'main_side', test_tales('view/macro:pagetype', view=self.view))
 
     def test_pagehas(self):
         # After the page type is set, the page macro can be queried

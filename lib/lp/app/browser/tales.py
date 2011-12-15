@@ -2499,6 +2499,7 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
         view/macro:pagehas/portlets
+        view/macro:pagehas/main
 
         view/macro:pagetype
 
@@ -2546,6 +2547,8 @@ class PageMacroDispatcher:
         return self.base.macros['master']
 
     def haspage(self, layoutelement):
+        # XXX sinzui 2011-12-15: This could check privacy and permission
+        # to return false for main and side.
         pagetype = getattr(self.context, '__pagetype__', None)
         if pagetype is None:
             pagetype = 'unset'
@@ -2560,6 +2563,7 @@ class PageMacroDispatcher:
             applicationtabs=False,
             globalsearch=False,
             portlets=False,
+            main=True,
             pagetypewasset=True,
             ):
             self.elements = vars()
