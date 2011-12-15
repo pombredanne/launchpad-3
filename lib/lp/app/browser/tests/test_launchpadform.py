@@ -11,6 +11,7 @@ from os.path import (
     )
 
 from lxml import html
+from testtools.content import text_content
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.interface import Interface
 from zope.schema import (
@@ -156,7 +157,6 @@ class TestWidgetDivInterface(Interface):
     checkbox = Choice(
         vocabulary=SimpleVocabulary.fromItems(
             (('yes', True), ('no', False))))
-    #hidden = ... TODO
 
 
 class TestWidgetDivView(LaunchpadFormView):
@@ -168,15 +168,33 @@ class TestWidgetDivView(LaunchpadFormView):
 
 
 class TestWidgetDiv(TestCaseWithFactory):
+    """Tests for the `widget_div` template macro."""
 
     layer = FunctionalLayer
 
     def test_all_widgets_present(self):
         request = LaunchpadTestRequest()
         view = TestWidgetDivView({}, request)
-        view.initialize()
-        root = html.fromstring(view())
+        content = view()
+        self.addDetail("content", text_content(content))
+        root = html.fromstring(content)
         # All the widgets appear in the page.
         self.assertEqual(
             ["field.single_line", "field.multi_line", "field.checkbox"],
             root.xpath("//@id"))
+
+    def test_all_widgets_present_but_hidden(self):
+        request = LaunchpadTestRequest()
+        view = TestWidgetDivView({}, request)
+        view.initialize()
+        for widget in view.widgets:
+            widget.visible = False
+        content = view.render()
+        self.addDetail("content", text_content(content))
+        root = html.fromstring(content)
+        # All the widgets appear in the page as hidden inputs.
+        self.assertEqual(
+            ["field.single_line", "hidden",
+             "field.multi_line", "hidden",
+             "field.checkbox", "hidden"],
+            root.xpath("//input/@id | //input/@type"))
