@@ -740,6 +740,24 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
     is_probationary = exported(
         Bool(title=_("Is this a probationary user?"), readonly=True))
 
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # @operation_parameters(team=copy_field(ITeamMembership['team']))
+    # @export_read_operation()
+    def inTeam(team):
+        """Is this person is a member of `team`?
+
+        Returns `True` when you ask if an `IPerson` (or an `ITeam`,
+        since it inherits from `IPerson`) is a member of himself
+        (i.e. `person1.inTeam(person1)`).
+
+        :param team: Either an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
+        :return: A bool with the result of the membership lookup. When looking
+            up the team from a string finds nothing or team was `None` then
+            `False` is returned.
+        """
+
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator))
     @operation_returns_entry(Interface)  # Really IArchive.
@@ -1268,24 +1286,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """Iterate over the top projects contributed to.
 
         Iterate no more than the given limit.
-        """
-
-    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
-    # into account whether or not a team's memberships are private.
-    # @operation_parameters(team=copy_field(ITeamMembership['team']))
-    # @export_read_operation()
-    def inTeam(team):
-        """Is this person is a member of `team`?
-
-        Returns `True` when you ask if an `IPerson` (or an `ITeam`,
-        since it inherits from `IPerson`) is a member of himself
-        (i.e. `person1.inTeam(person1)`).
-
-        :param team: Either an object providing `IPerson`, the string name of
-            a team or `None`. If a string was supplied the team is looked up.
-        :return: A bool with the result of the membership lookup. When looking
-            up the team from a string finds nothing or team was `None` then
-            `False` is returned.
         """
 
     def clearInTeamCache():

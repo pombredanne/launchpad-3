@@ -68,7 +68,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
-    validate_public_person,
+    validate_person,
     )
 from lp.services.encoding import guess as ensure_unicode
 from lp.services.job.model.job import Job
@@ -120,7 +120,7 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False)
+        storm_validator=validate_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     rfc822msgid = StringCol(notNull=True)
