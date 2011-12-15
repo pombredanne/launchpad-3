@@ -215,3 +215,4 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_watermark(document)
         # These parts are unique to the case without launchpad.View.
         self.assertIsNone(document.find(True, id='side-portlets'))
+        self.assertIsNone(document.find(True, id='registration'))

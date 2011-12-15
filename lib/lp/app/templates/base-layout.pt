@@ -120,7 +120,8 @@
               <tal:XXX condition="nothing">
                 # XXX sinzui 2011-12-14: this must not render for limitedview.
               </tal:XXX>
-              <div id="registration" class="registering">
+              <div id="registration" class="registering"
+                tal:condition="context/required:launchpad.View">
                 <metal:registering define-slot="registering" />
               </div>
             </div>
