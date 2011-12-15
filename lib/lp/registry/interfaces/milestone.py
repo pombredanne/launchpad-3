@@ -11,6 +11,7 @@ __all__ = [
     'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
+    'IMilestoneData',
     'IMilestoneSet',
     'IProjectGroupMilestone',
     ]

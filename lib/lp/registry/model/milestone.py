@@ -130,8 +130,35 @@ class MultipleProductReleases(Exception):
         super(MultipleProductReleases, self).__init__(msg)
 
 
-class MilestoneData(SQLBase):
+class MilestoneData:
     implements(IMilestoneData)
+
+    @property
+    def displayname(self):
+        """See IMilestone."""
+        return "%s %s" % (self.target.displayname, self.name)
+
+    @property
+    def title(self):
+        raise NotImplementedError
+
+    @property
+    def specifications(self):
+        raise NotImplementedError
+
+    def bugtasks(self, user):
+        """The list of non-conjoined bugtasks targeted to this milestone."""
+        # Put the results in a list so that iterating over it multiple
+        # times in this method does not make multiple queries.
+        non_conjoined_slaves = list(
+            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
+                user, self))
+        return non_conjoined_slaves
+
+
+class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
+                HasBugsBase):
+    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     active = BoolCol(notNull=True, default=True)
 
@@ -141,36 +168,6 @@ class MilestoneData(SQLBase):
     # milestones can't have some dateexpected attributes that are
     # datetimes and others that are dates, which can't be compared.
     dateexpected = DateCol(notNull=False, default=None)
-
-    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'definition_status',
-                 'implementation_status', 'title'],
-        prejoins=['assignee'])
-
-    @property
-    def displayname(self):
-        """See IMilestone."""
-        return "%s %s" % (self.target.displayname, self.name)
-
-    @property
-    def name(self):
-        raise NotImplementedError
-
-    @property
-    def title(self):
-        raise NotImplementedError
-
-    @property
-    def target(self):
-        raise NotImplementedError
-
-    def bugtasks(self, user):
-        raise NotImplementedError
-
-
-class Milestone(MilestoneData, StructuralSubscriptionTargetMixin,
-                HasBugsBase):
-    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseries
@@ -188,14 +185,10 @@ class Milestone(MilestoneData, StructuralSubscriptionTargetMixin,
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    def bugtasks(self, user):
-        """The list of non-conjoined bugtasks targeted to this milestone."""
-        # Put the results in a list so that iterating over it multiple
-        # times in this method does not make multiple queries.
-        non_conjoined_slaves = list(
-            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
-                user, self))
-        return non_conjoined_slaves
+    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
+        orderBy=['-priority', 'definition_status',
+                 'implementation_status', 'title'],
+        prejoins=['assignee'])
 
     @property
     def target(self):
@@ -331,7 +324,7 @@ class MilestoneSet:
         return Milestone.selectBy(active=True, orderBy='id')
 
 
-class ProjectMilestone(HasBugsBase):
+class ProjectMilestone(MilestoneData, HasBugsBase):
     """A virtual milestone implementation for project.
 
     The current database schema has no formal concept of milestones related to
@@ -346,12 +339,13 @@ class ProjectMilestone(HasBugsBase):
     implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active):
-        self.name = name
         self.code_name = None
         # The id is necessary for generating a unique memcache key
         # in a page template loop. The ProjectMilestone.id is passed
         # in as the third argument to the "cache" TALes.
         self.id = 'ProjectGroup:%s/Milestone:%s' % (target.name, name)
+        self.name = name
+        self.target = target
         self.code_name = None
         self.product = None
         self.distribution = None
@@ -360,7 +354,6 @@ class ProjectMilestone(HasBugsBase):
         self.product_release = None
         self.dateexpected = dateexpected
         self.active = active
-        self.target = target
         self.series_target = None
         self.summary = None
 
