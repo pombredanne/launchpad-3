@@ -2222,7 +2222,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series.getSourcePackage(
                 sp_name).latest_published_component)
         sponsored_person = self.factory.makePerson()
-        view = self._syncAndGetView(
+        self._syncAndGetView(
             derived_series, person, [diff_id],
             sponsored=sponsored_person)
 
