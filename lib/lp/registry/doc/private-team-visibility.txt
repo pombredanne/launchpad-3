@@ -130,6 +130,29 @@ branch (and hence team) to be visible.
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
 
+User who can see a branch can also see private teams for which reviews have
+been requested.
+    >>> login_person(priv_owner)
+    >>> product = factory.makeProduct()
+    >>> target_branch = factory.makeBranch(
+    ...     owner=priv_owner, private=True, product=product)
+    >>> source_branch = factory.makeBranch(
+    ...     owner=priv_owner, product=product)
+    >>> bmp = factory.makeBranchMergeProposal(
+    ...     source_branch=source_branch, target_branch=target_branch,
+    ...     reviewer=priv_team, registrant=priv_owner)
+    >>> login_person(pub_member)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    False
+    >>> login_person(priv_owner)
+    >>> sub = factory.makeBranchSubscription(
+    ...     branch=source_branch, person=pub_member,
+    ...     subscribed_by=priv_owner)
+
+    >>> login_person(pub_member)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    True
+
 Subscribers to the teams private PPA have limited view permission.
 
     >>> login_person(priv_owner)
