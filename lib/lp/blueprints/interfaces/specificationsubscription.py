@@ -40,7 +40,7 @@ class ISpecificationSubscription(Interface):
         title=_('ID'), required=True, readonly=True)
     person = PersonChoice(
             title=_('Subscriber'), required=True,
-            vocabulary='ValidPerson', readonly=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
             'The person you would like to subscribe to this blueprint. '
             'They will be notified of the subscription by e-mail.')
