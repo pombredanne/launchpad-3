@@ -14,9 +14,11 @@ from lxml import html
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.interface import Interface
 from zope.schema import (
+    Choice,
     Text,
     TextLine,
     )
+from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.config import config
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -151,7 +153,9 @@ class TestWidgetDivInterface(Interface):
 
     single_line = TextLine(title=u'single_line')
     multi_line = Text(title=u'multi_line')
-    #checkbox = ... TODO
+    checkbox = Choice(
+        vocabulary=SimpleVocabulary.fromItems(
+            (('yes', True), ('no', False))))
     #hidden = ... TODO
 
 
@@ -167,8 +171,12 @@ class TestWidgetDiv(TestCaseWithFactory):
 
     layer = FunctionalLayer
 
-    def test_widget_single_line(self):
+    def test_all_widgets_present(self):
         request = LaunchpadTestRequest()
         view = TestWidgetDivView({}, request)
         view.initialize()
-        self.assertEqual("TODO", view())
+        root = html.fromstring(view())
+        # All the widgets appear in the page.
+        self.assertEqual(
+            ["field.single_line", "field.multi_line", "field.checkbox"],
+            root.xpath("//@id"))
