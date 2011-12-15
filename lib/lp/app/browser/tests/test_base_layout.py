@@ -223,3 +223,6 @@ class TestBaseLayout(TestCaseWithFactory):
         # These parts are unique to the case without launchpad.View.
         self.assertIsNone(document.find(True, id='side-portlets'))
         self.assertIsNone(document.find(True, id='registration'))
+        self.assertEndsWith(
+            extract_text(document.find(True, id='maincontent')),
+            'The information in this page is not shared with you.')

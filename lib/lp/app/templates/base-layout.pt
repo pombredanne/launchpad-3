@@ -134,13 +134,12 @@
               </tal:notifications>
             </div>
 
-            <metal:main define-slot="main" />
-<!--            <tal:view condition="context/required:launchpad.View">-->
-<!--              <metal:main define-slot="main" />-->
-<!--            </tal:view>-->
-<!--            <tal:view condition="not context/required:launchpad.View">-->
-<!--              The information in this page is not shared with you.-->
-<!--            </tal:view>-->
+            <tal:view condition="context/required:launchpad.View">
+              <metal:main define-slot="main" />
+            </tal:view>
+            <tal:limitedview condition="not: context/required:launchpad.View">
+              The information in this page is not shared with you.
+            </tal:limitedview>
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
