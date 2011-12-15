@@ -19,7 +19,9 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
@@ -149,15 +151,18 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
         """
         can_unsubscribe = []
         cannot_unsubscribe = []
+        subscribers = []
         for subscription in self.context.subscriptions:
-            if not check_permission('launchpad.View', subscription.person):
-                continue
+            subscribers.append(subscription.person)
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe
             elif subscription.canBeUnsubscribedByUser(self.user):
                 can_unsubscribe.append(subscription)
             else:
                 cannot_unsubscribe.append(subscription)
+        # Cache permission so private subscribers can be viewed.
+        precache_permission_for_objects(
+                    self.request, 'launchpad.LimitedView', subscribers)
 
         sorted_subscriptions = can_unsubscribe + cannot_unsubscribe
         return sorted_subscriptions

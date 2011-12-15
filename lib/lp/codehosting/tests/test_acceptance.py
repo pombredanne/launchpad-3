@@ -756,9 +756,6 @@ def make_smoke_tests(base_suite):
         'RepositoryFormat5',
         'RepositoryFormat6',
         'RepositoryFormat7',
-        'HgRepositoryFormat',
-        'GitRepositoryFormat',
-        'SvnRepositoryFormat',
         ]
     scenarios = all_repository_format_scenarios()
     scenarios = [
