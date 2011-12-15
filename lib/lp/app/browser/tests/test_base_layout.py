@@ -20,7 +20,11 @@ from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.person import PersonVisibility
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestBaseLayout(TestCaseWithFactory):
@@ -34,8 +38,9 @@ class TestBaseLayout(TestCaseWithFactory):
             SERVER_URL='http://launchpad.dev',
             PATH_INFO='/~waffles/+layout')
         self.request.setPrincipal(self.user)
+        self.context = None
 
-    def makeTemplateView(self, layout):
+    def makeTemplateView(self, layout, context=None):
         """Return a view that uses the specified layout."""
 
         class TemplateView(LaunchpadView):
@@ -45,7 +50,11 @@ class TestBaseLayout(TestCaseWithFactory):
                 'testfiles/%s.pt' % layout.replace('_', '-'))
             page_title = 'Test base-layout: %s' % layout
 
-        return TemplateView(self.user, self.request)
+        if context is None:
+            self.context = self.user
+        else:
+            self.context = context
+        return TemplateView(self.context, self.request)
 
     def test_base_layout_doctype(self):
         # Verify that the document is a html DOCTYPE.
@@ -94,7 +103,10 @@ class TestBaseLayout(TestCaseWithFactory):
         yui_layout = document.find('div', 'yui-d0')
         watermark = yui_layout.find(True, id='watermark')
         self.assertEqual('watermark-apps-portlet', watermark['class'])
-        self.assertEqual('/@@/person-logo', watermark.img['src'])
+        if self.context.is_team:
+            self.assertEqual('/@@/team-logo', watermark.img['src'])
+        else:
+            self.assertEqual('/@@/person-logo', watermark.img['src'])
         self.assertEqual('Waffles', watermark.h2.string)
         self.assertEqual('facetmenu', watermark.ul['class'])
 
@@ -117,28 +129,24 @@ class TestBaseLayout(TestCaseWithFactory):
         # When the user has LimitedView on the context, the main_side layout
         # renders ignored the main and side content. It shows the header,
         # footer, and an explanation.
-        from lp.registry.interfaces.person import PersonVisibility
-        from lp.testing import login_person
-        subscriber = self.factory.makePerson()
-        self.request.setPrincipal(subscriber)
         owner = self.factory.makePerson()
-        login_person(owner)
-        self.user = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE, owner=owner)
-        archive = self.factory.makeArchive(
-            private=True, owner=self.user)
-        archive.newSubscription(subscriber, registrant=owner)
+        with person_logged_in(owner):
+            team = self.factory.makeTeam(
+                displayname='Waffles', owner=owner,
+                visibility=PersonVisibility.PRIVATE)
+            archive = self.factory.makeArchive(private=True, owner=team)
+            archive.newSubscription(self.user, registrant=owner)
 
-        login_person(subscriber)
-        view = self.makeTemplateView('main_side')
-        content = BeautifulSoup(view())
+        with person_logged_in(self.user):
+            view = self.makeTemplateView('main_side', context=team)
+            content = BeautifulSoup(view())
         self.verify_base_layout_html_element(content)
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
         classes = 'tab-overview main_side private yui3-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
-        #self.verify_watermark(document)
+        self.verify_watermark(document)
         self.assertEqual('form', document.find(True, id='globalsearch').name)
         # These parts are unique to the LimitedView rules.
         self.assertIsNone(document.find(True, id='side-portlets'))
