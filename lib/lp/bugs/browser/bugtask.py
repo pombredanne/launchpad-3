@@ -4104,6 +4104,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             (user is None or user.teams_participated_in.count() == 0))
         cx = self.context
         return dict(
+            id=cx.id,
             row_id=self.data['row_id'],
             form_row_id=self.data['form_row_id'],
             bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),

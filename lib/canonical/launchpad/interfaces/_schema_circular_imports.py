@@ -135,7 +135,8 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonPublic,
+    IPersonLimitedView,
+    IPersonViewRestricted,
     ITeam,
     )
 from lp.registry.interfaces.pillar import (
@@ -310,10 +311,10 @@ patch_choice_parameter_type(
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-patch_reference_property(IPersonPublic, 'archive', IArchive)
-patch_collection_property(IPersonPublic, 'ppas', IArchive)
-patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
-patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
+patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
+patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
+patch_entry_return_type(IPersonLimitedView, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonViewRestricted, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
