@@ -8,7 +8,10 @@ __metaclass__ = type
 from lxml import html
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.interface import Interface
-from zope.schema import Text
+from zope.schema import (
+    Text,
+    TextLine,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -133,3 +136,33 @@ class TestHelpLinks(TestCaseWithFactory):
         self.assertEqual(
             u"http://widget.example.com/displayname",
             displayname_help_link.get("href"))
+
+
+class TestWidgetDivInterface(Interface):
+    """Test interface for the view below."""
+
+    single_line = TextLine(title=u'single_line')
+    multi_line = Text(title=u'multi_line')
+    #checkbox = ...
+    #hidden = ...
+
+
+class TestWidgetDivView(LaunchpadFormView):
+    """A trivial view using `TestWidgetDivInterface`."""
+
+    schema = TestWidgetDivInterface
+
+
+class TestWidgetDiv(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_widget_single_line(self):
+        request = LaunchpadTestRequest()
+        view = TestWidgetDivView(None, request)
+        view.initialize()
+        self.assertEqual(
+            "", test_tales(
+                "widget/@@launchpad_form/widget_single_line",
+                widget=view.widgets["single_line"],
+                request=request))
