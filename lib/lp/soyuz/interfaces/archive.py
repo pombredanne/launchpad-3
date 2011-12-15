@@ -1004,15 +1004,21 @@ class IArchiveView(IHasBuildRecords):
             # Really PackagePublishingPocket, circular import fixed below.
             vocabulary=DBEnumeratedType,
             required=False, readonly=True),
+        exact_match=Bool(
+            description=_("Whether or not to filter binary names by exact "
+                          "matching."),
+            required=False),
         created_since_date=Datetime(
             title=_("Created Since Date"),
             description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
             required=False),
-        exact_match=Bool(
-            description=_("Whether or not to filter binary names by exact "
-                          "matching."),
-            required=False))
+        ordered=Bool(
+            title=_("Ordered"),
+            description=_("Return ordered results by default, but specifying "
+                          "False will return results more quickly."),
+            required=False, readonly=True),
+        )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1032,8 +1038,8 @@ class IArchiveView(IHasBuildRecords):
         :param pocket: `PackagePublishingPocket` filter.
         :param exact_match: either or not filter source names by exact
                              matching.
-        :param created_since_date: Only return publications created after
-            this date.
+        :param created_since_date: Only return publications created on or
+            after this date.
         :param ordered: Normally publications are ordered by binary package
             name and then ID order (creation order).  If this parameter is
             False then the results will be unordered.  This will make the
