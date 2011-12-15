@@ -1020,19 +1020,25 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False, created_since_date=None):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
-        :param: name: binary name filter (exact match or SQL LIKE controlled
+        :param name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
+        :param version: binary version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a list.
+        :param distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param pocket: `PackagePublishingPocket` filter.
+        :param exact_match: either or not filter source names by exact
                              matching.
-        :param: created_since_date: a filter on teh `date_created` of the
-                                    publishing record.
+        :param created_since_date: Only return publications created after
+            this date.
+        :param ordered: Normally publications are ordered by binary package
+            name and then ID order (creation order).  If this parameter is
+            False then the results will be unordered.  This will make the
+            operation much quicker to return results if you don't care about
+            ordering.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """
