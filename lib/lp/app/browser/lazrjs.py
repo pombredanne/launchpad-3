@@ -33,7 +33,6 @@ from zope.schema.interfaces import (
     )
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
