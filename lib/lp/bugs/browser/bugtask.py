@@ -2358,10 +2358,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def model(self):
-        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
-        for bugtask in bugtasks:
-            bugtask.update(self.field_visibility)
-        return {'bugtasks': bugtasks}
+        items = [bugtask.model for bugtask in self.getBugListingItems()]
+        for item in items:
+            item.update(self.field_visibility)
+        return {'items': items}
 
 
 class NominatedBugReviewAction(EnumeratedType):
