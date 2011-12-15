@@ -5,6 +5,11 @@
 
 __metaclass__ = type
 
+from os.path import (
+    dirname,
+    join,
+    )
+
 from lxml import html
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.interface import Interface
@@ -15,7 +20,10 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.app.browser.launchpadform import (
     has_structured_doc,
     LaunchpadFormView,
@@ -143,26 +151,24 @@ class TestWidgetDivInterface(Interface):
 
     single_line = TextLine(title=u'single_line')
     multi_line = Text(title=u'multi_line')
-    #checkbox = ...
-    #hidden = ...
+    #checkbox = ... TODO
+    #hidden = ... TODO
 
 
 class TestWidgetDivView(LaunchpadFormView):
     """A trivial view using `TestWidgetDivInterface`."""
 
     schema = TestWidgetDivInterface
+    template = ViewPageTemplateFile(
+        join(dirname(__file__), "test-widget-div.pt"))
 
 
 class TestWidgetDiv(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_widget_single_line(self):
         request = LaunchpadTestRequest()
-        view = TestWidgetDivView(None, request)
+        view = TestWidgetDivView({}, request)
         view.initialize()
-        self.assertEqual(
-            "", test_tales(
-                "widget/@@launchpad_form/widget_single_line",
-                widget=view.widgets["single_line"],
-                request=request))
+        self.assertEqual("TODO", view())

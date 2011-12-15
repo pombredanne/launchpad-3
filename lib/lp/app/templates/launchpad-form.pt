@@ -233,32 +233,18 @@
                   widget_class widget/widget_class|nothing;
                   widget_help_link widget_help_link|widget/help_link|nothing">
     <tal:is-visible condition="widget/visible">
-
-      <!-- <div tal:condition="python: view.isSingleLineLayout(field_name)" -->
-      <!--      tal:attributes="class error_class"> -->
-      <!--   <metal:widget use-macro="widget/@@launchpad_form/widget_single_line" /> -->
-      <!-- </div> -->
-      <!-- <div tal:condition="python: view.isMultiLineLayout(field_name)" -->
-      <!--      tal:attributes="class error_class"> -->
-      <!--   <metal:widget use-macro="widget/@@launchpad_form/widget_multi_line" /> -->
-      <!-- </div> -->
-      <!-- <div tal:condition="python: view.isCheckBoxLayout(field_name)" -->
-      <!--      tal:attributes="class error_class"> -->
-      <!--   <metal:widget use-macro="widget/@@launchpad_form/widget_checkbox" /> -->
-      <!-- </div> -->
-
-      <div tal:attributes="class error_class">
-        <metal:widget
-            tal:condition="python: view.isSingleLineLayout(field_name)"
-            use-macro="widget/@@launchpad_form/widget_single_line" />
-        <metal:widget
-            tal:condition="python: view.isMultiLineLayout(field_name)"
-            use-macro="widget/@@launchpad_form/widget_multi_line" />
-        <metal:widget
-            tal:condition="python: view.isCheckBoxLayout(field_name)"
-            use-macro="widget/@@launchpad_form/widget_checkbox" />
+      <div tal:condition="python: view.isSingleLineLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_single_line" />
       </div>
-
+      <div tal:condition="python: view.isMultiLineLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_multi_line" />
+      </div>
+      <div tal:condition="python: view.isCheckBoxLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_checkbox" />
+      </div>
     </tal:is-visible>
     <tal:not-visible condition="not: widget/visible">
       <metal:widget use-macro="widget/@@launchpad_form/widget_hidden" />
