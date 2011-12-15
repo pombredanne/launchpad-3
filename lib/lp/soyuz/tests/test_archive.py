@@ -2373,7 +2373,6 @@ class TestgetAllPublishedBinaries(TestCaseWithFactory):
             [first_publication, middle_publication, later_publication])
 
 
-
 class TestRemovingPermissions(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
