@@ -2535,8 +2535,6 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'show_actions_menu':
-            return self.show_actions_menu()
         else:
             raise TraversalError(name)
 
