@@ -54,4 +54,4 @@ ALTER TABLE EmailAddress ADD CONSTRAINT valid_account_for_person
 ALTER TABLE Person ADD CONSTRAINT valid_account_for_emailaddresses
     CHECK (check_person_email_address_account(id, account));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 00, 4);
