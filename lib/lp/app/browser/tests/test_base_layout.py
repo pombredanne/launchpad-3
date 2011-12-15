@@ -130,28 +130,6 @@ class TestBaseLayout(TestCaseWithFactory):
             'yui-b side', document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
-    def test_user_without_launchpad_view(self):
-        # When the user does not have launchpad.View on the context,
-        # base-layout does not render the main slot and side slot.
-        owner = self.factory.makePerson()
-        with person_logged_in(owner):
-            team = self.factory.makeTeam(
-                displayname='Waffles', owner=owner,
-                visibility=PersonVisibility.PRIVATE)
-            archive = self.factory.makeArchive(private=True, owner=team)
-            archive.newSubscription(self.user, registrant=owner)
-
-        with person_logged_in(self.user):
-            view = self.makeTemplateView('main_side', context=team)
-            content = BeautifulSoup(view())
-        self.verify_base_layout_html_element(content)
-        self.verify_base_layout_head_parts(view, content)
-        document = find_tag_by_id(content, 'document')
-        self.verify_base_layout_body_parts(document)
-        self.verify_watermark(document)
-        # These parts are unique to the case without launchpad.View.
-        self.assertIsNone(document.find(True, id='side-portlets'))
-
     def test_main_only(self):
         # The main_only layout has everything except side portlets.
         view = self.makeTemplateView('main_only')
@@ -216,3 +194,24 @@ class TestBaseLayout(TestCaseWithFactory):
         footer = find_tag_by_id(content, 'footer')
         link = footer.find('a', text='Contact Launchpad Support').parent
         self.assertEqual('/feedback', link['href'])
+
+    def test_user_without_launchpad_view(self):
+        # When the user does not have launchpad.View on the context,
+        # base-layout does not render the main slot and side slot.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            team = self.factory.makeTeam(
+                displayname='Waffles', owner=owner,
+                visibility=PersonVisibility.PRIVATE)
+            archive = self.factory.makeArchive(private=True, owner=team)
+            archive.newSubscription(self.user, registrant=owner)
+        with person_logged_in(self.user):
+            view = self.makeTemplateView('main_side', context=team)
+            content = BeautifulSoup(view())
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
+        document = find_tag_by_id(content, 'document')
+        self.verify_base_layout_body_parts(document)
+        self.verify_watermark(document)
+        # These parts are unique to the case without launchpad.View.
+        self.assertIsNone(document.find(True, id='side-portlets'))
