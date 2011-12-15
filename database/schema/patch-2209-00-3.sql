@@ -9,7 +9,7 @@ CREATE TABLE milestonetag (
     tag text NOT NULL,
     date_created timestamp without time zone DEFAULT
         timezone('UTC'::text, now()) NOT NULL,
-    creator integer NOT NULL REFERENCES person,
+    created_by integer NOT NULL REFERENCES person,
     CONSTRAINT valid_tag CHECK (valid_name(tag))
 );
 
