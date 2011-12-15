@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We use global in this module.
@@ -231,6 +231,18 @@ def summarize_requests():
     log = "%s queries/external actions issued in %.2f seconds%s" % (
         len(timeline.actions), secs, oops_str)
     return log
+
+
+# Truncate the in-page timeline after this many actions.
+IN_PAGE_TIMELINE_CAP = 200
+
+
+def get_timeline_actions():
+    """Return an iterable of timeline actions.
+    
+    """
+    return get_request_timeline(get_current_browser_request()).actions[
+        :IN_PAGE_TIMELINE_CAP]
 
 
 def store_sql_statements_and_request_duration(event):

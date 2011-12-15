@@ -53,10 +53,10 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_created"/>
+        handler="lp.bugs.subscribers.karma.bug_created"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_modified"/>
+        handler="lp.bugs.subscribers.karma.bug_modified"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -83,19 +83,19 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.cve_added"/>
+        handler="lp.bugs.subscribers.karma.cve_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>
+        handler="lp.bugs.subscribers.karma.bug_comment_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugwatch_added"/>
+        handler="lp.bugs.subscribers.karma.bugwatch_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -540,7 +540,7 @@
 
     <subscriber
         for="lp.bugs.interfaces.bugbranch.IBugBranch                                                lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_branch_created"/>
+        handler="lp.bugs.subscribers.karma.bug_branch_created"/>
 
     <!-- BugBranchSet -->
 
@@ -1065,7 +1065,7 @@
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_deleted"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugtask_created"/>
+        handler="lp.bugs.subscribers.karma.bugtask_created"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -1074,7 +1074,7 @@
         handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
+        handler="lp.bugs.subscribers.karma.bugtask_modified"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
