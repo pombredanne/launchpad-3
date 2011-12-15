@@ -168,3 +168,20 @@ Anonymous users do not have permission.
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.LimitedView', priv_team)
     False
+
+A team owner must be able to access the team even if they are not a team
+member. When a team is created, the owner is automatically made an admin
+member. So we revoke that membership and check that they still have access.
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet,
+    ...     TeamMembershipStatus,
+    ...     )
+    >>> membership_set = getUtility(ITeamMembershipSet)
+    >>> login_person(priv_owner)
+    >>> tm = membership_set.getByPersonAndTeam(priv_owner, priv_team)
+    >>> tm.setStatus(TeamMembershipStatus.DEACTIVATED, priv_owner)
+    True
+    >>> priv_owner.inTeam(priv_team)
+    False
+    >>> check_permission('launchpad.View', priv_team)
+    True

@@ -128,10 +128,14 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
+    InlinePersonEditPickerWidget,
     TextLineEditorWidget,
     )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import MenuAPI
+from lp.app.browser.tales import (
+    format_link,
+    MenuAPI,
+    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -1001,6 +1005,24 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     implements(IProductActionMenu, IEditableContextTitle)
 
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['owner'],
+            format_link(self.context.owner),
+            header='Change maintainer', edit_view='+edit-people',
+            step_title='Select a new maintainer')
+
+    @property
+    def driver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['driver'],
+            format_link(self.context.driver, empty_value="Not yet selected"),
+            header='Change driver', edit_view='+edit-people',
+            step_title='Select a new driver',
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
+
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
@@ -1035,7 +1057,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @property
     def page_description(self):
-        return '\n'.filter(None, [self.context.summary, self.context.description])
+        return '\n'.filter(
+            None,
+            [self.context.summary, self.context.description])
 
     @property
     def show_license_status(self):

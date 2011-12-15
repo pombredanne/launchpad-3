@@ -136,7 +136,6 @@ The page includes a comment after the body with diagnostic information.
       Has side portlets: False
       At least ... queries... issued in ... seconds
       Features: {...}
-      in scopes {...}
       r...
     -->
     ...

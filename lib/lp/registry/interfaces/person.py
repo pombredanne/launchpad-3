@@ -684,6 +684,12 @@ class IPersonPublic(IPrivacy):
         required=False, default=False))
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=True, vocabulary=AccountStatus)
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=True)
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -719,7 +725,6 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
-
     logo = exported(
         LogoImageUpload(
             title=_("Logo"), required=False,
@@ -730,6 +735,24 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
                 "is a logo, a small picture or a personal mascot. It should "
                 "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface)  # Really IArchive.
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists.
+
+        :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
+
+        :return: a PPA `IArchive` record corresponding to the name.
+        """
 
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
@@ -804,19 +827,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
 
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=True)
-
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
-    is_probationary = exported(
-        Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
     Bool(title=_("Signed Ubuntu Code of Conduct"),
             readonly=True))
@@ -956,9 +969,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             "is set on the Person referencing the destination Person. If "
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
-
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute('Person Page Title')
 
     archive = exported(
         Reference(
@@ -1440,20 +1450,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                 themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
-        """
-
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface)  # Really IArchive.
-    @export_read_operation()
-    @operation_for_version("beta")
-    def getPPAByName(name):
-        """Return a PPA with the given name if it exists.
-
-        :param name: A string with the exact name of the ppa being looked up.
-        :raises: `NoSuchPPA` if a suitable PPA could not be found.
-
-        :return: a PPA `IArchive` record corresponding to the name.
         """
 
     @operation_parameters(

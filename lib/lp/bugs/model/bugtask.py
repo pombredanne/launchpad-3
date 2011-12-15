@@ -162,7 +162,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.propertycache import get_property_cache
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.blueprints.model.specification import Specification
 
@@ -846,7 +849,7 @@ class BugTask(SQLBase):
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
@@ -855,7 +858,7 @@ class BugTask(SQLBase):
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
-        if not self.userHasPrivileges(user):
+        if not self.userHasBugSupervisorPrivileges(user):
             raise UserCannotEditBugTaskImportance(
                 "User does not have sufficient permissions "
                 "to edit the bug task importance.")
@@ -926,7 +929,7 @@ class BugTask(SQLBase):
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
             return True
-        elif self.userHasPrivileges(user):
+        elif self.userHasBugSupervisorPrivileges(user):
             return True
         else:
             return (self.status not in (
@@ -1078,7 +1081,7 @@ class BugTask(SQLBase):
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return self.userHasPrivileges(user)
+            return self.userHasBugSupervisorPrivileges(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1088,7 +1091,8 @@ class BugTask(SQLBase):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self.userHasPrivileges(user))
+            user.inTeam(self.assignee) or
+            self.userHasBugSupervisorPrivileges(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -1363,8 +1367,8 @@ class BugTask(SQLBase):
             return None
 
     @classmethod
-    def userHasPrivilegesContext(cls, context, user):
-        """Does the user have privileges for the given context?
+    def userHasDriverPrivilegesContext(cls, context, user):
+        """Does the user have driver privileges for the given context?
 
         :return: a boolean.
         """
@@ -1382,15 +1386,33 @@ class BugTask(SQLBase):
             role.in_janitor):
             return True
 
-        # Otherwise, if you're a member of the pillar owner, drivers, or the
-        # bug supervisor, you can change bug details.
+        # If you're the owner or a driver, you can change bug details.
         return (
-            role.isOwner(context.pillar) or role.isOneOfDrivers(context) or
+            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+
+    @classmethod
+    def userHasBugSupervisorPrivilegesContext(cls, context, user):
+        """Does the user have bug supervisor privileges for the given
+        context?
+
+        :return: a boolean.
+        """
+        if not user:
+            return False
+        role = IPersonRoles(user)
+        # If you have driver privileges, or are the bug supervisor, you can
+        # change bug details.
+        return (
+            cls.userHasDriverPrivilegesContext(context, user) or
             role.isBugSupervisor(context.pillar))
 
-    def userHasPrivileges(self, user):
+    def userHasDriverPrivileges(self, user):
         """See `IBugTask`."""
-        return self.userHasPrivilegesContext(self.target, user)
+        return self.userHasDriverPrivilegesContext(self.target, user)
+
+    def userHasBugSupervisorPrivileges(self, user):
+        """See `IBugTask`."""
+        return self.userHasBugSupervisorPrivilegesContext(self.target, user)
 
     def __repr__(self):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
@@ -3187,95 +3209,93 @@ class BugTaskSet:
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
 
-    def getOrderByColumnDBName(self, col_name):
-        """See `IBugTaskSet`."""
-        if BugTaskSet._ORDERBY_COLUMN is None:
-            # Avoid circular imports.
-            from lp.bugs.model.bug import (
-                Bug,
-                BugTag,
-                )
-            from lp.registry.model.milestone import Milestone
-            from lp.registry.model.person import Person
-            Assignee = ClassAlias(Person)
-            Reporter = ClassAlias(Person)
-            BugTaskSet._ORDERBY_COLUMN = {
-                "task": (BugTask.id, []),
-                "id": (BugTask.bugID, []),
-                "importance": (BugTask.importance, []),
-                # TODO: sort by their name?
-                "assignee": (
-                    Assignee.name,
-                    [
-                        (Assignee,
-                         LeftJoin(Assignee, BugTask.assignee == Assignee.id))
-                        ]),
-                "targetname": (BugTask.targetnamecache, []),
-                "status": (BugTask._status, []),
-                "title": (Bug.title, []),
-                "milestone": (BugTask.milestoneID, []),
-                "dateassigned": (BugTask.date_assigned, []),
-                "datecreated": (BugTask.datecreated, []),
-                "date_last_updated": (Bug.date_last_updated, []),
-                "date_closed": (BugTask.date_closed, []),
-                "number_of_duplicates": (Bug.number_of_duplicates, []),
-                "message_count": (Bug.message_count, []),
-                "users_affected_count": (Bug.users_affected_count, []),
-                "heat": (BugTask.heat, []),
-                "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
-                "milestone_name": (
-                    Milestone.name,
-                    [
-                        (Milestone,
-                         LeftJoin(Milestone,
-                                  BugTask.milestone == Milestone.id))
-                        ]),
-                "reporter": (
-                    Reporter.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Reporter, Join(Reporter, Bug.owner == Reporter.id))
-                        ]),
-                "tag": (
-                    BugTag.tag,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (BugTag,
-                         LeftJoin(
-                             BugTag,
-                             BugTag.bug == Bug.id and
-                             # We want at most one tag per bug. Select the
-                             # tag that comes first in alphabetic order.
-                             BugTag.id == SQL("""
-                                 SELECT id FROM BugTag AS bt
-                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                "specification": (
-                    Specification.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Specification,
-                         LeftJoin(
-                             Specification,
-                             # We want at most one specification per bug.
-                             # Select the specification that comes first
-                             # in alphabetic order.
-                             Specification.id == SQL("""
-                                 SELECT Specification.id
-                                 FROM SpecificationBug
-                                 JOIN Specification
-                                     ON SpecificationBug.specification=
-                                         Specification.id
-                                 WHERE SpecificationBug.bug=Bug.id
-                                 ORDER BY Specification.name
-                                 LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                }
-        return BugTaskSet._ORDERBY_COLUMN[col_name]
+    @cachedproperty
+    def orderby_expression(self):
+        # Avoid circular imports.
+        from lp.bugs.model.bug import (
+            Bug,
+            BugTag,
+            )
+        from lp.registry.model.milestone import Milestone
+        from lp.registry.model.person import Person
+        Assignee = ClassAlias(Person)
+        Reporter = ClassAlias(Person)
+        return {
+            "task": (BugTask.id, []),
+            "id": (BugTask.bugID, []),
+            "importance": (BugTask.importance, []),
+            # TODO: sort by their name?
+            "assignee": (
+                Assignee.name,
+                [
+                    (Assignee,
+                     LeftJoin(Assignee, BugTask.assignee == Assignee.id))
+                    ]),
+            "targetname": (BugTask.targetnamecache, []),
+            "status": (BugTask._status, []),
+            "title": (Bug.title, []),
+            "milestone": (BugTask.milestoneID, []),
+            "dateassigned": (BugTask.date_assigned, []),
+            "datecreated": (BugTask.datecreated, []),
+            "date_last_updated": (Bug.date_last_updated, []),
+            "date_closed": (BugTask.date_closed, []),
+            "number_of_duplicates": (Bug.number_of_duplicates, []),
+            "message_count": (Bug.message_count, []),
+            "users_affected_count": (Bug.users_affected_count, []),
+            "heat": (BugTask.heat, []),
+            "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+            "milestone_name": (
+                Milestone.name,
+                [
+                    (Milestone,
+                     LeftJoin(Milestone,
+                              BugTask.milestone == Milestone.id))
+                    ]),
+            "reporter": (
+                Reporter.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Reporter, Join(Reporter, Bug.owner == Reporter.id))
+                    ]),
+            "tag": (
+                BugTag.tag,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (BugTag,
+                     LeftJoin(
+                         BugTag,
+                         BugTag.bug == Bug.id and
+                         # We want at most one tag per bug. Select the
+                         # tag that comes first in alphabetic order.
+                         BugTag.id == SQL("""
+                             SELECT id FROM BugTag AS bt
+                             WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                             """))),
+                    ]
+                ),
+            "specification": (
+                Specification.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Specification,
+                     LeftJoin(
+                         Specification,
+                         # We want at most one specification per bug.
+                         # Select the specification that comes first
+                         # in alphabetic order.
+                         Specification.id == SQL("""
+                             SELECT Specification.id
+                             FROM SpecificationBug
+                             JOIN Specification
+                                 ON SpecificationBug.specification=
+                                     Specification.id
+                             WHERE SpecificationBug.bug=Bug.id
+                             ORDER BY Specification.name
+                             LIMIT 1
+                             """))),
+                    ]
+                ),
+            }
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
@@ -3343,11 +3363,11 @@ class BugTaskSet:
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col[1:])
+                col, sort_joins = self.orderby_expression[orderby_col[1:]]
                 extra_joins.extend(sort_joins)
                 order_clause = Desc(col)
             else:
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col)
+                col, sort_joins = self.orderby_expression[orderby_col]
                 extra_joins.extend(sort_joins)
                 order_clause = col
             if col in unambiguous_cols:
