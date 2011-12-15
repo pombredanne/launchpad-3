@@ -33,6 +33,7 @@ from zope.schema.interfaces import (
     )
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
@@ -376,6 +377,8 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
+        :param help_link: Used to set a link for help for the widget.
+        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
