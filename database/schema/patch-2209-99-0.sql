@@ -18,8 +18,6 @@ $$
     # integrity will prevent this from causing bugs later.
     if results.nrows() == 0 or results[0]['account'] is None:
         return True
-    if results[0]['account'] != account:
-        return False
     return results[0]['account'] == account
 $$;
 
