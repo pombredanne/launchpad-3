@@ -117,6 +117,9 @@
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
+              <tal:XXX condition="nothing">
+                # XXX sinzui 2011-12-14: this must not render for limitedview.
+              </tal:XXX>
               <div id="registration" class="registering">
                 <metal:registering define-slot="registering" />
               </div>
@@ -132,14 +135,22 @@
                   use-macro="context/@@+base-layout-macros/notifications"/>
               </tal:notifications>
             </div>
+            <tal:XXX condition="nothing">
+              # XXX sinzui 2011-12-14: this must not render for limitedview.
+            </tal:XXX>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <div id="side-portlets" class="yui-b side"
-          tal:condition="view/macro:pagehas/portlets">
-          <metal:portlets define-slot="side" />
-        </div><!-- yui-b side -->
+        <tal:XXX condition="nothing">
+          # XXX sinzui 2011-12-14: this must not render for limitedview.
+        </tal:XXX>
+        <tal:view condition="context/required:launchpad.View">
+          <div id="side-portlets" class="yui-b side"
+            tal:condition="view/macro:pagehas/portlets">
+            <metal:portlets define-slot="side" />
+          </div><!-- yui-b side -->
+        </tal:view>
       </div><!-- yui-t4 -->
 
       <metal:footer
@@ -187,7 +198,7 @@
 </tal:template>
 
 
-<metal:debug-timeline 
+<metal:debug-timeline
   use-macro="context/@@+base-layout-macros/debug-timeline" />
 
 <tal:comment

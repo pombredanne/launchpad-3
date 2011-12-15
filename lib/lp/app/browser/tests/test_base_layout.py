@@ -113,6 +113,36 @@ class TestBaseLayout(TestCaseWithFactory):
             'yui-b side', document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
+    def test_main_side_limited_view(self):
+        # When the user has LimitedView on the context, the main_side layout
+        # renders ignored the main and side content. It shows the header,
+        # footer, and an explanation.
+        from lp.registry.interfaces.person import PersonVisibility
+        from lp.testing import login_person
+        subscriber = self.factory.makePerson()
+        self.request.setPrincipal(subscriber)
+        owner = self.factory.makePerson()
+        login_person(owner)
+        self.user = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        archive = self.factory.makeArchive(
+            private=True, owner=self.user)
+        archive.newSubscription(subscriber, registrant=owner)
+
+        login_person(subscriber)
+        view = self.makeTemplateView('main_side')
+        content = BeautifulSoup(view())
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
+        document = find_tag_by_id(content, 'document')
+        self.verify_base_layout_body_parts(document)
+        classes = 'tab-overview main_side private yui3-skin-sam'.split()
+        self.assertEqual(classes, document['class'].split())
+        #self.verify_watermark(document)
+        self.assertEqual('form', document.find(True, id='globalsearch').name)
+        # These parts are unique to the LimitedView rules.
+        self.assertIsNone(document.find(True, id='side-portlets'))
+
     def test_main_only(self):
         # The main_only layout has everything except side portlets.
         view = self.makeTemplateView('main_only')

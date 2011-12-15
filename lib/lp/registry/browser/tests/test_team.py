@@ -183,3 +183,6 @@ class TestTeamIndexView(TestCaseWithFactory):
             'in a few minutes.')
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
+
+    # XXX sinzui 2011-12-14: team index needs tests to verify that
+    # the  main and side content are not rendered for limitedview.
