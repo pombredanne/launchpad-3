@@ -466,19 +466,19 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(True)
+        return self._getMilestones(only_active=True)
 
     @property
     def product_milestones(self):
         """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
         # XXX: bug=644977 Robert Collins - this is a workaround for
-        # insconsistency in project group milestone use.
+        # inconsistency in project group milestone use.
         return self._get_milestones()
 
     @property
     def all_milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(False)
+        return self._getMilestones(only_active=False)
 
     def getMilestone(self, name):
         """See `IProjectGroup`."""

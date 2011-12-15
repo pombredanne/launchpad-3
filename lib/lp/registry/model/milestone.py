@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -55,6 +55,7 @@ from lp.bugs.model.structuralsubscription import (
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
+    IMilestoneData,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
@@ -129,11 +130,50 @@ class MultipleProductReleases(Exception):
         super(MultipleProductReleases, self).__init__(msg)
 
 
-class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
+class MilestoneData(SQLBase):
+    implements(IMilestoneData)
+
+    active = BoolCol(notNull=True, default=True)
+
+    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+    # The Milestone.dateexpected should be changed into a date column,
+    # since the class defines the field as a DateCol, so that a list of
+    # milestones can't have some dateexpected attributes that are
+    # datetimes and others that are dates, which can't be compared.
+    dateexpected = DateCol(notNull=False, default=None)
+
+    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
+        orderBy=['-priority', 'definition_status',
+                 'implementation_status', 'title'],
+        prejoins=['assignee'])
+
+    @property
+    def displayname(self):
+        """See IMilestone."""
+        return "%s %s" % (self.target.displayname, self.name)
+
+    @property
+    def name(self):
+        raise NotImplementedError
+
+    @property
+    def title(self):
+        raise NotImplementedError
+
+    @property
+    def target(self):
+        raise NotImplementedError
+
+    def bugtasks(self, user):
+        raise NotImplementedError
+
+
+class Milestone(MilestoneData, StructuralSubscriptionTargetMixin,
+                HasBugsBase):
     implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
-    # Milestones should be associated with productseries/distroseriess
+    # Milestones should be associated with productseries/distroseries
     # so these columns are not needed.
     product = ForeignKey(dbName='product',
         foreignKey='Product', default=None)
@@ -145,21 +185,25 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
-    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
-    # The Milestone.dateexpected should be changed into a date column,
-    # since the class defines the field as a DateCol, so that a list of
-    # milestones can't have some dateexpected attributes that are
-    # datetimes and others that are dates, which can't be compared.
-    dateexpected = DateCol(notNull=False, default=None)
-    active = BoolCol(notNull=True, default=True)
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    # joins
-    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'definition_status',
-                 'implementation_status', 'title'],
-        prejoins=['assignee'])
+    def bugtasks(self, user):
+        """The list of non-conjoined bugtasks targeted to this milestone."""
+        # Put the results in a list so that iterating over it multiple
+        # times in this method does not make multiple queries.
+        non_conjoined_slaves = list(
+            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
+                user, self))
+        return non_conjoined_slaves
+
+    @property
+    def target(self):
+        """See IMilestone."""
+        if self.product:
+            return self.product
+        elif self.distribution:
+            return self.distribution
 
     @property
     def product_release(self):
@@ -173,25 +217,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             return releases[0]
 
     @property
-    def target(self):
-        """See IMilestone."""
-        if self.product:
-            return self.product
-        elif self.distribution:
-            return self.distribution
-
-    @property
     def series_target(self):
         """See IMilestone."""
         if self.productseries:
             return self.productseries
         elif self.distroseries:
             return self.distroseries
-
-    @property
-    def displayname(self):
-        """See IMilestone."""
-        return "%s %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
