@@ -733,7 +733,10 @@ class Archive(SQLBase):
             orderBy = ['BinaryPackageName.name',
                        '-BinaryPackagePublishingHistory.id']
         else:
-            orderBy = []
+            # Strictly speaking, this is ordering, but it's an indexed
+            # ordering so it will be quick.  It's needed so that we can
+            # batch results on the webservice.
+            orderBy = ['-BinaryPackagePublishingHistory.id']
 
         if name is not None:
             if exact_match:
@@ -754,7 +757,7 @@ class Archive(SQLBase):
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
-        else:
+        elif ordered:
             order_const = "BinaryPackageRelease.version"
             desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
