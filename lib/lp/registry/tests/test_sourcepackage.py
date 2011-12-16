@@ -510,8 +510,8 @@ class TestSourcePackage(TestCaseWithFactory):
         driver = distroseries.drivers[0]
         self.assertTrue(sourcepackage.personHasDriverRights(driver))
 
-    def test_personHasDriverRights_False(self):
-        # A distroseries driver has driver permissions on source packages.
+    def test_personHasDriverRights_false(self):
+        # A non-owner/driver/admin does not have driver rights.
         distroseries = self.factory.makeDistroSeries()
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
