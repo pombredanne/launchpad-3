@@ -771,10 +771,7 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        proposal = self.context.branch_merge_proposal
         self.can_change_review = (user == context.reviewer)
-        self.trusted = proposal.target_branch.isPersonTrustedReviewer(
-            context.reviewer)
         if user is None:
             self.user_can_review = False
         else:
@@ -790,6 +787,13 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_reassign = True
         else:
             self.user_can_reassign = False
+
+    @cachedproperty
+    def trusted(self):
+        """ Is the person a trusted reviewer."""
+        proposal = self.context.branch_merge_proposal
+        return proposal.target_branch.isPersonTrustedReviewer(
+            self.context.reviewer)
 
     @property
     def show_date_requested(self):
