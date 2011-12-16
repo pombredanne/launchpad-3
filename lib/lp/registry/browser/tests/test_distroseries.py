@@ -1870,12 +1870,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                   difference_type=None, distribution=None):
         # Helper to create a derived series with fixed names and proper
         # source package format selection along with a DSD.
-        parent_series = self.factory.makeDistroSeries(name='warty')
+        parent_series = self.factory.makeDistroSeries()
         if distribution == None:
-            distribution = self.factory.makeDistribution('deribuntu')
+            distribution = self.factory.makeDistribution()
         derived_series = self.factory.makeDistroSeries(
-            distribution=distribution,
-            name='derilucid')
+            distribution=distribution)
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
