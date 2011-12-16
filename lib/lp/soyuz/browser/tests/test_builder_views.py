@@ -180,6 +180,7 @@ class BuildCreationMixin(object):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=self.factory.makeSourcePackageRecipe(
                 branches=[branch1, branch2]))
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         if private_branch:
             with celebrity_logged_in('admin'):
                 branch1.setPrivate(
@@ -231,12 +232,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
             partial(self.createRecipeBuildWithBuilder, builder=self.builder),
             self.nb_objects)
 
-        # XXX: rvb 2011-11-14 bug=890326: The only query remaining is the
-        # one that results from a call to
-        # sourcepackagerecipebuild.buildqueue_record for each recipe build.
-        self.assertThat(
-            recorder2,
-            HasQueryCount(Equals(recorder1.count + 1 * self.nb_objects)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_build_history_queries_count_binary_package_builds(self):
         # Rendering to builder's history issues a constant number of queries
