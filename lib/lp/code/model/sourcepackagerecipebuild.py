@@ -32,8 +32,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from lp.services.propertycache import cachedproperty
-from lp.services.propertycache import get_property_cache
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
@@ -73,6 +71,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
 from lp.services.job.model.job import Job
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
