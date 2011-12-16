@@ -667,6 +667,7 @@
               duplicate_only_subscriptions
               duplicate_subscriptions
               indirect_subscribers
+              muted_subscribers
               structural_subscriptions
               " />
       <!-- Methods -->

@@ -2590,9 +2590,18 @@ class BugSubscriptionInfo:
         return self.cache.setdefault(info.cache_key, info)
 
     @cachedproperty
+    @freeze(BugSubscriberSet)
+    def muted_subscribers(self):
+        muted_people = Select(BugMute.person_id, BugMute.bug == self.bug)
+        return load_people(Person.id.is_in(muted_people))
+
+    @cachedproperty
     @freeze(BugSubscriptionSet)
     def direct_subscriptions(self):
-        """The bug's direct subscriptions."""
+        """The bug's direct subscriptions.
+
+        Excludes muted subscriptions.
+        """
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
@@ -2602,21 +2611,31 @@ class BugSubscriptionInfo:
 
     @property
     def direct_subscribers(self):
+        """The bug's direct subscriptions.
+
+        Excludes muted subscribers.
+        """
         return self.direct_subscriptions.subscribers
 
     @property
     def all_direct_subscriptions(self):
-        """The bug's direct subscriptions at all levels."""
+        """The bug's direct subscriptions at all levels.
+
+        Excludes muted subscriptions.
+        """
         return self.forLevel(
             BugNotificationLevel.LIFECYCLE).direct_subscriptions
 
     @property
     def all_direct_subscribers(self):
+        """The bug's direct subscribers at all levels.
+
+        Excludes muted subscribers.
+        """
         return self.all_direct_subscriptions.subscribers
 
     @cachedproperty
     def duplicate_subscriptions_and_subscribers(self):
-        """Subscriptions to duplicates of the bug."""
         if self.bug.private:
             return ((), ())
         else:
@@ -2635,11 +2654,19 @@ class BugSubscriptionInfo:
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
+        """Subscriptions to duplicates of the bug.
+
+        Excludes muted subscriptions.
+        """
         return self.duplicate_subscriptions_and_subscribers[0]
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def duplicate_subscribers(self):
+        """Subscribers to duplicates of the bug.
+
+        Excludes muted subscribers.
+        """
         return self.duplicate_subscriptions_and_subscribers[1]
 
     @cachedproperty
@@ -2647,8 +2674,8 @@ class BugSubscriptionInfo:
     def duplicate_only_subscriptions(self):
         """Subscriptions to duplicates of the bug only.
 
-        Excludes subscriptions for people who have a direct subscription or
-        are also notified for another reason.
+        Excludes muted subscriptions, subscriptions for people who have a
+        direct subscription, or who are also notified for another reason.
         """
         self.duplicate_subscribers  # Pre-load subscribers.
         higher_precedence = (
@@ -2662,8 +2689,8 @@ class BugSubscriptionInfo:
     def duplicate_only_subscribers(self):
         """Subscribers to duplicates of the bug only.
 
-        Excludes subscribers who have a direct subscription or are also
-        notified for another reason.
+        Excludes muted subscribers, subscribers who have a direct
+        subscription, or who are also notified for another reason.
         """
         return self.duplicate_only_subscriptions.subscribers
 
@@ -2706,7 +2733,10 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     def also_notified_subscribers(self):
-        """All subscribers except direct and dupe subscribers."""
+        """All subscribers except direct and dupe subscribers.
+
+        Excludes muted subscribers.
+        """
         if self.bug.private:
             return BugSubscriberSet()
         else:

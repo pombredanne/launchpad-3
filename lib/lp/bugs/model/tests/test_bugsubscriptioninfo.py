@@ -194,6 +194,14 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # The bugtask is the same.
         self.assertIs(info.bugtask, info_for_level.bugtask)
 
+    def test_muted(self):
+        # The set of muted subscribers for the bug.
+        subscribers, subscriptions = self._create_direct_subscriptions()
+        sub1, sub2 = subscribers
+        with person_logged_in(sub1):
+            self.bug.mute(sub1, sub1)
+        self.assertEqual(set([sub1]), self.getInfo().muted_subscribers)
+
     def test_direct(self):
         # The set of direct subscribers.
         subscribers, subscriptions = self._create_direct_subscriptions()
@@ -201,7 +209,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(set(subscriptions), found_subscriptions)
         self.assertEqual(set(subscribers), found_subscriptions.subscribers)
 
-    def test_muted_direct(self):
+    def test_direct_muted(self):
         # If a direct is muted, it is not listed.
         subscribers, subscriptions = self._create_direct_subscriptions()
         with person_logged_in(subscribers[0]):
@@ -579,12 +587,12 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         # Getting all bug supervisors and pillar owners can take several
         # queries. However, there are typically few tasks so the trade for
         # simplicity of implementation is acceptable. Only the simplest case
-        # is tested here.
-        with self.exactly_x_queries(1):
+        # is tested here (everything is already cached).
+        with self.exactly_x_queries(0):
             self.info.all_pillar_owners_without_bug_supervisors
 
     def test_also_notified_subscribers(self):
-        with self.exactly_x_queries(6):
+        with self.exactly_x_queries(5):
             self.info.also_notified_subscribers
 
     def test_also_notified_subscribers_later(self):
@@ -598,7 +606,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             self.info.also_notified_subscribers
 
     def test_indirect_subscribers(self):
-        with self.exactly_x_queries(7):
+        with self.exactly_x_queries(6):
             self.info.indirect_subscribers
 
     def test_indirect_subscribers_later(self):
