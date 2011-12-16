@@ -118,7 +118,7 @@
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
               <div id="registration" class="registering"
-                tal:condition="context/required:launchpad.View">
+                tal:condition="not: view/macro:is-page-contentless">
                 <metal:registering define-slot="registering" />
               </div>
             </div>
@@ -134,16 +134,16 @@
               </tal:notifications>
             </div>
 
-            <tal:view condition="context/required:launchpad.View">
+            <tal:view condition="not: view/macro:is-page-contentless">
               <metal:main define-slot="main" />
             </tal:view>
-            <tal:limitedview condition="not: context/required:launchpad.View">
+            <tal:limitedview condition="view/macro:is-page-contentless">
               The information in this page is not shared with you.
             </tal:limitedview>
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <tal:view condition="context/required:launchpad.View">
+        <tal:view condition="not: view/macro:is-page-contentless">
           <div id="side-portlets" class="yui-b side"
             tal:condition="view/macro:pagehas/portlets">
             <metal:portlets define-slot="side" />
