@@ -47,7 +47,7 @@ class MilestoneTagBugTaskTest(TestCaseWithFactory):
         # Ensure that all bugtasks on a single milestone can be retrieved.
         tagname = 'tag1'
         with person_logged_in(self.owner):
-            self.milestone.setTags([tagname])
+            self.milestone.setTags([tagname], self.owner)
             bugtasks = self._create_bugtasks(5, self.milestone)
             milestonetag = ProjectGroupMilestoneTag(
                 target=self.project_group, tags=[tagname])
