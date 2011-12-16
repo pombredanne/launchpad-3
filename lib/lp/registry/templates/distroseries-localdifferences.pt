@@ -99,15 +99,16 @@
             tal:attributes="value upgrade/label;
                             name upgrade/__name__;
                             id upgrade/__name__;" />
-          <span
-            tal:define="sponsored_person nocall:view/widgets/sponsored_person;
-                        field_name sponsored_person/context/__name__;
-                        error python:view.getFieldError(field_name);">
-            <label>Person being sponsored (optional):</label>
-            <tal:sponsored replace="structure sponsored_person"/>
-          </span>
         </div>
       </div>
+
+      <metal:bottom fill-slot="extra_bottom">
+        <tal:sponsored-person
+            define="widget nocall:view/widgets/sponsored_person"
+            condition="view/actions/field.actions.sync/available">
+          <metal:widget-div use-macro="widget/@@launchpad_form/widget_div" />
+        </tal:sponsored-person>
+      </metal:bottom>
 
       <div metal:fill-slot="widgets">
         <tal:navigation_top
