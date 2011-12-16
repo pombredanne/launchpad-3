@@ -128,9 +128,8 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         with person_logged_in(self.bug.owner):
             self.bug.unsubscribe(self.bug.owner, self.bug.owner)
 
-    def getInfo(self):
-        return BugSubscriptionInfo(
-            self.bug, BugNotificationLevel.LIFECYCLE)
+    def getInfo(self, level=BugNotificationLevel.LIFECYCLE):
+        return BugSubscriptionInfo(self.bug, level)
 
     def _create_direct_subscriptions(self):
         subscribers = (
@@ -209,6 +208,17 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             self.bug.mute(subscribers[0], subscribers[0])
         found_subscriptions = self.getInfo().direct_subscriptions
         self.assertEqual(set([subscriptions[1]]), found_subscriptions)
+
+    def test_all_direct(self):
+        # The set of all direct subscribers, regardless of level.
+        subscribers, subscriptions = self._create_direct_subscriptions()
+        # Change the first subscription to be for comments only.
+        sub1, sub2 = subscriptions
+        with person_logged_in(sub1.person):
+            sub1.bug_notification_level = BugNotificationLevel.LIFECYCLE
+        info = self.getInfo(BugNotificationLevel.COMMENTS)
+        self.assertEqual(set((sub2,)), info.direct_subscriptions)
+        self.assertEqual(set((sub1, sub2)), info.all_direct_subscriptions)
 
     def _create_duplicate_subscription(self):
         duplicate_bug = self.factory.makeBug(product=self.target)
@@ -507,6 +517,10 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
     def test_direct_subscriptions_sorted_first(self):
         self.exercise_subscription_set_sorted_first(
             "direct_subscriptions")
+
+    def test_all_direct_subscriptions(self):
+        self.exercise_subscription_set(
+            "all_direct_subscriptions")
 
     def make_duplicate_bug(self):
         duplicate_bug = self.factory.makeBug(product=self.target)

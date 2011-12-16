@@ -2604,6 +2604,16 @@ class BugSubscriptionInfo:
     def direct_subscribers(self):
         return self.direct_subscriptions.subscribers
 
+    @property
+    def all_direct_subscriptions(self):
+        """The bug's direct subscriptions at all levels."""
+        return self.forLevel(
+            BugNotificationLevel.LIFECYCLE).direct_subscriptions
+
+    @property
+    def all_direct_subscribers(self):
+        return self.all_direct_subscriptions.subscribers
+
     @cachedproperty
     def duplicate_subscriptions_and_subscribers(self):
         """Subscriptions to duplicates of the bug."""

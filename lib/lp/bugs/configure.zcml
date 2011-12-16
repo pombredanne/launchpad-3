@@ -658,6 +658,8 @@
           permission="launchpad.View"
           attributes="
               all_assignees
+              all_direct_subscriptions
+              all_direct_subscribers
               all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
               direct_subscriptions
