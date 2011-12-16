@@ -147,9 +147,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         subscribers, subscriptions = self._create_direct_subscriptions()
         found_subscriptions = self.getInfo().direct_subscriptions
         self.assertEqual(set(subscriptions), found_subscriptions)
-        self.assertEqual(subscriptions, found_subscriptions.sorted)
         self.assertEqual(set(subscribers), found_subscriptions.subscribers)
-        self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
 
     def test_muted_direct(self):
         # If a direct is muted, it is not listed.
@@ -172,9 +170,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # The set of subscribers from duplicate bugs.
         found_subscriptions = self.getInfo().duplicate_subscriptions
         self.assertEqual(set(), found_subscriptions)
-        self.assertEqual((), found_subscriptions.sorted)
         self.assertEqual(set(), found_subscriptions.subscribers)
-        self.assertEqual((), found_subscriptions.subscribers.sorted)
         duplicate_bug, duplicate_bug_subscription = (
             self._create_duplicate_subscription())
         found_subscriptions = self.getInfo().duplicate_subscriptions
@@ -182,14 +178,8 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             set([duplicate_bug_subscription]),
             found_subscriptions)
         self.assertEqual(
-            (duplicate_bug_subscription,),
-            found_subscriptions.sorted)
-        self.assertEqual(
             set([duplicate_bug.owner]),
             found_subscriptions.subscribers)
-        self.assertEqual(
-            (duplicate_bug.owner,),
-            found_subscriptions.subscribers.sorted)
 
     def test_muted_duplicate(self):
         # If a duplicate is muted, it is not listed.
@@ -210,9 +200,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             self.bug.setPrivate(True, self.bug.owner)
         found_subscriptions = self.getInfo().duplicate_subscriptions
         self.assertEqual(set(), found_subscriptions)
-        self.assertEqual((), found_subscriptions.sorted)
         self.assertEqual(set(), found_subscriptions.subscribers)
-        self.assertEqual((), found_subscriptions.subscribers.sorted)
 
     def test_duplicate_only(self):
         # The set of duplicate subscriptions where the subscriber has no other
@@ -247,21 +235,17 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
                 for subscriber in subscribers)
         found_subscriptions = self.getInfo().structural_subscriptions
         self.assertEqual(set(subscriptions), found_subscriptions)
-        self.assertEqual(subscriptions, found_subscriptions.sorted)
         self.assertEqual(set(subscribers), found_subscriptions.subscribers)
-        self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
 
     def test_all_assignees(self):
         # The set of bugtask assignees for bugtasks that have been assigned.
         found_assignees = self.getInfo().all_assignees
         self.assertEqual(set(), found_assignees)
-        self.assertEqual((), found_assignees.sorted)
         bugtask = self.bug.default_bugtask
         with person_logged_in(bugtask.pillar.bug_supervisor):
             bugtask.transitionToAssignee(self.bug.owner)
         found_assignees = self.getInfo().all_assignees
         self.assertEqual(set([self.bug.owner]), found_assignees)
-        self.assertEqual((self.bug.owner,), found_assignees.sorted)
         bugtask2 = self.factory.makeBugTask(bug=self.bug)
         with person_logged_in(bugtask2.pillar.owner):
             bugtask2.transitionToAssignee(bugtask2.owner)
@@ -269,9 +253,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([self.bug.owner, bugtask2.owner]),
             found_assignees)
-        self.assertEqual(
-            (self.bug.owner, bugtask2.owner),
-            found_assignees.sorted)
 
     def test_all_pillar_owners_without_bug_supervisors(self):
         # The set of owners of pillars for which no bug supervisor is
@@ -280,7 +261,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)
         self.assertEqual(set(), found_owners)
-        self.assertEqual((), found_owners.sorted)
         # Clear the supervisor for the first bugtask's target.
         with person_logged_in(bugtask.target.owner):
             bugtask.target.setBugSupervisor(None, bugtask.owner)
@@ -289,7 +269,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)
         self.assertEqual(set(), found_owners)
-        self.assertEqual((), found_owners.sorted)
         # When a pillar does use Launchpad the collection includes the
         # pillar's owner.
         with person_logged_in(bugtask.target.owner):
@@ -297,7 +276,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_owners = (
             self.getInfo().all_pillar_owners_without_bug_supervisors)
         self.assertEqual(set([bugtask.pillar.owner]), found_owners)
-        self.assertEqual((bugtask.pillar.owner,), found_owners.sorted)
         # Add another bugtask for a pillar that uses Launchpad but without a
         # bug supervisor.
         target2 = self.factory.makeProduct(
@@ -308,9 +286,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([bugtask.pillar.owner, bugtask2.pillar.owner]),
             found_owners)
-        self.assertEqual(
-            (bugtask.pillar.owner, bugtask2.pillar.owner),
-            found_owners.sorted)
 
     def _create_also_notified_subscribers(self):
         # Add an assignee, a bug supervisor and a structural subscriber.
@@ -331,7 +306,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # The set of also notified subscribers.
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertEqual(set(), found_subscribers)
-        self.assertEqual((), found_subscribers.sorted)
         assignee, supervisor, structural_subscriber = (
             self._create_also_notified_subscribers())
         # Add a direct subscription.
@@ -344,9 +318,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([assignee, supervisor, structural_subscriber]),
             found_subscribers)
-        self.assertEqual(
-            (assignee, supervisor, structural_subscriber),
-            found_subscribers.sorted)
 
     def test_muted_also_notified_subscribers(self):
         # If someone is muted, they are not listed in the
@@ -383,7 +354,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             self.bug.setPrivate(True, self.bug.owner)
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertEqual(set(), found_subscribers)
-        self.assertEqual((), found_subscribers.sorted)
 
     def test_indirect_subscribers(self):
         # The set of indirect subscribers is the union of also notified
@@ -399,9 +369,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([assignee, duplicate_bug.owner]),
             found_subscribers)
-        self.assertEqual(
-            (assignee, duplicate_bug.owner),
-            found_subscribers.sorted)
 
 
 class TestBugSubscriptionInfoPermissions(TestCaseWithFactory):
