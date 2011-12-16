@@ -23,11 +23,13 @@ class MilestoneTagBugTaskTest(TestCaseWithFactory):
     def setUp(self):
         super(MilestoneTagBugTaskTest, self).setUp()
         self.owner = self.factory.makePerson()
-        self.project_group = self.factory.makeProject()
+        self.project_group = self.factory.makeProject(owner=self.owner)
         self.product = self.factory.makeProduct(
             name="product1",
+            owner=self.owner,
             project=self.project_group)
-        self.milestone = self.factory.makeMilestone(product=self.product)
+        self.milestone = self.factory.makeMilestone(
+            product=self.product)
 
     def _create_bugtasks(self, num, milestone=None):
         bugtasks = []
@@ -44,13 +46,14 @@ class MilestoneTagBugTaskTest(TestCaseWithFactory):
     def test_bugtask_retrieval_single_milestone(self):
         # Ensure that all bugtasks on a single milestone can be retrieved.
         tagname = 'tag1'
-        self.milestone.setTags([tagname])
-        bugtasks = self._create_bugtasks(5, self.milestone)
-        milestonetag = ProjectGroupMilestoneTag(
-            target=self.project_group, tags=[tagname])
-        self.assertContentEqual(
-            bugtasks,
-            milestonetag.bugtasks(self.owner))
+        with person_logged_in(self.owner):
+            self.milestone.setTags([tagname])
+            bugtasks = self._create_bugtasks(5, self.milestone)
+            milestonetag = ProjectGroupMilestoneTag(
+                target=self.project_group, tags=[tagname])
+            self.assertContentEqual(
+                bugtasks,
+                milestonetag.bugtasks(self.owner))
 
 
 class MilestoneSpecificationTest(TestCaseWithFactory):

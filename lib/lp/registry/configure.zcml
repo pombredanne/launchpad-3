@@ -1014,7 +1014,9 @@
             attributes="
                 createProductRelease
                 closeBugsAndBlueprints
-                destroySelf"/>
+                destroySelf
+		setTags
+		"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
