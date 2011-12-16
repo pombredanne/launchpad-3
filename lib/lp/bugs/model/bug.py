@@ -2697,13 +2697,32 @@ class BugSubscriptionInfo:
     @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
-        """Structural subscriptions to the bug's targets."""
+        """Structural subscriptions to the bug's targets.
+
+        *Does not* exclude muted subscriptions.
+
+        ********************************************
+          This does _not_ take level into account.
+          Use `structural_subscribers` instead.
+        ********************************************
+        """
         return get_structural_subscriptions_for_bug(self.bug)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
+    def structural_subscribers(self):
+        """Structural subscribersptions to the bug's targets."""
+        subject = self.bug if self.bugtask is None else self.bugtask
+        return get_structural_subscribers(
+            subject, None, self.level, self.direct_subscribers)
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
     def all_assignees(self):
-        """Assignees of the bug's tasks."""
+        """Assignees of the bug's tasks.
+
+        *Does not* exclude muted subscribers.
+        """
         if self.bugtask is None:
             assignees = Select(
                 BugTask.assigneeID, BugTask.bug == self.bug)
@@ -2720,6 +2739,8 @@ class BugSubscriptionInfo:
         """Owners of pillars for which there is no bug supervisor.
 
         The pillars must also use Launchpad for bug tracking.
+
+        *Does not* exclude muted subscribers.
         """
         if self.bugtask is None:
             bugtasks = self.bug.bugtasks
@@ -2740,19 +2761,20 @@ class BugSubscriptionInfo:
         if self.bug.private:
             return BugSubscriberSet()
         else:
-            muted = IStore(BugMute).find(
-                Person,
-                BugMute.person_id == Person.id,
-                BugMute.bug == self.bug)
-            return BugSubscriberSet().union(
-                self.structural_subscriptions.subscribers,
+            subscribers = BugSubscriberSet().union(
+                self.structural_subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees).difference(
-                self.direct_subscribers, muted)
+                self.all_assignees)
+            return subscribers.difference(
+                self.all_direct_subscribers,
+                self.muted_subscribers)
 
     @cachedproperty
     def indirect_subscribers(self):
-        """All subscribers except direct subscribers."""
+        """All subscribers except direct subscribers.
+
+        Excludes muted subscribers.
+        """
         return self.also_notified_subscribers.union(
             self.duplicate_subscribers)
 

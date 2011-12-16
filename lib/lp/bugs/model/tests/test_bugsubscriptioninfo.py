@@ -252,7 +252,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             set([duplicate_bug.owner]),
             found_subscriptions.subscribers)
 
-    def test_muted_duplicate(self):
+    def test_duplicate_muted(self):
         # If a duplicate is muted, it is not listed.
         duplicate_bug, duplicate_bug_subscription = (
             self._create_duplicate_subscription())
@@ -295,8 +295,8 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_subscriptions = self.getInfo().duplicate_only_subscriptions
         self.assertEqual(set(), found_subscriptions)
 
-    def test_structural(self):
-        # The set of structural subscribers.
+    def test_structural_subscriptions(self):
+        # The set of structural subscriptions.
         subscribers = (
             self.factory.makePerson(),
             self.factory.makePerson())
@@ -306,7 +306,40 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
                 for subscriber in subscribers)
         found_subscriptions = self.getInfo().structural_subscriptions
         self.assertEqual(set(subscriptions), found_subscriptions)
-        self.assertEqual(set(subscribers), found_subscriptions.subscribers)
+
+    def test_structural_subscriptions_muted(self):
+        # The set of structural subscriptions DOES NOT exclude muted
+        # subscriptions.
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self.bug.mute(subscriber, subscriber)
+        with person_logged_in(self.bug.owner):
+            subscription = self.target.addBugSubscription(
+                subscriber, subscriber)
+        found_subscriptions = self.getInfo().structural_subscriptions
+        self.assertEqual(set([subscription]), found_subscriptions)
+
+    def test_structural_subscribers(self):
+        # The set of structural subscribers.
+        subscribers = (
+            self.factory.makePerson(),
+            self.factory.makePerson())
+        with person_logged_in(self.bug.owner):
+            for subscriber in subscribers:
+                self.target.addBugSubscription(subscriber, subscriber)
+        found_subscribers = self.getInfo().structural_subscribers
+        self.assertEqual(set(subscribers), found_subscribers)
+
+    def test_structural_subscribers_muted(self):
+        # The set of structural subscribers DOES NOT exclude muted
+        # subscribers.
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self.bug.mute(subscriber, subscriber)
+        with person_logged_in(self.bug.owner):
+            self.target.addBugSubscription(subscriber, subscriber)
+        found_subscribers = self.getInfo().structural_subscribers
+        self.assertEqual(set([subscriber]), found_subscribers)
 
     def test_all_assignees(self):
         # The set of bugtask assignees for bugtasks that have been assigned.
@@ -401,7 +434,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             set([assignee, supervisor, structural_subscriber]),
             found_subscribers)
 
-    def test_muted_also_notified_subscribers(self):
+    def test_also_notified_subscribers_muted(self):
         # If someone is muted, they are not listed in the
         # also_notified_subscribers.
         assignee, supervisor, structural_subscriber = (
@@ -601,7 +634,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.info.all_assignees
         self.info.all_pillar_owners_without_bug_supervisors
         self.info.direct_subscriptions.subscribers
-        self.info.structural_subscriptions.subscribers
+        self.info.structural_subscribers
         with self.exactly_x_queries(1):
             self.info.also_notified_subscribers
 

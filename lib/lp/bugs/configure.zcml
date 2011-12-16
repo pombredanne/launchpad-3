@@ -669,6 +669,7 @@
               indirect_subscribers
               muted_subscribers
               structural_subscriptions
+              structural_subscribers
               " />
       <!-- Methods -->
       <require
