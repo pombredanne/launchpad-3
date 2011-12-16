@@ -92,6 +92,7 @@ from lp.code.model.diff import (
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
@@ -197,7 +198,7 @@ class BranchMergeProposal(SQLBase):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person, notNull=False,
         default=None)
 
     @property
