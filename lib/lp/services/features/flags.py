@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import logging
+
 from lp.services.features.rulesource import (
     NullFeatureRuleSource,
     StormFeatureRuleSource,
@@ -18,6 +20,8 @@ from lp.services.features.rulesource import (
 
 __metaclass__ = type
 
+
+logger = logging.getLogger('lp.services.features')
 
 value_domain_info = sorted([
     ('boolean',
@@ -356,8 +360,19 @@ class FeatureController():
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
+                    self._debugMessage(
+                        'feature match flag=%r value=%r scope=%r' %
+                        (flag, value, scope))
                     return (value, scope)
+            else:
+                self._debugMessage('no rules matched for %r' % flag)
+        else:
+            self._debugMessage('no rules relevant to %r' % flag)
         return (None, None)
+
+    def _debugMessage(self, message):
+        logger.debug(message)
+        # The OOPS machinery can also grab it out of the request if needed.
 
     def currentScope(self, flag):
         """The name of the scope of the matching rule with the highest

@@ -1,5 +1,6 @@
 div#client-listing {
     float: left;
+    width: 100%;
     color: #666;
     }
 div.buglisting-row {

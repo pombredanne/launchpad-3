@@ -63,7 +63,10 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
-from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.branchcollection import (
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
@@ -795,6 +798,9 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         if user.in_admin or user.in_commercial_admin or user.inTeam(self.obj):
             return True
+        # Private team owners have visibility.
+        if self.obj.is_team and user.inTeam(self.obj.teamowner):
+            return True
         # We also grant visibility of the private team to administrators of
         # other teams that have been invited to join the private team.
         for invitee in self.obj.invited_members:
@@ -846,8 +852,16 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             # Grant visibility to people with subscriptions to branches owned
             # by the private team.
-            owned_branches = getUtility(IBranchCollection).ownedBy(self.obj)
-            if owned_branches.visibleByUser(user.person).count() > 0:
+            team_branches = IBranchCollection(self.obj)
+            if team_branches.visibleByUser(user.person).count() > 0:
+                return True
+
+            # Grant visibility to branches visible to the user and which have
+            # review requests for the private team.
+            branches = getUtility(IAllBranches)
+            visible_branches = branches.visibleByUser(user.person)
+            mp = visible_branches.getMergeProposalsForReviewer(self.obj)
+            if mp.count() > 0:
                 return True
 
         return False

@@ -227,9 +227,6 @@ h1 .yui3-ieditor-errors {
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
-.lazr-multiline-edit textarea {
-    max-width: inherit;
-    }
 .lazr-multiline-edit .clearfix h3 {
     /* Undo the damage done by lazr. */
     font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
