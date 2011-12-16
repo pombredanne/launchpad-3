@@ -128,10 +128,15 @@ class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
         login_person(self.factory.makePerson())
 
     def _setUpPermissions(self, has_permission=True):
-        class FakeSecurityAdapter(AuthorizationBase):
+        # Setup a specific permission for the test object.
+        class FakeSecurityChecker(AuthorizationBase):
+            """A class to instrument a specific permission."""
+            @classmethod
+            def __call__(adaptee):
+                return FakeSecurityChecker(adaptee)
 
             def __init__(self, adaptee=None):
-                super(FakeSecurityAdapter, self).__init__(adaptee)
+                super(FakeSecurityChecker, self).__init__(adaptee)
 
             def checkUnauthenticated(self):
                 return has_permission
@@ -139,11 +144,8 @@ class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
             def checkAuthenticated(self, user):
                 return has_permission
 
-        def adapter_factory(adaptee):
-            return FakeSecurityAdapter(adaptee)
-
         self.registerAuthorizationAdapter(
-            adapter_factory, ITest, 'launchpad.View')
+            FakeSecurityChecker, ITest, 'launchpad.View')
 
     def test_is_page_contentless_public(self):
         # Public objects always have content to be shown.
