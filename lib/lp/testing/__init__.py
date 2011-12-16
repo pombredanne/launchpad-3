@@ -17,6 +17,7 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeAdapterMixin',
     'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
@@ -100,9 +101,14 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 import zope.event
+from zope.interface import Interface
 from zope.interface.verify import verifyClass
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -126,6 +132,7 @@ from canonical.launchpad.webapp.servers import (
     StepsToGo,
     WebServiceTestRequest,
     )
+from lp.app.interfaces.security import IAuthorization
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
@@ -1429,3 +1436,44 @@ class FakeLaunchpadRequest(FakeRequest):
     def stepstogo(self):
         """See `IBasicLaunchpadRequest`."""
         return StepsToGo(self)
+
+
+class FakeAdapterMixin:
+    """A testcase mixin that helps register/unregister Zope adapters.
+
+    These helper methods simplify the task to registering Zope adapters
+    during the setup of a test and they will be unregistered when the
+    test completes.
+    """
+    def registerAdapter(self, adapter_class, for_interfaces,
+                        provided_interface, name=None):
+        """Register an adapter from the required interfacs to the provided.
+
+        eg. registerAdapter(
+                TestOtherThing, (IThing, ILayer), IOther, name='fnord')
+        """
+        getSiteManager().registerAdapter(
+            adapter_class, for_interfaces, provided_interface, name=name)
+        self.addCleanup(
+            getSiteManager().unregisterAdapter, adapter_class,
+            for_interfaces, provided_interface, name=name)
+
+    def registerAuthorizationAdapter(self, authorization_class,
+                                     for_interface, permission_name):
+        """Register a security checker to test authorisation.
+
+        eg. registerAuthorizationAdapter(
+                TestChecker, IPerson, 'launchpad.View')
+        """
+        self.registerAdapter(
+            authorization_class, (for_interface, ), IAuthorization,
+            name=permission_name)
+
+    def registerBrowserViewAdapter(self, view_class, for_interface, name):
+        """Register a security checker to test authorization.
+
+        eg registerBrowserViewAdapter(TestView, IPerson, '+test-view')
+        """
+        self.registerAdapter(
+            view_class, (for_interface, IBrowserRequest), Interface,
+            name=name)
