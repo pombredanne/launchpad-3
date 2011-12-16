@@ -645,19 +645,13 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
     def _createPrivateMergeProposalVotes(self):
         private_reviewer = self.factory.makeTeam(
             name="privateteam", visibility=PersonVisibility.PRIVATE)
-        private_reviewer2 = self.factory.makeTeam(
-            name="privateteam2", visibility=PersonVisibility.PRIVATE)
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product)
         target_branch = self.factory.makeProductBranch(product=product)
         with person_logged_in(branch.owner):
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=target_branch,
                 reviewer=private_reviewer)
-            bmp.createComment(
-                owner=private_reviewer2,
-                subject=self.factory.getUniqueString('subject'),
-                vote=CodeReviewVote.APPROVE)
         return branch
 
     def test_view_branch_with_private_reviewer(self):
@@ -671,7 +665,6 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         soup = BeautifulSoup(browser.contents)
         reviews_list = soup.find('dl', attrs={'class': 'reviews'})
         self.assertIsNotNone(reviews_list.find('a', text='Privateteam'))
-        self.assertIsNotNone(reviews_list.find('a', text='Privateteam2'))
 
     def test_anonymous_view_branch_with_private_reviewer(self):
         # A branch with a private reviewer is rendered.
@@ -683,7 +676,6 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         soup = BeautifulSoup(browser.contents)
         reviews_list = soup.find('dl', attrs={'class': 'reviews'})
         self.assertIsNone(reviews_list.find('a', text='Privateteam'))
-        self.assertIsNone(reviews_list.find('a', text='Privateteam2'))
 
 
 class TestBranchAddView(TestCaseWithFactory):
