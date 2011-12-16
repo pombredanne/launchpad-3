@@ -2576,7 +2576,6 @@ class PageMacroDispatcher:
             applicationtabs=False,
             globalsearch=False,
             portlets=False,
-            main=True,
             pagetypewasset=True,
             ):
             self.elements = vars()
