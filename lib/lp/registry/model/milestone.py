@@ -7,7 +7,6 @@
 __metaclass__ = type
 __all__ = [
     'HasMilestonesMixin',
-    'MilestoneTag',
     'Milestone',
     'MilestoneData',
     'MilestoneSet',
@@ -30,10 +29,6 @@ from sqlobject import (
 from storm.locals import (
     And,
     Store,
-    DateTime,
-    Int,
-    Unicode,
-    Reference,
     )
 from storm.zope import IResultSet
 from zope.component import getUtility
@@ -43,7 +38,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
@@ -161,27 +155,6 @@ class MilestoneData:
             getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
                 user, self))
         return non_conjoined_slaves
-
-
-class MilestoneTag(object):
-    """A tag belonging to a milestone."""
-
-    __storm_table__ = 'milestonetag'
-
-    id = Int(primary=True)
-    milestone_id = Int(name='milestone', allow_none=False)
-    milestone = Reference(milestone_id, 'milestone.id')
-    tag = Unicode(allow_none=False)
-    created_by_id = Int(name='created_by', allow_none=False)
-    created_by = Reference(created_by_id, 'person.id')
-    date_created = DateTime(allow_none=False)
-
-    def __init__(self, milestone, tag, created_by, date_created=None):
-        self.milestone_id = milestone.id
-        self.tag = tag
-        self.created_by_id = created_by.id
-        if date_created is not None:
-            self.date_created = date_created
 
 
 class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
@@ -309,6 +282,8 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
 
     def setTags(self, tags, user):
         """See IMilestone."""
+        # Circular reference prevention.
+        from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
         if tags:
             current_tags = set(self.getTags())
@@ -330,6 +305,8 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
 
     def getTags(self):
         """See IMilestone."""
+        # Circular reference prevention.
+        from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
         tags = store.find(
             MilestoneTag, MilestoneTag.milestone_id == self.id)
