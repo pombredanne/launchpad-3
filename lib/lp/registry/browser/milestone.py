@@ -69,6 +69,7 @@ from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
+    IAbstractMilestone,
     IMilestone,
     IMilestoneSet,
     IProjectGroupMilestone,
@@ -201,7 +202,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         :param request: `ILaunchpadRequest`.
         """
         super(MilestoneView, self).__init__(context, request)
-        if IMilestone.providedBy(context):
+        if IAbstractMilestone.providedBy(context):
             self.milestone = context
             self.release = context.product_release
         else:

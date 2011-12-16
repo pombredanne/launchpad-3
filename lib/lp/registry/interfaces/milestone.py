@@ -147,7 +147,6 @@ class IAbstractMilestone(IMilestoneData):
     """An intermediate interface for milestone, or a targeting point for bugs
     and other release-management items that need coordination.
     """
-    export_as_webservice_entry()
     code_name = exported(
         NoneableTextLine(
             title=u'Code name', required=False,
@@ -227,8 +226,11 @@ class IAbstractMilestone(IMilestoneData):
 
 
 class IMilestone(IAbstractMilestone):
+    """Actual interface for milestones."""
 
-    def setTags(tags):
+    export_as_webservice_entry()
+
+    def setTags(tags, user):
         """Set the milestone tags.
 
         :param: tags The list of tags to be associated with milestone.
@@ -274,6 +276,7 @@ class IMilestoneSet(Interface):
 
 class IProjectGroupMilestone(IAbstractMilestone):
     """A marker interface for milestones related to a project"""
+    export_as_webservice_entry()
 
 
 class IHasMilestones(Interface):

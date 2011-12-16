@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HasMilestonesMixin',
     'Milestone',
+    'MilestoneData',
     'MilestoneSet',
     'ProjectMilestone',
     'milestone_sort_key',

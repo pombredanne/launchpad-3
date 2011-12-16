@@ -1255,14 +1255,14 @@
             MilestoneNavigation"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
         permission="zope.Public"/>
     <browser:defaultView
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         name="+index"/>
     <browser:url
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         path_expression="string:+milestone/${name}"
         rootsite="mainsite"
         attribute_to_parent="target"/>
@@ -1273,7 +1273,7 @@
         template="../templates/milestone-macros.pt"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:pages
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         class="lp.registry.browser.milestone.MilestoneView"
         permission="zope.Public">
         <browser:page
