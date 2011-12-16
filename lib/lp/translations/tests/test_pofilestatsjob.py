@@ -125,7 +125,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         self.assertEqual(other_pofile.getStatistics(), (0, 0, 0, 0))
 #        self.assertEqual(other_template.messageCount(), 0)
         job = pofilestatsjob.schedule(pofile.id)
-        # Just scheduling the job doesn't update the statistics.
+        # Just scheduling the job doesn't update the statistics:
         self.assertEqual(pofile.getStatistics(), (0, 0, 0, 0))
         self.assertEqual(other_pofile.getStatistics(), (0, 0, 0, 0))
         with dbuser(config.pofile_stats.dbuser):
