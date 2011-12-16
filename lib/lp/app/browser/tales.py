@@ -2560,11 +2560,12 @@ class PageMacroDispatcher:
         context require the template to not render detailed information. The
         user may only know identifying information about the context.
         """
-        privacy = IPrivacy(self.context, None)
+        view_context = self.context.context
+        privacy = IPrivacy(view_context, None)
         if privacy is None or not privacy.private:
             return False
-        can_view = check_permission('launchpad.View', self.context)
-        return can_view
+        can_view = check_permission('launchpad.View', view_context)
+        return not can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

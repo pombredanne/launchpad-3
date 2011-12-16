@@ -14,21 +14,27 @@ from zope.interface import (
 from zope.component import getMultiAdapter
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
-from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
-    IBrowserView,
     )
 
-from canonical.testing.layers import FunctionalLayer
+from canonical.launchpad.interfaces.launchpad import IPrivacy
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import AuthorizationBase
 from lp.testing import (
+    login_person,
     TestCase,
+    TestCaseWithFactory,
     test_tales,
     )
 from lp.testing.views import create_view
 
 
-class ITest(Interface):
+class ITest(IPrivacy):
     """A mechanism for adaption."""
 
 
@@ -46,12 +52,9 @@ class TestView:
         self.request = request
 
 
-class TestPageMacroDispatcher(TestCase):
+class TestPageMacroDispatcherMixin:
 
-    layer = FunctionalLayer
-
-    def setUp(self):
-        super(TestPageMacroDispatcher, self).setUp()
+    def _setUpView(self):
         getSiteManager().registerAdapter(
             TestView, required=(ITest, IBrowserRequest),
             provided=Interface, name='+index')
@@ -62,6 +65,15 @@ class TestPageMacroDispatcher(TestCase):
 
     def _call_test_tales(self, path):
         test_tales(path, view=self.view)
+
+
+class PageMacroDispatcherTestCase(TestPageMacroDispatcherMixin, TestCase):
+
+    layer = FunctionalLayer
+
+    def setUp(self):
+        super(PageMacroDispatcherTestCase, self).setUp()
+        self._setUpView()
 
     def test_base_template(self):
         # Requests on the launchpad.dev vhost use the Launchpad base template.
@@ -118,13 +130,54 @@ class TestPageMacroDispatcher(TestCase):
             KeyError, "'fnord'",
             self._call_test_tales, 'view/macro:pagehas/fnord')
 
+
+class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
+                                             TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PageMacroDispatcherInteractionTestCase, self).setUp()
+        self._setUpView()
+        login_person(self.factory.makePerson())
+
+    def _setUpPermissions(self, has_permission=True):
+        class FakeSecurityAdapter(AuthorizationBase):
+            usedfor = ITest
+            permission = 'launchpad.View'
+
+            def __init__(self, adaptee=None):
+                super(FakeSecurityAdapter, self).__init__(adaptee)
+
+            def checkUnauthenticated(self):
+                return has_permission
+
+            def checkAuthenticated(self, user):
+                return has_permission
+
+        def adapter_factory(adaptee):
+            return FakeSecurityAdapter(adaptee)
+
+        getSiteManager().registerAdapter(
+            adapter_factory, (ITest,), IAuthorization, 'launchpad.View')
+        self.addCleanup(
+            getSiteManager().unregisterAdapter, adapter_factory,
+            (ITest, ), IAuthorization, 'launchpad.View')
+
     def test_is_page_contentless_public(self):
         # Public objects always have content to be shown.
         self.assertFalse(
             test_tales('view/macro:is-page-contentless', view=self.view))
 
-    def test_is_page_contentless_private(self):
-        # Private objects always have content to be shown.
+    def test_is_page_contentless_private_with_view(self):
+        # Private objects the user can view have content to be shown.
         self.view.context.private = True
-        self.assertFalse(
-            test_tales('view/macro:is-page-contentless', view=self.view))
+        self._setUpPermissions(has_permission=True)
+        result = test_tales('view/macro:is-page-contentless', view=self.view)
+        self.assertFalse(result)
+
+    def test_is_page_contentless_private_without_view(self):
+        # Private objects the view cannot view cannot show content.
+        self.view.context.private = True
+        self._setUpPermissions(has_permission=False)
+        result = test_tales('view/macro:is-page-contentless', view=self.view)
+        self.assertTrue(result)
