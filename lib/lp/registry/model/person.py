@@ -1475,12 +1475,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):
