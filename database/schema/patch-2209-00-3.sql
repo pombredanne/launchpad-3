@@ -4,16 +4,19 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE milestonetag (
-    id integer NOT NULL PRIMARY KEY,
-    milestone integer REFERENCES milestone ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    milestone integer NOT NULL REFERENCES milestone ON DELETE CASCADE,
     tag text NOT NULL,
+    date_created timestamp without time zone DEFAULT
+        timezone('UTC'::text, now()) NOT NULL,
+    created_by integer NOT NULL REFERENCES person,
     CONSTRAINT valid_tag CHECK (valid_name(tag))
 );
 
 ALTER TABLE ONLY milestonetag
     ADD CONSTRAINT milestonetag__tag__milestone__key UNIQUE (tag, milestone);
 
-CREATE INDEX milestonetag__milestones_idx ON milestonetag USING btree (milestone);
-CREATE INDEX milestonetag__tags_idx ON milestonetag (tag);
+CREATE INDEX milestonetag__milestones_idx
+    ON milestonetag USING btree (milestone);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 0, 3);
