@@ -535,6 +535,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IHasDrivers`."""
         return self.distroseries.drivers
 
+    @property
+    def owner(self):
+        """See `IHasOwner`."""
+        return self.distroseries.owner
+
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an

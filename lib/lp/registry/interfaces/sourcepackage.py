@@ -58,7 +58,10 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.role import IHasDrivers
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.soyuz.interfaces.component import IComponent
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -71,7 +74,7 @@ from lp.translations.interfaces.hastranslationimports import (
 class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
                            IHasOfficialBugTags, IHasCodeImports,
                            IHasTranslationImports, IHasTranslationTemplates,
-                           IHasDrivers):
+                           IHasDrivers, IHasOwner):
     """Public attributes for SourcePackage."""
 
     id = Attribute("ID")
@@ -174,6 +177,9 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
 
     drivers = Attribute(
         "The drivers for the distroseries for this source package.")
+
+    owner = Attribute(
+        "The owner of the distroseries for this source package.")
 
     def __getitem__(version):
         """Return the source package release with the given version in this
