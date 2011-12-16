@@ -6,9 +6,14 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.team import TeamOverviewMenu
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -184,5 +189,23 @@ class TestTeamIndexView(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
 
-    # XXX sinzui 2011-12-14: team index needs tests to verify that
-    # the  main and side content are not rendered for limitedview.
+    def test_user_without_launchpad_view(self):
+        # When the user does not have launchpad.View on the context,
+        user = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            team = self.factory.makeTeam(
+                displayname='Waffles', owner=owner,
+                visibility=PersonVisibility.PRIVATE)
+            archive = self.factory.makeArchive(private=True, owner=team)
+            archive.newSubscription(user, registrant=owner)
+        with person_logged_in(user):
+            view = create_initialized_view(
+                team, name="+index",  server_url=canonical_url(team),
+                path_info='')
+            document = find_tag_by_id(view(), 'document')
+        self.assertIsNone(document.find(True, id='side-portlets'))
+        self.assertIsNone(document.find(True, id='registration'))
+        self.assertEndsWith(
+            extract_text(document.find(True, id='maincontent')),
+            'The information in this page is not shared with you.')
