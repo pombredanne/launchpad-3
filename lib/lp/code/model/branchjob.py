@@ -486,20 +486,15 @@ class RevisionsAddedJob(BranchJobDerived):
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
         repository = self.bzr_branch.repository
-        graph = repository.get_graph()
-        branch_last_revinfo = self.bzr_branch.last_revision_info()
-        last_revno = graph.find_distance_to_null(
-            self.last_revision_id,
-            [(branch_last_revinfo[1], branch_last_revinfo[0])])
-        added_revisions = graph.find_unique_ancestors(
+        added_revisions = repository.get_graph().find_unique_ancestors(
             self.last_revision_id, [self.last_scanned_id])
         # Avoid hitting the database since bzrlib makes it easy to check.
-        history = graph.iter_lefthand_ancestry(
-            self.last_revision_id, (NULL_REVISION, None))
-        for distance, revid in enumerate(history):
-            if not revid in added_revisions:
-                break
-            yield revid, last_revno - distance
+        # There are possibly more efficient ways to get the mainline
+        # revisions, but this is simple and it works.
+        history = self.bzr_branch.revision_history()
+        for num, revid in enumerate(history):
+            if revid in added_revisions:
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -520,11 +515,8 @@ class RevisionsAddedJob(BranchJobDerived):
 
         self.bzr_branch.lock_read()
         try:
-            for revision_id, revno in reversed(
-                    list(self.iterAddedMainline())):
+            for revision, revno in self.iterAddedMainline():
                 assert revno is not None
-                revision = self.bzr_branch.repository.get_revision(
-                    revision_id)
                 mailer = self.getMailerForRevision(
                     revision, revno, self.generateDiffs())
                 mailer.sendAll()
