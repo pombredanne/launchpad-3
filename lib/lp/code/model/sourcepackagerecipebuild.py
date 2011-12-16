@@ -310,9 +310,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from canonical.launchpad.database.librarian import LibraryFileAlias
         SourcePackageRecipeBuild.prefetchBuildqueueRecord(builds)
         package_builds = load_related(
             PackageBuild, builds, ['package_build_id'])
+        build_farm_jobs = [
+            build.build_farm_job for build in builds]
+        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
         archives = load_related(Archive, package_builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
         sprs = load_related(

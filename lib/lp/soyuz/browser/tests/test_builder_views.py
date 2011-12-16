@@ -18,7 +18,10 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSource,
     InconsistentBuildFarmJobError,
@@ -158,6 +161,16 @@ class TestgetSpecificJobs(TestCaseWithFactory):
 
 class BuildCreationMixin(object):
 
+    def markAsBuilt(self, build):
+        lfa = self.factory.makeLibraryFileAlias()
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = lfa
+        naked_build.date_started = self.factory.getUniqueDate()
+        naked_build.date_finished = self.factory.getUniqueDate()
+        naked_build.status = BuildStatus.FULLYBUILT
+        import transaction
+        transaction.commit()
+
     def createTranslationTemplateBuildWithBuilder(self, builder=None):
         if builder is None:
             builder = self.factory.makeBuilder()
@@ -168,7 +181,7 @@ class BuildCreationMixin(object):
         branch = self.factory.makeBranch()
         build = source.create(build_farm_job, branch)
         removeSecurityProxy(build).builder = builder
-        self.addFakeBuildLog(build)
+        self.markAsBuilt(build)
         return build
 
     def createRecipeBuildWithBuilder(self, private_branch=False,
@@ -187,14 +200,8 @@ class BuildCreationMixin(object):
                     True, getUtility(IPersonSet).getByEmail(ADMIN_EMAIL))
         Store.of(build).flush()
         removeSecurityProxy(build).builder = builder
-        self.addFakeBuildLog(build)
+        self.markAsBuilt(build)
         return build
-
-    def addFakeBuildLog(self, build):
-        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(build).log = lfa
-        import transaction
-        transaction.commit()
 
     def createBinaryPackageBuild(self, in_ppa=False, builder=None):
         if builder is None:
@@ -207,7 +214,7 @@ class BuildCreationMixin(object):
         naked_build.builder = builder
         naked_build.date_started = self.factory.getUniqueDate()
         naked_build.date_finished = self.factory.getUniqueDate()
-        self.addFakeBuildLog(build)
+        self.markAsBuilt(build)
         return build
 
 

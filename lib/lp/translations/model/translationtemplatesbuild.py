@@ -119,21 +119,28 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
 
-        def eager_load(rows):
-            # Load the related branches, products.
-            branches = load_related(
-                Branch, rows, ['branch_id'])
-            load_related(
-                Product, branches, ['productID'])
-            # Preload branches cached associated product series and
-            # suite source packages for all the related branches.
-            GenericBranchCollection.preloadDataForBranches(branches)
-
         resultset = store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.build_farm_job_id.is_in(
                 buildfarmjob_ids))
-        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=cls.preloadBuildsData)
+
+    @classmethod
+    def preloadBuildsData(cls, builds):
+        # Circular imports.
+        from canonical.launchpad.database.librarian import LibraryFileAlias
+        # Load the related branches, products.
+        branches = load_related(
+            Branch, builds, ['branch_id'])
+        load_related(
+            Product, branches, ['productID'])
+        # Preload branches cached associated product series and
+        # suite source packages for all the related branches.
+        GenericBranchCollection.preloadDataForBranches(branches)
+        build_farm_jobs = [
+            build.build_farm_job for build in builds]
+        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
 
     @classmethod
     def findByBranch(cls, branch, store=None):
