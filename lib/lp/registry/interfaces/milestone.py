@@ -234,7 +234,12 @@ class IMilestone(IAbstractMilestone):
         """Set the milestone tags.
 
         :param: tags The list of tags to be associated with milestone.
+        :param: user The user who is updating tags for this milestone.
         """
+
+    def getTags():
+        """Return the milestone tags in alphabetical order."""
+
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
