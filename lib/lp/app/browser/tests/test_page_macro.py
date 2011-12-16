@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 from zope.interface import implements
-from zope.component import getMultiAdapter
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
 
@@ -65,7 +64,7 @@ class PageMacroDispatcherTestCase(TestPageMacroDispatcherMixin, TestCase):
 
     def test_base_template(self):
         # Requests on the launchpad.dev vhost use the Launchpad base template.
-        adapter = getMultiAdapter([self.view], IPathAdapter, name='macro')
+        adapter = self.getAdapter([self.view], IPathAdapter, name='macro')
         template_path = os.path.normpath(adapter.base.filename)
         self.assertIn('lp/app/templates', template_path)
         # The base template defines a 'master' macro as the adapter expects.

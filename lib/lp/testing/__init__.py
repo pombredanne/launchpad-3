@@ -103,6 +103,7 @@ from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
     getSiteManager,
+    getMultiAdapter,
     getUtility,
     )
 import zope.event
@@ -1477,3 +1478,6 @@ class FakeAdapterMixin:
         self.registerAdapter(
             view_class, (for_interface, IBrowserRequest), Interface,
             name=name)
+
+    def getAdapter(self, for_interfaces, provided_interface, name=None):
+        return getMultiAdapter(for_interfaces, provided_interface, name=name)
