@@ -202,7 +202,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         with person_logged_in(user):
             view = create_initialized_view(
                 team, name="+index",  server_url=canonical_url(team),
-                path_info='')
+                path_info='', principal=user)
             document = find_tag_by_id(view(), 'document')
         self.assertIsNone(document.find(True, id='side-portlets'))
         self.assertIsNone(document.find(True, id='registration'))
