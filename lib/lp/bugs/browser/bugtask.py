@@ -2231,10 +2231,7 @@ class BugTaskListingItem:
             self.bugtask.target,
             view_name="+bugs")
 
-        def build_tag_url(tag):
-            """Generate a url for the tag based on the current request ctx."""
-
-        return {
+        flattened = {
             'age': age,
             'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
@@ -2254,6 +2251,13 @@ class BugTaskListingItem:
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }
+
+        # This is a total hack, but pystache will run both truth/false values
+        # for an empty list for some reason, and it "works" if it's just a flag
+        # like this. We need this value for the mustache template to be able
+        # to tell that there are no tags without looking at the list.
+        flattened['has_tags'] = True if len(flattened['tags']) else False
+        return flattened
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
