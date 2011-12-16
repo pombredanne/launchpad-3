@@ -87,15 +87,15 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation,
     StructuralSubscriptionTargetTraversalMixin):
     """The navigation to traverse to a milestone."""
-    usedfor = IMilestone
+    usedfor = IAbstractMilestone
 
 
 class MilestoneBreadcrumb(Breadcrumb):
-    """The Breadcrumb for an `IMilestone`."""
+    """The Breadcrumb for an `IAbstractMilestone`."""
 
     @property
     def text(self):
-        milestone = IMilestone(self.context)
+        milestone = IAbstractMilestone(self.context)
         if milestone.code_name:
             return '%s "%s"' % (milestone.name, milestone.code_name)
         else:
@@ -142,7 +142,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
 
 class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     """The menu for this milestone."""
-    usedfor = IMilestone
+    usedfor = IAbstractMilestone
 
     @cachedproperty
     def links(self):
@@ -154,7 +154,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     """Overview navigation menu for `IMilestone` objects."""
-    usedfor = IMilestone
+    usedfor = IAbstractMilestone
     facet = 'overview'
 
     @cachedproperty
@@ -168,7 +168,7 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     """Overview  menus for `IMilestone` objects."""
     # This menu must not contain 'subscribe' because the link state is too
     # costly to calculate when this menu is used with a list of milestones.
-    usedfor = IMilestone
+    usedfor = IAbstractMilestone
     facet = 'overview'
     links = ('edit', 'create_release')
 
