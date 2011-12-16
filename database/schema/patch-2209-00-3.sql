@@ -18,6 +18,5 @@ ALTER TABLE ONLY milestonetag
 
 CREATE INDEX milestonetag__milestones_idx
     ON milestonetag USING btree (milestone);
-CREATE INDEX milestonetag__tags_idx ON milestonetag (tag);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 0, 3);
