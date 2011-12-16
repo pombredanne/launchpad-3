@@ -6,26 +6,19 @@
 __metaclass__ = type
 
 import os
-from zope.component import getSiteManager
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import implements
 from zope.component import getMultiAdapter
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
-from zope.publisher.interfaces.browser import (
-    IBrowserRequest,
-    )
 
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
-from lp.app.interfaces.security import IAuthorization
 from lp.app.security import AuthorizationBase
 from lp.testing import (
+    FakeAdapterMixin,
     login_person,
     TestCase,
     TestCaseWithFactory,
@@ -52,15 +45,10 @@ class TestView:
         self.request = request
 
 
-class TestPageMacroDispatcherMixin:
+class TestPageMacroDispatcherMixin(FakeAdapterMixin):
 
     def _setUpView(self):
-        getSiteManager().registerAdapter(
-            TestView, required=(ITest, IBrowserRequest),
-            provided=Interface, name='+index')
-        self.addCleanup(
-            getSiteManager().unregisterAdapter, TestView,
-            (ITest, IBrowserRequest), Interface, '+index')
+        self.registerBrowserViewAdapter(TestView, ITest, '+index')
         self.view = create_view(TestObject(), name='+index')
 
     def _call_test_tales(self, path):
@@ -142,8 +130,6 @@ class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
 
     def _setUpPermissions(self, has_permission=True):
         class FakeSecurityAdapter(AuthorizationBase):
-            usedfor = ITest
-            permission = 'launchpad.View'
 
             def __init__(self, adaptee=None):
                 super(FakeSecurityAdapter, self).__init__(adaptee)
@@ -157,11 +143,8 @@ class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
         def adapter_factory(adaptee):
             return FakeSecurityAdapter(adaptee)
 
-        getSiteManager().registerAdapter(
-            adapter_factory, (ITest,), IAuthorization, 'launchpad.View')
-        self.addCleanup(
-            getSiteManager().unregisterAdapter, adapter_factory,
-            (ITest, ), IAuthorization, 'launchpad.View')
+        self.registerAuthorizationAdapter(
+            adapter_factory, ITest, 'launchpad.View')
 
     def test_is_page_contentless_public(self):
         # Public objects always have content to be shown.
