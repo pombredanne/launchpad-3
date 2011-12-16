@@ -588,19 +588,47 @@ def get_structural_subscriptions_for_bug(bug, person=None):
         *conditions)
 
 
+def query_structural_subscriptions(
+    what, bug, bugtasks, level, exclude=None):
+    """Query into structural subscriptions for a given bug.
+
+    :param what: The fields to fetch. Choose from `Person`,
+        `StructuralSubscription`, `BugSubscriptionFilter`, or a combo.
+    :param bug: An `IBug`
+    :param bugtasks: An iterable of `IBugTask`.
+    :param level: A level from `BugNotificationLevel`.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    filter_id_query = (
+        _get_structural_subscription_filter_id_query(
+            bug, bugtasks, level, exclude))
+    if not filter_id_query:
+        return EmptyResultSet()
+    from lp.registry.model.person import Person  # Circular.
+    source = IStore(StructuralSubscription).using(
+        StructuralSubscription,
+        Join(BugSubscriptionFilter,
+             BugSubscriptionFilter.structural_subscription_id ==
+             StructuralSubscription.id),
+        Join(Person,
+             Person.id == StructuralSubscription.subscriberID))
+    conditions = In(
+        BugSubscriptionFilter.id, filter_id_query)
+    return source.find(what, conditions)
+
+
 def get_structural_subscribers(
     bug_or_bugtask, recipients, level, direct_subscribers=None):
     """Return subscribers for bug or bugtask at level.
 
-    :param bug: a bug.
-    :param recipients: a BugNotificationRecipients object or None.
-                       Populates if given.
-    :param level: a level from lp.bugs.enum.BugNotificationLevel.
-    :param direct_subscribers: a collection of Person objects who are
-                               directly subscribed to the bug.
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :param recipients: A `BugNotificationRecipients` object or
+        `None`, which will be populated if provided.
+    :param level: A level from `BugNotificationLevel`.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    from lp.registry.model.person import Person  # Circular.
 
-    Excludes structural subscriptions for people who are directly subscribed
-    to the bug."""
     if IBug.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask
         bugtasks = bug.bugtasks
@@ -609,33 +637,18 @@ def get_structural_subscribers(
         bugtasks = [bug_or_bugtask]
     else:
         raise ValueError('First argument must be bug or bugtask')
-    filter_id_query = (
-        _get_structural_subscription_filter_id_query(
-            bug, bugtasks, level, direct_subscribers))
-    if not filter_id_query:
-        return EmptyResultSet()
-    # This is here because of a circular import.
-    from lp.registry.model.person import Person
-    source = IStore(StructuralSubscription).using(
-        StructuralSubscription,
-        Join(BugSubscriptionFilter,
-             BugSubscriptionFilter.structural_subscription_id ==
-             StructuralSubscription.id),
-        Join(Person,
-             Person.id == StructuralSubscription.subscriberID),
-        )
+
     if recipients is None:
-        return source.find(
-            Person,
-            In(BugSubscriptionFilter.id,
-               filter_id_query)).config(distinct=True).order_by()
+        subscribers = query_structural_subscriptions(
+            Person, bug, bugtasks, level, direct_subscribers)
+        subscribers.config(distinct=True)
+        return subscribers.order_by()
     else:
-        subscribers = []
-        query_results = source.find(
+        results = query_structural_subscriptions(
             (Person, StructuralSubscription, BugSubscriptionFilter),
-            In(BugSubscriptionFilter.id, filter_id_query))
-        for person, subscription, filter in query_results:
-            # Set up results.
+            bug, bugtasks, level, direct_subscribers)
+        subscribers = []
+        for person, subscription, filter in results:
             if person not in recipients:
                 subscribers.append(person)
                 recipients.addStructuralSubscriber(
