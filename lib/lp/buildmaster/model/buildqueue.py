@@ -16,7 +16,9 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import groupby
 import logging
+from operator import attrgetter
 
 import pytz
 from sqlobject import (
@@ -56,6 +58,10 @@ from lp.buildmaster.interfaces.buildqueue import (
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 def normalize_virtualization(virtualized):
@@ -136,11 +142,33 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         return IBuildFarmJobBehavior(self.specific_job)
 
-    @property
+    @cachedproperty
     def specific_job(self):
         """See `IBuildQueue`."""
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
+
+    @staticmethod
+    def preloadSpecificJobData(queues):
+        key = attrgetter('job_type')
+        specific_jobs_dict = {}
+        for job_type, grouped_queues in groupby(queues, key=key):
+            specific_class = specific_job_classes()[job_type]
+            queue_subset = list(grouped_queues)
+            # We need to preload the build farm jobs early to avoid
+            # the call to _set_build_farm_job to look up BuildFarmBuildJobs
+            # one by one.
+            specific_class.preloadBuildFarmJobs(queue_subset)
+            specific_jobs = specific_class.getByJobs(queue_subset)
+            if len(list(specific_jobs)) == 0:
+                return
+            specific_class.preloadJobsData(specific_jobs)
+            specific_jobs_dict = dict(
+                (specific_job.job, specific_job)
+                    for specific_job in specific_jobs)
+            for queue in queue_subset:
+                cache = get_property_cache(queue)
+                cache.specific_job = specific_jobs_dict[queue.job]
 
     @property
     def date_started(self):

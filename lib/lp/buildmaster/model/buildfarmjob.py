@@ -160,11 +160,27 @@ class BuildFarmJobOldDerived:
         """
         raise NotImplementedError
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        """Preload the build farm jobs to which the given jobs will delegate.
+
+        """
+        pass
+
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJobOld`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_ids = [job.id for job in jobs]
+        return store.find(
+            cls, cls.job_id.is_in(job_ids))
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""

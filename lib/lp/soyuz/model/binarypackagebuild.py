@@ -867,6 +867,31 @@ class BinaryPackageBuildSet:
             return None
         return resulting_tuple[0]
 
+    def preloadBuildsData(self, builds):
+        # Circular imports.
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries
+            )
+        from lp.registry.model.distroseries import (
+            DistroSeries
+            )
+        from lp.registry.model.distribution import (
+            Distribution
+            )
+        from lp.soyuz.model.archive import Archive
+        from lp.registry.model.person import Person
+        self._prefetchBuildData(builds)
+        distro_arch_series = load_related(
+            DistroArchSeries, builds, ['distro_arch_series_id'])
+        package_builds = load_related(
+            PackageBuild, builds, ['package_build_id'])
+        archives = load_related(Archive, package_builds, ['archive_id'])
+        load_related(Person, archives, ['ownerID'])
+        distroseries = load_related(
+            DistroSeries, distro_arch_series, ['distroseriesID'])
+        load_related(
+            Distribution, distroseries, ['distributionID'])
+
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
@@ -875,36 +900,13 @@ class BinaryPackageBuildSet:
         build_farm_job_ids = [
             build_farm_job.id for build_farm_job in build_farm_jobs]
 
-        def eager_load(rows):
-            # Circular imports.
-            from lp.soyuz.model.distroarchseries import (
-                DistroArchSeries
-                )
-            from lp.registry.model.distroseries import (
-                DistroSeries
-                )
-            from lp.registry.model.distribution import (
-                Distribution
-                )
-            from lp.soyuz.model.archive import Archive
-            from lp.registry.model.person import Person
-            self._prefetchBuildData(rows)
-            distro_arch_series = load_related(
-                DistroArchSeries, rows, ['distro_arch_series_id'])
-            package_builds = load_related(
-                PackageBuild, rows, ['package_build_id'])
-            archives = load_related(Archive, package_builds, ['archive_id'])
-            load_related(Person, archives, ['ownerID'])
-            distroseries = load_related(
-                DistroSeries, distro_arch_series, ['distroseriesID'])
-            load_related(
-                Distribution, distroseries, ['distributionID'])
         resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
             BinaryPackageBuild,
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=self.preloadBuildsData)
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

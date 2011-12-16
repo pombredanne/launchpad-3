@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -424,6 +424,11 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         'archseries' argument should be a list of DistroArchSeries and it is
         asserted to not be None/empty.
+        """
+
+    def preloadBuildsData(builds):
+        """Prefetch the data related to the builds.
+
         """
 
 
