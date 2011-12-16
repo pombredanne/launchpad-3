@@ -454,7 +454,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # findSourcePackageRelease finds the matching SourcePackageRelease.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
@@ -475,7 +475,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # SourcePackageRelease.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
@@ -492,14 +492,14 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # package releases.
         das = self.factory.makeDistroArchSeries(
             distroseries=self.policy.distroseries, architecturetag="i386")
-        build = self.factory.makeBinaryPackageBuild(
+        self.factory.makeBinaryPackageBuild(
             distroarchseries=das,
             archive=self.policy.archive)
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         spn = self.factory.makeSourcePackageName("foo")
-        spph1 = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn,
             distroseries=self.policy.distroseries,
             version="0.42", archive=self.policy.archive,
