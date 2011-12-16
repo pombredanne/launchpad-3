@@ -95,3 +95,41 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # is added.
         pofilestatsjob.schedule(pofile.id)
         self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
+
+    def test_run_with_shared_template(self):
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        productseries = self.factory.makeProductSeries(product=product)
+        pofile = self.factory.makePOFile(side=TranslationSide.UPSTREAM)
+#        other_template = self.factory.makePOTemplate(
+#            name='template',
+#            side=TranslationSide.UPSTREAM)
+#        other_pofile = self.factory.makePOFile(potemplate=other_template)
+        other_pofile = self.factory.makePOFile(potemplate=pofile.potemplate)
+#        self.factory.makePackagingLink(
+#            productseries=other_template.productseries,
+#            distroseries=pofile.potemplate.distroseries,
+#            sourcepackagename=pofile.potemplate.sourcepackagename)
+
+        # Running a job causes the POFile statistics to be updated.
+        # Create a message so we have something to have statistics about.
+        singular_text = self.factory.getUniqueString()
+        potmsgset = pofile.potemplate.getOrCreateSharedPOTMsgSet(
+            singular_text, plural_text=None)
+
+        self.factory.makeSuggestion(pofile, potmsgset, translations=['x'])
+        self.factory.makeCurrentTranslationMessage(pofile, potmsgset)
+
+        # The statistics start at 0.
+        self.assertEqual(pofile.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(other_pofile.getStatistics(), (0, 0, 0, 0))
+#        self.assertEqual(other_template.messageCount(), 0)
+        job = pofilestatsjob.schedule(pofile.id)
+        # Just scheduling the job doesn't update the statistics.
+        self.assertEqual(pofile.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(other_pofile.getStatistics(), (0, 0, 0, 0))
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
+        # Now that the job ran, the statistics have been updated.
+        self.assertEqual(pofile.getStatistics(), (0, 0, 0, 1))
+        self.assertEqual(other_pofile.getStatistics(), (0, 0, 0, 1))
