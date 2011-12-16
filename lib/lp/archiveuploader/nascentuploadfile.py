@@ -713,8 +713,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2, data.tar.lzma or data.tar.xz." %
                 (self.filename, data_tar))
 
-        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
-        XZ_REQUIRED_DPKG_VER = '1.15.6'
+        # xz-compressed debs must pre-depend on dpkg >= 1.15.6~.
+        XZ_REQUIRED_DPKG_VER = '1.15.6~'
         if data_tar == "data.tar.xz":
             parsed_deps = []
             try:

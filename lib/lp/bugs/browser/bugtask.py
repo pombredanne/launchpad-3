@@ -2226,6 +2226,14 @@ class BugTaskListingItem:
         assignee = None
         if self.assignee is not None:
             assignee = self.assignee.displayname
+
+        base_tag_url = "%s/?field.tag=" % canonical_url(
+            self.bugtask.target,
+            view_name="+bugs")
+
+        def build_tag_url(tag):
+            """Generate a url for the tag based on the current request ctx."""
+
         return {
             'age': age,
             'assignee': assignee,
@@ -2242,7 +2250,8 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': ' '.join(self.bug.tags),
+            'tags': [{'url': base_tag_url + tag, 'tag': tag}
+                for tag in self.bug.tags],
             'title': self.bug.title,
             }
 
@@ -2358,10 +2367,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def model(self):
-        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
-        for bugtask in bugtasks:
-            bugtask.update(self.field_visibility)
-        return {'bugtasks': bugtasks}
+        items = [bugtask.model for bugtask in self.getBugListingItems()]
+        for item in items:
+            item.update(self.field_visibility)
+        return {'items': items}
 
 
 class NominatedBugReviewAction(EnumeratedType):
@@ -2476,6 +2485,33 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
+
+
+# All sort orders supported by BugTaskSet.search() and a title for
+# them.
+SORT_KEYS = [
+    ('importance', 'Importance'),
+    ('status', 'Status'),
+    ('id', 'Bug number'),
+    ('title', 'Bug title'),
+    ('targetname', 'Package/Project/Series name'),
+    ('milestone_name', 'Milestone'),
+    ('date_last_updated', 'Date bug last updated'),
+    ('assignee', 'Assignee'),
+    ('reporter', 'Reporter'),
+    ('datecreated', 'Bug age'),
+    ('tag', 'Bug Tags'),
+    ('heat', 'Bug heat'),
+    ('date_closed', 'Date bug closed'),
+    ('dateassigned', 'Date when the bug task was assigned'),
+    ('number_of_duplicates', 'Number of duplicates'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded'),
+    ('message_count', 'Number of comments'),
+    ('milestone', 'Milestone ID'),
+    ('specification', 'Linked blueprint'),
+    ('task', 'Bug task ID'),
+    ('users_affected_count', 'Number of affected users'),
+    ]
 
 
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
@@ -2672,6 +2708,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+            cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
@@ -2743,7 +2780,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.getOrderByColumnDBName(orderby_col)
+                bugset.orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)

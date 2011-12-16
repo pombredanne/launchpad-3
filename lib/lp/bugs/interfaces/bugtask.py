@@ -920,7 +920,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasBugSupervisorPrivileges(user):
-        """Is the user a privledged one, allowed to changed details on a 
+        """Is the user a privledged one, allowed to changed details on a
         bug?
 
         :return: A boolean.
@@ -1483,6 +1483,8 @@ class BugTaskSearchParams:
 class IBugTaskSet(Interface):
     """A utility to retrieving BugTasks."""
     title = Attribute('Title')
+    orderby_expression = Attribute(
+        "The SQL expression for a sort key")
 
     def get(task_id):
         """Retrieve a BugTask with the given id.
@@ -1637,12 +1639,6 @@ class IBugTaskSet(Interface):
         The <user> parameter is necessary to make sure we don't return any
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
-        """
-
-    def getOrderByColumnDBName(col_name):
-        """Get the database name for col_name.
-
-        If the col_name is unrecognized, a KeyError is raised.
         """
 
     def getBugCountsForPackages(user, packages):
