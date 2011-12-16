@@ -117,6 +117,7 @@ class TestBaseLayout(TestCaseWithFactory):
         # The main_side layout has everything.
         view = self.makeTemplateView('main_side')
         content = BeautifulSoup(view())
+        self.assertIsNot(None, content.find(text=' Extra head content '))
         self.verify_base_layout_html_element(content)
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
@@ -215,6 +216,7 @@ class TestBaseLayout(TestCaseWithFactory):
         with person_logged_in(self.user):
             view = self.makeTemplateView('main_side', context=team)
             content = BeautifulSoup(view())
+        self.assertIs(None, content.find(text=' Extra head content '))
         self.verify_base_layout_html_element(content)
         self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
