@@ -99,6 +99,13 @@
             tal:attributes="value upgrade/label;
                             name upgrade/__name__;
                             id upgrade/__name__;" />
+          <span
+            tal:define="sponsored_person nocall:view/widgets/sponsored_person;
+                        field_name sponsored_person/context/__name__;
+                        error python:view.getFieldError(field_name);">
+            <label>Person being sponsored (optional):</label>
+            <tal:sponsored replace="structure sponsored_person"/>
+          </span>
         </div>
       </div>
 

@@ -77,6 +77,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -881,6 +882,9 @@ class IDifferencesFormSchema(Interface):
         description=_("Select the differences for syncing."),
         required=True)
 
+    sponsored_person = Choice(
+        vocabulary='ValidPerson', required=False,)
+
 
 class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                                      PackageCopyingMixin,
@@ -888,9 +892,12 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     """Base class for all pages presenting differences between
     a derived series and its parent."""
     schema = IDifferencesFormSchema
-    field_names = ['selected_differences']
+    field_names = ['selected_differences', 'sponsored_person']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
     custom_widget('package_type', LaunchpadRadioWidget)
+    custom_widget(
+        'sponsored_person', PersonPickerWidget,
+        header="Select person being sponsored", show_assign_me_button=False)
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -909,7 +916,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
-
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
@@ -977,6 +983,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
+        sponsored_person = data.get("sponsored_person")
+
         # When syncing we *must* do it asynchronously so that a package
         # copy job is created.  This gives the job a chance to inspect
         # the copy and create a PackageUpload if required.
@@ -984,7 +992,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user, force_async=True):
+            person=self.user, force_async=True,
+            sponsored_person=sponsored_person):
             # The copy worked so we redirect back to show the results. Include
             # the query string so that the user ends up on the same batch page
             # with the same filtering parameters as before.

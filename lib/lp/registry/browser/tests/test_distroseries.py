@@ -2115,14 +2115,18 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs',
-                        query_string=''):
+                        query_string='', sponsored=None):
         # A helper to get the POST'ed sync view.
         with person_logged_in(person):
+            form = {
+                'field.selected_differences': sync_differences,
+                'field.actions.sync': 'Sync',
+                }
+            if sponsored is not None:
+                form['field.sponsored_person'] = sponsored.name
             view = create_initialized_view(
                 derived_series, view_name,
-                method='POST', form={
-                    'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync'},
+                method='POST', form=form,
                 query_string=query_string)
             return view
 
@@ -2205,6 +2209,26 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertTrue(
             "Signer is not permitted to upload to the "
             "component" in view.errors[0])
+
+    def test_sync_with_sponsoring(self):
+        # The requesting user can set a sponsored person on the sync. We
+        # need to make sure the sponsored person ends up on the copy job
+        # metadata.
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
+            'my-src-name')
+        set_derived_series_sync_feature_flag(self)
+        person, _ = self.makePersonWithComponentPermission(
+            derived_series.main_archive,
+            derived_series.getSourcePackage(
+                sp_name).latest_published_component)
+        sponsored_person = self.factory.makePerson()
+        self._syncAndGetView(
+            derived_series, person, [diff_id],
+            sponsored=sponsored_person)
+
+        pcj = PlainPackageCopyJob.getActiveJobs(
+            derived_series.main_archive).one()
+        self.assertEqual(pcj.sponsored, sponsored_person)
 
     def assertPackageCopied(self, series, src_name, version, view):
         # Helper to check that a package has been copied by virtue of
