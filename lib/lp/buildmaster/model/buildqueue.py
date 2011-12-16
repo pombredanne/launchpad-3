@@ -161,7 +161,7 @@ class BuildQueue(SQLBase):
             specific_class.preloadBuildFarmJobs(queue_subset)
             specific_jobs = specific_class.getByJobs(queue_subset)
             if len(list(specific_jobs)) == 0:
-                return
+                continue
             specific_class.preloadJobsData(specific_jobs)
             specific_jobs_dict = dict(
                 (specific_job.job, specific_job)
