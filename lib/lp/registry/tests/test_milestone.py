@@ -10,7 +10,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,

@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IAbstractMilestone',
     'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
@@ -142,9 +143,9 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
         """Get a list of non-conjoined bugtasks visible to this user."""
 
 
-class IMilestone(IMilestoneData):
-    """A milestone, or a targeting point for bugs and other
-    release-management items that need coordination.
+class IAbstractMilestone(IMilestoneData):
+    """An intermediate interface for milestone, or a targeting point for bugs
+    and other release-management items that need coordination.
     """
     export_as_webservice_entry()
     code_name = exported(
@@ -225,6 +226,14 @@ class IMilestone(IMilestoneData):
         """
 
 
+class IMilestone(IAbstractMilestone):
+
+    def setTags(tags):
+        """Set the milestone tags.
+
+        :param: tags The list of tags to be associated with milestone.
+        """
+
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
 patch_plain_parameter_type(
@@ -263,12 +272,8 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectGroupMilestone(IMilestone):
+class IProjectGroupMilestone(IAbstractMilestone):
     """A marker interface for milestones related to a project"""
-
-
-class IProjectGroupTag(IMilestoneData):
-    """A marker interface for a project group's tags."""
 
 
 class IHasMilestones(Interface):
