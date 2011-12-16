@@ -2376,50 +2376,44 @@ def get_also_notified_subscribers(
     if IBug.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask
         bugtasks = bug.bugtasks
+        info = bug.getSubscriptionInfo(level)
     elif IBugTask.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask.bug
         bugtasks = [bug_or_bugtask]
+        info = bug.getSubscriptionInfo(level).forTask(bug_or_bugtask)
     else:
         raise ValueError('First argument must be bug or bugtask')
 
     if bug.private:
         return []
 
-    # Direct subscriptions always take precedence over indirect
-    # subscriptions.
-    direct_subscribers = set(bug.getDirectSubscribers())
+    # Subscribers to exclude.
+    exclude_subscribers = frozenset().union(
+        info.direct_subscribers, info.muted_subscribers)
+    # Get also notified subscribers at the given level for the given tasks.
+    also_notified_subscribers = info.also_notified_subscribers
 
-    also_notified_subscribers = set()
-
-    for bugtask in bugtasks:
-        if (bugtask.assignee and
-            bugtask.assignee not in direct_subscribers):
-            # We have an assignee that is not a direct subscriber.
-            also_notified_subscribers.add(bugtask.assignee)
-            if recipients is not None:
+    if recipients is not None:
+        for bugtask in bugtasks:
+            assignee = bugtask.assignee
+            if assignee in also_notified_subscribers:
+                # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-
-        # If the target's bug supervisor isn't set...
-        pillar = bugtask.pillar
-        if (pillar.bug_supervisor is None and
-            pillar.official_malone and
-            pillar.owner not in direct_subscribers):
-            # ...we add the owner as a subscriber.
-            also_notified_subscribers.add(pillar.owner)
-            if recipients is not None:
-                recipients.addRegistrant(pillar.owner, pillar)
+            # If the target's bug supervisor isn't set...
+            pillar = bugtask.pillar
+            if pillar.official_malone and pillar.bug_supervisor is None:
+                if pillar.owner in also_notified_subscribers:
+                    # ...we add the owner as a subscriber.
+                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
-    also_notified_subscribers.update(
-        get_structural_subscribers(
-            bug_or_bugtask, recipients, level, direct_subscribers))
+    # TODO: Pass the info object into get_structural_subscribers for
+    # efficiency... or do the recipients stuff here.
+    structural_subscribers = get_structural_subscribers(
+        bug_or_bugtask, recipients, level, exclude_subscribers)
+    assert also_notified_subscribers.issuperset(structural_subscribers)
 
-    # Remove security proxy for the sort key, but return
-    # the regular proxied object.
-    return sorted(also_notified_subscribers,
-                  # XXX: GavinPanella 2011-12-12 bug=???: Should probably use
-                  # person_sort_key.
-                  key=lambda x: removeSecurityProxy(x).displayname)
+    return also_notified_subscribers.sorted
 
 
 def load_people(*where):

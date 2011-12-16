@@ -99,7 +99,7 @@ Finer-grained access to indirect subscribers is provided by
 getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 
     >>> linux_source_bug.getAlsoNotifiedSubscribers()
-    [<Person at ...>]
+    (<Person at ...>,)
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
@@ -109,7 +109,7 @@ individual bug task.
     >>> from lp.bugs.model.bug import get_also_notified_subscribers
     >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
     >>> res
-    [<Person at ...>]
+    (<Person at ...>,)
 
 These are security proxied.
 
