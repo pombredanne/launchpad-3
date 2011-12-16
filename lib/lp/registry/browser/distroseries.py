@@ -883,7 +883,8 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
     sponsored_person = Choice(
-        vocabulary='ValidPerson', required=False,)
+        title=u"Person being sponsored", vocabulary='ValidPerson',
+        required=False)
 
 
 class DistroSeriesDifferenceBaseView(LaunchpadFormView,
