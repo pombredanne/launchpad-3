@@ -2563,8 +2563,31 @@ class BugSubscriptionInfo:
 
     def __init__(self, bug, level):
         self.bug = bug
+        self.bugtask = None  # Implies all.
         assert level is not None
         self.level = level
+        self.cache = {self.cache_key: self}
+
+    @property
+    def cache_key(self):
+        bugtask_id = None if self.bugtask is None else self.bugtask.id
+        return self.bug.id, bugtask_id, self.level
+
+    def forTask(self, bugtask):
+        """Create a new `BugSubscriptionInfo` limited to `bugtask`.
+
+        The given task must refer to this object's bug. If `None` is passed a
+        new `BugSubscriptionInfo` instance is returned with no limit.
+        """
+        info = self.__class__(self.bug, self.level)
+        info.bugtask, info.cache = bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
+
+    def forLevel(self, level):
+        """Create a new `BugSubscriptionInfo` limited to `level`."""
+        info = self.__class__(self.bug, level)
+        info.bugtask, info.cache = self.bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
 
     @cachedproperty
     @freeze(BugSubscriptionSet)

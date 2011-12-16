@@ -142,6 +142,59 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
                 for subscriber in subscribers)
         return subscribers, subscriptions
 
+    def test_forTask(self):
+        # `forTask` returns a new `BugSubscriptionInfo` narrowed to the given
+        # bugtask.
+        info = self.getInfo()
+        self.assertIs(None, info.bugtask)
+        # If called with the current bugtask the same `BugSubscriptionInfo`
+        # instance is returned.
+        self.assertIs(info, info.forTask(info.bugtask))
+        # If called with a different bugtask a new `BugSubscriptionInfo` is
+        # created.
+        bugtask = self.bug.default_bugtask
+        info_for_task = info.forTask(bugtask)
+        self.assertIs(bugtask, info_for_task.bugtask)
+        self.assertIsNot(info, info_for_task)
+        # The instances share a cache of `BugSubscriptionInfo` instances.
+        expected_cache = {
+            info.cache_key: info,
+            info_for_task.cache_key: info_for_task,
+            }
+        self.assertEqual(expected_cache, info.cache)
+        self.assertIs(info.cache, info_for_task.cache)
+        # Calling `forTask` again looks in the cache first.
+        self.assertIs(info, info_for_task.forTask(info.bugtask))
+        self.assertIs(info_for_task, info.forTask(info_for_task.bugtask))
+        # The level is the same.
+        self.assertEqual(info.level, info_for_task.level)
+
+    def test_forLevel(self):
+        # `forLevel` returns a new `BugSubscriptionInfo` narrowed to the given
+        # subscription level.
+        info = self.getInfo()
+        # If called with the current level the same `BugSubscriptionInfo`
+        # instance is returned.
+        self.assertIs(info, info.forLevel(info.level))
+        # If called with a different level a new `BugSubscriptionInfo` is
+        # created.
+        level = BugNotificationLevel.METADATA
+        info_for_level = info.forLevel(level)
+        self.assertEqual(level, info_for_level.level)
+        self.assertIsNot(info, info_for_level)
+        # The instances share a cache of `BugSubscriptionInfo` instances.
+        expected_cache = {
+            info.cache_key: info,
+            info_for_level.cache_key: info_for_level,
+            }
+        self.assertEqual(expected_cache, info.cache)
+        self.assertIs(info.cache, info_for_level.cache)
+        # Calling `forLevel` again looks in the cache first.
+        self.assertIs(info, info_for_level.forLevel(info.level))
+        self.assertIs(info_for_level, info.forLevel(info_for_level.level))
+        # The bugtask is the same.
+        self.assertIs(info.bugtask, info_for_level.bugtask)
+
     def test_direct(self):
         # The set of direct subscribers.
         subscribers, subscriptions = self._create_direct_subscriptions()

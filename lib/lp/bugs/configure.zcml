@@ -650,6 +650,7 @@
           permission="launchpad.View"
           attributes="
               bug
+              bugtask
               level
               " />
       <!-- Properties -->
@@ -665,6 +666,13 @@
               duplicate_subscriptions
               indirect_subscribers
               structural_subscriptions
+              " />
+      <!-- Methods -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              forLevel
+              forTask
               " />
     </class>
 
