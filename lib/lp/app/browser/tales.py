@@ -2503,6 +2503,7 @@ class PageMacroDispatcher:
 
         view/macro:pagetype
 
+        view/macro:is-page-contentless
     """
 
     implements(ITraversable)
@@ -2535,6 +2536,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
+        elif name == 'is-page-contentless':
+            return self.isPageContentless()
         else:
             raise TraversalError(name)
 
@@ -2545,12 +2548,23 @@ class PageMacroDispatcher:
         return self.base.macros['master']
 
     def haspage(self, layoutelement):
-        # XXX sinzui 2011-12-15: This could check privacy and permission
-        # to return false for main and side.
         pagetype = getattr(self.context, '__pagetype__', None)
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def isPageContentless(self):
+        """Should the template avoid rendering detailed information.
+
+        Circumstances such as not possessing launchpad.View on a private
+        context require the template to not render detailed information. The
+        user may only know identifying information about the context.
+        """
+        privacy = IPrivacy(self.context, None)
+        if privacy is None or not privacy.private:
+            return False
+        can_view = check_permission('launchpad.View', self.context)
+        return can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

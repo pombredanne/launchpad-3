@@ -6,12 +6,20 @@
 __metaclass__ = type
 
 import os
-
+from zope.component import getSiteManager
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.component import getMultiAdapter
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
+from zope.publisher.browser import BrowserView
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest,
+    IBrowserView,
+    )
 
-from canonical.launchpad.webapp.publisher import rootObject
 from canonical.testing.layers import FunctionalLayer
 from lp.testing import (
     TestCase,
@@ -20,13 +28,37 @@ from lp.testing import (
 from lp.testing.views import create_view
 
 
+class ITest(Interface):
+    """A mechanism for adaption."""
+
+
+class TestObject:
+    implements(ITest)
+
+    def __init__(self):
+        self.private = False
+
+
+class TestView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+
 class TestPageMacroDispatcher(TestCase):
 
     layer = FunctionalLayer
 
     def setUp(self):
         super(TestPageMacroDispatcher, self).setUp()
-        self.view = create_view(rootObject, name='index.html')
+        getSiteManager().registerAdapter(
+            TestView, required=(ITest, IBrowserRequest),
+            provided=Interface, name='+index')
+        self.addCleanup(
+            getSiteManager().unregisterAdapter, TestView,
+            (ITest, IBrowserRequest), Interface, '+index')
+        self.view = create_view(TestObject(), name='+index')
 
     def _call_test_tales(self, path):
         test_tales(path, view=self.view)
@@ -85,3 +117,14 @@ class TestPageMacroDispatcher(TestCase):
         self.assertRaisesWithContent(
             KeyError, "'fnord'",
             self._call_test_tales, 'view/macro:pagehas/fnord')
+
+    def test_is_page_contentless_public(self):
+        # Public objects always have content to be shown.
+        self.assertFalse(
+            test_tales('view/macro:is-page-contentless', view=self.view))
+
+    def test_is_page_contentless_private(self):
+        # Private objects always have content to be shown.
+        self.view.context.private = True
+        self.assertFalse(
+            test_tales('view/macro:is-page-contentless', view=self.view))
