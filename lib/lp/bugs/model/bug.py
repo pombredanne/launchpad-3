@@ -2677,17 +2677,32 @@ class BugSubscriptionInfo:
     @freeze(BugSubscriberSet)
     def all_assignees(self):
         """Assignees of the bug's tasks."""
-        assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
+        if self.bugtask is None:
+            assignees = Select(
+                BugTask.assigneeID, BugTask.bug == self.bug)
+        else:
+            assignees = Select(
+                BugTask.assigneeID, And(
+                    BugTask.bug == self.bug,
+                    BugTask.id == self.bugtask.id))
         return load_people(Person.id.is_in(assignees))
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which no Bug supervisor is configured."""
-        for bugtask in self.bug.bugtasks:
+        """Owners of pillars for which there is no bug supervisor.
+
+        The pillars must also use Launchpad for bug tracking.
+        """
+        if self.bugtask is None:
+            bugtasks = self.bug.bugtasks
+        else:
+            bugtasks = [self.bugtask]
+        for bugtask in bugtasks:
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None and pillar.official_malone:
-                yield pillar.owner
+            if pillar.official_malone:
+                if pillar.bug_supervisor is None:
+                    yield pillar.owner
 
     @cachedproperty
     def also_notified_subscribers(self):

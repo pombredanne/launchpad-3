@@ -316,6 +316,11 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([self.bug.owner, bugtask2.owner]),
             found_assignees)
+        # Getting info for a specific bugtask will return the assignee for
+        # that bugtask only.
+        self.assertEqual(
+            set([bugtask2.owner]),
+            self.getInfo().forTask(bugtask2).all_assignees)
 
     def test_all_pillar_owners_without_bug_supervisors(self):
         # The set of owners of pillars for which no bug supervisor is
@@ -349,6 +354,12 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             set([bugtask.pillar.owner, bugtask2.pillar.owner]),
             found_owners)
+        # Getting subscription info for just a specific bugtask will yield
+        # owners for only the pillar associated with that bugtask.
+        info_for_bugtask2 = self.getInfo().forTask(bugtask2)
+        self.assertEqual(
+            set([bugtask2.pillar.owner]),
+            info_for_bugtask2.all_pillar_owners_without_bug_supervisors)
 
     def _create_also_notified_subscribers(self):
         # Add an assignee, a bug supervisor and a structural subscriber.
