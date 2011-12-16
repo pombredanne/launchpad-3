@@ -48,6 +48,12 @@ def pop_notifications(sort_key=None, commit=True):
     return sorted(notifications, key=sort_key)
 
 
+def sort_addresses(header):
+    """Sort an address-list in an e-mail header field body."""
+    addresses = set(address.strip() for address in header.split(','))
+    return ", ".join(sorted(addresses))
+
+
 def print_emails(include_reply_to=False, group_similar=False,
                  include_rationale=False, notifications=None):
     """Pop all messages from stub.test_emails and print them with

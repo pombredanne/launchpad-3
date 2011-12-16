@@ -302,7 +302,10 @@ Upload a new "bar" source so we can accept it later.
 Swallow any email generated at the upload:
 
   >>> from lp.services.mail import stub
-  >>> from lp.testing.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import (
+  ...     pop_notifications,
+  ...     sort_addresses,
+  ...     )
   >>> swallow = pop_notifications()
 
 Set up a second browser on the same page to simulate accidentally posting to the
@@ -345,9 +348,9 @@ if it is someone other than the uploader) and (usually) an email to the
 distroseries' announcement list (see nascentupload-announcements.txt).
 
   >>> [notification, announcement] = pop_notifications()
-  >>> print notification['To']
-  Foo Bar <foo.bar@canonical.com>,
-  Daniel Silverstone <daniel.silverstone@canonical.com>
+  >>> print sort_addresses(notification['To'])
+  Daniel Silverstone <daniel.silverstone@canonical.com>,
+  Foo Bar <foo.bar@canonical.com>
   >>> print announcement['To']
   autotest_changes@ubuntu.com
 
