@@ -182,6 +182,7 @@ from lp.bugs.model.bugtask import (
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
+    get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -2697,22 +2698,18 @@ class BugSubscriptionInfo:
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets.
 
-        *Does not* exclude muted subscriptions.
-
-        ********************************************
-          This does _not_ take level into account.
-          Use `structural_subscribers` instead.
-        ********************************************
+        Excludes direct subscriptions.
         """
-        return get_structural_subscriptions_for_bug(self.bug)
-
-    @cachedproperty
-    @freeze(BugSubscriberSet)
-    def structural_subscribers(self):
-        """Structural subscribersptions to the bug's targets."""
         subject = self.bug if self.bugtask is None else self.bugtask
-        return get_structural_subscribers(
-            subject, None, self.level, self.direct_subscribers)
+        return get_structural_subscriptions(subject, self.level)
+
+    @property
+    def structural_subscribers(self):
+        """Structural subscribers to the bug's targets.
+
+        Excludes direct subscribers.
+        """
+        return self.structural_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriberSet)

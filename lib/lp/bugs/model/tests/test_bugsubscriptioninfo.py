@@ -538,27 +538,28 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             yield recorder
         self.assertThat(recorder, condition)
 
-    def exercise_subscription_set(self, set_name):
+    def exercise_subscription_set(self, set_name, counts=(1, 1, 0)):
         # Looking up subscriptions takes a single query.
-        with self.exactly_x_queries(1):
+        with self.exactly_x_queries(counts[0]):
             getattr(self.info, set_name)
         # Getting the subscribers results in one additional query.
-        with self.exactly_x_queries(1):
+        with self.exactly_x_queries(counts[1]):
             getattr(self.info, set_name).subscribers
         # Everything is now cached so no more queries are needed.
-        with self.exactly_x_queries(0):
+        with self.exactly_x_queries(counts[2]):
             getattr(self.info, set_name).subscribers
             getattr(self.info, set_name).subscribers.sorted
 
-    def exercise_subscription_set_sorted_first(self, set_name):
+    def exercise_subscription_set_sorted_first(
+        self, set_name, counts=(1, 1, 0)):
         # Looking up subscriptions takes a single query.
-        with self.exactly_x_queries(1):
+        with self.exactly_x_queries(counts[0]):
             getattr(self.info, set_name)
         # Getting the sorted subscriptions takes one additional query.
-        with self.exactly_x_queries(1):
+        with self.exactly_x_queries(counts[1]):
             getattr(self.info, set_name).sorted
         # Everything is now cached so no more queries are needed.
-        with self.exactly_x_queries(0):
+        with self.exactly_x_queries(counts[2]):
             getattr(self.info, set_name).subscribers
             getattr(self.info, set_name).subscribers.sorted
 
@@ -599,18 +600,19 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             self.info.duplicate_subscriptions.subscribers
 
     def add_structural_subscriber(self):
-        with person_logged_in(self.bug.owner):
-            self.target.addSubscription(self.bug.owner, self.bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self.target.addSubscription(subscriber, subscriber)
 
     def test_structural_subscriptions(self):
         self.add_structural_subscriber()
         self.exercise_subscription_set(
-            "structural_subscriptions")
+            "structural_subscriptions", (2, 1, 0))
 
     def test_structural_subscriptions_sorted_first(self):
         self.add_structural_subscriber()
         self.exercise_subscription_set_sorted_first(
-            "structural_subscriptions")
+            "structural_subscriptions", (2, 1, 0))
 
     def test_all_assignees(self):
         with self.exactly_x_queries(1):
