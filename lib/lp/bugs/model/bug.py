@@ -2561,6 +2561,10 @@ class BugSubscriptionInfo:
         assert level is not None
         self.level = level
         self.cache = {self.cache_key: self}
+        # This is often used in event handlers, many of which block implicit
+        # flushes. However, the data needs to be in the database for the
+        # queries herein to give correct answers.
+        Store.of(bug).flush()
 
     @property
     def cache_key(self):
