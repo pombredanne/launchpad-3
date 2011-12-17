@@ -2389,7 +2389,7 @@ def get_also_notified_subscribers(
 
     # Subscribers to exclude.
     exclude_subscribers = frozenset().union(
-        info.direct_subscribers, info.muted_subscribers)
+        info.all_direct_subscribers, info.muted_subscribers)
     # Get also notified subscribers at the given level for the given tasks.
     also_notified_subscribers = info.also_notified_subscribers
 
