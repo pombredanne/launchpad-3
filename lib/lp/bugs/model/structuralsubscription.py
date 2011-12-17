@@ -3,10 +3,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_structural_subscriptions_for_bug',
-    'get_structural_subscriptions_for_target',
     'get_structural_subscribers',
     'get_structural_subscription_targets',
+    'get_structural_subscriptions',
+    'get_structural_subscriptions_for_bug',
+    'get_structural_subscriptions_for_target',
     'StructuralSubscription',
     'StructuralSubscriptionTargetMixin',
     ]
@@ -617,8 +618,41 @@ def query_structural_subscriptions(
     return source.find(what, conditions)
 
 
+def resolve_bug_and_bugtasks(bug_or_bugtask):
+    """Return a bug and a list of bugtasks given a bug or a bugtask.
+
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :raises ValueError: If `bug_or_bugtask` does not provide `IBug` or
+        `IBugTask`.
+    """
+    if IBug.providedBy(bug_or_bugtask):
+        return bug_or_bugtask, bug_or_bugtask.bugtasks
+    elif IBugTask.providedBy(bug_or_bugtask):
+        return bug_or_bugtask.bug, [bug_or_bugtask]
+    else:
+        raise ValueError(
+            "Expected bug or bugtask, got %r" % (bug_or_bugtask,))
+
+
+def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
+    """Return subscriptions for bug or bugtask at level.
+
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :param level: A level from `BugNotificationLevel`.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    bug, bugtasks = resolve_bug_and_bugtasks(bug_or_bugtask)
+    subscriptions = query_structural_subscriptions(
+        StructuralSubscription, bug, bugtasks, level, exclude)
+    from lp.registry.model.person import Person  # Circular.
+    # Only return the earliest matching subscription per subscriber.
+    subscriptions.config(distinct=(Person.id,))
+    subscriptions.order_by(Person.id, StructuralSubscription.id)
+    return subscriptions
+
+
 def get_structural_subscribers(
-    bug_or_bugtask, recipients, level, direct_subscribers=None):
+    bug_or_bugtask, recipients, level, exclude=None):
     """Return subscribers for bug or bugtask at level.
 
     :param bug_or_bugtask: An `IBug` or `IBugTask`.
@@ -628,25 +662,16 @@ def get_structural_subscribers(
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     from lp.registry.model.person import Person  # Circular.
-
-    if IBug.providedBy(bug_or_bugtask):
-        bug = bug_or_bugtask
-        bugtasks = bug.bugtasks
-    elif IBugTask.providedBy(bug_or_bugtask):
-        bug = bug_or_bugtask.bug
-        bugtasks = [bug_or_bugtask]
-    else:
-        raise ValueError('First argument must be bug or bugtask')
-
+    bug, bugtasks = resolve_bug_and_bugtasks(bug_or_bugtask)
     if recipients is None:
         subscribers = query_structural_subscriptions(
-            Person, bug, bugtasks, level, direct_subscribers)
+            Person, bug, bugtasks, level, exclude)
         subscribers.config(distinct=True)
         return subscribers.order_by()
     else:
         results = query_structural_subscriptions(
             (Person, StructuralSubscription, BugSubscriptionFilter),
-            bug, bugtasks, level, direct_subscribers)
+            bug, bugtasks, level, exclude)
         subscribers = []
         for person, subscription, filter in results:
             if person not in recipients:
