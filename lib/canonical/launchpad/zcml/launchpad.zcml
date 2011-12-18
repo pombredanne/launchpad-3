@@ -17,9 +17,9 @@
   />
 
 <adapter
-  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  provides="lp.app.browser.badge.IHasBadges"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
+  factory="lp.app.browser.badge.HasBadgeBase"
   permission="zope.Public"
   />
 

@@ -846,7 +846,7 @@
             factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.badge.IHasBadges"
+            provides="lp.app.browser.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>

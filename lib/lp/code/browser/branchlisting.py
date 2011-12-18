@@ -72,7 +72,7 @@ from canonical.launchpad.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.badge import (
+from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
     )

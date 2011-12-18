@@ -92,7 +92,7 @@ from canonical.launchpad.webapp.batching import (
     InactiveBatchNavigator,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.badge import HasBadgeBase
+from lp.app.browser.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured

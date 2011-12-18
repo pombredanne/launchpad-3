@@ -20,7 +20,7 @@ In order to maintain a level of standardisation across the badge uses in
 Launchpad, there is a central list of standard badges along with their
 alternate text and titles.
 
-    >>> from canonical.launchpad.webapp.badge import STANDARD_BADGES
+    >>> from lp.app.browser.badge import STANDARD_BADGES
 
 Iterating over this collection gives:
 
@@ -45,7 +45,7 @@ A badge is constructed with the locations of the images, the default
 alternate text and the default title.  An optional id attribute for a
 Badge is added to the rendered heading image.
 
-    >>> from canonical.launchpad.webapp.badge import Badge
+    >>> from lp.app.browser.badge import Badge
     >>> bug = Badge(
     ...     icon_image='/@@/bug', heading_image='/@@/bug-large',
     ...     alt='bug', title='Linked to a bug', id='bugbadge')
@@ -82,7 +82,7 @@ implementation of IHasBadges. HasBadgeBase is also a default adapter
 for Interface, which just provides the privacy badge.
 
     >>> from zope.interface import Interface, Attribute, implements
-    >>> from canonical.launchpad.webapp.badge import IHasBadges, HasBadgeBase
+    >>> from lp.app.browser.badge import IHasBadges, HasBadgeBase
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> class PrivateClass:
     ...     implements(Interface)
@@ -191,7 +191,7 @@ IHasBadges.  Here is the sample from the branch.zcml to illustrate.
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
-      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"
       />
 

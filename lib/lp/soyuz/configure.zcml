@@ -424,7 +424,7 @@
         factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
-        provides="canonical.launchpad.webapp.badge.IHasBadges"
+        provides="lp.app.browser.badge.IHasBadges"
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter

@@ -71,7 +71,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
+from lp.app.browser.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,

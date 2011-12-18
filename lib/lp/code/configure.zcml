@@ -484,7 +484,7 @@
       factory="lp.code.publisher.LaunchpadBranchContainer"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
-      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
