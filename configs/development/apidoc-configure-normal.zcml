@@ -99,7 +99,7 @@
     <apidoc:bookchapter
         id="dbpolicy"
         title="Storm Stores and Database Policies"
-        doc_path="../../lib/canonical/launchpad/doc/db-policy.txt"
+        doc_path="../../lib/lp/services/database/doc/db-policy.txt"
         parent="lp"
         />
     <apidoc:bookchapter
