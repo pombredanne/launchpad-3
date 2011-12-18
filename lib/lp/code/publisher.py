@@ -8,6 +8,7 @@ __all__ = [
     'CodeBrowserRequest',
     'CodeLayer',
     'code_request_publication_factory',
+    'LaunchpadBranchContainer',
     ]
 
 
@@ -22,6 +23,8 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
+from canonical.launchpad.webapp.publisher import LaunchpadContainer
 
 
 class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):
@@ -36,3 +39,16 @@ class CodeBrowserRequest(LaunchpadBrowserRequest):
 def code_request_publication_factory():
     return VHostWebServiceRequestPublicationFactory(
         'code', CodeBrowserRequest, LaunchpadBrowserPublication)
+
+
+class LaunchpadBranchContainer(LaunchpadContainer):
+
+    def isWithin(self, scope):
+        """Is this branch within the given scope?
+
+        If a branch has a product, it is always in the scope that product or
+        its project.  Otherwise it's not in any scope.
+        """
+        if self.context.product is None:
+            return False
+        return ILaunchpadContainer(self.context.product).isWithin(scope)

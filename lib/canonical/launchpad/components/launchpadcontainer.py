@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'LaunchpadBranchContainer',
     'LaunchpadBugContainer',
     'LaunchpadProductContainer',
     'LaunchpadDistributionSourcePackageContainer',
@@ -14,19 +13,6 @@ __all__ = [
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.publisher import LaunchpadContainer
-
-
-class LaunchpadBranchContainer(LaunchpadContainer):
-
-    def isWithin(self, scope):
-        """Is this branch within the given scope?
-
-        If a branch has a product, it is always in the scope that product or
-        its project.  Otherwise it's not in any scope.
-        """
-        if self.context.product is None:
-            return False
-        return ILaunchpadContainer(self.context.product).isWithin(scope)
 
 
 class LaunchpadBugContainer(LaunchpadContainer):
