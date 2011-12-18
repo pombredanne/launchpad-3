@@ -43,7 +43,7 @@
   <!-- Some message have a canonical_url -->
   <adapter for="lp.services.messages.interfaces.message.IMessage"
     provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
-    factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
+    factory="lp.services.messages.browser.message.message_to_canonical_url_data"
     />
 
   <!-- Adapt several related objects to provide unified details -->
