@@ -3,15 +3,16 @@
 
 """Tests for lp.services.profile.
 
-See lib/canonical/doc/profiling.txt for an end-user description of
-the functionality.
+See doc.txt for an end-user description of the functionality.
 """
 
 __metaclass__ = type
 
 import glob
+import logging
 import os
 import random
+import unittest
 
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
@@ -19,6 +20,12 @@ from zope.app.publication.interfaces import (
     )
 from zope.component import getSiteManager
 
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -29,6 +36,7 @@ from lp.services.profile import profile
 from lp.testing import (
     TestCase,
     TestCaseWithFactory)
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -773,3 +781,15 @@ class TestSqlLogging(TestCaseWithFactory, BaseRequestEndHandlerTest):
             response)
         # This file should be part of several of the tracebacks.
         self.assertIn(__file__.replace('.pyc', '.py'), response)
+
+
+def test_suite():
+    """Return the `IBugTarget` TestSuite."""
+    suite = unittest.TestSuite()
+
+    doctest = LayeredDocFileSuite(
+        './profiling.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer, stdout_logging_level=logging.WARNING)
+    suite.addTest(doctest)
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite

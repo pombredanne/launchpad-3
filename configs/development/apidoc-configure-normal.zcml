@@ -123,7 +123,7 @@
     <apidoc:bookchapter
         id="profiling"
         title="Profiling"
-        doc_path="../../lib/canonical/launchpad/doc/profiling.txt"
+        doc_path="../../lib/lp/services/profile/profiling.txt"
         parent="lp"
         />
 
