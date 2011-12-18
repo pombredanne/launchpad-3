@@ -875,7 +875,7 @@
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-            factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
+            factory="lp.bugs.publisher.LaunchpadBugContainer"/>
 
         <!-- BugSet -->
 

@@ -5,27 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'LaunchpadBugContainer',
     'LaunchpadProductContainer',
     'LaunchpadDistributionSourcePackageContainer',
     ]
 
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.publisher import LaunchpadContainer
-
-
-class LaunchpadBugContainer(LaunchpadContainer):
-
-    def isWithin(self, scope):
-        """Is this bug within the given scope?
-
-        A bug is in the scope of any of its bugtasks' targets.
-        """
-        for bugtask in self.context.bugtasks:
-            if ILaunchpadContainer(bugtask.target).isWithin(scope):
-                return True
-        return False
 
 
 class LaunchpadProductContainer(LaunchpadContainer):
