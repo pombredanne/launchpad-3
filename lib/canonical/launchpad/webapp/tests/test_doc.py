@@ -9,8 +9,16 @@ __metaclass__ = type
 
 import os
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.launchpad.webapp.tests import test_notifications
+from canonical.testing.layers import (
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.services.testing import build_test_suite
 
 
@@ -18,6 +26,15 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 
 special = {
+    'canonical_url.txt': LayeredDocFileSuite(
+        '../doc/canonical_url.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=FunctionalLayer,),
+    'notification-text-escape.txt': LayeredDocFileSuite(
+        '../doc/notification-text-escape.txt',
+        setUp=test_notifications.setUp,
+        tearDown=test_notifications.tearDown,
+        stdout_logging=False, layer=None),
     'test_adapter.txt': LayeredDocFileSuite(
         '../doc/test_adapter.txt',
         layer=LaunchpadFunctionalLayer),
@@ -31,6 +48,10 @@ special = {
     'test_adapter_permissions.txt': LayeredDocFileSuite(
         '../doc/test_adapter_permissions.txt',
         layer=LaunchpadFunctionalLayer),
+    'uri.txt': LayeredDocFileSuite(
+        '../doc/uri.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=FunctionalLayer),
     }
 
 
