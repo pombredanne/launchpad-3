@@ -19,6 +19,8 @@ from lp.services.mail.basemailer import (
 
 class SourcePackageRecipeBuildMailer(BaseMailer):
 
+    app = 'code'
+
     @classmethod
     def forStatus(cls, build):
         """Create a mailer for notifying about build status.

@@ -203,7 +203,7 @@ def notify_specification_modified(spec, event):
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
-    body = get_email_template('specification-modified.txt') % {
+    body = get_email_template('specification-modified.txt', 'blueprints') % {
         'editor': user.displayname,
         'info_fields': '\n'.join(info_lines),
         'spec_title': spec.title,
