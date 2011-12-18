@@ -12,7 +12,7 @@
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  factory="canonical.lazr.privacy.ObjectPrivacy"
   permission="zope.Public"
   />
 
