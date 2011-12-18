@@ -21,9 +21,9 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = TestSuite()
-    import canonical.launchpad.interfaces.validation
+    import lp.app.validators.validation
     test = DocTestSuite(
-        canonical.launchpad.interfaces.validation,
+        lp.app.validators.validation,
         setUp=setUp,
         tearDown=tearDown,
         optionflags=ELLIPSIS | NORMALIZE_WHITESPACE

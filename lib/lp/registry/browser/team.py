@@ -73,7 +73,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.validation import validate_new_team_email
+from lp.app.validators.validation import validate_new_team_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

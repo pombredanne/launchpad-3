@@ -423,7 +423,7 @@ class PasswordField(Password):
 
     def _validate(self, value):
         # Local import to avoid circular imports
-        from canonical.launchpad.interfaces.validation import valid_password
+        from lp.app.validators.validation import valid_password
         if not valid_password(value):
             raise LaunchpadValidationError(_(
                 "The password provided contains non-ASCII characters."))

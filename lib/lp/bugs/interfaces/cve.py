@@ -39,7 +39,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.validation import valid_cve_sequence
+from lp.app.validators.validation import valid_cve_sequence
 
 
 class CveStatus(DBEnumeratedType):

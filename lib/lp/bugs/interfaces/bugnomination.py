@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasBug,
     IHasDateCreated,
     )
-from canonical.launchpad.interfaces.validation import (
+from lp.app.validators.validation import (
     can_be_nominated_for_series,
     )
 from lp.bugs.interfaces.bug import IBug
