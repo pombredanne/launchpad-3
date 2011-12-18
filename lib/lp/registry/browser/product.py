@@ -84,7 +84,7 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.multistep import (
+from lp.app.browser.multistep import (
     MultiStepView,
     StepView,
     )

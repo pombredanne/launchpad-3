@@ -8,7 +8,7 @@ functionality for use across Launchpad.
 To use multiple steps, you need one subclass of MultiStepView to start your
 wizard, and one or more subclasses of StepView for each step of your wizard.
 
-    >>> from canonical.launchpad.browser.multistep import (
+    >>> from lp.app.browser.multistep import (
     ...     MultiStepView, StepView)
 
 The controlling view must define a property `first_step` which is the view
