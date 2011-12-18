@@ -18,7 +18,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (

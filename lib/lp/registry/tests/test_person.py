@@ -20,13 +20,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
     )
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
     IEmailAddressSet,

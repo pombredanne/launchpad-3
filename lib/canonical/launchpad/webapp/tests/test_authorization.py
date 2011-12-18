@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `canonical.launchpad.webapp.authorization`."""
@@ -20,7 +20,7 @@ from zope.interface import (
     )
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces.account import IAccount
+from lp.services.identity.interfaces.account import IAccount
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
     check_permission,
