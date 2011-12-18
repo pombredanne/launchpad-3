@@ -528,7 +528,7 @@
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
+        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1330,7 +1330,7 @@
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"/>
+        factory="lp.registry.publisher.LaunchpadProductContainer"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
