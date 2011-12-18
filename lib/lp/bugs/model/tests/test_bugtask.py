@@ -1553,13 +1553,17 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted.
-        bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(bug=bug)
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        target = self.factory.makeProductSeries(product=product)
+        bugtask = self.factory.makeBugTask(bug=bug, target=target)
         bug = bugtask.bug
+        self.factory.makeBugNomination(bug=bug, target=target)
         login_person(bugtask.owner)
         with FeatureFixture(self.flags):
             bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
+        self.assertTrue(bug.canBeNominatedFor(target))
 
     def test_delete_default_bugtask(self):
         # The default bugtask can be deleted.

@@ -952,6 +952,10 @@
                 attributes="
                     approve
                     decline"/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    destroySelf"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugnomination.BugNominationSet"
