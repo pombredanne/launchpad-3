@@ -47,7 +47,7 @@ from zope.schema import (
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication

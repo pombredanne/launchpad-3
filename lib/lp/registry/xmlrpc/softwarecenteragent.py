@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.account import AccountSuspendedError
+from lp.services.identity.interfaces.account import AccountSuspendedError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (

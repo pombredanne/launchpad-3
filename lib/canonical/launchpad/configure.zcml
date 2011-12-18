@@ -15,8 +15,6 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
-  <include package="lp.hardwaredb" />
-
   <include package="lp.app" />
   <include package="lp.bugs" />
   <include package="lp.buildmaster" />
@@ -24,8 +22,8 @@
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
   <include package="lp.code" />
+  <include package="lp.hardwaredb" />
   <include package="lp.soyuz" />
-  <include package="lp.services.webservice" />
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />

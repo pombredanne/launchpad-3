@@ -33,7 +33,7 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
     )

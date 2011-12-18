@@ -23,7 +23,7 @@ from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag

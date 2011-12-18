@@ -30,7 +30,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,

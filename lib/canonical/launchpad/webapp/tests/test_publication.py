@@ -26,7 +26,7 @@ from zope.publisher.interfaces import (
     )
 
 from canonical.config import dbconfig
-from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,

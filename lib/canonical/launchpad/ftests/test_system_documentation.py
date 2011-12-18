@@ -25,7 +25,6 @@ from canonical.testing.layers import (
     AppServerLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 
@@ -45,9 +44,6 @@ special = {
     'webservice-configuration.txt': LayeredDocFileSuite(
         '../doc/webservice-configuration.txt',
         setUp=setGlobs, tearDown=layerlessTearDown, layer=None),
-    'close-account.txt': LayeredDocFileSuite(
-        '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadZopelessLayer),
     'uri.txt': LayeredDocFileSuite(
         '../doc/uri.txt',
         setUp=setUp, tearDown=tearDown,

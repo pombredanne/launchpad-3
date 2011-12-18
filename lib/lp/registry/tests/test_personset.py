@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountStatus,
     AccountSuspendedError,
     )

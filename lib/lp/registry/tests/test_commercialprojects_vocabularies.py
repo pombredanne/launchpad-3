@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
     IProductSet,

@@ -24,19 +24,19 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
     IAccount,
     IAccountSet,
     )
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,

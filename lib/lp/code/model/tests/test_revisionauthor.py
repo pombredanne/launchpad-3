@@ -9,7 +9,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import (

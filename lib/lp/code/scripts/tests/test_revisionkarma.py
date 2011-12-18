@@ -9,7 +9,7 @@ from storm.store import Store
 import transaction
 
 from canonical.config import config
-from canonical.launchpad.database.emailaddress import EmailAddressSet
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet

@@ -36,7 +36,7 @@ from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
