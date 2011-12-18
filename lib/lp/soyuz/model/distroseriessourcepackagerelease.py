@@ -23,7 +23,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries

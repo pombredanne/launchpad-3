@@ -36,7 +36,7 @@ we can turn a model object into a string:
 The original result set and the decorator function are then used to
 create the decorated result set:
 
-    >>> from canonical.launchpad.components.decoratedresultset import (
+    >>> from lp.services.database.decoratedresultset import (
     ...     DecoratedResultSet)
     >>> decorated_result_set = DecoratedResultSet(result_set,
     ...     result_decorator)

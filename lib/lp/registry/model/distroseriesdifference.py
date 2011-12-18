@@ -40,7 +40,7 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import (

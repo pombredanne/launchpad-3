@@ -53,7 +53,7 @@ from zope.security.interfaces import Unauthorized
 from lazr.restful.utils import smartquote
 
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import english_list

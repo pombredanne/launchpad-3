@@ -27,7 +27,7 @@ from storm import Undef
 
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore

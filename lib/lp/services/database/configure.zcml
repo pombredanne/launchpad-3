@@ -11,4 +11,10 @@
     <class class="storm.references.BoundIndirectReferenceSet">
         <allow attributes="add remove clear" />
     </class>
+
+    <class class="lp.services.database.decoratedresultset.DecoratedResultSet">
+        <allow interface="storm.zope.interfaces.IResultSet" />
+        <allow attributes="__getslice__ get_plain_result_set" />
+    </class>
+
 </configure>

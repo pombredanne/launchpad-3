@@ -88,7 +88,7 @@ from lp.app.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
