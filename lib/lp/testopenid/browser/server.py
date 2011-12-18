@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  All rights reserved.
+# Copyright 2010-2011 Canonical Ltd.  All rights reserved.
 
 """Test OpenID server."""
 
