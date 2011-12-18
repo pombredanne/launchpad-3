@@ -30,6 +30,8 @@ class BaseMailer:
     _getTemplateParams, and perhaps _getBody.
     """
 
+    app = None
+
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
                  mail_controller_class=None):
@@ -132,7 +134,7 @@ class BaseMailer:
 
     def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
-        template = get_email_template(self._template_name)
+        template = get_email_template(self._template_name, app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
         footer = self._getFooter(params)
