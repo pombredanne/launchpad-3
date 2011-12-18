@@ -377,7 +377,6 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
-
 If a nomination is declined, the bug can be re-nominated for the same target.
 The decider and date declined are reset to None.
 
@@ -387,10 +386,11 @@ The decider and date declined are reset to None.
     ...     target=ubuntu_breezy_autotest, owner=no_privs)
     >>> breezy_nomination.isProposed()
     True
-    >>> print breezy_nomination.decider or 'None'
+    >>> print breezy_nomination.decider
     None
     >>> print breezy_nomination.date_decided
     None
+
 
 == Automatic targeting of new source packages ==
 
