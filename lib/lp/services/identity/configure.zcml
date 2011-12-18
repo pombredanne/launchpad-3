@@ -36,6 +36,12 @@
             interface="lp.services.identity.interfaces.emailaddress.IEmailAddressSet"/>
     </securedutility>
 
+    <browser:url
+        for="lp.services.identity.interfaces.emailaddress.IEmailAddress"
+        path_expression="string:+email/${email}"
+        rootsite="api"
+        attribute_to_parent="person" />
+
     <class
         class="lp.services.identity.model.account.Account">
         <require
