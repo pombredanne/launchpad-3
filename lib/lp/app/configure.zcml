@@ -25,4 +25,10 @@
         factory="lp.app.utilities.celebrities.LaunchpadCelebrities"
         provides="lp.app.interfaces.launchpad.ILaunchpadCelebrities">
     </utility>
+
+    <!-- Configuration related to datetime classes in Launchpad. -->
+    <adapter
+        for="canonical.launchpad.interfaces.launchpad.IHasDateCreated"
+        provides="canonical.launchpad.interfaces.launchpad.IAging"
+        factory="lp.app.model.cdatetime.AgingAdapter" />
 </configure>
