@@ -748,7 +748,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             extra_info = ''
 
-        template = get_email_template('build-notification.txt')
+        template = get_email_template('build-notification.txt', app='soyuz')
         replacements = {
             'source_name': self.source_package_release.name,
             'source_version': self.source_package_release.version,

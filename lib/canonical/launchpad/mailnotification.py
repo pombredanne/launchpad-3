@@ -282,7 +282,7 @@ def notify_new_ppa_subscription(subscription, event):
     ppa_description = archive.description
     subject = 'PPA access granted for ' + ppa_displayname
 
-    template = get_email_template('ppa-subscription-new.txt')
+    template = get_email_template('ppa-subscription-new.txt', app='soyuz')
 
     for person, preferred_email in non_active_subscribers:
         to_address = [preferred_email.email]
