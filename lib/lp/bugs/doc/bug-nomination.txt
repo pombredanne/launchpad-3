@@ -384,6 +384,10 @@ The decider and date declined are reset to None.
     True
     >>> breezy_nomination = bug_one.addNomination(
     ...     target=ubuntu_breezy_autotest, owner=no_privs)
+    >>> ubuntu_breezy_autotest_nomination.isApproved()
+    False
+    >>> breezy_nomination.isDeclined()
+    False
     >>> breezy_nomination.isProposed()
     True
     >>> print breezy_nomination.decider
