@@ -150,6 +150,7 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatus,
     NominationError,
     NominationSeriesObsoleteError,
     )
@@ -1550,16 +1551,28 @@ class Bug(SQLBase):
             raise NominationError(
                 "Only bug supervisors or owners can nominate bugs.")
 
-        nomination = BugNomination(
-            owner=owner, bug=self, distroseries=distroseries,
-            productseries=productseries)
+        # There may be an existing DECLINED nomination. If so, we set the
+        # status back to PROPOSED. We do not alter the original date_created.
+        nomination = None
+        try:
+            nomination = self.getNominationFor(target)
+        except NotFoundError:
+            pass
+        if nomination:
+            nomination.status = BugNominationStatus.PROPOSED
+            nomination.decider = None
+            nomination.date_decided = None
+        else:
+            nomination = BugNomination(
+                owner=owner, bug=self, distroseries=distroseries,
+                productseries=productseries)
         self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(target)
+            nomination = self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination target.
@@ -1590,7 +1603,9 @@ class Bug(SQLBase):
             return False
         else:
             # The bug is already nominated for this nomination target.
-            return False
+            # If the status is declined, the bug can be renominated, else
+            # return False
+            return nomination.status == BugNominationStatus.DECLINED
 
     def getNominationFor(self, target):
         """See `IBug`."""
