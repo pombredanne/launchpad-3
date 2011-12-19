@@ -110,7 +110,7 @@ upper and lower navigation link views.
     u''
 
 When there is a current batch, but there are no previous or next
-batches, only the upper navigation links view will render.
+batches, both the upper and lower navigation links view will render.
 
     >>> navigator = BatchNavigator(reindeer, request=request)
     >>> upper_view = getMultiAdapter(
@@ -126,4 +126,9 @@ batches, only the upper navigation links view will render.
     >>> lower_view = getMultiAdapter(
     ...     (navigator, request), name='+navigation-links-lower')
     >>> lower_view.render()
-    u''
+    u'<table...class="lower-batch-nav"...
+    ...<strong>1</strong>...&rarr;...<strong>9</strong>...
+    ...<span class="first inactive">...First...
+    ...<span class="previous inactive">...Previous...
+    ...<span class="next inactive">...Next...
+    ...<span class="last inactive">...Last...
