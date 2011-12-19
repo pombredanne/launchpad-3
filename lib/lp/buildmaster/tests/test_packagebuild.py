@@ -12,6 +12,7 @@ import shutil
 import tempfile
 
 from storm.store import Store
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -285,6 +286,7 @@ class TestHandleStatusMixin:
     """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def makeBuild(self):
         """Allow classes to override the build with which the test runs."""

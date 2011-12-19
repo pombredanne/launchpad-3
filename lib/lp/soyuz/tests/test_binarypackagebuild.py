@@ -10,7 +10,6 @@ from datetime import (
 
 import pytz
 from storm.store import Store
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -574,9 +573,6 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 class TestHandleStatusForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
     """IPackageBuild.handleStatus works with binary builds."""
-
-    layer = LaunchpadZopelessLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
 
 class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
