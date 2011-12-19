@@ -1015,8 +1015,13 @@
                 createProductRelease
                 closeBugsAndBlueprints
                 destroySelf
-		setTags
-		"/>
+		        setTags
+		        "/>
+        <require
+            permission="zope.Public"
+            attributes="
+                getTags
+                "/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>

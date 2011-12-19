@@ -148,6 +148,7 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
     IPerson,
     validate_person,
@@ -2029,6 +2030,13 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
+        if (params.exclude_conjoined_tasks and
+            not (params.milestone or params.milestone_tag)):
+            raise ValueError(
+                "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                "BugTaskSearchParam.milestone or "
+                "BugTaskSearchParam.milestone_tag is not set")
+
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
@@ -2048,10 +2056,26 @@ class BugTaskSet:
                     params.milestone)
                 join_tables += tables
                 extra_clauses += clauses
-        elif params.exclude_conjoined_tasks:
-            raise ValueError(
-                "BugTaskSearchParam.exclude_conjoined cannot be True if "
-                "BugTaskSearchParam.milestone is not set")
+
+        if params.milestone_tag:
+            where_cond = """
+                IN (SELECT Milestone.id
+                    FROM Milestone, Product, MilestoneTag
+                    WHERE Milestone.product = Product.id
+                        AND Product.project = %s
+                        AND MilestoneTag.milestone = Milestone.id
+                        AND MilestoneTag.tag IN %s)
+            """ % sqlvalues(params.milestone_tag.target,
+                            params.milestone_tag.tags)
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
+
+            # XXX frankban 2011-12-16 further investigation needed
+            # to make sure we can skip the _buildExcludeConjoinedClause call
+            # if params.exclude_conjoined_tasks:
+            #     tables, clauses = self._buildExcludeConjoinedClause(
+            #         params.milestone_tag)
+            #     join_tables += tables
+            #     extra_clauses += clauses
 
         if params.project:
             # Prevent circular import problems.
@@ -2847,12 +2871,18 @@ class BugTaskSet:
             result[row[:-1]] = row[-1]
         return result
 
-    def getPrecachedNonConjoinedBugTasks(self, user, milestone):
+    def getPrecachedNonConjoinedBugTasks(self, user, milestone_data):
         """See `IBugTaskSet`."""
-        params = BugTaskSearchParams(
-            user, milestone=milestone,
-            orderby=['status', '-importance', 'id'],
-            omit_dupes=True, exclude_conjoined_tasks=True)
+        kwargs = {
+            'orderby': ['status', '-importance', 'id'],
+            'omit_dupes': True,
+            'exclude_conjoined_tasks': True,
+            }
+        if IProjectGroupMilestoneTag.providedBy(milestone_data):
+            kwargs['milestone_tag'] = milestone_data
+        else:
+            kwargs['milestone'] = milestone_data
+        params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
     def createTask(self, bug, owner, target,

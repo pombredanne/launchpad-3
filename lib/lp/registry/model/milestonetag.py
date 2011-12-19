@@ -11,9 +11,18 @@ __all__ = [
 
 
 from zope.interface import implements
+from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    DEFAULT_FLAVOR,
+    )
+
+from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
-from lp.registry.model.milestone import MilestoneData
+from lp.registry.model.milestone import MilestoneData, Milestone
+from lp.registry.model.product import Product
 from storm.locals import (
     DateTime,
     Int,
@@ -49,6 +58,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
 
     def __init__(self, target, tags):
         self.target = target
+        # Tags is a sequence of Unicode strings.
         self.tags = tags
 
     @property
@@ -60,8 +70,13 @@ class ProjectGroupMilestoneTag(MilestoneData):
         """See IMilestoneData."""
         return self.displayname
 
-    def bugtasks(self, user):
-        raise NotImplementedError()
-
+    @property
     def specifications(self):
-        raise NotImplementedError()
+        """See IMilestoneData."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Specification,
+            Specification.milestone == Milestone.id,
+            Milestone.product == Product.id,
+            Product.project == self.target,
+            MilestoneTag.tag.is_in(self.tags))
