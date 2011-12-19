@@ -72,7 +72,7 @@ class TestSomething(TestCase):
         """Main task failed and cleanup also failed.
 
         Exception from cleanup is logged.
-        Original exception from main task is logged and raised.
+        Original exception from main task is raised.
         """
         log_file = StringIO()
         loop = FailingLoop(fail_main=True, fail_cleanup=True)
