@@ -76,7 +76,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore

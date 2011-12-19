@@ -333,7 +333,7 @@ class MaloneHandler:
     def sendHelpEmail(self, to_address):
         """Send usage help to `to_address`."""
         # Get the help text (formatted as MoinMoin markup)
-        help_text = get_email_template('help.txt')
+        help_text = get_email_template('help.txt', app='bugs')
         help_text = reformat_wiki_text(help_text)
         # Wrap text
         mailwrapper = MailWrapper(width=72)

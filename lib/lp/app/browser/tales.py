@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.layers import LaunchpadLayer
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
+from lp.app.browser.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,

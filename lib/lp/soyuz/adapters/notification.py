@@ -88,7 +88,7 @@ def get_template(archive, action):
     if archive.is_ppa:
         template_name = 'ppa-%s' % template_name
     template_name += '.txt'
-    return get_email_template(template_name)
+    return get_email_template(template_name, app='soyuz')
 
 
 ACTION_DESCRIPTIONS = {

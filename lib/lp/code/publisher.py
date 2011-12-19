@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code's custom publication."""
@@ -8,6 +8,7 @@ __all__ = [
     'CodeBrowserRequest',
     'CodeLayer',
     'code_request_publication_factory',
+    'LaunchpadBranchContainer',
     ]
 
 
@@ -17,7 +18,9 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
+from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.publisher import LaunchpadContainer
 from canonical.launchpad.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
@@ -36,3 +39,16 @@ class CodeBrowserRequest(LaunchpadBrowserRequest):
 def code_request_publication_factory():
     return VHostWebServiceRequestPublicationFactory(
         'code', CodeBrowserRequest, LaunchpadBrowserPublication)
+
+
+class LaunchpadBranchContainer(LaunchpadContainer):
+
+    def isWithin(self, scope):
+        """Is this branch within the given scope?
+
+        If a branch has a product, it is always in the scope that product or
+        its project.  Otherwise it's not in any scope.
+        """
+        if self.context.product is None:
+            return False
+        return ILaunchpadContainer(self.context.product).isWithin(scope)

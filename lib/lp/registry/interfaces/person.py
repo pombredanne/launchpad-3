@@ -104,7 +104,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.interfaces.validation import validate_new_team_email
+from lp.app.validators.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.answers.interfaces.questionsperson import IQuestionsPerson

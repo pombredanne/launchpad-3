@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts.mlistimport import Importer
+from lp.registry.scripts.mlistimport import Importer
 from canonical.testing.layers import (
     AppServerLayer,
     BaseLayer,

@@ -62,7 +62,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import (

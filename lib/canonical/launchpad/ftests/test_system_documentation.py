@@ -20,7 +20,6 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
     AppServerLayer,
     FunctionalLayer,
@@ -44,15 +43,6 @@ special = {
     'webservice-configuration.txt': LayeredDocFileSuite(
         '../doc/webservice-configuration.txt',
         setUp=setGlobs, tearDown=layerlessTearDown, layer=None),
-    'uri.txt': LayeredDocFileSuite(
-        '../doc/uri.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=FunctionalLayer),
-    'notification-text-escape.txt': LayeredDocFileSuite(
-        '../doc/notification-text-escape.txt',
-        setUp=test_notifications.setUp,
-        tearDown=test_notifications.tearDown,
-        stdout_logging=False, layer=None),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -68,11 +58,6 @@ special = {
     # 'google-service-stub.txt': LayeredDocFileSuite(
     #     '../doc/google-service-stub.txt',
     #     layer=GoogleServiceLayer,),
-    'canonical_url.txt': LayeredDocFileSuite(
-        '../doc/canonical_url.txt',
-        setUp=setUp,
-        tearDown=tearDown,
-        layer=FunctionalLayer,),
     }
 
 

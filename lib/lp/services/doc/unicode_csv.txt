@@ -18,7 +18,7 @@ UnicodeReader and UnicodeWriter as their underlying workers.
 
     >>> from cStringIO import StringIO
     >>> from tempfile import mkstemp
-    >>> from canonical.launchpad.utilities.unicode_csv import (
+    >>> from lp.services.unicode_csv import (
     ...     UnicodeCSVReader, UnicodeCSVWriter)
 
 Create a test string with some non-ASCII content representing a row of
@@ -81,7 +81,7 @@ The dictionary-based versions of the unicode reader and writer work
 exactly like the standard versions, they just take a dictionary as
 input and present a dictionary as output as a convenience.
 
-    >>> from canonical.launchpad.utilities.unicode_csv import (
+    >>> from lp.services.unicode_csv import (
     ...     UnicodeDictReader, UnicodeDictWriter)
 
 Construct a dict using the same data as before.
