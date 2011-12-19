@@ -2350,6 +2350,28 @@ class TestgetAllPublishedBinaries(TestCaseWithFactory):
         self.assertEqual(1, publications.count())
         self.assertEqual(later_publication, publications[0])
 
+    def test_unordered_results(self):
+        archive = self.factory.makeArchive()
+        datecreated = self.factory.getUniqueDate()
+        middle_date = datecreated + timedelta(minutes=1)
+        later_date = middle_date + timedelta(minutes=1)
+
+        # Create three publications whose ID ordering doesn't match the
+        # date ordering.
+        first_publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=datecreated)
+        middle_publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=later_date)
+        later_publication = self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, datecreated=middle_date)
+
+        # We can't test for no ordering as it's not deterministic; but
+        # we can make sure that all the publications are returned.
+        publications = archive.getAllPublishedBinaries(ordered=False)
+        self.assertContentEqual(
+            publications,
+            [first_publication, middle_publication, later_publication])
+
 
 class TestRemovingPermissions(TestCaseWithFactory):
 

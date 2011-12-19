@@ -33,9 +33,10 @@
     }
 
 .yui3-orderbybar .config-widget {
-    float: right;
-    border-left: 1px solid #EEE;
-    margin: 3px;
+    float: left;
+    border-right: 1px solid #EEE;
+    margin: 4px 3px;
+    padding-right: 4px;
     min-width: 20px;
     min-height: 20px;
     }

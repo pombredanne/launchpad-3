@@ -29,7 +29,7 @@ sent. We'll start by importing some things we'll need for the examples
 that follow:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from lp.bugs.adapters.bugdelta import BugDelta
     >>> from lp.bugs.interfaces.bug import (

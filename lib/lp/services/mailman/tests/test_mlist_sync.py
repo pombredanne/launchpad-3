@@ -18,7 +18,7 @@ from Mailman.MailList import MailList
 from Mailman.Utils import list_names
 
 from canonical.config import config
-from canonical.launchpad.database.emailaddress import EmailAddressSet
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
