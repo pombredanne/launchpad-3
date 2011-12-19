@@ -11,10 +11,18 @@ __all__ = [
 
 
 from zope.interface import implements
+from zope.component import getUtility
+
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    DEFAULT_FLAVOR,
+    )
 
 from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
-from lp.registry.model.milestone import MilestoneData
+from lp.registry.model.milestone import MilestoneData, Milestone
+from lp.registry.model.product import Product
 from storm.locals import (
     DateTime,
     Int,
@@ -65,13 +73,10 @@ class ProjectGroupMilestoneTag(MilestoneData):
     @property
     def specifications(self):
         """See IMilestoneData."""
-        raise NotImplementedError
-        # store = Store.of(self)
-        # return store.find(
-        #     Specification,
-        #     Specification.milestone == Milestone.id,
-        #     MilestoneTag.milestone_id == Milestone.id,
-        #     MilestoneTag.tag.is_in(self.tags),
-        #     ).order_by(MilestoneTag.tag
-        #     ).values(MilestoneTag.tag)
-
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Specification,
+            Specification.milestone == Milestone.id,
+            Milestone.product == Product.id,
+            Product.project == self.target,
+            MilestoneTag.tag.is_in(self.tags))
