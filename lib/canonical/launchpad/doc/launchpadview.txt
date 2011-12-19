@@ -1,4 +1,5 @@
-= LaunchpadView =
+LaunchpadView
+=============
 
 This is the base-class we should use for all View classes in Launchpad.
 
@@ -44,7 +45,7 @@ A new view should have the new user.
 
     >>> view = MyView(context, request)
     >>> print view.account
-    <...launchpad.database.account.Account instance ...>
+    <...lp.services.identity.model.account.Account instance ...>
     >>> print view.user
     <...lp.registry.model.person.Person instance ...>
     >>> print view.user.name
@@ -83,14 +84,16 @@ an IStructuredString implementation.
     >>> view.error_message = 'A simple string.'
     Traceback (most recent call last):
     ...
-    ValueError: <type 'str'> is not a valid value for error_message, only None and IStructuredString are allowed.
+    ValueError: <type 'str'> is not a valid value for error_message,
+    only None and IStructuredString are allowed.
     >>> print view.error_message
     None
 
     >>> view.info_message = 'A simple string.'
     Traceback (most recent call last):
     ...
-    ValueError: <type 'str'> is not a valid value for info_message, only None and IStructuredString are allowed.
+    ValueError: <type 'str'> is not a valid value for info_message,
+    only None and IStructuredString are allowed.
     >>> print view.info_message
     None
 

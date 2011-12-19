@@ -26,7 +26,7 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )

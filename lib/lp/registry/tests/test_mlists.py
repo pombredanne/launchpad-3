@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test mailing list stuff."""
@@ -22,7 +22,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.testing.layers import (
     AppServerLayer,

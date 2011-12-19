@@ -18,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,

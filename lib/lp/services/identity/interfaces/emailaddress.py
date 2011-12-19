@@ -31,7 +31,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import IAccount
+from lp.services.identity.interfaces.account import IAccount
 from lp.registry.interfaces.role import IHasOwner
 
 

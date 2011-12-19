@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
@@ -9,7 +9,7 @@ from storm.store import Store
 import transaction
 
 from canonical.config import config
-from canonical.launchpad.database.emailaddress import EmailAddressSet
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet

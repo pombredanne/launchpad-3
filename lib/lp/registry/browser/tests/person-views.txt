@@ -63,7 +63,7 @@ New users are on probation; the homepage content is escaped HTML.
 Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
 
     # Only admins can change an account.

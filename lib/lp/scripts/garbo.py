@@ -43,11 +43,11 @@ from canonical.database.sqlbase import (
     session_store,
     sqlvalues,
     )
-from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (

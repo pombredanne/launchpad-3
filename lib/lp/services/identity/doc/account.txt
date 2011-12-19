@@ -14,7 +14,7 @@ implements the IAccountSet interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     IAccount, IAccountSet)
 
     >>> account_set = getUtility(IAccountSet)
@@ -126,7 +126,7 @@ email address.
 If we add a new guessed email address, it will be included in the
 guessed list.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus,
     ...     IEmailAddressSet,
     ...     )
@@ -184,7 +184,7 @@ The account has other metadata.
 When the status is changed, the date_status_set is updated in the
 database. Only an admin can change the status.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
 
     >>> original_date_status_set = account.date_status_set
     >>> login('admin@canonical.com')
@@ -212,7 +212,7 @@ Creating new accounts
 New Accounts are created using the AccountSet.new() method. The account
 rationale and displayname are required.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale)
     >>> from storm.store import Store
 
@@ -275,7 +275,7 @@ Let's add a new email address to the account.
 The account is still not valid because it has no preferred email.
 Setting the email to preferred fixes this.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
     >>> email.status = EmailAddressStatus.PREFERRED
     >>> account.is_valid
     True

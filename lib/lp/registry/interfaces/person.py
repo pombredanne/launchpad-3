@@ -93,11 +93,11 @@ from zope.schema import (
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccount,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
