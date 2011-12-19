@@ -5,14 +5,21 @@
 
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.testing.pages import (
+    find_tag_by_id,
+    setupBrowserForUser
+    )
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing import BrowserTestCase
 from lp.testing.views import create_initialized_view
 
 
@@ -111,3 +118,35 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
             self.subscriber, registrant=self.archive.owner)
 
         self.assertEqual(0, len(pop_notifications()))
+
+
+class PrivateArtifactsViewTestCase(BrowserTestCase):
+    """ Tests that private team archives can be viewed."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Create a test archive."""
+        super(PrivateArtifactsViewTestCase, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.private_team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            name="subscribertest", owner=self.owner)
+        with person_logged_in(self.owner):
+            self.archive = self.factory.makeArchive(
+                private=True, owner=self.private_team)
+        self.subscriber = self.factory.makePerson()
+
+    def test_traverse_view_private_team_archive_subscriber(self):
+        # A subscriber can traverse and view the archive.
+        with person_logged_in(self.owner):
+            self.archive.newSubscription(
+                self.subscriber, registrant=self.archive.owner)
+        with person_logged_in(self.subscriber):
+            url = canonical_url(self.archive)
+        browser = setupBrowserForUser(self.subscriber)
+        browser.open(url)
+        content = find_tag_by_id(browser.contents, 'document')
+        self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
+        self.assertIsNotNone(
+            find_tag_by_id(content, 'portlet-latest-updates'))

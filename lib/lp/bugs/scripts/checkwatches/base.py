@@ -39,12 +39,6 @@ from lp.services.limitedlist import LimitedList
 MAX_SQL_STATEMENTS_LOGGED = 10000
 
 
-class CheckWatchesErrorUtility(ErrorReportingUtility):
-    """An error utility that for the checkwatches process."""
-
-    _default_config_section = 'checkwatches'
-
-
 def report_oops(message=None, properties=None, info=None,
                 transaction_manager=None):
     """Record an oops for the current exception.
@@ -91,7 +85,8 @@ def report_oops(message=None, properties=None, info=None,
 
     # Create the dummy request object.
     request = ScriptRequest(properties, url)
-    error_utility = CheckWatchesErrorUtility()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure(section_name='checkwatches')
     error_utility.raising(info, request)
     return request
 

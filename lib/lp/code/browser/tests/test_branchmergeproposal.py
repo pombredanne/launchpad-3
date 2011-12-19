@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
 
 """Unit tests for BranchMergeProposals."""
 
@@ -56,6 +55,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff
@@ -63,6 +63,7 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     BrowserTestCase,
@@ -201,6 +202,50 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # The vote table should not be shown, because there are no votes, and
         # the logged-in user cannot request reviews.
         self.assertFalse(view.show_table)
+
+    def _createPrivateVotes(self, is_branch_visible=True):
+        # Create a branch with a public and private reviewer.
+        owner = self.bmp.source_branch.owner
+        if not is_branch_visible:
+            branch = self.bmp.source_branch
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+            branch.setPrivate(True, owner)
+
+        # Set up some review requests.
+        public_person1 = self.factory.makePerson()
+        private_team1 = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        self._nominateReviewer(public_person1, owner)
+        self._nominateReviewer(private_team1, owner)
+
+        return private_team1, public_person1
+
+    def testPrivateVotesNotVisibleIfBranchNotVisible(self):
+        # User can't see votes for private teams if they can't see the branch.
+        private_team1, public_person1 = self._createPrivateVotes(False)
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(1, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1],
+            [review.reviewer for review in requested_reviews])
+
+    def testPrivateVotesVisibleIfBranchVisible(self):
+        # User can see votes for private teams if they can see the branch.
+        private_team1, public_person1 = self._createPrivateVotes()
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(2, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1, private_team1],
+            [review.reviewer for review in requested_reviews])
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
