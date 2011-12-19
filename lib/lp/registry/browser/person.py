@@ -3935,7 +3935,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
         # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
         # system set up for this that is almost identical in
-        # canonical.launchpad.interfaces.validation, called
+        # lp.app.validators.validation, called
         # _check_email_available or similar. It would be really nice if we
         # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)

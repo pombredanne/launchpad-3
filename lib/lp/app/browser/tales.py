@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.layers import LaunchpadLayer
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
+from lp.app.browser.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -2499,9 +2499,11 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
         view/macro:pagehas/portlets
+        view/macro:pagehas/main
 
         view/macro:pagetype
 
+        view/macro:is-page-contentless
     """
 
     implements(ITraversable)
@@ -2534,8 +2536,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'show_actions_menu':
-            return self.show_actions_menu()
+        elif name == 'is-page-contentless':
+            return self.isPageContentless()
         else:
             raise TraversalError(name)
 
@@ -2550,6 +2552,20 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def isPageContentless(self):
+        """Should the template avoid rendering detailed information.
+
+        Circumstances such as not possessing launchpad.View on a private
+        context require the template to not render detailed information. The
+        user may only know identifying information about the context.
+        """
+        view_context = self.context.context
+        privacy = IPrivacy(view_context, None)
+        if privacy is None or not privacy.private:
+            return False
+        can_view = check_permission('launchpad.View', view_context)
+        return not can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

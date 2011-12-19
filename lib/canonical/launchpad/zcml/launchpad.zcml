@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -12,14 +12,14 @@
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  factory="canonical.lazr.privacy.ObjectPrivacy"
   permission="zope.Public"
   />
 
 <adapter
-  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  provides="lp.app.browser.badge.IHasBadges"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
+  factory="lp.app.browser.badge.HasBadgeBase"
   permission="zope.Public"
   />
 
