@@ -55,7 +55,12 @@ class TestPageMacroDispatcherMixin(FakeAdapterMixin):
 
 
 class PageMacroDispatcherTestCase(TestPageMacroDispatcherMixin, TestCase):
+    """Page macro tests for layouts.
 
+
+    Templates should start by specifying the kind of pagetype they use.
+    <html metal:use-macro="view/macro:page/main_side" />
+    """
     layer = FunctionalLayer
 
     def setUp(self):
