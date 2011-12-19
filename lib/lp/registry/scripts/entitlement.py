@@ -25,7 +25,7 @@ import time
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.utilities.unicode_csv import (
+from lp.services.unicode_csv import (
     UnicodeDictReader,
     UnicodeDictWriter,
     )
