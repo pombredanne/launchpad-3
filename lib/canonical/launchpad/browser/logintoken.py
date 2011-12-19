@@ -29,9 +29,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )

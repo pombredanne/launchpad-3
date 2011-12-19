@@ -17,8 +17,8 @@ from zope.component import (
 from zope.interface import Interface
 
 from canonical.config import config
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.account import IAccount
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
@@ -63,7 +63,10 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
-from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.branchcollection import (
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
@@ -849,8 +852,16 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             # Grant visibility to people with subscriptions to branches owned
             # by the private team.
-            owned_branches = getUtility(IBranchCollection).ownedBy(self.obj)
-            if owned_branches.visibleByUser(user.person).count() > 0:
+            team_branches = IBranchCollection(self.obj)
+            if team_branches.visibleByUser(user.person).count() > 0:
+                return True
+
+            # Grant visibility to branches visible to the user and which have
+            # review requests for the private team.
+            branches = getUtility(IAllBranches)
+            visible_branches = branches.visibleByUser(user.person)
+            mp = visible_branches.getMergeProposalsForReviewer(self.obj)
+            if mp.count() > 0:
                 return True
 
         return False
