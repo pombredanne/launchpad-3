@@ -559,8 +559,13 @@ class BugTargetTraversalMixin:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
-        # If we've come this far, there's no task for the requested
-        # context. Redirect to one that exists.
+        # If we've come this far, there's no task for the requested context.
+        # If we are attempting to delete a bug task, we raise a NotFoundError.
+        # Otherwise we are simply navigating to a non-existent task and so we
+        # redirect to one that exists.
+        travseral_stack = self.request.getTraversalStack()
+        if len(travseral_stack) > 0 and travseral_stack[-1] == '+delete':
+            raise NotFoundError
         return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
 
@@ -2253,9 +2258,9 @@ class BugTaskListingItem:
             }
 
         # This is a total hack, but pystache will run both truth/false values
-        # for an empty list for some reason, and it "works" if it's just a flag
-        # like this. We need this value for the mustache template to be able
-        # to tell that there are no tags without looking at the list.
+        # for an empty list for some reason, and it "works" if it's just a
+        # flag like this. We need this value for the mustache template to be
+        # able to tell that there are no tags without looking at the list.
         flattened['has_tags'] = True if len(flattened['tags']) else False
         return flattened
 
