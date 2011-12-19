@@ -92,8 +92,8 @@ class DatabaseTransactionPolicy:
 
         :raise TransactionInProgress: if a transaction was already ongoing.
         """
-        self._checkNoTransaction(
-            "Entered DatabaseTransactionPolicy while in a transaction.")
+        # self._checkNoTransaction(
+        #     "Entered DatabaseTransactionPolicy while in a transaction.")
         self.previous_policy = self._getCurrentPolicy()
         self._setPolicy(self.read_only)
         # Commit should include the policy itself.  If this breaks

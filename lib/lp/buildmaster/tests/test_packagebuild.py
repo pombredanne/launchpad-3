@@ -13,6 +13,7 @@ import tempfile
 
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -295,7 +296,6 @@ class TestHandleStatusMixin:
 
     def enterReadOnly(self):
         # TODO: Tidy this up.
-        import transaction
         transaction.commit()
         policy = DatabaseTransactionPolicy(read_only=True)
         policy.__enter__()
@@ -376,7 +376,9 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        removeSecurityProxy(self.build).log = None
+        with DatabaseTransactionPolicy(read_only=False):
+            removeSecurityProxy(self.build).log = None
+            transaction.commit()
         self.assertEqual(None, self.build.log)
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -415,7 +417,10 @@ class TestHandleStatusMixin:
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        removeSecurityProxy(self.build).date_finished = None
+        with DatabaseTransactionPolicy(read_only=False):
+            removeSecurityProxy(self.build).date_finished = None
+            transaction.commit()
+
         self.assertEqual(None, self.build.date_finished)
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},

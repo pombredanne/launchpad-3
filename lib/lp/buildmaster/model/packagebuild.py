@@ -475,7 +475,9 @@ class PackageBuildDerived:
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        self.status = BuildStatus.MANUALDEPWAIT
+        with DatabaseTransactionPolicy(read_only=False):
+            self.status = BuildStatus.MANUALDEPWAIT
+            transaction.commit()
 
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
@@ -495,7 +497,9 @@ class PackageBuildDerived:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        self.status = BuildStatus.CHROOTWAIT
+        with DatabaseTransactionPolicy(read_only=False):
+            self.status = BuildStatus.CHROOTWAIT
+            transaction.commit()
 
         def build_info_stored(ignored):
             logger.critical(
