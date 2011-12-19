@@ -2148,7 +2148,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'milestone_name': 'milestone_name1',
             'status': 'status1',
             'reporter': 'reporter1',
-            'tags': 'tags1',
+            'tags': [{'tag': 'tags1'}],
+            'tag_urls': [{'url': '', 'tag': 'tags1'}],
             'title': 'title1',
         }
         item.update(navigator.field_visibility)
@@ -2343,7 +2344,10 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
             item.bug.tags = ['tag1', 'tag2']
-            self.assertEqual('tag1 tag2', item.model['tags'])
+            self.assertEqual(2, len(item.model['tags']))
+            self.assertTrue('tag' in item.model['tags'][0].keys())
+            self.assertTrue('url' in item.model['tags'][0].keys())
+            self.assertTrue('field.tag' in item.model['tags'][0]['url'])
 
     def test_model_reporter(self):
         """Model contains bug reporter."""

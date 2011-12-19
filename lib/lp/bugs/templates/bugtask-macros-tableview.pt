@@ -672,14 +672,6 @@
                 sort_order = 'desc';
             }
             var unknown_sort_key = true;
-            /*xxxxxxxxxxxxxxx
-            for (var i = 0; i < sort_keys.length; i++) {
-                if (sort_keys[i][0] === active_sort_key) {
-                    unknown_sort_key = false;
-                    break;
-                }
-            }
-            */
             Y.each(sort_keys, function(sort_key) {
                 if (sort_key[0] === active_sort_key) {
                     unknown_sort_key = false;
@@ -716,11 +708,12 @@
             });
             var field_visibility =
                 navigator.get('model').get_field_visibility();
+            orderby.always_display = ['title'];
             // The advanced search page contains sort options that have
             // no related data fields we can display. If a user has selected
             // such a sort order, this sort option should always be visible.
             if (field_visibility['show_' + active_sort_key] === undefined) {
-                orderby.always_display = active_sort_key;
+                orderby.always_display.push(active_sort_key);
             }
             Y.lp.buglisting_utils.update_sort_button_visibility(
                  orderby, field_visibility);

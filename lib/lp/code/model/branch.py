@@ -221,7 +221,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
+        storm_validator=validate_person, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 

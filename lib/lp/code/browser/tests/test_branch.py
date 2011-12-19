@@ -51,6 +51,7 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
     BranchVisibilityRule,
+    CodeReviewVote,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import PersonVisibility
@@ -551,6 +552,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
     A Branch may be associated with a private team as follows:
     - the owner is a private team
     - a subscriber is a private team
+    - a reviewer is a private team
 
     A logged in user who is not authorised to see the private team(s) still
     needs to be able to view the branch. The private team will be rendered in
@@ -625,20 +627,55 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
             soup.find('div', attrs={'id': 'subscriber-privateteam'}))
 
     def test_anonymous_view_branch_with_private_subscriber(self):
-        # A branch with a private subscriber is not rendered for anon users.
+        # Private branch subscribers are not rendered for anon users.
         private_subscriber = self.factory.makeTeam(
             name="privateteam", visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makeAnyBranch()
         with person_logged_in(branch.owner):
             self.factory.makeBranchSubscription(
                 branch, private_subscriber, branch.owner)
-        # Viewing the branch results in an error.
+        # Viewing the branch doesn't show the private subscriber.
         url = canonical_url(branch, rootsite='code')
         browser = self._getBrowser()
         browser.open(url)
         soup = BeautifulSoup(browser.contents)
         self.assertIsNone(
             soup.find('div', attrs={'id': 'subscriber-privateteam'}))
+
+    def _createPrivateMergeProposalVotes(self):
+        private_reviewer = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        target_branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(branch.owner):
+            self.factory.makeBranchMergeProposal(
+                source_branch=branch, target_branch=target_branch,
+                reviewer=private_reviewer)
+        return branch
+
+    def test_view_branch_with_private_reviewer(self):
+        # A branch with a private reviewer is rendered.
+        branch = self._createPrivateMergeProposalVotes()
+        # Ensure the branch reviewers are rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        reviews_list = soup.find('dl', attrs={'class': 'reviews'})
+        self.assertIsNotNone(reviews_list.find('a', text='Privateteam'))
+
+    def test_anonymous_view_branch_with_private_reviewer(self):
+        # A branch with a private reviewer is rendered.
+        branch = self._createPrivateMergeProposalVotes()
+        # Viewing the branch doesn't show the private reviewers.
+        url = canonical_url(branch, rootsite='code')
+        browser = self._getBrowser()
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        reviews_list = soup.find('dl', attrs={'class': 'reviews'})
+        self.assertIsNone(reviews_list.find('a', text='Privateteam'))
 
 
 class TestBranchAddView(TestCaseWithFactory):

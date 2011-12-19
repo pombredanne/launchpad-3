@@ -13,7 +13,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.webapp import (
     canonical_url,
     )

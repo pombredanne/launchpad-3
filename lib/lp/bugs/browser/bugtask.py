@@ -2226,7 +2226,12 @@ class BugTaskListingItem:
         assignee = None
         if self.assignee is not None:
             assignee = self.assignee.displayname
-        return {
+
+        base_tag_url = "%s/?field.tag=" % canonical_url(
+            self.bugtask.target,
+            view_name="+bugs")
+
+        flattened = {
             'age': age,
             'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
@@ -2242,9 +2247,17 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': ' '.join(self.bug.tags),
+            'tags': [{'url': base_tag_url + tag, 'tag': tag}
+                for tag in self.bug.tags],
             'title': self.bug.title,
             }
+
+        # This is a total hack, but pystache will run both truth/false values
+        # for an empty list for some reason, and it "works" if it's just a flag
+        # like this. We need this value for the mustache template to be able
+        # to tell that there are no tags without looking at the list.
+        flattened['has_tags'] = True if len(flattened['tags']) else False
+        return flattened
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2481,18 +2494,18 @@ class BugTaskSearchListingMenu(NavigationMenu):
 # All sort orders supported by BugTaskSet.search() and a title for
 # them.
 SORT_KEYS = [
-    ('id', 'Bug number'),
-    ('title', 'Bug title'),
     ('importance', 'Importance'),
     ('status', 'Status'),
-    ('heat', 'Bug heat'),
-    ('reporter', 'Reporter'),
-    ('assignee', 'Assignee'),
+    ('id', 'Bug number'),
+    ('title', 'Bug title'),
     ('targetname', 'Package/Project/Series name'),
     ('milestone_name', 'Milestone'),
-    ('datecreated', 'Bug age'),
     ('date_last_updated', 'Date bug last updated'),
+    ('assignee', 'Assignee'),
+    ('reporter', 'Reporter'),
+    ('datecreated', 'Bug age'),
     ('tag', 'Bug Tags'),
+    ('heat', 'Bug heat'),
     ('date_closed', 'Date bug closed'),
     ('dateassigned', 'Date when the bug task was assigned'),
     ('number_of_duplicates', 'Number of duplicates'),

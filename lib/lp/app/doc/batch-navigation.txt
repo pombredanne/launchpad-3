@@ -52,7 +52,7 @@ Multiple pages
 
 The batch navigator tells us whether multiple pages will be used.
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> select_results = EmailAddress.select(orderBy='id')
     >>> batch_nav = BatchNavigator(select_results, build_request(), size=50)
     >>> batch_nav.has_multiple_pages

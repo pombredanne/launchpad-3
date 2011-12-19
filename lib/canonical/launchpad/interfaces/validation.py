@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -23,7 +23,7 @@ from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag

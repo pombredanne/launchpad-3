@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
     cursor,
     quote,
     )
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
