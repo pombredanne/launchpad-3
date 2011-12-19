@@ -92,9 +92,18 @@ class DatabaseTransactionPolicy:
 
         :raise TransactionInProgress: if a transaction was already ongoing.
         """
-        # self._checkNoTransaction(
-        #     "Entered DatabaseTransactionPolicy while in a transaction.")
+        # We must check the transaction status before checking the current
+        # policy because getting the policy causes a status change.
+        in_transaction = self._isInTransaction()
         self.previous_policy = self._getCurrentPolicy()
+        # If the current transaction is read-write and we're moving to
+        # read-only then we should check for a transaction. If the current
+        # policy is read-only then we don't care if a transaction is in
+        # progress.
+        if in_transaction and self.read_only and not self.previous_policy:
+            raise TransactionInProgress(
+                "Attempting to enter a read-only transaction while holding "
+                "open a read-write transaction.")
         self._setPolicy(self.read_only)
         # Commit should include the policy itself.  If this breaks
         # because the transaction was already in a failed state before
