@@ -76,15 +76,25 @@ class TestTransactionPolicy(TestCaseWithFactory):
 
         self.assertRaises(InternalError, make_forbidden_update)
 
-    def test_will_not_start_in_ongoing_transaction(self):
-        # You cannot enter a DatabaseTransactionPolicy while already in
-        # a transaction.
+    def test_will_not_go_read_only_when_read_write_transaction_ongoing(self):
+        # You cannot enter a read-only DatabaseTransactionPolicy while in an
+        # active read-write transaction.
         def enter_policy():
-            with DatabaseTransactionPolicy():
+            with DatabaseTransactionPolicy(read_only=True):
                 pass
 
         self.writeToDatabase()
         self.assertRaises(TransactionInProgress, enter_policy)
+
+    def test_will_go_read_write_when_read_write_transaction_ongoing(self):
+        # You can enter a read-write DatabaseTransactionPolicy while in an
+        # active read-write transaction.
+        def enter_policy():
+            with DatabaseTransactionPolicy(read_only=False):
+                pass
+
+        self.writeToDatabase()
+        enter_policy()  # No exception.
 
     def test_successful_exit_requires_commit_or_abort(self):
         # If a read-write policy exits normally (which would probably
