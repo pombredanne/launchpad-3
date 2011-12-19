@@ -4,14 +4,14 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
-from testtools.testcase import ExpectedException
 from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy

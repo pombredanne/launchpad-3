@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore

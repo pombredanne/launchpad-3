@@ -10,11 +10,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
+from lp.services.propertycache import cachedproperty
 from lp.testing import (
     BrowserTestCase,
     login_person,
     )
-from lp.services.propertycache import cachedproperty
 
 
 class TestRobotsMixin:

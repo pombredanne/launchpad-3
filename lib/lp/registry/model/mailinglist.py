@@ -16,7 +16,6 @@ __all__ = [
 
 
 import collections
-
 from email import message_from_string
 from email.Header import (
     decode_header,
@@ -66,17 +65,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from lp.services.identity.model.account import Account
-from lp.services.identity.model.emailaddress import EmailAddress
-from lp.services.messages.model.message import Message
-from lp.services.identity.interfaces.account import AccountStatus
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -100,6 +88,15 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.messages.model.message import Message
 from lp.services.propertycache import cachedproperty
 
 

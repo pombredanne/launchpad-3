@@ -4,7 +4,11 @@ import tempfile
 
 from paste.fixture import TestApp
 
-from lp.scripts.utilities.js.combo import parse_url, combine_files, combo_app
+from lp.scripts.utilities.js.combo import (
+    combine_files,
+    combo_app,
+    parse_url,
+    )
 from lp.testing import TestCase
 
 

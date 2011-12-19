@@ -11,9 +11,9 @@ from canonical.launchpad.browser.logintoken import (
     )
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
 
 

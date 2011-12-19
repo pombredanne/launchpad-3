@@ -46,9 +46,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -62,6 +59,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     PackageDiffStatus,

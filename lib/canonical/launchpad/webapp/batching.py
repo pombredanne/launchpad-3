@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 from datetime import datetime
+from operator import isSequenceType
+import re
 
 from iso8601 import (
     parse_date,
@@ -11,8 +13,6 @@ from iso8601 import (
     )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
-from operator import isSequenceType
-import re
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -42,18 +42,15 @@ from canonical.database.sqlbase import (
     convert_storm_clause_to_string,
     sqlvalues,
     )
-
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
+    ITableBatchNavigator,
     MAIN_STORE,
     SLAVE_FLAVOR,
     StormRangeFactoryError,
-    ITableBatchNavigator,
     )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import cachedproperty
 
 

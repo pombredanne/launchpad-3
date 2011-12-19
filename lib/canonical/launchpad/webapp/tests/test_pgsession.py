@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 
-from unittest import TestCase
-
 from datetime import timedelta
+from unittest import TestCase
 
 from zope.publisher.browser import TestRequest
 from zope.security.management import (

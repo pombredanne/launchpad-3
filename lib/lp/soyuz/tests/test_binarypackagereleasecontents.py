@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.lpstorm import IStore

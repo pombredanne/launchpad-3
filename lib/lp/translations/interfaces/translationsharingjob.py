@@ -3,9 +3,7 @@
 
 __metaclass__ = type
 
-from zope.interface import (
-    Attribute,
-    )
+from zope.interface import Attribute
 
 from canonical.launchpad import _
 from lp.services.job.interfaces.job import IJob

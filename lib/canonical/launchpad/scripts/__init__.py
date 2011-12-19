@@ -27,6 +27,7 @@ import zope.sendmail.delivery
 import zope.site.hooks
 
 from canonical.config import config
+from canonical.database.postgresql import ConnectionString
 # these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
     dummy_logger_options,
@@ -34,7 +35,6 @@ from canonical.launchpad.scripts.logger import (
     logger,
     logger_options,
     )
-from canonical.database.postgresql import ConnectionString
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 from canonical.launchpad.webapp.authorization import (

@@ -16,7 +16,6 @@ __all__ = [
     'KarmaContextMixin',
     ]
 
-from storm.expr import Desc
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -25,6 +24,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
+from storm.expr import Desc
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW

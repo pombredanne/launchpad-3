@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -17,9 +18,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

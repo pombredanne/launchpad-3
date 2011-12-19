@@ -6,8 +6,8 @@
 import datetime
 import logging
 import os
-import pytz
 
+import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer

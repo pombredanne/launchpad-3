@@ -63,11 +63,11 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     )
 from lp.soyuz.interfaces.component import IComponent
-from lp.translations.interfaces.hastranslationtemplates import (
-    IHasTranslationTemplates,
-    )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
     )
 
 

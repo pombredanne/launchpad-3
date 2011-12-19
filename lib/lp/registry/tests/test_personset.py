@@ -10,10 +10,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    AccountSuspendedError,
-    )
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches,
     )
@@ -26,6 +22,10 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.model.person import PersonSet
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    AccountSuspendedError,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

@@ -16,13 +16,10 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-from testtools.matchers import (
-    Equals,
-    )
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject

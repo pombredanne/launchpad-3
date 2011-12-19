@@ -12,7 +12,6 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translator import ITranslatorSet
 
-
 # A user can be translating either a translation that's not covered by a
 # translation team ("untended"), or one that is ("tended"), or one whose
 # translation team the user is a member of ("member").

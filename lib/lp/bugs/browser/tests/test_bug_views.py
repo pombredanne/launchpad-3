@@ -5,32 +5,28 @@
 
 __metaclass__ = type
 
-import simplejson
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from BeautifulSoup import BeautifulSoup
-
-from testtools.matchers import (
-    MatchesAll,
-    Contains,
-    Not,
-    )
-
+import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
     )
+from testtools.matchers import (
+    Contains,
+    MatchesAll,
+    Not,
+    )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -40,8 +36,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

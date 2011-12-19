@@ -20,14 +20,14 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import enabled_with_permission
+from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionSort,
+    )
 from lp.answers.interfaces.faqcollection import (
     FAQSort,
     IFAQCollection,
     ISearchFAQsForm,
-    )
-from lp.answers.enums import (
-    QuestionSort,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.app.browser.launchpadform import (
     action,

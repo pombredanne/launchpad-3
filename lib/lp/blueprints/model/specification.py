@@ -46,12 +46,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    )
+from canonical.launchpad.helpers import get_contact_email_addresses
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -88,13 +83,13 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-
 
 
 def recursive_blocked_query(spec):

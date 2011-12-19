@@ -27,9 +27,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.code.tests.test_doc import branchscannerSetUp
-from lp.services.mail.tests.test_doc import (
-    ProcessMailLayer,
-    )
+from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,

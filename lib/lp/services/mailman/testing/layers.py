@@ -12,13 +12,13 @@ __all__ = [
 import atexit
 import os
 
-from lp.services.mailman.runmailman import (
-    start_mailman,
-    stop_mailman,
-    )
 from canonical.testing.layers import (
     AppServerLayer,
     LayerProcessController,
+    )
+from lp.services.mailman.runmailman import (
+    start_mailman,
+    stop_mailman,
     )
 from lp.services.mailman.testing import logwatcher
 

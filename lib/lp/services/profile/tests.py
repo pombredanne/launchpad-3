@@ -20,7 +20,6 @@ from zope.app.publication.interfaces import (
     )
 from zope.component import getSiteManager
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -28,14 +27,16 @@ from canonical.launchpad.testing.systemdocs import (
     )
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
 from lp.testing import (
     TestCase,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
 
 
 EXAMPLE_HTML_START = '''\
