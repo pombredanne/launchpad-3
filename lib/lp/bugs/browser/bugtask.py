@@ -560,11 +560,12 @@ class BugTargetTraversalMixin:
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, there's no task for the requested context.
-        # If we are attempting to delete a bug task, we raise NotFound error.
+        # If we are attempting to navigate past the non-existent bugtask,
+        # we raise NotFound error. eg +delete or +edit etc.
         # Otherwise we are simply navigating to a non-existent task and so we
         # redirect to one that exists.
         travseral_stack = self.request.getTraversalStack()
-        if len(travseral_stack) > 0 and travseral_stack[-1] == '+delete':
+        if len(travseral_stack) > 0:
             raise NotFoundError
         return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
