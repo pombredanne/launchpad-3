@@ -25,7 +25,7 @@ from storm.sqlobject import SQLObjectNotFound
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.librarian_apache_log_parser import (
+from lp.services.apachelogparser.librarian_apache_log_parser import (
     DBUSER, get_library_file_id)
 from lp.services.apachelogparser.script import ParseApacheLogs
 
