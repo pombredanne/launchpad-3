@@ -61,10 +61,10 @@
             {{/show_datecreated}}
             {{#show_tag}}
                 <span class="field">Tags:
+                  {{^has_tags}}None{{/has_tags}}
                   {{#tags}}
-                    <a href="{{url}}" class="tag">{{tag}}</a>
+                     <a href="{{url}}" class="tag">{{tag}}</a>&#160;
                   {{/tags}}
-                  {{^tags}}None{{/tags}}
                 </span>
             {{/show_tag}}
         </div>
