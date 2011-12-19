@@ -228,3 +228,12 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEndsWith(
             extract_text(document.find(True, id='maincontent')),
             'The information in this page is not shared with you.')
+
+    def test_user_with_launchpad_view(self):
+        # Users with launchpad.View do not see the sharing explanation.
+        # See the main_side, main_only, locationless, and searchless
+        # tests to know what content is provides to the user who can view.
+        view = self.makeTemplateView('main_side')
+        content = extract_text(find_tag_by_id(view(), 'maincontent'))
+        self.assertNotIn(
+            'The information in this page is not shared with you.', content)
