@@ -11,9 +11,9 @@ __all__ = [
 
 
 from datetime import timedelta
+import sys
 import time
 
-from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -172,19 +172,18 @@ class LoopTuner:
                 total_size, iteration, total_time, average_size,
                 average_speed)
         except Exception:
-            # Should we be logging this? Raising an exception might be a
-            # way of escaping the loop early, although making isDone
-            # signal termination is probably better.
-            self.log.exception("Unhandled exception")
+            exc_info = sys.exc_info()
             try:
                 cleanup()
             except Exception:
+                # We need to raise the original exception, but we don't
+                # want to lose the information about the cleanup
+                # failure, so log it.
                 self.log.exception("Unhandled exception in cleanUp")
-            raise
-        try:
+            # Reraise the original exception.
+            raise exc_info[0], exc_info[1], exc_info[2]
+        else:
             cleanup()
-        except Exception:
-            self.log.exception("Unhandled exception in cleanUp")
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.
