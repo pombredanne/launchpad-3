@@ -18,12 +18,7 @@ __all__ = [
 import bz2
 from cStringIO import StringIO
 
-#XXX: Given the version of python we know we're running on now,
-# is the try/except here necessary?
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import cElementTree as etree
+import xml.etree.cElementTree as etree
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
@@ -141,8 +136,8 @@ class SubmissionParser(object):
         self._logged_warnings = set()
 
         self.validator = {}
-        directory = os.path.join(config.root, 'lib', 'canonical',
-                                 'launchpad', 'scripts')
+        directory = os.path.join(
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts')
         for version, relax_ng_filename in _relax_ng_files.items():
             path = os.path.join(directory, relax_ng_filename)
             self.validator[version] = RelaxNGValidator(path)
