@@ -2425,8 +2425,3 @@ COMMENT ON TABLE OpenIdIdentifier IS
 'OpenId Identifiers that can be used to log into an Account.';
 COMMENT ON COLUMN OpenIdIdentifier.identifier IS
 'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
-
--- MilestoneTag
-COMMENT ON TABLE milestonetag IS 'Attaches simple text tags to a milestone.';
-COMMENT ON COLUMN milestonetag.milestone IS 'The milestone the tag is attached to.';
-COMMENT ON COLUMN milestonetag.tag IS 'The text representation of the tag.';
