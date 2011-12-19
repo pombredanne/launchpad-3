@@ -82,7 +82,7 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         # first have to find the set of shared templates.
         subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=self.pofile.potemplate.product)
-        shared_templates = product.getSharingPOTemplates(
+        shared_templates = subset.getSharingPOTemplates(
             self.pofile.potemplate.name)
         # Now we have to find any POFiles that translate the shared templates
         # into the same language as the POFile this job is about.
