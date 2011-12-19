@@ -294,13 +294,6 @@ class TestHandleStatusMixin:
         """Allow classes to override the build with which the test runs."""
         raise NotImplementedError
 
-    def enterReadOnly(self):
-        # TODO: Tidy this up.
-        transaction.commit()
-        policy = DatabaseTransactionPolicy(read_only=True)
-        policy.__enter__()
-        self.addCleanup(policy.__exit__, None)
-
     def setUp(self):
         super(TestHandleStatusMixin, self).setUp()
         self.factory = LaunchpadObjectFactory()
@@ -330,7 +323,11 @@ class TestHandleStatusMixin:
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
 
-        self.enterReadOnly()
+        # Save everything done so far then shift into a read-only transaction
+        # access mode by default.
+        transaction.commit()
+        policy = DatabaseTransactionPolicy(read_only=True)
+        self.useContext(policy)
 
     def assertResultCount(self, count, result):
         self.assertEquals(
