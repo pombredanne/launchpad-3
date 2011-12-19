@@ -38,6 +38,7 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.testing import (
     login,
     login_person,
@@ -292,6 +293,14 @@ class TestHandleStatusMixin:
         """Allow classes to override the build with which the test runs."""
         raise NotImplementedError
 
+    def enterReadOnly(self):
+        # TODO: Tidy this up.
+        import transaction
+        transaction.commit()
+        policy = DatabaseTransactionPolicy(read_only=True)
+        policy.__enter__()
+        self.addCleanup(policy.__exit__, None)
+
     def setUp(self):
         super(TestHandleStatusMixin, self).setUp()
         self.factory = LaunchpadObjectFactory()
@@ -320,6 +329,8 @@ class TestHandleStatusMixin:
         # verifySuccessfulUpload().
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
+
+        self.enterReadOnly()
 
     def assertResultCount(self, count, result):
         self.assertEquals(
