@@ -16,7 +16,7 @@ import time
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.updateremoteproduct import (
+from lp.bugs.scripts.updateremoteproduct import (
     RemoteProductUpdater)
 
 

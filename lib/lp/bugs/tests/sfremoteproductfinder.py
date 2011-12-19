@@ -10,7 +10,7 @@ import os
 import re
 from urllib2 import HTTPError
 
-from canonical.launchpad.scripts.sfremoteproductfinder import (
+from lp.bugs.scripts.sfremoteproductfinder import (
     SourceForgeRemoteProductFinder,
     )
 
