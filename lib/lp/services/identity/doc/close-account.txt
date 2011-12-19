@@ -56,7 +56,7 @@ We can't just set the account to DEACTIVATED, as the close-account.py
 script is used to satisty people who insist on us removing all their
 personal details from our system. The Account has been removed entirely.
 
->>> from canonical.launchpad.database.account import Account
+>>> from lp.services.identity.model.account import Account
 >>> Account.get(mark_account_id)
 Traceback (most recent call last):
 ...

@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.pages import (

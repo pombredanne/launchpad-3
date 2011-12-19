@@ -14,7 +14,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     IAccountSet,
     )

@@ -122,7 +122,7 @@ they've confirmed with Launchpad.
 However, should Anne register a new, but not-validated email address, she may
 not post from it.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
     >>> alternative = address_set.new(
     ...     'anne.x.person@example.net', anne, account=anne.account)
@@ -136,7 +136,7 @@ not post from it.
 
 Once Anne validates her new address, she can post from it.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
@@ -1335,7 +1335,7 @@ post to the mailing list, nor will she receive mailing list posts.
 
 Now Umma's account is suspended by a Launchpad administrator.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     AccountStatus, IAccountSet)
     >>> umma_account = getUtility(IAccountSet).getByEmail(
     ...     'umma.person@example.com')

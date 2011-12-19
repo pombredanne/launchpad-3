@@ -70,13 +70,13 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.model.account import Account
+from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
     IAccountSet,
     )
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
