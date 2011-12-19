@@ -53,7 +53,7 @@ def new_import(code_import, event):
         RevisionControlSystems.HG: 'mercurial',
         RevisionControlSystems.BZR: 'bazaar',
         }
-    body = get_email_template('new-code-import.txt') % {
+    body = get_email_template('new-code-import.txt', app='code') % {
         'person': code_import.registrant.displayname,
         'branch': canonical_url(code_import.branch),
         'rcs_type': rcs_type_map[code_import.rcs_type],
@@ -161,7 +161,8 @@ def code_import_updated(code_import, event, new_whiteboard, person):
         code_import.branch.target.name, branch.name,
         code_import.review_status.title)
 
-    email_template = get_email_template('code-import-status-updated.txt')
+    email_template = get_email_template(
+        'code-import-status-updated.txt', app='code')
     template_params = {
         'body': make_email_body_for_code_import_update(
             code_import, event, new_whiteboard),

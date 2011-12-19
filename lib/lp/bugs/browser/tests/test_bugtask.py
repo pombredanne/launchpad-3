@@ -2263,6 +2263,21 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             "keys present in JSON cache but not defined: %r"
             % (valid_keys - json_sort_keys, json_sort_keys - valid_keys))
 
+    def test_sort_keys_in_json_cache_data(self):
+        # The entry 'sort_keys' in the JSON cache of a search listing
+        # view is a sequence of 3-tuples (name, title, order), where
+        # order is one of the string 'asc' or 'desc'.
+        with dynamic_listings():
+            view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        json_sort_keys = cache.objects['sort_keys']
+        for key in json_sort_keys:
+            self.assertEqual(
+                3, len(key), 'Invalid key length: %r' % (key, ))
+            self.assertTrue(
+                key[2] in ('asc', 'desc'),
+                'Invalid order value: %r' % (key, ))
+
 
 class TestBugTaskExpirableListingView(BrowserTestCase):
     """Test BugTaskExpirableListingView."""
