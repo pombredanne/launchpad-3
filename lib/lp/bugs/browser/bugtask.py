@@ -2507,6 +2507,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
 
+    _batch_navigator = None
+
     @cachedproperty
     def bug_tracking_usage(self):
         """Whether the context tracks bugs in Launchpad.
@@ -2970,9 +2972,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             the search criteria taken from the request. Params in
             `extra_params` take precedence over request params.
         """
-        unbatchedTasks = self.searchUnbatched(
-            searchtext, context, extra_params)
-        return self._getBatchNavigator(unbatchedTasks)
+        if self._batch_navigator is None:
+            unbatchedTasks = self.searchUnbatched(
+                searchtext, context, extra_params)
+            self._batch_navigator = self._getBatchNavigator(unbatchedTasks)
+        return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
