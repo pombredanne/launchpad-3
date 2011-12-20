@@ -1,0 +1,26 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+    <include
+        package=".browser"/>
+
+    <!-- LaunchpadStatistic -->
+
+    <class
+        class="lp.services.statistics.model.launchpadstatistic.LaunchpadStatistic">
+        <allow
+            interface="lp.services.statistics.interfaces.launchpadstatistic.ILaunchpadStatistic"/>
+    </class>
+
+    <!-- LaunchpadStatisticSet -->
+
+    <securedutility
+        class="lp.services.statistics.model.launchpadstatistic.LaunchpadStatisticSet"
+        provides="lp.services.statistics.interfaces.launchpadstatistic.ILaunchpadStatisticSet">
+        <allow
+            interface="lp.services.statistics.interfaces.launchpadstatistic.ILaunchpadStatisticSet"/>
+    </securedutility>
+</configure>

@@ -23,6 +23,7 @@
   <include package=".salesforce" />
   <include package=".scripts" />
   <include package=".session" />
-  <include package="lp.services.webservice" />
+  <include package=".statistics" />
+  <include package=".webservice" />
   <include package=".worlddata" />
 </configure>

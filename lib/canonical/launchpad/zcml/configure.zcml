@@ -11,7 +11,6 @@
     <!-- Content class configuration -->
     <include file="feeds.zcml" />
     <include file="launchpad.zcml" />
-    <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="lifecycle.zcml" />
     <include file="logintoken.zcml" />

@@ -25,7 +25,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.launchpadstatistic import (
     ILaunchpadStatistic,
     ILaunchpadStatisticSet,
     )

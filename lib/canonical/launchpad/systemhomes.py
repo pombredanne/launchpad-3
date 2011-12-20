@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IRosettaApplication,
     IWebServiceApplication,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp.interfaces import (
