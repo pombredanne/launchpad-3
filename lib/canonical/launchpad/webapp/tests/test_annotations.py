@@ -17,7 +17,7 @@ class TestAnnotations(unittest.TestCase):
         connection = db.open()
         root = connection.root()
         handle_before_traversal(root)
-        from canonical.launchpad.interfaces.launchpad import IZODBAnnotation
+        from canonical.launchpad.webapp.interfaces import IZODBAnnotation
         from lp.bugs.model.bug import Bug
         from lp.registry.model.product import Product
         bug = Bug.get(1)

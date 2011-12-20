@@ -36,10 +36,7 @@ __all__ = [
     'IHasProductAndAssignee',
     'IPrivateApplication',
     'IPrivacy',
-    'IReadZODBAnnotation',
     'IWebServiceApplication',
-    'IWriteZODBAnnotation',
-    'IZODBAnnotation',
     ]
 
 
@@ -66,39 +63,8 @@ class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
 
 
-class IReadZODBAnnotation(Interface):
-
-    def __getitem__(namespace):
-        """Get the annotation for the given dotted-name namespace."""
-
-    def get(namespace, default=None):
-        """Get the annotation for the given dotted-name namespace.
-
-        If there is no such annotation, return the default value.
-        """
-
-    def __contains__(namespace):
-        """Returns true if there is an annotation with the given namespace.
-
-        Otherwise, returns false.
-        """
-
-    def __delitem__(namespace):
-        """Removes annotation at the given namespace."""
-
-
 class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
     """Launchpad web service application root."""
-
-
-class IWriteZODBAnnotation(Interface):
-
-    def __setitem__(namespace, value):
-        """Set a value as the annotation for the given namespace."""
-
-
-class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
-    pass
 
 
 class IHasAssignee(Interface):

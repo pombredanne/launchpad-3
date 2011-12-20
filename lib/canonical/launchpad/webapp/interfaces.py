@@ -425,6 +425,7 @@ class IPasswordEncryptor(Interface):
         self.encrypt(plaintext) will compare equal to 'encrypted'.
         """
 
+
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
     request's credentials.
@@ -941,3 +942,34 @@ class StormRangeFactoryError(Exception):
     """Raised when a Storm result set cannot be used for slicing by a
     StormRangeFactory.
     """
+
+
+class IReadZODBAnnotation(Interface):
+
+    def __getitem__(namespace):
+        """Get the annotation for the given dotted-name namespace."""
+
+    def get(namespace, default=None):
+        """Get the annotation for the given dotted-name namespace.
+
+        If there is no such annotation, return the default value.
+        """
+
+    def __contains__(namespace):
+        """Returns true if there is an annotation with the given namespace.
+
+        Otherwise, returns false.
+        """
+
+    def __delitem__(namespace):
+        """Removes annotation at the given namespace."""
+
+
+class IWriteZODBAnnotation(Interface):
+
+    def __setitem__(namespace, value):
+        """Set a value as the annotation for the given namespace."""
+
+
+class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
+    pass
