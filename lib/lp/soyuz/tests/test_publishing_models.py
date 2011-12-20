@@ -18,6 +18,7 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.testing import TestCaseWithFactory
 
@@ -136,3 +137,31 @@ class TestSourcePackagePublishingHistory(TestCaseWithFactory):
     def test_getFileByName_unhandled_name(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         self.assertRaises(NotFoundError, spph.getFileByName, 'not-changelog')
+
+
+class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        self.assertEqual(0, len(bpph.binaryFileUrls()))
+
+    def test_binaryFileUrls_one_binary(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        self.assertEqual(1, len(bpph.binaryFileUrls()))
+
+    def test_binaryFileUrls_two_binaries(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        self.assertEqual(2, len(bpph.binaryFileUrls()))

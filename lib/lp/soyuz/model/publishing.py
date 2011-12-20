@@ -152,6 +152,12 @@ def get_archive(archive, bpr):
     return archive
 
 
+def proxied_urls(files, parent):
+    """Run the files passed through `ProxiedLibraryFileAlias`."""
+    return [
+        ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+
+
 class FilePublishingBase:
     """Base class to publish files in the archive."""
 
@@ -577,14 +583,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
         # a 302 so that webapp threads are not tied up.
-        the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
+        the_url = proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
 
     def changelogUrl(self):
         """See `ISourcePackagePublishingHistory`."""
         lfa = self.sourcepackagerelease.changelog
         if lfa is not None:
-            return self._proxied_urls((lfa,), self)[0]
+            return proxied_urls((lfa,), self)[0]
         return None
 
     def _getAllowedArchitectures(self, available_archs):
@@ -870,14 +876,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.component in (
             self.archive.getComponentsForSeries(self.distroseries))
 
-    def _proxied_urls(self, files, parent):
-        """Run the files passed through `ProxiedLibraryFileAlias`."""
-        return [
-            ProxiedLibraryFileAlias(file, parent).http_url for file in files]
-
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
-        source_urls = self._proxied_urls(
+        source_urls = proxied_urls(
             [file.libraryfile for file in self.sourcepackagerelease.files],
              self.archive)
         return source_urls
@@ -887,7 +888,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         publishing_set = getUtility(IPublishingSet)
         binaries = publishing_set.getBinaryFilesForSources(
             self).config(distinct=True)
-        binary_urls = self._proxied_urls(
+        binary_urls = proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
         return binary_urls
 
@@ -1321,6 +1322,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
         self.setDeleted(removed_by, removal_comment)
+
+    def binaryFileUrls(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        binary_urls = proxied_urls(
+            [f.libraryfilealias for f in self.files], self.archive)
+        return binary_urls
 
 
 def expand_binary_requests(distroseries, binaries):
