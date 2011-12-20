@@ -99,24 +99,30 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
 
     def test_run_with_shared_template(self):
+        # Create a product with two series and sharing POTemplates
+        # in different series ('devel' and 'stable').
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        devel = self.factory.makeProductSeries(
+            name='devel', product=product)
+        stable = self.factory.makeProductSeries(
+            name='stable', product=product)
 
-        template1 = self.factory.makePOTemplate(
-            name='template', side=TranslationSide.UPSTREAM)
+        # POTemplate is a 'sharing' one if it has the same name ('messages').
+        template1 = self.factory.makePOTemplate(devel, name="messages")
+        template2 = self.factory.makePOTemplate(stable, name="messages")
 
-        product = template1.productseries.product
-        template2 = self.factory.makePOTemplate(
-            name='template')
-
+        # Create a single POTMsgSet and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(template1)
 
         self.factory.makeLanguage('en-tt')
-#        pofile1 = self.factory.makePOFile('en-tt', template1)
-#        pofile2 = self.factory.makePOFile('en-tt', template2)
-        pofile1 = template1.newPOFile('en-tt', create_sharing=True)
-        pofile2 = template2.newPOFile('en-tt', create_sharing=True)
+        pofile1 = self.factory.makePOFile('en-tt', template1)
+        pofile2 = self.factory.makePOFile('en-tt', template2)
+
         shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
         shared_potmsgset.setSequence(template2, 1)
         suggestion = self.factory.makeSuggestion(pofile1)
-        suggestion.approve(pofile1, self.factory.makePerson())
+        suggestion = self.factory.makeSuggestion(pofile2)
 
         # The statistics start at 0.
         self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
@@ -128,5 +134,5 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         with dbuser(config.pofile_stats.dbuser):
             job.run()
         # Now that the job ran, the statistics have been updated.
-        self.assertEqual(pofile1.getStatistics(), (0, 0, 1, 0))
-        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 1))
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 1))
