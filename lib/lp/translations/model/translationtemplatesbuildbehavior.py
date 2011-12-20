@@ -62,8 +62,12 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._builder.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+            with DatabaseTransactionPolicy(read_only=False):
+                d = self._builder.slave.build(
+                    cookie, self.build_type, chroot_sha1, filemap, args)
+                transaction.commit()
+
+            return d
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -176,7 +180,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.FULLYBUILT)
+                    transaction.commit()
                 return
 
             tarball_file = open(filename)
@@ -186,17 +192,24 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     logger.error("Build produced empty tarball.")
                 else:
                     logger.debug("Uploading translation templates tarball.")
-                    self._uploadTarball(
-                        queue_item.specific_job.branch, tarball, logger)
+                    with DatabaseTransactionPolicy(read_only=False):
+                        self._uploadTarball(
+                            queue_item.specific_job.branch, tarball, logger)
+                        transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
+                transaction.abort()
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.FULLYBUILT)
+                    transaction.commit()
                 tarball_file.close()
                 os.remove(filename)
 
         def build_info_stored(ignored):
             if build_status == 'OK':
-                self.setBuildStatus(BuildStatus.UPLOADING)
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.UPLOADING)
+                    transaction.commit()
                 logger.debug("Processing successful templates build.")
                 filemap = slave_status.get('filemap')
                 d = self._readTarball(queue_item, filemap, logger)
@@ -204,7 +217,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 d.addCallback(clean_slave)
                 return d
 
-            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
+            with DatabaseTransactionPolicy(read_only=False):
+                self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
+                transaction.commit()
+
             return clean_slave(None)
 
         d = self.storeBuildInfo(self, queue_item, build_status)
