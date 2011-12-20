@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -25,10 +25,10 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_entry,
-    operation_returns_collection_of,
     operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
     )
 from lazr.restful.fields import (
     Reference,
@@ -50,12 +50,12 @@ from canonical.launchpad import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
     Title,
     )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):
@@ -195,6 +195,8 @@ class IBuilder(IHasOwner):
 
     def setSlaveForTesting(proxy):
         """Sets the RPC proxy through which to operate the build slave."""
+        # XXX JeroenVermeulen 2011-11-09, bug=888010: Don't use this.
+        # It's a trap.  See bug for details.
 
     def verifySlaveBuildCookie(slave_build_id):
         """Verify that a slave's build cookie is consistent.
