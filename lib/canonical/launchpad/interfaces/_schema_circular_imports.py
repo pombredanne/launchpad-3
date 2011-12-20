@@ -18,7 +18,7 @@ __all__ = []
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.fields import Reference
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
     patch_choice_vocabulary,
     patch_collection_property,

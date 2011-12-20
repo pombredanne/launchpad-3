@@ -14,7 +14,7 @@ __all__ = [
     'IEmailAddress',
     ]
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_entry_explicit_version,
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddress

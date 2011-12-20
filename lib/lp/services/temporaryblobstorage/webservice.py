@@ -15,7 +15,7 @@ __all__ = [
     'ITemporaryStorageManager',
     ]
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_operations_explicit_version,
     )
 from lp.services.temporaryblobstorage.interfaces import (
