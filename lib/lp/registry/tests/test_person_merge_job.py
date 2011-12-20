@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterObject,
     IStore,
     )

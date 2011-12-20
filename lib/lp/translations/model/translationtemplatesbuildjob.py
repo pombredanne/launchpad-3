@@ -20,7 +20,7 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

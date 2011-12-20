@@ -62,7 +62,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )

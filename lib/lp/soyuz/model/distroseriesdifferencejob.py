@@ -16,7 +16,7 @@ from zope.interface import (
     )
 
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

@@ -28,7 +28,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,

@@ -31,7 +31,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,

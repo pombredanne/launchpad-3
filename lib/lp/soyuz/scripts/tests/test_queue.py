@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (

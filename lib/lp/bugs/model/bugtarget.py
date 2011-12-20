@@ -25,7 +25,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterObject,
     IMasterStore,
     )

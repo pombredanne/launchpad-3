@@ -15,7 +15,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
     LaunchpadFunctionalLayer,

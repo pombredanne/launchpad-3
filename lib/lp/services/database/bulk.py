@@ -21,7 +21,7 @@ from storm.info import get_cls_info
 from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 
 
 def collate(things, key):

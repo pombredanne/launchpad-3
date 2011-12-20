@@ -42,7 +42,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.sqlbase import StupidCache
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     ISlaveStore,
     )

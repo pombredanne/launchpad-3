@@ -59,7 +59,7 @@ from zope.interface import (
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,

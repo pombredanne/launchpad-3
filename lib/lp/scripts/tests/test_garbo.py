@@ -45,7 +45,7 @@ from canonical.database.constants import (
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,

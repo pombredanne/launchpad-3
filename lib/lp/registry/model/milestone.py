@@ -37,7 +37,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification

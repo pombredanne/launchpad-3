@@ -20,7 +20,7 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import (

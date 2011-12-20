@@ -20,7 +20,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.registry.interfaces.person import IPerson
 from lp.services.identity.interfaces.account import IAccount

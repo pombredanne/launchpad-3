@@ -64,7 +64,7 @@ Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
     >>> from lp.services.identity.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+    >>> from lp.services.database.interfaces import IMasterObject
 
     # Only admins can change an account.
 

@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
 from lp.soyuz.interfaces.binarypackagereleasecontents import (

@@ -57,7 +57,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget

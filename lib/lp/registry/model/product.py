@@ -70,7 +70,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

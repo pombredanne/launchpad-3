@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,

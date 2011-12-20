@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.services.database.interfaces import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

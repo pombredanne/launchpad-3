@@ -12,7 +12,7 @@ from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

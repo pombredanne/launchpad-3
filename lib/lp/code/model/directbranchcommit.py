@@ -20,7 +20,7 @@ from bzrlib.transform import (
     )
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.services.database.interfaces import IMasterObject
 from lp.code.errors import StaleLastMirrored
 from lp.codehosting.bzrutils import (
     get_branch_info,

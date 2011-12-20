@@ -18,7 +18,7 @@ from storm.references import Reference
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
     IAccessPolicy,

@@ -31,7 +31,7 @@ from lp.services.temporaryblobstorage.model import (
     TemporaryBlobStorage,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

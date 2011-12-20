@@ -18,7 +18,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distributionsourcepackagecache import (

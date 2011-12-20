@@ -29,7 +29,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.launchpad.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,

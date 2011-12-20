@@ -35,7 +35,7 @@ from zope.interface import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

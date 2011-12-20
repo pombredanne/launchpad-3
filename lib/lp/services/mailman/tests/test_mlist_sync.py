@@ -21,7 +21,7 @@ from Mailman.Utils import list_names
 from transaction import commit
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mailman.testing import MailmanTestCase

@@ -35,7 +35,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.side import TranslationSide

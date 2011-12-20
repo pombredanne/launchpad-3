@@ -10,7 +10,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.services.database.interfaces import ISlaveStore
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

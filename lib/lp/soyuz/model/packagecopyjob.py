@@ -29,7 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
