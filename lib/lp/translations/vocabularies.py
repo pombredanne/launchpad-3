@@ -15,16 +15,10 @@ __all__ = [
     'TranslationTemplateVocabulary',
     ]
 
-from sqlobject import (
-    AND,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    )
+from sqlobject import AND
+from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import (
-    sqlvalues,
-    )
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,

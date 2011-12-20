@@ -84,13 +84,6 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.app.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
@@ -130,6 +123,10 @@ from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlinePersonEditPickerWidget,
     TextLineEditorWidget,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
@@ -197,6 +194,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,

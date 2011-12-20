@@ -5,13 +5,15 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.tests.helpers import make_project_cloud_data
 from lp.registry.interfaces.product import IProductSet

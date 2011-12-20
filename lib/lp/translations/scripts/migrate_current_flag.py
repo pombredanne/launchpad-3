@@ -8,11 +8,15 @@ __all__ = ['MigrateCurrentFlagProcess']
 
 import logging
 
+from storm.expr import (
+    And,
+    Count,
+    Or,
+    Select,
+    )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
-
-from storm.info import ClassAlias
-from storm.expr import And, Count, Or, Select
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner

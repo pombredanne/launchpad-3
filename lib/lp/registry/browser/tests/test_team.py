@@ -21,8 +21,8 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.testing import (
     login_person,
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.menu import check_menu_links

@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
@@ -36,8 +37,8 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

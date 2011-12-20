@@ -13,7 +13,6 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -21,6 +20,7 @@ from canonical.launchpad.testing.pages import (
     setupBrowserForUser,
     )
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification

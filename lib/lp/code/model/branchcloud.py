@@ -9,15 +9,25 @@ __all__ = [
     ]
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
-from storm.expr import Alias, Func
-from storm.locals import Count, Desc, Max, Not
+from storm.expr import (
+    Alias,
+    Func,
+    )
+from storm.locals import (
+    Count,
+    Desc,
+    Max,
+    Not,
+    )
 from zope.interface import classProvides
 
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-
 from lp.code.interfaces.branch import IBranchCloud
 from lp.code.model.revision import RevisionCache
 from lp.registry.model.product import Product

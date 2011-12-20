@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 
-from fixtures import TempDir
 import os
 from subprocess import (
     PIPE,
@@ -23,6 +22,7 @@ from bzrlib.urlutils import (
     local_path_from_url,
     )
 from bzrlib.workingtree import WorkingTree
+from fixtures import TempDir
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

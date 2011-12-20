@@ -22,8 +22,6 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from lp.registry.scripts.mlistimport import Importer
 from canonical.testing.layers import (
     AppServerLayer,
     BaseLayer,
@@ -34,6 +32,8 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
+from lp.registry.scripts.mlistimport import Importer
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import BufferLogger
 from lp.testing.factory import LaunchpadObjectFactory
 

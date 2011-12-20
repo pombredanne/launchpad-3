@@ -9,12 +9,12 @@ from storm.store import Store
 import transaction
 
 from canonical.config import config
-from lp.services.identity.model.emailaddress import EmailAddressSet
-from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
 

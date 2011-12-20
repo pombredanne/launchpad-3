@@ -19,18 +19,9 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.services.identity.model.account import Account
-from lp.services.identity.model.emailaddress import EmailAddress
-from lp.services.identity.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    )
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken,
-    EmailAddressStatus,
-    IEmailAddressSet,
-    InvalidEmailAddress,
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -70,6 +61,18 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (

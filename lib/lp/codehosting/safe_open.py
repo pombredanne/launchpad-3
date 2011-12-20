@@ -8,8 +8,8 @@ __metaclass__ = type
 import threading
 
 from bzrlib import (
-    trace,
     errors,
+    trace,
     urlutils,
     )
 from bzrlib.branch import Branch
@@ -17,11 +17,11 @@ from bzrlib.bzrdir import (
     BzrProber,
     RemoteBzrProber,
     )
-from lazr.uri import URI
 from bzrlib.transport import (
     do_catching_redirections,
     get_transport,
     )
+from lazr.uri import URI
 
 
 __all__ = [

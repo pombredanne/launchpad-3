@@ -16,7 +16,6 @@ from lazr.restful.declarations import (
     exported,
     )
 from lazr.restful.fields import Reference
-
 from zope.interface import Interface
 from zope.schema import (
     Datetime,

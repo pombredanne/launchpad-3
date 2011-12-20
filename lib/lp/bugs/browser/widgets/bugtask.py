@@ -59,6 +59,7 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
@@ -67,7 +68,6 @@ from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,

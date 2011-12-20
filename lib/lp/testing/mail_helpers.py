@@ -9,15 +9,14 @@ import email
 import operator
 
 import transaction
-
 from zope.component import getUtility
 
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
     )
 from lp.services.job.runner import JobRunner
-from lp.services.mail import stub
 from lp.services.log.logger import DevNullLogger
+from lp.services.mail import stub
 
 
 def pop_notifications(sort_key=None, commit=True):

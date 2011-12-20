@@ -62,10 +62,10 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
+    add_subscribe_link,
     get_status_counts,
     RegistryDeleteViewMixin,
     )
-from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (

@@ -16,7 +16,8 @@ from lp.translations.browser.pofile import POExportView
 from lp.translations.browser.potemplate import POTemplateExportView
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.model.poexportrequest import POExportRequest
 
 

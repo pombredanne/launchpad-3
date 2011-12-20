@@ -12,12 +12,12 @@ from lazr.restful.simple import BaseWebServiceConfiguration
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest,
     WebServicePublication,
     )
+from lp.app import versioninfo
 
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):

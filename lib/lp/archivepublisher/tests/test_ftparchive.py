@@ -15,10 +15,6 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.log.logger import (
-    BufferLogger,
-    DevNullLogger,
-    )
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -33,6 +29,10 @@ from lp.archivepublisher.model.ftparchive import (
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.testing import TestCaseWithFactory
 
 

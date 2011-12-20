@@ -13,17 +13,11 @@ __all__ = [
     'ISpecificationGoal',
     ]
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-from zope.schema import TextLine
-
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    exported,
     export_as_webservice_entry,
     export_read_operation,
+    exported,
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
@@ -32,6 +26,11 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import TextLine
 
 from canonical.launchpad import _
 

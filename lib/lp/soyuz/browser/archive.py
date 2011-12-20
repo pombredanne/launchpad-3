@@ -71,7 +71,6 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.app.browser.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
@@ -81,6 +80,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
     )
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

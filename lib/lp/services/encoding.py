@@ -11,10 +11,11 @@ __all__ = [
     'is_ascii_only',
     ]
 
-import re
 import codecs
-import unicodedata
 from cStringIO import StringIO
+import re
+import unicodedata
+
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),

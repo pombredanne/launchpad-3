@@ -7,7 +7,6 @@ from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import HasQueryCount
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -17,6 +16,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_view
 
 

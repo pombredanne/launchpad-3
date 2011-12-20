@@ -20,10 +20,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.identity.interfaces.account import IAccount
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 

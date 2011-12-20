@@ -27,6 +27,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.app.validators.email import valid_email
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
@@ -34,7 +35,6 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from lp.app.validators.email import valid_email
 
 
 class HasOwnerMixin:

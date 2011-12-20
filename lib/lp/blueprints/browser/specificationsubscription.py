@@ -10,15 +10,12 @@ __all__ = [
     'SpecificationSubscriptionEditView',
     ]
 
+from lazr.delegates import delegates
 from simplejson import dumps
 from zope.component import getUtility
 
-from lazr.delegates import delegates
-
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects,
     )

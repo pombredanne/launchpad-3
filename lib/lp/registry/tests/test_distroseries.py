@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 
-from datetime import (
-    timedelta,
-)
+from datetime import timedelta
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

@@ -10,7 +10,8 @@ import os
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
-    tearDown)
+    tearDown,
+    )
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

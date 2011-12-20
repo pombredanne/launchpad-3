@@ -11,9 +11,7 @@ __all__ = [
     'IRecipeBuildRecordSet',
     ]
 
-from zope.interface import (
-    Interface,
-    )
+from zope.interface import Interface
 
 
 class IRecipeBuildRecordSet(Interface):

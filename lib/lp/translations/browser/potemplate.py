@@ -31,16 +31,16 @@ import operator
 import os.path
 
 from lazr.restful.utils import smartquote
-from storm.info import ClassAlias
+import pytz
 from storm.expr import (
     And,
     Or,
     )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
-import pytz
 
 from canonical.launchpad import (
     _,
@@ -83,7 +83,6 @@ from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -102,6 +101,7 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.model.potemplate import POTemplate
 
 
 class POTemplateNavigation(Navigation):

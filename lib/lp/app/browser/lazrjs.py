@@ -16,22 +16,24 @@ __all__ = [
     'vocabulary_to_choice_edit_items',
     ]
 
-import simplejson
-
 from lazr.enum import IEnumeratedType
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.utils import (
     get_current_browser_request,
     safe_hasattr,
     )
+import simplejson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.security.checker import canAccess, canWrite
 from zope.schema.interfaces import (
     ICollection,
     IVocabulary,
     )
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url

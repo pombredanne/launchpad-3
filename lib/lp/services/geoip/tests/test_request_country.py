@@ -11,8 +11,8 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from lp.services.geoip.helpers import request_country
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.geoip.helpers import request_country
 
 
 class RequestCountryTestCase(unittest.TestCase):

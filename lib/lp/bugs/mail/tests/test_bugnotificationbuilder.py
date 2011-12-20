@@ -4,6 +4,7 @@
 """Tests for BugNotificationBuilder email construction."""
 
 from datetime import datetime
+
 import pytz
 
 from canonical.testing.layers import ZopelessDatabaseLayer

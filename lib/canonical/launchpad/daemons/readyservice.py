@@ -17,6 +17,7 @@ __all__ = [
 from twisted.application import service
 from twisted.python import log
 
+
 LOG_MAGIC = 'daemon ready!'
 
 

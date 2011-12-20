@@ -14,10 +14,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from lp.services.identity.interfaces.account import (
-    AccountCreationRationale,
-    IAccountSet,
-    )
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent,
@@ -31,6 +27,10 @@ from canonical.launchpad.webapp.login import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    IAccountSet,
+    )
 from lp.testing import TestCaseWithFactory
 
 

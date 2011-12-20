@@ -7,10 +7,10 @@ from datetime import timedelta
 
 from lazr.restfulclient.errors import (
     BadRequest,
-    NotFound,
     HTTPError,
+    NotFound,
     Unauthorized as LRUnauthorized,
-)
+    )
 from testtools import ExpectedException
 import transaction
 from zope.component import getUtility

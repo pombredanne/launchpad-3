@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 import simplejson
-
 from zope.interface import Interface
 from zope.interface.interface import InterfaceClass
 from zope.schema import Choice

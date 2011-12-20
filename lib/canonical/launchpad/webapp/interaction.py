@@ -46,8 +46,8 @@ from zope.security.management import (
     )
 
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag,
     IInteractionExtras,
+    IOpenLaunchBag,
     IPlacelessAuthUtility,
     )
 
