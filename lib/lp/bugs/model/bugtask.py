@@ -683,6 +683,17 @@ class BugTask(SQLBase):
         self.destroySelf()
         del get_property_cache(bug).bugtasks
 
+        # When a task is deleted, we also delete it's BugNomination entry
+        # if there is one. Sadly, getNominationFor() can return None or
+        # raise NotFoundError so we need to check for both.
+        try:
+            nomination = bug.getNominationFor(target)
+            if nomination is not None:
+                nomination.destroySelf()
+        except NotFoundError:
+            # We don't care if there isn't a nomination
+            pass
+
         # When a task is deleted the bug's heat needs to be recalculated.
         target.recalculateBugHeatCache()
 

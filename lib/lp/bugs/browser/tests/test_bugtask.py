@@ -889,14 +889,21 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         # Test that the delete action works as expected.
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
+        bugtask_url = canonical_url(bugtask, rootsite='bugs')
         target_name = bugtask.bugtargetdisplayname
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             login_person(bugtask.owner)
             form = {
                 'field.actions.delete_bugtask': 'Delete',
                 }
+            extra = {
+                'HTTP_REFERER': bugtask_url,
+                }
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
             view = create_initialized_view(
-                bugtask, name='+delete', form=form, principal=bugtask.owner)
+                bugtask, name='+delete', form=form, server_url=server_url,
+                principal=bugtask.owner, **extra)
             self.assertEqual([bug.default_bugtask], bug.bugtasks)
             notifications = view.request.response.notifications
             self.assertEqual(1, len(notifications))
