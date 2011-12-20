@@ -4,6 +4,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <browser:url
+      for="lp.services.verification.interfaces.logintoken.ILoginTokenSet"
+      path_expression="string:token"
+      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      />
     <facet
         facet="overview">
         <browser:defaultView

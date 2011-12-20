@@ -8,6 +8,15 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        />
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        />
     <browser:page
         for="*"
         name="+base-layout-macros"
