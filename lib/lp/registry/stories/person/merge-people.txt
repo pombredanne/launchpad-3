@@ -76,7 +76,7 @@ Get the token we'll have to use to finish the registration process.
     >>> from_addr1, to_addrs1, raw_msg1 = emails.pop()
     >>> from_addr2, to_addrs2, raw_msg2 = emails.pop()
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg1)
 

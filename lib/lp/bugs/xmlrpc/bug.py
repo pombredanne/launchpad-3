@@ -9,8 +9,8 @@ __all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,

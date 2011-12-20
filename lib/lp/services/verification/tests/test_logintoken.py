@@ -11,8 +11,8 @@ from textwrap import dedent
 from testtools.matchers import DocTestMatches
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     person_logged_in,

@@ -20,7 +20,7 @@ from zope.interface import (
 from zope.schema import Text
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.authtoken import IAuthToken
+from lp.services.verification.interfaces.authtoken import IAuthToken
 
 
 class ILoginToken(IAuthToken):

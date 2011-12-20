@@ -24,6 +24,7 @@
   <include package=".scripts" />
   <include package=".session" />
   <include package=".statistics" />
+  <include package=".verification" />
   <include package=".webservice" />
   <include package=".worlddata" />
 </configure>

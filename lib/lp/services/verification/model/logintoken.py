@@ -34,8 +34,8 @@ from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
     )
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import (
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
     )

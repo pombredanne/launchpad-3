@@ -65,7 +65,7 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.logintoken.ILoginTokenSet"
+    for="lp.services.verification.interfaces.logintoken.ILoginTokenSet"
     path_expression="string:token"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />

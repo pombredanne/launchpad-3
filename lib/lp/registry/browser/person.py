@@ -133,12 +133,12 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

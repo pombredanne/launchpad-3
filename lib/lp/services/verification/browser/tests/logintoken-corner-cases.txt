@@ -14,9 +14,12 @@ Using the +validateemail view on a token that was already consumed should
 redirect to the default token view. This would happen if for example the
 user tried to re-post the form after validating one of their email addresses.
 
-    >>> from canonical.launchpad.browser.logintoken import ValidateEmailView
-    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
-    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+    >>> from lp.services.verification.browser.logintoken import (
+    ...     ValidateEmailView)
+    >>> from lp.services.verification.interfaces.authtoken import (
+    ...     LoginTokenType)
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.person import IPersonSet
 
