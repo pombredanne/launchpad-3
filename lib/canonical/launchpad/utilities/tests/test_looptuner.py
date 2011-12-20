@@ -54,7 +54,7 @@ class FailingLoop:
             raise CleanupException()
 
 
-class TestSomething(TestCase):
+class TestExceptionHandling(TestCase):
     layer = BaseLayer
 
     def test_cleanup_exception_on_success(self):
