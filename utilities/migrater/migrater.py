@@ -56,7 +56,6 @@ APP_DIRECTORIES = [
     'browser',
     'doc',
     'emailtemplates',
-    'event',
     'interfaces',
     'model',
     'scripts',
