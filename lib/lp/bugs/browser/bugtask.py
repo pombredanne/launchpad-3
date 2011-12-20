@@ -125,7 +125,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )

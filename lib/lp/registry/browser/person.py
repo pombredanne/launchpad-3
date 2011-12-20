@@ -132,7 +132,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,

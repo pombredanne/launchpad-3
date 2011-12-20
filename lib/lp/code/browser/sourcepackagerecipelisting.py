@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.services.feeds.browser import FeedsMixin
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

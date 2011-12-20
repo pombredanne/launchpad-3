@@ -15,7 +15,7 @@ for the thing comprising the feed.  Rather than use a standard
 Launchpad interface, we'll define one here.
 
     >>> from zope.interface import Interface, Attribute, implements
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     IThing, Thing, ThingFeedView)
 
 
@@ -29,7 +29,7 @@ The zcml `browser:feeds` directive describes a feed view.
     ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
     ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:feeds
-    ...       module="canonical.launchpad.ftests.feeds_helper"
+    ...       module="lp.services.feeds.tests.helper"
     ...       classes="ThingFeedView"
     ...       />
     ... </configure>
@@ -184,7 +184,7 @@ Therefore, we won't set type="html" for the title element.
     ...     <content type="html">&lt;b&gt;hello&lt;/b&gt;</content>
     ... </entry>
     ... </feed>"""
-    >>> from canonical.launchpad.ftests.feeds_helper import validate_feed
+    >>> from lp.services.feeds.tests.helper import validate_feed
     >>> validate_feed(feed, '/atom+xml', 'http://ubuntu.com')
     -------- Error: InvalidFullLink --------
     Backupcolumn: 7

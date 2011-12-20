@@ -6,6 +6,7 @@
   <include package=".comments" />
   <include package=".database" />
   <include package=".features" />
+  <include package=".feeds" />
   <include package=".fields" />
   <include package=".geoip" />
   <include package=".googlesearch" />

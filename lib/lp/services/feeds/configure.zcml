@@ -18,7 +18,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
         for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
-        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        factory="lp.services.feeds.browser.FeedsRootUrlData"
         />
 
     <browser:defaultView
@@ -27,7 +27,7 @@
         />
 
     <browser:navigation
-        module="canonical.launchpad.browser.feeds"
+        module="lp.services.feeds.browser"
         classes="FeedsNavigation"
         />
 
@@ -36,7 +36,7 @@
         for="canonical.lazr.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
-        template="../../lazr/feed/templates/feed-entry-atom.pt"
+        template="../../../canonical/lazr/feed/templates/feed-entry-atom.pt"
         />
 
     <!-- Feeds -->
