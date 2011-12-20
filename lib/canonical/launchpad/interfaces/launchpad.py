@@ -50,12 +50,7 @@ __all__ = [
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
-    'NameNotAvailable',
     ]
-
-
-class NameNotAvailable(KeyError):
-    """You're trying to set a name, but the name you chose isn't available."""
 
 
 class IHasExternalBugTracker(Interface):
