@@ -170,7 +170,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.webapp.interface.IPasswordEncryptor"
+        provides="canonical.launchpad.webapp.interfaces.IPasswordEncryptor"
         permission="zope.Public"
         />
 
@@ -285,7 +285,7 @@
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        for="lp.services.feeds.interfaces.IFeedsApplication"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

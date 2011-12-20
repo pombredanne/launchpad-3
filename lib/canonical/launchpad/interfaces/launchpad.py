@@ -26,7 +26,6 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthServerApplication',
-    'IFeedsApplication',
     'IHasAssignee',
     'IHasBug',
     'IHasDateCreated',
@@ -65,10 +64,6 @@ class IPrivateApplication(ILaunchpadApplication):
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
-
-
-class IFeedsApplication(ILaunchpadApplication):
-    """Launchpad Feeds application root."""
 
 
 class IReadZODBAnnotation(Interface):

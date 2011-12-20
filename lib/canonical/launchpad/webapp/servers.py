@@ -63,7 +63,6 @@ from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication,
     IPrivateApplication,
     IWebServiceApplication,
     )
@@ -105,6 +104,7 @@ from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
 from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
+from lp.services.feeds.interfaces import IFeedsApplication
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     IOAuthSignedRequest,
