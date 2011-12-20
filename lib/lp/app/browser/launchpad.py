@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication,
     IRosettaApplication,
     )
-from lp.services.statistics.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistics import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet

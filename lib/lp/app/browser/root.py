@@ -23,7 +23,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
 from canonical.launchpad import _
-from lp.services.statistics.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistics import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp import LaunchpadView

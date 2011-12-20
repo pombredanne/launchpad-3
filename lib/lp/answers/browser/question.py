@@ -61,7 +61,7 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from lp.services.statistics.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistics import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp import (

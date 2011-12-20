@@ -10,7 +10,7 @@ __all__ = [
     'LaunchpadStatisticSetFacets',
     ]
 
-from lp.services.statistics.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistics import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp import (
