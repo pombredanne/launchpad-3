@@ -6,6 +6,9 @@
 """Security policies for using content objects."""
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.blueprints.model.specificationsubscription import SpecificationSubscription
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugtask import get_bug_privacy_filter, BugTask
 from lp.registry.model.teammembership import TeamParticipation
 
 __metaclass__ = type
@@ -889,6 +892,51 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                     ).find(
                         SpecificationSubscription.specificationID,
                         (SpecificationSubscription.personID
+                            == TeamParticipation.teamID,
+                        TeamParticipation.personID == self.obj.id))
+                if rs.count() > 0:
+                    return True
+
+                # If the team is directly subscribed to any bugs the user can
+                # see, the team should be visible.
+                store = IStore(BugSubscription)
+                filter = get_bug_privacy_filter(user.person)
+                rs = store.using(
+                        Bug, BugSubscription, TeamParticipation
+                    ).find(
+                        Bug.id,
+                        filter,
+                        (BugSubscription.person_id
+                            == TeamParticipation.teamID,
+                        TeamParticipation.personID == self.obj.id))
+                if rs.count() > 0:
+                    return True
+
+                # If the team is directly subscribed to any bugs the user can
+                # see, the team should be visible.
+                store = IStore(BugSubscription)
+                filter = get_bug_privacy_filter(user.person)
+                rs = store.using(
+                        Bug, BugSubscription, TeamParticipation
+                    ).find(
+                        Bug.id,
+                        filter,
+                        BugSubscription.bug_id == Bug.id,
+                        (BugSubscription.person_id
+                            == TeamParticipation.teamID,
+                        TeamParticipation.personID == self.obj.id))
+                if rs.count() > 0:
+                    return True
+
+                # If the team is assigned to any bugs the user can see,
+                # the team should be visible.
+                rs = store.using(
+                        Bug, BugTask, TeamParticipation
+                    ).find(
+                        Bug.id,
+                        filter,
+                        BugTask.bugID == Bug.id,
+                        (BugTask.assigneeID
                             == TeamParticipation.teamID,
                         TeamParticipation.personID == self.obj.id))
                 if rs.count() > 0:

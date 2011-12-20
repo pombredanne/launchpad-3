@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugSubscription views."""
+from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -645,6 +646,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         expected_result = []
+        removeSecurityProxy(bug).private = True
         view = create_initialized_view(
             bug, '+bug-portlet-subscribers-details', request=request)
         if authenticated_user:
@@ -684,7 +686,13 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         self.assertEqual(
             dumps(expected_result), view.subscriber_data_js)
 
-    def test_data_private_team_subscription_authenticated_user(self):
+    def test_data_private_team_subscription_authenticated_user_fflag(self):
+        # For a logged in user, private team subscriptions are rendered.
+        fflag = u'disclosure.extra_private_team_limitedView_security.enabled'
+        with FeatureFixture({fflag: u'on'}):
+            self._test_data_private_team_subscription(authenticated_user=True)
+
+    def test_data_private_team_subscription_authenticated_user_no_fflag(self):
         # For a logged in user, private team subscriptions are rendered.
         self._test_data_private_team_subscription(authenticated_user=True)
 
