@@ -429,13 +429,14 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilderSlaveStatus, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
+        self.builder = self.factory.makeBuilder()
+        self.useFixture(BuilddManagerTestFixture())
 
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(slave)
-        d = builder.slaveStatus()
+        self.builder.setSlaveForTesting(slave)
+        d = self.builder.slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -480,21 +481,19 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around slaveStatusSentence()
-        builder = self.factory.makeBuilder()
-        builder.builderok = False
-        d = builder.isAvailable()
+        with BuilddManagerTestFixture.extraSetUp():
+            self.builder.builderok = False
+        d = self.builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
-        builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(BrokenSlave())
-        d = builder.isAvailable()
+        self.builder.setSlaveForTesting(BrokenSlave())
+        d = self.builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
-        builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
-        d = builder.isAvailable()
+        self.builder.setSlaveForTesting(OkSlave())
+        d = self.builder.isAvailable()
         return d.addCallback(self.assertTrue)
 
 
