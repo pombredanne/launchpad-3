@@ -5,8 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    "BuilddManagerDatabasePolicyFixture",
-    "BuilddManagerTestMixin",
+    "BuilddManagerTestFixture",
     ]
 
 from contextlib import contextmanager
@@ -17,44 +16,34 @@ import transaction
 from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 
 
-class BuilddManagerDatabasePolicyFixture(fixtures.Fixture):
-    """Mimics the default transaction access policy of `BuilddManager`.
+class BuilddManagerTestFixture(fixtures.Fixture):
+    """Helps provide an environment more like `BuilddManager` provides.
 
-    Though it can be configured with a different policy by passing in `store`
-    and/or `read_only`.
+    This mimics the default transaction access policy of `BuilddManager`,
+    though it can be configured with a different policy by passing in `store`
+    and/or `read_only`. See `BuilddManager.enterReadOnlyDatabasePolicy`.
 
-    See `BuilddManager.enterReadOnlyDatabasePolicy`.
+    Because this will shift into a read-only database transaction access mode,
+    individual tests that need to do more setup can use the `extraSetUp()`
+    context manager to temporarily shift back to a read-write mode.
     """
 
     def __init__(self, store=None, read_only=True):
-        super(BuilddManagerDatabasePolicyFixture, self).__init__()
+        super(BuilddManagerTestFixture, self).__init__()
         self.policy = DatabaseTransactionPolicy(
             store=store, read_only=read_only)
 
     def setUp(self):
         # Commit everything done so far then shift into a read-only
         # transaction access mode by default.
-        super(BuilddManagerDatabasePolicyFixture, self).setUp()
+        super(BuilddManagerTestFixture, self).setUp()
         transaction.commit()
         self.policy.__enter__()
         self.addCleanup(self.policy.__exit__, None, None, None)
 
-
-class BuilddManagerTestMixin:
-    """Helps provide an environment more like `BuilddManager` provides.
-
-    At the end of `setUp()` call `applyDatabasePolicy()` to shift into a
-    read-only database transaction access mode. If individual tests need to do
-    more setup they can use the `extraSetUp()` context manager to temporarily
-    shift back to a read-write mode.
-    """
-
-    def applyDatabasePolicy(self):
-        """Use the default `BuilddManagerDatabasePolicyFixture`."""
-        self.useFixture(BuilddManagerDatabasePolicyFixture())
-
+    @staticmethod
     @contextmanager
-    def extraSetUp(self):
+    def extraSetUp():
         """Temporarily enter a read-write transaction to do extra setup.
 
         For example:

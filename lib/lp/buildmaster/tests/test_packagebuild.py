@@ -36,7 +36,7 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.testing import BuilddManagerTestMixin
+from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
@@ -283,7 +283,7 @@ class TestGetUploadMethodsMixin:
             (job_type, job_id))
 
 
-class TestHandleStatusMixin(BuilddManagerTestMixin):
+class TestHandleStatusMixin:
     """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
@@ -322,7 +322,7 @@ class TestHandleStatusMixin(BuilddManagerTestMixin):
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
 
-        self.applyDatabasePolicy()
+        self.useFixture(BuilddManagerTestFixture())
 
     def assertResultCount(self, count, result):
         self.assertEquals(
@@ -368,7 +368,7 @@ class TestHandleStatusMixin(BuilddManagerTestMixin):
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        with self.extraSetUp():
+        with BuilddManagerTestFixture.extraSetUp():
             removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
         d = self.build.handleStatus('OK', None, {
@@ -408,7 +408,7 @@ class TestHandleStatusMixin(BuilddManagerTestMixin):
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        with self.extraSetUp():
+        with BuilddManagerTestFixture.extraSetUp():
             removeSecurityProxy(self.build).date_finished = None
 
         self.assertEqual(None, self.build.date_finished)
