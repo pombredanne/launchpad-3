@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -9,16 +9,20 @@
   <include package=".fields" />
   <include package=".geoip" />
   <include package=".googlesearch" />
+  <include package=".gpg" />
+  <include package=".identity" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".longpoll" />
   <include package=".memcache" />
   <include package=".messages" />
   <include package=".messaging" />
+  <include package=".oauth" />
   <include package=".openid" />
   <include package=".profile" />
   <include package=".salesforce" />
   <include package=".scripts" />
   <include package=".session" />
+  <include package="lp.services.webservice" />
   <include package=".worlddata" />
 </configure>

@@ -79,6 +79,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
+    PersonChoice,
     PublicPersonChoice,
     Summary,
     Whiteboard,
@@ -165,7 +166,7 @@ class IBranchMergeProposal(IPrivacy):
     # Not to be confused with a code reviewer. A code reviewer is someone who
     # can vote or has voted on a proposal.
     reviewer = exported(
-        PublicPersonChoice(
+        PersonChoice(
             title=_('Review person or team'), required=False,
             readonly=True, vocabulary='ValidPersonOrTeam',
             description=_("The person that accepted (or rejected) the code "

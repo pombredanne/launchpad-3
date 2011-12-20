@@ -10,26 +10,18 @@ __all__ = [
 __metaclass__ = type
 
 import pytz
-
-from sqlobject import (
-    SQLObjectNotFound,
-    )
-
+from sqlobject import SQLObjectNotFound
 from zope.interface import alsoProvides
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
+from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
-
-from canonical.launchpad.webapp.vocabulary import (
-    SQLObjectVocabularyBase,
-    )
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
-
 
 # create a sorted list of the common time zone names, with UTC at the start
 _values = sorted(pytz.common_timezones)

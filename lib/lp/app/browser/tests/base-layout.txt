@@ -136,7 +136,6 @@ The page includes a comment after the body with diagnostic information.
       Has side portlets: False
       At least ... queries... issued in ... seconds
       Features: {...}
-      in scopes {...}
       r...
     -->
     ...
@@ -176,34 +175,6 @@ Page Footers
     Careers http://www.canonical.com/about-canonical/careers
     System status http://identi.ca/launchpadstatus
     Get the code! https://dev.launchpad.net/
-
-
-Page registering
-----------------
-
-The 'registering' slot is presented on the right side of the 'heading'
-and can be filled with the context registering information (registrant
-and date_created, normally).
-
-    >>> class RegisteringView(LaunchpadView):
-    ...     """A simple view to test base-layout."""
-    ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
-    ...     page_title = 'Test base-layout: main_registering'
-
-    >>> view = RegisteringView(user, request)
-    >>> html = view.render()
-
-    >>> from canonical.launchpad.testing.pages import (
-    ...     first_tag_by_class)
-
-    >>> print first_tag_by_class(html, 'registering')
-    <div id="registration" class="registering">
-    <p>something nice about the context registering.</p>
-    </div>
-
-Note that the slot itself will be already 'styled' and it rarely has
-to be changed.
 
 
 Public and private presentation

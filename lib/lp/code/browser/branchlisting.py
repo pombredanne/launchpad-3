@@ -72,13 +72,13 @@ from canonical.launchpad.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.badge import (
-    Badge,
-    HasBadgeBase,
-    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.badge import (
+    Badge,
+    HasBadgeBase,
+    )
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -1314,13 +1314,13 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def person_owner_count(self):
         """The number of individual people who own branches."""
         return len([person for person in self._branch_owners
-                    if not person.isTeam()])
+                    if not person.is_team])
 
     @cachedproperty
     def team_owner_count(self):
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
-                    if person.isTeam()])
+                    if person.is_team])
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
@@ -1416,6 +1416,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def configure_codehosting(self):
         """Get the menu link for configuring code hosting."""
+        if not check_permission(
+            'launchpad.Edit', self.context.development_focus):
+            return None
         series_menu = MenuAPI(self.context.development_focus).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure code hosting'

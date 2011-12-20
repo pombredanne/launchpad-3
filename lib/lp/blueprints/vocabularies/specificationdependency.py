@@ -11,7 +11,10 @@ __all__ = [
 
 from operator import attrgetter
 
-from storm.locals import SQL, Store
+from storm.locals import (
+    SQL,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm

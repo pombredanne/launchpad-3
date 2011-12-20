@@ -13,15 +13,6 @@ __all__ = [
     'ISearchQuestionsForm',
     ]
 
-from zope.interface import Interface
-from zope.schema import (
-    Choice,
-    Int,
-    List,
-    Set,
-    TextLine,
-    )
-
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -33,15 +24,23 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    Set,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner,
-    )
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questioncollection import (
+    ISearchableByQuestionOwner,
     )
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice

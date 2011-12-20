@@ -38,7 +38,7 @@ table.wide {
     width: 60em;
     }
 pre, code, samp, tt, .console {
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Ubuntu Mono', monospace;
     margin-bottom: 0.8em;
     }
 pre.wrap {

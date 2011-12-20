@@ -34,13 +34,13 @@ from canonical.launchpad.interfaces.launchpad import (
     IRosettaApplication,
     IWebServiceApplication,
     )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot,
     ICanonicalUrlData,
     ILaunchBag,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
     )
 from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
@@ -72,11 +72,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet

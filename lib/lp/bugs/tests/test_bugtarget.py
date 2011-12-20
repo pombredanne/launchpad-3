@@ -14,11 +14,11 @@ __metaclass__ = type
 __all__ = []
 
 import random
-from testtools.matchers import Equals
 import unittest
 
 from storm.expr import LeftJoin
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.testing.systemdocs import (

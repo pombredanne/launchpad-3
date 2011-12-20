@@ -673,7 +673,7 @@ Any person that's already merged is not part of this vocabulary:
 A person whose account_status is any of the statuses of
 INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     INACTIVE_ACCOUNT_STATUSES)
     >>> naked_cprov.merged = None
     >>> checked_count = 0
@@ -1366,7 +1366,6 @@ projects are returned.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)

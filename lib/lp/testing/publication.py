@@ -31,7 +31,6 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
 
-
 # Defines an helper function that returns the appropriate
 # IRequest and IPublication.
 def get_request_and_publication(host='localhost', port=None,

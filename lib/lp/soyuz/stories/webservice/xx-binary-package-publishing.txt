@@ -168,12 +168,12 @@ We can retrieve the total download count for a binary in this archive.
     >>> logout()
 
     >>> firefox = webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedBinaries', 
+    ...     cprov_archive['self_link'], 'getPublishedBinaries',
     ...     binary_name='mozilla-firefox').jsonBody()['entries'][0]
     >>> webservice.named_get(
     ...     firefox['self_link'], 'getDownloadCount').jsonBody()
     18
-    
+
 Detailed download counts are also available from the getDownloadCounts method.
 
     >>> counts = webservice.named_get(

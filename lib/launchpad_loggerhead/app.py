@@ -238,7 +238,7 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
-            base_api_url = config.appserver_root_url('api')
+            base_api_url = allvhosts.configs['api'].rooturl
             branch_api_url = '%s/%s/%s' % (
                 base_api_url,
                 'devel',
@@ -324,4 +324,4 @@ def oops_middleware(app):
     """
     error_utility = make_error_utility()
     return oops_wsgi.make_app(app, error_utility._oops_config,
-            template=_oops_html_template)
+            template=_oops_html_template, soft_start_timeout=7000)

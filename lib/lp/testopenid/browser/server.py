@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  All rights reserved.
+# Copyright 2010-2011 Canonical Ltd.  All rights reserved.
 
 """Test OpenID server."""
 
@@ -33,13 +33,7 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.webapp import (
-    LaunchpadView,
-    )
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessLoginSource,
@@ -59,6 +53,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
     )

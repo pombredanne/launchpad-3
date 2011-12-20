@@ -10,9 +10,9 @@ __metaclass__ = type
 import codecs
 import os
 import re
+from StringIO import StringIO
 import sys
 import xmlrpclib
-from StringIO import StringIO
 
 from bzrlib import errors
 from bzrlib.bzrdir import (
@@ -40,18 +40,14 @@ from bzrlib.urlutils import (
     escape,
     local_path_to_url,
     )
-
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 from twisted.internet import defer
 
 from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import (
-    ZopelessDatabaseLayer,
-    )
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     branch_id_alias,

@@ -34,9 +34,7 @@ __all__ = [
 
 from contextlib import contextmanager
 from cStringIO import StringIO
-from datetime import (
-    timedelta,
-    )
+from datetime import timedelta
 import hashlib
 import logging
 from logging.handlers import WatchedFileHandler

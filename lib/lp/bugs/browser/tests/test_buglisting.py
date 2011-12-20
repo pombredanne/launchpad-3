@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import os
+
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -37,8 +38,8 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

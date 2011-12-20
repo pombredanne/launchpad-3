@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -9,41 +9,17 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-<facet facet="overview">
-  <!-- OAuth-related pages. -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+request-token"
-      class="canonical.launchpad.browser.oauth.OAuthRequestTokenView"
-      permission="zope.Public" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+authorize-token"
-      class="canonical.launchpad.browser.oauth.OAuthAuthorizeTokenView"
-      template="../templates/oauth-authorize.pt"
-      permission="launchpad.AnyPerson" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+access-token"
-      class="canonical.launchpad.browser.oauth.OAuthAccessTokenView"
-      permission="zope.Public" />
-
-</facet>
-
-
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  factory="canonical.lazr.privacy.ObjectPrivacy"
   permission="zope.Public"
   />
 
 <adapter
-  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  provides="lp.app.browser.badge.IHasBadges"
   for="zope.interface.Interface"
-  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
+  factory="lp.app.browser.badge.HasBadgeBase"
   permission="zope.Public"
   />
 

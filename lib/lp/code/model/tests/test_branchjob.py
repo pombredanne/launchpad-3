@@ -30,7 +30,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file,
@@ -75,6 +74,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner

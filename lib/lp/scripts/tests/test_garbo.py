@@ -44,14 +44,7 @@ from canonical.database.constants import (
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
-from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -97,9 +90,16 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthNonce,
+    )
+from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
@@ -1025,23 +1025,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
-
-    def test_SPPH_and_BPPH_populator(self):
-        # If SPPHs (or BPPHs) do not have sourcepackagename (or
-        # binarypackagename) set, the populator will set it.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        spn = spph.sourcepackagename
-        removeSecurityProxy(spph).sourcepackagename = None
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        bpn = bpph.binarypackagename
-        removeSecurityProxy(bpph).binarypackagename = None
-        transaction.commit()
-        self.assertIs(None, spph.sourcepackagename)
-        self.assertIs(None, bpph.binarypackagename)
-        self.runHourly()
-        self.assertEqual(spn, spph.sourcepackagename)
-        self.assertEqual(bpn, bpph.binarypackagename)
 
 
 class TestGarboTasks(TestCaseWithFactory):

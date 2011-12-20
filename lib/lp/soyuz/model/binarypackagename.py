@@ -32,11 +32,11 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary,
     )
 from lp.app.errors import NotFoundError
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,
     IBinaryPackageNameSet,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 

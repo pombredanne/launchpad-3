@@ -10,9 +10,9 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-from testtools.matchers import StartsWith
 from unittest import TestCase
 
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
@@ -61,7 +61,7 @@ from lp.soyuz.scripts.queue import (
     CommandRunnerError,
     name_queue_map,
     QueueAction,
-    QueueActionOverride
+    QueueActionOverride,
     )
 from lp.testing import (
     celebrity_logged_in,

@@ -4,11 +4,11 @@
 """Tests for sync package jobs."""
 
 import operator
+from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
-from textwrap import dedent
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized

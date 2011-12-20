@@ -5,17 +5,16 @@
 
 from zope.component import getUtility
 
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,

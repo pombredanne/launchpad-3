@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import cgi
+
 from lxml import html
 import transaction
 from zope.component import (

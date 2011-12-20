@@ -1007,7 +1007,18 @@ class IArchiveView(IHasBuildRecords):
         exact_match=Bool(
             description=_("Whether or not to filter binary names by exact "
                           "matching."),
-            required=False))
+            required=False),
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
+                          "than or equal to this date."),
+            required=False),
+        ordered=Bool(
+            title=_("Ordered"),
+            description=_("Return ordered results by default, but specifying "
+                          "False will return results more quickly."),
+            required=False, readonly=True),
+        )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1015,17 +1026,25 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
-        :param: name: binary name filter (exact match or SQL LIKE controlled
+        :param name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
+        :param version: binary version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a list.
+        :param distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param pocket: `PackagePublishingPocket` filter.
+        :param exact_match: either or not filter source names by exact
                              matching.
+        :param created_since_date: Only return publications created on or
+            after this date.
+        :param ordered: Normally publications are ordered by binary package
+            name and then ID order (creation order).  If this parameter is
+            False then the results will be unordered.  This will make the
+            operation much quicker to return results if you don't care about
+            ordering.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """

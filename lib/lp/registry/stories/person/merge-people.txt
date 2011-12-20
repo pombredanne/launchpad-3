@@ -23,9 +23,9 @@ In preparation for the actual merge (below), we add an extra email
 address to the 'foo' account, to show how things work when the dupe
 account has more than one email address.
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
+    >>> from lp.services.identity.model.emailaddress import EmailAddressSet
     >>> from lp.registry.model.person import PersonSet
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
     >>> foo = PersonSet().getByName('foo')
     >>> email = EmailAddressSet().new(
@@ -152,7 +152,6 @@ messages to them all.
     >>> dupe = factory.makePerson(name="duplicate-person", email="dupe1@example.com",
     ...                           hide_email_addresses=True)
     >>> email = factory.makeEmail(address="dupe2@example.com", person=dupe)
-    >>> logout()
 
 Ensure there are no leftover emails.
 
@@ -162,6 +161,7 @@ Ensure there are no leftover emails.
 Open the merge page and merge our duplicate account with hidden email
 addresses.
 
+    >>> logout()
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
     >>> browser.getControl(
     ...     'Duplicated Account').value = 'duplicate-person'

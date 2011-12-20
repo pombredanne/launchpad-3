@@ -94,9 +94,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -150,6 +147,7 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatus,
     NominationError,
     NominationSeriesObsoleteError,
     )
@@ -197,9 +195,9 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -209,6 +207,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
@@ -811,7 +810,7 @@ class Bug(SQLBase):
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if person.isTeam() and self.private and person.anyone_can_join():
+        if person.is_team and self.private and person.anyone_can_join():
             error_msg = ("Open and delegated teams cannot be subscribed "
                 "to private bugs.")
             raise SubscriptionPrivacyViolation(error_msg)
@@ -1550,16 +1549,28 @@ class Bug(SQLBase):
             raise NominationError(
                 "Only bug supervisors or owners can nominate bugs.")
 
-        nomination = BugNomination(
-            owner=owner, bug=self, distroseries=distroseries,
-            productseries=productseries)
+        # There may be an existing DECLINED nomination. If so, we set the
+        # status back to PROPOSED. We do not alter the original date_created.
+        nomination = None
+        try:
+            nomination = self.getNominationFor(target)
+        except NotFoundError:
+            pass
+        if nomination:
+            nomination.status = BugNominationStatus.PROPOSED
+            nomination.decider = None
+            nomination.date_decided = None
+        else:
+            nomination = BugNomination(
+                owner=owner, bug=self, distroseries=distroseries,
+                productseries=productseries)
         self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(target)
+            nomination = self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination target.
@@ -1589,7 +1600,11 @@ class Bug(SQLBase):
             # No tasks match the candidate's pillar. We must refuse.
             return False
         else:
-            # The bug is already nominated for this nomination target.
+            # The bug may be already nominated for this nomination target.
+            # If the status is declined, the bug can be renominated, else
+            # return False
+            if nomination:
+                return nomination.status == BugNominationStatus.DECLINED
             return False
 
     def getNominationFor(self, target):

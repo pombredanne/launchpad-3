@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.component import getUtility
@@ -11,9 +11,9 @@ from canonical.launchpad.browser.logintoken import (
     )
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
 
 

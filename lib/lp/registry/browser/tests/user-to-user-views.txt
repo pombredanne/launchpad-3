@@ -226,7 +226,6 @@ Salgado decides to hide his email addresses.
 Anne contacts Salgado even though his email addresses are hidden.
 
     >>> anne = factory.makePerson(email='anne@example.com', name='anne')
-    >>> logout()
     >>> login_person(anne)
 
     >>> view = create_view(
@@ -421,7 +420,7 @@ Foo Bar's message gets sent to each individual member of he team.
 The Guadamen team now registers an external contact address (they could
 have also used their Launchpad mailing list address).
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> email_set = getUtility(IEmailAddressSet)
     >>> address = email_set.new('guadamen@example.com', guadamen)

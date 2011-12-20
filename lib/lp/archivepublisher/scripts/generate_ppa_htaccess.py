@@ -124,9 +124,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)
         subject = "PPA access cancelled for %s" % ppa_name
-        template = get_email_template("ppa-subscription-cancelled.txt")
+        template = get_email_template(
+            "ppa-subscription-cancelled.txt", app='soyuz')
 
-        assert not send_to_person.isTeam(), (
+        assert not send_to_person.is_team, (
             "Token.person is a team, it should always be individuals.")
 
         if send_to_person.preferredemail is None:

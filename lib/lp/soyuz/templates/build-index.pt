@@ -118,7 +118,7 @@
       </dl>
       <dl>
         <dt>Component:</dt>
-          <dd><span tal:replace="view/component/name">main</span></dd>
+          <dd><span tal:replace="view/component_name">main</span></dd>
       </dl>
     </div>
   </metal:macro>

@@ -20,7 +20,6 @@ import time
 import warnings
 
 from fixtures import Fixture
-
 from txfixtures.tachandler import (
     TacException,
     TacTestFixture,

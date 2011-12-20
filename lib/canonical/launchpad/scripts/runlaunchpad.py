@@ -13,11 +13,10 @@ import signal
 import subprocess
 import sys
 
-from testtools.testresult.real import _details_to_str
-
 import fixtures
 from lazr.config import as_host_port
 from rabbitfixture.server import RabbitServerResources
+from testtools.testresult.real import _details_to_str
 from zope.app.server.main import main
 
 from canonical.config import config

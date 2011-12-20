@@ -133,26 +133,12 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError,
-    IGPGHandler,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -268,10 +254,24 @@ from lp.registry.model.milestone import (
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
@@ -1369,8 +1369,6 @@ class PersonSpecWorkloadView(LaunchpadView):
         This batch does not test for whether the person has specifications or
         not.
         """
-        assert self.context.isTeam, (
-            "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
         batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
@@ -2451,17 +2449,17 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def openpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getOpenPolls()
 
     @cachedproperty
     def closedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getClosedPolls()
 
     @cachedproperty
     def notyetopenedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
     @cachedproperty
@@ -2624,7 +2622,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
+        assert self.context.is_team
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
@@ -2675,7 +2673,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
             emails = [self.context.preferredemail.email]
-            if not self.context.isTeam():
+            if not self.context.is_team:
                 emails.extend(sorted(
                     email.email for email in self.context.validatedemails))
             return emails
@@ -3937,7 +3935,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
         # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
         # system set up for this that is almost identical in
-        # canonical.launchpad.interfaces.validation, called
+        # lp.app.validators.validation, called
         # _check_email_available or similar. It would be really nice if we
         # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)

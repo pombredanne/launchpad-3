@@ -21,19 +21,16 @@ __all__ = [
     'WaitingSlave',
     ]
 
-import fixtures
 import os
 import types
-
 import xmlrpclib
 
+import fixtures
+from lpbuildd.tests.harness import BuilddSlaveTestSetup
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-
 from twisted.internet import defer
 from twisted.web import xmlrpc
-
-from lpbuildd.tests.harness import BuilddSlaveTestSetup
 
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,

@@ -18,13 +18,13 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     CLOSED_TEAM_POLICY,
     OPEN_TEAM_POLICY,
+    PersonVisibility,
+    TeamSubscriptionPolicy,
     )
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.testing import (
     StormStatementRecorder,
@@ -311,9 +311,10 @@ class TestValidTeamMemberVocabulary(TeamMemberVocabularyTestBase,
     def test_private_team_cannot_be_a_member_of_itself(self):
         # A private team should be filtered by the vocab.extra_clause
         # when provided a search term.
+        owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        login_person(team.teamowner)
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        login_person(owner)
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
 

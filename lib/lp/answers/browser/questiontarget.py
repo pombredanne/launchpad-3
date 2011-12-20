@@ -24,14 +24,13 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from simplejson import dumps
 from urllib import urlencode
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
     )
-
+from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (
@@ -795,7 +794,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         response = self.request.response
         english = getUtility(ILaunchpadCelebrities).english
-        if person_or_team.isTeam():
+        if person_or_team.is_team:
             person_or_team.addLanguage(english)
             team_mapping = {'name': person_or_team.name,
                             'displayname': person_or_team.displayname}

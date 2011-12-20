@@ -8,9 +8,8 @@ __metaclass__ = type
 
 import unittest
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-
 from contrib.oauth import OAuthRequest
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.ftests import login

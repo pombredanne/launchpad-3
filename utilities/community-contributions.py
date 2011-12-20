@@ -134,6 +134,7 @@ known_canonical_lp_devs = \
                               u'Edwin Grubbs',
                               u'Elliot Murphy',
                               u'Firstname Lastname',
+                              u'Francesco Banconi',
                               u'Francis Lacoste',
                               u'Francis J. Lacoste',
                               u'Gary Poster',

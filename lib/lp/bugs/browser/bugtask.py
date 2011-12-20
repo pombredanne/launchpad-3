@@ -55,7 +55,6 @@ from math import (
 from operator import attrgetter
 import os.path
 import re
-import transaction
 import urllib
 import urlparse
 
@@ -79,6 +78,7 @@ import pystache
 from pytz import utc
 from simplejson import dumps
 from simplejson.encoder import JSONEncoderForHTML
+import transaction
 from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
@@ -107,9 +107,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import Choice
-from zope.schema.interfaces import (
-    IContextSourceBinder,
-    )
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
@@ -285,6 +283,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.utils import obfuscate_structure
+
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -559,8 +558,14 @@ class BugTargetTraversalMixin:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
-        # If we've come this far, there's no task for the requested
-        # context. Redirect to one that exists.
+        # If we've come this far, there's no task for the requested context.
+        # If we are attempting to navigate past the non-existent bugtask,
+        # we raise NotFound error. eg +delete or +edit etc.
+        # Otherwise we are simply navigating to a non-existent task and so we
+        # redirect to one that exists.
+        travseral_stack = self.request.getTraversalStack()
+        if len(travseral_stack) > 0:
+            raise NotFoundError
         return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
 
@@ -1285,7 +1290,7 @@ class BugTaskPrivilegeMixin:
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userHasPrivileges(self.user)
+        return self.context.userHasBugSupervisorPrivileges(self.user)
 
 
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
@@ -1784,7 +1789,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return super(BugTaskDeletionView, self).next_url
+            return self._next_url or self._return_url
         return None
 
     @action('Delete', name='delete_bugtask')
@@ -1795,6 +1800,9 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
         error_message = None
+        # We set the next_url here before the bugtask is deleted since later
+        # the bugtask will not be available if required to construct the url.
+        self._next_url = self._return_url
 
         try:
             bugtask.delete()
@@ -2067,11 +2075,9 @@ class BugsStatsMixin(BugsInfoMixin):
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
         """
-        days_old = config.malone.days_before_expiration
-
         if target_has_expirable_bugs_listing(self.context):
             return getUtility(IBugTaskSet).findExpirableBugTasks(
-                days_old, user=self.user, target=self.context).count()
+                0, user=self.user, target=self.context).count()
         else:
             return None
 
@@ -2228,7 +2234,12 @@ class BugTaskListingItem:
         assignee = None
         if self.assignee is not None:
             assignee = self.assignee.displayname
-        return {
+
+        base_tag_url = "%s/?field.tag=" % canonical_url(
+            self.bugtask.target,
+            view_name="+bugs")
+
+        flattened = {
             'age': age,
             'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
@@ -2244,9 +2255,17 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': ' '.join(self.bug.tags),
+            'tags': [{'url': base_tag_url + tag, 'tag': tag}
+                for tag in self.bug.tags],
             'title': self.bug.title,
             }
+
+        # This is a total hack, but pystache will run both truth/false values
+        # for an empty list for some reason, and it "works" if it's just a
+        # flag like this. We need this value for the mustache template to be
+        # able to tell that there are no tags without looking at the list.
+        flattened['has_tags'] = True if len(flattened['tags']) else False
+        return flattened
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2260,17 +2279,17 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
         self.field_visibility_defaults = {
-            'show_age': False,
+            'show_datecreated': False,
             'show_assignee': False,
-            'show_bugtarget': True,
-            'show_bug_heat': True,
+            'show_targetname': True,
+            'show_heat': True,
             'show_id': True,
             'show_importance': True,
-            'show_last_updated': False,
+            'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
             'show_status': True,
-            'show_tags': False,
+            'show_tag': False,
         }
         self.field_visibility = None
         self._setFieldVisibility()
@@ -2360,10 +2379,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def model(self):
-        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
-        for bugtask in bugtasks:
-            bugtask.update(self.field_visibility)
-        return {'bugtasks': bugtasks}
+        items = [bugtask.model for bugtask in self.getBugListingItems()]
+        for item in items:
+            item.update(self.field_visibility)
+        return {'items': items}
 
 
 class NominatedBugReviewAction(EnumeratedType):
@@ -2478,6 +2497,33 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
+
+
+# All sort orders supported by BugTaskSet.search() and a title for
+# them.
+SORT_KEYS = [
+    ('importance', 'Importance', 'desc'),
+    ('status', 'Status', 'asc'),
+    ('id', 'Bug number', 'desc'),
+    ('title', 'Bug title', 'asc'),
+    ('targetname', 'Package/Project/Series name', 'asc'),
+    ('milestone_name', 'Milestone', 'asc'),
+    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('assignee', 'Assignee', 'asc'),
+    ('reporter', 'Reporter', 'asc'),
+    ('datecreated', 'Bug age', 'desc'),
+    ('tag', 'Bug Tags', 'asc'),
+    ('heat', 'Bug heat', 'desc'),
+    ('date_closed', 'Date bug closed', 'desc'),
+    ('dateassigned', 'Date when the bug task was assigned', 'desc'),
+    ('number_of_duplicates', 'Number of duplicates', 'desc'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
+    ('message_count', 'Number of comments', 'desc'),
+    ('milestone', 'Milestone ID', 'desc'),
+    ('specification', 'Linked blueprint', 'asc'),
+    ('task', 'Bug task ID', 'desc'),
+    ('users_affected_count', 'Number of affected users', 'desc'),
+    ]
 
 
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
@@ -2674,6 +2720,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             last_batch = batch_navigator.batch.lastBatch()
             cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
+            cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
@@ -2745,7 +2792,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.getOrderByColumnDBName(orderby_col)
+                bugset.orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
@@ -3108,7 +3155,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     @property
     def structural_subscriber_label(self):
         if IDistribution.providedBy(self.context):
-            return 'Package, or series subscriber'
+            return 'Package or series subscriber'
         elif IDistroSeries.providedBy(self.context):
             return 'Package subscriber'
         elif IProduct.providedBy(self.context):
@@ -4106,6 +4153,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             (user is None or user.teams_participated_in.count() == 0))
         cx = self.context
         return dict(
+            id=cx.id,
             row_id=self.data['row_id'],
             form_row_id=self.data['form_row_id'],
             bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
@@ -4305,7 +4353,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
     page_title = label
 
 
-class BugTaskExpirableListingView(LaunchpadView):
+class BugTaskExpirableListingView(BugTaskSearchListingView):
     """View for listing Incomplete bugs that can expire."""
 
     @property
@@ -4328,13 +4376,11 @@ class BugTaskExpirableListingView(LaunchpadView):
         else:
             return ['id', 'summary', 'date_last_updated', 'heat']
 
-    @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
-        days_old = config.malone.days_before_expiration
         bugtaskset = getUtility(IBugTaskSet)
         bugtasks = bugtaskset.findExpirableBugTasks(
-            days_old, user=self.user, target=self.context)
+            user=self.user, target=self.context, min_days_old=0)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

@@ -12,7 +12,6 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
-
 from storm.locals import (
     DateTime,
     Int,

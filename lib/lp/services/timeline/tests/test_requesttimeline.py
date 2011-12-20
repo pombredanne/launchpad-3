@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 import testtools
-from timeline.timeline import OverlappingActionError, Timeline
+from timeline.timeline import (
+    OverlappingActionError,
+    Timeline,
+    )
 from zope.publisher.browser import TestRequest
 
 from canonical.launchpad import webapp

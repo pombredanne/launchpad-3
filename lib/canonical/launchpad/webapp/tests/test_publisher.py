@@ -5,28 +5,30 @@ from doctest import (
     DocTestSuite,
     ELLIPSIS,
     )
-from unittest import TestLoader, TestSuite
+from unittest import (
+    TestLoader,
+    TestSuite,
+    )
 
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp import publisher
 from canonical.launchpad.webapp.publisher import (
     FakeRequest,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing import (
-    logout,
+    login_as,
     person_logged_in,
     TestCaseWithFactory,
     )
-
-from canonical.launchpad.webapp import publisher
 
 
 class TestLaunchpadView(TestCaseWithFactory):
@@ -108,7 +110,7 @@ class TestLaunchpadView(TestCaseWithFactory):
     def test_getCache_anonymous_obfuscated(self):
         request = LaunchpadTestRequest()
         branch = self.factory.makeBranch(name='user@domain')
-        logout()
+        login_as(None)
         view = LaunchpadView(branch, request)
         self.assertIs(None, view.user)
         self.assertNotIn('user@domain', view.getCacheJSON())
@@ -170,7 +172,8 @@ class TestLaunchpadView(TestCaseWithFactory):
                     u'priority': 0,
                     u'value': u'on',
                     },
-                )))
+                ),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -207,7 +210,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         #     but have different values,
         # then the property related_feature_info contains this feature flag.
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -228,7 +232,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         #     and have the same values,
         # then is_beta is false.
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'on', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'on', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.related_features = ['test_feature']
@@ -245,7 +250,8 @@ class TestLaunchpadView(TestCaseWithFactory):
             related_features = ['test_feature']
 
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = TestView(object(), request)
         with person_logged_in(self.factory.makePerson()):
@@ -269,7 +275,8 @@ class TestLaunchpadView(TestCaseWithFactory):
             related_features = ['test_feature_2']
 
         self.useFixture(FeatureFixture(
-            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
         request = LaunchpadTestRequest()
         view = TestView(object(), request)
         TestView2(object(), request)

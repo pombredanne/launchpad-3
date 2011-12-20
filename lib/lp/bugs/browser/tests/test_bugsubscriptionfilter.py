@@ -30,8 +30,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.testing import (
-    feature_flags,
     anonymous_logged_in,
+    feature_flags,
     login_person,
     normalize_whitespace,
     person_logged_in,
