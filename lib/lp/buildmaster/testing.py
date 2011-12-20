@@ -32,7 +32,7 @@ class BuilddManagerDatabasePolicyFixture(fixtures.Fixture):
             store=store, read_only=read_only)
 
     def setUp(self):
-        # Commit everything done so far then apply  shift into a read-only
+        # Commit everything done so far then shift into a read-only
         # transaction access mode by default.
         transaction.commit()
         self.policy.__enter__()
