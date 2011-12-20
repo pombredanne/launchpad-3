@@ -69,7 +69,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,

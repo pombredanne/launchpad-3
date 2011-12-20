@@ -23,7 +23,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IAuthServerApplication,
     IPrivateApplication,
     )

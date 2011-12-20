@@ -26,7 +26,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IAuthServerApplication,
     )
 from lp.services.statistics.interfaces.statistic import (

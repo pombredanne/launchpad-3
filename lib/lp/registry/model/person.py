@@ -127,7 +127,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,

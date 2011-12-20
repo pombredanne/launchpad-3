@@ -100,7 +100,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from lp.app.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.searchbuilder import (
     all,
     any,

@@ -10,18 +10,18 @@
 
   <securedutility
       class="canonical.launchpad.xmlrpc.application.PrivateApplication"
-      provides="canonical.launchpad.interfaces.launchpad.IPrivateApplication">
-      <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateApplication"/>
+      provides="lp.app.interfaces.launchpad.IPrivateApplication">
+      <allow interface="lp.app.interfaces.launchpad.IPrivateApplication"/>
   </securedutility>
 
   <securedutility
     class="canonical.launchpad.systemhomes.AuthServerApplication"
-    provides="canonical.launchpad.interfaces.launchpad.IAuthServerApplication">
-    <allow interface="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"/>
+    provides="lp.app.interfaces.launchpad.IAuthServerApplication">
+    <allow interface="lp.app.interfaces.launchpad.IAuthServerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
+    for="lp.app.interfaces.launchpad.IAuthServerApplication"
     interface="canonical.launchpad.interfaces.authserver.IAuthServer"
     class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
     permission="zope.Public"

@@ -62,7 +62,7 @@ from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IPrivateApplication,
     )
 import canonical.launchpad.layers
