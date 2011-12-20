@@ -1602,10 +1602,12 @@ class Bug(SQLBase):
             # No tasks match the candidate's pillar. We must refuse.
             return False
         else:
-            # The bug is already nominated for this nomination target.
+            # The bug may be already nominated for this nomination target.
             # If the status is declined, the bug can be renominated, else
             # return False
-            return nomination.status == BugNominationStatus.DECLINED
+            if nomination:
+                return nomination.status == BugNominationStatus.DECLINED
+            return False
 
     def getNominationFor(self, target):
         """See `IBug`."""
