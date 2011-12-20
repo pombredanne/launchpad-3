@@ -901,7 +901,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :param end_date: The optional last date to return.
         """
 
-    #@export_read_operation()
+    @export_read_operation()
+    @operation_for_version("devel")
     def binaryFileUrls():
         """URLs for this binary publication's binary files.
 

@@ -7,6 +7,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.testing.pages import webservice_for_person
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -20,7 +22,11 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -165,3 +171,24 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr)
         self.assertEqual(2, len(bpph.binaryFileUrls()))
+
+
+class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_binaryFileUrls(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        person = self.factory.makePerson()
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.READ_PUBLIC)
+        with person_logged_in(person):
+            bpph_url = api_url(bpph)
+        response = webservice.named_get(
+            bpph_url, 'binaryFileUrls', api_version='devel')
+        self.assertEqual(200, response.status)
+        urls = response.jsonBody()
+        self.assertEqual(1, len(urls))
