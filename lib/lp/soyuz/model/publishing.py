@@ -50,9 +50,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -73,6 +70,7 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

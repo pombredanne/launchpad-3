@@ -100,9 +100,7 @@ from lp.codehosting.bzrutils import (
     get_branch_info,
     get_stacked_on_url,
     )
-from lp.codehosting.vfs.branchfsclient import (
-    BranchFileSystemClient,
-    )
+from lp.codehosting.vfs.branchfsclient import BranchFileSystemClient
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer,
     AsyncVirtualTransport,
@@ -115,7 +113,6 @@ from lp.services.twistedsupport.xmlrpc import (
     DeferredBlockingProxy,
     trap_fault,
     )
-
 
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation. We support

@@ -22,7 +22,6 @@ from canonical.launchpad.webapp.vocabulary import (
     IHugeVocabulary,
     SQLObjectVocabularyBase,
     )
-
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches

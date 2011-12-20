@@ -8,7 +8,6 @@ __all__ = ['FeatureFixture']
 
 
 from fixtures import Fixture
-
 from lazr.restful.utils import get_current_browser_request
 
 from lp.services.features import (
@@ -20,9 +19,7 @@ from lp.services.features.rulesource import (
     Rule,
     StormFeatureRuleSource,
     )
-from lp.services.features.scopes import (
-    ScopesFromRequest,
-    )
+from lp.services.features.scopes import ScopesFromRequest
 
 
 class FeatureFixture(Fixture):

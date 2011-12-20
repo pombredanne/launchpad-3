@@ -40,9 +40,9 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.app.enums import service_uses_launchpad
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries

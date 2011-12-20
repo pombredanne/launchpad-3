@@ -9,6 +9,7 @@ from urlparse import (
     urlparse,
     )
 
+from lazr.restfulclient.errors import NotFound as RestfulNotFound
 import transaction
 from zope.component import (
     getMultiAdapter,
@@ -29,7 +30,6 @@ from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
-from lazr.restfulclient.errors import NotFound as RestfulNotFound
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
 from lp.testing import (
     launchpadlib_for,

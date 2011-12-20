@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,7 +16,6 @@ from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
-from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.authentication import (
     LaunchpadPrincipal,
@@ -27,6 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import IAccount
 
 
 class DummyPerson(object):

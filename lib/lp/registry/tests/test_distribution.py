@@ -36,16 +36,16 @@ from lp.registry.errors import (
     NoSuchDistroSeries,
     OpenTeamLinkageError,
     )
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
-    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    IPersonSet,
+    OPEN_TEAM_POLICY,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,

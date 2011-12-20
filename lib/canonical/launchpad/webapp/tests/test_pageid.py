@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 
-from zope.interface import implements
 from lazr.restful.interfaces import ICollectionResource
+from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import WebServicePublication
 from lp.testing import TestCase

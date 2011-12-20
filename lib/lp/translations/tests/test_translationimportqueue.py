@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from operator import attrgetter
 import os.path
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

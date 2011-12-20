@@ -8,17 +8,16 @@ __all__ = []
 
 from textwrap import dedent
 
+from zope.app.testing.functional import HTTPCaller
+
 from canonical.config import config
-from canonical.testing.layers import FunctionalLayer
 from canonical.launchpad.webapp import haproxy
 from canonical.launchpad.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     LaunchpadDatabasePolicyFactory,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-from zope.app.testing.functional import HTTPCaller
-
+from canonical.testing.layers import FunctionalLayer
 from lp.testing import TestCase
 
 

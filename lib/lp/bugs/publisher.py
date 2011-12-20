@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugs' custom publication."""
@@ -8,6 +8,7 @@ __all__ = [
     'BugsBrowserRequest',
     'BugsLayer',
     'bugs_request_publication_factory',
+    'LaunchpadBugContainer',
     ]
 
 
@@ -17,7 +18,9 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
+from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.publisher import LaunchpadContainer
 from canonical.launchpad.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
@@ -36,3 +39,16 @@ class BugsBrowserRequest(LaunchpadBrowserRequest):
 def bugs_request_publication_factory():
     return VHostWebServiceRequestPublicationFactory(
         'bugs', BugsBrowserRequest, LaunchpadBrowserPublication)
+
+
+class LaunchpadBugContainer(LaunchpadContainer):
+
+    def isWithin(self, scope):
+        """Is this bug within the given scope?
+
+        A bug is in the scope of any of its bugtasks' targets.
+        """
+        for bugtask in self.context.bugtasks:
+            if ILaunchpadContainer(bugtask.target).isWithin(scope):
+                return True
+        return False

@@ -26,20 +26,23 @@
     </noscript>
     <div class="yui3-activator-message-box yui3-activator-hidden"></div>
 </span>
+
 <script tal:condition="view/can_write"
         tal:content="structure string:
-LPS.use('lp.app.picker', function(Y) {
+LPS.use('lp.app.picker', 'lp.client', function(Y) {
     if (Y.UA.ie) {
         return;
     }
 
+    var picker_config = ${view/json_config}
+    picker_config.validate_callback = Y.lp.app.picker.public_private_warning;
     Y.on('load', function(e) {
       Y.lp.app.picker.addPickerPatcher(
         ${view/json_vocabulary_name},
         ${view/json_resource_uri},
         ${view/json_attribute},
         ${view/json_content_box_id},
-        ${view/json_config});
+        picker_config);
       }, window);
 });
 "/>

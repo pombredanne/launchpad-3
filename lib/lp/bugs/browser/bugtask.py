@@ -55,7 +55,6 @@ from math import (
 from operator import attrgetter
 import os.path
 import re
-import transaction
 import urllib
 import urlparse
 
@@ -79,6 +78,7 @@ import pystache
 from pytz import utc
 from simplejson import dumps
 from simplejson.encoder import JSONEncoderForHTML
+import transaction
 from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
@@ -107,9 +107,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import Choice
-from zope.schema.interfaces import (
-    IContextSourceBinder,
-    )
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
@@ -285,6 +283,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.utils import obfuscate_structure
+
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -559,8 +558,14 @@ class BugTargetTraversalMixin:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
-        # If we've come this far, there's no task for the requested
-        # context. Redirect to one that exists.
+        # If we've come this far, there's no task for the requested context.
+        # If we are attempting to navigate past the non-existent bugtask,
+        # we raise NotFound error. eg +delete or +edit etc.
+        # Otherwise we are simply navigating to a non-existent task and so we
+        # redirect to one that exists.
+        travseral_stack = self.request.getTraversalStack()
+        if len(travseral_stack) > 0:
+            raise NotFoundError
         return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
 
@@ -1784,7 +1789,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return super(BugTaskDeletionView, self).next_url
+            return self._next_url or self._return_url
         return None
 
     @action('Delete', name='delete_bugtask')
@@ -1795,6 +1800,9 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
         error_message = None
+        # We set the next_url here before the bugtask is deleted since later
+        # the bugtask will not be available if required to construct the url.
+        self._next_url = self._return_url
 
         try:
             bugtask.delete()
@@ -2253,9 +2261,9 @@ class BugTaskListingItem:
             }
 
         # This is a total hack, but pystache will run both truth/false values
-        # for an empty list for some reason, and it "works" if it's just a flag
-        # like this. We need this value for the mustache template to be able
-        # to tell that there are no tags without looking at the list.
+        # for an empty list for some reason, and it "works" if it's just a
+        # flag like this. We need this value for the mustache template to be
+        # able to tell that there are no tags without looking at the list.
         flattened['has_tags'] = True if len(flattened['tags']) else False
         return flattened
 
@@ -2494,27 +2502,27 @@ class BugTaskSearchListingMenu(NavigationMenu):
 # All sort orders supported by BugTaskSet.search() and a title for
 # them.
 SORT_KEYS = [
-    ('importance', 'Importance'),
-    ('status', 'Status'),
-    ('id', 'Bug number'),
-    ('title', 'Bug title'),
-    ('targetname', 'Package/Project/Series name'),
-    ('milestone_name', 'Milestone'),
-    ('date_last_updated', 'Date bug last updated'),
-    ('assignee', 'Assignee'),
-    ('reporter', 'Reporter'),
-    ('datecreated', 'Bug age'),
-    ('tag', 'Bug Tags'),
-    ('heat', 'Bug heat'),
-    ('date_closed', 'Date bug closed'),
-    ('dateassigned', 'Date when the bug task was assigned'),
-    ('number_of_duplicates', 'Number of duplicates'),
-    ('latest_patch_uploaded', 'Date latest patch uploaded'),
-    ('message_count', 'Number of comments'),
-    ('milestone', 'Milestone ID'),
-    ('specification', 'Linked blueprint'),
-    ('task', 'Bug task ID'),
-    ('users_affected_count', 'Number of affected users'),
+    ('importance', 'Importance', 'desc'),
+    ('status', 'Status', 'asc'),
+    ('id', 'Bug number', 'desc'),
+    ('title', 'Bug title', 'asc'),
+    ('targetname', 'Package/Project/Series name', 'asc'),
+    ('milestone_name', 'Milestone', 'asc'),
+    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('assignee', 'Assignee', 'asc'),
+    ('reporter', 'Reporter', 'asc'),
+    ('datecreated', 'Bug age', 'desc'),
+    ('tag', 'Bug Tags', 'asc'),
+    ('heat', 'Bug heat', 'desc'),
+    ('date_closed', 'Date bug closed', 'desc'),
+    ('dateassigned', 'Date when the bug task was assigned', 'desc'),
+    ('number_of_duplicates', 'Number of duplicates', 'desc'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
+    ('message_count', 'Number of comments', 'desc'),
+    ('milestone', 'Milestone ID', 'desc'),
+    ('specification', 'Linked blueprint', 'asc'),
+    ('task', 'Bug task ID', 'desc'),
+    ('users_affected_count', 'Number of affected users', 'desc'),
     ]
 
 

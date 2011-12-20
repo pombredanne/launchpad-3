@@ -12,13 +12,13 @@ __all__ = [
     ]
 
 import logging
-from zope.component import getUtility
 
 from storm.locals import (
     And,
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,

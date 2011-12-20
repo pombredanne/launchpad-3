@@ -8,8 +8,7 @@ __metaclass__ = type
 from zope.interface import (
     implements,
     Interface,
-)
-
+    )
 from zope.schema import Choice
 
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -4,14 +4,14 @@
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from debian.deb822 import Changes
 from optparse import OptionValueError
+
+from debian.deb822 import Changes
 from testtools.matchers import LessThan
 import transaction
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger

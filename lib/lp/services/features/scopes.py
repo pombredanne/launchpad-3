@@ -25,9 +25,9 @@ __metaclass__ = type
 
 import re
 
+import canonical.config
 from lp.registry.interfaces.person import IPerson
 from lp.services.propertycache import cachedproperty
-import canonical.config
 
 
 undocumented_scopes = set()

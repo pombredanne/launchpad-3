@@ -12,9 +12,7 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

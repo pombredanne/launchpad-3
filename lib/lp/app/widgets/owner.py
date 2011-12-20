@@ -3,12 +3,16 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.app.form.interfaces import IInputWidget
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+
 
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request

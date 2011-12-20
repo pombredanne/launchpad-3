@@ -17,8 +17,6 @@ from zope.component import (
 from zope.interface import Interface
 
 from canonical.config import config
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
@@ -158,6 +156,8 @@ from lp.registry.interfaces.role import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.identity.interfaces.account import IAccount
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,

@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCase
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -13,6 +12,7 @@ from lp.bugs.interfaces.bugtask import (
     get_bugtask_status,
     normalize_bugtask_status,
     )
+from lp.testing import TestCase
 
 
 class TestFunctions(TestCase):

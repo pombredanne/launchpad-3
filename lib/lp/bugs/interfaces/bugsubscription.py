@@ -32,9 +32,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import (
-    patch_reference_property,
-    )
+from canonical.launchpad.components.apihelpers import patch_reference_property
 from lp.bugs.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice
 

@@ -19,12 +19,12 @@ from lp.codehosting import (
     )
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
+    _WaitForExit,
     ExecOnlySession,
     ForbiddenCommand,
     ForkingRestrictedExecOnlySession,
-    RestrictedExecOnlySession,
-    _WaitForExit,
     lookup_command_template,
+    RestrictedExecOnlySession,
     )
 from lp.codehosting.tests.helpers import AvatarTestCase
 from lp.testing import TestCase

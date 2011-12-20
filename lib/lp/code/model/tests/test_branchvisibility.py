@@ -25,12 +25,11 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel,
     BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet

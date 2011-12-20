@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests publication.py"""
@@ -26,7 +26,6 @@ from zope.publisher.interfaces import (
     )
 
 from canonical.config import dbconfig
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -62,6 +61,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     IOAuthSignedRequest,

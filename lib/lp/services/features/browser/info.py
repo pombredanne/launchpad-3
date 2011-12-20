@@ -23,7 +23,6 @@ from lp.services.features.scopes import (
     )
 from lp.services.utils import docstring_dedent
 
-
 # Named tuples to use when passing flag and scope data to the template.
 Flag = namedtuple(
     'Flag', ('name', 'domain', 'description', 'default', 'title', 'link'))

@@ -35,7 +35,6 @@ from canonical.launchpad.components.tokens import (
     )
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
@@ -52,6 +51,7 @@ from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,

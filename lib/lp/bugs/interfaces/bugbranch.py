@@ -33,9 +33,7 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
-from lp.services.fields import (
-    BugField,
-    )
+from lp.services.fields import BugField
 
 
 class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):

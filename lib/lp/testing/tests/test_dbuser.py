@@ -9,8 +9,13 @@ from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
-from lp.testing import TestCase # or TestCaseWithFactory
-from lp.testing.dbuser import dbuser, lp_dbuser
+# or TestCaseWithFactory
+from lp.testing import TestCase
+from lp.testing.dbuser import (
+    dbuser,
+    lp_dbuser,
+    )
+
 
 class TestDbUser(TestCase):
 

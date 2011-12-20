@@ -7,7 +7,7 @@ quiet mode over it.
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from lp.soyuz.interfaces.publishing import active_publishing_status
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,

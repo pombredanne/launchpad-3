@@ -16,11 +16,11 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.ftests import logout
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     RedirectionView,
     )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.browser.publishing import (
     SourcePackagePublishingHistoryNavigation,

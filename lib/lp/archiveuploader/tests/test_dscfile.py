@@ -20,7 +20,10 @@ from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.log.logger import BufferLogger, DevNullLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.soyuz.enums import SourcePackageFormat
 from lp.testing import (
     TestCase,
