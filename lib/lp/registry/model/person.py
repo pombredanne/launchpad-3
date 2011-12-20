@@ -132,7 +132,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from lp.services.statistics.interfaces.statistics import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet

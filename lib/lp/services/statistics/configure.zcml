@@ -10,17 +10,17 @@
     <!-- LaunchpadStatistic -->
 
     <class
-        class="lp.services.statistics.model.launchpadstatistic.LaunchpadStatistic">
+        class="lp.services.statistics.model.statistics.LaunchpadStatistic">
         <allow
-            interface="lp.services.statistics.interfaces.statistics.ILaunchpadStatistic"/>
+            interface="lp.services.statistics.interfaces.statistic.ILaunchpadStatistic"/>
     </class>
 
     <!-- LaunchpadStatisticSet -->
 
     <securedutility
-        class="lp.services.statistics.model.launchpadstatistic.LaunchpadStatisticSet"
-        provides="lp.services.statistics.interfaces.statistics.ILaunchpadStatisticSet">
+        class="lp.services.statistics.model.statistics.LaunchpadStatisticSet"
+        provides="lp.services.statistics.interfaces.statistic.ILaunchpadStatisticSet">
         <allow
-            interface="lp.services.statistics.interfaces.statistics.ILaunchpadStatisticSet"/>
+            interface="lp.services.statistics.interfaces.statistic.ILaunchpadStatisticSet"/>
     </securedutility>
 </configure>
