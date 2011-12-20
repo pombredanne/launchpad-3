@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TestOpenID adapters and helpers."""
@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.account import IAccount
+from lp.services.identity.interfaces.account import IAccount
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity

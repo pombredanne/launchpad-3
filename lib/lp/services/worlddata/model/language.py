@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under
 # the GNU Affero General Public License version 3 (see the file
 # LICENSE).
 
@@ -30,7 +30,7 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import ensure_unicode

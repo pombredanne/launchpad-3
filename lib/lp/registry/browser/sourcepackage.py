@@ -59,7 +59,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.multistep import (
+from lp.app.browser.multistep import (
     MultiStepView,
     StepView,
     )

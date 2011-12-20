@@ -29,7 +29,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore

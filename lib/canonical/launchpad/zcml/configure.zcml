@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -9,10 +9,6 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
-    <include file="account.zcml" />
-    <include file="datetime.zcml" />
-    <include file="decoratedresultset.zcml" />
-    <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />

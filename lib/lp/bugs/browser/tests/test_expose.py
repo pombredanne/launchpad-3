@@ -20,7 +20,7 @@ from testtools.matchers import (
 from zope.interface import implements
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer

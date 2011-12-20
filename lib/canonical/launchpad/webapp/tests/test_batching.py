@@ -19,7 +19,7 @@ from testtools.matchers import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias

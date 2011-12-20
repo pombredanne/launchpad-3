@@ -2231,10 +2231,7 @@ class BugTaskListingItem:
             self.bugtask.target,
             view_name="+bugs")
 
-        def build_tag_url(tag):
-            """Generate a url for the tag based on the current request ctx."""
-
-        return {
+        flattened = {
             'age': age,
             'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
@@ -2254,6 +2251,13 @@ class BugTaskListingItem:
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }
+
+        # This is a total hack, but pystache will run both truth/false values
+        # for an empty list for some reason, and it "works" if it's just a flag
+        # like this. We need this value for the mustache template to be able
+        # to tell that there are no tags without looking at the list.
+        flattened['has_tags'] = True if len(flattened['tags']) else False
+        return flattened
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2490,27 +2494,27 @@ class BugTaskSearchListingMenu(NavigationMenu):
 # All sort orders supported by BugTaskSet.search() and a title for
 # them.
 SORT_KEYS = [
-    ('importance', 'Importance'),
-    ('status', 'Status'),
-    ('id', 'Bug number'),
-    ('title', 'Bug title'),
-    ('targetname', 'Package/Project/Series name'),
-    ('milestone_name', 'Milestone'),
-    ('date_last_updated', 'Date bug last updated'),
-    ('assignee', 'Assignee'),
-    ('reporter', 'Reporter'),
-    ('datecreated', 'Bug age'),
-    ('tag', 'Bug Tags'),
-    ('heat', 'Bug heat'),
-    ('date_closed', 'Date bug closed'),
-    ('dateassigned', 'Date when the bug task was assigned'),
-    ('number_of_duplicates', 'Number of duplicates'),
-    ('latest_patch_uploaded', 'Date latest patch uploaded'),
-    ('message_count', 'Number of comments'),
-    ('milestone', 'Milestone ID'),
-    ('specification', 'Linked blueprint'),
-    ('task', 'Bug task ID'),
-    ('users_affected_count', 'Number of affected users'),
+    ('importance', 'Importance', 'desc'),
+    ('status', 'Status', 'asc'),
+    ('id', 'Bug number', 'desc'),
+    ('title', 'Bug title', 'asc'),
+    ('targetname', 'Package/Project/Series name', 'asc'),
+    ('milestone_name', 'Milestone', 'asc'),
+    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('assignee', 'Assignee', 'asc'),
+    ('reporter', 'Reporter', 'asc'),
+    ('datecreated', 'Bug age', 'desc'),
+    ('tag', 'Bug Tags', 'asc'),
+    ('heat', 'Bug heat', 'desc'),
+    ('date_closed', 'Date bug closed', 'desc'),
+    ('dateassigned', 'Date when the bug task was assigned', 'desc'),
+    ('number_of_duplicates', 'Number of duplicates', 'desc'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
+    ('message_count', 'Number of comments', 'desc'),
+    ('milestone', 'Milestone ID', 'desc'),
+    ('specification', 'Linked blueprint', 'asc'),
+    ('task', 'Bug task ID', 'desc'),
+    ('users_affected_count', 'Number of affected users', 'desc'),
     ]
 
 
