@@ -12,8 +12,6 @@ which tells `lazr.restful` that it should look for webservice exports here.
 __metaclass__ = type
 __all__ = [
     'IMessage',
-    'ITemporaryBlobStorage',
-    'ITemporaryStorageManager',
     'IWebServiceApplication',
     ]
 
@@ -21,10 +19,6 @@ __all__ = [
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
 from canonical.launchpad.interfaces.launchpad import IWebServiceApplication
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryBlobStorage,
-    ITemporaryStorageManager,
-    )
 from lp.services.messages.interfaces.message import IMessage
 
 

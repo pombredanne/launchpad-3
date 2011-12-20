@@ -30,10 +30,6 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryBlobStorage,
-    ITemporaryStorageManager,
-    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationtarget import (
@@ -1074,14 +1070,6 @@ patch_entry_explicit_version(ITeam, 'beta')
 patch_entry_explicit_version(ITeamMembership, 'beta')
 patch_operations_explicit_version(
     ITeamMembership, 'beta', "setExpirationDate", "setStatus")
-
-# ITemporaryBlobStorage
-patch_operations_explicit_version(
-    ITemporaryBlobStorage, 'beta', "getProcessedData", "hasBeenProcessed")
-
-# ITemporaryStorageManager
-patch_operations_explicit_version(
-    ITemporaryStorageManager, 'beta', "fetch")
 
 # ITimelineProductSeries
 patch_entry_explicit_version(ITimelineProductSeries, 'beta')
