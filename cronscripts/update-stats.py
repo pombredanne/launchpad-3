@@ -11,7 +11,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from lp.registry.interfaces.distribution import IDistributionSet

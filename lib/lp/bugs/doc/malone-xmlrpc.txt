@@ -247,9 +247,11 @@ for authentication with external bug trackers.
 The API provides a single method, newBugTrackerToken(), which returns
 the ID of the new LoginToken.
 
-    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     IExternalBugTrackerTokenAPI)
     >>> from lp.bugs.xmlrpc.bug import (
     ...     ExternalBugTrackerTokenAPI)
 

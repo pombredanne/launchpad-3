@@ -83,7 +83,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.services.feeds.browser import FeedsMixin
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,

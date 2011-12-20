@@ -58,11 +58,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication,
     IRosettaApplication,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.layers import WebServiceLayer

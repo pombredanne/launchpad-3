@@ -22,7 +22,7 @@ __all__ = [
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
 from canonical.launchpad.interfaces.launchpad import IWebServiceApplication
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )

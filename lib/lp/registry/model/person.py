@@ -119,23 +119,23 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import _
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.logintoken import LoginToken
+from lp.services.verification.model.logintoken import LoginToken
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,

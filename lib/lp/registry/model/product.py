@@ -67,7 +67,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore

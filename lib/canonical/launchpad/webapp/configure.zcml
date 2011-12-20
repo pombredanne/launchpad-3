@@ -5,6 +5,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="canonical.launchpad">
 
     <include file="servers.zcml" />
@@ -247,6 +248,25 @@
             />
     </class>
 
+    <!--
+    Operational statistics. Note that these are publicly available,
+    and if we want to restrict access to the LAN then we need to block
+    these URLs in Apache.
+    -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+opstats"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.opstats.OpStats"
+        />
+    <xmlrpc:view
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.webapp.opstats.OpStats"
+        methods="opstats"
+        permission="zope.Public"
+        name="+opstats"
+        />
+
     <browser:page
         for="*"
         name="bag"
@@ -298,6 +318,11 @@
     <adapter
         factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result"
         for="storm.zope.interfaces.ISQLObjectResultSet" />
+
+    <class class="canonical.launchpad.webapp.publisher.RenamedView">
+        <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+               attributes="__call__"/>
+    </class>
 
     <!--These pages are used for testing BrowserNotificationMessages
         They are protected with admin privileges rather than being installed
