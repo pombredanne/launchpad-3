@@ -16,7 +16,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -27,6 +26,7 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.testing.dbuser import dbuser
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.sampledata import (
