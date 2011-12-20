@@ -33,7 +33,6 @@ __all__ = [
     'IHasAssignee',
     'IHasBug',
     'IHasDateCreated',
-    'IHasExternalBugTracker',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -51,21 +50,6 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     ]
-
-
-class IHasExternalBugTracker(Interface):
-    """An object that can have an external bugtracker specified."""
-
-    def getExternalBugTracker():
-        """Return the external bug tracker used by this bug tracker.
-
-        If the product uses Launchpad, return None.
-
-        If the product doesn't have a bug tracker specified, return the
-        project bug tracker instead. If the product doesn't belong to a
-        superproject, or if the superproject doesn't have a bug tracker,
-        return None.
-        """
 
 
 class IPrivateMaloneApplication(ILaunchpadApplication):

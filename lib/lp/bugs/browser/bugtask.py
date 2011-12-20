@@ -129,7 +129,7 @@ from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,

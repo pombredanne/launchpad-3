@@ -70,7 +70,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -92,6 +91,7 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
