@@ -36,10 +36,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -95,7 +92,7 @@ from lp.testing.fakemethod import FakeMethod
 class TestBuilderBasics(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestBuilderBasics, self).setUp()
@@ -163,6 +160,7 @@ class TestBuilder(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilder, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
+        self.useFixture(BuilddManagerTestFixture())
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -179,12 +177,14 @@ class TestBuilder(TestCaseWithFactory):
         return d.addBoth(check_slave_status)
 
     def test_resumeSlaveHost_nonvirtual(self):
-        builder = self.factory.makeBuilder(virtualized=False)
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder(virtualized=False)
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
-        builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
@@ -195,7 +195,8 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset', reset_config)
         self.addCleanup(config.pop, 'reset')
 
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
@@ -207,7 +208,8 @@ class TestBuilder(TestCaseWithFactory):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
@@ -217,11 +219,13 @@ class TestBuilder(TestCaseWithFactory):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        builder.builderok = True
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+            builder.builderok = True
         d = builder.handleTimeout(BufferLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
 
+    @BuilddManagerTestFixture.extraSetUp
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
@@ -236,6 +240,7 @@ class TestBuilder(TestCaseWithFactory):
         distroseries.nominatedarchindep = das
         return builder, distroseries, das
 
+    @BuilddManagerTestFixture.extraSetUp
     def _setupRecipeBuildAndBuilder(self):
         # Helper function to make a builder capable of building a
         # recipe, returning both.
@@ -244,6 +249,7 @@ class TestBuilder(TestCaseWithFactory):
             distroseries=distroseries)
         return builder, build
 
+    @BuilddManagerTestFixture.extraSetUp
     def _setupBinaryBuildAndBuilder(self):
         # Helper function to make a builder capable of building a
         # binary package, returning both.
@@ -295,7 +301,8 @@ class TestBuilder(TestCaseWithFactory):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
         # security context.
-        builder = removeSecurityProxy(self.factory.makeBuilder())
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = removeSecurityProxy(self.factory.makeBuilder())
         self.assertEqual(builder.url, builder.slave.url)
 
     def test_recovery_of_aborted_virtual_slave(self):
@@ -389,10 +396,11 @@ class TestBuilder(TestCaseWithFactory):
         # too so that we don't traceback when the wrong behaviour tries
         # to access a non-existent job.
         builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
-        building_slave = BuildingSlave()
-        builder.setSlaveForTesting(building_slave)
-        candidate.markAsBuilding(builder)
+        with BuilddManagerTestFixture.extraSetUp():
+            candidate = build.queueBuild()
+            building_slave = BuildingSlave()
+            builder.setSlaveForTesting(building_slave)
+            candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
         self.assertFalse(
@@ -400,8 +408,8 @@ class TestBuilder(TestCaseWithFactory):
                 builder.current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
-        candidate.destroySelf()
-        self.layer.txn.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            candidate.destroySelf()
         builder = getUtility(IBuilderSet)[builder.name]
         d = builder.rescueIfLost()
         def check_builder(ignored):
