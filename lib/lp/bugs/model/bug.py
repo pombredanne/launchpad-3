@@ -99,7 +99,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.database.interfaces import IStore
 from canonical.launchpad.webapp.authorization import check_permission

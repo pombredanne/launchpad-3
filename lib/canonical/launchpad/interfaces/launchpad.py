@@ -13,7 +13,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Int,
     )
 
 from canonical.launchpad import _
@@ -24,7 +23,6 @@ __all__ = [
     'IAging',
     'IAuthServerApplication',
     'IHasAssignee',
-    'IHasBug',
     'IHasDateCreated',
     'IHasIcon',
     'IHasLogo',
@@ -74,12 +72,6 @@ class IHasProduct(Interface):
     """An object that has a product attribute that is an IProduct."""
 
     product = Attribute("The object's product")
-
-
-class IHasBug(Interface):
-    """An object linked to a bug, e.g., a bugtask or a bug branch."""
-
-    bug = Int(title=_("Bug #"))
 
 
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
