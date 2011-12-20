@@ -12,11 +12,11 @@ __all__ = [
 
 __metaclass__ = type
 
-import re
 from collections import (
     defaultdict,
     namedtuple,
     )
+import re
 
 from storm.locals import Desc
 
@@ -25,7 +25,6 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")

@@ -9,11 +9,11 @@ from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
     MassSyncCopyPolicy,
     )
-from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
     )
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.testing import TestCaseWithFactory
 
 

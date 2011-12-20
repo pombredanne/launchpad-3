@@ -19,8 +19,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.answers.interfaces.question import IQuestion
 from lp.answers.enums import QuestionStatus
+from lp.answers.interfaces.question import IQuestion
 from lp.registry.interfaces.person import IPerson
 
 

@@ -5,23 +5,22 @@
 
 __metaclass__ = type
 
-from itertools import chain
 from datetime import datetime
-import pytz
-import transaction
+from itertools import chain
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from storm.store import Store
 from testtools.matchers import Not
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.ftests import login
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -41,9 +40,10 @@ from lp.bugs.model.bugnotification import (
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import Contains

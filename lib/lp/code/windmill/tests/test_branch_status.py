@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from storm.store import Store
+import transaction
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.model.branch import Branch

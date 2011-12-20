@@ -76,13 +76,11 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,

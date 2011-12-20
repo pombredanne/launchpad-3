@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.security.management import endInteraction
 
 from canonical.launchpad.testing.pages import (

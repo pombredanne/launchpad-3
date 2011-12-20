@@ -40,9 +40,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.enums import service_uses_launchpad
@@ -92,6 +89,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

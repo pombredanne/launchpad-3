@@ -12,8 +12,8 @@ from StringIO import StringIO
 
 from bzrlib import urlutils
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.tests.http_server import HttpServer
 from bzrlib.tests.http_server import (
+    HttpServer,
     TestingHTTPServer,
     TestingThreadingHTTPServer,
     )
@@ -25,8 +25,8 @@ from lp.codehosting.puller.worker import (
     PullerWorker,
     PullerWorkerProtocol,
     )
-from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.safe_open import AcceptAnythingPolicy
+from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.vfs import branch_id_to_path
 from lp.testing import TestCaseWithFactory
 

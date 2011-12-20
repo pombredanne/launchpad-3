@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = ['QuestionSubscription']
 
 import pytz
-
 from sqlobject import ForeignKey
 from storm.locals import (
     DateTime,

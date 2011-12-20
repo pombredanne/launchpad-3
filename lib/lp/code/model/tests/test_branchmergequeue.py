@@ -18,8 +18,8 @@ from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.testing import (
     ANONYMOUS,
-    person_logged_in,
     launchpadlib_for,
+    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )

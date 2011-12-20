@@ -118,17 +118,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import (
-    Account,
-    AccountPassword,
-    )
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress,
-    HasOwnerMixin,
-    )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.helpers import (
@@ -137,21 +126,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    AccountSuspendedError,
-    IAccount,
-    IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES,
-    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -280,6 +255,29 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
     TeamParticipation,
+    )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import (
+    Account,
+    AccountPassword,
+    )
+from lp.services.identity.model.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
     )
 from lp.services.oauth.model import (
     OAuthAccessToken,

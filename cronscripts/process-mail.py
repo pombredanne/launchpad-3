@@ -14,7 +14,7 @@ from canonical.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.services.mail.incoming import handleMail
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
 
 
 class ProcessMail(LaunchpadCronScript):

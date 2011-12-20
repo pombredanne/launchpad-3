@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-
 import unittest
+
 import transaction
 from zope.component import getUtility
 

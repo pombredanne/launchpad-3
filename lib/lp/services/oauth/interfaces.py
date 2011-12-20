@@ -24,6 +24,8 @@ __all__ = [
     ]
 
 import httplib
+
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -35,8 +37,6 @@ from zope.schema import (
     Object,
     TextLine,
     )
-
-from lazr.restful.declarations import error_status
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (

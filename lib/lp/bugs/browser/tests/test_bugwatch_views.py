@@ -7,10 +7,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.services.messages.interfaces.message import IMessageSet
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 

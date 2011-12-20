@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lazr.restful import EntryResource
 from zope.app.pagetemplate.simpleviewclass import simple
 from zope.component import (
     getSiteManager,
@@ -23,7 +24,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lazr.restful import EntryResource
 from lp.testing import (
     ANONYMOUS,
     login,

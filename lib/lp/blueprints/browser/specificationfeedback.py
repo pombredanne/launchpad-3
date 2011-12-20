@@ -11,9 +11,7 @@ from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

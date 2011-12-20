@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -35,7 +35,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
@@ -49,6 +48,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.services.identity.interfaces.account import IAccountSet
 from lp.services.oauth.interfaces import OAUTH_CHALLENGE
 
 

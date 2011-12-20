@@ -37,10 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.browser import (
     Browser,
@@ -70,6 +66,10 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (

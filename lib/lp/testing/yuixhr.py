@@ -13,7 +13,6 @@ __all__ = [
 
 from fnmatch import fnmatchcase
 import os
-import simplejson
 import sys
 from textwrap import dedent
 import traceback
@@ -21,6 +20,7 @@ import unittest
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
@@ -28,26 +28,28 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.http import IResult
 from zope.security.checker import (
     NamesChecker,
-    ProxyFactory)
+    ProxyFactory,
+    )
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility,
     IOpenLaunchBag,
+    IPlacelessAuthUtility,
     )
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
-    LibrarianLayer,
     LayerProcessController,
+    LibrarianLayer,
     YUIAppServerLayer,
     )
 from lp.app.versioninfo import revno
 from lp.testing import AbstractYUITestCase
+
 
 EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)
 

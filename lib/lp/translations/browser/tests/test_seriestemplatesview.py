@@ -15,13 +15,13 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
-from lp.translations.browser.distroseries import DistroSeriesTemplatesView
-from lp.translations.browser.productseries import ProductSeriesTemplatesView
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
+from lp.translations.browser.distroseries import DistroSeriesTemplatesView
+from lp.translations.browser.productseries import ProductSeriesTemplatesView
 
 
 class SeriesTemplatesViewScenario:

@@ -12,7 +12,6 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.testing import TestCaseWithFactory
 
 

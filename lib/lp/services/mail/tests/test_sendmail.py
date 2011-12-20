@@ -14,12 +14,11 @@ from zope.sendmail.interfaces import IMailDelivery
 from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureTimeline,
     ZopeUtilityFixture,
     )
-
-from lp.testing import TestCase
 
 
 class TestMailController(TestCase):

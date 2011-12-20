@@ -85,9 +85,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.searchbuilder import (
@@ -106,6 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -162,9 +160,12 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.propertycache import get_property_cache
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -679,6 +680,17 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
+
+        # When a task is deleted, we also delete it's BugNomination entry
+        # if there is one. Sadly, getNominationFor() can return None or
+        # raise NotFoundError so we need to check for both.
+        try:
+            nomination = bug.getNominationFor(target)
+            if nomination is not None:
+                nomination.destroySelf()
+        except NotFoundError:
+            # We don't care if there isn't a nomination
+            pass
 
         # When a task is deleted the bug's heat needs to be recalculated.
         target.recalculateBugHeatCache()
@@ -3206,95 +3218,93 @@ class BugTaskSet:
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
 
-    def getOrderByColumnDBName(self, col_name):
-        """See `IBugTaskSet`."""
-        if BugTaskSet._ORDERBY_COLUMN is None:
-            # Avoid circular imports.
-            from lp.bugs.model.bug import (
-                Bug,
-                BugTag,
-                )
-            from lp.registry.model.milestone import Milestone
-            from lp.registry.model.person import Person
-            Assignee = ClassAlias(Person)
-            Reporter = ClassAlias(Person)
-            BugTaskSet._ORDERBY_COLUMN = {
-                "task": (BugTask.id, []),
-                "id": (BugTask.bugID, []),
-                "importance": (BugTask.importance, []),
-                # TODO: sort by their name?
-                "assignee": (
-                    Assignee.name,
-                    [
-                        (Assignee,
-                         LeftJoin(Assignee, BugTask.assignee == Assignee.id))
-                        ]),
-                "targetname": (BugTask.targetnamecache, []),
-                "status": (BugTask._status, []),
-                "title": (Bug.title, []),
-                "milestone": (BugTask.milestoneID, []),
-                "dateassigned": (BugTask.date_assigned, []),
-                "datecreated": (BugTask.datecreated, []),
-                "date_last_updated": (Bug.date_last_updated, []),
-                "date_closed": (BugTask.date_closed, []),
-                "number_of_duplicates": (Bug.number_of_duplicates, []),
-                "message_count": (Bug.message_count, []),
-                "users_affected_count": (Bug.users_affected_count, []),
-                "heat": (BugTask.heat, []),
-                "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
-                "milestone_name": (
-                    Milestone.name,
-                    [
-                        (Milestone,
-                         LeftJoin(Milestone,
-                                  BugTask.milestone == Milestone.id))
-                        ]),
-                "reporter": (
-                    Reporter.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Reporter, Join(Reporter, Bug.owner == Reporter.id))
-                        ]),
-                "tag": (
-                    BugTag.tag,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (BugTag,
-                         LeftJoin(
-                             BugTag,
-                             BugTag.bug == Bug.id and
-                             # We want at most one tag per bug. Select the
-                             # tag that comes first in alphabetic order.
-                             BugTag.id == SQL("""
-                                 SELECT id FROM BugTag AS bt
-                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                "specification": (
-                    Specification.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Specification,
-                         LeftJoin(
-                             Specification,
-                             # We want at most one specification per bug.
-                             # Select the specification that comes first
-                             # in alphabetic order.
-                             Specification.id == SQL("""
-                                 SELECT Specification.id
-                                 FROM SpecificationBug
-                                 JOIN Specification
-                                     ON SpecificationBug.specification=
-                                         Specification.id
-                                 WHERE SpecificationBug.bug=Bug.id
-                                 ORDER BY Specification.name
-                                 LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                }
-        return BugTaskSet._ORDERBY_COLUMN[col_name]
+    @cachedproperty
+    def orderby_expression(self):
+        # Avoid circular imports.
+        from lp.bugs.model.bug import (
+            Bug,
+            BugTag,
+            )
+        from lp.registry.model.milestone import Milestone
+        from lp.registry.model.person import Person
+        Assignee = ClassAlias(Person)
+        Reporter = ClassAlias(Person)
+        return {
+            "task": (BugTask.id, []),
+            "id": (BugTask.bugID, []),
+            "importance": (BugTask.importance, []),
+            # TODO: sort by their name?
+            "assignee": (
+                Assignee.name,
+                [
+                    (Assignee,
+                     LeftJoin(Assignee, BugTask.assignee == Assignee.id))
+                    ]),
+            "targetname": (BugTask.targetnamecache, []),
+            "status": (BugTask._status, []),
+            "title": (Bug.title, []),
+            "milestone": (BugTask.milestoneID, []),
+            "dateassigned": (BugTask.date_assigned, []),
+            "datecreated": (BugTask.datecreated, []),
+            "date_last_updated": (Bug.date_last_updated, []),
+            "date_closed": (BugTask.date_closed, []),
+            "number_of_duplicates": (Bug.number_of_duplicates, []),
+            "message_count": (Bug.message_count, []),
+            "users_affected_count": (Bug.users_affected_count, []),
+            "heat": (BugTask.heat, []),
+            "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+            "milestone_name": (
+                Milestone.name,
+                [
+                    (Milestone,
+                     LeftJoin(Milestone,
+                              BugTask.milestone == Milestone.id))
+                    ]),
+            "reporter": (
+                Reporter.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Reporter, Join(Reporter, Bug.owner == Reporter.id))
+                    ]),
+            "tag": (
+                BugTag.tag,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (BugTag,
+                     LeftJoin(
+                         BugTag,
+                         BugTag.bug == Bug.id and
+                         # We want at most one tag per bug. Select the
+                         # tag that comes first in alphabetic order.
+                         BugTag.id == SQL("""
+                             SELECT id FROM BugTag AS bt
+                             WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                             """))),
+                    ]
+                ),
+            "specification": (
+                Specification.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Specification,
+                     LeftJoin(
+                         Specification,
+                         # We want at most one specification per bug.
+                         # Select the specification that comes first
+                         # in alphabetic order.
+                         Specification.id == SQL("""
+                             SELECT Specification.id
+                             FROM SpecificationBug
+                             JOIN Specification
+                                 ON SpecificationBug.specification=
+                                     Specification.id
+                             WHERE SpecificationBug.bug=Bug.id
+                             ORDER BY Specification.name
+                             LIMIT 1
+                             """))),
+                    ]
+                ),
+            }
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
@@ -3362,11 +3372,11 @@ class BugTaskSet:
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col[1:])
+                col, sort_joins = self.orderby_expression[orderby_col[1:]]
                 extra_joins.extend(sort_joins)
                 order_clause = Desc(col)
             else:
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col)
+                col, sort_joins = self.orderby_expression[orderby_col]
                 extra_joins.extend(sort_joins)
                 order_clause = col
             if col in unambiguous_cols:
