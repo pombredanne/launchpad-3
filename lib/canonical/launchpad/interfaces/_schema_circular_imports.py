@@ -168,7 +168,6 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
@@ -899,9 +898,6 @@ patch_operations_explicit_version(
 
 # IDistroSeriesDifferenceComment
 patch_entry_explicit_version(IDistroSeriesDifferenceComment, 'beta')
-
-# IEmailAddress
-patch_entry_explicit_version(IEmailAddress, 'beta')
 
 # IGPGKey
 patch_entry_explicit_version(IGPGKey, 'beta')

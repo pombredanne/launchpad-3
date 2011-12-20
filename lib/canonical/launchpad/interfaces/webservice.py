@@ -11,7 +11,6 @@ which tells `lazr.restful` that it should look for webservice exports here.
 
 __metaclass__ = type
 __all__ = [
-    'IEmailAddress',
     'IMessage',
     'ITemporaryBlobStorage',
     'ITemporaryStorageManager',
@@ -26,7 +25,6 @@ from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import IMessage
 
 
