@@ -104,16 +104,17 @@ class TestPOFileStatsJob(TestCaseWithFactory):
             name='template', side=TranslationSide.UPSTREAM)
 
         product = template1.productseries.product
-        other_series = self.factory.makeProductSeries(product=product)
         template2 = self.factory.makePOTemplate(
-            name='template', productseries=other_series)
+            name='template')
 
-        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
-        shared_potmsgset.setSequence(template2, 1)
 
         self.factory.makeLanguage('en-tt')
-        pofile1 = self.factory.makePOFile('en-tt', template1)
-        pofile2 = self.factory.makePOFile('en-tt', template2)
+#        pofile1 = self.factory.makePOFile('en-tt', template1)
+#        pofile2 = self.factory.makePOFile('en-tt', template2)
+        pofile1 = template1.newPOFile('en-tt', create_sharing=True)
+        pofile2 = template2.newPOFile('en-tt', create_sharing=True)
+        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
+        shared_potmsgset.setSequence(template2, 1)
         suggestion = self.factory.makeSuggestion(pofile1)
         suggestion.approve(pofile1, self.factory.makePerson())
 
