@@ -11,9 +11,9 @@ __all__ = [
 
 
 from datetime import timedelta
+import sys
 import time
 
-from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -118,6 +118,8 @@ class LoopTuner:
 
     def run(self):
         """Run the loop to completion."""
+        # Cleanup function, if we have one.
+        cleanup = getattr(self.operation, 'cleanUp', lambda: None)
         try:
             chunk_size = self.minimum_chunk_size
             iteration = 0
@@ -169,9 +171,19 @@ class LoopTuner:
                 "average size %f (%s/s)",
                 total_size, iteration, total_time, average_size,
                 average_speed)
-        finally:
-            if safe_hasattr(self.operation, 'cleanUp'):
-                self.operation.cleanUp()
+        except Exception:
+            exc_info = sys.exc_info()
+            try:
+                cleanup()
+            except Exception:
+                # We need to raise the original exception, but we don't
+                # want to lose the information about the cleanup
+                # failure, so log it.
+                self.log.exception("Unhandled exception in cleanUp")
+            # Reraise the original exception.
+            raise exc_info[0], exc_info[1], exc_info[2]
+        else:
+            cleanup()
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.
