@@ -27,6 +27,11 @@ special = {
         '../doc/google-searchservice.txt',
         setUp=setUp, tearDown=tearDown,
         layer=GoogleLaunchpadFunctionalLayer,),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #     '../doc/google-service-stub.txt',
+    #     layer=GoogleServiceLayer,),
     }
 
 
