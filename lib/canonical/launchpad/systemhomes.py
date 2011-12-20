@@ -28,7 +28,6 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IAuthServerApplication,
-    IBazaarApplication,
     IFeedsApplication,
     IWebServiceApplication,
     )
@@ -55,7 +54,10 @@ from lp.bugs.interfaces.malone import (
     IMaloneApplication,
     IPrivateMaloneApplication,
     )
-from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codehosting import (
+    IBazaarApplication,
+    ICodehostingApplication,
+    )
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )

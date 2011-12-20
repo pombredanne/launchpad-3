@@ -55,7 +55,6 @@ from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
-    IBazaarApplication,
     )
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
@@ -118,6 +117,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.announcement import IAnnouncementSet

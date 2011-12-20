@@ -28,7 +28,6 @@ __all__ = [
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
-    'IBazaarApplication',
     'IFeedsApplication',
     'IHasAssignee',
     'IHasBug',
@@ -48,10 +47,6 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     ]
-
-
-class IBazaarApplication(ILaunchpadApplication):
-    """Bazaar Application"""
 
 
 class IPrivateApplication(ILaunchpadApplication):
