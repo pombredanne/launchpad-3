@@ -103,6 +103,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -129,6 +130,10 @@ class ProjectNavigation(Navigation,
     @stepthrough('+series')
     def traverse_series(self, series_name):
         return self.context.getSeries(series_name)
+
+    @stepthrough('+tags')
+    def traverse_tag(self, name):
+        return ProjectGroupMilestoneTag(self.context, name.split(','))
 
 
 class ProjectSetNavigation(Navigation):

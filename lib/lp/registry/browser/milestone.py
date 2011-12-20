@@ -71,6 +71,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IAbstractMilestone,
     IMilestone,
+    IMilestoneData,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
@@ -87,7 +88,7 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation,
     StructuralSubscriptionTargetTraversalMixin):
     """The navigation to traverse to a milestone."""
-    usedfor = IAbstractMilestone
+    usedfor = IMilestoneData
 
 
 class MilestoneBreadcrumb(Breadcrumb):
@@ -95,8 +96,8 @@ class MilestoneBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        milestone = IAbstractMilestone(self.context)
-        if milestone.code_name:
+        milestone = IMilestoneData(self.context)
+        if hasattr(milestone, 'code_name') and milestone.code_name:
             return '%s "%s"' % (milestone.name, milestone.code_name)
         else:
             return milestone.name
@@ -202,7 +203,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         :param request: `ILaunchpadRequest`.
         """
         super(MilestoneView, self).__init__(context, request)
-        if IAbstractMilestone.providedBy(context):
+        if IMilestoneData.providedBy(context):
             self.milestone = context
             self.release = context.product_release
         else:
@@ -532,6 +533,19 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         self.request.response.addInfoNotification(
             "Milestone %s deleted." % name)
         self.next_url = canonical_url(series)
+
+
+class MilestoneTagView(MilestoneView):
+    """A View for listing bugtasks and specification for milestone tags."""
+
+    def __init__(self, context, request):
+        """See `LaunchpadView`.
+
+        :param context: `IProjectGroupMilestoneTag`
+        :param request: `ILaunchpadRequest`.
+        """
+        super(MilestoneView, self).__init__(context, request)
+        self.context = self.milestone = context
 
 
 class ObjectMilestonesView(LaunchpadView):
