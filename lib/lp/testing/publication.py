@@ -22,14 +22,15 @@ from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.management import restoreInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+
 
 # Defines an helper function that returns the appropriate
 # IRequest and IPublication.

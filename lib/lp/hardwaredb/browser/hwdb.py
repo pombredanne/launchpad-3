@@ -18,12 +18,12 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     LaunchpadView,
     Navigation,
     stepthrough,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.batching import BatchNavigator
 from lp.app.browser.launchpadform import (
     action,

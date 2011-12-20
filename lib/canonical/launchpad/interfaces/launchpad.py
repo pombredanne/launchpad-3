@@ -1,9 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,W0611
-# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
-
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
@@ -24,17 +20,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-# XXX kiko 2007-02-08:
-# These import shims are actually necessary if we don't go over the
-# entire codebase and fix where the import should come from.
-from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest,
-    ILaunchBag,
-    ILaunchpadApplication,
-    ILaunchpadRoot,
-    IOpenLaunchBag,
-    UnsafeFormGetSubmissionError,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [
@@ -42,7 +28,6 @@ __all__ = [
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
-    'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IFeedsApplication',
     'IHasAssignee',
@@ -54,10 +39,7 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'ILaunchBag',
-    'ILaunchpadRoot',
     'INotificationRecipientSet',
-    'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
@@ -71,7 +53,6 @@ __all__ = [
     'IZODBAnnotation',
     'NameNotAvailable',
     'UnknownRecipientError',
-    'UnsafeFormGetSubmissionError',
     ]
 
 
