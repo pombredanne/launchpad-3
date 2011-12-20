@@ -115,8 +115,8 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         pofile1 = self.factory.makePOFile('en-tt', template1)
         pofile2 = self.factory.makePOFile('en-tt', template2)
 
-        suggestion = self.factory.makeSuggestion(pofile1)
-        suggestion = self.factory.makeSuggestion(pofile2)
+        self.factory.makeSuggestion(pofile1)
+        self.factory.makeSuggestion(pofile2)
 
         # The statistics start at 0.
         self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
