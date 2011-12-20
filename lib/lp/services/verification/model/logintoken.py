@@ -58,6 +58,9 @@ from lp.services.mail.sendmail import (
     )
 
 
+MAIL_APP = 'services/verification'
+
+
 class LoginToken(SQLBase):
     implements(ILoginToken)
     _table = 'LoginToken'
@@ -113,7 +116,7 @@ class LoginToken(SQLBase):
 
     def sendEmailValidationRequest(self):
         """See ILoginToken."""
-        template = get_email_template('validate-email.txt')
+        template = get_email_template('validate-email.txt', app=MAIL_APP)
         replacements = {'token_url': canonical_url(self),
                         'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
@@ -140,7 +143,7 @@ class LoginToken(SQLBase):
         # that MUA is configured.
 
         # Here are the instructions that need to be encrypted.
-        template = get_email_template('validate-gpg.txt')
+        template = get_email_template('validate-gpg.txt', app=MAIL_APP)
         replacements = {'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname,
@@ -162,7 +165,7 @@ class LoginToken(SQLBase):
             # for people who do not have an MUA that can decrypt the ASCII
             # armored text.
             instructions = get_email_template(
-                'gpg-cleartext-instructions.txt')
+                'gpg-cleartext-instructions.txt', app=MAIL_APP)
 
         # Concatenate the message parts and send it.
         text = salutation + instructions + token_text + closing
@@ -172,7 +175,7 @@ class LoginToken(SQLBase):
 
     def sendProfileCreatedEmail(self, profile, comment):
         """See ILoginToken."""
-        template = get_email_template('profile-created.txt')
+        template = get_email_template('profile-created.txt', app=MAIL_APP)
         replacements = {'token_url': canonical_url(self),
                         'requester': self.requester.displayname,
                         'comment': comment,
@@ -186,7 +189,7 @@ class LoginToken(SQLBase):
 
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
-        template = get_email_template('request-merge.txt')
+        template = get_email_template('request-merge.txt', app=MAIL_APP)
         from_name = "Launchpad Account Merge"
 
         dupe = getUtility(IPersonSet).getByEmail(self.email)
@@ -202,7 +205,7 @@ class LoginToken(SQLBase):
 
     def sendTeamEmailAddressValidationEmail(self, user):
         """See ILoginToken."""
-        template = get_email_template('validate-teamemail.txt')
+        template = get_email_template('validate-teamemail.txt', app=MAIL_APP)
 
         from_name = "Launchpad Email Validator"
         subject = "Launchpad: Validate your team's contact email address"
@@ -217,7 +220,7 @@ class LoginToken(SQLBase):
 
     def sendClaimProfileEmail(self):
         """See ILoginToken."""
-        template = get_email_template('claim-profile.txt')
+        template = get_email_template('claim-profile.txt', app=MAIL_APP)
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
@@ -231,7 +234,7 @@ class LoginToken(SQLBase):
 
     def sendClaimTeamEmail(self):
         """See `ILoginToken`."""
-        template = get_email_template('claim-team.txt')
+        template = get_email_template('claim-team.txt', app=MAIL_APP)
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
