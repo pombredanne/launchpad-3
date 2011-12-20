@@ -2067,9 +2067,12 @@ class BugTaskSet:
                     WHERE Milestone.product = Product.id
                         AND Product.project = %s
                         AND MilestoneTag.milestone = Milestone.id
-                        AND MilestoneTag.tag IN %s)
+                        AND MilestoneTag.tag IN %s
+                    GROUP BY Milestone.id
+                    HAVING COUNT(Milestone.id) = %s)
             """ % sqlvalues(params.milestone_tag.target,
-                            params.milestone_tag.tags)
+                            params.milestone_tag.tags,
+                            len(params.milestone_tag.tags))
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
             # XXX frankban 2011-12-16 further investigation needed
