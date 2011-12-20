@@ -13,9 +13,7 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Choice,
     Int,
-    TextLine,
     )
 
 from canonical.launchpad import _
@@ -24,7 +22,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 __all__ = [
     'IAging',
-    'IAppFrontPageSearchForm',
     'IAuthServerApplication',
     'IHasAssignee',
     'IHasBug',
@@ -139,12 +136,3 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
-
-class IAppFrontPageSearchForm(Interface):
-    """Schema for the app-specific front page search question forms."""
-
-    search_text = TextLine(title=_('Search text'), required=False)
-
-    scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProjectGroup')

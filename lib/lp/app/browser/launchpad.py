@@ -32,6 +32,7 @@ import time
 import urllib
 
 from lazr.uri import URI
+
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
@@ -44,18 +45,24 @@ from zope.datetime import (
     parseDatetimetz,
     )
 from zope.i18nmessageid import Message
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
+
 from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm,
-    )
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
@@ -892,6 +899,15 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AppFrontPageSearchView(LaunchpadFormView):
