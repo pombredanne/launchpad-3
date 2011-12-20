@@ -57,6 +57,7 @@ from lp.buildmaster.model.builder import (
     )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -96,44 +97,61 @@ class TestBuilderBasics(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestBuilderBasics, self).setUp()
+        self.useFixture(BuilddManagerTestFixture())
+
     def test_providesInterface(self):
         # Builder provides IBuilder
-        builder = self.factory.makeBuilder()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder()
         self.assertProvides(builder, IBuilder)
 
     def test_default_values(self):
-        builder = self.factory.makeBuilder()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder()
         # Make sure the Storm cache gets the values that the database
         # initializes.
         flush_database_updates()
+        self.useFixture(BuilddManagerTestFixture())
         self.assertEqual(0, builder.failure_count)
 
     def test_getCurrentBuildFarmJob(self):
-        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
-        builder = self.factory.makeBuilder()
-        bq.markAsBuilding(builder)
+        with BuilddManagerTestFixture.extraSetUp():
+            bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
+            builder = self.factory.makeBuilder()
+            bq.markAsBuilding(builder)
+        self.useFixture(BuilddManagerTestFixture())
         self.assertEqual(
             bq, builder.getCurrentBuildFarmJob().buildqueue_record)
 
     def test_getBuildQueue(self):
-        buildqueueset = getUtility(IBuildQueueSet)
-        active_jobs = buildqueueset.getActiveBuildJobs()
-        [active_job] = active_jobs
-        builder = active_job.builder
+        with BuilddManagerTestFixture.extraSetUp():
+            buildqueueset = getUtility(IBuildQueueSet)
+            active_jobs = buildqueueset.getActiveBuildJobs()
+            [active_job] = active_jobs
+            builder = active_job.builder
 
         bq = builder.getBuildQueue()
         self.assertEqual(active_job, bq)
 
-        active_job.builder = None
+        with BuilddManagerTestFixture.extraSetUp():
+            active_job.builder = None
+
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
 
     def test_setting_builderok_resets_failure_count(self):
-        builder = removeSecurityProxy(self.factory.makeBuilder())
-        builder.failure_count = 1
-        builder.builderok = False
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = removeSecurityProxy(self.factory.makeBuilder())
+            builder.failure_count = 1
+            builder.builderok = False
+
         self.assertEqual(1, builder.failure_count)
-        builder.builderok = True
+
+        with BuilddManagerTestFixture.extraSetUp():
+            builder.builderok = True
+
         self.assertEqual(0, builder.failure_count)
 
 
