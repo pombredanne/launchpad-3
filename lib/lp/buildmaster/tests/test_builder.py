@@ -527,6 +527,8 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
             builder.builderok = True
             builder.manual = False
 
+        self.useFixture(BuilddManagerTestFixture())
+
 
 class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
     # Test usage of findBuildCandidate not specific to any archive type.
@@ -535,10 +537,11 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         # IBuilder._findBuildCandidate identifies if there are builds
         # for superseded source package releases in the queue and marks
         # the corresponding build record as SUPERSEDED.
-        archive = self.factory.makeArchive()
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=archive).createMissingBuilds()
+        with BuilddManagerTestFixture.extraSetUp():
+            archive = self.factory.makeArchive()
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=archive).createMissingBuilds()
         old_candidate = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
 
@@ -549,7 +552,8 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # Now supersede the source package:
         publication = build.current_source_publication
-        publication.status = PackagePublishingStatus.SUPERSEDED
+        with BuilddManagerTestFixture.extraSetUp():
+            publication.status = PackagePublishingStatus.SUPERSEDED
 
         # The candidate returned is now a different one:
         new_candidate = removeSecurityProxy(
@@ -567,25 +571,24 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # PackageBuildJob.postprocessCandidate will attempt to delete
         # security builds.
-        pub = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.factory.makeArchive(),
-            pocket=PackagePublishingPocket.SECURITY)
-        pub.createMissingBuilds()
+        with BuilddManagerTestFixture.extraSetUp():
+            pub = self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.factory.makeArchive(),
+                pocket=PackagePublishingPocket.SECURITY)
+            pub.createMissingBuilds()
+        removeSecurityProxy(self.frog_builder)._findBuildCandidate()
+        # Passes without a "transaction is read-only" error...
         transaction.commit()
-        with DatabaseTransactionPolicy(read_only=True):
-            removeSecurityProxy(self.frog_builder)._findBuildCandidate()
-            # The test is that this passes without a "transaction is
-            # read-only" error.
-            transaction.commit()
 
     def test_acquireBuildCandidate_marks_building(self):
         # acquireBuildCandidate() should call _findBuildCandidate and
         # mark the build as building.
-        archive = self.factory.makeArchive()
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=archive).createMissingBuilds()
+        with BuilddManagerTestFixture.extraSetUp():
+            archive = self.factory.makeArchive()
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=archive).createMissingBuilds()
         candidate = removeSecurityProxy(
             self.frog_builder).acquireBuildCandidate()
         self.assertEqual(JobStatus.RUNNING, candidate.job.status)
@@ -640,6 +643,7 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
     ppa_joe_private = False
     ppa_jim_private = False
 
+    @BuilddManagerTestFixture.extraSetUp
     def _setBuildsBuildingForArch(self, builds_list, num_builds,
                                   archtag="i386"):
         """Helper function.
@@ -657,7 +661,10 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindBuildCandidatePPABase, self).setUp()
+        self.extraSetUp()
 
+    @BuilddManagerTestFixture.extraSetUp
+    def extraSetUp(self):
         # Create two PPAs and add some builds to each.
         self.ppa_joe = self.factory.makeArchive(
             name="joesppa", private=self.ppa_joe_private)
@@ -718,7 +725,8 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
+        with BuilddManagerTestFixture.extraSetUp():
+            self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -727,9 +735,10 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
         # Disabled archives should not be considered for dispatching
         # builds.
         disabled_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
-            disabled_job)
-        build.archive.disable()
+        with BuilddManagerTestFixture.extraSetUp():
+            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+                disabled_job)
+            build.archive.disable()
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         self.assertNotEqual(disabled_job, next_job)
 
@@ -749,7 +758,8 @@ class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
         # dispatched because the builder has to fetch the source files
         # from the (password protected) repo area, not the librarian.
         pub = build.current_source_publication
-        pub.status = PackagePublishingStatus.PENDING
+        with BuilddManagerTestFixture.extraSetUp():
+            pub.status = PackagePublishingStatus.PENDING
         candidate = removeSecurityProxy(self.builder4)._findBuildCandidate()
         self.assertNotEqual(next_job.id, candidate.id)
 
@@ -759,6 +769,10 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindBuildCandidateDistroArchive, self).setUp()
+        self.extraSetUp()
+
+    @BuilddManagerTestFixture.extraSetUp
+    def extraSetUp(self):
         # Create a primary archive and publish some builds for the
         # queue.
         self.non_ppa = self.factory.makeArchive(
@@ -774,7 +788,6 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
     def test_findBuildCandidate_for_non_ppa(self):
         # Normal archives are not restricted to serial builds per
         # arch.
-
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -783,8 +796,9 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        build.status = BuildStatus.BUILDING
-        build.builder = self.frog_builder
+        with BuilddManagerTestFixture.extraSetUp():
+            build.status = BuildStatus.BUILDING
+            build.builder = self.frog_builder
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -801,7 +815,9 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
         self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
 
-        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
+        with BuilddManagerTestFixture.extraSetUp():
+            recipe_build_job = (
+                self.factory.makeSourcePackageRecipeBuildJob(9999))
 
         self.assertEqual(recipe_build_job.lastscore, 9999)
 
@@ -815,6 +831,7 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
     # These tests operate in a "recipe builds only" setting.
     # Please see also bug #507782.
 
+    @BuilddManagerTestFixture.extraSetUp
     def clearBuildQueue(self):
         """Delete all `BuildQueue`, XXXJOb and `Job` instances."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -824,6 +841,10 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindRecipeBuildCandidates, self).setUp()
+        self.extraSetUp()
+
+    @BuilddManagerTestFixture.extraSetUp
+    def extraSetUp(self):
         # Create a primary archive and publish some builds for the
         # queue.
         self.non_ppa = self.factory.makeArchive(
