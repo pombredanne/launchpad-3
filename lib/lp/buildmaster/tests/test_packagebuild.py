@@ -13,7 +13,6 @@ import tempfile
 
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -37,10 +36,9 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.testing import BuilddManagerDatabasePolicyFixture
+from lp.buildmaster.testing import BuilddManagerTestMixin
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.testing import (
     login,
     login_person,
@@ -285,7 +283,7 @@ class TestGetUploadMethodsMixin:
             (job_type, job_id))
 
 
-class TestHandleStatusMixin:
+class TestHandleStatusMixin(BuilddManagerTestMixin):
     """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
@@ -324,7 +322,7 @@ class TestHandleStatusMixin:
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
 
-        self.useFixture(BuilddManagerDatabasePolicyFixture())
+        self.applyDatabasePolicy()
 
     def assertResultCount(self, count, result):
         self.assertEquals(
@@ -370,9 +368,8 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        with DatabaseTransactionPolicy(read_only=False):
+        with self.extraSetUp():
             removeSecurityProxy(self.build).log = None
-            transaction.commit()
         self.assertEqual(None, self.build.log)
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -411,9 +408,8 @@ class TestHandleStatusMixin:
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        with DatabaseTransactionPolicy(read_only=False):
+        with self.extraSetUp():
             removeSecurityProxy(self.build).date_finished = None
-            transaction.commit()
 
         self.assertEqual(None, self.build.date_finished)
         d = self.build.handleStatus('OK', None, {
