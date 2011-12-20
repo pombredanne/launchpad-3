@@ -93,18 +93,18 @@ from zope.schema import (
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccount,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.interfaces.validation import validate_new_team_email
+from lp.app.validators.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.answers.interfaces.questionsperson import IQuestionsPerson

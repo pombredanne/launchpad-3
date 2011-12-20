@@ -71,9 +71,9 @@ from zope.schema.vocabulary import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.validation import validate_new_team_email
+from lp.app.validators.validation import validate_new_team_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -92,7 +92,7 @@ from canonical.launchpad.webapp.batching import (
     InactiveBatchNavigator,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.badge import HasBadgeBase
+from lp.app.browser.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured

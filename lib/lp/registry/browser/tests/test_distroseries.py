@@ -1870,12 +1870,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                   difference_type=None, distribution=None):
         # Helper to create a derived series with fixed names and proper
         # source package format selection along with a DSD.
-        parent_series = self.factory.makeDistroSeries(name='warty')
+        parent_series = self.factory.makeDistroSeries()
         if distribution == None:
-            distribution = self.factory.makeDistribution('deribuntu')
+            distribution = self.factory.makeDistribution()
         derived_series = self.factory.makeDistroSeries(
-            distribution=distribution,
-            name='derilucid')
+            distribution=distribution)
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
@@ -2115,14 +2114,18 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs',
-                        query_string=''):
+                        query_string='', sponsored=None):
         # A helper to get the POST'ed sync view.
         with person_logged_in(person):
+            form = {
+                'field.selected_differences': sync_differences,
+                'field.actions.sync': 'Sync',
+                }
+            if sponsored is not None:
+                form['field.sponsored_person'] = sponsored.name
             view = create_initialized_view(
                 derived_series, view_name,
-                method='POST', form={
-                    'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync'},
+                method='POST', form=form,
                 query_string=query_string)
             return view
 
@@ -2205,6 +2208,26 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertTrue(
             "Signer is not permitted to upload to the "
             "component" in view.errors[0])
+
+    def test_sync_with_sponsoring(self):
+        # The requesting user can set a sponsored person on the sync. We
+        # need to make sure the sponsored person ends up on the copy job
+        # metadata.
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
+            'my-src-name')
+        set_derived_series_sync_feature_flag(self)
+        person, _ = self.makePersonWithComponentPermission(
+            derived_series.main_archive,
+            derived_series.getSourcePackage(
+                sp_name).latest_published_component)
+        sponsored_person = self.factory.makePerson()
+        self._syncAndGetView(
+            derived_series, person, [diff_id],
+            sponsored=sponsored_person)
+
+        pcj = PlainPackageCopyJob.getActiveJobs(
+            derived_series.main_archive).one()
+        self.assertEqual(pcj.sponsored, sponsored_person)
 
     def assertPackageCopied(self, series, src_name, version, view):
         # Helper to check that a package has been copied by virtue of

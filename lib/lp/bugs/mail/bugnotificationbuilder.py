@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.mail.sendmail import format_address
 

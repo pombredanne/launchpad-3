@@ -6,10 +6,7 @@
 from cStringIO import StringIO
 
 
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import cElementTree as etree
+import xml.etree.cElementTree as etree
 from datetime import datetime
 import logging
 import os
@@ -1431,7 +1428,7 @@ invalid line
     def testSubmissionParser(self):
         """Test the entire parser."""
         sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest.xml')
         sample_data = open(sample_data_path).read()
         parser = SubmissionParser()

@@ -14,7 +14,7 @@ automatically.
 
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.services.log.logger import FakeLogger, BufferLogger
-    >>> from canonical.launchpad.scripts.updateremoteproduct import (
+    >>> from lp.bugs.scripts.updateremoteproduct import (
     ...     RemoteProductUpdater)
     >>> from lp.testing.faketransaction import FakeTransaction
     >>> updater = RemoteProductUpdater(FakeTransaction(), BufferLogger())

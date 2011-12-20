@@ -35,7 +35,7 @@ from canonical.launchpad.components.tokens import (
     )
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,

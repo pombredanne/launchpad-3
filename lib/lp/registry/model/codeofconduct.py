@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -215,7 +215,7 @@ class SignedCodeOfConduct(SQLBase):
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
         assert self.owner.preferredemail
-        template = open('lib/canonical/launchpad/emailtemplates/'
+        template = open('lib/lp/registry/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
@@ -318,7 +318,6 @@ class SignedCodeOfConductSet:
         content = ('Digitally Signed by %s\n' % sig.fingerprint)
         signed.sendAdvertisementEmail(subject, content)
 
-
     def searchByDisplayname(self, displayname, searchfor=None):
         """See ISignedCodeOfConductSet."""
         clauseTables = ['Person']
@@ -339,7 +338,7 @@ class SignedCodeOfConductSet:
         # the name shoudl work like a filter, if you don't enter anything
         # you get everything.
         if displayname:
-            query +=' AND Person.fti @@ ftq(%s)' % quote(displayname)
+            query += ' AND Person.fti @@ ftq(%s)' % quote(displayname)
 
         # Attempt to search for directive
         if searchfor == 'activeonly':
@@ -390,4 +389,3 @@ class SignedCodeOfConductSet:
     def getLastAcceptedDate(self):
         """See ISignedCodeOfConductSet."""
         return getUtility(ICodeOfConductConf).datereleased
-

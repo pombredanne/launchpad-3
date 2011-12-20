@@ -55,7 +55,7 @@ from zope.traversing.interfaces import ITraversable
 
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
     IBazaarApplication,
