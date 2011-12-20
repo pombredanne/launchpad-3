@@ -8,6 +8,8 @@ __all__ = [
     'DatabaseTransactionPolicy',
     ]
 
+from functools import wraps
+
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 import transaction
 from zope.component import getUtility
@@ -195,3 +197,19 @@ class DatabaseTransactionPolicy:
         """
         self.store.execute(
             "SET %s TO %s" % (self.db_switch, quote(read_only)))
+
+    @classmethod
+    def readOnly(cls, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with cls(read_only=True):
+                return func(*args, **kwargs)
+        return wrapper
+
+    @classmethod
+    def readWrite(cls, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with cls(read_only=False):
+                return func(*args, **kwargs)
+        return wrapper

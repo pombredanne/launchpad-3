@@ -41,6 +41,14 @@ class TestTransactionPolicy(TestCaseWithFactory):
         self.factory.makePerson(name=name)
         return name
 
+    def writeToDatabaseAndCommit(self):
+        """Write an object to the database and commit.
+
+        :return: A token that `hasDatabaseBeenWrittenTo` can look for.
+        """
+        self.writeToDatabase()
+        transaction.commit()
+
     def hasDatabaseBeenWrittenTo(self, test_token):
         """Is the object made by `writeToDatabase` present in the database?
 
@@ -216,28 +224,36 @@ class TestTransactionPolicy(TestCaseWithFactory):
     def test_policy_can_span_transactions(self):
         # It's okay to commit within a policy; the policy will still
         # apply to the next transaction inside the same policy.
-        def write_and_commit():
-            self.writeToDatabase()
-            transaction.commit()
-
         test_token = self.writeToDatabase()
         transaction.commit()
 
         with DatabaseTransactionPolicy(read_only=True):
             self.hasDatabaseBeenWrittenTo(test_token)
             transaction.commit()
-            self.assertRaises(InternalError, write_and_commit)
+            self.assertRaises(InternalError, self.writeToDatabaseAndCommit)
             transaction.abort()
 
     def test_policy_survives_abort(self):
         # Even after aborting the initial transaction, a transaction
         # policy still applies.
-        def write_and_commit():
-            self.writeToDatabase()
-            transaction.commit()
-
         with DatabaseTransactionPolicy(read_only=True):
             self.readFromDatabase()
             transaction.abort()
-            self.assertRaises(InternalError, write_and_commit)
+            self.assertRaises(InternalError, self.writeToDatabaseAndCommit)
             transaction.abort()
+
+    def test_readOnly(self):
+        # DatabaseTransactionPolicy.readOnly() is a function decorator that
+        # applies a read-only policy for the duration of the function call.
+        writeToDatabaseAndCommit = DatabaseTransactionPolicy.readOnly(
+            self.writeToDatabaseAndCommit)
+        with DatabaseTransactionPolicy(read_only=False):
+            self.assertRaises(InternalError, writeToDatabaseAndCommit)
+
+    def test_readWrite(self):
+        # DatabaseTransactionPolicy.readWrite() is a function decorator that
+        # applies a read-write policy for the duration of the function call.
+        writeToDatabaseAndCommit = DatabaseTransactionPolicy.readWrite(
+            self.writeToDatabaseAndCommit)
+        with DatabaseTransactionPolicy(read_only=True):
+            writeToDatabaseAndCommit()  # No exception.
