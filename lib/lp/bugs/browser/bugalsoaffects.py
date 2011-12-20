@@ -30,7 +30,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import (
+from lp.app.browser.multistep import (
     MultiStepView,
     StepView,
     )

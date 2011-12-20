@@ -118,14 +118,14 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.account import (
+from lp.services.identity.model.account import (
     Account,
     AccountPassword,
     )
-from canonical.launchpad.database.emailaddress import (
+from lp.services.identity.model.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
     )
@@ -137,7 +137,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.account import (
+from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
     AccountSuspendedError,
@@ -146,7 +146,7 @@ from canonical.launchpad.interfaces.account import (
     INACTIVE_ACCOUNT_STATUSES,
     )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,

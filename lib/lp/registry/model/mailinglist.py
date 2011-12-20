@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -66,14 +66,14 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
+from lp.services.database.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.messages.model.message import Message
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import (
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )

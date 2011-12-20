@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,

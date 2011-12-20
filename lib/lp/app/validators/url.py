@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,7 +23,7 @@ def valid_absolute_url(name):
     """Validate an absolute URL.
 
     It looks like this function has been deprecated by
-    canonical.launchpad.interfaces.validation.
+    lp.app.validators.validation.
 
     We define this as something that can be parsed into a URL that has both
     a protocol and a network address.
