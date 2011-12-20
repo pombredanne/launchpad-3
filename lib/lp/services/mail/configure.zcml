@@ -9,7 +9,7 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="canonical.launchpad">
 
-    <class class="lp.services.mail.mailnotification.motificationrecipientset.NotificationRecipientSet">
+    <class class="lp.services.mail.notificationrecipientset.NotificationRecipientSet">
         <allow interface="lp.services.mail.interfaces.INotificationRecipientSet" />
     </class>
 
