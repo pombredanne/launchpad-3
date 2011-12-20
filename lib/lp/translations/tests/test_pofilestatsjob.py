@@ -110,7 +110,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
 
         # POTemplate is a 'sharing' one if it has the same name ('messages').
         template1 = self.factory.makePOTemplate(devel, name="messages")
-        template2 = self.factory.makePOTemplate(stable, name="messages2")
+        template2 = self.factory.makePOTemplate(stable, name="messages")
 
         # Create a single POTMsgSet and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(template1)
