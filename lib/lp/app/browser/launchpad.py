@@ -62,7 +62,7 @@ from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.layers import WebServiceLayer

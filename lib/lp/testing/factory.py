@@ -75,7 +75,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy

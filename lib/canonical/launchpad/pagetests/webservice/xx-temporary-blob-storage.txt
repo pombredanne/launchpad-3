@@ -15,7 +15,7 @@ If we add a new blob, it will not show up in the temporary_blobs entries set.
     >>> import os
     >>> from zope.component import getUtility
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces.temporaryblobstorage import (
+    >>> from lp.services.temporaryblobstorage.interfaces import (
     ...     ITemporaryStorageManager)
 
     >>> testfiles = os.path.join(config.root,

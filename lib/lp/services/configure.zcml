@@ -25,6 +25,7 @@
   <include package=".scripts" />
   <include package=".session" />
   <include package=".statistics" />
+  <include package=".temporaryblobstorage" />
   <include package=".verification" />
   <include package=".webservice" />
   <include package=".worlddata" />

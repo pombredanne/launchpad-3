@@ -27,7 +27,7 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.model import (
     TemporaryBlobStorage,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet

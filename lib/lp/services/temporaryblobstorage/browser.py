@@ -13,7 +13,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     BlobTooLarge,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
