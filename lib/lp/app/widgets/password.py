@@ -9,14 +9,13 @@ TODO: Consider folding this back into Zope3 -- StuartBishop 20050520
 
 __metaclass__ = type
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import PasswordWidget
 from zope.app.form.browser.interfaces import ITextBrowserWidget
 from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import ValidationError
-
-from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor

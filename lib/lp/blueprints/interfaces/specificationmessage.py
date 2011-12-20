@@ -18,8 +18,8 @@ from zope.schema import (
     Int,
     )
 
-from lp.services.messages.interfaces.message import IMessage
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.services.messages.interfaces.message import IMessage
 
 
 class ISpecificationMessage(Interface):

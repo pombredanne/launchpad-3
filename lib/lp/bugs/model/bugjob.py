@@ -37,9 +37,9 @@ from lp.bugs.interfaces.bugjob import (
     IBugJobSource,
     )
 from lp.bugs.model.bug import Bug
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class BugJob(StormBase):

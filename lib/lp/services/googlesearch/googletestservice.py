@@ -28,7 +28,6 @@ from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
-
 from lp.services.osutils import ensure_directory_exists
 
 # Set up basic logging.

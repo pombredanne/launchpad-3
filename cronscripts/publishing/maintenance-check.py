@@ -9,6 +9,8 @@
 # this warning filter is only needed on older versions of python-apt,
 # once the machine runs lucid it can be removed
 import warnings
+
+
 warnings.filterwarnings("ignore", "apt API not stable yet")
 import apt
 warnings.resetwarnings()

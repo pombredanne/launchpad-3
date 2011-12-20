@@ -27,7 +27,10 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,

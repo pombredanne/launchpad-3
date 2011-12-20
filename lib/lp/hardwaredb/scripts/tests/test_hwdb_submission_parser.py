@@ -4,24 +4,25 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
-
-
-import xml.etree.cElementTree as etree
 from datetime import datetime
 import logging
 import os
 from textwrap import dedent
+import xml.etree.cElementTree as etree
 
 import pytz
-
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from lp.hardwaredb.scripts.hwdbsubmissions import (SubmissionParser,
-    ROOT_UDI)
 from canonical.testing.layers import BaseLayer
-
-from lp.testing import TestCase, validate_mock_class
+from lp.hardwaredb.scripts.hwdbsubmissions import (
+    ROOT_UDI,
+    SubmissionParser,
+    )
+from lp.testing import (
+    TestCase,
+    validate_mock_class,
+    )
 
 
 class SubmissionParserTestParseSoftware(SubmissionParser):

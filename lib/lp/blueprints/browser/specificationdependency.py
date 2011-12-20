@@ -11,9 +11,8 @@ __all__ = [
     'SpecificationDependencyTreeView',
     ]
 
-from zope.interface import Interface
-
 from lazr.restful.interface import copy_field
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (

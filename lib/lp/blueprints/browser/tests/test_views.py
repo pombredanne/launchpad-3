@@ -24,9 +24,9 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
-from lp.testing._webservice import QueryCollector
 
 
 class TestAssignments(TestCaseWithFactory):

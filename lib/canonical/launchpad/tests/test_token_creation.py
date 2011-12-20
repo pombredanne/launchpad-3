@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import random
+
 import testtools
 
 from canonical.database.constants import UTC_NOW

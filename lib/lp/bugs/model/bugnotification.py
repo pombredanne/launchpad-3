@@ -29,18 +29,17 @@ from storm.expr import (
     Join,
     LeftJoin,
     )
-from storm.store import Store
 from storm.locals import (
     Int,
     Reference,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from lp.services.messages.model.message import Message
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -61,6 +60,7 @@ from lp.bugs.model.bugsubscriptionfilter import (
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import Message
 
 
 class BugNotification(SQLBase):

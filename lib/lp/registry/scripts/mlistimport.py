@@ -14,10 +14,6 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from lp.registry.interfaces.mailinglist import (
     CannotSubscribe,
     IMailingListSet,
@@ -25,6 +21,10 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.log.logger import BufferLogger
 
 

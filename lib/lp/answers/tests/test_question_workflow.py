@@ -39,7 +39,6 @@ from canonical.launchpad.ftests.event import TestEventListener
 from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.answers.interfaces.question import IQuestion
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
@@ -48,6 +47,7 @@ from lp.answers.errors import (
     InvalidQuestionStateError,
     NotQuestionOwnerError,
     )
+from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (

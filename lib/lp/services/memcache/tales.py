@@ -28,8 +28,8 @@ from zope.tales.expressions import (
 from zope.tales.interfaces import ITALESExpression
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app import versioninfo
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.utils import compress_hash
 

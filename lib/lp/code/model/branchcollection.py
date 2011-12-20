@@ -10,9 +10,7 @@ __all__ = [
 
 from collections import defaultdict
 from functools import partial
-from operator import (
-    attrgetter,
-    )
+from operator import attrgetter
 
 from lazr.restful.utils import safe_hasattr
 from storm.expr import (
@@ -34,9 +32,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.interfaces import (
@@ -83,6 +78,7 @@ from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import get_property_cache
 
 

@@ -25,7 +25,6 @@ from lp.services.scripts.base import (
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
-
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
 # because we haven't decided if archivepublisher.debversion will be

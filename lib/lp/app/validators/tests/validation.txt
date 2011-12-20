@@ -73,13 +73,11 @@ nominated.
     LaunchpadValidationError:
     This bug has already been nominated for these series: 1.0, Trunk
 
-The validation will still fail if a nomination is declined.
+Declined nominations can be re-nominated.
 
     >>> trunk_nomination.decline(foo_bar)
     >>> can_be_nominated_for_series([firefox.series[1]])
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError...
+    True
 
 == PersonNameField ==
 

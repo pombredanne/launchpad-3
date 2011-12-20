@@ -29,12 +29,12 @@ from lp.answers.errors import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
     ws_object,
     )
 from lp.testing.views import create_webservice_error_view

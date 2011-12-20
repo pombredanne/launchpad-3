@@ -133,16 +133,7 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
@@ -266,6 +257,15 @@ from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,

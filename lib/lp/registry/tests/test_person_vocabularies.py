@@ -18,13 +18,13 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     CLOSED_TEAM_POLICY,
     OPEN_TEAM_POLICY,
+    PersonVisibility,
+    TeamSubscriptionPolicy,
     )
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.testing import (
     StormStatementRecorder,

@@ -76,6 +76,11 @@ from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -91,11 +96,6 @@ from lp.registry.browser.product import (
     ProductAddView,
     ProjectAddStepOne,
     ProjectAddStepTwo,
-    )
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import (

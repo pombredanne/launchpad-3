@@ -5,18 +5,22 @@ from doctest import (
     DocTestSuite,
     ELLIPSIS,
     )
-from unittest import TestLoader, TestSuite
+from unittest import (
+    TestLoader,
+    TestSuite,
+    )
 
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp import publisher
 from canonical.launchpad.webapp.publisher import (
     FakeRequest,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -25,8 +29,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-
-from canonical.launchpad.webapp import publisher
 
 
 class TestLaunchpadView(TestCaseWithFactory):

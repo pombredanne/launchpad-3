@@ -70,9 +70,7 @@ from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
     )
-from lp.buildmaster.enums import (
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,

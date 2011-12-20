@@ -9,10 +9,9 @@ __all__ = [
     'BugSubscriptionFilterMute',
     ]
 
-import pytz
-
 from itertools import chain
 
+import pytz
 from storm.locals import (
     Bool,
     DateTime,

@@ -24,14 +24,13 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from simplejson import dumps
 from urllib import urlencode
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
     )
-
+from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (

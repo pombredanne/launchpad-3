@@ -13,7 +13,6 @@ from testtools.matchers import (
     Equals,
     Matcher,
     )
-
 from zope.component import getUtility
 
 from canonical.config import config
@@ -24,8 +23,8 @@ from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
     )
-from lp.testing import TestCase
 from lp.services.features.testing import FeatureFixture
+from lp.testing import TestCase
 
 
 def test_split_paragraphs():

@@ -19,8 +19,8 @@ from lp.services.worlddata.interfaces.language import (
     ILanguageSet,
     )
 from lp.testing import (
-    TestCaseWithFactory,
     StormStatementRecorder,
+    TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.matchers import HasQueryCount

@@ -19,7 +19,10 @@ from lp.services.messages.model.message import (
     Message,
     MessageSet,
     )
-from lp.testing import TestCaseWithFactory, person_logged_in
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestOopsReferences(TestCaseWithFactory):

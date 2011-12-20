@@ -12,8 +12,8 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import (
-    Int,
     Choice,
+    Int,
     Text,
     TextLine,
     )

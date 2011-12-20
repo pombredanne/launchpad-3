@@ -30,6 +30,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.interface import (
     Attribute,
     Interface,
@@ -44,15 +45,13 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.lifecycle.interfaces import IObjectCreatedEvent
-
 from canonical.launchpad import _
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IMailingListApplication(ILaunchpadApplication):

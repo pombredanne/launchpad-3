@@ -7,8 +7,9 @@ from datetime import (
     datetime,
     timedelta,
     )
-import pytz
 from textwrap import dedent
+
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
