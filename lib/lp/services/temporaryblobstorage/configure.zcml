@@ -46,8 +46,6 @@
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryBlobStorage"
       urldata="lp.services.temporaryblobstorage.browser.TemporaryBlobStorageURL"
       parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
-      path_expression="string:temporary-blobs/${uuid}"
-      />
 
   <browser:url
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryStorageManager"
