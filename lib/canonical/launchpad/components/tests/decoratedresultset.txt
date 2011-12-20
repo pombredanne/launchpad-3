@@ -25,7 +25,7 @@ ResultSet:
     >>> def result_decorator(distribution):
     ...     return "Dist name is: %s" % distribution.name
 
-    >>> from canonical.launchpad.components.decoratedresultset import (
+    >>> from lp.services.database.decoratedresultset import (
     ...     DecoratedResultSet)
     >>> decorated_result_set = DecoratedResultSet(
     ...     proxied_result_set, result_decorator)

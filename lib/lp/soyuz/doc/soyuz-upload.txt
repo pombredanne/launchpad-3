@@ -170,7 +170,7 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from lp.registry.interfaces.gpg import (
     ...     GPGKeyAlgorithm,

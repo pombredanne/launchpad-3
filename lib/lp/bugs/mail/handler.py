@@ -19,7 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.mailnotification import (
     MailWrapper,
     send_process_error_notification,
@@ -333,7 +333,7 @@ class MaloneHandler:
     def sendHelpEmail(self, to_address):
         """Send usage help to `to_address`."""
         # Get the help text (formatted as MoinMoin markup)
-        help_text = get_email_template('help.txt')
+        help_text = get_email_template('help.txt', app='bugs')
         help_text = reformat_wiki_text(help_text)
         # Wrap text
         mailwrapper = MailWrapper(width=72)

@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IStore,
     )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (

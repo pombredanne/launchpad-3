@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import entitlements from Salesforce.
@@ -25,7 +25,7 @@ import time
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.utilities.unicode_csv import (
+from lp.services.unicode_csv import (
     UnicodeDictReader,
     UnicodeDictWriter,
     )

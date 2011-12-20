@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """All the interfaces that are exposed through the webservice.
@@ -20,7 +20,7 @@ __all__ = [
 
 from canonical.launchpad.interfaces.launchpad import IWebServiceApplication
 
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,

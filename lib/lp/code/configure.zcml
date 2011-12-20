@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -481,10 +481,10 @@
   <adapter
       for="lp.code.interfaces.branch.IBranch"
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"/>
+      factory="lp.code.publisher.LaunchpadBranchContainer"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
-      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"

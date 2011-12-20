@@ -24,7 +24,7 @@ import textwrap
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.mlistimport import Importer
+from lp.registry.scripts.mlistimport import Importer
 from lp.services.scripts.base import LaunchpadScript
 
 

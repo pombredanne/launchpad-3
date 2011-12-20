@@ -203,7 +203,7 @@ def notify_specification_modified(spec, event):
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
-    body = get_email_template('specification-modified.txt') % {
+    body = get_email_template('specification-modified.txt', 'blueprints') % {
         'editor': user.displayname,
         'info_fields': '\n'.join(info_lines),
         'spec_title': spec.title,
@@ -282,7 +282,7 @@ def notify_new_ppa_subscription(subscription, event):
     ppa_description = archive.description
     subject = 'PPA access granted for ' + ppa_displayname
 
-    template = get_email_template('ppa-subscription-new.txt')
+    template = get_email_template('ppa-subscription-new.txt', app='soyuz')
 
     for person, preferred_email in non_active_subscribers:
         to_address = [preferred_email.email]
