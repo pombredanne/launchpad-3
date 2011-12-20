@@ -90,91 +90,75 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
                 specifications.append(specification)
         return specifications
 
+    def _create_items_for_retrieval(self, factory, tag=u'tag1'):
+        with person_logged_in(self.owner):
+            self.milestone.setTags([tag], self.owner)
+            items = factory(5, self.milestone)
+            milestonetag = ProjectGroupMilestoneTag(
+                target=self.project_group, tags=[tag])
+        return items, milestonetag
+
+    def _create_items_for_untagged_milestone(self, factory, tag=u'tag1'):
+        new_milestone = self.factory.makeMilestone(product=self.product)
+        with person_logged_in(self.owner):
+            self.milestone.setTags([tag], self.owner)
+            items = factory(5, self.milestone)
+            factory(3, new_milestone)
+            milestonetag = ProjectGroupMilestoneTag(
+                target=self.project_group, tags=[tag])
+        return items, milestonetag
+
+    def _create_items_for_multiple_tags(
+        self, factory, tags=(u'tag1', u'tag2')):
+        new_milestone = self.factory.makeMilestone(product=self.product)
+        with person_logged_in(self.owner):
+            self.milestone.setTags(tags, self.owner)
+            new_milestone.setTags(tags[:1], self.owner)
+            items = factory(5, self.milestone)
+            factory(3, new_milestone)
+            milestonetag = ProjectGroupMilestoneTag(
+                target=self.project_group, tags=tags)
+        return items, milestonetag
+
     # Add a test similar to TestProjectExcludeConjoinedMasterSearch in
     # lp.bugs.tests.test_bugsearch_conjoined.
 
     def test_bugtask_retrieve_single_milestone(self):
         # Ensure that all bugtasks on a single milestone can be retrieved.
-        tagname = u'tag1'
-        with person_logged_in(self.owner):
-            self.milestone.setTags([tagname], self.owner)
-            bugtasks = self._create_bugtasks(5, self.milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=[tagname])
-            self.assertContentEqual(
-                bugtasks,
-                milestonetag.bugtasks(self.owner))
+        bugtasks, milestonetag = self._create_items_for_retrieval(
+            self._create_bugtasks)
+        self.assertContentEqual(bugtasks, milestonetag.bugtasks(self.owner))
 
     def test_bugtasks_for_untagged_milestone(self):
         # Ensure that bugtasks for a project group are retrieved
         # only if associated with milestones having specified tags.
-        tagname = u'tag1'
-        new_milestone = self.factory.makeMilestone(product=self.product)
-        with person_logged_in(self.owner):
-            self.milestone.setTags([tagname], self.owner)
-            bugtasks = self._create_bugtasks(5, self.milestone)
-            self._create_bugtasks(3, new_milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=[tagname])
-            self.assertContentEqual(
-                bugtasks,
-                milestonetag.bugtasks(self.owner))
+        bugtasks, milestonetag = self._create_items_for_untagged_milestone(
+            self._create_bugtasks)
+        self.assertContentEqual(bugtasks, milestonetag.bugtasks(self.owner))
 
     def test_bugtasks_multiple_tags(self):
         # Ensure that, in presence of multiple tags, only bugtasks
         # for milestones associated with all the tags are retrieved.
-        tagnames = (u'tag1', u'tag2')
-        new_milestone = self.factory.makeMilestone(product=self.product)
-        with person_logged_in(self.owner):
-            self.milestone.setTags(tagnames, self.owner)
-            new_milestone.setTags(tagnames[:1], self.owner)
-            bugtasks = self._create_bugtasks(5, self.milestone)
-            self._create_bugtasks(3, new_milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=tagnames)
-            self.assertContentEqual(
-                bugtasks,
-                milestonetag.bugtasks(self.owner))
+        bugtasks, milestonetag = self._create_items_for_multiple_tags(
+            self._create_bugtasks)
+        self.assertContentEqual(bugtasks, milestonetag.bugtasks(self.owner))
 
     def test_specification_retrieval(self):
         # Ensure that all specifications on a milestone can be retrieved.
-        tagname = u'tag1'
-        with person_logged_in(self.owner):
-            self.milestone.setTags([tagname], self.owner)
-            specifications = self._create_specifications(5, self.milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=[tagname])
-            self.assertContentEqual(
-                specifications,
-                milestonetag.specifications)
+        specs, milestonetag = self._create_items_for_retrieval(
+            self._create_specifications)
+        self.assertContentEqual(specs, milestonetag.specifications)
 
     def test_specifications_for_untagged_milestone(self):
         # Ensure that specifications for a project group are retrieved
         # only if associated with milestones having specified tags.
-        tagname = u'tag1'
-        new_milestone = self.factory.makeMilestone(product=self.product)
-        with person_logged_in(self.owner):
-            self.milestone.setTags([tagname], self.owner)
-            specifications = self._create_specifications(5, self.milestone)
-            self._create_specifications(3, new_milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=[tagname])
-            self.assertContentEqual(
-                specifications,
-                milestonetag.specifications)
+        specs, milestonetag = self._create_items_for_untagged_milestone(
+            self._create_specifications)
+        self.assertContentEqual(specs, milestonetag.specifications)
 
     def test_specifications_multiple_tags(self):
         # Ensure that, in presence of multiple tags, only specifications
         # for milestones associated with all the tags are retrieved.
-        tagnames = (u'tag1', u'tag2')
-        new_milestone = self.factory.makeMilestone(product=self.product)
-        with person_logged_in(self.owner):
-            self.milestone.setTags(tagnames, self.owner)
-            new_milestone.setTags(tagnames[:1], self.owner)
-            specifications = self._create_specifications(5, self.milestone)
-            self._create_specifications(3, new_milestone)
-            milestonetag = ProjectGroupMilestoneTag(
-                target=self.project_group, tags=tagnames)
-            self.assertContentEqual(
-                specifications,
-                milestonetag.specifications)
+        specs, milestonetag = self._create_items_for_multiple_tags(
+            self._create_specifications)
+        self.assertContentEqual(specs, milestonetag.specifications)
