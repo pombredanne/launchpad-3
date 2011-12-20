@@ -64,7 +64,6 @@ from zope.session.interfaces import ISession
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IPrivateApplication,
-    IWebServiceApplication,
     )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
@@ -111,6 +110,7 @@ from lp.services.oauth.interfaces import (
     TokenException,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 

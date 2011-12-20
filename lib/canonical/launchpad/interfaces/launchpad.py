@@ -6,7 +6,6 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from lazr.restful.interfaces import IServiceRootResource
 from zope.interface import (
     Attribute,
     Interface,
@@ -22,16 +21,12 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 __all__ = [
     'IAging',
     'IAuthServerApplication',
-    'IHasAssignee',
     'IHasDateCreated',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasProduct',
-    'IHasProductAndAssignee',
     'IPrivateApplication',
     'IPrivacy',
-    'IWebServiceApplication',
     ]
 
 
@@ -56,27 +51,6 @@ class IPrivateApplication(ILaunchpadApplication):
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
-
-
-class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
-    """Launchpad web service application root."""
-
-
-class IHasAssignee(Interface):
-    """An object that has an assignee."""
-
-    assignee = Attribute("The object's assignee, which is an IPerson.")
-
-
-class IHasProduct(Interface):
-    """An object that has a product attribute that is an IProduct."""
-
-    product = Attribute("The object's product")
-
-
-class IHasProductAndAssignee(IHasProduct, IHasAssignee):
-    """An object that has a product attribute and an assigned attribute.
-    See IHasProduct and IHasAssignee."""
 
 
 class IHasIcon(Interface):

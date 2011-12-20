@@ -45,12 +45,12 @@
   <browser:url
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryBlobStorage"
       urldata="lp.services.temporaryblobstorage.browser.TemporaryBlobStorageURL"
-      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
+      parent_utility="lp.services.webservice.interfaces.IWebServiceApplication"/>
 
   <browser:url
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryStorageManager"
       path_expression="string:temporary-blobs"
-      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
+      parent_utility="lp.services.webservice.interfaces.IWebServiceApplication"/>
 
   <webservice:register module="lp.services.temporaryblobstorage.webservice" />
 </configure>
