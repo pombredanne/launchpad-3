@@ -39,14 +39,6 @@
         template="../../../canonical/lazr/feed/templates/feed-entry-atom.pt"
         />
 
-    <!-- Feeds -->
-    <browser:feeds
-        module="canonical.launchpad.feed"
-        classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed
-                 BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
-                 LaunchpadAnnouncementsFeed TargetAnnouncementsFeed
-                 PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
-        />
 
     <!-- Unauthorized -->
     <browser:page

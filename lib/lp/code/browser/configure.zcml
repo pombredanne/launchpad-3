@@ -13,6 +13,11 @@
        path_expression="string:branches"
        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       />
+    <browser:feeds
+        module="lp.code.feed.branch"
+        classes="BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
+                 PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
+        />
 
   <adapter
       provides="lp.app.interfaces.headings.IRootContext"

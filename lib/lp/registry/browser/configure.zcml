@@ -28,6 +28,10 @@
       path_expression="string:projectgroups"
       parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       />
+    <browser:feeds
+        module="lp.registry.feed.announcement"
+        classes="LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
+        />
 
 <facet facet="overview">
     <browser:page
