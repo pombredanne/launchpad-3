@@ -24,7 +24,7 @@
       name="translations" />
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+      for="lp.translations.interfaces.translations.IRosettaApplication"
       interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
       class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
       permission="zope.Public"
@@ -60,9 +60,9 @@
     </class>
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
-        provides="canonical.launchpad.interfaces.launchpad.IRosettaApplication">
+        provides="lp.translations.interfaces.translations.IRosettaApplication">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.IRosettaApplication"/>
+            interface="lp.translations.interfaces.translations.IRosettaApplication"/>
     </securedutility>
 
     <!-- TranslationsOverview -->

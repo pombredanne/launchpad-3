@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IAuthServerApplication,
     IBazaarApplication,
     IFeedsApplication,
-    IRosettaApplication,
     IWebServiceApplication,
     )
 from lp.services.statistics.interfaces.statistic import (
@@ -81,6 +80,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview,

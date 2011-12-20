@@ -56,7 +56,6 @@ from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
     IBazaarApplication,
-    IRosettaApplication,
     )
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
@@ -146,6 +145,7 @@ from lp.soyuz.interfaces.processor import (
     IProcessorSet,
     )
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,

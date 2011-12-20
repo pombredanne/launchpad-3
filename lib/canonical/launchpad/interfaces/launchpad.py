@@ -44,45 +44,10 @@ __all__ = [
     'IPrivateApplication',
     'IPrivacy',
     'IReadZODBAnnotation',
-    'IRosettaApplication',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     ]
-
-
-class IRosettaApplication(ILaunchpadApplication):
-    """Application root for rosetta."""
-
-    languages = Attribute(
-        'Languages Launchpad can translate into.')
-    language_count = Attribute(
-        'Number of languages Launchpad can translate into.')
-    statsdate = Attribute('The date stats were last updated.')
-    translation_groups = Attribute('ITranslationGroupSet object.')
-
-    def translatable_products():
-        """Return a list of the translatable products."""
-
-    def featured_products():
-        """Return a sample of all the translatable products."""
-
-    def translatable_distroseriess():
-        """Return a list of the distroseriess in launchpad for which
-        translations can be done.
-        """
-
-    def potemplate_count():
-        """Return the number of potemplates in the system."""
-
-    def pofile_count():
-        """Return the number of pofiles in the system."""
-
-    def pomsgid_count():
-        """Return the number of msgs in the system."""
-
-    def translator_count():
-        """Return the number of people who have given translations."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
