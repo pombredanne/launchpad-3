@@ -1,5 +1,5 @@
 <div class="listing">
-{{#bugtasks}}
+{{#items}}
   <div class="buglisting-row">
 
     <div class="buglisting-col1">
@@ -61,8 +61,10 @@
             {{/show_datecreated}}
             {{#show_tag}}
                 <span class="field">Tags:
-                  {{#tags}}{{tags}}{{/tags}}
-                  {{^tags}}None{{/tags}}
+                  {{^has_tags}}None{{/has_tags}}
+                  {{#tags}}
+                     <a href="{{url}}" class="tag">{{tag}}</a>&#160;
+                  {{/tags}}
                 </span>
             {{/show_tag}}
         </div>
@@ -80,5 +82,5 @@
     </div>
 
   </div>
-{{/bugtasks}}
+{{/items}}
 </div>

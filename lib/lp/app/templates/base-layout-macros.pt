@@ -122,7 +122,7 @@
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
-	    Y.lp.app.links.check_valid_lp_links();
+            Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
             // LP.cache.longpoll is populated.
             // We use Y.later to work around a Safari/Chrome 'feature':
