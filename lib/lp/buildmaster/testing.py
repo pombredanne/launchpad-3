@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+from functools import wraps
 
 import fixtures
 import transaction
@@ -42,18 +43,38 @@ class BuilddManagerTestFixture(fixtures.Fixture):
         self.addCleanup(self.policy.__exit__, None, None, None)
 
     @staticmethod
-    @contextmanager
-    def extraSetUp():
+    def extraSetUp(func=None):
         """Temporarily enter a read-write transaction to do extra setup.
 
         For example:
 
-          with self.extraSetUp():
+          with BuilddManagerTestFixture.extraSetUp():
               removeSecurityProxy(self.build).date_finished = None
 
         On exit it will commit the changes and restore the previous
         transaction access mode.
+
+        Alternatively it can be used as a decorator:
+
+          @BuilddManagerTestFixture.extraSetUp
+          def makeSomethingOrOther(self):
+              return ...
+
+        Like with the context manager, on return it will commit the changes
+        and restore the previous transaction access mode.
         """
-        with DatabaseTransactionPolicy(read_only=False):
-            yield
-            transaction.commit()
+        if func is None:
+            @contextmanager
+            def context():
+                with DatabaseTransactionPolicy(read_only=False):
+                    yield
+                    transaction.commit()
+            return context()
+        else:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                with DatabaseTransactionPolicy(read_only=False):
+                    result = func(*args, **kwargs)
+                    transaction.commit()
+                    return result
+            return wrapper
