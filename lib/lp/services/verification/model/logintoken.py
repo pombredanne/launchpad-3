@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_unique_token_for_table,
     )
 from canonical.launchpad.helpers import get_email_template

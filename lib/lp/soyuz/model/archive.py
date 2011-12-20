@@ -54,7 +54,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )
