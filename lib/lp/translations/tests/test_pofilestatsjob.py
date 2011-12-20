@@ -50,7 +50,6 @@ class TestPOFileStatsJob(TestCaseWithFactory):
             job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
-        self.assertEqual(pofile.getStatistics(), (0, 0, 0, 0))
 
     def test_with_product(self):
         product = self.factory.makeProduct(
@@ -70,7 +69,6 @@ class TestPOFileStatsJob(TestCaseWithFactory):
             job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
-        self.assertEqual(pofile.getStatistics(), (0, 0, 0, 0))
 
     def test_iterReady(self):
         # The POFileStatsJob class provides a way to iterate over the jobs
