@@ -30,10 +30,6 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from lp.app.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -41,6 +37,10 @@ from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities

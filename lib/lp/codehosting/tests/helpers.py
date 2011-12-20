@@ -26,11 +26,7 @@ from bzrlib.tests import (
     TestNotApplicable,
     TestSkipped,
     )
-
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
-
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import (
     defer,
     threads,

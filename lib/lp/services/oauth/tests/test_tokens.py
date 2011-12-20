@@ -17,9 +17,7 @@ from zope.component import getUtility
 from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import (
-    login_person,
-    )
+from canonical.launchpad.ftests import login_person
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,

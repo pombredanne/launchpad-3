@@ -10,24 +10,25 @@ from datetime import (
     timedelta,
     )
 from fcntl import (
-    fcntl,
     F_GETFL,
+    fcntl,
     )
 from os import (
     fdopen,
     O_NONBLOCK,
     pipe,
     )
+
 from pytz import utc
 from testtools.matchers import LessThan
 
-from lp.testing import TestCase
-from lp.testing.fakemethod import FakeMethod
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 
 def make_pipe():

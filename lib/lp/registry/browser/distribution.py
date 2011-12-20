@@ -41,6 +41,7 @@ __all__ = [
 from collections import defaultdict
 import datetime
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import getUtility
 from zope.event import notify
@@ -50,12 +51,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
-from lazr.restful.utils import smartquote
-
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     ApplicationMenu,
@@ -123,6 +119,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,

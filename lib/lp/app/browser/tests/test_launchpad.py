@@ -13,10 +13,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.identity.interfaces.account import AccountStatus
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchpadRoot,
@@ -38,6 +35,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     )
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.testing import (
     ANONYMOUS,
     login,

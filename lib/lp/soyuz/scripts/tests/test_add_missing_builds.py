@@ -4,9 +4,9 @@
 """Test the add-missing-builds.py script. """
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
 
 from canonical.config import config

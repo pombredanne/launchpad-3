@@ -29,7 +29,6 @@ __all__ = [
 
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
-
 from zope.schema import getFields
 
 

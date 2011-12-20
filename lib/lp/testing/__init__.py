@@ -102,8 +102,8 @@ from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
-    getSiteManager,
     getMultiAdapter,
+    getSiteManager,
     getUtility,
     )
 import zope.event

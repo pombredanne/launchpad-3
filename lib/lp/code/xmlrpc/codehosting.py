@@ -42,8 +42,8 @@ from lp.code.errors import (
     NoLinkedBranch,
     UnknownBranchTypeError,
     )
-from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces import branchpuller
+from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
     ILinkedBranchTraverser,

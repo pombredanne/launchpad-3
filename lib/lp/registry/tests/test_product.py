@@ -37,13 +37,13 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.product import (
-    IProduct,
-    License,
-    )
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
     OPEN_TEAM_POLICY,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription

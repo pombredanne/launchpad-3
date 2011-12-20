@@ -47,8 +47,8 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app import versioninfo
-from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.messaging import rabbit
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 UTC = pytz.utc

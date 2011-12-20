@@ -20,10 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (
@@ -45,6 +41,10 @@ from lp.registry.interfaces.person import (
     IAdminTeamMergeSchema,
     IPersonSet,
     IRequestPeopleMerge,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import ArchiveStatus

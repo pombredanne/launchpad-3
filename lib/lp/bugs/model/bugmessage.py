@@ -20,15 +20,15 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.messages.model.message import (
-    Message,
-    MessageChunk,
-    )
 from lp.bugs.interfaces.bugmessage import (
     IBugMessage,
     IBugMessageSet,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 
 
 class BugMessage(SQLBase):

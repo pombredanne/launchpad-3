@@ -12,8 +12,8 @@ __all__ = [
 from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.interface import implements
 
-from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):

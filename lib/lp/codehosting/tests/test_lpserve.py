@@ -5,12 +5,10 @@
 
 __metaclass__ = type
 
-from bzrlib import (
-    errors,
-    )
+from bzrlib import errors
+from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 from bzrlib.smart import medium
 from bzrlib.transport import remote
-from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
 from canonical.testing.layers import LaunchpadLayer
 from lp.testing.fixture import CaptureOops

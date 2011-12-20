@@ -8,14 +8,12 @@ Run the doctests and pagetests.
 import logging
 import os
 
-from lp.services.mail.tests.test_doc import (
-    ProcessMailLayer,
-    )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
+from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.services.testing import build_test_suite
 
 

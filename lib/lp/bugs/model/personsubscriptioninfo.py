@@ -11,18 +11,22 @@ from storm.store import Store
 from zope.interface import implements
 from zope.proxy import sameProxiedObjects
 
-from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bug import Bug, BugMute
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IAbstractSubscriptionInfoCollection,
-    IRealSubscriptionInfoCollection,
     IPersonSubscriptions,
     IRealSubscriptionInfo,
+    IRealSubscriptionInfoCollection,
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
 from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTargetHelper)
+    IStructuralSubscriptionTargetHelper,
+    )
+from lp.bugs.model.bug import (
+    Bug,
+    BugMute,
+    )
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation

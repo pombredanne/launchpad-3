@@ -29,11 +29,11 @@ from lp.registry.interfaces.personnotification import (
     IPersonNotification,
     IPersonNotificationSet,
     )
-from lp.services.propertycache import cachedproperty
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class PersonNotification(SQLBase):

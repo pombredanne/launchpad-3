@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+
 from zope.interface import implements
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
@@ -19,9 +20,9 @@ from lp.app.security import AuthorizationBase
 from lp.testing import (
     FakeAdapterMixin,
     login_person,
+    test_tales,
     TestCase,
     TestCaseWithFactory,
-    test_tales,
     )
 from lp.testing.views import create_view
 

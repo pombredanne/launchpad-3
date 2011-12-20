@@ -29,9 +29,7 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase,
-    )
+from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.bugs.scripts.checkwatches.core import (
     CheckwatchesMaster,
     LOGIN,

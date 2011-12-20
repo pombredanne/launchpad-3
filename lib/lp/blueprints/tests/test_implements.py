@@ -7,7 +7,9 @@ __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications, ISpecificationTarget)
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.testing import TestCaseWithFactory
 
 

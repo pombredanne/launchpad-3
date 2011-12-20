@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 
-from canonical.launchpad import _
 from zope.interface import (
     Attribute,
     Interface,
@@ -24,6 +23,8 @@ from zope.schema import (
     Datetime,
     Int,
     )
+
+from canonical.launchpad import _
 from lp.services.fields import (
     BugField,
     PersonChoice,

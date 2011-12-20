@@ -33,10 +33,8 @@ from canonical.testing.layers import (
     ZopelessAppServerLayer,
     ZopelessDatabaseLayer,
     )
-from lp.registry.interfaces.ssh import (
-    ISSHKeySet,
-    )
 from lp.poppy.hooks import Hooks
+from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.testing import TestCaseWithFactory
 from lp.testing.keyserver import KeyServerTac
 

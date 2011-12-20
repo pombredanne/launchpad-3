@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (

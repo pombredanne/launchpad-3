@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.testing.publication import test_traverse
 

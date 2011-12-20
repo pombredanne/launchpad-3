@@ -21,14 +21,14 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import MailController
 from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
     MessageSet,
     )
-from lp.services.job.model.job import Job
-from lp.services.mail.sendmail import MailController
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

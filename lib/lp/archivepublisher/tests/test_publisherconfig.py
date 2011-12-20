@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 
-from storm.store import Store
 from storm.exceptions import IntegrityError
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized

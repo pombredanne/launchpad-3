@@ -8,9 +8,9 @@
 __metaclass__ = type
 
 import cgi
-import simplejson
 
 from lazr.restful.utils import safe_hasattr
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase,

@@ -94,9 +94,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -198,9 +195,9 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -210,6 +207,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug

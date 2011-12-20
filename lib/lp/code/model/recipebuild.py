@@ -17,31 +17,27 @@ from datetime import (
     )
 
 import pytz
+from storm import Undef
 from storm.expr import (
     Desc,
     Join,
     Max,
     Select,
     )
-from storm import Undef
-
 from zope.interface import implements
 
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.services.database.stormexpr import CountDistinct
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.stormexpr import CountDistinct
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
