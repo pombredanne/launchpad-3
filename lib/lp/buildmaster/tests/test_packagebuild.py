@@ -37,6 +37,7 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.testing import BuilddManagerDatabasePolicyFixture
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.transaction_policy import DatabaseTransactionPolicy
@@ -323,11 +324,7 @@ class TestHandleStatusMixin:
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
 
-        # Save everything done so far then shift into a read-only transaction
-        # access mode by default.
-        transaction.commit()
-        policy = DatabaseTransactionPolicy(read_only=True)
-        self.useContext(policy)
+        self.useFixture(BuilddManagerDatabasePolicyFixture())
 
     def assertResultCount(self, count, result):
         self.assertEquals(
