@@ -134,7 +134,7 @@ from canonical.launchpad import (
     )
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.launchpad import (
+from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )

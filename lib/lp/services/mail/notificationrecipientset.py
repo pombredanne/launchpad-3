@@ -14,7 +14,7 @@ from operator import attrgetter
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.interfaces.launchpad import (
+from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )

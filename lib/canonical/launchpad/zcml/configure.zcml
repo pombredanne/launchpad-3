@@ -9,7 +9,6 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
-    <include file="launchpad.zcml" />
     <include file="librarian.zcml" />
     <include file="lifecycle.zcml" />
     <include file="webservice.zcml" />
