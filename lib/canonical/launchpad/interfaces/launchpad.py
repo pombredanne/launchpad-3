@@ -7,7 +7,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from lazr.restful.interfaces import IServiceRootResource
-from persistent import IPersistent
 from zope.interface import (
     Attribute,
     Interface,
@@ -26,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
-    'IAuthApplication',
     'IAuthServerApplication',
     'IFeedsApplication',
     'IHasAssignee',
@@ -37,9 +35,6 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'IPasswordChangeApp',
-    'IPasswordEncryptor',
-    'IPasswordResets',
     'IPrivateApplication',
     'IPrivacy',
     'IReadZODBAnnotation',
@@ -72,61 +67,8 @@ class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
 
 
-class IAuthApplication(Interface):
-    """Interface for AuthApplication."""
-
-    def __getitem__(name):
-        """The __getitem__ method used to traverse the app."""
-
-    def sendPasswordChangeEmail(longurlsegment, toaddress):
-        """Send an Password change special link for a user."""
-
-    def getPersonFromDatabase(emailaddr):
-        """Returns the Person in the database who has the given email address.
-
-        If there is no Person for that email address, returns None.
-        """
-
-    def newLongURL(person):
-        """Creates a new long url for the given person.
-
-        Returns the long url segment.
-        """
-
-
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class IPasswordResets(IPersistent):
-    """Interface for PasswordResets"""
-
-    lifetime = Attribute("Maximum time between request and reset password")
-
-    def newURL(person):
-        """Create a new URL and store person and creation time"""
-
-    def getPerson(long_url):
-        """Get the person object using the long_url if not expired"""
-
-
-class IPasswordChangeApp(Interface):
-    """Interface for PasswdChangeApp."""
-    code = Attribute("The transaction code")
-
-
-class IPasswordEncryptor(Interface):
-    """An interface representing a password encryption scheme."""
-
-    def encrypt(plaintext):
-        """Return the encrypted value of plaintext."""
-
-    def validate(plaintext, encrypted):
-        """Return a true value if the encrypted value of 'plaintext' is
-        equivalent to the value of 'encrypted'.  In general, if this
-        method returns true, it can also be assumed that the value of
-        self.encrypt(plaintext) will compare equal to 'encrypted'.
-        """
 
 
 class IReadZODBAnnotation(Interface):

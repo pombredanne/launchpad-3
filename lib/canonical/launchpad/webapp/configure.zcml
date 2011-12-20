@@ -170,7 +170,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.interfaces.launchpad.IPasswordEncryptor"
+        provides="canonical.launchpad.webapp.interface.IPasswordEncryptor"
         permission="zope.Public"
         />
 
