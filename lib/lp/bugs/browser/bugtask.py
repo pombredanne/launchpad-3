@@ -1784,7 +1784,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return super(BugTaskDeletionView, self).next_url
+            return self._next_url or self._return_url
         return None
 
     @action('Delete', name='delete_bugtask')
@@ -1795,6 +1795,9 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
         error_message = None
+        # We set the next_url here before the bugtask is deleted since later
+        # the bugtask will not be available if required to construct the url.
+        self._next_url = self._return_url
 
         try:
             bugtask.delete()

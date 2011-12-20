@@ -1552,14 +1552,16 @@ class TestBugTaskDeletion(TestCaseWithFactory):
             self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
     def test_delete_bugtask(self):
-        # A bugtask can be deleted.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        # A bugtask can be deleted and after deletion, re-nominated.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=owner, bug_supervisor=owner)
+        bug = self.factory.makeBug(
+            product=product, owner=owner)
         target = self.factory.makeProductSeries(product=product)
-        bugtask = self.factory.makeBugTask(bug=bug, target=target)
-        bug = bugtask.bug
-        self.factory.makeBugNomination(bug=bug, target=target)
-        login_person(bugtask.owner)
+        login_person(bug.owner)
+        nomination = bug.addNomination(bug.owner, target)
+        nomination.approve(bug.owner)
+        bugtask = bug.getBugTask(target)
         with FeatureFixture(self.flags):
             bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
