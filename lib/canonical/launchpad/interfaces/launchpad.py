@@ -42,7 +42,6 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
-    'IPrivateMaloneApplication',
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
@@ -50,10 +49,6 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     ]
-
-
-class IPrivateMaloneApplication(ILaunchpadApplication):
-    """Private application root for malone."""
 
 
 class IRosettaApplication(ILaunchpadApplication):

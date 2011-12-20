@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IAuthServerApplication,
     IBazaarApplication,
     IFeedsApplication,
-    IPrivateMaloneApplication,
     IRosettaApplication,
     IWebServiceApplication,
     )
@@ -53,7 +52,10 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.malone import (
+    IMaloneApplication,
+    IPrivateMaloneApplication,
+    )
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
