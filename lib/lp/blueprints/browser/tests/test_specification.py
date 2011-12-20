@@ -1,5 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -187,7 +188,7 @@ class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
             login_person(user)
         return setupBrowserForUser(user=user)
 
-    def test_view_specification_with_private_subscriber(self):
+    def _test_view_specification_with_private_subscriber(self):
         # A specification with a private subscriber is rendered.
         private_subscriber = self.factory.makeTeam(
             name="privateteam",
@@ -205,6 +206,16 @@ class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
                 'div', attrs={'id': 'subscribers'})
             self.assertIsNotNone(
                 subscriber_portlet.find('a', text='Privateteam'))
+
+    def test_view_specification_with_private_subscriber_with_fflag(self):
+        # A feature flag controls if the check is done in the security
+        # adaptor or the view.
+        fflag = u'disclosure.extra_private_team_limitedView_security.enabled'
+        with FeatureFixture({fflag: u'on'}):
+            self._test_view_specification_with_private_subscriber()
+
+    def test_view_specification_with_private_subscriber_without_fflag(self):
+        self._test_view_specification_with_private_subscriber()
 
     def test_anonymous_view_specification_with_private_subscriber(self):
         # A specification with a private subscriber is not rendered for anon.

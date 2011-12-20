@@ -4,6 +4,9 @@
 # pylint: disable-msg=F0401
 
 """Security policies for using content objects."""
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.blueprints.model.specificationsubscription import SpecificationSubscription
+from lp.registry.model.teammembership import TeamParticipation
 
 __metaclass__ = type
 __all__ = [
@@ -158,6 +161,7 @@ from lp.registry.interfaces.role import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.features import getFeatureFlag
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
@@ -850,9 +854,15 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
 
-            # Grant visibility to people with subscriptions to branches owned
-            # by the private team.
+            # Grant visibility to people who can see branches owned by the
+            # private team.
             team_branches = IBranchCollection(self.obj)
+            if team_branches.visibleByUser(user.person).count() > 0:
+                return True
+
+            # Grant visibility to people who can see branches subscribed to
+            # by the private team.
+            team_branches = getUtility(IAllBranches).subscribedBy(self.obj)
             if team_branches.visibleByUser(user.person).count() > 0:
                 return True
 
@@ -863,6 +873,26 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
             if mp.count() > 0:
                 return True
+
+            # There are additional checks we can do to determine if the user
+            # should have limitedView permission. It is uncertain these will
+            # not cause performance issues, so for now we use a feature flag
+            # to enabled the checks.
+            extra_checks_enabled = bool(getFeatureFlag(
+                'disclosure.extra_private_team_limitedView_security.enabled'))
+            if extra_checks_enabled:
+                # All blueprints are public, so if the team is subscribed to
+                # any blueprints, they are in a public role and hence visible.
+                store = IStore(SpecificationSubscription)
+                rs = store.using(
+                        SpecificationSubscription, TeamParticipation
+                    ).find(
+                        SpecificationSubscription.specificationID,
+                        (SpecificationSubscription.personID
+                            == TeamParticipation.teamID,
+                        TeamParticipation.personID == self.obj.id))
+                if rs.count() > 0:
+                    return True
 
         return False
 

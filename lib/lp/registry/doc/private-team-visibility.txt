@@ -154,7 +154,7 @@ been requested.
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
 
-Subscribers to the teams private PPA have limited view permission.
+Subscribers to the team's private PPA have limited view permission.
 
     >>> login_person(priv_owner)
     >>> archive = factory.makeArchive(private=True, owner=priv_team)
@@ -166,9 +166,46 @@ Subscribers to the teams private PPA have limited view permission.
     >>> check_permission('launchpad.LimitedView', priv_team)
     True
 
+The following permission checks are behind a feature flag just in case there
+are performance issues with the queries used in the security adaptor.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fflag = 'disclosure.extra_private_team_limitedView_security.enabled'
+    >>> feature_flag = {fflag: 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
+If the team is subscribed to any blueprint, any user has limited view
+permission, since all blueprints are public.
+
+    >>> login_person(priv_owner)
+    >>> spec = factory.makeSpecification()
+    >>> login_person(spec.owner)
+    >>> spec.subscribe(priv_team, spec.owner)
+    <SpecificationSubscription...
+
+    >>> any_person = factory.makePerson()
+    >>> login_person(any_person)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    True
+
+    >>> login_person(priv_owner)
+    >>> spec.unsubscribe(priv_team, priv_owner)
+
+    >>> login_person(any_person)
+    >>> check_permission('launchpad.LimitedView', priv_team)
+    False
+
+Clean up the feature flag.
+    >>> flags.cleanUp()
+
+
 Users with LimitedView can know identifying information like name,
 displayname, and unique_name, but cannot know other information like
 teamowner.
+
+First login as a person who has limitedView permission.
+    >>> login_person(archive_subscriber)
 
     >>> print priv_team.name
     priv-team

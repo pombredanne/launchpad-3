@@ -19,10 +19,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
@@ -51,15 +48,6 @@ class BranchPortletSubscribersContent(LaunchpadView):
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""
-
-        # Cache permissions so private subscribers can be rendered.
-        if self.user is not None:
-            subscribers = [
-                subscription.person
-                for subscription in self.context.subscriptions]
-            precache_permission_for_objects(
-                self.request, "launchpad.LimitedView", subscribers)
-
         visible_subscriptions = [
             subscription for subscription in self.context.subscriptions
             if check_permission('launchpad.LimitedView', subscription.person)]
