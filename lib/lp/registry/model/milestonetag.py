@@ -74,9 +74,17 @@ class ProjectGroupMilestoneTag(MilestoneData):
     def specifications(self):
         """See IMilestoneData."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Specification,
-            Specification.milestone == Milestone.id,
-            Milestone.product == Product.id,
-            Product.project == self.target,
-            MilestoneTag.tag.is_in(self.tags))
+        results = []
+        for tag in self.tags:
+            result = store.find(
+                Specification,
+                Specification.milestone == Milestone.id,
+                Milestone.product == Product.id,
+                Product.project == self.target,
+                MilestoneTag.milestone_id == Milestone.id,
+                MilestoneTag.tag == tag)
+            results.append(result)
+        result = results.pop()
+        for i in results:
+            result = result.intersection(i)
+        return result
