@@ -34,6 +34,7 @@ class BuilddManagerDatabasePolicyFixture(fixtures.Fixture):
     def setUp(self):
         # Commit everything done so far then shift into a read-only
         # transaction access mode by default.
+        super(BuilddManagerDatabasePolicyFixture, self).setUp()
         transaction.commit()
         self.policy.__enter__()
         self.addCleanup(self.policy.__exit__, None, None, None)
