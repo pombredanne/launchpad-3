@@ -46,7 +46,7 @@ First, let's define a simple event listener to show that the
 IObjectCreatedEvent is being published when a bug is reported through
 the XML-RPC interface.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import IBug
 
