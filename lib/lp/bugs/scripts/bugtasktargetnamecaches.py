@@ -10,12 +10,14 @@ from collections import defaultdict
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from lp.services.database.interfaces import (
     IMasterStore,
     ISlaveStore,
     )
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     BugTask,

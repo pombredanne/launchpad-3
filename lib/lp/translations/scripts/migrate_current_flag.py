@@ -18,8 +18,10 @@ from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from lp.services.looptuner import (
+    DBLoopTuner,
+    ITunableLoop,
+    )
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,

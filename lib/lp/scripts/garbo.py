@@ -46,7 +46,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.database.interfaces import IMasterStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
+from lp.services.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,

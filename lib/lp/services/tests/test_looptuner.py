@@ -12,8 +12,10 @@ from cStringIO import StringIO
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
 from canonical.testing.layers import BaseLayer
 from lp.services.log.logger import FakeLogger
 from lp.testing import TestCase

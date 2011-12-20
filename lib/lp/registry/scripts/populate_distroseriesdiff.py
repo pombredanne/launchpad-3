@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     quote_identifier,
     )
 from lp.services.database.interfaces import IStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
+from lp.services.looptuner import TunableLoop
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
