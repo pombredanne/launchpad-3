@@ -9,7 +9,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.mailnotification import get_unified_diff
+from lp.services.mail.notification import get_unified_diff
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.registry.interfaces.person import IPerson

@@ -19,7 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mailnotification import (
+from lp.services.mail.notification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
