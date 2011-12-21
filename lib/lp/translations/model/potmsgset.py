@@ -44,7 +44,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (

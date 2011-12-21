@@ -17,7 +17,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,

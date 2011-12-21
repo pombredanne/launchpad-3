@@ -20,7 +20,7 @@ import _pythonpath
 
 from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.librarian import librariangc
 from lp.services.scripts.base import LaunchpadCronScript
 

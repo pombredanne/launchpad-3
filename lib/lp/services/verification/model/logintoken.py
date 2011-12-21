@@ -39,7 +39,7 @@ from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
     )
-from lp.services.database.interfaces import IMasterObject
+from lp.services.database.lpstorm import IMasterObject
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,

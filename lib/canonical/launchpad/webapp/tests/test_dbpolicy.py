@@ -21,7 +21,7 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )

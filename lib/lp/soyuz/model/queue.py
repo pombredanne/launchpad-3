@@ -48,7 +48,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

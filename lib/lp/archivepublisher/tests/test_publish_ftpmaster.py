@@ -17,7 +17,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

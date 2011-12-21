@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter

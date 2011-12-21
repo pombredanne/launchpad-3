@@ -48,7 +48,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     ISlaveStore,
     IStore,

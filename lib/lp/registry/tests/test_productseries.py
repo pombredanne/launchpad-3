@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

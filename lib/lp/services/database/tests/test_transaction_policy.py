@@ -8,7 +8,7 @@ __metaclass__ = type
 from psycopg2 import InternalError
 import transaction
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.model.person import Person
 from lp.services.database.isolation import (

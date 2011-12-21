@@ -30,7 +30,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file,

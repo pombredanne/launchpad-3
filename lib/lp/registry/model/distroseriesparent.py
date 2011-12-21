@@ -20,7 +20,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

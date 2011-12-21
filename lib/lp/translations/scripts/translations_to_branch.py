@@ -33,7 +33,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,

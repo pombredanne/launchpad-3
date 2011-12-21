@@ -76,7 +76,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.services.orderingcheck import OrderingCheck
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related

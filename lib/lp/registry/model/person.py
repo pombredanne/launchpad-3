@@ -136,7 +136,7 @@ from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,

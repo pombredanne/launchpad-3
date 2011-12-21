@@ -18,7 +18,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

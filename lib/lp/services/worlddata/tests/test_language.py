@@ -7,7 +7,7 @@ from lazr.lifecycle.interfaces import IDoNotSnapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

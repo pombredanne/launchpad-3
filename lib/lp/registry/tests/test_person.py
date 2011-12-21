@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

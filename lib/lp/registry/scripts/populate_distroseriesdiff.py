@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     quote,
     quote_identifier,
     )
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.services.looptuner import TunableLoop
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,

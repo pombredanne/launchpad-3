@@ -44,7 +44,7 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

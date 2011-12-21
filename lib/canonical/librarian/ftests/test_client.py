@@ -11,7 +11,7 @@ import transaction
 from canonical.testing.layers import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.services.database.interfaces import ISlaveStore
+from lp.services.database.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.librarian import client as client_module
 from canonical.librarian.client import (

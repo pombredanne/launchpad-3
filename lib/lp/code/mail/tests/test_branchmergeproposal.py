@@ -13,7 +13,7 @@ import transaction
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

@@ -59,7 +59,7 @@ from canonical.config import (
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.postgresql import ConnectionString
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )

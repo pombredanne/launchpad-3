@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (

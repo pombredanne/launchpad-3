@@ -8,7 +8,7 @@ from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,

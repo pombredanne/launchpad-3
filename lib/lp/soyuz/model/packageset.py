@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.helpers import ensure_unicode
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

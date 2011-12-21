@@ -11,7 +11,7 @@ from zope.component import adapter
 from zope.interface import implementer
 
 from canonical.database.sqlbase import session_store
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,

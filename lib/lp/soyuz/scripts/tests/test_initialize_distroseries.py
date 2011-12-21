@@ -15,7 +15,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus

@@ -28,7 +28,7 @@ from canonical.launchpad.database.librarian import (
     TimeLimitedToken,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,

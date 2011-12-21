@@ -18,7 +18,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection

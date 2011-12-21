@@ -22,7 +22,7 @@ from storm.locals import (
     )
 
 from canonical.database.enumcol import EnumCol
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName

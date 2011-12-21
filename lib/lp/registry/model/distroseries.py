@@ -57,7 +57,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,

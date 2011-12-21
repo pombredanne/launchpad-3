@@ -71,7 +71,7 @@ from canonical.database.constants import (
     )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

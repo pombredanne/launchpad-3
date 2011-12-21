@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (

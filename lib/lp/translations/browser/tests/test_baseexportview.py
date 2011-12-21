@@ -8,7 +8,7 @@ import unittest
 
 import transaction
 
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory

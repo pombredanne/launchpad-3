@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from lp.code.interfaces.branchmergequeue import (
     user_has_special_merge_queue_access,
     )

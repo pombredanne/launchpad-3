@@ -14,7 +14,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from lp.soyuz.interfaces.binarypackagepath import IBinaryPackagePath
 
 

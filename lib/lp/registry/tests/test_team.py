@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

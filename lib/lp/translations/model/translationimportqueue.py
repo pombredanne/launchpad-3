@@ -55,7 +55,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,

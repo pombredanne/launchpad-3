@@ -10,7 +10,7 @@ import pytz
 from storm.locals import Store
 
 from canonical.database.constants import UTC_NOW
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (

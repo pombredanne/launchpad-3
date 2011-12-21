@@ -23,7 +23,7 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.config import config
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )

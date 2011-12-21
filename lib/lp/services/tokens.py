@@ -14,7 +14,7 @@ import random
 
 from zope.component import getUtility
 
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 
 
 def create_token(token_length):

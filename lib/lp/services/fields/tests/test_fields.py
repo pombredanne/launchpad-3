@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema.interfaces import TooShort
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet

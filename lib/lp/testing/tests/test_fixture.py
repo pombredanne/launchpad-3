@@ -26,7 +26,7 @@ from canonical.config import (
     config,
     dbconfig,
     )
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,

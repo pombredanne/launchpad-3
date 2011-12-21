@@ -21,7 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad import _
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.services.database.interfaces import IMasterObject
+from lp.services.database.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

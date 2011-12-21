@@ -63,7 +63,7 @@ from canonical.launchpad.interfaces.librarian import (
     ILibraryFileContent,
     ILibraryFileDownloadCount,
     )
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.librarian.interfaces import (
     DownloadFailed,
     ILibrarianClient,

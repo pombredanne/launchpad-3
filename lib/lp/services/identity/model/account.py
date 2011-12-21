@@ -25,7 +25,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp.interfaces import IPasswordEncryptor
-from lp.services.database.interfaces import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,

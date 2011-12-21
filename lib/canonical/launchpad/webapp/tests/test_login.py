@@ -37,7 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
-from lp.services.database.interfaces import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.testing.browser import (
     Browser,
     setUp,
