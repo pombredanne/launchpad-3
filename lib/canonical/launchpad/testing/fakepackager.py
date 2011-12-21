@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FakePackager utility.
@@ -423,4 +423,3 @@ class FakePackager:
 
         return queue_record.archive.getPublishedSources(
             name=self.name, version=version, exact_match=True).first()
-
