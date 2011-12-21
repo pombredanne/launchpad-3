@@ -18,5 +18,5 @@ def test_suite():
     suite.addTest(DocTestSuite(
         'lp.services.scripts.logger', tearDown=tearDown
         ))
-    suite.addTest(DocTestSuite('canonical.launchpad.scripts'))
+    suite.addTest(DocTestSuite('lp.services.scripts'))
     return suite

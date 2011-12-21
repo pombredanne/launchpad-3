@@ -22,7 +22,7 @@ from zope.interface import (
     implements,
     )
 
-import canonical.launchpad.scripts
+import lp.services.scripts
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -129,7 +129,7 @@ class LoopTuner:
         self.cooldown_time = cooldown_time
         self.abort_time = abort_time
         if log is None:
-            self.log = canonical.launchpad.scripts.log
+            self.log = lp.services.scripts.log
         else:
             self.log = log
 

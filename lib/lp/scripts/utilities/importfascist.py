@@ -47,13 +47,11 @@ permitted_database_imports = text_lines_to_set("""
 
 
 warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.scripts.ftpmaster
-    canonical.launchpad.scripts.gina.handlers
-    canonical.launchpad.browser.distroseries
-    canonical.launchpad.scripts.builddmaster
+    lp.soyuz.scripts.ftpmaster
+    lp.soyuz.scripts.gina.handlers
+    lp.registry.browser.distroseries
     lp.translations.scripts.po_import
     canonical.launchpad.systemhomes
-    canonical.rosetta
     """)
 
 

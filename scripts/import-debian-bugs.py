@@ -53,6 +53,6 @@ class DebianBugImportScript(LaunchpadScript):
 
 if __name__ == '__main__':
     script = DebianBugImportScript(
-        'canonical.launchpad.scripts.importdebianbugs',
+        'lp.services.scripts.importdebianbugs',
         dbuser=config.checkwatches.dbuser)
     script.run()

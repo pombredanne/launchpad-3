@@ -12,7 +12,7 @@ import shutil
 import socket
 import tempfile
 
-from canonical.launchpad import scripts
+from lp.services import scripts
 from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from lp.services.log.logger import BufferLogger

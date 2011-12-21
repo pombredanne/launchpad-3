@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile

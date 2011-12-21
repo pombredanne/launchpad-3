@@ -32,7 +32,7 @@ from time import strftime
 import _pythonpath
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,

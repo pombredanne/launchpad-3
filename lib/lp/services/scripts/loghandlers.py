@@ -4,7 +4,7 @@
 """Backport of Python 2.6 logging handlers.
 
 Do not import this module directly, instead import from
-`canonical.launchpad.scripts`.
+`lp.services.scripts`.
 
 Given that most of the contents of this file are derived from the Python 2.6
 distribution, the above license statement is probably wrong.

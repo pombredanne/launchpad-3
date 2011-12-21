@@ -38,7 +38,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.postgresql import ConnectionString
-from canonical.launchpad import scripts
+from lp.services import scripts
 from lp.services.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
