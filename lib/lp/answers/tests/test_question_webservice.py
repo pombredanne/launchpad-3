@@ -27,7 +27,6 @@ from lp.answers.errors import (
     QuestionTargetError,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
