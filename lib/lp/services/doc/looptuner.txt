@@ -454,7 +454,7 @@ than this timeout, it is aborted and a WARNING logged.
     start
     same (0.0)
     same (0.0)
-    WARNING:root:Task aborted after 20 seconds.
+    WARNING:...:Task aborted after 20 seconds.
 
 
 == Cleanup ==
@@ -480,6 +480,6 @@ than this timeout, it is aborted and a WARNING logged.
     start
     same (0.0)
     same (0.0)
-    WARNING:root:Task aborted after 20 seconds.
+    WARNING:...:Task aborted after 20 seconds.
     clean up
 
