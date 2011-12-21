@@ -2,7 +2,7 @@
 The LibrarianFormatter works just like a normal logger.Formatter if there
 is no Librarian available or active
 
->>> from canonical.launchpad.scripts.logger import LibrarianFormatter
+>>> from lp.services.scripts.logger import LibrarianFormatter
 
 This is a helper to quickly construct a Logger instance with a particular
 formatter. Each call generates a unique Logger.

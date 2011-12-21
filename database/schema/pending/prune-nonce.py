@@ -17,7 +17,7 @@ from canonical.database.sqlbase import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
 from canonical.launchpad.scripts import db_options
-from canonical.launchpad.scripts.logger import (
+from lp.services.scripts.logger import (
     log,
     logger_options,
     )

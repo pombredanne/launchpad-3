@@ -664,7 +664,7 @@ class TestCaseWithFactory(TestCase):
         self._use_bzr_branch_called = False
         # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
         # messing with global log state (see
-        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # lp.services.scripts.logger), trace._bzr_logger does not
         # necessarily equal logging.getLogger('bzr'), so we have to explicitly
         # make it so in order to avoid "No handlers for "bzr" logger'
         # messages.

@@ -29,14 +29,14 @@ import zope.site.hooks
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
 # these are intentional re-exports, apparently, used by *many* files.
-from canonical.launchpad.scripts.logger import (
+from lp.services.scripts.logger import (
     dummy_logger_options,
     log,
     logger,
     logger_options,
     )
 # Intentional re-export, following along the lines of the logger module.
-from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
+from lp.services.scripts.loghandlers import WatchedFileHandler
 from canonical.launchpad.webapp.authorization import (
     LaunchpadPermissiveSecurityPolicy,
     LaunchpadSecurityPolicy,
