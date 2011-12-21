@@ -6,7 +6,7 @@
 
 import transaction
 
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.testing import (
     person_logged_in,

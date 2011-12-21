@@ -15,7 +15,7 @@ import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.model.sourcepackagerelease import (
