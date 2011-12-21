@@ -26,7 +26,7 @@ from canonical.launchpad.scripts import (
     logger,
     logger_options,
     )
-from canonical.launchpad.scripts.scriptmonitor import check_script
+from lp.scripts.scriptmonitor import check_script
 
 
 def main():
