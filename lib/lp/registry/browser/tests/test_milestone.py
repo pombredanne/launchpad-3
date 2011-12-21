@@ -16,6 +16,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -430,3 +431,43 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
         self.assertThat(self.milestone, browses_under_limit)
+
+
+class TestMilestoneTagView(TestQueryCountBase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMilestoneTagView, self).setUp()
+        self.tags = [u'tag1']
+        self.owner = self.factory.makePerson()
+        self.project_group = self.factory.makeProject(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            name="product1",
+            owner=self.owner,
+            project=self.project_group)
+        self.milestone = self.factory.makeMilestone(product=self.product)
+        with person_logged_in(self.owner):
+            self.milestone.setTags(self.tags, self.owner)
+        self.milestonetag = ProjectGroupMilestoneTag(
+            target=self.project_group, tags=self.tags)
+
+    def add_bug(self, count):
+        with person_logged_in(self.owner):
+            for n in range(count):
+                self.factory.makeBug(
+                    product=self.product, owner=self.owner,
+                    milestone=self.milestone)
+
+    def test_view_properties(self):
+        # Ensure that the view is correctly initialized.
+        view = create_initialized_view(self.milestonetag, '+index')
+        self.assertEqual(view.context, self.milestonetag)
+        self.assertEqual(view.page_title, self.milestonetag.title)
+
+    def test_buktask_query_count(self):
+        # Ensure that a correct number of queries is executed for
+        # bugtasks retrieval
+        bugtask_count = 10
+        self.assert_bugtasks_query_count(
+            self.milestonetag, bugtask_count, query_limit=11)
