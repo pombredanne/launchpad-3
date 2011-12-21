@@ -22,8 +22,8 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,

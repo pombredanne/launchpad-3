@@ -134,7 +134,8 @@ page that lists PPA packages in batches.
     ...
     Name      Uploaded to           Version  When        Failures
     iceweasel PPA for Mark...Warty  1.0      2006-04-11  None
-
+    1...1 of 1 result
+    ...
 
 Private PPA packages
 --------------------

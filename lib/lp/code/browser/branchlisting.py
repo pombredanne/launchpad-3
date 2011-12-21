@@ -53,7 +53,7 @@ from zope.schema import Choice
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     FeedsMixin,
     PersonBranchesFeedLink,
     PersonRevisionsFeedLink,

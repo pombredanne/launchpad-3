@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the helpers in `lp.testing.publication`."""
@@ -19,8 +19,10 @@ from zope.security.checker import (
     defineChecker,
     )
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer

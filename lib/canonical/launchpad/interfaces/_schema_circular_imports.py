@@ -30,7 +30,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )

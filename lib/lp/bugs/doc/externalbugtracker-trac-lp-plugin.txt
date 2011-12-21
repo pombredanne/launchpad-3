@@ -30,8 +30,8 @@ $base_url/launchpad-auth/$token. A request to such an URL will cause
 Trac to validate $token and return a Set-Cookie header.
 
     >>> import random
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from lp.testing.dbuser import lp_dbuser
 

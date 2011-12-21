@@ -28,7 +28,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (

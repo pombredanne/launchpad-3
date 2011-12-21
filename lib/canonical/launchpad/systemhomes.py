@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IRosettaApplication,
     IWebServiceApplication,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp.interfaces import (

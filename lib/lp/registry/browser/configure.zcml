@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,7 +8,31 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
-    <!-- RDF downloadable documents -->
+    <browser:url
+      for="lp.registry.interfaces.person.IPersonSet"
+      path_expression="string:people"
+      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.distribution.IDistributionSet"
+      path_expression="string:distros"
+      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"
+      path_expression="string:sourcepackagenames"
+      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
+      path_expression="string:projectgroups"
+      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:feeds
+        module="lp.registry.feed.announcement"
+        classes="LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
+        />
+
 <facet facet="overview">
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
