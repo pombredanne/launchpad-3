@@ -153,6 +153,14 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.assertNotEqual([], distribution.drivers)
         self.assertEqual(dsp.drivers, distribution.drivers)
 
+    def test_personHasDriverRights(self):
+        # A distribution driver has driver permissions on a DSP.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        driver = distribution.drivers[0]
+        self.assertTrue(dsp.personHasDriverRights(driver))
+
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 

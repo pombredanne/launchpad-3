@@ -12,8 +12,8 @@ from testtools.matchers import KeysEqual
 from zope.configuration import xmlconfig
 
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.namespace import JsonModelNamespaceView
+from canonical.launchpad.webapp.publisher import canonical_url
 import canonical.launchpad.webapp.tests
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.launchpadform import LaunchpadFormView

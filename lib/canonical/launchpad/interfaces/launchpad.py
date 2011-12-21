@@ -1,9 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,W0611
-# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
-
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
@@ -24,17 +20,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-# XXX kiko 2007-02-08:
-# These import shims are actually necessary if we don't go over the
-# entire codebase and fix where the import should come from.
-from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest,
-    ILaunchBag,
-    ILaunchpadApplication,
-    ILaunchpadRoot,
-    IOpenLaunchBag,
-    UnsafeFormGetSubmissionError,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [
@@ -42,7 +28,6 @@ __all__ = [
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
-    'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IFeedsApplication',
     'IHasAssignee',
@@ -54,10 +39,6 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'ILaunchBag',
-    'ILaunchpadRoot',
-    'INotificationRecipientSet',
-    'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
@@ -70,8 +51,6 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'UnknownRecipientError',
-    'UnsafeFormGetSubmissionError',
     ]
 
 
@@ -332,98 +311,3 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProjectGroup')
-
-
-class UnknownRecipientError(KeyError):
-    """Error raised when an email or person isn't part of the recipient set.
-    """
-
-
-class INotificationRecipientSet(Interface):
-    """Represents a set of notification recipients and rationales.
-
-    All Launchpad emails should include a footer explaining why the user
-    is receiving the email. An INotificationRecipientSet encapsulates a
-    list of recipients along the rationale for being on the recipients list.
-
-    The pattern for using this are as follows: email addresses in an
-    INotificationRecipientSet are being notified because of a specific
-    event (for instance, because a bug changed). The rationales describe
-    why that email addresses is included in the recipient list,
-    detailing subscription types, membership in teams and/or other
-    possible reasons.
-
-    The set maintains the list of `IPerson` that will be contacted as well
-    as the email address to use to contact them.
-    """
-
-    def getEmails():
-        """Return all email addresses registered, sorted alphabetically."""
-
-    def getRecipients():
-        """Return the set of person who will be notified.
-
-        :return: An iterator of `IPerson`, sorted by display name.
-        """
-
-    def getRecipientPersons():
-        """Return the set of individual Persons who will be notified.
-
-        :return: An iterator of (`email_address`, `IPerson`), unsorted.
-        """
-
-    def __iter__():
-        """Return an iterator of the recipients."""
-
-    def __contains__(person_or_email):
-        """Is person_or_email in the notification recipients list?
-
-        Return true if person or email is in the notification recipients list.
-        """
-
-    def __nonzero__():
-        """Return False when the set is empty, True when it's not."""
-
-    def getReason(person_or_email):
-        """Return a reason tuple containing (text, header) for an address.
-
-        The text is meant to appear in the notification footer. The header
-        should be a short code that will appear in an
-        X-Launchpad-Message-Rationale header for automatic filtering.
-
-        :param person_or_email: An `IPerson` or email address that is in the
-            recipients list.
-
-        :raises UnknownRecipientError: if the person or email isn't in the
-            recipients list.
-        """
-
-    def add(person, reason, header):
-        """Add a person or a sequence of persons to the recipients list.
-
-        When the added person is a team without an email address, all its
-        members emails will be added. If the person is already in the
-        recipients list, the reson for contacting him is not changed.
-
-        :param person: The `IPerson` or a sequence of `IPerson`
-            that will be notified.
-        :param reason: The rationale message that should appear in the
-            notification footer.
-        :param header: The code that will appear in the
-            X-Launchpad-Message-Rationale header.
-        """
-
-    def remove(person):
-        """Remove a person or a list of persons from the recipients list.
-
-        :param person: The `IPerson` or a sequence of `IPerson`
-            that will removed from the recipients list.
-        """
-
-    def update(recipient_set):
-        """Updates this instance's reasons with reasons from another set.
-
-        The rationale for recipient already in this set will not be updated.
-
-        :param recipient_set: An `INotificationRecipientSet`.
-        """

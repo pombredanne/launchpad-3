@@ -68,9 +68,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bug import (
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,

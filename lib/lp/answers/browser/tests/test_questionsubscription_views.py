@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import Equals
@@ -13,7 +14,6 @@ from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,

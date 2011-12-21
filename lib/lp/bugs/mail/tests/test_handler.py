@@ -18,8 +18,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -37,6 +35,7 @@ from lp.bugs.mail.handler import (
     MaloneHandler,
     )
 from lp.bugs.model.bugnotification import BugNotification
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
 from lp.testing import (
     celebrity_logged_in,
@@ -46,6 +45,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import GPGSigningContext
+from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.mail_helpers import pop_notifications
 
 

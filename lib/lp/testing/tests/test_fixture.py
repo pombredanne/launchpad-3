@@ -34,8 +34,8 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
-    LaunchpadZopelessLayer,
     LaunchpadLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.registry.model.person import Person
 from lp.services.messaging import rabbit

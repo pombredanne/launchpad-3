@@ -6,11 +6,12 @@
     z-index: 999;
     }
 
+.yui3-overlay-indicator-content {
+    text-align: center;
+    }
+
 .yui3-overlay-indicator img {
-    display: block;
-    margin: auto;
-    max-width: 100%;
-    position: absolute;
+    margin-top: 8em;
     }
 
 .yui3-overlay-indicator-hidden {

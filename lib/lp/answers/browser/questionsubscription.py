@@ -9,9 +9,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import (
-    IWebServiceClientRequest,
-)
+from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from zope.traversing.browser import absoluteURL
 

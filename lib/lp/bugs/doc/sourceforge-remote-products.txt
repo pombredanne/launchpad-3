@@ -40,7 +40,7 @@ We'll use a test version of SourceForgeRemoteProductFinder that won't
 try to access SourceForge.
 
     >>> from lp.services.log.logger import FakeLogger
-    >>> from lp.registry.tests.sfremoteproductfinder import (
+    >>> from lp.bugs.tests.sfremoteproductfinder import (
     ...     TestSFRemoteProductFinder)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> finder = TestSFRemoteProductFinder(
@@ -65,7 +65,7 @@ atid therein as an ampersand-separated string.
 If an error is raised when trying to fetch the project pages from the
 remote server, it will be logged.
 
-    >>> from lp.registry.tests.sfremoteproductfinder import (
+    >>> from lp.bugs.tests.sfremoteproductfinder import (
     ...     TestBrokenSFRemoteProductFinder)
     >>> broken_finder = TestBrokenSFRemoteProductFinder(
     ...     txn=LaunchpadZopelessLayer.txn, logger=FakeLogger())

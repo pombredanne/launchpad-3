@@ -94,111 +94,117 @@
     </form>
   </div>
 
-  <metal:macro define-macro="widget_rows">
-    <table class="form" id="launchpad-form-widgets">
-      <tal:block define="widgets widgets|view/widgets"
-                 repeat="widget widgets">
-
-  <metal:macro define-macro="widget_row"
-      tal:define="field_name widget/context/__name__;
-                  error python:view.getFieldError(field_name);
-                  error_class python:error and 'error' or None;
-                  show_optional python:view.showOptionalMarker(field_name);
-                  widget_class widget/widget_class|nothing;
-                  widget_help_link widget_help_link|widget/help_link|nothing">
-    <tal:is-visible condition="widget/visible">
-      <tr
-        tal:condition="python: view.isSingleLineLayout(field_name)"
-        tal:attributes="class error_class"
-      >
-      <td colspan="2">
-      <div tal:attributes="class widget_class">
-        <tal:block tal:condition="display_label|widget/display_label|python:True">
-          <label tal:attributes="for widget/name"
-                 tal:content="string:${widget/label}:">Label</label>
-          <span tal:condition="show_optional"
-                class="fieldRequired">(Optional)</span>
-        </tal:block>
-          <div>
-            <input tal:replace="structure widget" />
-            <tal:help-link condition="widget_help_link">
-              <a tal:attributes="href widget_help_link"
-                 target="help" class="sprite maybe">
-                &nbsp;<span class="invisible-link">(?)</span>
-              </a>
-            </tal:help-link>
-          </div>
-          <div class="message" tal:condition="error"
-               tal:content="structure error">Error message</div>
-          <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
+  <metal:macro define-macro="widget_single_line">
+    <div tal:attributes="class widget_class">
+      <tal:label condition="display_label|widget/display_label|python:True">
+        <label tal:attributes="for widget/name"
+               tal:content="string:${widget/label}:">Label</label>
+        <span tal:condition="show_optional"
+              class="fieldRequired">(Optional)</span>
+      </tal:label>
+      <div>
+        <input tal:replace="structure widget" />
+        <tal:help-link condition="widget_help_link">
+          <a tal:attributes="href widget_help_link"
+             target="help" class="sprite maybe">
+            &nbsp;<span class="invisible-link">(?)</span>
+          </a>
+        </tal:help-link>
       </div>
-        </td>
-      </tr>
-      <tal:block condition="python: view.isMultiLineLayout(field_name)">
-        <tr tal:attributes="class error_class">
-          <td colspan="2" style="text-align: left">
-            <div tal:attributes="class widget_class">
-            <tal:showlabel
-              condition="display_label|widget/display_label|python:True"
-            >
-
-            <label
-              tal:attributes="for widget/name"
-              tal:content="string:${widget/label}:">Label:</label>
-            <span tal:condition="show_optional"
-                  class="fieldRequired">(Optional)</span>
-            </tal:showlabel>
-            <tal:help-link condition="widget_help_link">
-              <a tal:attributes="href widget_help_link"
-                 target="help" class="sprite maybe">
-                &nbsp;<span class="invisible-link">(?)</span>
-              </a>
-            </tal:help-link>
-            <div
-              tal:condition="error"
-              tal:content="structure error"
-              class="message"
-            >Error message</div>
-            <div tal:content="structure widget">
-              <input type="text" />
-            </div>
-            <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
-            </div>
-          </td>
-        </tr>
-      </tal:block>
-      <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
-        <td tal:attributes="class error_class" colspan="2">
-        <div tal:attributes="class widget_class">
-          <input type="checkbox" tal:replace="structure widget" />
-          <label tal:attributes="for widget/name"
-                 tal:content="widget/label">Label</label>
-          <tal:help-link condition="widget_help_link">
-            <a tal:attributes="href widget_help_link"
-               target="help" class="sprite maybe">
-              &nbsp;<span class="invisible-link">(?)</span>
-            </a>
-          </tal:help-link>
-          <div
-            tal:condition="error"
-            tal:content="structure error"
-            class="message"
-          >Error message</div>
-          <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
-        </div>
-        </td>
-      </tr>
-    </tal:is-visible>
-    <tal:not-visible
-      condition="not: widget/visible">
-      <tr
-        tal:define="markup widget/hidden"
-        tal:condition="markup">
-        <td tal:content="structure markup" />
-      </tr>
-    </tal:not-visible>
+      <div class="message" tal:condition="error"
+           tal:content="structure error">Error message</div>
+      <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
+    </div>
   </metal:macro>
 
+  <metal:macro define-macro="widget_multi_line">
+    <div tal:attributes="class widget_class">
+      <tal:label condition="display_label|widget/display_label|python:True">
+        <label
+            tal:attributes="for widget/name"
+            tal:content="string:${widget/label}:">Label:</label>
+        <span tal:condition="show_optional"
+              class="fieldRequired">(Optional)</span>
+      </tal:label>
+      <tal:help-link condition="widget_help_link">
+        <a tal:attributes="href widget_help_link"
+           target="help" class="sprite maybe">
+          &nbsp;<span class="invisible-link">(?)</span>
+        </a>
+      </tal:help-link>
+      <div tal:condition="error" tal:content="structure error"
+           class="message">Error message</div>
+      <div tal:content="structure widget">
+        <input type="text" />
+      </div>
+      <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
+    </div>
+  </metal:macro>
+
+  <metal:macro define-macro="widget_checkbox">
+    <div tal:attributes="class widget_class">
+      <input type="checkbox" tal:replace="structure widget" />
+      <label tal:attributes="for widget/name"
+             tal:content="widget/label">Label</label>
+      <tal:help-link condition="widget_help_link">
+        <a tal:attributes="href widget_help_link"
+           target="help" class="sprite maybe">
+          &nbsp;<span class="invisible-link">(?)</span>
+        </a>
+      </tal:help-link>
+      <div tal:condition="error" tal:content="structure error"
+           class="message">Error message</div>
+      <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
+    </div>
+  </metal:macro>
+
+  <metal:macro define-macro="widget_hidden">
+    <div tal:replace="structure widget/hidden" />
+  </metal:macro>
+
+  <metal:macro define-macro="widget_rows">
+    <table class="form" id="launchpad-form-widgets">
+      <tal:block define="widgets widgets|view/widgets" repeat="widget widgets">
+        <metal:macro
+            define-macro="widget_row"
+            tal:define="field_name widget/context/__name__;
+                        error python:view.getFieldError(field_name);
+                        error_class python:'error' if error else None;
+                        show_optional python:view.showOptionalMarker(field_name);
+                        widget_class widget/widget_class|nothing;
+                        widget_help_link widget_help_link|widget/help_link|nothing">
+          <tal:is-visible condition="widget/visible">
+            <tr tal:condition="python: view.isSingleLineLayout(field_name)"
+                tal:attributes="class error_class">
+              <td colspan="2">
+                <metal:widget
+                    use-macro="widget/@@launchpad_form/widget_single_line" />
+              </td>
+            </tr>
+            <tal:block condition="python: view.isMultiLineLayout(field_name)">
+              <tr tal:attributes="class error_class">
+                <td colspan="2" style="text-align: left">
+                  <metal:widget
+                      use-macro="widget/@@launchpad_form/widget_multi_line" />
+                </td>
+              </tr>
+            </tal:block>
+            <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
+              <td tal:attributes="class error_class" colspan="2">
+                <metal:widget
+                    use-macro="widget/@@launchpad_form/widget_checkbox" />
+              </td>
+            </tr>
+          </tal:is-visible>
+          <tal:not-visible condition="not: widget/visible">
+            <tr>
+              <td>
+                  <metal:widget
+                      use-macro="widget/@@launchpad_form/widget_hidden" />
+              </td>
+            </tr>
+          </tal:not-visible>
+        </metal:macro>
       </tal:block>
     </table>
   </metal:macro>
@@ -217,5 +223,32 @@
       </p>
     </tal:widget-help>
   </metal:help-hint>
+
+  <metal:macro
+      define-macro="widget_div"
+      tal:define="field_name widget/context/__name__;
+                  error python:view.getFieldError(field_name);
+                  error_class python:'error' if error else None;
+                  show_optional python:view.showOptionalMarker(field_name);
+                  widget_class widget/widget_class|nothing;
+                  widget_help_link widget_help_link|widget/help_link|nothing">
+    <tal:is-visible condition="widget/visible">
+      <div tal:condition="python: view.isSingleLineLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_single_line" />
+      </div>
+      <div tal:condition="python: view.isMultiLineLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_multi_line" />
+      </div>
+      <div tal:condition="python: view.isCheckBoxLayout(field_name)"
+           tal:attributes="class error_class">
+        <metal:widget use-macro="widget/@@launchpad_form/widget_checkbox" />
+      </div>
+    </tal:is-visible>
+    <tal:not-visible condition="not: widget/visible">
+      <metal:widget use-macro="widget/@@launchpad_form/widget_hidden" />
+    </tal:not-visible>
+  </metal:macro>
 
 </div>

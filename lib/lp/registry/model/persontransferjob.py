@@ -28,9 +28,6 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
@@ -59,6 +56,7 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -316,7 +314,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # self.members, and in this case we won't have a single email
         # address to send this notification to.
         if self.member_email and self.reviewer != self.member:
-            if self.member.isTeam():
+            if self.member.is_team:
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name

@@ -12,6 +12,7 @@ from meliae import scanner
 from twisted.application import service, strports
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
 from canonical.config import config, dbconfig
@@ -91,7 +92,10 @@ else:
     setUpListener(uploadPort, webPort, restricted=True)
 
 # Log OOPS reports
-set_up_oops_reporting('librarian', 'librarian')
+options = ServerOptions()
+options.parseOptions()
+logfile = options.get("logfile")
+set_up_oops_reporting('librarian', 'librarian', logfile)
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

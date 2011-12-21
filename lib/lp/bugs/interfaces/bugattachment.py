@@ -38,8 +38,8 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.services.messages.interfaces.message import IMessage
 from lp.services.fields import Title
+from lp.services.messages.interfaces.message import IMessage
 
 
 class BugAttachmentType(DBEnumeratedType):

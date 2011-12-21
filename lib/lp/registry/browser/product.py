@@ -83,14 +83,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
+from lp.services.feeds.browser import FeedsMixin
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
@@ -128,10 +121,18 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
+    InlinePersonEditPickerWidget,
     TextLineEditorWidget,
     )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import MenuAPI
+from lp.app.browser.tales import (
+    format_link,
+    MenuAPI,
+    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -193,6 +194,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -1001,6 +1003,24 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     implements(IProductActionMenu, IEditableContextTitle)
 
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['owner'],
+            format_link(self.context.owner),
+            header='Change maintainer', edit_view='+edit-people',
+            step_title='Select a new maintainer')
+
+    @property
+    def driver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['driver'],
+            format_link(self.context.driver, empty_value="Not yet selected"),
+            header='Change driver', edit_view='+edit-people',
+            step_title='Select a new driver',
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
+
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
@@ -1035,7 +1055,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @property
     def page_description(self):
-        return '\n'.filter(None, [self.context.summary, self.context.description])
+        return '\n'.filter(
+            None,
+            [self.context.summary, self.context.description])
 
     @property
     def show_license_status(self):

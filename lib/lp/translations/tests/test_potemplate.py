@@ -21,12 +21,8 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.side import (
-    TranslationSide,
-    )
-from lp.translations.model.potemplate import (
-    get_pofiles_for,
-    )
+from lp.translations.interfaces.side import TranslationSide
+from lp.translations.model.potemplate import get_pofiles_for
 
 
 class TestPOTemplate(TestCaseWithFactory):

@@ -24,13 +24,13 @@ from canonical.database.sqlbase import (
     cursor,
     quote,
     )
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
 from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

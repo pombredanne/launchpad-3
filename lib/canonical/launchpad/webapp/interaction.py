@@ -46,8 +46,8 @@ from zope.security.management import (
     )
 
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag,
     IInteractionExtras,
+    IOpenLaunchBag,
     IPlacelessAuthUtility,
     )
 
@@ -163,7 +163,8 @@ def setupInteractionForPerson(person, participation=None):
         return setupInteraction(ANONYMOUS, participation)
     else:
         # Bypass zope's security because IEmailAddress.email is not public.
-        naked_email = removeSecurityProxy(person.preferredemail)
+        naked_person = removeSecurityProxy(person)
+        naked_email = removeSecurityProxy(naked_person.preferredemail)
         return setupInteractionByEmail(naked_email.email, participation)
 
 

@@ -12,7 +12,6 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     flush_logged_errors,
     )
-
 from twisted.internet import (
     defer,
     error,

@@ -30,8 +30,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
@@ -135,7 +134,8 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonPublic,
+    IPersonLimitedView,
+    IPersonViewRestricted,
     ITeam,
     )
 from lp.registry.interfaces.pillar import (
@@ -168,6 +168,7 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
@@ -310,10 +311,10 @@ patch_choice_parameter_type(
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-patch_reference_property(IPersonPublic, 'archive', IArchive)
-patch_collection_property(IPersonPublic, 'ppas', IArchive)
-patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
-patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
+patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
+patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
+patch_entry_return_type(IPersonLimitedView, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonViewRestricted, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[

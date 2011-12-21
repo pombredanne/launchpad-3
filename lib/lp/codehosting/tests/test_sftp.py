@@ -13,12 +13,10 @@ from bzrlib import (
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
-
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 from twisted.conch.interfaces import ISFTPServer
 from twisted.conch.ls import lsLine
 from twisted.conch.ssh import filetransfer

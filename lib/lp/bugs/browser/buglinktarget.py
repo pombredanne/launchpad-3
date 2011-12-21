@@ -38,7 +38,10 @@ from lp.bugs.interfaces.buglink import (
     IBugLinkForm,
     IUnlinkBugsForm,
     )
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

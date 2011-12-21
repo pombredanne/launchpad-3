@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 
-import pkg_resources
 import subprocess
 import urlparse
+
+import pkg_resources
 
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,

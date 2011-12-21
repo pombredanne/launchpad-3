@@ -18,8 +18,8 @@ from canonical.launchpad import helpers
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
 
 
 class HasTranslationTemplatesMixin:

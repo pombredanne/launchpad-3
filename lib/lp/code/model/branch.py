@@ -59,9 +59,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
@@ -147,6 +144,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -221,7 +219,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
+        storm_validator=validate_person, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -944,7 +942,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            if subscription.person.isTeam():
+            if subscription.person.is_team:
                 rationale = 'Subscriber @%s' % subscription.person.name
             else:
                 rationale = 'Subscriber'

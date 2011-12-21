@@ -37,10 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.browser import (
     Browser,
@@ -70,6 +66,10 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
@@ -704,6 +704,15 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # that we pass to the OpenID provider. The params may not be legimate
         # utf8 even.
         self.assertThat('key\x85=value', ForwardsCorrectly())
+
+    def test_unicode_form_params_bug_898638(self):
+        # Sometimes the form params are unicode because a decode('utf8') worked
+        # in the form machinery... and if so they cannot be trivially quoted
+        # but must be encoded first.
+        key = urllib.quote(u'key\xf3'.encode('utf8'))
+        value = urllib.quote(u'value\xf3'.encode('utf8'))
+        query_string = "%s=%s" % (key, value)
+        self.assertThat(query_string, ForwardsCorrectly())
 
     def test_sreg_fields(self):
         # We request the user's email address and Full Name (through the SREG

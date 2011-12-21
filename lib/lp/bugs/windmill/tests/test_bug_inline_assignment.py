@@ -12,6 +12,7 @@ from lp.testing.windmill.constants import (
     SLEEP,
     )
 
+
 ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +
     '//button[contains(@class, "yui3-activator-act")]')
 VISIBLE_PICKER_OVERLAY = (

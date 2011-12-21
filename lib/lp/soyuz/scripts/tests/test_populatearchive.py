@@ -13,18 +13,20 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.testing.layers import DatabaseLayer
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.scripts.ftpmaster import (
     PackageLocationError,

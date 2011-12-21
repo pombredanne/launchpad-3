@@ -25,8 +25,9 @@ from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,
     FormattableDate,
+    is_public_person_or_closed_team,
     StrippableText,
-    is_public_person_or_closed_team)
+    )
 from lp.testing import (
     login_person,
     TestCase,

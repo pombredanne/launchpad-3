@@ -7,31 +7,29 @@ __metaclass__ = type
 
 import re
 import unittest
-from zope.component import getUtility
-from BeautifulSoup import BeautifulSoup
 
+from BeautifulSoup import BeautifulSoup
+from zope.component import getUtility
+
+from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.milestone import ProjectMilestone
 from lp.testing import (
+    BrowserTestCase,
     celebrity_logged_in,
     extract_lp_cache,
     person_logged_in,
-    BrowserTestCase,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
-from lp.testing.views import (
-    create_initialized_view,
-    )
+from lp.testing.views import create_initialized_view
 
 
 class _TestResultsMixin:
@@ -132,7 +130,7 @@ class ProductBugs(ProductView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupView(_TestStructSubs):
@@ -192,7 +190,7 @@ class ProductSeriesBugs(ProductSeriesView):
     """Test structural subscriptions on the product series bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def setUp(self):
         super(ProductSeriesBugs, self).setUp()
@@ -306,7 +304,7 @@ class DistroBugs(DistroView):
     """Test structural subscriptions on the distro bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def test_subscribe_link_owner(self):
         self._create_scenario(self.target.owner)
@@ -473,7 +471,7 @@ class ProductDoesNotUseLPBugs(ProductDoesNotUseLPView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupDoesNotUseLPView(_DoesNotUseLP):
@@ -584,7 +582,7 @@ class DistroDoesNotUseLPView(DistroView):
 
 class DistroDoesNotUseLPBugs(DistroDoesNotUseLPView):
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):

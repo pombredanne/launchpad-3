@@ -63,7 +63,7 @@ New users are on probation; the homepage content is escaped HTML.
 Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
 
     # Only admins can change an account.
@@ -115,7 +115,6 @@ anyone in Launchpad..
 
     >>> mark.hide_email_addresses
     False
-    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor

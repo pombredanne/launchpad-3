@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -20,12 +20,10 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
     AppServerLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 
@@ -45,18 +43,6 @@ special = {
     'webservice-configuration.txt': LayeredDocFileSuite(
         '../doc/webservice-configuration.txt',
         setUp=setGlobs, tearDown=layerlessTearDown, layer=None),
-    'close-account.txt': LayeredDocFileSuite(
-        '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadZopelessLayer),
-    'uri.txt': LayeredDocFileSuite(
-        '../doc/uri.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=FunctionalLayer),
-    'notification-text-escape.txt': LayeredDocFileSuite(
-        '../doc/notification-text-escape.txt',
-        setUp=test_notifications.setUp,
-        tearDown=test_notifications.tearDown,
-        stdout_logging=False, layer=None),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -67,16 +53,6 @@ special = {
         '../doc/launchpadlib.txt',
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,),
-    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
-    # multiple spurious problems with layer and test.
-    # 'google-service-stub.txt': LayeredDocFileSuite(
-    #     '../doc/google-service-stub.txt',
-    #     layer=GoogleServiceLayer,),
-    'canonical_url.txt': LayeredDocFileSuite(
-        '../doc/canonical_url.txt',
-        setUp=setUp,
-        tearDown=tearDown,
-        layer=FunctionalLayer,),
     }
 
 

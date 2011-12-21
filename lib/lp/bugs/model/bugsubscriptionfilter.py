@@ -9,10 +9,9 @@ __all__ = [
     'BugSubscriptionFilterMute',
     ]
 
-import pytz
-
 from itertools import chain
 
+import pytz
 from storm.locals import (
     Bool,
     DateTime,
@@ -261,7 +260,7 @@ class BugSubscriptionFilter(StormBase):
         # address (because if the team does, then the mute would be
         # ineffectual).
         return (
-            subscriber.isTeam() and
+            subscriber.is_team and
             person.inTeam(subscriber) and
             subscriber.preferredemail is None)
 

@@ -5,10 +5,9 @@ import os
 
 from testtools.deferredruntest import (
     assert_fails_with,
-    flush_logged_errors,
     AsynchronousDeferredRunTest,
+    flush_logged_errors,
     )
-
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth

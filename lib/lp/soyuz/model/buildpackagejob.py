@@ -20,9 +20,9 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -36,7 +36,6 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
-
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 

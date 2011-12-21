@@ -19,7 +19,10 @@ from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from lp.services.xmlrpc import LaunchpadFault
-from lp.testing import person_logged_in, TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 NON_ASCII_NAME = u'nam\N{LATIN SMALL LETTER E WITH ACUTE}'

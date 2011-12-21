@@ -36,7 +36,7 @@ class BugRoleMixin:
         if role is None or self.context.userCanAlterSubscription(role, user):
             return self.OK
         # The user is not an admin of the team, or he entered another user.
-        if role.isTeam():
+        if role.is_team:
             return self.OTHER_TEAM
         else:
             return self.OTHER_USER

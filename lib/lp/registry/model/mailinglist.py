@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,7 +16,6 @@ __all__ = [
 
 
 import collections
-
 from email import message_from_string
 from email.Header import (
     decode_header,
@@ -66,17 +65,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.services.messages.model.message import Message
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -100,6 +88,15 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.messages.model.message import Message
 from lp.services.propertycache import cachedproperty
 
 
@@ -402,7 +399,7 @@ class MailingList(SQLBase):
         if not self.is_usable:
             raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
-        if person.isTeam():
+        if person.is_team:
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
         if address is not None and address.personID != person.id:
@@ -567,9 +564,9 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         store = Store.of(self)
         clauses = [
-            MessageApproval.mailing_listID==self.id,
-            MessageApproval.status==PostedMessageStatus.NEW,
-            MessageApproval.messageID==Message.id,
+            MessageApproval.mailing_listID == self.id,
+            MessageApproval.status == PostedMessageStatus.NEW,
+            MessageApproval.messageID == Message.id,
             ]
         if message_id_filter is not None:
             clauses.append(Message.rfc822msgid.is_in(message_id_filter))
@@ -603,7 +600,7 @@ class MailingListSet:
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
-        assert team.isTeam(), (
+        assert team.is_team, (
             'Cannot register a list for a person who is not a team')
         if registrant is None:
             registrant = team.teamowner

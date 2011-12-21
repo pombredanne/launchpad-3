@@ -4,6 +4,7 @@
 """Webservice unit tests related to Launchpad Bug messages."""
 from lp.services.features.testing import FeatureFixture
 
+
 __metaclass__ = type
 
 import transaction

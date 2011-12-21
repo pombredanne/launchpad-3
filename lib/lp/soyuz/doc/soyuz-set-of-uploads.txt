@@ -68,7 +68,7 @@ relevant launchpad person.
 
 Import public keyring into current LPDB.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Having set up that infrastructure we need to prepare a breezy distroseries
@@ -265,7 +265,10 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     if loglevel is None or loglevel <= logging.INFO:
     ...         print "Upload complete."
 
-    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import (
+    ...     pop_notifications,
+    ...     sort_addresses,
+    ...     )
     >>> def read_email():
     ...     """Pop all emails from the test mailbox, and summarize them.
     ...
@@ -274,7 +277,7 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     line.
     ...     """
     ...     for message in pop_notifications(commit=False):
-    ...         print "To:", message['to']
+    ...         print "To:", sort_addresses(message['to'])
     ...         print "Subject:", message['subject']
     ...         print message.get_payload()[0].as_string()
     ...         print ''
@@ -305,8 +308,8 @@ to a different 'bar_1.0.orig.tar.gz'.
 
     >>> read_email()
     To:
-	Foo Bar <foo.bar@canonical.com>,
-	Daniel Silverstone <daniel.silverstone@canonical.com>
+	Daniel Silverstone <daniel.silverstone@canonical.com>,
+	Foo Bar <foo.bar@canonical.com>
     Subject: bar_1.0-3_source.changes rejected
     ...
 
