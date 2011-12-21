@@ -20,7 +20,6 @@ from zope.interface import implements
 
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mailnotification import (
-    MailWrapper,
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -34,6 +33,7 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.commands import BugEmailCommands
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,

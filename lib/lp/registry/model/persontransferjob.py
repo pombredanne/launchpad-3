@@ -36,7 +36,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.mailnotification import MailWrapper
+from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
