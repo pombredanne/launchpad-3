@@ -186,38 +186,8 @@ class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     links = ('edit', )
 
 
-class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
-    """A View for listing milestones and releases."""
-    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
-    # to a mixin so that MilestoneView and others can use it.
-    implements(IMilestoneInline)
-    show_series_context = False
-
-    def __init__(self, context, request):
-        """See `LaunchpadView`.
-
-        This view may be used with a milestone or a release. The milestone
-        and release (if it exists) are accessible as attributes. The context
-        attribute will always be the milestone.
-
-        :param context: `IMilestone` or `IProductRelease`.
-        :param request: `ILaunchpadRequest`.
-        """
-        super(MilestoneView, self).__init__(context, request)
-        if IMilestoneData.providedBy(context):
-            self.milestone = context
-            self.release = context.product_release
-        else:
-            self.milestone = context.milestone
-            self.release = context
-        self.context = self.milestone
-
-    def initialize(self):
-        """See `LaunchpadView`."""
-        self.form = self.request.form
-        self.processDeleteFiles()
-        expose_structural_subscription_data_to_js(
-            self.context, self.request, self.user)
+class MilestoneViewMixin(object):
+    """Common methods shared between MilestoneView and MilestoneTagView."""
 
     @property
     def expire_cache_minutes(self):
@@ -237,29 +207,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """Return the HTML page title."""
         return self.context.title
 
-    def getReleases(self):
-        """See `ProductDownloadFileMixin`."""
-        return set([self.release])
-
-    @cachedproperty
-    def download_files(self):
-        """The release's files as DownloadFiles."""
-        if self.release is None or self.release.files.count() == 0:
-            return None
-        return list(self.release.files)
-
-    # Listify and cache the specifications, ProductReleaseFiles and bugtasks
-    # to avoid making the same query over and over again when evaluating in
-    # the template.
+    # Listify and cache the specifications and bugtasks to avoid making
+    # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
         """The list of specifications targeted to this milestone."""
         return list(self.context.specifications)
-
-    @cachedproperty
-    def product_release_files(self):
-        """Files associated with this milestone."""
-        return list(self.release.files)
 
     @cachedproperty
     def _bugtasks(self):
@@ -362,6 +315,78 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return all_assignments
         return all_assignments
 
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone or
+        a project milestone tag, else return False."""
+        return (
+            IProjectGroupMilestone.providedBy(self.context) or
+            IProjectGroupMilestoneTag.providedBy(self.context)
+            )
+
+    @property
+    def has_bugs_or_specs(self):
+        """Does the milestone have any bugtasks and specifications?"""
+        return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+
+class MilestoneView(
+    LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin):
+    """A View for listing milestones and releases."""
+    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
+    # to a mixin so that MilestoneView and others can use it.
+    implements(IMilestoneInline)
+    show_series_context = False
+
+    def __init__(self, context, request):
+        """See `LaunchpadView`.
+
+        This view may be used with a milestone or a release. The milestone
+        and release (if it exists) are accessible as attributes. The context
+        attribute will always be the milestone.
+
+        :param context: `IMilestone` or `IProductRelease`.
+        :param request: `ILaunchpadRequest`.
+        """
+        super(MilestoneView, self).__init__(context, request)
+        if IMilestoneData.providedBy(context):
+            self.milestone = context
+            self.release = context.product_release
+        else:
+            self.milestone = context.milestone
+            self.release = context
+        self.context = self.milestone
+        # Put at view level some attributes used in the template.
+        self.milestone_summary = self.milestone.summary
+        self.milestone_code_name = self.milestone.code_name
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        self.form = self.request.form
+        self.processDeleteFiles()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.release])
+
+    @cachedproperty
+    def download_files(self):
+        """The release's files as DownloadFiles."""
+        if self.release is None or self.release.files.count() == 0:
+            return None
+        return list(self.release.files)
+
+    # Listify and cache ProductReleaseFiles to avoid making the same query
+    # over and over again when evaluating in the template.
+    @cachedproperty
+    def product_release_files(self):
+        """Files associated with this milestone."""
+        return list(self.release.files)
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this milestone."""
@@ -375,19 +400,6 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         Milestones that belong to distroseries cannot have releases.
         """
         return IDistroSeries.providedBy(self.context.series_target)
-
-    @property
-    def is_project_milestone(self):
-        """Check, if the current milestone is a project milestone.
-
-        Return true, if the current milestone is a project milestone,
-        else return False."""
-        return IProjectGroupMilestone.providedBy(self.context)
-
-    @property
-    def has_bugs_or_specs(self):
-        """Does the milestone have any bugtasks and specifications?"""
-        return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
 class MilestoneWithoutCountsView(MilestoneView):
@@ -536,8 +548,11 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         self.next_url = canonical_url(series)
 
 
-class MilestoneTagView(MilestoneView):
+class MilestoneTagView(
+    LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin):
     """A View for listing bugtasks and specification for milestone tags."""
+    # Dummy attributes used by the template.
+    release = milestone_summary = milestone_code_name = None
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -545,16 +560,8 @@ class MilestoneTagView(MilestoneView):
         :param context: `IProjectGroupMilestoneTag`
         :param request: `ILaunchpadRequest`.
         """
-        super(MilestoneView, self).__init__(context, request)
+        super(MilestoneTagView, self).__init__(context, request)
         self.context = self.milestone = context
-
-    @property
-    def is_project_milestone(self):
-        """Check, if the current milestone is a project milestone tag.
-
-        Return true, if the current milestone is a project milestone tag,
-        else return False."""
-        return IProjectGroupMilestoneTag.providedBy(self.context)
 
 
 class ObjectMilestonesView(LaunchpadView):

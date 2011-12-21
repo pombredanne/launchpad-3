@@ -1303,7 +1303,7 @@
         for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
         class="lp.registry.browser.milestone.MilestoneTagView"
         permission="zope.Public"
-        template="../templates/milestonetag-index.pt"
+        template="../templates/milestone-index.pt"
         />
     <browser:page
         name="+edit"

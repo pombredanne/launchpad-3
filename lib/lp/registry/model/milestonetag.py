@@ -61,6 +61,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
         # Tags is a sequence of Unicode strings.
         self.tags = tags
         self.active = True
+        self.dateexpected = None
 
     @property
     def name(self):
