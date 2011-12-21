@@ -7,8 +7,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.testing.pages import webservice_for_person
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -22,11 +21,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
-from lp.testing import (
-    api_url,
-    person_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -153,42 +148,30 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease()
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr)
-        self.assertEqual(0, len(bpph.binaryFileUrls()))
+        expected_urls = []
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def get_urls_for_binarypackagerelease(self, bpr, archive):
+        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+            for f in bpr.files]
 
     def test_binaryFileUrls_one_binary(self):
+        archive = self.factory.makeArchive(private=False)
         bpr = self.factory.makeBinaryPackageRelease()
         self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        self.assertEqual(1, len(bpph.binaryFileUrls()))
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
 
     def test_binaryFileUrls_two_binaries(self):
+        archive = self.factory.makeArchive(private=False)
         bpr = self.factory.makeBinaryPackageRelease()
         self.factory.makeBinaryPackageFile(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
         self.factory.makeBinaryPackageFile(
             binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        self.assertEqual(2, len(bpph.binaryFileUrls()))
-
-
-class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_binaryFileUrls(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        person = self.factory.makePerson()
-        webservice = webservice_for_person(
-            person, permission=OAuthPermission.READ_PUBLIC)
-        with person_logged_in(person):
-            bpph_url = api_url(bpph)
-        response = webservice.named_get(
-            bpph_url, 'binaryFileUrls', api_version='devel')
-        self.assertEqual(200, response.status)
-        urls = response.jsonBody()
-        self.assertEqual(1, len(urls))
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
