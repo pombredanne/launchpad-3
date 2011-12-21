@@ -46,6 +46,7 @@ def file2module(module_file):
 # Cache the working tree for speed.
 _wt = workingtree.WorkingTree.open('.')
 
+
 def bzr_move_file(src_file, target):
     """Move or rename a versioned file or directory."""
     if os.path.isdir(target):
@@ -58,6 +59,7 @@ def bzr_move_file(src_file, target):
 def bzr_add(paths):
     "Version a list of paths."
     _wt.add(paths)
+
 
 def bzr_remove_file(filename):
     """Remove a versioned file."""
@@ -91,7 +93,8 @@ def update_references(source_module, target_module):
     """
     source = r'\b%s\b' % source_module.replace('.', '\\.')
     target = target_module
-    root_dirs = ['cronscripts', 'lib/canonical', 'lib/lp']
+    root_dirs = [
+        'cronscripts', 'scripts', 'database', 'lib/canonical', 'lib/lp']
     file_pattern = '\.(py|txt|zcml)$'
     print "    Updating references:"
     for root_dir in root_dirs:
