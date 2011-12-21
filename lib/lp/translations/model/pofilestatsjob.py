@@ -12,13 +12,13 @@ __all__ = [
     ]
 
 import logging
-from zope.component import getUtility
 
 from storm.locals import (
     And,
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -34,6 +34,7 @@ from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
@@ -72,7 +73,23 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
         logger.info('Updating statistics for %s' % self.pofile.title)
+        # First update the statistics for the POFile that was directly
+        # modified.
         self.pofile.updateStatistics()
+
+        # Next we have to find any POFiles that share translations with the
+        # above POFile so we can update their statistics too.  To do that we
+        # first have to find the set of shared templates.
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=self.pofile.potemplate.product)
+        shared_templates = subset.getSharingPOTemplates(
+            self.pofile.potemplate.name)
+        # Now we have to find any POFiles that translate the shared templates
+        # into the same language as the POFile this job is about.
+        for template in shared_templates:
+            for pofile in template.pofiles:
+                if pofile.language == self.pofile.language:
+                    pofile.updateStatistics()
 
     @staticmethod
     def iterReady():

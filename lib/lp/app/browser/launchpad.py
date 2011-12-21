@@ -24,9 +24,7 @@ __all__ = [
 
 
 import cgi
-from datetime import (
-    timedelta,
-    )
+from datetime import timedelta
 import operator
 import os
 import re
@@ -55,17 +53,16 @@ from zope.traversing.interfaces import ITraversable
 
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
-from lp.services.identity.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IRosettaApplication,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.layers import WebServiceLayer
@@ -137,6 +134,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
 from lp.services.utils import utc_now
 from lp.services.worlddata.interfaces.country import ICountrySet

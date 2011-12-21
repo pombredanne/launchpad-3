@@ -26,7 +26,6 @@ from zope.publisher.interfaces import (
     )
 
 from canonical.config import dbconfig
-from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -62,6 +61,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     IOAuthSignedRequest,

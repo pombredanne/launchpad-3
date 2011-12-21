@@ -52,7 +52,7 @@ user to go through the email address confirmation process.
 
     # Extract the link (from the email we just sent) the user will have to
     # use to finish the registration process.
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg)
     >>> token_url

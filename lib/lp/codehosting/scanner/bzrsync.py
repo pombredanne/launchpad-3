@@ -19,16 +19,15 @@ import logging
 from bzrlib.graph import DictParentsProvider
 from bzrlib.revision import NULL_REVISION
 import pytz
-import transaction
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
-
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchrevision import (BranchRevision)
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import Revision
 from lp.codehosting.scanner import events
 from lp.services.utils import iter_list_chunks

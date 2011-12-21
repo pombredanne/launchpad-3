@@ -13,19 +13,20 @@ __all__ = [
     'PageMatches',
     ]
 
-import xml.etree.cElementTree as ET
 import urllib
 import urllib2
 from urlparse import (
-    urlunparse,
     parse_qsl,
+    urlunparse,
     )
+import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.launchpad.webapp import urlparse
 from canonical.lazr.timeout import TimeoutError
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
@@ -34,7 +35,6 @@ from lp.services.googlesearch.interfaces import (
     ISearchResults,
     ISearchService,
     )
-from canonical.launchpad.webapp import urlparse
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 

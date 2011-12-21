@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to ApportJobs are in here."""
@@ -27,7 +27,7 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.model import (
     TemporaryBlobStorage,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -48,9 +48,9 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class ApportJob(StormBase):

@@ -8,9 +8,11 @@ __metaclass__ = type
 import os
 import signal
 
+from canonical.launchpad.webapp import (
+    haproxy,
+    sighup,
+    )
 from canonical.testing.layers import FunctionalLayer
-from canonical.launchpad.webapp import haproxy
-from canonical.launchpad.webapp import sighup
 from lp.testing import TestCase
 
 

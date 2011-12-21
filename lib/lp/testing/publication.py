@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for testing out publication related code."""
@@ -22,13 +22,13 @@ from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.management import restoreInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
 
 

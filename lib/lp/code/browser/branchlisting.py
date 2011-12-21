@@ -53,7 +53,7 @@ from zope.schema import Choice
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     FeedsMixin,
     PersonBranchesFeedLink,
     PersonRevisionsFeedLink,
@@ -72,13 +72,13 @@ from canonical.launchpad.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.badge import (
-    Badge,
-    HasBadgeBase,
-    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.badge import (
+    Badge,
+    HasBadgeBase,
+    )
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,

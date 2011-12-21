@@ -132,22 +132,13 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp.services.feeds.browser import FeedsMixin
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -266,6 +257,15 @@ from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -3935,7 +3935,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
         # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
         # system set up for this that is almost identical in
-        # canonical.launchpad.interfaces.validation, called
+        # lp.app.validators.validation, called
         # _check_email_available or similar. It would be really nice if we
         # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)

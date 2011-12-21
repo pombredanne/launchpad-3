@@ -16,22 +16,24 @@ __all__ = [
     'vocabulary_to_choice_edit_items',
     ]
 
-import simplejson
-
 from lazr.enum import IEnumeratedType
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.utils import (
     get_current_browser_request,
     safe_hasattr,
     )
+import simplejson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.security.checker import canAccess, canWrite
 from zope.schema.interfaces import (
     ICollection,
     IVocabulary,
     )
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -376,6 +378,8 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
+        :param help_link: Used to set a link for help for the widget.
+        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,

@@ -80,7 +80,7 @@ from canonical.launchpad import (
     _,
     searchbuilder,
     )
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
@@ -109,9 +109,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import (
-    EnumChoiceWidget,
-    )
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription

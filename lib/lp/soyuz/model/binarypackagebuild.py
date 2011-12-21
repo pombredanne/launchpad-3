@@ -40,9 +40,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -79,6 +76,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import (
     format_address,
@@ -748,7 +746,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             extra_info = ''
 
-        template = get_email_template('build-notification.txt')
+        template = get_email_template('build-notification.txt', app='soyuz')
         replacements = {
             'source_name': self.source_package_release.name,
             'source_version': self.source_package_release.version,

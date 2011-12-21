@@ -11,8 +11,8 @@ __all__ = [
     ]
 
 from storm.properties import (
-    Int,
     DateTime,
+    Int,
     )
 from storm.references import Reference
 from zope.interface import implements

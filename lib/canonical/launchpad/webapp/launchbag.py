@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.services.identity.interfaces.account import IAccount
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
@@ -31,6 +30,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.identity.interfaces.account import IAccount
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 

@@ -30,8 +30,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
@@ -169,6 +168,7 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,

@@ -31,8 +31,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.services.identity.interfaces.account import IAccount
 from lp.registry.interfaces.role import IHasOwner
+from lp.services.identity.interfaces.account import IAccount
 
 
 class InvalidEmailAddress(Exception):

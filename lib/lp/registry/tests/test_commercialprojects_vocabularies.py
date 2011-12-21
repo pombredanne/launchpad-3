@@ -15,13 +15,13 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
 from lp.registry.vocabularies import CommercialProjectsVocabulary
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing.factory import LaunchpadObjectFactory
 
 

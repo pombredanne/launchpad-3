@@ -875,7 +875,7 @@
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
             provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-            factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
+            factory="lp.bugs.publisher.LaunchpadBugContainer"/>
 
         <!-- BugSet -->
 
@@ -952,6 +952,10 @@
                 attributes="
                     approve
                     decline"/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    destroySelf"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugnomination.BugNominationSet"
@@ -1097,7 +1101,7 @@
     <class
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+            interface="lp.services.mail.interfaces.INotificationRecipientSet"/>
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow

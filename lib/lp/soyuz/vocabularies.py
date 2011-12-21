@@ -14,17 +14,11 @@ __all__ = [
     'ProcessorVocabulary',
     ]
 
-from sqlobject import (
-    AND,
-    )
-from storm.expr import (
-    SQL,
-    )
+from sqlobject import AND
+from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    )
+from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import (
     quote,

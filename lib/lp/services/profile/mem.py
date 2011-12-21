@@ -36,9 +36,9 @@ __all__ = [
 import gc
 import os
 import sys
-import types
 import threading
 import time
+import types
 
 
 _proc_status = '/proc/%d/status' % os.getpid()

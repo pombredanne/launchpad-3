@@ -16,7 +16,6 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.librarian import (

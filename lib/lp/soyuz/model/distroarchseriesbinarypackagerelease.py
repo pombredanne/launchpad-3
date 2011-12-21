@@ -15,10 +15,10 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )

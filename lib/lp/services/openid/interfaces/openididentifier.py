@@ -16,6 +16,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.services.identity.interfaces.account import IAccount
 
+
 class IOpenIdIdentifier(Interface):
     """An OpenId Identifier that can be used to log into an Account"""
     account = Object(schema=IAccount, required=True)

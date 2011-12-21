@@ -1,7 +1,9 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from BeautifulSoup import BeautifulSoup
+
 from lp.registry.interfaces.person import PersonVisibility
+
 
 __metaclass__ = type
 
@@ -889,14 +891,21 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         # Test that the delete action works as expected.
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
+        bugtask_url = canonical_url(bugtask, rootsite='bugs')
         target_name = bugtask.bugtargetdisplayname
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             login_person(bugtask.owner)
             form = {
                 'field.actions.delete_bugtask': 'Delete',
                 }
+            extra = {
+                'HTTP_REFERER': bugtask_url,
+                }
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
             view = create_initialized_view(
-                bugtask, name='+delete', form=form, principal=bugtask.owner)
+                bugtask, name='+delete', form=form, server_url=server_url,
+                principal=bugtask.owner, **extra)
             self.assertEqual([bug.default_bugtask], bug.bugtasks)
             notifications = view.request.response.notifications
             self.assertEqual(1, len(notifications))
@@ -2262,6 +2271,21 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             "Existing sort order values not available in JSON cache: %r; "
             "keys present in JSON cache but not defined: %r"
             % (valid_keys - json_sort_keys, json_sort_keys - valid_keys))
+
+    def test_sort_keys_in_json_cache_data(self):
+        # The entry 'sort_keys' in the JSON cache of a search listing
+        # view is a sequence of 3-tuples (name, title, order), where
+        # order is one of the string 'asc' or 'desc'.
+        with dynamic_listings():
+            view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        json_sort_keys = cache.objects['sort_keys']
+        for key in json_sort_keys:
+            self.assertEqual(
+                3, len(key), 'Invalid key length: %r' % (key, ))
+            self.assertTrue(
+                key[2] in ('asc', 'desc'),
+                'Invalid order value: %r' % (key, ))
 
 
 class TestBugTaskExpirableListingView(BrowserTestCase):

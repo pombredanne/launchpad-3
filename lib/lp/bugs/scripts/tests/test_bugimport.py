@@ -18,7 +18,6 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
@@ -47,6 +46,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.testing import (
     run_process,
     TestCase,

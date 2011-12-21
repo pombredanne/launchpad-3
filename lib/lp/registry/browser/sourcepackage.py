@@ -59,10 +59,6 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -80,6 +76,10 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage

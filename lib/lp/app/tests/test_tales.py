@@ -3,32 +3,35 @@
 
 """tales.py doctests."""
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lxml import html
 from pytz import utc
 from zope.component import (
     getAdapter,
-    getUtility
+    getUtility,
     )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
+
 from canonical.launchpad.webapp.authorization import (
     clear_cache,
     precache_permission_for_objects,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.app.browser.tales import (
-    format_link,
     DateTimeFormatterAPI,
+    format_link,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )

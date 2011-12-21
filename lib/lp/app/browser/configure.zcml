@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,15 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        />
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        />
     <browser:page
         for="*"
         name="+base-layout-macros"

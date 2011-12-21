@@ -146,6 +146,8 @@ class RecipientReason(basemailer.RecipientReason):
 class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
+    app = 'code'
+
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, contents=None, diff=None, message_id=None,
                  revno=None, notification_type=None, **kwargs):

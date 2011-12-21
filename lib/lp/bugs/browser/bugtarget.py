@@ -24,8 +24,8 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
-from operator import itemgetter
 import httplib
+from operator import itemgetter
 import urllib
 from urlparse import urljoin
 

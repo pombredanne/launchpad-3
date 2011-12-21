@@ -8,9 +8,7 @@ __metaclass__ = type
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.services.job.interfaces.job import (
     IJobSource,
@@ -95,3 +93,44 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # is added.
         pofilestatsjob.schedule(pofile.id)
         self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
+
+    def test_run_with_shared_template(self):
+        # Create a product with two series and sharing POTemplates
+        # in different series ('devel' and 'stable').
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        devel = self.factory.makeProductSeries(
+            name='devel', product=product)
+        stable = self.factory.makeProductSeries(
+            name='stable', product=product)
+
+        # POTemplate is a 'sharing' one if it has the same name ('messages').
+        template1 = self.factory.makePOTemplate(devel, name='messages')
+        template2 = self.factory.makePOTemplate(stable, name='messages')
+
+        # Create a single POTMsgSet and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(template1)
+
+        self.factory.makeLanguage('en-tt')
+        pofile1 = self.factory.makePOFile('en-tt', template1)
+        pofile2 = self.factory.makePOFile('en-tt', template2)
+
+        self.factory.makeSuggestion(pofile1)
+        self.factory.makeSuggestion(pofile2)
+
+        # The statistics start at 0.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
+        job = pofilestatsjob.schedule(pofile1.id)
+        # Just scheduling the job doesn't update the statistics.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
+        # Now that the job ran, the statistics for the POFile have been
+        # updated.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 1))
+        # The statistics for the other POFile is also updated as a result of
+        # running the job for the other POFile because they share
+        # translations.
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 1))

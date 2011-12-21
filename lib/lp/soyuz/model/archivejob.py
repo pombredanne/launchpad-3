@@ -25,9 +25,9 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
     IArchiveJob,
