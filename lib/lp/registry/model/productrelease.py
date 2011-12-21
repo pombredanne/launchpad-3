@@ -34,7 +34,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

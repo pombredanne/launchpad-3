@@ -11,7 +11,7 @@ from testtools.matchers import LessThan
 import transaction
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger

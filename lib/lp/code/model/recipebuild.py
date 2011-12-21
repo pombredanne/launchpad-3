@@ -26,7 +26,7 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.services.database.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob

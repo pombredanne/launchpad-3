@@ -54,7 +54,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
