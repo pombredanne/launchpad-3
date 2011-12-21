@@ -62,10 +62,8 @@ from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication,
+from lp.app.interfaces.launchpad import (
     IPrivateApplication,
-    IWebServiceApplication,
     )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
@@ -105,12 +103,14 @@ from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
 from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
+from lp.services.feeds.interfaces import IFeedsApplication
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     IOAuthSignedRequest,
     TokenException,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 

@@ -27,7 +27,7 @@ from storm.locals import (
     )
 from zope.interface import classProvides
 
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.services.database.lpstorm import ISlaveStore
 from lp.code.interfaces.branch import IBranchCloud
 from lp.code.model.revision import RevisionCache
 from lp.registry.model.product import Product
