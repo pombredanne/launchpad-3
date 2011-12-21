@@ -153,7 +153,7 @@ class BinaryPublicationTraits:
     @staticmethod
     def getPackageName(bpph):
         """Return the name of this publication's binary package."""
-        return bpph.binarypackagerelease.binarypackagename.name
+        return bpph.binarypackagename.name
 
     @staticmethod
     def getPackageRelease(bpph):
