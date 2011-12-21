@@ -60,6 +60,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
         self.target = target
         # Tags is a sequence of Unicode strings.
         self.tags = tags
+        self.active = True
 
     @property
     def name(self):

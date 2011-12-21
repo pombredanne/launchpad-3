@@ -75,6 +75,7 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
@@ -92,7 +93,7 @@ class MilestoneNavigation(Navigation,
 
 
 class MilestoneBreadcrumb(Breadcrumb):
-    """The Breadcrumb for an `IAbstractMilestone`."""
+    """The Breadcrumb for an `IMilestoneData`."""
 
     @property
     def text(self):
@@ -143,7 +144,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
 
 class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     """The menu for this milestone."""
-    usedfor = IAbstractMilestone
+    usedfor = IMilestoneData
 
     @cachedproperty
     def links(self):
@@ -154,7 +155,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
-    """Overview navigation menu for `IMilestone` objects."""
+    """Overview navigation menu for `IAbstractMilestone` objects."""
     usedfor = IAbstractMilestone
     facet = 'overview'
 
@@ -169,7 +170,7 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     """Overview  menus for `IMilestone` objects."""
     # This menu must not contain 'subscribe' because the link state is too
     # costly to calculate when this menu is used with a list of milestones.
-    usedfor = IAbstractMilestone
+    usedfor = IMilestoneData
     facet = 'overview'
     links = ('edit', 'create_release')
 
@@ -546,6 +547,14 @@ class MilestoneTagView(MilestoneView):
         """
         super(MilestoneView, self).__init__(context, request)
         self.context = self.milestone = context
+
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone tag.
+
+        Return true, if the current milestone is a project milestone tag,
+        else return False."""
+        return IProjectGroupMilestoneTag.providedBy(self.context)
 
 
 class ObjectMilestonesView(LaunchpadView):
