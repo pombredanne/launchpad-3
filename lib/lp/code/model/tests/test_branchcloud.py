@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for IBranchCloud provider."""
@@ -43,11 +43,14 @@ class TestBranchCloud(TestCaseWithFactory):
         # commit the transaction to make the information visible to the slave.
         transaction.commit()
         cloud_info = self._branch_cloud.getProductsWithInfo(num_products)
-        # The last commit time is timezone unaware as the storm Max function
-        # doesn't take into account the type that it is aggregating, so whack
-        # the UTC tz on it here for easier comparing in the tests.
+
         def add_utc(value):
+            # Since Storm's Max function does not take into account the
+            # type that it is aggregating, the last commit time is not
+            # timezone-aware.  Whack the UTC timezone on it here for
+            # easier comparing in the tests.
             return value.replace(tzinfo=pytz.UTC)
+
         return [
             (name, commits, authors, add_utc(last_commit))
             for name, commits, authors, last_commit in cloud_info]
