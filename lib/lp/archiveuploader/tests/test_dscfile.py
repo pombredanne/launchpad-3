@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
@@ -100,7 +100,7 @@ class TestDscFile(TestCase):
         which is incredibly unlikely to be hit by normal files in the
         archive"""
         dev_zero = open("/dev/zero", "r")
-        ten_MiB = 2**20 * 10
+        ten_MiB = 10 * (2 ** 20)
         empty_file = dev_zero.read(ten_MiB + 1)
         dev_zero.close()
 
@@ -179,7 +179,8 @@ class BaseTestSourceFileVerification(TestCase):
         :param bzip2_count: number of files using bzip2 compression.
         :param xz_count: number of files using xz compression.
         """
-        self.assertErrorsForFiles([], files, components, bzip2_count, xz_count)
+        self.assertErrorsForFiles(
+            [], files, components, bzip2_count, xz_count)
 
 
 class Test10SourceFormatVerification(BaseTestSourceFileVerification):

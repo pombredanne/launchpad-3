@@ -16,7 +16,7 @@ import time
 import psycopg2
 
 from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts import db_options, logger
+from lp.services.scripts import db_options, logger
 from lp.scripts.helpers import LPOptionParser
 
 

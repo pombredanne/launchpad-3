@@ -1,6 +1,5 @@
-= Demo and launchpad.net =
-
-== Demo sites ==
+Demo and launchpad.net
+======================
 
 Launchpad can brand instances as 'demo' instances to make it obvious to
 users that they are working in a playpen and changes they make do not

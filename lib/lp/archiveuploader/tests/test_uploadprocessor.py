@@ -27,7 +27,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -98,6 +97,7 @@ from lp.soyuz.model.publishing import (
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

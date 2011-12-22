@@ -130,7 +130,7 @@ from lp.services.feeds.browser import (
     FeedsMixin,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
-from canonical.launchpad.mailnotification import get_unified_diff
+from lp.services.mail.notification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
     any,

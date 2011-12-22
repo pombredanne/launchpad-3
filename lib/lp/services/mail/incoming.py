@@ -26,7 +26,7 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.mailnotification import (
+from lp.services.mail.notification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.errorlog import (

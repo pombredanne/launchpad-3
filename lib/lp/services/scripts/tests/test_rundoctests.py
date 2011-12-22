@@ -15,9 +15,8 @@ def tearDown(test):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite('canonical.launchpad.scripts.sort_sql'))
     suite.addTest(DocTestSuite(
-        'canonical.launchpad.scripts.logger', tearDown=tearDown
+        'lp.services.scripts.logger', tearDown=tearDown
         ))
-    suite.addTest(DocTestSuite('canonical.launchpad.scripts'))
+    suite.addTest(DocTestSuite('lp.services.scripts'))
     return suite

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -43,7 +43,7 @@ class RequestWidget(object):
 
     def getInputValue(self):
         '''See zope.app.form.interfaces.IInpputWidget'''
-        raise NotImplementedError, 'getInputValue'
+        raise NotImplementedError('getInputValue')
 
     def applyChanges(self, content):
         '''See zope.app.form.interfaces.IInputWidget'''
@@ -85,6 +85,7 @@ class IUserWidget(Interface):
 
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
+
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.
 

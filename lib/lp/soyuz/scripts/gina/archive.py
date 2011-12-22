@@ -21,7 +21,7 @@ import tempfile
 
 import apt_pkg
 
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from lp.soyuz.scripts.gina import call
 
 
