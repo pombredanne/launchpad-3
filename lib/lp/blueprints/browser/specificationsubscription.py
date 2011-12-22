@@ -29,7 +29,6 @@ from lp.app.browser.launchpadform import (
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 

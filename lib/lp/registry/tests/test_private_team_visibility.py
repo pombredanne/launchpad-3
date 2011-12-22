@@ -50,7 +50,7 @@ from lp.testing import (
 class TestPrivateTeamVisibility(TestCaseWithFactory):
     """Tests for visibility of private teams."""
 
-    layer = DatabaseFunctionalLayer    
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestPrivateTeamVisibility, self).setUp()
@@ -114,7 +114,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         self.assertTrue(check_permission('launchpad.View', self.priv_team))
         team_membership = self.priv_member.team_memberships[0]
         self.assertTrue(check_permission('launchpad.View', team_membership))
-        
+
     def team_owner_can_see_team_details(self):
         """A team owner must be able to access the team even if they are not a
         team member. When a team is created, the owner is automatically made
@@ -131,19 +131,19 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
 
     def test_invited_team_admins_can_see_team(self):
         """Public teams can join private teams.  When adding one team to
-        another the team is invited to join and that invitation must be 
-        accepted by one of the invited team's admins.  Normally the admin of 
-        the invited team is not a member of the private team and therefore 
-        cannot even see the page to accept the invitation!  To resolve that 
-        situation the rules for viewing a private team include admins of 
+        another the team is invited to join and that invitation must be
+        accepted by one of the invited team's admins.  Normally the admin of
+        the invited team is not a member of the private team and therefore
+        cannot even see the page to accept the invitation!  To resolve that
+        situation the rules for viewing a private team include admins of
         invited teams.
-        """        
+        """
         pub_owner = self.factory.makePerson(name="pub-owner")
         pub_member = self.factory.makePerson(name="pub-member")
         pub_team = self.factory.makeTeam(owner=pub_owner, name="pubteam")
         with person_logged_in(pub_owner):
             pub_team.addMember(pub_member, reviewer=pub_owner)
-            # At this point the public team owner cannot see the priv-team's 
+            # At this point the public team owner cannot see the priv-team's
             # bits.
             self.assertRaises(Unauthorized, getattr, self.priv_team, 'name')
         login_person(self.priv_owner)
@@ -153,7 +153,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         self.assertFalse(pub_team in self.priv_team.activemembers)
         self.assertFalse(pub_owner in self.priv_team.activemembers)
 
-        # The public team's owner can now see the priv-team's bits since his 
+        # The public team's owner can now see the priv-team's bits since his
         # team has been invited to join.
         login_person(pub_owner)
         self.assertEqual('priv-team', self.priv_team.name)
@@ -256,7 +256,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
     def test_teams_with_private_branch_review_requests(self, private=True):
         self._test_teams_with_branch_review_requests()
 
-    def test_private_ppa_subscriber(self):        
+    def test_private_ppa_subscriber(self):
         # Subscribers to the team's private PPA have limited view permission.
         login_person(self.priv_owner)
         archive = self.factory.makeArchive(private=True, owner=self.priv_team)
