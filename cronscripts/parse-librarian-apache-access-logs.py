@@ -22,11 +22,11 @@ from storm.sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.apachelogparser.librarian_apache_log_parser import (
+from lp.services.apachelogparser.script import ParseApacheLogs
+from lp.services.librarian.apachelogparser import (
     DBUSER,
     get_library_file_id,
     )
-from lp.services.apachelogparser.script import ParseApacheLogs
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 

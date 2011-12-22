@@ -20,7 +20,7 @@ from lp.services.apachelogparser.base import (
     get_method_and_path,
     parse_file,
     )
-from lp.services.apachelogparser.librarian_apache_log_parser import (
+from lp.services.librarian.apachelogparser import (
     get_library_file_id,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
