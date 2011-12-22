@@ -13,7 +13,7 @@ from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

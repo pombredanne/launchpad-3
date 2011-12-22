@@ -253,7 +253,7 @@ class OpenIDLogin(LaunchpadView):
         we don't want.
 
         Coerces all keys and values to be ascii decode safe - either by making
-        them unicode or by url quoting them. keys are known to be urldecoded 
+        them unicode or by url quoting them. keys are known to be urldecoded
         bytestrings, so are simply re urlencoded.
         """
         for name, value in self.request.form.items():
@@ -263,20 +263,22 @@ class OpenIDLogin(LaunchpadView):
                 value_list = value
             else:
                 value_list = [value]
+
             def restore_url(element):
                 """Restore a form item to its original url representation.
 
                 The form items are byte strings simply url decoded and
                 sometimes utf8 decoded (for special confusion). They may fail
                 to coerce to unicode as they can include arbitrary
-                bytesequences after url decoding. We can restore their original
-                url value by url quoting them again if they are a bytestring,
-                with a pre-step of utf8 encoding if they were successfully
-                decoded to unicode.
+                bytesequences after url decoding. We can restore their
+                original url value by url quoting them again if they are a
+                bytestring, with a pre-step of utf8 encoding if they were
+                successfully decoded to unicode.
                 """
                 if isinstance(element, unicode):
                     element = element.encode('utf8')
                 return urllib.quote(element)
+
             for value_list_item in value_list:
                 value_list_item = restore_url(value_list_item)
                 name = restore_url(name)

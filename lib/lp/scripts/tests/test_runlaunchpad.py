@@ -18,7 +18,7 @@ import testtools
 
 import canonical.config
 from canonical.config import config
-from canonical.launchpad.scripts.runlaunchpad import (
+from lp.scripts.runlaunchpad import (
     get_services_to_run,
     process_config_arguments,
     SERVICES,

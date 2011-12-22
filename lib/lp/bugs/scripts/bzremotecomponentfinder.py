@@ -19,7 +19,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.scripts.logger import log as default_log
+from lp.services.scripts.logger import log as default_log
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatch views."""
@@ -51,7 +51,7 @@ class TestBugWatchEditView(TestCaseWithFactory):
         # We need to log in as an admin here as only admins can link a
         # watch to a comment.
         login(ADMIN_EMAIL)
-        bug_message = self.bug_watch.addComment('comment-id', message)
+        self.bug_watch.addComment('comment-id', message)
         login_person(self.person)
         view = create_initialized_view(self.bug_watch, '+edit')
         self.assertFalse(

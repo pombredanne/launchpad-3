@@ -9,7 +9,7 @@
 <div id="logincontrol" tal:condition="view/logged_in">
   <form action="/+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
-    <a 
+    <a
       href="javascript:removeElementClass(document.getElementById('debug_timeline'),'hidden')"
       tal:condition="request/features/visible_render_time"
       >

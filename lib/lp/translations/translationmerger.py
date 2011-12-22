@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.scripts.logger import (
+from lp.services.scripts.logger import (
     DEBUG2,
     log,
     )

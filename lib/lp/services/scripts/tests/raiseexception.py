@@ -11,7 +11,7 @@ import logging
 from optparse import OptionParser
 import sys
 
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     execute_zcml_for_scripts,
     logger,
     logger_options,

@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,

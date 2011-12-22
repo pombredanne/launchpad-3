@@ -61,7 +61,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.mailnotification import MailWrapper
+from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.searchbuilder import (
     any,
     greater_than,

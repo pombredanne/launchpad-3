@@ -84,7 +84,7 @@ comments. Calling importBugComments() and passing it our new
 comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
-    >>> from canonical.launchpad.scripts.logger import log
+    >>> from lp.services.scripts.logger import log
     >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
     >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
     ...     make_bug_watch_updater)

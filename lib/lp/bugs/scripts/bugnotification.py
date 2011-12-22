@@ -21,7 +21,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.scripts.logger import log
+from lp.services.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet

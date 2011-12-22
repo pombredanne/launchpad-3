@@ -15,13 +15,13 @@ from storm.locals import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchCloud
 from lp.code.model.revision import RevisionCache
-from lp.code.tests.helpers import make_project_branch_with_revisions
+from lp.code.tests.helpers import (
+    make_project_branch_with_revisions,
+    remove_all_sample_data_branches,
+    )
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,

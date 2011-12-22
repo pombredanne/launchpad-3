@@ -25,7 +25,7 @@ from replication.helpers import (
     )
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad import scripts
+from lp.services import scripts
 
 
 con = None

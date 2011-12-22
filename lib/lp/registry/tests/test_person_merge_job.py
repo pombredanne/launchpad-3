@@ -16,7 +16,7 @@ from lp.services.database.lpstorm import (
     IMasterObject,
     IStore,
     )
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,

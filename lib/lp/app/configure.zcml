@@ -13,6 +13,18 @@
     <include package="lp.app.validators" />
     <include package="lp.app.widgets" />
 
+    <class class="lazr.lifecycle.event.ObjectCreatedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectCreatedEvent" />
+    </class>
+
+    <class class="lazr.lifecycle.event.ObjectDeletedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectDeletedEvent" />
+    </class>
+
+    <class class="lazr.lifecycle.event.ObjectModifiedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectModifiedEvent" />
+    </class>
+
     <xmlrpc:view
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       interface="canonical.launchpad.xmlrpc.application.ISelfTest"
