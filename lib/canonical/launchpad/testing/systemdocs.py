@@ -114,6 +114,7 @@ def LayeredDocFileSuite(*paths, **kw):
 
     if stdout_logging:
         kw_setUp = kw.get('setUp')
+
         def setUp(test):
             if kw_setUp is not None:
                 kw_setUp(test)
@@ -123,14 +124,17 @@ def LayeredDocFileSuite(*paths, **kw):
             test.globs['log'] = log
             # Store as instance attribute so we can uninstall it.
             test._stdout_logger = log
+
         kw['setUp'] = setUp
 
         kw_tearDown = kw.get('tearDown')
+
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
             reset_logging()
             test._stdout_logger.uninstall()
+
         kw['tearDown'] = tearDown
 
     layer = kw.pop('layer', None)

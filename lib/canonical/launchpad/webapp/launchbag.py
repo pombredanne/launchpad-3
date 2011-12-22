@@ -209,4 +209,3 @@ def reset_developer_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that resets the developer flag."""
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setDeveloper(False)
-
