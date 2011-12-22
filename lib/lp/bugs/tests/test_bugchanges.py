@@ -24,7 +24,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.testing import (
     celebrity_logged_in,
@@ -1414,9 +1413,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges()
 
         login_person(self.user)
-        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-        with FeatureFixture(flags):
-            task_to_delete.delete()
+        task_to_delete.delete()
 
         task_deleted_activity = {
             'person': self.user,
