@@ -23,10 +23,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     not_equals,
     )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     AppServerLayer,
@@ -1475,33 +1472,24 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-
     def test_cannot_delete_if_not_logged_in(self):
         # You cannot delete a bug task if not logged in.
         bug = self.factory.makeBug()
-        with FeatureFixture(self.flags):
-            self.assertFalse(
-                check_permission('launchpad.Delete', bug.default_bugtask))
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_unauthorised_cannot_delete(self):
         # Unauthorised users cannot delete a bug task.
         bug = self.factory.makeBug()
         unauthorised = self.factory.makePerson()
         login_person(unauthorised)
-        with FeatureFixture(self.flags):
-            self.assertFalse(
-                check_permission('launchpad.Delete', bug.default_bugtask))
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_admin_can_delete(self):
         # With the feature flag on, an admin can delete a bug task.
         bug = self.factory.makeBug()
         login_celebrity('admin')
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Admin', bug.default_bugtask))
-        # Admins can also the task even without the feature flag.
-        clear_cache()
         self.assertTrue(
             check_permission('launchpad.Admin', bug.default_bugtask))
 
@@ -1509,12 +1497,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         # With the feature flag on, the pillar owner can delete a bug task.
         bug = self.factory.makeBug()
         login_person(bug.default_bugtask.pillar.owner)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_bug_supervisor_can_delete(self):
@@ -1523,24 +1506,14 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         bug = self.factory.makeBug(product=product)
         login_person(bug_supervisor)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_task_reporter_can_delete(self):
         # With the feature flag on, the bug task reporter can delete bug task.
         bug = self.factory.makeBug()
         login_person(bug.default_bugtask.owner)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_cannot_delete_only_bugtask(self):
@@ -1548,8 +1521,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = self.factory.makeBug()
         bugtask = bug.default_bugtask
         login_person(bugtask.owner)
-        with FeatureFixture(self.flags):
-            self.assertRaises(CannotDeleteBugtask, bugtask.delete)
+        self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted and after deletion, re-nominated.
@@ -1562,8 +1534,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         nomination = bug.addNomination(bug.owner, target)
         nomination.approve(bug.owner)
         bugtask = bug.getBugTask(target)
-        with FeatureFixture(self.flags):
-            bugtask.delete()
+        bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
         self.assertTrue(bug.canBeNominatedFor(target))
 
@@ -1573,8 +1544,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(bug=bug)
         bug = bugtask.bug
         login_person(bug.default_bugtask.owner)
-        with FeatureFixture(self.flags):
-            bug.default_bugtask.delete()
+        bug.default_bugtask.delete()
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
 
@@ -1586,8 +1556,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         login_person(distro.owner)
         dsp_task = bug.addTask(bug.owner, dsp)
         self.assertTrue(dsp.total_bug_heat > 0)
-        with FeatureFixture(self.flags):
-            dsp_task.delete()
+        dsp_task.delete()
         self.assertTrue(dsp.total_bug_heat == 0)
 
 
@@ -2625,24 +2594,23 @@ class TestWebservice(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_delete_bugtask(self):
-        """Test that a bugtask can be deleted with the feature flag on."""
+        """Test that a bugtask can be deleted."""
         owner = self.factory.makePerson()
+        some_person = self.factory.makePerson()
         db_bug = self.factory.makeBug()
         db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
         transaction.commit()
         logout()
 
-        # It will fail without feature flag enabled.
-        launchpad = self.factory.makeLaunchpadService(owner)
+        # It will fail for an unauthorised user.
+        launchpad = self.factory.makeLaunchpadService(some_person)
         bugtask = ws_object(launchpad, db_bugtask)
         self.assertRaises(Unauthorized, bugtask.lp_delete)
 
-        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-        with FeatureFixture(flags):
-            launchpad = self.factory.makeLaunchpadService(owner)
-            bugtask = ws_object(launchpad, db_bugtask)
-            bugtask.lp_delete()
-            transaction.commit()
+        launchpad = self.factory.makeLaunchpadService(owner)
+        bugtask = ws_object(launchpad, db_bugtask)
+        bugtask.lp_delete()
+        transaction.commit()
         # Check the delete really worked.
         with person_logged_in(removeSecurityProxy(db_bug).owner):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)

@@ -4,20 +4,29 @@
 from cStringIO import StringIO
 import textwrap
 import unittest
-from urllib2 import URLError, HTTPError
+from urllib2 import (
+    HTTPError,
+    URLError,
+    )
 
 import transaction
 
-from canonical.testing.layers import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.librarian import client as client_module
 from canonical.librarian.client import (
-    LibrarianClient, LibrarianServerError, RestrictedLibrarianClient)
+    LibrarianClient,
+    LibrarianServerError,
+    RestrictedLibrarianClient,
+    )
 from canonical.librarian.interfaces import UploadFailed
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.services.database.lpstorm import ISlaveStore
+from lp.services.librarian.model import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):

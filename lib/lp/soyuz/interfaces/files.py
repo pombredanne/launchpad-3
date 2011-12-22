@@ -22,7 +22,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 

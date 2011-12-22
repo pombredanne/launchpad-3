@@ -12,8 +12,8 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

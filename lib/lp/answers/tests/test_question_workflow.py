@@ -35,7 +35,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from canonical.launchpad.ftests.event import TestEventListener
+from canonical.lazr.testing.event import TestEventListener
 from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer

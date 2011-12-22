@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -29,6 +28,7 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.enums import RosettaImportStatus

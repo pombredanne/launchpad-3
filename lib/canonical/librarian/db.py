@@ -13,15 +13,12 @@ __all__ = [
 from sqlobject.sqlbuilder import AND
 from storm.expr import SQL
 
-from canonical.database.sqlbase import (
-    session_store,
-    )
-from canonical.launchpad.database.librarian import (
+from canonical.database.sqlbase import session_store
+from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     TimeLimitedToken,
     )
-
 
 
 class Library:

@@ -6,11 +6,14 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.librarian import db
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.librarian.model import LibraryFileContent
 
 
 class DBTestCase(unittest.TestCase):

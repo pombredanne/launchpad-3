@@ -79,7 +79,7 @@ for the ubuntutest distribution.
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> ubuntu = Distribution.byName('ubuntu')

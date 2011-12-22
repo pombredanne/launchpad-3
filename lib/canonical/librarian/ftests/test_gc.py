@@ -26,13 +26,13 @@ from canonical.database.sqlbase import (
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.log.logger import BufferLogger
 from lp.services.utils import utc_now
 from lp.testing import TestCase

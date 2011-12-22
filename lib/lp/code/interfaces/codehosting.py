@@ -13,6 +13,7 @@ __all__ = [
     'BRANCH_TRANSPORT',
     'compose_public_url',
     'CONTROL_TRANSPORT',
+    'IBazaarApplication',
     'ICodehostingAPI',
     'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
@@ -68,6 +69,10 @@ def branch_id_alias(branch):
 
 # The scheme types that are supported for codehosting.
 SUPPORTED_SCHEMES = 'bzr+ssh', 'http'
+
+
+class IBazaarApplication(ILaunchpadApplication):
+    """Bazaar Application"""
 
 
 class ICodehostingApplication(ILaunchpadApplication):

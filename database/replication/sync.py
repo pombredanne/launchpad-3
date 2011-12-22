@@ -12,7 +12,7 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from canonical.launchpad.scripts import logger_options, db_options
+from lp.services.scripts import logger_options, db_options
 from replication.helpers import sync
 
 if __name__ == '__main__':

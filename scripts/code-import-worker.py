@@ -29,7 +29,7 @@ from lp.codehosting.codeimport.worker import (
     CodeImportBranchOpenPolicy, CodeImportSourceDetails, GitImportWorker,
     HgImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.safe_open import AcceptAnythingPolicy
-from canonical.launchpad import scripts
+from lp.services import scripts
 
 
 opener_policies = {

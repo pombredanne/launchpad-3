@@ -34,7 +34,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )

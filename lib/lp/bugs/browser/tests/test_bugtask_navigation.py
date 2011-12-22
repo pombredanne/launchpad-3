@@ -10,7 +10,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -28,10 +27,8 @@ class TestBugtaskTraversal(TestCaseWithFactory):
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
         bugtask_url = canonical_url(bugtask, rootsite='bugs')
-        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
         login_person(bugtask.owner)
-        with FeatureFixture(flags):
-            bugtask.delete()
+        bugtask.delete()
         obj, view, request = test_traverse(bugtask_url)
         view()
         naked_view = removeSecurityProxy(view)
@@ -47,8 +44,6 @@ class TestBugtaskTraversal(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(bug=bug)
         bugtask_delete_url = canonical_url(
             bugtask, rootsite='bugs', view_name='+delete')
-        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
         login_person(bugtask.owner)
-        with FeatureFixture(flags):
-            bugtask.delete()
+        bugtask.delete()
         self.assertRaises(NotFound, test_traverse, bugtask_delete_url)

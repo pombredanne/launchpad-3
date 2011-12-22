@@ -198,19 +198,19 @@
   </securedutility>
   <securedutility
       class="canonical.launchpad.systemhomes.BazaarApplication"
-      provides="canonical.launchpad.interfaces.launchpad.IBazaarApplication">
-    <allow interface="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
+      provides="lp.code.interfaces.codehosting.IBazaarApplication">
+    <allow interface="lp.code.interfaces.codehosting.IBazaarApplication"/>
   </securedutility>
 
   <!-- pages for the bazaar application -->
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+      for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IBranchSetAPI"
       class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+      for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
       class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
@@ -454,7 +454,7 @@
   <class class="lp.code.model.branch.Branch">
     <require
         permission="launchpad.View"
-        interface="canonical.launchpad.interfaces.launchpad.IPrivacy
+        interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.branch.IBranchAnyone
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic

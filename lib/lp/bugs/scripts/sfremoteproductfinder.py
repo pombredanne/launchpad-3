@@ -17,7 +17,7 @@ from urllib2 import (
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import log as default_log
+from lp.services.scripts.logger import log as default_log
 from canonical.launchpad.webapp import (
     urlappend,
     urlsplit,

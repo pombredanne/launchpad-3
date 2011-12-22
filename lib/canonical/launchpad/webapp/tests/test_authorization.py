@@ -187,6 +187,7 @@ class FakeStore:
     """Enough of a store to fool the `block_implicit_flushes` decorator."""
     def block_implicit_flushes(self):
         pass
+
     def unblock_implicit_flushes(self):
         pass
 
@@ -194,12 +195,15 @@ class FakeStore:
 class FakeStoreSelector:
     """A store selector that always returns a `FakeStore`."""
     classProvides(IStoreSelector)
+
     @staticmethod
     def get(name, flavor):
         return FakeStore()
+
     @staticmethod
     def push(dbpolicy):
         pass
+
     @staticmethod
     def pop():
         pass
