@@ -8,11 +8,7 @@ from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
-from testtools.matchers import (
-    Equals,
-    MatchesSetwise,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -562,8 +558,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.makePPAJob(target2)
 
         pending_jobs = list(job_source.getIncompleteJobsForArchive(target1))
-        has_both_jobs = MatchesSetwise(*(map(Equals, target1_jobs)))
-        self.assertThat(pending_jobs, has_both_jobs)
+        self.assertContentEqual(pending_jobs, target1_jobs)
 
     def test_getIncompleteJobsForArchive_finds_failed_and_running_jobs(self):
         # getIncompleteJobsForArchive should return only waiting, failed
@@ -577,9 +572,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job_source = getUtility(IPlainPackageCopyJobSource)
         found_jobs = job_source.getIncompleteJobsForArchive(ppa)
         found_statuses = [job.status for job in found_jobs]
-        self.assertThat(
+        self.assertContentEqual(
             [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED],
-            MatchesSetwise(*(map(Equals, found_statuses))))
+            found_statuses)
 
     def test_copying_to_main_archive_ancestry_overrides(self):
         # The job will complete right away for auto-approved copies to a
