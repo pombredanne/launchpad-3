@@ -921,7 +921,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                         WHERE person = %(personid)s
                     )
                     -- The team blueprint subscriptions
-                    SELECT SpecificationSubscription.specification
+                    SELECT 1
                     FROM SpecificationSubscription
                     WHERE SpecificationSubscription.person IN
                         (SELECT team FROM teams)
