@@ -39,4 +39,3 @@ if __name__ == '__main__':
     DEFAULT = test_suite()
     import unittest
     unittest.main('DEFAULT')
-

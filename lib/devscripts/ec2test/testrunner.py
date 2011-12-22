@@ -323,10 +323,14 @@ class EC2TestRunner:
             # really wrong with the server or suite.
             user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
-        as_user("sudo mount -o remount,data=writeback,commit=3600,async,relatime /")
+        as_user(
+            "sudo mount "
+            "-o remount,data=writeback,commit=3600,async,relatime /")
         for d in ['/tmp', '/var/tmp']:
-            as_user('sudo mkdir -p %s && sudo mount -t tmpfs none %s' % (d, d))
-        as_user("sudo service postgresql-8.4 stop"
+            as_user(
+                "sudo mkdir -p %s && sudo mount -t tmpfs none %s" % (d, d))
+        as_user(
+            "sudo service postgresql-8.4 stop"
             "; sudo mv /var/lib/postgresql /tmp/postgresql-tmp"
             "&& sudo mkdir /var/lib/postgresql"
             "&& sudo mount -t tmpfs none /var/lib/postgresql"
@@ -367,11 +371,13 @@ class EC2TestRunner:
         user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
-        user_connection.perform('sudo mkdir /var/launchpad/test '
-            '&& sudo mount -t tmpfs none /var/launchpad/test')
+        user_connection.perform(
+            'sudo mkdir /var/launchpad/test && '
+            'sudo mount -t tmpfs none /var/launchpad/test')
         # Get trunk.
         user_connection.run_with_ssh_agent(
-            'bzr branch --use-existing-dir %s /var/launchpad/test' % (self._trunk_branch,))
+            'bzr branch --use-existing-dir %s /var/launchpad/test'
+            % (self._trunk_branch,))
         # Merge the branch in.
         if self._branch is not None:
             user_connection.run_with_ssh_agent(

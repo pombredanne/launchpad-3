@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -79,8 +79,9 @@ class PasswordChangeWidget(PasswordWidget):
         contain the same value. It returns the value encrypted.
 
         >>> request = LaunchpadTestRequest(form={
-        ...     'field.foo': u'My Password', 'field.foo_dupe': u'My Password'}
-        ...     )
+        ...     'field.foo': u'My Password',
+        ...     'field.foo_dupe': u'My Password',
+        ...     })
         >>> widget = PasswordChangeWidget(field, request)
         >>> crypted_pw = widget.getInputValue()
         >>> encryptor = getUtility(IPasswordEncryptor)
