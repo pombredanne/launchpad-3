@@ -32,14 +32,14 @@ setUp
 -----
 
     >>> from canonical.database.sqlbase import session_store
-    >>> from canonical.launchpad.database.librarian import TimeLimitedToken
+    >>> from lp.services.librarian.model import TimeLimitedToken
 
 
 High Level
 ----------
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> data = 'This is some data'
 
@@ -47,7 +47,7 @@ We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
 This name is a mouthful, but is consistent with the rest of our naming.
 
     >>> lfas = getUtility(ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces.librarian import NEVER_EXPIRES
+    >>> from lp.services.librarian.interfaces import NEVER_EXPIRES
     >>> alias = lfas.create(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )
@@ -601,7 +601,7 @@ We need some files to test different ways of accessing them.
     # Create a new LibraryFileAlias not referencing any LibraryFileContent
     # record. Such records are considered as being deleted.
 
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -671,7 +671,7 @@ entries.
 This was the first hit for that file from Brazil on 2006 November first,
 so a new LibraryFileDownloadCount was created.
 
-    >>> from canonical.launchpad.database.librarian import (
+    >>> from lp.services.librarian.model import (
     ...        LibraryFileDownloadCount)
     >>> from storm.locals import Store
     >>> store = Store.of(public_file)

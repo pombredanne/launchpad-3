@@ -12,7 +12,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessLayer,
@@ -24,6 +23,7 @@ from lp.services.apachelogparser.base import (
 from lp.services.apachelogparser.librarian_apache_log_parser import (
     get_library_file_id,
     )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 

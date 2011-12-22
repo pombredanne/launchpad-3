@@ -49,7 +49,6 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
@@ -59,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 
 # These are used lp.bugs.model.bugactivity.BugActivity.attribute to normalize
 # the output from these change objects into the attribute that actually
