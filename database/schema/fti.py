@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
     quote,
     quote_identifier,
     )
-from lp.services.scripts import (
+from canonical.launchpad.scripts import (
     db_options,
     logger,
     logger_options,
