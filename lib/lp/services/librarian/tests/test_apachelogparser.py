@@ -20,9 +20,7 @@ from lp.services.apachelogparser.base import (
     get_method_and_path,
     parse_file,
     )
-from lp.services.librarian.apachelogparser import (
-    get_library_file_id,
-    )
+from lp.services.librarian.apachelogparser import get_library_file_id
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase

@@ -29,8 +29,8 @@ from lp.services.apachelogparser.base import (
     get_method_and_path,
     parse_file,
     )
-from lp.services.librarian.apachelogparser import DBUSER
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.librarian.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
