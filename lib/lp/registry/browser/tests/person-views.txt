@@ -325,7 +325,7 @@ progress.
     >>> len(view.assigned_specs_in_progress)
     0
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> len(extract_text(view.render()))
     0
 

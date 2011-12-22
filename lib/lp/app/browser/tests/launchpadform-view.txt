@@ -13,7 +13,7 @@ can be used for subordinate field indentation, for example.
     >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
-    >>> from canonical.launchpad.testing.pages import find_tags_by_class
+    >>> from lp.testing.pages import find_tags_by_class
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> class ITestSchema(Interface):

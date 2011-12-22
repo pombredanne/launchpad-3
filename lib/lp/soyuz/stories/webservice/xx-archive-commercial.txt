@@ -43,7 +43,7 @@ Create the P3A marked commercial, and fetch the celebrity.
 
 And fetch our objects:
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> agent = webservice.get('/~software-center-agent').jsonBody()
     >>> joe = webservice.get('/~joe').jsonBody()
