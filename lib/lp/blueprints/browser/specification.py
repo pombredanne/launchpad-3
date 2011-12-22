@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -200,17 +200,17 @@ class NewSpecificationView(LaunchpadFormView):
         """Registers a new specification."""
         self.transform(data)
         spec = getUtility(ISpecificationSet).new(
-            owner = self.user,
-            name = data.get('name'),
-            title = data.get('title'),
-            specurl = data.get('specurl'),
-            summary = data.get('summary'),
-            product = data.get('product'),
-            drafter = data.get('drafter'),
-            assignee = data.get('assignee'),
-            approver = data.get('approver'),
-            distribution = data.get('distribution'),
-            definition_status = data.get('definition_status'))
+            owner=self.user,
+            name=data.get('name'),
+            title=data.get('title'),
+            specurl=data.get('specurl'),
+            summary=data.get('summary'),
+            product=data.get('product'),
+            drafter=data.get('drafter'),
+            assignee=data.get('assignee'),
+            approver=data.get('approver'),
+            distribution=data.get('distribution'),
+            definition_status=data.get('definition_status'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
