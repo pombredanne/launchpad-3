@@ -12,7 +12,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,
@@ -26,6 +25,7 @@ from lp.code.interfaces.codeimportjob import (
     )
 from lp.code.interfaces.codeimportscheduler import ICodeImportScheduler
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
 class CodeImportSchedulerAPI(LaunchpadXMLRPCView):

@@ -14,6 +14,7 @@
   <include package=".identity" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
+  <include package=".librarian" />
   <include package=".longpoll" />
   <include package=".mail" />
   <include package=".memcache" />

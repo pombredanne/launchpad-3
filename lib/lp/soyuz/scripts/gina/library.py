@@ -11,7 +11,7 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
 def _libType(fname):

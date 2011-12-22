@@ -8,8 +8,8 @@ __metaclass__ = type
 import testtools
 
 from canonical.database.sqlbase import session_store
-from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.librarian.model import TimeLimitedToken
 
 
 class TestLibraryFileAlias(testtools.TestCase):
