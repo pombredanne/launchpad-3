@@ -8,10 +8,10 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
-from lp.app.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import IPrivateApplication
+from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.testing import TestCaseWithFactory
 
 

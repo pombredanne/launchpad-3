@@ -4,7 +4,6 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
-    'AuthServerApplication',
     'BazaarApplication',
     'CodeImportSchedulerApplication',
     'FeedsApplication',
@@ -26,12 +25,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from lp.app.interfaces.launchpad import (
-    IAuthServerApplication,
-    )
-from lp.services.statistics.interfaces.statistic import (
-    ILaunchpadStatisticSet,
-    )
 from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot,
     ICanonicalUrlData,
@@ -79,21 +72,15 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
-from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview,
     )
-
-
-class AuthServerApplication:
-    """AuthServer End-Point."""
-    implements(IAuthServerApplication)
-
-    title = "Auth Server"
 
 
 class CodehostingApplication:
