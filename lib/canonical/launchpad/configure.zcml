@@ -9,7 +9,6 @@
   i18n_domain="launchpad">
 
   <include package="canonical.launchpad.webapp" />
-  <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
