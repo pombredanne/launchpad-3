@@ -563,7 +563,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_getIncompleteJobsForArchive_finds_failed_and_running_jobs(self):
         # getIncompleteJobsForArchive should return only waiting, failed
         # and running jobs.
-        jobs = []
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         for status in JobStatus.items:
             job = self.makePPAJob(target_archive=ppa)
