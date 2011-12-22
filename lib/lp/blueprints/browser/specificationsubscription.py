@@ -161,15 +161,11 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
                 can_unsubscribe.append(subscription)
             else:
                 cannot_unsubscribe.append(subscription)
-
-        extra_checks_enabled = bool(getFeatureFlag(
-            'disclosure.extra_private_team_limitedView_security.enabled'))
-        # If the feature flag is enabled, the security adaptor checks the
-        # permission, otherwise we need to cache it ourselves.
-        if not extra_checks_enabled:
-            # Cache permission so private subscribers can be viewed.
-            precache_permission_for_objects(
-                        self.request, 'launchpad.LimitedView', subscribers)
+        # Cache permission so private subscribers can be viewed.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        precache_permission_for_objects(
+                    self.request, 'launchpad.LimitedView', subscribers)
 
         sorted_subscriptions = can_unsubscribe + cannot_unsubscribe
         return sorted_subscriptions

@@ -457,7 +457,7 @@ class TestBugTextViewPrivateTeams(TestCaseWithFactory):
         self.assertNotIn(
             removeSecurityProxy(subscriber).unique_displayname, view_text)
 
-    def _test_authenticated_view(self):
+    def test_authenticated_view(self):
         # Authenticated users can see private assignees or subscribers.
         bug, assignee, subscriber = self._makeBug()
         request = LaunchpadTestRequest()
@@ -474,13 +474,6 @@ class TestBugTextViewPrivateTeams(TestCaseWithFactory):
             % (naked_subscriber.displayname, naked_subscriber.name),
             view_text)
 
-    def test_authenticated_view_with_fflag(self):
-        fflag = u'disclosure.extra_private_team_limitedView_security.enabled'
-        with FeatureFixture({fflag: u'on'}):
-            self._test_authenticated_view()
-
-    def test_authenticated_view_no_fflag(self):
-        self._test_authenticated_view()
 
 class TestBugCanonicalUrl(BrowserTestCase):
     """Bugs give a <link rel=canonical> to a standard url.

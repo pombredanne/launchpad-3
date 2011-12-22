@@ -4,12 +4,6 @@
 # pylint: disable-msg=F0401
 
 """Security policies for using content objects."""
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.blueprints.model.specificationsubscription import SpecificationSubscription
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugtask import get_bug_privacy_filter, BugTask
-from lp.registry.model.teammembership import TeamParticipation
 
 __metaclass__ = type
 __all__ = [
@@ -23,6 +17,9 @@ from zope.component import (
 from zope.interface import Interface
 
 from canonical.config import config
+from canonical.database.sqlbase import quote
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import (
@@ -55,6 +52,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.bugs.model.bugtask import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -164,6 +162,7 @@ from lp.registry.interfaces.role import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.oauth.interfaces import (
@@ -877,71 +876,80 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if mp.count() > 0:
                 return True
 
-            # There are additional checks we can do to determine if the user
-            # should have limitedView permission. It is uncertain these will
-            # not cause performance issues, so for now we use a feature flag
-            # to enabled the checks.
+            # There are a number of other conditions under which a private
+            # team may be visible. These are:
+            #  - All blueprints are public, so if the team is subscribed to
+            #    any blueprints, they are in a public role and hence visible.
+            #  - If the team is directly subscribed or assigned to any bugs
+            #    the user can see, the team should be visible.
+            #
+            # For efficiency, we do not want to perform several
+            # TeamParticipation joins and we only want to do the user visible
+            # bug filtering once. We use a With statement for the team
+            # participation check. For the bug query, we first filter on team
+            # association (subscribed to, assigned to etc) and then on user
+            # visibility.
+
+            # The extra checks may be expensive so we'll use a feature flag.
             extra_checks_enabled = bool(getFeatureFlag(
-                'disclosure.extra_private_team_limitedView_security.enabled'))
-            if extra_checks_enabled:
-                # All blueprints are public, so if the team is subscribed to
-                # any blueprints, they are in a public role and hence visible.
-                store = IStore(SpecificationSubscription)
-                rs = store.using(
-                        SpecificationSubscription, TeamParticipation
-                    ).find(
-                        SpecificationSubscription.specificationID,
-                        (SpecificationSubscription.personID
-                            == TeamParticipation.teamID,
-                        TeamParticipation.personID == self.obj.id))
-                if rs.count() > 0:
-                    return True
+                'disclosure.extra_private_team_LimitedView_security.enabled'))
+            if not extra_checks_enabled:
+                return False
 
-                # If the team is directly subscribed to any bugs the user can
-                # see, the team should be visible.
-                store = IStore(BugSubscription)
-                filter = get_bug_privacy_filter(user.person)
-                rs = store.using(
-                        Bug, BugSubscription, TeamParticipation
-                    ).find(
-                        Bug.id,
-                        filter,
-                        (BugSubscription.person_id
-                            == TeamParticipation.teamID,
-                        TeamParticipation.personID == self.obj.id))
-                if rs.count() > 0:
-                    return True
+            store = IStore(Person)
+            team_bugs_visible_select = """
+                SELECT bug_id FROM (
+                    -- The direct team bug subscriptions
+                    SELECT BugSubscription.bug as bug_id
+                    FROM BugSubscription
+                    WHERE BugSubscription.person IN
+                        (SELECT team FROM teams)
+                    UNION
+                    -- The bugs assigned to the team
+                    SELECT BugTask.bug as bug_id
+                    FROM BugTask
+                    WHERE BugTask.assignee IN (SELECT team FROM teams)
+                    ) as TeamBugs
+                """
+            user_private_bugs_visible_filter = get_bug_privacy_filter(
+                user.person, private_only=True)
 
-                # If the team is directly subscribed to any bugs the user can
-                # see, the team should be visible.
-                store = IStore(BugSubscription)
-                filter = get_bug_privacy_filter(user.person)
-                rs = store.using(
-                        Bug, BugSubscription, TeamParticipation
-                    ).find(
-                        Bug.id,
-                        filter,
-                        BugSubscription.bug_id == Bug.id,
-                        (BugSubscription.person_id
-                            == TeamParticipation.teamID,
-                        TeamParticipation.personID == self.obj.id))
-                if rs.count() > 0:
-                    return True
+            query = """
+                SELECT TRUE WHERE
+                EXISTS (
+                    WITH teams AS (
+                        SELECT team from TeamParticipation
+                        WHERE person = %(personid)s
+                    )
+                    -- The team blueprint subscriptions
+                    SELECT SpecificationSubscription.specification
+                    FROM SpecificationSubscription
+                    WHERE SpecificationSubscription.person IN
+                        (SELECT team FROM teams)
+                    UNION ALL
+                    -- Find the bugs associated with the team and filter by
+                    -- those that are visible to the user.
+                    -- Public bugs are simple to check and always visible so
+                    -- do those first.
+                    %(team_bug_select)s
+                    WHERE bug_id in (
+                        SELECT Bug.id FROM Bug WHERE Bug.private is FALSE
+                    )
+                    UNION ALL
+                    -- Now do the private bugs the user can see.
+                    %(team_bug_select)s
+                    WHERE bug_id in (
+                        SELECT Bug.id FROM Bug WHERE %(user_bug_filter)s
+                    )
+                )
+                """ % dict(
+                        personid=quote(self.obj.id),
+                        team_bug_select=team_bugs_visible_select,
+                        user_bug_filter=user_private_bugs_visible_filter)
 
-                # If the team is assigned to any bugs the user can see,
-                # the team should be visible.
-                rs = store.using(
-                        Bug, BugTask, TeamParticipation
-                    ).find(
-                        Bug.id,
-                        filter,
-                        BugTask.bugID == Bug.id,
-                        (BugTask.assigneeID
-                            == TeamParticipation.teamID,
-                        TeamParticipation.personID == self.obj.id))
-                if rs.count() > 0:
-                    return True
-
+            rs = store.execute(query)
+            if rs.rowcount > 0:
+                return True
         return False
 
 

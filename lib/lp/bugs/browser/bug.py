@@ -968,20 +968,16 @@ class BugTextView(LaunchpadView):
 
     def initialize(self):
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
-        extra_checks_enabled = bool(features.getFeatureFlag(
-            'disclosure.extra_private_team_limitedView_security.enabled'))
-        # If the feature flag is enabled, the security adaptor checks the
-        # assignee and subscribers permissions, otherwise we need to cache it
-        # ourselves.
-        if not extra_checks_enabled:
-            authorised_people = []
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    authorised_people.append(task.assignee)
-            authorised_people.extend(self.subscribers)
-            precache_permission_for_objects(
-                self.request, 'launchpad.LimitedView', authorised_people)
+        # bug, hence they can see any assignees and subscribers.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = []
+        for task in self.bugtasks:
+            if task.assignee is not None:
+                authorised_people.append(task.assignee)
+        authorised_people.extend(self.subscribers)
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
 
     @cachedproperty
     def bugtasks(self):

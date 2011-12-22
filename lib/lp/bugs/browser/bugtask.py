@@ -3562,17 +3562,14 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
-        extra_checks_enabled = bool(getFeatureFlag(
-            'disclosure.extra_private_team_limitedView_security.enabled'))
-        # If the feature flag is enabled, the security adaptor checks the
-        # permission, otherwise we need to cache it ourselves.
-        if not extra_checks_enabled:
-            # If we have made it to here then the logged in user can see the
-            # bug, hence they can see any assignees.
-            authorised_people = [task.assignee for task in self.bugtasks
-                                 if task.assignee is not None]
-            precache_permission_for_objects(
-                self.request, 'launchpad.LimitedView', authorised_people)
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any assignees.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = [task.assignee for task in self.bugtasks
+                             if task.assignee is not None]
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
 
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.
