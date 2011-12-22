@@ -19,7 +19,6 @@ from testtools.matchers import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
@@ -32,6 +31,7 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.model.person import Person
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.librarian.model import LibraryFileAlias
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -163,7 +163,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             resultset[0])
         self.assertEqual(
             "Instances of <class "
-            "'canonical.launchpad.database.librarian.LibraryFileAlias'> are "
+            "'lp.services.librarian.model.LibraryFileAlias'> are "
             "not contained in the result set, but are required to retrieve "
             "the value of LibraryFileAlias.id.",
             str(exception))

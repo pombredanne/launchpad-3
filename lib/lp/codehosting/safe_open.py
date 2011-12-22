@@ -45,6 +45,7 @@ __all__ = [
 
 DEFAULT_PROBERS = [BzrProber, RemoteBzrProber]
 
+
 class BadUrl(Exception):
     """Tried to access a branch from a bad URL."""
 

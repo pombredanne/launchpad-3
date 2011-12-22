@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing.layers import (
@@ -47,6 +46,7 @@ from lp.code.tests.codeimporthelpers import (
     make_finished_import,
     make_running_import,
     )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.testing import (
     ANONYMOUS,
     login,

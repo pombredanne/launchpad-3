@@ -11,7 +11,6 @@ from storm.expr import (
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -26,6 +25,7 @@ from lp.services.command_spawner import (
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormexpr import Concatenate
+from lp.services.librarian.model import LibraryFileAlias
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease

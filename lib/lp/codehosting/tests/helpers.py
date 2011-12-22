@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -112,6 +112,7 @@ def deferToThread(f):
     """
     def decorated(*args, **kwargs):
         d = defer.Deferred()
+
         def runInThread():
             return threads._putResultInDeferred(d, f, args, kwargs)
 
@@ -125,8 +126,10 @@ def clone_test(test, new_id):
     """Return a clone of the given test."""
     from copy import deepcopy
     new_test = deepcopy(test)
+
     def make_new_test_id():
         return lambda: new_id
+
     new_test.id = make_new_test_id()
     return new_test
 

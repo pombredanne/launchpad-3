@@ -10,7 +10,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.ftests import (
     login,
     logout,
@@ -23,6 +22,7 @@ from lp.archiveuploader.tests import (
     )
 from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.component import ComponentSelection
