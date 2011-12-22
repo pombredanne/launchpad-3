@@ -8,7 +8,11 @@ from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    Equals,
+    MatchesSetwise,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -95,6 +99,22 @@ class LocalTestHelper:
             dsd.source_package_name.name, source_archive, target_archive,
             target_distroseries, target_pocket, requester=requester,
             package_version=dsd.parent_source_version, **kwargs)
+
+    def makePPAJob(self, source_archive=None, target_archive=None, **kwargs):
+        if source_archive is None:
+            source_archive = self.factory.makeArchive(
+                purpose=ArchivePurpose.PPA)
+        if target_archive is None:
+            target_archive = self.factory.makeArchive(
+                purpose=ArchivePurpose.PPA)
+        source_name = self.factory.getUniqueString('src-name')
+        target_series = self.factory.makeDistroSeries()
+        target_pocket = self.factory.getAnyPocket()
+        requester = self.factory.makePerson()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            source_name, source_archive, target_archive,
+            target_series, target_pocket, requester=requester,
+            package_version="1.0", **kwargs)
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
@@ -529,6 +549,37 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_getIncompleteJobsForArchive_finds_jobs_in_right_archive(self):
+        # getIncompleteJobsForArchive should return all the jobs in an
+        # specified archive.
+        target1 = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        target2 = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        target1_jobs = [
+            self.makePPAJob(target_archive=target1)
+            for counter in xrange(2)]
+        self.makePPAJob(target2)
+
+        pending_jobs = list(job_source.getIncompleteJobsForArchive(target1))
+        has_both_jobs = MatchesSetwise(*(map(Equals, target1_jobs)))
+        self.assertThat(pending_jobs, has_both_jobs)
+
+    def test_getIncompleteJobsForArchive_finds_failed_and_running_jobs(self):
+        # getIncompleteJobsForArchive should return only waiting, failed
+        # and running jobs.
+        jobs = []
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        for status in JobStatus.items:
+            job = self.makePPAJob(target_archive=ppa)
+            removeSecurityProxy(job).job._status = status
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        found_jobs = job_source.getIncompleteJobsForArchive(ppa)
+        found_statuses = [job.status for job in found_jobs]
+        self.assertThat(
+            [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED],
+            MatchesSetwise(*(map(Equals, found_statuses))))
 
     def test_copying_to_main_archive_ancestry_overrides(self):
         # The job will complete right away for auto-approved copies to a

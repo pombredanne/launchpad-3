@@ -182,6 +182,15 @@ class IPlainPackageCopyJobSource(IJobSource):
             `DistroSeriesDifference.parent_source_version`.
         """
 
+    def getIncompleteJobsForArchive(archive):
+        """Find incomplete jobs for each package in `archive`.
+
+        Incomplete jobs are ones in status WAITING, RUNNING or FAILED.
+
+        :param archive: The target `IArchive` for the job.
+        :return: An iterable of `PackageCopyJob`.
+        """
+
 
 class IPlainPackageCopyJob(IRunnableJob):
     """A no-frills job to copy packages between `IArchive`s."""
