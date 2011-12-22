@@ -14,7 +14,7 @@ __all__ = [
     'IMessage',
     ]
 
-from canonical.launchpad.interfaces import _schema_circular_imports
+from lp import _schema_circular_imports
 from lp.services.messages.interfaces.message import (
     IMessage,
     )
