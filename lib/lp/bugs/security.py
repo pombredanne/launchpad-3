@@ -62,8 +62,6 @@ class DeleteBugTask(AuthorizationBase):
         """Check that a user may delete a bugtask.
 
         A user may delete a bugtask if:
-         - The disclosure.delete_bugtask.enabled feature flag is enabled,
-         and they are:
          - project maintainer
          - task creator
          - bug supervisor
@@ -74,11 +72,6 @@ class DeleteBugTask(AuthorizationBase):
         # Admins can always delete bugtasks.
         if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             return True
-
-        delete_allowed = bool(getFeatureFlag(
-            'disclosure.delete_bugtask.enabled'))
-        if not delete_allowed:
-            return False
 
         bugtask = self.obj
         owner = None
