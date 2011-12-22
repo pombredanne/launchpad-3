@@ -191,6 +191,12 @@
          factory="lp.bugs.browser.bugcomment.BugCommentXHTMLRepresentation"
          name="lazr.restful.EntryResource"
         />
+    <adapter
+        for="lp.bugs.interfaces.bugmessage.IBugComment
+             lazr.restful.interfaces.IWebServiceClientRequest"
+        provides="lazr.restful.interfaces.IEntry"
+        factory="lp.bugs.adapters.bug.bugcomment_to_entry"
+        />
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
