@@ -12,7 +12,7 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
