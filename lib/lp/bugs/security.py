@@ -27,7 +27,6 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.features import getFeatureFlag
 from lp.services.messages.interfaces.message import IMessage
 
 
