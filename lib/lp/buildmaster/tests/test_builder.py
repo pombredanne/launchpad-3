@@ -621,6 +621,8 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
             archive=self.ppa_joe).createMissingBuilds()
 
+        self.useFixture(BuilddManagerTestFixture())
+
     def test_findBuildCandidate_first_build_started(self):
         # The allocation rule for PPA dispatching doesn't apply when
         # there's only one builder available.
@@ -633,8 +635,9 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
         # If bob is in a failed state the joesppa build is still
         # returned.
-        self.bob_builder.builderok = False
-        self.bob_builder.manual = False
+        with BuilddManagerTestFixture.extraSetUp():
+            self.bob_builder.builderok = False
+            self.bob_builder.manual = False
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -892,6 +895,8 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             archive=self.ppa_joe).createMissingBuilds()[0]
 
         self.buildfarmjob = self.build.buildqueue_record.specific_job
+
+        # TODO: Needs policy
 
     def test_idle_behavior_when_no_current_build(self):
         """We return an idle behavior when there is no behavior specified
@@ -1205,6 +1210,8 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
     def setUp(self):
         super(TestSlaveWithLibrarian, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
+
+        # TODO: Needs policy
 
     def test_ensurepresent_librarian(self):
         # ensurepresent, when given an http URL for a file will download the
