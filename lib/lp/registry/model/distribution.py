@@ -784,7 +784,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             whiteboard=whiteboard)
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IBugTarget`."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
