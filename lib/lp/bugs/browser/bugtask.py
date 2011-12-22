@@ -129,7 +129,7 @@ from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
@@ -2504,17 +2504,17 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
-    ('id', 'Bug number', 'desc'),
-    ('title', 'Bug title', 'asc'),
+    ('id', 'Number', 'desc'),
+    ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
     ('milestone_name', 'Milestone', 'asc'),
-    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('date_last_updated', 'Date last updated', 'desc'),
     ('assignee', 'Assignee', 'asc'),
     ('reporter', 'Reporter', 'asc'),
-    ('datecreated', 'Bug age', 'desc'),
-    ('tag', 'Bug Tags', 'asc'),
-    ('heat', 'Bug heat', 'desc'),
-    ('date_closed', 'Date bug closed', 'desc'),
+    ('datecreated', 'Age', 'desc'),
+    ('tag', 'Tags', 'asc'),
+    ('heat', 'Heat', 'desc'),
+    ('date_closed', 'Date closed', 'desc'),
     ('dateassigned', 'Date when the bug task was assigned', 'desc'),
     ('number_of_duplicates', 'Number of duplicates', 'desc'),
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),

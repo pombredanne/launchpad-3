@@ -267,7 +267,7 @@ we can confirm that an event is indeed fired off.
     ...     if bugtask.importance != old_bugtask.importance:
     ...         print "%s => %s" % (old_bugtask.importance.title,
     ...             bugtask.importance.title)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> event_listener = TestEventListener(

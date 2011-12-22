@@ -31,7 +31,7 @@ from zope.interface import implements
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )

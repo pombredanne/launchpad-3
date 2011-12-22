@@ -100,10 +100,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    IHasDateCreated,
-    )
+from lp.app.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -112,6 +109,7 @@ from canonical.launchpad.searchbuilder import (
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch,
     IBugWatchSet,

@@ -19,7 +19,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import IFeedsApplication
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,
@@ -38,6 +37,7 @@ from lp.registry.interfaces.announcement import (
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.feeds.interfaces import IFeedsApplication
 
 
 class AnnouncementsFeedBase(FeedBase):

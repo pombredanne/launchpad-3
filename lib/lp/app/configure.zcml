@@ -35,8 +35,8 @@
 
     <!-- Configuration related to datetime classes in Launchpad. -->
     <adapter
-        for="canonical.launchpad.interfaces.launchpad.IHasDateCreated"
-        provides="canonical.launchpad.interfaces.launchpad.IAging"
+        for="lp.app.interfaces.launchpad.IHasDateCreated"
+        provides="lp.app.interfaces.launchpad.IAging"
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter

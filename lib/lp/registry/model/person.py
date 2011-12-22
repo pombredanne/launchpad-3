@@ -127,7 +127,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -136,7 +136,7 @@ from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,

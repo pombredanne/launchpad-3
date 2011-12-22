@@ -54,7 +54,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )
@@ -62,7 +62,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )

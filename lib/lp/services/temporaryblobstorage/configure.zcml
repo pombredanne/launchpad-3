@@ -6,6 +6,7 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:webservice="http://namespaces.canonical.com/webservice"
   i18n_domain="launchpad">
 
   <!-- TemporaryBlobStorage -->
@@ -44,12 +45,12 @@
   <browser:url
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryBlobStorage"
       urldata="lp.services.temporaryblobstorage.browser.TemporaryBlobStorageURL"
-      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
-      path_expression="string:temporary-blobs/${uuid}"
-      />
+      parent_utility="lp.services.webservice.interfaces.IWebServiceApplication"/>
 
   <browser:url
       for="lp.services.temporaryblobstorage.interfaces.ITemporaryStorageManager"
       path_expression="string:temporary-blobs"
-      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
+      parent_utility="lp.services.webservice.interfaces.IWebServiceApplication"/>
+
+  <webservice:register module="lp.services.temporaryblobstorage.webservice" />
 </configure>
