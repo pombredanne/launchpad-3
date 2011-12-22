@@ -23,12 +23,6 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     session_store,
     )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.lpstorm import IMasterStore
 from canonical.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,
@@ -37,6 +31,12 @@ from canonical.librarian.interfaces import DownloadFailed
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    TimeLimitedToken,
     )
 
 

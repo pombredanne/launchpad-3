@@ -47,11 +47,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -64,6 +59,11 @@ from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify

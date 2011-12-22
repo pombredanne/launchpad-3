@@ -33,8 +33,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -51,6 +49,8 @@ from lp.registry.interfaces.productrelease import (
     IProductReleaseSet,
     UpstreamFileType,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
 SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.

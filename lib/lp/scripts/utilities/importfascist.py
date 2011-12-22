@@ -30,12 +30,12 @@ permitted_database_imports = text_lines_to_set("""
     lp.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
-    canonical.launchpad.browser.librarian
+    lp.services.librarian.browser
     canonical.launchpad.feed.branch
     lp.code.feed.branch
-    canonical.launchpad.interfaces.person
     lp.scripts.garbo
     lp.bugs.vocabularies
+    lp.registry.interfaces.person
     lp.registry.vocabularies
     lp.services.worlddata.vocabularies
     lp.soyuz.vocabularies

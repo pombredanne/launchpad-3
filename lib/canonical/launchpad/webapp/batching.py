@@ -143,7 +143,7 @@ class InactiveBatchNavigator(BatchNavigator):
 
 
 class TableBatchNavigator(BatchNavigator):
-    """See canonical.launchpad.interfaces.ITableBatchNavigator."""
+    """See canonical.launchpad.webapp.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
     def __init__(self, results, request, start=0, size=None,

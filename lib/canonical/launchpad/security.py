@@ -18,9 +18,6 @@ from zope.interface import Interface
 
 from canonical.config import config
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -163,6 +160,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,

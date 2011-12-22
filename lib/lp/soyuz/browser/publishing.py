@@ -17,10 +17,6 @@ from operator import attrgetter
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
 from canonical.launchpad.webapp import Navigation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -28,6 +24,10 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
+    )
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus
