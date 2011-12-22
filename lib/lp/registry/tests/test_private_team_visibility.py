@@ -170,7 +170,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
             check_permission('launchpad.LimitedView', self.priv_team))
         clear_cache()
 
-    def test_subscriber_to_branch_owned_by_team(self):
+    def _test_subscriber_to_branch_owned_by_team(self, private=True):
         """A person with visibility to any of the branches owned by the
         private team will be granted limited view permission on the team.
 
@@ -179,10 +179,11 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         """
         login_person(self.priv_owner)
         private_team_branch = self.factory.makeBranch(
-            owner=self.priv_team, private=True)
+            owner=self.priv_team, private=private)
         some_person = self.factory.makePerson()
-        # Initially no visibility.
-        self._check_permission(some_person, False)
+        # All users can see public branches, so in that case, the team is
+        # now visible, else team is still not visible.
+        self._check_permission(some_person, not private)
         # Subscribe the user to the branch.
         login_person(self.priv_owner)
         self.factory.makeBranchSubscription(
@@ -190,6 +191,12 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
             subscribed_by=self.priv_owner)
         # The team is now visible.
         self._check_permission(some_person, True)
+
+    def test_subscriber_to_public_branch_owned_by_team(self):
+        self._test_subscriber_to_branch_owned_by_team(private=False)
+
+    def test_subscriber_to_private_branch_owned_by_team(self):
+        self._test_subscriber_to_branch_owned_by_team()
 
     def _test_subscriber_to_branch_subscribed_to_by_team(self, private=True):
         """A person with visibility to any of the branches subscribed to by
