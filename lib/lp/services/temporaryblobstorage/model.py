@@ -27,13 +27,13 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.interfaces import (
     BlobTooLarge,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.utils import utc_now
 
 

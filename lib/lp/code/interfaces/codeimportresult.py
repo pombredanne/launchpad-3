@@ -24,11 +24,11 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportmachine import ICodeImportMachine
 from lp.registry.interfaces.person import IPerson
+from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class ICodeImportResult(Interface):

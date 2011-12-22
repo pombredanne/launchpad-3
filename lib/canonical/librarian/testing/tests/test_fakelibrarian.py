@@ -12,18 +12,18 @@ from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileAliasSet,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileAliasSet,
     )
 from lp.testing import TestCaseWithFactory
 
