@@ -1730,7 +1730,7 @@ class DistributionSet:
         return distribution
 
     def get(self, distributionid):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         return Distribution.get(distributionid)
 
     def count(self):
