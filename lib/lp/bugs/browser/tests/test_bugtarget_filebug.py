@@ -11,10 +11,6 @@ from zope.schema.interfaces import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from lp.testing.pages import (
-    find_main_content,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import (
@@ -26,6 +22,10 @@ from lp.bugs.publisher import BugsLayer
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
 

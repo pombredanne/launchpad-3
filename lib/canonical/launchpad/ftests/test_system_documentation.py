@@ -13,17 +13,17 @@ import unittest
 
 from zope.testing.cleanup import cleanUp
 
+from canonical.testing.layers import (
+    AppServerLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing import browser
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    AppServerLayer,
-    FunctionalLayer,
-    LaunchpadFunctionalLayer,
     )
 
 

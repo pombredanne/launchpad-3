@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from lp.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -36,6 +35,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,

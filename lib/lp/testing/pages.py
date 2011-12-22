@@ -41,10 +41,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    stop,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
@@ -64,6 +60,10 @@ from lp.testing import (
     logout,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    stop,
+    )
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):

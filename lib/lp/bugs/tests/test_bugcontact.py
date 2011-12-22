@@ -7,14 +7,14 @@ implementations.
 
 import unittest
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    tearDown,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.tests.test_structuralsubscriptiontarget import (
     distributionSetUp,
     productSetUp,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    tearDown,
     )
 
 

@@ -15,12 +15,6 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from lp.testing.pages import PageTestSuite
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -32,6 +26,12 @@ from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,
     uploadQueueSetUp,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

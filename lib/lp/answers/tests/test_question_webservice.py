@@ -11,7 +11,6 @@ from simplejson import dumps
 import transaction
 from zope.component import getUtility
 
-from lp.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
@@ -36,6 +35,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_webservice_error_view
 
 

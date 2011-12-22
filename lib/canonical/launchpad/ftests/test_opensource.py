@@ -23,8 +23,8 @@ import unittest
 import launchpadlib
 import wadllib
 
-from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import AppServerLayer
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def add_testable_opensource_package(suite, package):

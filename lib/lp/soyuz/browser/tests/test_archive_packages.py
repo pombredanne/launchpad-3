@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.testing.layers import (
@@ -39,6 +38,7 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import get_feedback_messages
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 

@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -16,6 +15,7 @@ from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 

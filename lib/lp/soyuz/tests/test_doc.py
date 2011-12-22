@@ -12,16 +12,16 @@ import unittest
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import logout
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.pages import PageTestSuite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 

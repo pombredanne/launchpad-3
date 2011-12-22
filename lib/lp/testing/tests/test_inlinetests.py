@@ -9,9 +9,9 @@ from doctest import (
     ELLIPSIS,
     )
 
-from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import BaseLayer
 from lp import testing
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():

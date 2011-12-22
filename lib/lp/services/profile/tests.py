@@ -20,11 +20,6 @@ from zope.app.publication.interfaces import (
     )
 from zope.component import getSiteManager
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
@@ -36,6 +31,11 @@ from lp.services.profile import profile
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

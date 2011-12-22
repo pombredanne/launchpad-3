@@ -8,10 +8,6 @@ __metaclass__ = type
 import transaction
 from zope.security.management import endInteraction
 
-from lp.testing.pages import (
-    LaunchpadWebServiceCaller,
-    webservice_for_person,
-    )
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.testing import (
     AppServerLayer,
@@ -23,6 +19,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
     )
 
 

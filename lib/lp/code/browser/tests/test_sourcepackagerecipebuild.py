@@ -14,11 +14,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tags_by_class,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
@@ -31,6 +26,11 @@ from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 

@@ -6,10 +6,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.team import TeamOverviewMenu
@@ -26,6 +22,10 @@ from lp.testing import (
     )
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.menu import check_menu_links
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,

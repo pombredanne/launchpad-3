@@ -10,12 +10,12 @@ import os
 import unittest
 
 from canonical.config import config
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 def archivePublisherSetUp(test):

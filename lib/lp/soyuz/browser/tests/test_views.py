@@ -9,12 +9,12 @@ import logging
 import os
 import unittest
 
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))

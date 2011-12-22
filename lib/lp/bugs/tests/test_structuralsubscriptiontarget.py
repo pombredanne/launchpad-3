@@ -16,11 +16,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -55,6 +50,11 @@ from lp.testing import (
     )
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import Provides
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class RestrictedStructuralSubscriptionTestBase:

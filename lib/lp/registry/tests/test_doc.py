@@ -10,11 +10,6 @@ import os
 
 import transaction
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
@@ -25,6 +20,11 @@ from lp.registry.tests import mailinglists_helper
 from lp.services.testing import (
     build_doctest_suite,
     build_test_suite,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

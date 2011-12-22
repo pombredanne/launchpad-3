@@ -13,11 +13,11 @@ import tempfile
 import unittest
 
 from canonical.config import config
+from canonical.testing import reset_logging
 from lp.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,
     )
-from canonical.testing import reset_logging
 
 
 class LayeredDocFileSuiteTests(unittest.TestCase):

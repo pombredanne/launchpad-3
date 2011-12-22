@@ -12,11 +12,6 @@ import unittest
 from storm.store import Store
 from testtools.matchers import LessThan
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
@@ -27,6 +22,11 @@ from lp.testing import (
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class TestAssignments(TestCaseWithFactory):

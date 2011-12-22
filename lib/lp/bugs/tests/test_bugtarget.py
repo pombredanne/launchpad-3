@@ -21,11 +21,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
@@ -48,6 +43,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 def bugtarget_filebug(bugtarget, summary, status=None):

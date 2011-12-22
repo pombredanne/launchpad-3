@@ -9,17 +9,17 @@ __metaclass__ = type
 
 import os
 
-from lp.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
     FunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.services.testing import build_test_suite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))

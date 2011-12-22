@@ -13,12 +13,6 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    setupBrowser,
-    setupBrowserForUser,
-    )
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -39,6 +33,12 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import DocTestMatches
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    setupBrowser,
+    setupBrowserForUser,
+    )
 from lp.testing.views import create_initialized_view
 
 

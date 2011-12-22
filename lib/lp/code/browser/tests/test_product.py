@@ -14,10 +14,6 @@ from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 
-from lp.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
@@ -35,6 +31,10 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.testing.views import (
     create_initialized_view,

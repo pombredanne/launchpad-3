@@ -11,10 +11,6 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.testing.pages import (
-    find_main_content,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -27,6 +23,10 @@ from lp.testing import (
     person_logged_in,
     )
 from lp.testing.matchers import Contains
+from lp.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 
 
 class FauxForm:

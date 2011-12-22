@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
-from lp.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.translations.interfaces.side import TranslationSide
 

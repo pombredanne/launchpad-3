@@ -9,15 +9,15 @@ import logging
 import os
 import unittest
 
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.pages import PageTestSuite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 

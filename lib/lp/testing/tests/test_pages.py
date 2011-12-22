@@ -12,8 +12,8 @@ import unittest
 
 from bzrlib.tests import iter_suite_tests
 
-from lp.testing.pages import PageTestSuite
 from canonical.testing.layers import PageTestLayer
+from lp.testing.pages import PageTestSuite
 
 
 class TestMakeStoryTest(unittest.TestCase):
