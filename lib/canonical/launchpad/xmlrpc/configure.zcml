@@ -15,19 +15,6 @@
   </securedutility>
 
   <securedutility
-    class="canonical.launchpad.systemhomes.AuthServerApplication"
-    provides="lp.app.interfaces.launchpad.IAuthServerApplication">
-    <allow interface="lp.app.interfaces.launchpad.IAuthServerApplication"/>
-  </securedutility>
-
-  <xmlrpc:view
-    for="lp.app.interfaces.launchpad.IAuthServerApplication"
-    interface="canonical.launchpad.interfaces.authserver.IAuthServer"
-    class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
-    permission="zope.Public"
-    />
-
-  <securedutility
     class="canonical.launchpad.systemhomes.CodehostingApplication"
     provides="lp.code.interfaces.codehosting.ICodehostingApplication">
     <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>

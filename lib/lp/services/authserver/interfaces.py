@@ -7,11 +7,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'IAuthServer'
+    'IAuthServer',
+    'IAuthServerApplication',
     ]
 
 
 from zope.interface import Interface
+
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 
 class IAuthServer(Interface):
@@ -25,3 +28,8 @@ class IAuthServer(Interface):
             [(key-type, key-text)]}, or NoSuchPersonWithName if there is no
             person with the given name.
         """
+
+
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
+

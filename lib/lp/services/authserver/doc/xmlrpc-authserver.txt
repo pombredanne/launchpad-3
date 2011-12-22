@@ -3,11 +3,13 @@
 The AuthServer interface is available on the authserver attribute
 of our private XMLRPC instance.
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.app.interfaces.launchpad import (
-    ...     IAuthServerApplication,
     ...     IPrivateApplication,
     ...     )
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.authserver.interfaces import (
+    ...     IAuthServerApplication,
+    ...     )
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(IAuthServerApplication, private_root.authserver)
@@ -16,8 +18,8 @@ of our private XMLRPC instance.
 The AuthServerAPIView provides the IAuthServer XML-RPC API:
 
     >>> from zope.publisher.xmlrpc import TestRequest
-    >>> from canonical.launchpad.interfaces.authserver import IAuthServer
-    >>> from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
+    >>> from lp.services.authserver.interfaces import IAuthServer
+    >>> from lp.services.authserver.xmlrpc import AuthServerAPIView
 
     >>> authserver_api = AuthServerAPIView(
     ...     private_root.authserver, TestRequest())

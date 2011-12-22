@@ -10,7 +10,6 @@ __metaclass__ = type
 
 __all__ = [
     'IAging',
-    'IAuthServerApplication',
     'IHasDateCreated',
     'IHasIcon',
     'IHasLogo',
@@ -150,10 +149,6 @@ class IPrivateApplication(ILaunchpadApplication):
         """Software center agent XML-RPC end point.""")
 
     featureflags = Attribute("""Feature flag information endpoint""")
-
-
-class IAuthServerApplication(ILaunchpadApplication):
-    """Launchpad legacy AuthServer application root."""
 
 
 class IHasIcon(Interface):

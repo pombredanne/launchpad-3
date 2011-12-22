@@ -6,7 +6,7 @@
 """Custom authentication for the SSH server.
 
 Launchpad's SSH server authenticates users against a XML-RPC service (see
-`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`lp.services.authserver.interfaces.IAuthServer` and
 `PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
 case of failed authentication (see `SSHUserAuthServer`).
 """
