@@ -276,7 +276,6 @@ class PackageBuildDerived:
         """See `IPackageBuild`."""
         return '%s-%s' % (self.job_type.name, self.id)
 
-    @DatabaseTransactionPolicy.readWrite
     def queueBuild(self, suspended=False):
         """See `IPackageBuild`."""
         specific_job = self.makeJob()
@@ -295,7 +294,6 @@ class PackageBuildDerived:
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
 
-        transaction.commit()
         return queue_entry
 
     def handleStatus(self, status, librarian, slave_status):

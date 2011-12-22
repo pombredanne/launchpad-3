@@ -262,7 +262,8 @@ class TestBuilder(TestCaseWithFactory):
         # findAndStartJob finds the next queued job using _findBuildCandidate.
         # We don't care about the type of build at all.
         builder, build = self._setupRecipeBuildAndBuilder()
-        candidate = build.queueBuild()
+        with BuilddManagerTestFixture.extraSetUp():
+            candidate = build.queueBuild()
         # _findBuildCandidate is tested elsewhere, we just make sure that
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
@@ -275,7 +276,8 @@ class TestBuilder(TestCaseWithFactory):
         # and then starts it.
         # We don't care about the type of build at all.
         builder, build = self._setupRecipeBuildAndBuilder()
-        candidate = build.queueBuild()
+        with BuilddManagerTestFixture.extraSetUp():
+            candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
@@ -288,7 +290,8 @@ class TestBuilder(TestCaseWithFactory):
         # We need to send a ping to the builder to work around a bug
         # where sometimes the first network packet sent is dropped.
         builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
+        with BuilddManagerTestFixture.extraSetUp():
+            candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
