@@ -12,7 +12,7 @@
 
     <include package="lazr.restful" file="configure.zcml" />
     <utility
-        factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+        factory="lp.services.webservice.configuration.LaunchpadWebServiceConfiguration"
         provides="lazr.restful.interfaces.IWebServiceConfiguration">
     </utility>
 
@@ -36,10 +36,10 @@
         for="lazr.restful.interfaces.IEntry
              zope.schema.interfaces.IField"
         provides="lazr.restful.interfaces.IByteStorage"
-        factory="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage"
+        factory="lp.services.webservice.bytestorage.LibraryBackedByteStorage"
         />
 
-    <class class="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage">
+    <class class="lp.services.webservice.bytestorage.LibraryBackedByteStorage">
         <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
@@ -59,7 +59,7 @@
         />
 
    <grok:grok package="lazr.restful.directives" />
-   <grok:grok package="canonical.launchpad.rest" />
+   <grok:grok package="lp.services.webservice" />
 
    <webservice:register module="canonical.launchpad.interfaces.webservice" />
 
