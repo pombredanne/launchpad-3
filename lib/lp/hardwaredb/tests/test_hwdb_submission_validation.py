@@ -11,7 +11,7 @@ import re
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import OopsHandler
+from lp.services.scripts.logger import OopsHandler
 from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
 from lp.testing import TestCase

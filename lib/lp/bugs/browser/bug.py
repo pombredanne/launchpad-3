@@ -60,8 +60,6 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.searchbuilder import (
     any,
     greater_than,
@@ -120,6 +118,8 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.services import features
 from lp.services.fields import DuplicateBug
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 
 

@@ -111,7 +111,7 @@ from canonical.config.fixture import (
     ConfigUseFixture,
     )
 from canonical.database.sqlbase import session_store
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.authorization import (
     LaunchpadPermissiveSecurityPolicy,
     )

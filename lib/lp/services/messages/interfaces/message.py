@@ -46,9 +46,9 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.services.job.interfaces.job import IJob
+from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class IMessage(Interface):

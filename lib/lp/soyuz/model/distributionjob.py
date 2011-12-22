@@ -18,7 +18,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries

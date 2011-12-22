@@ -20,9 +20,7 @@ action:
 The instance of BugNotificationRecipients we get back correctly
 implements INotificationRecipientSet:
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     INotificationRecipientSet,
-    ...     )
+    >>> from lp.services.mail.interfaces import INotificationRecipientSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(INotificationRecipientSet, recipients)
     True

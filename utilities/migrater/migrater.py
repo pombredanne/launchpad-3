@@ -35,7 +35,11 @@ TLA_MAP = dict(
     tra='translations',
     pkg='registry',
     hdb='hardwaredb',
-    idy='services/identity'
+    idy='services/identity',
+    ver='services/verification',
+    sta='services/statistics',
+    loo='services/looptuner',
+    fee='services/feeds',
     )
 
 RENAME_MAP = dict(
@@ -49,18 +53,13 @@ OLD_TOP = 'lib/canonical/launchpad'
 NEW_TOP = 'lib/lp'
 
 APP_DIRECTORIES = [
-    'adapters',
     'browser',
     'doc',
     'emailtemplates',
-    'event',
-    'feed',
     'interfaces',
     'model',
-    'notifications',
     'scripts',
     'stories',
-    'subscribers',
     'templates',
     'tests',
     'browser/tests',

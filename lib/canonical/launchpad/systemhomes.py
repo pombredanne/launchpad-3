@@ -1,10 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
-    'AuthServerApplication',
     'BazaarApplication',
     'CodeImportSchedulerApplication',
     'FeedsApplication',
@@ -26,17 +25,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
-    IAuthServerApplication,
-    IBazaarApplication,
-    IFeedsApplication,
-    IPrivateMaloneApplication,
-    IRosettaApplication,
-    IWebServiceApplication,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
 from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot,
     ICanonicalUrlData,
@@ -53,8 +41,14 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.bugs.interfaces.malone import (
+    IMaloneApplication,
+    IPrivateMaloneApplication,
+    )
+from lp.code.interfaces.codehosting import (
+    IBazaarApplication,
+    ICodehostingApplication,
+    )
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
@@ -77,19 +71,16 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
+from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview,
     )
-
-
-class AuthServerApplication:
-    """AuthServer End-Point."""
-    implements(IAuthServerApplication)
-
-    title = "Auth Server"
 
 
 class CodehostingApplication:

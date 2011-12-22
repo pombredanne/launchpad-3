@@ -556,7 +556,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from canonical.launchpad.scripts.tests import run_script
+        from lp.services.scripts.tests import run_script
         distro = self.makeDistro()
         self.factory.makeDistroSeries(distro)
         transaction.commit()

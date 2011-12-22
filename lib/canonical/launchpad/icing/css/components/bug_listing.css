@@ -46,3 +46,6 @@ div#client-listing .field {
     line-height: 16px;
     margin-right: 5px;
     }
+div#client-listing .field a {
+    color: #333;
+    }

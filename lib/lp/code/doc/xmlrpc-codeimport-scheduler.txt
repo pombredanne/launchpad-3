@@ -7,7 +7,7 @@ codeimportscheduler attribute of our private XMLRPC instance.
 
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportSchedulerApplication)
-    >>> from canonical.launchpad.interfaces.launchpad import (
+    >>> from lp.app.interfaces.launchpad import (
     ...     IPrivateApplication)
     >>> from canonical.launchpad.webapp.testing import verifyObject
 

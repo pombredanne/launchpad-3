@@ -34,10 +34,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -59,7 +56,10 @@ from lp.buildmaster.model.buildfarmjob import (
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.transaction_policy import DatabaseTransactionPolicy
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )

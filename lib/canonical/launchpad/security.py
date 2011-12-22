@@ -17,9 +17,6 @@ from zope.component import (
 from zope.interface import Interface
 
 from canonical.config import config
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -158,6 +155,7 @@ from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,

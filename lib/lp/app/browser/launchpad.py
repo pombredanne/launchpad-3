@@ -32,6 +32,7 @@ import time
 import urllib
 
 from lazr.uri import URI
+
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
@@ -44,25 +45,29 @@ from zope.datetime import (
     parseDatetimetz,
     )
 from zope.i18nmessageid import Message
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
+
 from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm,
-    IBazaarApplication,
-    IRosettaApplication,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.layers import WebServiceLayer
@@ -119,6 +124,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.announcement import IAnnouncementSet
@@ -146,6 +152,7 @@ from lp.soyuz.interfaces.processor import (
     IProcessorSet,
     )
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -892,6 +899,15 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AppFrontPageSearchView(LaunchpadFormView):

@@ -17,7 +17,7 @@ from signal import (
 import time
 
 from canonical.config import config
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     logger,
     logger_options,
     )

@@ -97,7 +97,7 @@ If no matching specification is found, None is returned.
 
 We use a logger to see what the handler does:
 
-    >>> from canonical.launchpad.scripts import log
+    >>> from lp.services.scripts import log
     >>> OLD_LOG_LEVEL = log._log.getEffectiveLevel()
     >>> log._log.setLevel(10)
 

@@ -30,7 +30,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
@@ -47,6 +46,7 @@ from lp.archiveuploader.utils import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
