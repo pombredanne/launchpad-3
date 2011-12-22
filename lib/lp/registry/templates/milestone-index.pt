@@ -40,9 +40,9 @@
       has_edit context/required:launchpad.Edit">
 
       <div class="top-portlet">
-        <div id="description" tal:condition="view/milestone_summary">
+        <div id="description" tal:condition="view/milestone/summary|nothing">
           <p class="documentDescription"
-            tal:content="structure view/milestone_summary/fmt:text-to-html">
+            tal:content="structure view/milestone/summary/fmt:text-to-html">
               Milestone summary.
           </p>
         </div>
@@ -67,53 +67,56 @@
               </dl>
 
               <dl id="version">
-                <dt>Version:</dt>
+                <dt tal:condition="view/is_project_milestone_tag">Tags:</dt>
+                <dt tal:condition="not: view/is_project_milestone_tag">Version:</dt>
                 <dd><tal:version replace="context/name" /></dd>
               </dl>
 
-              <dl id="code-name" tal:condition="view/milestone_code_name">
+              <dl id="code-name" tal:condition="view/milestone/code_name|nothing">
                 <dt>Code name:</dt>
                 <dd>
-                  <tal:code-name replace="view/milestone_code_name" />
+                  <tal:code-name replace="view/milestone/code_name" />
                   <tal:no-code-name
-                    condition="not: view/milestone_code_name">None</tal:no-code-name>
+                    condition="not: view/milestone/code_name">None</tal:no-code-name>
                 </dd>
               </dl>
 
-              <dl tal:condition="not: view/release|nothing">
-                <dt>Expected:</dt>
-                <dd><span
-                  tal:attributes="title context/dateexpected/fmt:datetime"
-                  tal:content="context/dateexpected/fmt:approximatedate" />
-                  &nbsp;
-                  <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />
-                </dd>
-              </dl>
-
-              <tal:has_release condition="view/release">
-                <dl>
-                  <dt>Released:</dt>
+              <tal:is_not_project_milestone_tag condition="not: view/is_project_milestone_tag">
+                <dl tal:condition="not: view/release">
+                  <dt>Expected:</dt>
                   <dd><span
-                    tal:attributes="title view/release/datereleased/fmt:datetime"
-                    tal:content="view/release/datereleased/fmt:approximatedate" />
+                    tal:attributes="title context/dateexpected/fmt:datetime"
+                    tal:content="context/dateexpected/fmt:approximatedate" />
                     &nbsp;
-                    <a tal:replace="structure release_menu/delete/fmt:icon" />
-                    <a tal:replace="structure release_menu/edit/fmt:icon" />
-                    </dd>
+                    <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />
+                  </dd>
                 </dl>
 
-                <dl>
-                  <dt>Registrant:</dt>
-                  <dd><tal:registrant replace="structure view/release/owner/fmt:link"/></dd>
-                </dl>
+                <tal:has_release condition="view/release">
+                  <dl>
+                    <dt>Released:</dt>
+                    <dd><span
+                      tal:attributes="title view/release/datereleased/fmt:datetime"
+                      tal:content="view/release/datereleased/fmt:approximatedate" />
+                      &nbsp;
+                      <a tal:replace="structure release_menu/delete/fmt:icon" />
+                      <a tal:replace="structure release_menu/edit/fmt:icon" />
+                      </dd>
+                  </dl>
 
-                <dl>
-                  <dt>Release registered:</dt>
-                  <dd><span
-                    tal:attributes="title view/release/datecreated/fmt:datetime"
-                    tal:content="view/release/datecreated/fmt:approximatedate" /></dd>
-                </dl>
-              </tal:has_release>
+                  <dl>
+                    <dt>Registrant:</dt>
+                    <dd><tal:registrant replace="structure view/release/owner/fmt:link"/></dd>
+                  </dl>
+
+                  <dl>
+                    <dt>Release registered:</dt>
+                    <dd><span
+                      tal:attributes="title view/release/datecreated/fmt:datetime"
+                      tal:content="view/release/datecreated/fmt:approximatedate" /></dd>
+                  </dl>
+                </tal:has_release>
+              </tal:is_not_project_milestone_tag>
             </div>
 
             <dl tal:condition="not: view/is_project_milestone">

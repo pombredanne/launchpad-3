@@ -15,8 +15,10 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
+    'MilestoneTagView',
     'MilestoneWithoutCountsView',
     'MilestoneView',
+    'MilestoneViewMixin',
     'ObjectMilestonesView',
     ]
 
@@ -316,6 +318,14 @@ class MilestoneViewMixin(object):
         return all_assignments
 
     @property
+    def is_project_milestone_tag(self):
+        """Check, if the current milestone is a project milestone tag.
+
+        Return true, if the current milestone is a project milestone tag,
+        else return False."""
+        return IProjectGroupMilestoneTag.providedBy(self.context)
+
+    @property
     def is_project_milestone(self):
         """Check, if the current milestone is a project milestone.
 
@@ -323,7 +333,7 @@ class MilestoneViewMixin(object):
         a project milestone tag, else return False."""
         return (
             IProjectGroupMilestone.providedBy(self.context) or
-            IProjectGroupMilestoneTag.providedBy(self.context)
+            self.is_project_milestone_tag
             )
 
     @property
@@ -358,9 +368,6 @@ class MilestoneView(
             self.milestone = context.milestone
             self.release = context
         self.context = self.milestone
-        # Put at view level some attributes used in the template.
-        self.milestone_summary = self.milestone.summary
-        self.milestone_code_name = self.milestone.code_name
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -551,8 +558,6 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 class MilestoneTagView(
     LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin):
     """A View for listing bugtasks and specification for milestone tags."""
-    # Dummy attributes used by the template.
-    release = milestone_summary = milestone_code_name = None
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -562,6 +567,7 @@ class MilestoneTagView(
         """
         super(MilestoneTagView, self).__init__(context, request)
         self.context = self.milestone = context
+        self.release = None
 
 
 class ObjectMilestonesView(LaunchpadView):

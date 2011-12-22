@@ -467,7 +467,7 @@ class TestMilestoneTagView(TestQueryCountBase):
 
     def test_buktask_query_count(self):
         # Ensure that a correct number of queries is executed for
-        # bugtasks retrieval
+        # bugtasks retrieval.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
             self.milestonetag, bugtask_count, query_limit=11)
