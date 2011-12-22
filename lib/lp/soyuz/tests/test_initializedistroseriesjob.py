@@ -7,7 +7,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

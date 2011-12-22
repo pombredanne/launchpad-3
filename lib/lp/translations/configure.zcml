@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -17,10 +17,18 @@
   <publisher
       name="translations"
       factory="lp.translations.publisher.translations_request_publication_factory"/>
+
   <utility
       component="lp.translations.publisher.TranslationsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="translations" />
+
+  <xmlrpc:view
+      for="lp.translations.interfaces.translations.IRosettaApplication"
+      interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
+      class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
+      permission="zope.Public"
+      />
 
     <lp:help-folder folder="help" name="+help-translations" />
 
@@ -52,9 +60,9 @@
     </class>
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
-        provides="canonical.launchpad.interfaces.launchpad.IRosettaApplication">
+        provides="lp.translations.interfaces.translations.IRosettaApplication">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.IRosettaApplication"/>
+            interface="lp.translations.interfaces.translations.IRosettaApplication"/>
     </securedutility>
 
     <!-- TranslationsOverview -->

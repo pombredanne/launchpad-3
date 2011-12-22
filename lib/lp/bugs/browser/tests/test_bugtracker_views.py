@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugTracker views."""
@@ -7,13 +7,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
-    login,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -55,4 +53,3 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         #    find_tag_by_id(content, 'lower-batch-nav-batchnav-next')['class'])
         # Instead we check the string appears.
         self.assertTrue('upper-batch-nav-batchnav-next' in content)
-

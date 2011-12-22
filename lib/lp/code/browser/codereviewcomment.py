@@ -26,7 +26,6 @@ from zope.schema import Text
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -42,6 +41,7 @@ from lp.app.browser.launchpadform import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

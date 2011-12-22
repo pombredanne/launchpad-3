@@ -51,7 +51,7 @@ __all__ = [
     'VersionRequiresName',
     ]
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_collection_property,
     patch_plain_parameter_type,
     patch_reference_property,

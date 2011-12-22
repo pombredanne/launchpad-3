@@ -19,7 +19,7 @@ import replication.helpers
 
 from canonical.config import config
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     logger,
     logger_options,
     )

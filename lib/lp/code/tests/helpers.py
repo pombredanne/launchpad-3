@@ -13,6 +13,7 @@ __all__ = [
     'make_official_package_branch',
     'make_project_branch_with_revisions',
     'make_project_cloud_data',
+    'remove_all_sample_data_branches',
     ]
 
 
@@ -29,6 +30,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from canonical.database.sqlbase import cursor
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -327,3 +329,15 @@ def get_non_existant_source_package_branch_unique_name(owner, factory):
     return '~%s/%s/%s/%s/%s' % (
         owner, distroseries.distribution.name, distroseries.name,
         source_package, branch)
+
+
+def remove_all_sample_data_branches():
+    c = cursor()
+    c.execute('delete from bugbranch')
+    c.execute('delete from specificationbranch')
+    c.execute('update productseries set branch=NULL')
+    c.execute('delete from branchrevision')
+    c.execute('delete from branchsubscription')
+    c.execute('delete from codeimportjob')
+    c.execute('delete from codeimport')
+    c.execute('delete from branch')

@@ -14,7 +14,7 @@ from zope.security import (
     proxy,
     )
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,

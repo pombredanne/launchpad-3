@@ -12,11 +12,11 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IStore,
     )
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,

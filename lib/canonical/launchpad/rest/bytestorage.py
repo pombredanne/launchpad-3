@@ -18,11 +18,11 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.librarian import (
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.librarian.interfaces import (
     ILibraryFileAliasSet,
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class LibraryBackedByteStorage:

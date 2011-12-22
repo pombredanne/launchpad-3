@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 
 __all__ = [
     'IMaloneApplication',
+    'IPrivateMaloneApplication',
     ]
 
 
@@ -79,3 +80,7 @@ class IMaloneApplication(ILaunchpadApplication):
           * for public upstreams bugs where there is no upstream bug contact,
             the product owner will be subscribed instead
         """
+
+
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""

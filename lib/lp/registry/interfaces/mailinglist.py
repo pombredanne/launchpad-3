@@ -46,11 +46,11 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.messages.interfaces.message import IMessage
 
 

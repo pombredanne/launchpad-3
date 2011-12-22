@@ -15,8 +15,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.database.lpstorm import ISlaveStore
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (

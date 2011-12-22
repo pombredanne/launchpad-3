@@ -27,7 +27,7 @@ from canonical.launchpad.rest.wadl import (
     generate_json,
     generate_wadl,
     )
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
 

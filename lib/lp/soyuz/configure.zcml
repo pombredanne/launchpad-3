@@ -580,7 +580,7 @@
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription"/>
+        handler="lp.soyuz.mail.notifications.notify_new_ppa_subscription"/>
 
     <!-- DistributionSourcePackageRelease -->
 

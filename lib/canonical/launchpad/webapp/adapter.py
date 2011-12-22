@@ -59,7 +59,7 @@ from canonical.config import (
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.postgresql import ConnectionString
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
@@ -241,11 +241,9 @@ IN_PAGE_TIMELINE_CAP = 200
 
 
 def get_timeline_actions():
-    """Return an iterable of timeline actions.
-    
-    """
-    return get_request_timeline(get_current_browser_request()).actions[
-        :IN_PAGE_TIMELINE_CAP]
+    """Return an iterable of timeline actions."""
+    timeline = get_request_timeline(get_current_browser_request())
+    return timeline.actions[:IN_PAGE_TIMELINE_CAP]
 
 
 def store_sql_statements_and_request_duration(event):

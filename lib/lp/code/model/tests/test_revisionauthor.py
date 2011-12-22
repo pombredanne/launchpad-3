@@ -94,7 +94,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
 
     def test_new_harry_not_linked(self):
         # Check a NEW email address is not used to link.
-        harry = self._makeHarry(EmailAddressStatus.NEW)
+        self._makeHarry(EmailAddressStatus.NEW)
         author = self._createRevisionAuthor()
         self.assertEqual('harry@canonical.com', author.email)
         self.assertEqual(None, author.person)
@@ -146,26 +146,26 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
     def test_validated_email_updates(self):
         # A newly validated email for a user.
-        self.assertEqual(None, self.author.person,
-                         'No author should be initially set.')
+        self.assertEqual(
+            None, self.author.person, "No author should be initially set.")
         harry = self._makeHarry(EmailAddressStatus.NEW)
         # Since the email address is initially new, there should still be
         # no link.
-        self.assertEqual(None, self.author.person,
-                         'No author should be set yet.')
+        self.assertEqual(
+            None, self.author.person, "No author should be set yet.")
         email = harry.guessedemails[0]
         harry.validateAndEnsurePreferredEmail(email)
-        transaction.commit() # Sync all changes
+        transaction.commit()  # Sync changes.
 
         # The link still hasn't been created at this point.
-        self.assertEqual(None, self.author.person,
-                         'No author should be set yet.')
+        self.assertEqual(
+            None, self.author.person, "No author should be set yet.")
 
         # After the garbo RevisionAuthorEmailLinker job runs, the link
         # is made.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
-        self.assertEqual(harry, self.author.person,
-                         'Harry should now be the author.')
+        self.assertEqual(
+            harry, self.author.person, "Harry should now be the author.")
 
 
 class TestRevisionAuthor(TestCase):

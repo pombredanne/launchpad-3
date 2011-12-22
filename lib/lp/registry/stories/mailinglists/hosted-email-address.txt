@@ -56,7 +56,7 @@ Launchpad sends that address a confirmation message.
 When the confirmation token url is followed, the external email address is
 confirmed.
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg)
     >>> user_browser.open(token_url)

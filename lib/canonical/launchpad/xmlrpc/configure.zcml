@@ -10,22 +10,9 @@
 
   <securedutility
       class="canonical.launchpad.xmlrpc.application.PrivateApplication"
-      provides="canonical.launchpad.interfaces.launchpad.IPrivateApplication">
-      <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateApplication"/>
+      provides="lp.app.interfaces.launchpad.IPrivateApplication">
+      <allow interface="lp.app.interfaces.launchpad.IPrivateApplication"/>
   </securedutility>
-
-  <securedutility
-    class="canonical.launchpad.systemhomes.AuthServerApplication"
-    provides="canonical.launchpad.interfaces.launchpad.IAuthServerApplication">
-    <allow interface="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"/>
-  </securedutility>
-
-  <xmlrpc:view
-    for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
-    interface="canonical.launchpad.interfaces.authserver.IAuthServer"
-    class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
-    permission="zope.Public"
-    />
 
   <securedutility
     class="canonical.launchpad.systemhomes.CodehostingApplication"
@@ -55,12 +42,12 @@
 
   <securedutility
     class="canonical.launchpad.systemhomes.PrivateMaloneApplication"
-    provides="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication">
-    <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"/>
+    provides="lp.bugs.interfaces.malone.IPrivateMaloneApplication">
+    <allow interface="lp.bugs.interfaces.malone.IPrivateMaloneApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"
+    for="lp.bugs.interfaces.malone.IPrivateMaloneApplication"
     interface="lp.bugs.interfaces.externalbugtracker.IExternalBugTrackerTokenAPI"
     class="lp.bugs.xmlrpc.bug.ExternalBugTrackerTokenAPI"
     permission="zope.Public"

@@ -8,7 +8,7 @@
 from testtools.matchers import MatchesRegex
 import transaction
 
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.tests.test_branchmergeproposaljobs import (
     make_runnable_incremental_diff_job,

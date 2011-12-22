@@ -6,7 +6,6 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -18,6 +17,7 @@ from lp.services.database import (
     read_transaction,
     write_transaction,
     )
+from lp.services.librarian.model import LibraryFileContent
 
 
 class TestTransactionDecorators(unittest.TestCase):

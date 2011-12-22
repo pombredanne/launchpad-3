@@ -26,15 +26,15 @@ import zope.component
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
     )
 
 

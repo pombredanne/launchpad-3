@@ -32,12 +32,12 @@ from time import strftime
 import _pythonpath
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
-from canonical.launchpad.scripts.scriptmonitor import check_script
+from lp.scripts.scriptmonitor import check_script
 
 
 def main():
