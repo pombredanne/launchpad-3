@@ -65,6 +65,7 @@ valid_imports_not_in_all = {
     'openid.fetchers': set(['Urllib2Fetcher']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
+    'testtools.testresult.real': set(['_details_to_str']),
     'twisted.internet.threads': set(['deferToThreadPool']),
     'zope.component': set(
         ['adapter',
