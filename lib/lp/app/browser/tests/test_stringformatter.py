@@ -435,7 +435,8 @@ class TestMarkdownDisabled(TestCase):
 class TestMarkdown(TestCase):
     """Test for Markdown integration within Launchpad.
 
-    Not an exhaustive test, more of a check for our integration and configuration.
+    Not an exhaustive test, more of a check for our integration and
+    configuration.
     """
 
     layer = DatabaseFunctionalLayer  # Fixtures need the database for now

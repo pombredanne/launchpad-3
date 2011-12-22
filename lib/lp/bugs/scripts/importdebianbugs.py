@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.logger import log
+from lp.services.scripts.logger import log
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker import get_external_bugtracker
 from lp.bugs.interfaces.bugtask import IBugTaskSet

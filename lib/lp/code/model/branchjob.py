@@ -59,7 +59,7 @@ from zope.interface import (
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -297,7 +297,7 @@ class BranchScanJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchScanJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         bzrsync = BzrSync(self.branch, log)
         bzrsync.syncBranchAndClose()
 

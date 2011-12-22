@@ -11,11 +11,11 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,

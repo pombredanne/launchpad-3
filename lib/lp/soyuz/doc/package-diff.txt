@@ -116,7 +116,7 @@ chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -136,7 +136,7 @@ chroot in hoary in order to be able to accept the NEW packages.
 of a new source series for us. We can use this to avoid messing with
 sampledata to create valid packages.
 
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
+    >>> from lp.soyuz.tests.fakepackager import FakePackager
     >>> login('foo.bar@canonical.com')
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')

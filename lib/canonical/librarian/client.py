@@ -147,8 +147,8 @@ class FileUploadClient:
             name = name.encode('utf-8')
 
         # Import in this method to avoid a circular import
-        from canonical.launchpad.database.librarian import LibraryFileContent
-        from canonical.launchpad.database.librarian import LibraryFileAlias
+        from lp.services.librarian.model import LibraryFileContent
+        from lp.services.librarian.model import LibraryFileAlias
 
         self._connect()
         try:
@@ -338,7 +338,7 @@ class FileDownloadClient:
         :raises: `DownloadFailed` if the alias is invalid or
             inaccessible.
         """
-        from canonical.launchpad.database.librarian import LibraryFileAlias
+        from lp.services.librarian.model import LibraryFileAlias
         from sqlobject import SQLObjectNotFound
         try:
             lfa = LibraryFileAlias.get(aliasID)

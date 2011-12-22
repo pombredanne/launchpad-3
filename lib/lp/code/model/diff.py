@@ -42,7 +42,6 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
@@ -51,6 +50,7 @@ from lp.code.interfaces.diff import (
     )
 from lp.codehosting.bzrutils import read_locked
 from lp.services.database.bulk import load_referencing
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

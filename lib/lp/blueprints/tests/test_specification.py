@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -65,8 +65,7 @@ class SpecificationTests(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         specification1 = self.factory.makeSpecification(
             product=product1, name="foo")
-        specification2 = self.factory.makeSpecification(
-            product=product2, name="foo")
+        self.factory.makeSpecification(product=product2, name="foo")
         self.assertRaises(
             TargetAlreadyHasSpecification,
             removeSecurityProxy(specification1).retarget, product2)
@@ -83,7 +82,7 @@ class SpecificationTests(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         specification1 = self.factory.makeSpecification(
             product=product1, name="foo")
-        specification2 = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product2, name="foo")
         self.assertRaises(
             TargetAlreadyHasSpecification, specification1.validateMove,

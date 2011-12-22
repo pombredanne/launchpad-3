@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the public codehosting API."""
@@ -124,7 +124,7 @@ class TestExpandURL(TestCaseWithFactory):
         # development focus of the product for the anonymous public access,
         # just to the aliased short name for bzr+ssh access.
         product, trunk = self.makeProdutWithTrunk()
-        lp_path='%s/%s' % (product.name, product.development_focus.name)
+        lp_path = '%s/%s' % (product.name, product.development_focus.name)
         self.assertResolves(lp_path, trunk.unique_name, lp_path)
 
     def test_target_doesnt_exist(self):
@@ -317,7 +317,7 @@ class TestExpandURL(TestCaseWithFactory):
         # anonymous user.
         branch = self.factory.makeAnyBranch(private=True)
         series = self.factory.makeProductSeries(branch=branch)
-        lp_path='%s/%s' % (series.product.name, series.name)
+        lp_path = '%s/%s' % (series.product.name, series.name)
         self.assertOnlyWritableResolves(lp_path)
 
     def test_private_branch_as_development_focus(self):

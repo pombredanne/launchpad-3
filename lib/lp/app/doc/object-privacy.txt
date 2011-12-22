@@ -1,4 +1,5 @@
-= Object privacy =
+Object privacy
+==============
 
 Some of our content objects can be flagged as private so that they are
 invisible to most users while still being there and visible to certain

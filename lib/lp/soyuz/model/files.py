@@ -19,12 +19,12 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.librarian import (
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.database.bulk import load_related
+from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.database.bulk import load_related
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile,

@@ -19,7 +19,7 @@ for a particular bugtracker.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.scripts import log
+    >>> from lp.services.scripts import log
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
 
 get_external_bugtracker supports five external bug tracker types:

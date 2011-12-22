@@ -6,7 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
 import pdb
 import socket
@@ -23,11 +26,8 @@ from bzrlib.option import (
     ListOption,
     Option,
     )
-from bzrlib.transport import get_transport
 from bzrlib.trace import is_verbose
-from pytz import UTC
-import simplejson
-
+from bzrlib.transport import get_transport
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
@@ -42,6 +42,8 @@ from devscripts.ec2test.testrunner import (
     EC2TestRunner,
     TRUNK_BRANCH,
     )
+from pytz import UTC
+import simplejson
 
 # Options accepted by more than one command.
 
@@ -620,7 +622,8 @@ class cmd_update_image(EC2Command):
         instance.check_bundling_prerequisites(ami_name)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
-            extra_update_image_command, ami_name, instance._credentials, public)
+            extra_update_image_command, ami_name, instance._credentials,
+            public)
 
     def update_image(self, instance, extra_update_image_command, ami_name,
                      credentials, public):
@@ -792,16 +795,18 @@ class cmd_list(EC2Command):
                     current_status = '[FAILED]'
                 else:
                     current_status = '[OK]    '
-        output = '%-40s  %-10s (up for %s) %10s' % (description, current_status, uptime,
-            instance.id)
+        output = (
+            '%-40s  %-10s (up for %s) %10s'
+            % (description, current_status, uptime, instance.id))
         if verbose:
             url = self.get_http_url(instance)
             if url is None:
                 url = "No web service"
             output += '\n  %s' % (url,)
             if instance.state_reason:
-                output += '\n  transition reason: %s' % instance.state_reason.get(
-                    'message', '')
+                output += (
+                    '\n  transition reason: %s'
+                    % instance.state_reason.get('message', ''))
         return output
 
     def format_summary(self, by_state):
@@ -824,7 +829,8 @@ class cmd_list(EC2Command):
             data = self.get_ec2test_info(instance)
             if data is None and not all:
                 continue
-            print self.format_instance(instance, data, verbose=(show_urls or is_verbose()))
+            print self.format_instance(
+                instance, data, verbose=(show_urls or is_verbose()))
         print 'Summary: %s' % (self.format_summary(by_state),)
 
 

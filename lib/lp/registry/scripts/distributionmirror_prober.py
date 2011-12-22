@@ -26,7 +26,6 @@ from twisted.web.http import HTTPClient
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
@@ -36,6 +35,7 @@ from lp.registry.interfaces.distributionmirror import (
     UnableToFetchCDImageFileList,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing

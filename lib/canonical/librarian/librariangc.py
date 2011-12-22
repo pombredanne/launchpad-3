@@ -16,8 +16,10 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.postgresql import drop_tables, quoteIdentifier
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from lp.services.looptuner import (
+    DBLoopTuner,
+    ITunableLoop,
+    )
 from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences

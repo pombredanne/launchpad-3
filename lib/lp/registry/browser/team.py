@@ -70,8 +70,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

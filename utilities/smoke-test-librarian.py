@@ -11,7 +11,7 @@ import _pythonpath # Not lint, actually needed.
 import sys
 
 from zope.component import getUtility
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.librarian.interfaces import (
     IRestrictedLibrarianClient,
     ILibrarianClient,

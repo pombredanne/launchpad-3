@@ -1600,7 +1600,7 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.importance.title)
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)
@@ -2032,7 +2032,7 @@ error, so let's create one.
 Now we can send an error mail, passing the created message to
 send_process_error_notification().
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
