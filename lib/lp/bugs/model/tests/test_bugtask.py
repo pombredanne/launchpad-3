@@ -2594,15 +2594,16 @@ class TestWebservice(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_delete_bugtask(self):
-        """Test that a bugtask can be deleted with the feature flag on."""
+        """Test that a bugtask can be deleted."""
         owner = self.factory.makePerson()
+        some_person = self.factory.makePerson()
         db_bug = self.factory.makeBug()
         db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
         transaction.commit()
         logout()
 
-        # It will fail without feature flag enabled.
-        launchpad = self.factory.makeLaunchpadService(owner)
+        # It will fail for an unauthorised user.
+        launchpad = self.factory.makeLaunchpadService(some_person)
         bugtask = ws_object(launchpad, db_bugtask)
         self.assertRaises(Unauthorized, bugtask.lp_delete)
 
