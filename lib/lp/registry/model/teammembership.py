@@ -41,7 +41,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.mailnotification import MailWrapper
+from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities

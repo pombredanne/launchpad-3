@@ -5,7 +5,7 @@
 
 """Logging setup for scripts.
 
-Don't import from this module. Import it from canonical.launchpad.scripts.
+Don't import from this module. Import it from lp.services.scripts.
 
 Parts of this may be moved into canonical.launchpad somewhere if it is
 to be used for non-script stuff.
@@ -435,7 +435,7 @@ def _logger(
 class _LogWrapper:
     """Changes the logger instance.
 
-    Other modules will do 'from canonical.launchpad.scripts import log'.
+    Other modules will do 'from lp.services.scripts import log'.
     This wrapper allows us to change the logger instance these other modules
     use, by replacing the _log attribute. This is done each call to logger()
     """

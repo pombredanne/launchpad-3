@@ -21,7 +21,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.mailnotification import MailWrapper
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,

@@ -23,7 +23,7 @@ from textwrap import dedent
 from bzrlib.branch import Branch
 from bzrlib.errors import NotBranchError
 
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from lp.services.scripts import db_options, logger_options, logger
 from canonical.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,

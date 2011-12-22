@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
-from canonical.launchpad.scripts.logger import log, DEBUG2
+from lp.services.scripts.logger import log, DEBUG2
 
 
 # The Slony-I clustername we use with Launchpad. Hardcoded because there

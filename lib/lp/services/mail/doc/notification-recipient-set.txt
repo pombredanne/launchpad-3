@@ -12,13 +12,13 @@ providing INotificationRecipientSet. That interface encapsulates the
 recipient lists with the rationale for contacting them.
 
 There is a base implementation of the interface available as
-canonical.launchpad.mailnotification.NotificationRecipientSet. You can
+lp.services.mail.notificationrecipientset.NotificationRecipientSet. You can
 use it as is or derive from it (see bugnotificationrecipients.txt for an
 example of a derivation).
 
     >>> from lp.services.mail.interfaces import INotificationRecipientSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notificationrecipientset import (
     ...     NotificationRecipientSet)
 
     >>> recipients = NotificationRecipientSet()

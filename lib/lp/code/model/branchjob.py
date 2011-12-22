@@ -297,7 +297,7 @@ class BranchScanJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchScanJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         bzrsync = BzrSync(self.branch, log)
         bzrsync.syncBranchAndClose()
 

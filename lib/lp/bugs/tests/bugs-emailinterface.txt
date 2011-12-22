@@ -2032,7 +2032,7 @@ error, so let's create one.
 Now we can send an error mail, passing the created message to
 send_process_error_notification().
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',

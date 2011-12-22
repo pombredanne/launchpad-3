@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.mailnotification import (
+from lp.services.mail.notification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp import urlparse

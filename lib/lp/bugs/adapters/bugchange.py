@@ -398,7 +398,7 @@ class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
-        from canonical.launchpad.mailnotification import get_unified_diff
+        from lp.services.mail.notification import get_unified_diff
         description_diff = get_unified_diff(
             self.old_value, self.new_value, 72)
         notification_text = (

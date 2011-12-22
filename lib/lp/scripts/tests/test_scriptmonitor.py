@@ -8,8 +8,8 @@ __metaclass__ = type
 from unittest import TestCase
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger
-from canonical.launchpad.scripts.scriptmonitor import check_script
+from lp.services.scripts import logger
+from lp.scripts.scriptmonitor import check_script
 from canonical.testing.layers import DatabaseLayer
 
 
