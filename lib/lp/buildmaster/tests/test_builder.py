@@ -896,7 +896,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.buildfarmjob = self.build.buildqueue_record.specific_job
 
-        # TODO: Needs policy
+        self.useFixture(BuilddManagerTestFixture())
 
     def test_idle_behavior_when_no_current_build(self):
         """We return an idle behavior when there is no behavior specified
@@ -918,7 +918,8 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
-        self.build.buildqueue_record.builder = self.builder
+        with BuilddManagerTestFixture.extraSetUp():
+            self.build.buildqueue_record.builder = self.builder
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
