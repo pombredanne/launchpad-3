@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import get_feedback_messages
+from lp.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.testing.layers import (

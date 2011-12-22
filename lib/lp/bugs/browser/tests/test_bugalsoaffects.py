@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import get_feedback_messages
+from lp.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture

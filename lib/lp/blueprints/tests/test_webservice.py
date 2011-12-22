@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.security.management import endInteraction
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )

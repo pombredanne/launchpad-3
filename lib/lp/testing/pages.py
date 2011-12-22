@@ -41,7 +41,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     stop,
     )

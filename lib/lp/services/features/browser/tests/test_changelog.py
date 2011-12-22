@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import find_tag_by_id
+from lp.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -20,7 +20,7 @@ from zope.app.publication.interfaces import (
     )
 from zope.component import getSiteManager
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

@@ -25,7 +25,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 

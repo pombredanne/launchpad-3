@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,

@@ -12,7 +12,7 @@ from soupmatchers import (
     Tag,
     )
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )

@@ -16,7 +16,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.testing.pages import find_tags_by_class
+from lp.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import (

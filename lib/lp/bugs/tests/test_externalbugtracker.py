@@ -9,7 +9,7 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

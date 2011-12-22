@@ -24,7 +24,7 @@ from canonical.launchpad.ftests import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )

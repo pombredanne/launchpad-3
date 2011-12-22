@@ -14,7 +14,7 @@ import unittest
 from zope.testing.cleanup import cleanUp
 
 from canonical.launchpad.testing import browser
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,

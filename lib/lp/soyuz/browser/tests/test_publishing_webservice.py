@@ -3,7 +3,7 @@
 
 """Test webservice methods related to the publisher."""
 
-from canonical.launchpad.testing.pages import webservice_for_person
+from lp.testing.pages import webservice_for_person
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.testing.layers import LaunchpadFunctionalLayer
 

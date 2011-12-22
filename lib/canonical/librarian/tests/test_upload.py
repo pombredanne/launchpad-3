@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.librarian.libraryprotocol import FileUploadProtocol
 from canonical.librarian.storage import WrongDatabaseError
 

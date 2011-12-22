@@ -14,7 +14,7 @@ import transaction
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger

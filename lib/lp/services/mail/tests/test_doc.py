@@ -10,7 +10,7 @@ import os
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

@@ -37,7 +37,7 @@ from zope.security.proxy import (
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )

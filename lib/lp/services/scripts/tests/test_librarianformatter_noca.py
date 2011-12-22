@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import reset_logging
 
 

@@ -12,7 +12,7 @@ from doctest import (
     )
 from unittest import TestSuite
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     setUp,
     tearDown,
     )

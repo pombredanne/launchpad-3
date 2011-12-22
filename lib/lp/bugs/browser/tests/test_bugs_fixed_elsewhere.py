@@ -16,7 +16,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

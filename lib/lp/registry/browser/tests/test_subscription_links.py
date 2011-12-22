@@ -11,7 +11,7 @@ import unittest
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import first_tag_by_class
+from lp.testing.pages import first_tag_by_class
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url

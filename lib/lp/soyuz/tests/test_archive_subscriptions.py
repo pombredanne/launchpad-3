@@ -5,7 +5,7 @@
 
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     find_tag_by_id,
     setupBrowserForUser,
     )

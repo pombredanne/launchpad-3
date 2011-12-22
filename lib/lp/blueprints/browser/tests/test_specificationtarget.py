@@ -8,7 +8,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import find_tag_by_id
+from lp.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView

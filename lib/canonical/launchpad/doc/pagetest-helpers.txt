@@ -6,7 +6,7 @@ zope.testbrowser component to write most of these tests. The pagetest
 doctest environement comes loaded with a bunch of predefined names that
 makes writing page test easy.
 
-    >>> from canonical.launchpad.testing.pages import setUpGlobs
+    >>> from lp.testing.pages import setUpGlobs
     >>> class MockTest(object):
     ...     def __init__(self):
     ...         self.globs = {}

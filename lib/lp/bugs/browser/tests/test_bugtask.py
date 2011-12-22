@@ -42,7 +42,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from canonical.launchpad.testing.pages import find_tag_by_id
+from lp.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.interfaces import (

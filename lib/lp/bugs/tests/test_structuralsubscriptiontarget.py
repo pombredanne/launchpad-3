@@ -16,7 +16,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

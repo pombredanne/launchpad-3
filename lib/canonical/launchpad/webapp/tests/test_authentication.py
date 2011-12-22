@@ -13,7 +13,7 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

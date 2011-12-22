@@ -47,7 +47,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.browser import Browser
+from lp.testing.browser import Browser
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper

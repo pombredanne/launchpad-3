@@ -12,7 +12,7 @@ import unittest
 from storm.store import Store
 from testtools.matchers import LessThan
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

@@ -13,7 +13,7 @@ import unittest
 from testtools.matchers import DocTestMatches
 
 from lp.services.scripts.logger import LaunchpadFormatter
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import BaseLayer
 from lp.services.utils import traceback_info
 from lp.testing import TestCase

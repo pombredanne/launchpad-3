@@ -9,7 +9,7 @@ from doctest import (
     ELLIPSIS,
     )
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import BaseLayer
 from lp import testing
 

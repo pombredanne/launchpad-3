@@ -8,7 +8,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.systemdocs import create_view
+from lp.testing.systemdocs import create_view
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.folder import ExportedFolder
 from canonical.testing.layers import FunctionalLayer

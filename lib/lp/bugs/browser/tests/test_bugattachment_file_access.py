@@ -22,7 +22,7 @@ from zope.security.management import endInteraction
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

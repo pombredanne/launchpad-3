@@ -11,7 +11,7 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     setUp,
     tearDown,
     )

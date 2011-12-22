@@ -69,7 +69,7 @@ Follow the token link, to confirm the new email address.
 Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.getLink(url='+editemails').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")

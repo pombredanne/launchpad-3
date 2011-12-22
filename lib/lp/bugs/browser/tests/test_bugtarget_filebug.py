@@ -11,7 +11,7 @@ from zope.schema.interfaces import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )

@@ -38,18 +38,18 @@ from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.testing.browser import (
+from lp.testing.browser import (
     Browser,
     setUp,
     tearDown,
     )
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,
     find_tags_by_class,
     )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadApplication,

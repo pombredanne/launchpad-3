@@ -11,7 +11,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.testing.pages import setupBrowser
+from lp.testing.pages import setupBrowser
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     PageTestLayer,

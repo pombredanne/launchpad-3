@@ -15,7 +15,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

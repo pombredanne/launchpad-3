@@ -16,7 +16,7 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )

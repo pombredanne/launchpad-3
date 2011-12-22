@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     api_url,

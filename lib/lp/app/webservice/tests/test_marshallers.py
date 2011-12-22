@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )

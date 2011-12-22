@@ -11,7 +11,7 @@ from simplejson import dumps
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,

@@ -12,7 +12,7 @@ import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

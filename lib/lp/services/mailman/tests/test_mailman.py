@@ -18,11 +18,11 @@ from Mailman.mm_cfg import (
 from Mailman.Utils import list_names
 import transaction
 
-from canonical.launchpad.testing.browser import (
+from lp.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser,
     )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LayerProcessController
 import lp.services.mailman.doc
 from lp.services.mailman.testing import helpers

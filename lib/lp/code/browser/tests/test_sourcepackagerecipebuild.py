@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,

@@ -16,7 +16,7 @@ from lp.app.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     find_main_content,
     get_feedback_messages,
     setupBrowser,

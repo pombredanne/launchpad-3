@@ -14,7 +14,7 @@ from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )

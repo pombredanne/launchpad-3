@@ -7,7 +7,7 @@ implementations.
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     tearDown,
     )

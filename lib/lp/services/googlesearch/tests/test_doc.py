@@ -7,7 +7,7 @@ Run the doctests.
 
 import os
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,

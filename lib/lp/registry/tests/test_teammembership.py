@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,
     setUp,

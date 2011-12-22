@@ -10,7 +10,7 @@ from lazr.restful.interfaces import IFieldHTMLRenderer
 from lazr.restful.utils import get_current_web_service_request
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.registry.interfaces.product import IProduct

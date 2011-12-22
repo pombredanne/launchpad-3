@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_tags_by_class,
     )
