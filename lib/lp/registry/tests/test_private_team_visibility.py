@@ -270,12 +270,13 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # The team is now visible.
         self._check_permission(some_person, True)
 
-    def _check_permission_using_feature_flag(self, user):
+    def _check_permission_using_feature_flag(self, user, permission=True):
         # The team is visible if the feature flag is set.
         login_person(user)
         flag = 'disclosure.extra_private_team_LimitedView_security.enabled'
         with FeatureFixture({flag: 'true'}):
-            self.assertTrue(
+            self.assertEqual(
+                permission,
                 check_permission('launchpad.LimitedView', self.priv_team))
         clear_cache()
         self.assertFalse(
@@ -302,13 +303,14 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Initially no visibility.
         some_person = self.factory.makePerson()
         self._check_permission(some_person, False)
+        clear_cache()
         # Subscribe the private team to the bug.
         login_person(bug_owner)
         bug.subscribe(self.priv_team, bug_owner)
         # All users can see public bugs, so in that case, the team is
         # now visible, else team is still not visible.
         some_person = self.factory.makePerson()
-        self._check_permission(some_person, not private)
+        self._check_permission_using_feature_flag(some_person, not private)
         # Subscribe the user to the bug.
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
@@ -330,13 +332,14 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Initially no visibility.
         some_person = self.factory.makePerson()
         self._check_permission(some_person, False)
+        clear_cache()
         # Assign the private team to a bugtask.
         login_person(bug_owner)
         bug.default_bugtask.transitionToAssignee(self.priv_team)
         # All users can see public bugs, so in that case, the team is
         # now visible, else team is still not visible.
         some_person = self.factory.makePerson()
-        self._check_permission(some_person, not private)
+        self._check_permission_using_feature_flag(some_person, not private)
         # Subscribe the user to the bug.
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
