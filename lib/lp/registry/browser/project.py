@@ -30,7 +30,6 @@ __all__ = [
     'ProjectView',
     ]
 
-import re
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
@@ -54,7 +53,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    redirection,
     StandardLaunchpadFacets,
     stepthrough,
     structured,
@@ -76,7 +74,6 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
-from lp.app.validators.name import valid_name
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -90,6 +87,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
+from lp.registry.browser.milestone import validate_tags
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.product import (
     ProductAddView,
@@ -136,17 +134,10 @@ class ProjectNavigation(Navigation,
         return self.context.getSeries(series_name)
 
     @stepthrough('+tags')
-    def traverse_tag(self, name):
-        separator = u','
-        tags = name.split(separator)
-        if (all(valid_name(tag) for tag in tags) and
-            len(set(tags)) == len(tags)):
+    def traverse_tags(self, name):
+        tags = name.split(u',')
+        if validate_tags(tags):
             return ProjectGroupMilestoneTag(self.context, tags)
-
-    @redirection('+redirect-to-tags')
-    def redirect_to_tags(self):
-        tags = re.split(r'[,\s]+', self.request.form['tags'])
-        return u'+tags/%s/' % u','.join(tags)
 
 
 class ProjectSetNavigation(Navigation):

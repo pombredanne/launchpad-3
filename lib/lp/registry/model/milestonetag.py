@@ -65,7 +65,12 @@ class ProjectGroupMilestoneTag(MilestoneData):
 
     @property
     def name(self):
-        return u", ".join(self.tags)
+        return u','.join(self.tags)
+
+    @property
+    def displayname(self):
+        """See IMilestone."""
+        return "%s %s" % (self.target.displayname, u", ".join(self.tags))
 
     @property
     def title(self):

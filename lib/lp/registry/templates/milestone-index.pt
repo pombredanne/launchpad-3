@@ -39,6 +39,10 @@
       milestone_menu view/milestone/menu:overview;
       has_edit context/required:launchpad.Edit">
 
+      <tal:search_by_tags_form condition="view/is_project_milestone_tag">
+        <div metal:use-macro="context/@@launchpad_form/form" />
+      </tal:search_by_tags_form>
+
       <div class="top-portlet">
         <div id="description" tal:condition="view/milestone/summary|nothing">
           <p class="documentDescription"

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ISearchMilestoneTagsForm',
     'MilestoneAddView',
     'MilestoneBreadcrumb',
     'MilestoneContextMenu',
@@ -20,6 +21,7 @@ __all__ = [
     'MilestoneView',
     'MilestoneViewMixin',
     'ObjectMilestonesView',
+    'validate_tags',
     ]
 
 
@@ -29,7 +31,7 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema import Choice
+from zope.schema import Choice, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -54,7 +56,9 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    safe_action,
     )
+from lp.app.validators.name import valid_name
 from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.browser.structuralsubscription import (
@@ -80,6 +84,7 @@ from lp.registry.interfaces.milestone import (
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.propertycache import cachedproperty
 
 
@@ -555,9 +560,28 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
         self.next_url = canonical_url(series)
 
 
+def validate_tags(tags):
+    """Check that `separator` separated `tags` are valid tag names."""
+    return (
+        all(valid_name(tag) for tag in tags) and
+        len(set(tags)) == len(tags)
+        )
+
+
+class ISearchMilestoneTagsForm(Interface):
+    """Schema for the search milestone tags form."""
+
+    tags = TextLine(
+        title=_('Search by tags'),
+        description=_('Insert space separated tag names'),
+        required=True, min_length=2, max_length=64,
+        constraint=lambda value: validate_tags(value.split()))
+
+
 class MilestoneTagView(
-    LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin):
+    LaunchpadFormView, MilestoneViewMixin, ProductDownloadFileMixin):
     """A View for listing bugtasks and specification for milestone tags."""
+    schema = ISearchMilestoneTagsForm
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -568,6 +592,18 @@ class MilestoneTagView(
         super(MilestoneTagView, self).__init__(context, request)
         self.context = self.milestone = context
         self.release = None
+
+    @property
+    def initial_values(self):
+        """Set the initial value of the search tags field."""
+        return {'tags': u' '.join(self.context.name.split(u','))}
+
+    @safe_action
+    @action(u'Search', name='search')
+    def search_by_tags(self, action, data):
+        tags = data['tags'].split()
+        milestone_tag = ProjectGroupMilestoneTag(self.context.target, tags)
+        self.next_url = canonical_url(milestone_tag, request=self.request)
 
 
 class ObjectMilestonesView(LaunchpadView):

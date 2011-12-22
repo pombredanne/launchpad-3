@@ -1266,6 +1266,11 @@
         path_expression="string:+milestone/${name}"
         rootsite="mainsite"
         attribute_to_parent="target"/>
+    <browser:url
+        for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
+        path_expression="string:+tags/${name}"
+        rootsite="mainsite"
+        attribute_to_parent="target"/>
     <browser:page
         for="*"
         name="+milestone-macros"
