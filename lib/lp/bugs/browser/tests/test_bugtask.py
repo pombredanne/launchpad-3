@@ -790,9 +790,6 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
             bug, name='+bugtasks-and-nominations-table',
             principal=bugtask.owner)
         row_view = view._getTableRowView(bugtask, False, False)
-        self.assertFalse(row_view.user_can_delete_bugtask)
-        del get_property_cache(row_view).user_can_delete_bugtask
-        clear_cache()
         self.assertTrue(row_view.user_can_delete_bugtask)
 
     def test_bugtask_delete_icon(self):
