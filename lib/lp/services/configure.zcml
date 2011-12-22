@@ -6,6 +6,7 @@
   <include package=".comments" />
   <include package=".database" />
   <include package=".features" />
+  <include package=".feeds" />
   <include package=".fields" />
   <include package=".geoip" />
   <include package=".googlesearch" />
@@ -14,6 +15,7 @@
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".longpoll" />
+  <include package=".mail" />
   <include package=".memcache" />
   <include package=".messages" />
   <include package=".messaging" />
@@ -23,6 +25,9 @@
   <include package=".salesforce" />
   <include package=".scripts" />
   <include package=".session" />
-  <include package="lp.services.webservice" />
+  <include package=".statistics" />
+  <include package=".temporaryblobstorage" />
+  <include package=".verification" />
+  <include package=".webservice" />
   <include package=".worlddata" />
 </configure>

@@ -13,12 +13,12 @@ import re
 
 from pytz import utc
 from storm.locals import Store
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -28,7 +28,6 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
@@ -589,11 +588,14 @@ class TestAsBuildmaster(TestCaseWithFactory):
         self.assertEquals(0, len(notifications))
 
 
-class TestBuildNotifications(TestCaseWithFactory):
+class TestBuildNotifications(TrialTestCase):
 
     layer = LaunchpadZopelessLayer
 
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    def setUp(self):
+        super(TestBuildNotifications, self).setUp()
+        from lp.testing.factory import LaunchpadObjectFactory
+        self.factory = LaunchpadObjectFactory()
 
     def prepare_build(self, fake_successful_upload=False):
         queue_record = self.factory.makeSourcePackageRecipeBuildJob()
@@ -606,7 +608,7 @@ class TestBuildNotifications(TestCaseWithFactory):
                 result=True)
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        queue_record.builder.setSlaveForTesting(slave)
         return build
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
@@ -664,5 +666,5 @@ class TestGetUploadMethodsForSPRecipeBuild(
 
 
 class TestHandleStatusForSPRBuild(
-    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with SPRecipe builds."""

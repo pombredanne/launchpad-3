@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A configuration class describing the Launchpad web service."""
@@ -12,12 +12,12 @@ from lazr.restful.simple import BaseWebServiceConfiguration
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest,
     WebServicePublication,
     )
+from lp.app import versioninfo
 
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
@@ -48,7 +48,8 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
         "devel": """This version of the web service reflects the most
         recent changes made. It may abruptly change without
         warning. Periodically, these changes are bundled up and given a
-        permanent version number.""" }
+        permanent version number.""",
+        }
 
     @property
     def use_https(self):

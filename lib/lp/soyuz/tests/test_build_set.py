@@ -7,10 +7,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from storm.store import EmptyResultSet
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus

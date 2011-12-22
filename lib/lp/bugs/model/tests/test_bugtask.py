@@ -4,14 +4,14 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
-from testtools.testcase import ExpectedException
 from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
@@ -1571,14 +1571,20 @@ class TestBugTaskDeletion(TestCaseWithFactory):
             self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
     def test_delete_bugtask(self):
-        # A bugtask can be deleted.
-        bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(bug=bug)
-        bug = bugtask.bug
-        login_person(bugtask.owner)
+        # A bugtask can be deleted and after deletion, re-nominated.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=owner, bug_supervisor=owner)
+        bug = self.factory.makeBug(
+            product=product, owner=owner)
+        target = self.factory.makeProductSeries(product=product)
+        login_person(bug.owner)
+        nomination = bug.addNomination(bug.owner, target)
+        nomination.approve(bug.owner)
+        bugtask = bug.getBugTask(target)
         with FeatureFixture(self.flags):
             bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
+        self.assertTrue(bug.canBeNominatedFor(target))
 
     def test_delete_default_bugtask(self):
         # The default bugtask can be deleted.

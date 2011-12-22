@@ -12,9 +12,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.testing import build_test_suite
 
 

@@ -7,7 +7,6 @@ import tarfile
 from textwrap import dedent
 
 from bzrlib.bzrdir import BzrDir
-
 from lpbuildd.pottery.intltool import (
     check_potfiles_in,
     ConfigFile,
@@ -17,6 +16,7 @@ from lpbuildd.pottery.intltool import (
     generate_pots,
     get_translation_domain,
     )
+
 from canonical.launchpad.scripts.tests import run_script
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug subscription filter browser code."""
@@ -30,7 +30,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.testing import (
-    feature_flags,
     anonymous_logged_in,
     login_person,
     normalize_whitespace,

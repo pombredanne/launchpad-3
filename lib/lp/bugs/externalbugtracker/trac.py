@@ -20,7 +20,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
@@ -45,6 +44,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.messages.interfaces.message import IMessageSet
 
 # Symbolic constants used for the Trac LP plugin.
 LP_PLUGIN_BUG_IDS_ONLY = 0

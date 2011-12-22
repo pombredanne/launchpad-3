@@ -15,11 +15,11 @@ __all__ = [
 
 from lazr.restful.declarations import (
     collection_default_content,
-    exported,
-    export_as_webservice_entry,
     export_as_webservice_collection,
-    export_read_operation,
+    export_as_webservice_entry,
     export_operation_as,
+    export_read_operation,
+    exported,
     operation_for_version,
     operation_parameters,
     operation_returns_entry,

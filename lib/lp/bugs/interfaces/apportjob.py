@@ -25,7 +25,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     )
 from lp.services.job.interfaces.job import (

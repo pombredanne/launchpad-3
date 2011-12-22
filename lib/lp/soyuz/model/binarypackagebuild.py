@@ -40,9 +40,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -51,7 +48,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     ISlaveStore,
     IStore,
@@ -79,6 +76,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import (
     format_address,

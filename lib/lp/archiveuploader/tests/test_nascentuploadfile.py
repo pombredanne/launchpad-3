@@ -22,13 +22,13 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     UploadError,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
-    PackageUploadCustomFormat,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     )
 from lp.testing import TestCaseWithFactory
 

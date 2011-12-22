@@ -17,7 +17,10 @@ from time import time
 import traceback
 import warnings
 
-from lazr.restful.utils import get_current_browser_request, safe_hasattr
+from lazr.restful.utils import (
+    get_current_browser_request,
+    safe_hasattr,
+    )
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -56,12 +59,13 @@ from canonical.config import (
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.postgresql import ConnectionString
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interaction import get_interaction_extras
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -71,19 +75,18 @@ from canonical.launchpad.webapp.interfaces import (
     ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
-from canonical.launchpad.webapp.interaction import get_interaction_extras
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2
-from lp.services.timeline.requesttimeline import (
-    get_request_timeline,
-    set_request_timeline,
-    )
 from lp.services.stacktrace import (
     extract_stack,
     extract_tb,
     print_list,
+    )
+from lp.services.timeline.requesttimeline import (
+    get_request_timeline,
+    set_request_timeline,
     )
 
 
@@ -238,11 +241,9 @@ IN_PAGE_TIMELINE_CAP = 200
 
 
 def get_timeline_actions():
-    """Return an iterable of timeline actions.
-    
-    """
-    return get_request_timeline(get_current_browser_request()).actions[
-        :IN_PAGE_TIMELINE_CAP]
+    """Return an iterable of timeline actions."""
+    timeline = get_request_timeline(get_current_browser_request())
+    return timeline.actions[:IN_PAGE_TIMELINE_CAP]
 
 
 def store_sql_statements_and_request_duration(event):

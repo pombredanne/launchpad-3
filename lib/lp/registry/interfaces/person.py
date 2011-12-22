@@ -93,18 +93,12 @@ from zope.schema import (
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from lp.app.validators.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
@@ -113,6 +107,7 @@ from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.validators.name import name_validator
+from lp.app.validators.validation import validate_new_team_email
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
@@ -148,8 +143,8 @@ from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
-    is_public_person_or_closed_team,
     is_public_person,
+    is_public_person_or_closed_team,
     LogoImageUpload,
     MugshotImageUpload,
     PasswordField,
@@ -157,6 +152,11 @@ from lp.services.fields import (
     PublicPersonChoice,
     StrippedTextLine,
     )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,

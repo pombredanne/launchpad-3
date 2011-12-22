@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import (
-    DistributionOrProductVocabulary,
     DistributionOrProductOrProjectGroupVocabulary,
+    DistributionOrProductVocabulary,
     PillarVocabularyBase,
     )
 from lp.testing import (

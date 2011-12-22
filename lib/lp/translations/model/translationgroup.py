@@ -28,21 +28,19 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import (
-    IStore,
+from lp.services.database.lpstorm import (
     ISlaveStore,
+    IStore,
     )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup,

@@ -28,8 +28,8 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.errors import TranslationUnavailable
 from lp.app.enums import service_uses_launchpad
+from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty

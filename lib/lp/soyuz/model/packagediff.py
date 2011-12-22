@@ -27,15 +27,12 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -43,6 +40,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.librarian.utils import copy_and_close
 from lp.services.database.bulk import load
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,

@@ -9,9 +9,8 @@ __all__ = []
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
-
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class CrashScript(LaunchpadCronScript):

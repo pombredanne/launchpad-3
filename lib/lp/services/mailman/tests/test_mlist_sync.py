@@ -8,19 +8,22 @@ __all__ = []
 from contextlib import contextmanager
 import os
 import shutil
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import sys
 import tempfile
-from transaction import commit
-from subprocess import Popen, PIPE
 
 from Mailman import mm_cfg
 from Mailman.MailList import MailList
 from Mailman.Utils import list_names
+from transaction import commit
 
 from canonical.config import config
-from lp.services.identity.model.emailaddress import EmailAddressSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mailman.testing import MailmanTestCase
 from lp.testing import person_logged_in
 

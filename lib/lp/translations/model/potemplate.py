@@ -62,10 +62,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -76,6 +73,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import RosettaImportStatus

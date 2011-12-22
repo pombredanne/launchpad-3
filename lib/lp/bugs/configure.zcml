@@ -276,7 +276,7 @@
             permission="zope.Public"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            provides="canonical.launchpad.interfaces.launchpad.IPrivacy"
+            provides="lp.app.interfaces.launchpad.IPrivacy"
             factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -952,6 +952,10 @@
                 attributes="
                     approve
                     decline"/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    destroySelf"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugnomination.BugNominationSet"
@@ -1097,7 +1101,7 @@
     <class
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+            interface="lp.services.mail.interfaces.INotificationRecipientSet"/>
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow

@@ -24,8 +24,8 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
-from operator import itemgetter
 import httplib
+from operator import itemgetter
 import urllib
 from urlparse import urljoin
 
@@ -1220,7 +1220,8 @@ class BugTargetBugListingView(LaunchpadView):
         elif IProduct(self.context, None):
             milestone_resultset = self.context.milestones
         else:
-            raise AssertionError("milestones_list called with illegal context")
+            raise AssertionError(
+                "milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1320,7 +1321,6 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = self.context.official_bug_tags
         tags = self.context.getUsedBugTagsWithOpenCounts(
             self.user, 10, official_tags)
-        max_count = float(max([1] + tags.values()))
 
         return sorted(
             [dict(

@@ -26,17 +26,17 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
 from lp.app.errors import NotFoundError
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,
     IBinaryPackageNameSet,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 

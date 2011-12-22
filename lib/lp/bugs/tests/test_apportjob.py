@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
+from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from canonical.launchpad.scripts.tests import run_script

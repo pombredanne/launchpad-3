@@ -18,7 +18,7 @@ __all__ = []
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.fields import Reference
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
     patch_choice_vocabulary,
     patch_collection_property,
@@ -29,11 +29,6 @@ from canonical.launchpad.components.apihelpers import (
     patch_operations_explicit_version,
     patch_plain_parameter_type,
     patch_reference_property,
-    )
-from lp.services.identity.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryBlobStorage,
-    ITemporaryStorageManager,
     )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -900,9 +895,6 @@ patch_operations_explicit_version(
 # IDistroSeriesDifferenceComment
 patch_entry_explicit_version(IDistroSeriesDifferenceComment, 'beta')
 
-# IEmailAddress
-patch_entry_explicit_version(IEmailAddress, 'beta')
-
 # IGPGKey
 patch_entry_explicit_version(IGPGKey, 'beta')
 
@@ -1078,14 +1070,6 @@ patch_entry_explicit_version(ITeam, 'beta')
 patch_entry_explicit_version(ITeamMembership, 'beta')
 patch_operations_explicit_version(
     ITeamMembership, 'beta', "setExpirationDate", "setStatus")
-
-# ITemporaryBlobStorage
-patch_operations_explicit_version(
-    ITemporaryBlobStorage, 'beta', "getProcessedData", "hasBeenProcessed")
-
-# ITemporaryStorageManager
-patch_operations_explicit_version(
-    ITemporaryStorageManager, 'beta', "fetch")
 
 # ITimelineProductSeries
 patch_entry_explicit_version(ITimelineProductSeries, 'beta')

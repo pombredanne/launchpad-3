@@ -16,6 +16,7 @@ close or delete the browser instance.
 """
 from lazr.uri._uri import URI
 
+
 __metaclass__ = type
 __all__ = [
     'Browser',

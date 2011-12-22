@@ -9,13 +9,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
-    <include file="feeds.zcml" />
-    <include file="launchpad.zcml" />
-    <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="lifecycle.zcml" />
-    <include file="logintoken.zcml" />
-    <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />
 
 </configure>

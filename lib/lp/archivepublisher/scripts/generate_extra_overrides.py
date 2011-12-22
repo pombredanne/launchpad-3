@@ -14,11 +14,10 @@ from optparse import OptionValueError
 import os
 import re
 
-from germinate.germinator import Germinator
 from germinate.archive import TagFile
+from germinate.germinator import Germinator
 from germinate.log import GerminateFormatter
 from germinate.seeds import SeedStructure
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.dbpolicy import (

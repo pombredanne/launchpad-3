@@ -10,11 +10,11 @@ __metaclass__ = type
 import atexit
 import os
 import random
-import time
 import sys
+import time
 
-from bzrlib.lock import WriteLock
 from bzrlib.errors import LockContention
+from bzrlib.lock import WriteLock
 import psycopg2
 
 from canonical.config import config

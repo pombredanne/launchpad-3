@@ -3,15 +3,14 @@
 
 from datetime import datetime
 import gzip
+from operator import itemgetter
 import os
 from StringIO import StringIO
 import tempfile
-from operator import itemgetter
 
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.apachelogparser.librarian_apache_log_parser import DBUSER
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -30,6 +29,7 @@ from lp.services.apachelogparser.base import (
     get_method_and_path,
     parse_file,
     )
+from lp.services.apachelogparser.librarian_apache_log_parser import DBUSER
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase

@@ -19,6 +19,7 @@ import linecache
 import sys
 import traceback
 
+
 DEBUG_EXCEPTION_FORMATTER = False
 EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)
 

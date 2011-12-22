@@ -43,11 +43,9 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.services.identity.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -92,6 +90,8 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message

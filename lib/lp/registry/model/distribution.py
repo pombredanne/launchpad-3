@@ -10,8 +10,11 @@ __all__ = [
     'DistributionSet',
     ]
 
-from operator import attrgetter, itemgetter
 import itertools
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from sqlobject import (
     BoolCol,
@@ -30,9 +33,7 @@ from storm.locals import (
     Or,
     SQL,
     )
-from storm.store import (
-    Store,
-    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -50,16 +51,13 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -132,8 +130,8 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
-    validate_person_or_closed_team,
     validate_person,
+    validate_person_or_closed_team,
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -160,6 +158,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

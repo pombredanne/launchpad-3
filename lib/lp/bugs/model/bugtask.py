@@ -85,11 +85,8 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -106,6 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -162,12 +160,12 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -682,6 +680,17 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
+
+        # When a task is deleted, we also delete it's BugNomination entry
+        # if there is one. Sadly, getNominationFor() can return None or
+        # raise NotFoundError so we need to check for both.
+        try:
+            nomination = bug.getNominationFor(target)
+            if nomination is not None:
+                nomination.destroySelf()
+        except NotFoundError:
+            # We don't care if there isn't a nomination
+            pass
 
         # When a task is deleted the bug's heat needs to be recalculated.
         target.recalculateBugHeatCache()

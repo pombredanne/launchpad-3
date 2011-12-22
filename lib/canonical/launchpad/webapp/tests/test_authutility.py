@@ -16,17 +16,17 @@ from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
-from lp.services.identity.interfaces.account import IAccount
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.authentication import (
     LaunchpadPrincipal,
     PlacelessAuthUtility,
     )
 from canonical.launchpad.webapp.interfaces import (
+    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import IAccount
 
 
 class DummyPerson(object):

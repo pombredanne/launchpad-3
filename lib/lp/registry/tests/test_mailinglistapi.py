@@ -10,7 +10,6 @@ __all__ = []
 import transaction
 
 from canonical.config import config
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
@@ -18,6 +17,7 @@ from lp.registry.xmlrpc.mailinglist import (
     ENABLED,
     MailingListAPIView,
     )
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

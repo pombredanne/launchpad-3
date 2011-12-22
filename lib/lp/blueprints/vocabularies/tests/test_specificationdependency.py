@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `SpecificationDepCandidatesVocabulary`.
@@ -12,7 +12,6 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.testing import TestCaseWithFactory
 
 
@@ -221,7 +220,8 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         # Specs on the same distribution are returned first.
         mint = self.factory.makeDistribution()
         spec = self.factory.makeSpecification(distribution=mint)
-        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        foo_b = self.factory.makeSpecification(
+            name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
         results = vocab.searchForTerms('foo')
@@ -236,9 +236,11 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         next = self.factory.makeDistroSeries(mint)
         spec = self.factory.makeSpecification(distribution=mint)
         spec.proposeGoal(next, mint.owner)
-        foo_c = self.factory.makeSpecification(name='foo-c', distribution=mint)
+        foo_c = self.factory.makeSpecification(
+            name='foo-c', distribution=mint)
         foo_c.proposeGoal(next, mint.owner)
-        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        foo_b = self.factory.makeSpecification(
+            name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
         results = vocab.searchForTerms('foo')

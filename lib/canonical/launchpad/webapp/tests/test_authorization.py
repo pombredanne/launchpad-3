@@ -20,7 +20,6 @@ from zope.interface import (
     )
 import zope.testing.cleanup
 
-from lp.services.identity.interfaces.account import IAccount
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
     check_permission,
@@ -47,6 +46,7 @@ from canonical.testing.layers import (
     )
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import AuthorizationBase
+from lp.services.identity.interfaces.account import IAccount
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -187,6 +187,7 @@ class FakeStore:
     """Enough of a store to fool the `block_implicit_flushes` decorator."""
     def block_implicit_flushes(self):
         pass
+
     def unblock_implicit_flushes(self):
         pass
 
@@ -194,12 +195,15 @@ class FakeStore:
 class FakeStoreSelector:
     """A store selector that always returns a `FakeStore`."""
     classProvides(IStoreSelector)
+
     @staticmethod
     def get(name, flavor):
         return FakeStore()
+
     @staticmethod
     def push(dbpolicy):
         pass
+
     @staticmethod
     def pop():
         pass

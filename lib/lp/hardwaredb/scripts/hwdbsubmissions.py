@@ -17,25 +17,33 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
-
-import xml.etree.cElementTree as etree
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from logging import getLogger
 import os
 import re
 import sys
+import xml.etree.cElementTree as etree
 
 import pytz
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.xml import RelaxNGValidator
-
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from canonical.lazr.xml import RelaxNGValidator
 from canonical.librarian.interfaces import LibrarianServerError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     HWSubmissionProcessingStatus,
@@ -48,14 +56,9 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorNameSet,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import disable_oops_handler
+
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }

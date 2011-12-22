@@ -132,22 +132,13 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp.services.feeds.browser import FeedsMixin
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -266,6 +257,15 @@ from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -1287,7 +1287,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces.lpstorm import IMasterObject
+        from lp.services.database.lpstorm import IMasterObject
         self.context = IMasterObject(self.context.account)
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']

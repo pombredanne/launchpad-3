@@ -14,7 +14,7 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.model.person import Person
 from lp.translations.enums import TranslationPermission

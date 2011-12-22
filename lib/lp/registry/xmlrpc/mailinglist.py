@@ -16,12 +16,6 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.services.encoding import escape_nonascii_uniquely
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.mailinglist import (
@@ -36,6 +30,12 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonVisibility,
     )
+from lp.services.encoding import escape_nonascii_uniquely
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that

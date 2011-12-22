@@ -103,16 +103,11 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
     )
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -197,6 +192,9 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

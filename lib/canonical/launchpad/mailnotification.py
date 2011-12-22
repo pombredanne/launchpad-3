@@ -77,7 +77,8 @@ def send_process_error_notification(to_address, subject, error_msg,
         for failing_command in failing_commands:
             failed_commands_information += '\n    %s' % str(failing_command)
 
-    body = get_email_template('email-processing-error.txt') % {
+    body = get_email_template(
+        'email-processing-error.txt', app='services/mail') % {
             'failed_command_information': failed_commands_information,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)

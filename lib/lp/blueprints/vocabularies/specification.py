@@ -15,7 +15,6 @@ from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import NamedSQLObjectVocabulary
-
 from lp.blueprints.model.specification import Specification
 
 

@@ -14,17 +14,17 @@ from urllib2 import (
     HTTPError,
     urlopen,
     )
+
 from BeautifulSoup import BeautifulSoup
-from canonical.launchpad.scripts.logger import log as default_log
 from zope.component import getUtility
+
+from lp.services.database.lpstorm import IStore
+from canonical.launchpad.scripts.logger import log as default_log
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
     )
-from lp.bugs.model.bugtracker import (
-    BugTrackerComponent,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.model.bugtracker import BugTrackerComponent
 
 
 def dictFromCSV(line):

@@ -9,14 +9,14 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionSet,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory

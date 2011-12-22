@@ -26,12 +26,11 @@ from zope.publisher.interfaces import (
     )
 
 from canonical.config import dbconfig
-from lp.services.identity.model.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file,
@@ -62,6 +61,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     IOAuthSignedRequest,

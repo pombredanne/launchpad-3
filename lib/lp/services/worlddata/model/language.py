@@ -30,11 +30,8 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.services.database.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
@@ -43,6 +40,7 @@ from lp.registry.model.karma import (
     KarmaCache,
     KarmaCategory,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -52,10 +50,11 @@ from lp.services.worlddata.interfaces.language import (
     ILanguageSet,
     TextDirection,
     )
-
 # XXX: JonathanLange 2010-11-10 bug=673796: It turns out this module is
 # unusable without spokenin being imported first. So, import spokenin.
 from lp.services.worlddata.model.spokenin import SpokenIn
+
+
 SpokenIn
 
 

@@ -9,8 +9,16 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 __all__ = [
+    'IAging',
+    'IAuthServerApplication',
+    'IHasDateCreated',
+    'IHasIcon',
+    'IHasLogo',
+    'IHasMugshot',
     'ILaunchpadCelebrities',
     'ILaunchpadUsage',
+    'IPrivateApplication',
+    'IPrivacy',
     'IServiceUsage',
     ]
 
@@ -25,6 +33,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.app.enums import ServiceUsage
 
 
@@ -122,3 +131,77 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire "Incomplete" bug reports when they become inactive'),
         required=True)
+
+
+class IPrivateApplication(ILaunchpadApplication):
+    """Launchpad private XML-RPC application root."""
+
+    authserver = Attribute("""Old Authserver API end point.""")
+
+    codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    codehosting = Attribute("""Codehosting end point.""")
+
+    mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
+
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
+
+    featureflags = Attribute("""Feature flag information endpoint""")
+
+
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
+
+
+class IHasIcon(Interface):
+    """An object that can have a custom icon."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    icon = Attribute("The 14x14 icon.")
+
+
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    mugshot = Attribute("The 192x192 mugshot.")
+
+
+class IAging(Interface):
+    """Something that gets older as time passes."""
+
+    def currentApproximateAge():
+        """Return a human-readable string of how old this thing is.
+
+        Values returned are things like '2 minutes', '3 hours',
+        '1 month', etc.
+        """
+
+
+class IPrivacy(Interface):
+    """Something that can be private."""
+
+    private = Bool(
+        title=_("This is private"),
+        required=False,
+        description=_(
+            "Private objects are visible to members or subscribers."))
+
+
+class IHasDateCreated(Interface):
+    """Something created on a certain date."""
+
+    datecreated = Attribute("The date on which I was created.")

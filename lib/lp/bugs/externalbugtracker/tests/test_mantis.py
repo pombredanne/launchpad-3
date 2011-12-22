@@ -5,8 +5,12 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals, Is
 import urllib2
+
+from testtools.matchers import (
+    Equals,
+    Is,
+    )
 
 from canonical.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker import UnparsableBugData
@@ -14,11 +18,11 @@ from lp.bugs.externalbugtracker.mantis import (
     Mantis,
     MantisBugBatchParser,
     )
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     monkey_patch,
     TestCase,
     )
-from lp.services.log.logger import BufferLogger
 
 
 class TestMantisBugBatchParser(TestCase):

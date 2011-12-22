@@ -24,8 +24,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.services.identity.model.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.lpstorm import (
+from canonical.launchpad.webapp.interfaces import IPasswordEncryptor
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,
@@ -41,7 +41,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 

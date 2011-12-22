@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import code
+from datetime import datetime
 import errno
 import glob
 import os
@@ -18,7 +19,7 @@ import subprocess
 import sys
 import time
 import traceback
-from datetime import datetime
+
 from bzrlib.errors import BzrCommandError
 from devscripts.ec2test.session import EC2SessionName
 import paramiko
@@ -95,7 +96,10 @@ apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2af499cb24ac5f654614
 apt-key adv --recv-keys --keyserver pool.sks-keyservers.net ece2800bacf028b31ee3657cd702bf6b8c6c1efd # bzr
 
 aptitude update
-LANG=C aptitude -y install language-pack-en   # Do this first so later things don't complain about locales
+
+# Do this first so later things don't complain about locales:
+LANG=C aptitude -y install language-pack-en
+
 aptitude -y full-upgrade
 
 # This next part is cribbed from rocketfuel-setup
@@ -309,8 +313,10 @@ class EC2Instance:
             self._ec2test_user_has_keys = False
         else:
             raise BzrCommandError(
-                'failed to start: %s: %r\n' % (
-                    self._boto_instance.state, self._boto_instance.state_reason))
+                "failed to start: %s: %r\n" % (
+                    self._boto_instance.state,
+                    self._boto_instance.state_reason,
+                    ))
 
     def shutdown(self):
         """Shut down the instance."""
@@ -343,12 +349,21 @@ class EC2Instance:
             'look_for_keys': False,
             }
         for count in range(20):
+            caught_errors = (
+                socket.error,
+                paramiko.AuthenticationException,
+                EOFError,
+                )
             try:
                 ssh.connect(self.hostname, **connect_args)
-            except (socket.error, paramiko.AuthenticationException, EOFError), e:
+            except caught_errors as e:
                 self.log('.')
-                if getattr(e, 'errno', None) not in (
-                        errno.ECONNREFUSED, errno.ETIMEDOUT, errno.EHOSTUNREACH):
+                not_connected = [
+                    errno.ECONNREFUSED,
+                    errno.ETIMEDOUT,
+                    errno.EHOSTUNREACH,
+                    ]
+                if getattr(e, 'errno', None) not in not_connected:
                     self.log('ssh _connect: %r\n' % (e,))
                 if count < 9:
                     time.sleep(5)
@@ -532,7 +547,7 @@ class EC2Instance:
         # The bucket `name` needs to exist and be accessible. We create it
         # here to reserve the name. If the bucket already exists and conforms
         # to the above requirements, this is a no-op.
-        # 
+        #
         # The API for region creation is a little quirky: you apparently can't
         # explicitly ask for 'us-east-1' you must just say '', etc.
         location = self._credentials.region_name

@@ -15,7 +15,6 @@ from germinate import (
     germinator,
     seeds,
     )
-
 import transaction
 
 from canonical.testing.layers import (

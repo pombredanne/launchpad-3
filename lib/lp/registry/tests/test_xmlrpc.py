@@ -10,8 +10,7 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.identity.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import IPrivateApplication
+from lp.app.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
@@ -21,6 +20,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.xmlrpc import XMLRPCTestTransport
 

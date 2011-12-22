@@ -18,8 +18,8 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (
-    License,
     IProductSet,
+    License,
     )
 from lp.testing import (
     login_celebrity,
@@ -27,9 +27,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import (
-    DemoMode,
-    )
+from lp.testing.fixture import DemoMode
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (

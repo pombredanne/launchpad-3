@@ -12,10 +12,10 @@ from optparse import (
     OptionParser,
     OptionValueError,
     )
-from testtools.matchers import MatchesStructure
 from unittest import TestLoader
 
 from storm.store import Store
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.loghandler import Handler

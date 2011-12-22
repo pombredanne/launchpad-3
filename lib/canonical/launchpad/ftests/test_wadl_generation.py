@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IWebServiceConfiguration
 from testtools.matchers import StartsWith
-
 from zope.component import getUtility
 
 from canonical.launchpad.rest.wadl import (
@@ -14,7 +14,6 @@ from canonical.launchpad.rest.wadl import (
     generate_wadl,
     )
 from canonical.testing import LaunchpadFunctionalLayer
-from lazr.restful.interfaces import IWebServiceConfiguration
 from lp.testing import TestCase
 
 

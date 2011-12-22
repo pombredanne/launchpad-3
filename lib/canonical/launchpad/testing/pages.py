@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
@@ -44,7 +44,6 @@ from zope.testbrowser.testing import Browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     stop,
-    strip_prefix,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
@@ -161,12 +160,12 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
     default_api_version = "beta"
 
     def addHeadersTo(self, full_url, full_headers):
-        if (self.consumer is not None and self.access_token is not None):
+        if self.consumer is not None and self.access_token is not None:
             request = OAuthRequest.from_consumer_and_token(
-                self.consumer, self.access_token, http_url = full_url,
-                )
-            request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
-                                 self.consumer, self.access_token)
+                self.consumer, self.access_token, http_url=full_url)
+            request.sign_request(
+                OAuthSignatureMethod_PLAINTEXT(), self.consumer,
+                self.access_token)
             full_headers.update(request.to_header(OAUTH_REALM))
         if not self.handle_errors:
             full_headers['X_Zope_handle_errors'] = 'False'
@@ -563,7 +562,7 @@ def print_comments(page):
         for li_tag in comment('li'):
             print "Attachment: %s" % li_tag.a.renderContents()
         print comment.div.renderContents()
-        print "-"*40
+        print "-" * 40
 
 
 def print_batch_header(soup):
@@ -852,11 +851,11 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # files would be looked up relative to this module.
     package = doctest._normalize_module(package)
     abs_storydir = doctest._module_relative_path(package, storydir)
-    stripped_storydir = strip_prefix(abs_storydir)
 
-    filenames = set(filename
-                    for filename in os.listdir(abs_storydir)
-                    if filename.lower().endswith('.txt'))
+    filenames = set(
+        filename
+        for filename in os.listdir(abs_storydir)
+        if filename.lower().endswith('.txt'))
 
     suite = unittest.TestSuite()
     # Add tests to the suite individually.

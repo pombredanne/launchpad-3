@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals, Is
+from testtools.matchers import (
+    Equals,
+    Is,
+    )
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.mail.handler import (
