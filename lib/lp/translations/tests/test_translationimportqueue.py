@@ -10,7 +10,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )

@@ -46,7 +46,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_plain_parameter_type,
     )
 from lp.app.validators.name import name_validator

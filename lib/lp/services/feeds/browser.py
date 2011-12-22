@@ -29,7 +29,6 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import IFeedsApplication
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name,
@@ -63,6 +62,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.feeds.interfaces import IFeedsApplication
 
 
 class FeedsRootUrlData:

@@ -8,7 +8,7 @@ __all__ = []
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,

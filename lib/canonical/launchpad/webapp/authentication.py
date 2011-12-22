@@ -35,12 +35,12 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     BasicAuthLoggedInEvent,
     CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal,
+    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )

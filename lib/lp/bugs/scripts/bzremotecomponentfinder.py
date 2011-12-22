@@ -18,7 +18,7 @@ from urllib2 import (
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.scripts.logger import log as default_log
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,

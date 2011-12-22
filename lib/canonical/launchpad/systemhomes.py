@@ -26,13 +26,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IAuthServerApplication,
-    IBazaarApplication,
-    IFeedsApplication,
-    IPrivateMaloneApplication,
-    IRosettaApplication,
-    IWebServiceApplication,
     )
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
@@ -53,8 +48,14 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.bugs.interfaces.malone import (
+    IMaloneApplication,
+    IPrivateMaloneApplication,
+    )
+from lp.code.interfaces.codehosting import (
+    IBazaarApplication,
+    ICodehostingApplication,
+    )
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
@@ -77,8 +78,11 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
+from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview,
