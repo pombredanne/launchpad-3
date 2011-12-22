@@ -27,7 +27,7 @@ from zope.interface import Interface
 from zope.schema import Int
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson

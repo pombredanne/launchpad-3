@@ -9,7 +9,7 @@ import datetime
 
 import pytz
 
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bug import IBug
 
 

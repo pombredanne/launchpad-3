@@ -13,7 +13,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> cve = getUtility(ICveSet)['2005-2730']
 
     (Setup an event listener.)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> collected_events = []
     >>> modified_listener = TestEventListener(
     ...     IBugLinkTarget, ObjectModifiedEvent,

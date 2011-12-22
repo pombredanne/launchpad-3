@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_unique_token_for_table,
     )
 from canonical.launchpad.helpers import get_email_template
@@ -39,7 +39,7 @@ from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.services.database.lpstorm import IMasterObject
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,

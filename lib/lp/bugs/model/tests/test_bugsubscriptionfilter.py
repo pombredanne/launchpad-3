@@ -13,7 +13,7 @@ from zope.security.proxy import (
     )
 
 from canonical.launchpad import searchbuilder
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
