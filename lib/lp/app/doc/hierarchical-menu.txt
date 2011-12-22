@@ -231,7 +231,7 @@ location bar.
     >>> from BeautifulSoup import BeautifulSoup
     >>> from lp.testing.pages import extract_text
 
-    # Borrowed from launchpad.testing.pages.print_location()
+    # Borrowed from lp.testing.pages.print_location()
     >>> def print_hierarchy(html):
     ...     soup = BeautifulSoup(html)
     ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(

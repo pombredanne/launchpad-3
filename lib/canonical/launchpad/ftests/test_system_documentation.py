@@ -13,7 +13,7 @@ import unittest
 
 from zope.testing.cleanup import cleanUp
 
-from canonical.launchpad.testing import browser
+from lp.testing import browser
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
