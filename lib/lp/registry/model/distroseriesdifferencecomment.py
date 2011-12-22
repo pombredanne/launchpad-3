@@ -22,7 +22,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

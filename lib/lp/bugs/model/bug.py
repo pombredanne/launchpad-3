@@ -99,9 +99,9 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,

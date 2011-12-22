@@ -12,7 +12,7 @@ from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from canonical.launchpad.webapp.interfaces import IPasswordEncryptor
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 

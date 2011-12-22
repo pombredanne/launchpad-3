@@ -7,7 +7,7 @@ that order sometimes, you may add an assertion to that affect.  But it
 adds some ugliness: "if this is not the first item, assert..."  Doesn't
 seem worth the trouble.
 
-    >>> from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+    >>> from lp.services.orderingcheck import OrderingCheck
 
     >>> def sort_key(item):
     ...     """Simple sorting key for integers: the integer itself."""

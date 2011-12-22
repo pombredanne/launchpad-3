@@ -1760,7 +1760,7 @@
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
         path_expression="string:series"
-        parent_utility="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
+        parent_utility="lp.code.interfaces.codehosting.IBazaarApplication"/>
     <browser:menus
         classes="
             ProductSeriesFacets

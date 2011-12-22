@@ -18,8 +18,10 @@ from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.webapp.interfaces import IMultiLineWidgetLayout
+from canonical.launchpad.webapp.interfaces import (
+    IMultiLineWidgetLayout,
+    IPasswordEncryptor,
+    )
 
 
 class PasswordMismatch(ValidationError):

@@ -107,7 +107,7 @@ from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
