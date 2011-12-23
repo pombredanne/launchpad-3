@@ -374,7 +374,7 @@ We'll also create a new test milestone within the "trunk" series:
 
 Let's target an existing bug to both series "1.0" and series "2.0":
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> browser.open(bug_1_url)
     >>> print backslashreplace(browser.title)
     Bug...in Mozilla Firefox...

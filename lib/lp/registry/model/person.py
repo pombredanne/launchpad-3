@@ -118,7 +118,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )

@@ -198,7 +198,7 @@ a distribution.  There are several sections of information.
 
 The page has an appropriate title and main heading.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(user_browser.title)
     \u201ciceweasel\u201d package : Ubuntu
 

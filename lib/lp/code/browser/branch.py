@@ -82,7 +82,7 @@ from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.helpers import truncate_text
+from lp.services.helpers import truncate_text
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

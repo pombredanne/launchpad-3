@@ -5,7 +5,7 @@ from doctest import DocTestSuite
 from textwrap import dedent
 import unittest
 
-from canonical.launchpad import helpers
+from lp.services import helpers
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
@@ -101,7 +101,7 @@ def test_shortlist_returns_all_elements():
     Show that shortlist doesn't crop the results when a warning is
     printed.
 
-    >>> from canonical.launchpad.helpers import shortlist
+    >>> from lp.services.helpers import shortlist
     >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPSIS
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -124,7 +124,7 @@ def test_english_list():
     or more elements it follows the advice given in The Elements of Style,
     chapter I, section 2.
 
-        >>> from canonical.launchpad.helpers import english_list
+        >>> from lp.services.helpers import english_list
 
     By default, it joins the last two elements in the list with 'and', and
     joins the rest of the list with ','. It also adds whitespace around

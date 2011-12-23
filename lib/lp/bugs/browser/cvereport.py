@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from lp.services.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView
 from lp.bugs.browser.bugtask import BugTaskListingItem

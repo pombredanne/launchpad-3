@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.app.form.browser import TextWidget
 
-from canonical.launchpad.helpers import english_list
+from lp.services.helpers import english_list
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,

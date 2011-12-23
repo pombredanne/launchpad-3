@@ -52,7 +52,7 @@ from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
 from lp.services.feeds.browser import FeedsMixin
-from canonical.launchpad.helpers import english_list
+from lp.services.helpers import english_list
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

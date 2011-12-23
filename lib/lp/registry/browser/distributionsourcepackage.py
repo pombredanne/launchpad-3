@@ -33,7 +33,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
