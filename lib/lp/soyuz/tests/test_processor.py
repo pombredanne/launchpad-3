@@ -5,7 +5,6 @@
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -27,6 +26,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class ProcessorFamilyTests(TestCaseWithFactory):

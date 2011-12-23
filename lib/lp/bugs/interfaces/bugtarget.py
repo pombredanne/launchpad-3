@@ -334,8 +334,7 @@ class IBugTarget(IHasBugs):
     def createBug(bug_params):
         """Create a new bug on this target.
 
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
+        bug_params is an instance of `CreateBugParams`.
         """
 
 # We assign the schema for an `IBugTask` attribute here

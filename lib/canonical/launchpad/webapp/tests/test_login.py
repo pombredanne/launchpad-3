@@ -37,19 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
-from lp.services.database.lpstorm import IStore
-from canonical.launchpad.testing.browser import (
-    Browser,
-    setUp,
-    tearDown,
-    )
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadApplication,
@@ -66,6 +53,7 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -77,7 +65,19 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from lp.testing.fixture import ZopeViewReplacementFixture
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
+from lp.testing.systemdocs import LayeredDocFileSuite
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 

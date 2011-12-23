@@ -35,7 +35,7 @@ from zope.testbrowser.browser import (
     fix_exception_name,
     )
 
-from canonical.launchpad.testing.pages import (
+from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,

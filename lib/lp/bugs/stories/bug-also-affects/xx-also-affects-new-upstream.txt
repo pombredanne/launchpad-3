@@ -26,7 +26,7 @@ upstream already registered in Launchpad which uses the same bugtracker as
 the one specified by the user. If there are any we present them as options
 for the user to use as the affected upstream.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')

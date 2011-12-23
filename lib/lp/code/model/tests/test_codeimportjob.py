@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing.layers import (
@@ -57,6 +56,7 @@ from lp.testing import (
     with_anonymous_login,
     with_celebrity_logged_in,
     )
+from lp.testing.pages import get_feedback_messages
 
 
 def login_for_code_imports():

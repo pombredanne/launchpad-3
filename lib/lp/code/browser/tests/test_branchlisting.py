@@ -20,11 +20,6 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
@@ -61,6 +56,11 @@ from lp.testing import (
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.matchers import DocTestMatches
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,

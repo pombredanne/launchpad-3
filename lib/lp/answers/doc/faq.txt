@@ -44,8 +44,7 @@ contacts.)
     ...     sample_person, 'How can I see the Fnords?',
     ...     "Install the Fnords highlighter extension and see the Fnords!")
 
-(The complete description of IFAQTarget is available in
-lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
+(The complete description of IFAQTarget is available in faqtarget.txt)
 
 
 IFAQTarget adapters
@@ -115,8 +114,7 @@ for FAQs. It is provided by product, distribution, and projects.
     >>> verifyObject(IFAQCollection, firefox)
     True
 
-(The complete description of IFAQCollection is available in
-lib/canonical/launchpad/interfaces/ftests/faqcollection.txt)
+(The complete description of IFAQCollection is available in faqcollection.txt)
 
 
 IFAQ
@@ -240,8 +238,7 @@ The searchFAQs() method can be used to find FAQs by keywords or owner.
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
         or view Flash/Java web pages (Ubuntu)
 
-(See lib/canonical/launchpad/interfaces/ftests/faqcollection.txt for the
-full interface description.)
+(See faqcollection.txt for the full interface description.)
 
 
 Linking a FAQ to a question

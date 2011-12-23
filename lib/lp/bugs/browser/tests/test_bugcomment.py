@@ -20,7 +20,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugcomment import group_comments_with_activity
@@ -35,6 +34,7 @@ from lp.testing import (
     person_logged_in,
     TestCase,
     )
+from lp.testing.pages import find_tag_by_id
 
 
 class BugActivityStub:
