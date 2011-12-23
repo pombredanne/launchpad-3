@@ -61,6 +61,10 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -93,6 +97,7 @@ from lp.testing import (
 from lp.testing._webservice import QueryCollector
 from lp.testing.dbuser import dbuser
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_initialized_view
 
 

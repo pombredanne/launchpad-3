@@ -40,7 +40,7 @@ from lp.registry.model.teammembership import TeamParticipation
 
 
 class BugBranch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugBranch."""
+    """See `IBugBranch`."""
     implements(IBugBranch, IHasBranchTarget)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

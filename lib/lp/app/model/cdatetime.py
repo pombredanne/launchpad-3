@@ -19,6 +19,7 @@ DAYS_PER_YEAR = 365
 DAYS_PER_MONTH = 30
 DAYS_PER_WEEK = 7
 
+
 class AgingAdapter:
     """Adapt an IHasDateCreated to an IAging."""
     implements(IAging)
@@ -27,7 +28,7 @@ class AgingAdapter:
         self.context = context
 
     def currentApproximateAge(self):
-        """See canonical.launchpad.interfaces.ITimeDelta."""
+        """See `ITimeDelta`."""
         age = ""
         datecreated = self.context.datecreated
         right_now = datetime.now(pytz.timezone('UTC'))

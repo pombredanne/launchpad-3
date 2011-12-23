@@ -6,7 +6,7 @@ form will suggest translations from this alternative language as well as those
 in the form's main language.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.testing.pages import extract_url_parameter
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
 
     >>> login(ANONYMOUS)

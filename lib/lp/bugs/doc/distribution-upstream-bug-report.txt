@@ -347,7 +347,7 @@ We test that the view data is constructed sanely and without any hidden
 defects. Let's set up some helpers to make it easier for us to output
 them:
 
-    >>> from canonical.launchpad.testing.systemdocs import create_view
+    >>> from lp.testing.systemdocs import create_view
 
     >>> def print_numbers(data):
     ...     for f in ['open_bugs',

@@ -11,11 +11,6 @@ from mechanize import LinkNotFoundError
 import soupmatchers
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import (
-    extract_link_from_tag,
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.model import (
@@ -27,6 +22,11 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.pages import (
+    extract_link_from_tag,
+    extract_text,
+    find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
 

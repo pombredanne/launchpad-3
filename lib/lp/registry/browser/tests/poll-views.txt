@@ -4,7 +4,7 @@ Poll views
 The polls portlet shows the state of current polls, and links to past
 polls.
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> from datetime import timedelta
 
     >>> user = factory.makePerson()
