@@ -71,7 +71,6 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
@@ -375,7 +374,8 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave()
-        builder = MockBuilder("mock_builder", building_slave, TrivialBehavior())
+        builder = MockBuilder(
+            "mock_builder", building_slave, TrivialBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
