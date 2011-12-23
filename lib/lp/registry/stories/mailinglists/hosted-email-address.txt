@@ -17,7 +17,7 @@ the address is reserved for the team which owns the ML.
 
 The team owner sets the contact address to the hosted mailing list.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> logout()
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')

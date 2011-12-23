@@ -3,15 +3,14 @@
 
 """Test webservice methods related to the publisher."""
 
-from canonical.launchpad.testing.pages import webservice_for_person
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.testing import (
     api_url,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.pages import webservice_for_person
 
 
 class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):

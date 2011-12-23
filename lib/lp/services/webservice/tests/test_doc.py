@@ -9,16 +9,16 @@ import os
 
 from zope.testing.cleanup import cleanUp
 
-from canonical.launchpad.testing import browser
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setGlobs,
-    )
 from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.services.testing import build_test_suite
+from lp.testing import browser
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
