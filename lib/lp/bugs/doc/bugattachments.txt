@@ -400,7 +400,7 @@ We can search for attachment of a specific types:
     >>> bugs[0].id
     4
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> attachmenttype = any(*BugAttachmentType.items)
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
     >>> bugtasks = bugtaskset.search(params)

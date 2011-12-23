@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
+from lp.services.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (

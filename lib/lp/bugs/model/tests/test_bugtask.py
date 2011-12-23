@@ -18,7 +18,7 @@ from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     not_equals,

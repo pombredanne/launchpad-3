@@ -131,7 +131,7 @@ from lp.services.feeds.browser import (
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.services.mail.notification import get_unified_diff
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     NULL,
