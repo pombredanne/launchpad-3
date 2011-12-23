@@ -256,6 +256,53 @@ def test_shortlist_returns_all_elements():
     """
 
 
+def test_english_list():
+    """
+    The english_list function takes a list of strings and concatenates them
+    in a form suitable for inclusion in an English sentence. For lists of 3
+    or more elements it follows the advice given in The Elements of Style,
+    chapter I, section 2.
+
+        >>> from canonical.launchpad.helpers import english_list
+
+    By default, it joins the last two elements in the list with 'and', and
+    joins the rest of the list with ','. It also adds whitespace around
+    these delimiters as appropriate.
+
+        >>> english_list([])
+        ''
+
+        >>> english_list(['Fred'])
+        'Fred'
+
+        >>> english_list(['Fred', 'Bob'])
+        'Fred and Bob'
+
+        >>> english_list(['Fred', 'Bob', 'Harold'])
+        'Fred, Bob, and Harold'
+
+    It accepts any iterable that yields strings:
+
+        >>> english_list('12345')
+        '1, 2, 3, 4, and 5'
+
+        >>> english_list(str(i) for i in xrange(5))
+        '0, 1, 2, 3, and 4'
+
+    It does not convert non-string elements:
+
+        >>> english_list(range(3))
+        Traceback (most recent call last):
+        ...
+        TypeError: sequence item 0: expected string, int found
+
+    The conjunction can be changed:
+
+        >>> english_list('123', 'or')
+        '1, 2, or 3'
+    """
+
+
 class TruncateTextTest(unittest.TestCase):
 
     def test_leaves_shorter_text_unchanged(self):

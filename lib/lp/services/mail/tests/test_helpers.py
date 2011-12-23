@@ -14,6 +14,7 @@ from zope.interface import (
 
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.helpers import get_contact_email_addresses
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
@@ -220,6 +221,16 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
             owner=owner, email='fooix-devs@lists.example.com')
         self.assertEqual(
             team, get_person_or_team('fooix-devs@lists.example.com'))
+
+
+class getContactEmailAddresses(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_user_with_preferredemail(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com', name='user',)
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
 
 
 def test_suite():
