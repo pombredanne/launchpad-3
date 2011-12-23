@@ -10,8 +10,8 @@
 
   <securedutility
       class="lp.xmlrpc.application.PrivateApplication"
-      provides="lp.app.interfaces.launchpad.IPrivateApplication">
-      <allow interface="lp.app.interfaces.launchpad.IPrivateApplication"/>
+      provides="lp.xmlrpc.interfaces.IPrivateApplication">
+      <allow interface="lp.xmlrpc.interfaces.IPrivateApplication"/>
   </securedutility>
 
   <xmlrpc:view

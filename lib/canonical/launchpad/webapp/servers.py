@@ -62,9 +62,7 @@ from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-from lp.app.interfaces.launchpad import (
-    IPrivateApplication,
-    )
+from lp.xmlrpc.interfaces import IPrivateApplication
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,

@@ -23,7 +23,7 @@ from zope.interface import (
 
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.app.interfaces.launchpad import IPrivateApplication
+from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.bugs.interfaces.malone import IPrivateMaloneApplication
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
