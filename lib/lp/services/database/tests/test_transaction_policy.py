@@ -46,8 +46,9 @@ class TestTransactionPolicy(TestCaseWithFactory):
 
         :return: A token that `hasDatabaseBeenWrittenTo` can look for.
         """
-        self.writeToDatabase()
+        name = self.writeToDatabase()
         transaction.commit()
+        return name
 
     def hasDatabaseBeenWrittenTo(self, test_token):
         """Is the object made by `writeToDatabase` present in the database?
