@@ -29,7 +29,7 @@ sourcepackagename, tag, milestone, status, importance, has_patch,
 fixed_upstream, viewed_by and the count. viewed_by is a team reference
 and used to query private bug counts.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.bugs.model.bugsummary import BugSummary
     >>> from lp.testing import login_celebrity

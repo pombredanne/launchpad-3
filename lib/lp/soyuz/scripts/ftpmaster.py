@@ -29,7 +29,6 @@ from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     UploadFailed,
@@ -42,6 +41,7 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.browser_helpers import get_plural_text
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,

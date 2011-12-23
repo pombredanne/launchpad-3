@@ -1,6 +1,8 @@
-= Review Nominated Bugs =
+Review Nominated Bugs
+=====================
 
-== Distribution Series ==
+Distribution Series
+-------------------
 
 From the distribution series bug page you can go to a page to review
 all the bugs nominated for this series.
@@ -107,7 +109,8 @@ After approving the nominated bugs, the listing is empty.
     ...
     LookupError: label 'Save changes'
 
-== Product Series ==
+Product Series
+--------------
 
 A product series has the same nomination listing as a distro series.
 

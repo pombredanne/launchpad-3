@@ -18,7 +18,7 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage

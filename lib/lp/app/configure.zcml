@@ -13,6 +13,18 @@
     <include package="lp.app.validators" />
     <include package="lp.app.widgets" />
 
+    <class class="lazr.lifecycle.event.ObjectCreatedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectCreatedEvent" />
+    </class>
+
+    <class class="lazr.lifecycle.event.ObjectDeletedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectDeletedEvent" />
+    </class>
+
+    <class class="lazr.lifecycle.event.ObjectModifiedEvent">
+      <allow interface="lazr.lifecycle.interfaces.IObjectModifiedEvent" />
+    </class>
+
     <xmlrpc:view
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       interface="canonical.launchpad.xmlrpc.application.ISelfTest"
@@ -35,8 +47,8 @@
 
     <!-- Configuration related to datetime classes in Launchpad. -->
     <adapter
-        for="canonical.launchpad.interfaces.launchpad.IHasDateCreated"
-        provides="canonical.launchpad.interfaces.launchpad.IAging"
+        for="lp.app.interfaces.launchpad.IHasDateCreated"
+        provides="lp.app.interfaces.launchpad.IAging"
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter

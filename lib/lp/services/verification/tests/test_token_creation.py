@@ -8,7 +8,7 @@ import random
 import testtools
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.components.tokens import (
+from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )

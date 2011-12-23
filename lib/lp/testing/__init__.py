@@ -664,7 +664,7 @@ class TestCaseWithFactory(TestCase):
         self._use_bzr_branch_called = False
         # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
         # messing with global log state (see
-        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # lp.services.scripts.logger), trace._bzr_logger does not
         # necessarily equal logging.getLogger('bzr'), so we have to explicitly
         # make it so in order to avoid "No handlers for "bzr" logger'
         # messages.
@@ -678,7 +678,7 @@ class TestCaseWithFactory(TestCase):
             because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
-        from canonical.launchpad.testing.pages import setupBrowserForUser
+        from lp.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson(password=password)
@@ -807,7 +807,7 @@ class BrowserTestCase(TestCaseWithFactory):
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
-            from canonical.launchpad.testing.pages import setupBrowser
+            from lp.testing.pages import setupBrowser
             browser = setupBrowser()
             browser.open(url)
             return browser
@@ -817,7 +817,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainContent(self, context, view_name=None, rootsite=None,
                        no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
-        from canonical.launchpad.testing.pages import find_main_content
+        from lp.testing.pages import find_main_content
         browser = self.getViewBrowser(
             context, view_name, rootsite=rootsite, no_login=no_login,
             user=user)
@@ -826,7 +826,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainText(self, context, view_name=None, rootsite=None,
                     no_login=False, user=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import extract_text
+        from lp.testing.pages import extract_text
         return extract_text(
             self.getMainContent(context, view_name, rootsite, no_login, user))
 

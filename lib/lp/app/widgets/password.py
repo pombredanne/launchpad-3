@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -18,8 +18,10 @@ from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.webapp.interfaces import IMultiLineWidgetLayout
+from canonical.launchpad.webapp.interfaces import (
+    IMultiLineWidgetLayout,
+    IPasswordEncryptor,
+    )
 
 
 class PasswordMismatch(ValidationError):
@@ -77,7 +79,9 @@ class PasswordChangeWidget(PasswordWidget):
         contain the same value. It returns the value encrypted.
 
         >>> request = LaunchpadTestRequest(form={
-        ...     'field.foo': u'My Password', 'field.foo_dupe': u'My Password'})
+        ...     'field.foo': u'My Password',
+        ...     'field.foo_dupe': u'My Password',
+        ...     })
         >>> widget = PasswordChangeWidget(field, request)
         >>> crypted_pw = widget.getInputValue()
         >>> encryptor = getUtility(IPasswordEncryptor)
@@ -123,4 +127,3 @@ class PasswordChangeWidget(PasswordWidget):
         # If we have matching plaintext, encrypt it and return the password
         encryptor = getUtility(IPasswordEncryptor)
         return encryptor.encrypt(value)
-

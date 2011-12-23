@@ -17,7 +17,7 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
-from canonical.launchpad.components.apihelpers import (
+from lp.services.webservice.apihelpers import (
     patch_collection_return_type,
     patch_entry_return_type,
     patch_reference_property,

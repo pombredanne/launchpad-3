@@ -13,7 +13,7 @@ import sys
 
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.scripts import logger_options, logger
+from lp.services.scripts import logger_options, logger
 
 mapping = {
     # u'\u2022': u' ',  # space represented as a dot.

@@ -978,6 +978,7 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         namespace = PersonalNamespace(team)
         self.assertTrue(namespace.canBranchesBePrivate())
 
+
 class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
     """Tests for PersonalNamespace.canBranchesBePublic."""
 

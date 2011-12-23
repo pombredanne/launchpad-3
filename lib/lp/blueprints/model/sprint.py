@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     )
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ChangesFile functionality."""
@@ -123,7 +123,8 @@ class ChangesFileTests(TestCase):
         contents = self.getBaseChanges()
         contents["Binary"] = "binary1\n binary2 \n binary3"
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
-        self.assertEquals(set(["binary1", "binary2", "binary3"]), changes.binaries)
+        self.assertEqual(
+            set(["binary1", "binary2", "binary3"]), changes.binaries)
 
     def test_checkFileName(self):
         # checkFileName() yields an UploadError if the filename is invalid.

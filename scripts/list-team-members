@@ -12,7 +12,7 @@ import _pythonpath
 
 from canonical.config import config
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.scripts.base import LaunchpadScript
 from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
 
@@ -57,5 +57,5 @@ class ListTeamMembersScript(LaunchpadScript):
         return 0
 
 if __name__ == '__main__':
-    script = ListTeamMembersScript('canonical.launchpad.scripts.listteammembers', dbuser='listteammembers')
+    script = ListTeamMembersScript('lp.services.scripts.listteammembers', dbuser='listteammembers')
     script.run()

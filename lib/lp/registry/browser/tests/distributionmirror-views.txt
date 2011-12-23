@@ -7,7 +7,7 @@ Registering a mirror
 Only full functionality distributions may have mirrors.
 IDerivativeDistributions cannot use the form.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> distribution = factory.makeDistribution(name='youbuntu')
@@ -347,7 +347,7 @@ Viewing a mirror
 The archive mirror page summarizes the current state of the mirror.
 
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> login('no-priv@canonical.com')

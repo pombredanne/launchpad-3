@@ -29,7 +29,7 @@ from canonical.database.sqlbase import (
     quote_identifier,
     sqlvalues,
     )
-from canonical.launchpad.scripts import db_options
+from lp.services.scripts import db_options
 
 
 class Table:

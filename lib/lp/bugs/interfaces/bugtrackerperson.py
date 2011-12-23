@@ -18,7 +18,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.registry.interfaces.person import IPerson
 

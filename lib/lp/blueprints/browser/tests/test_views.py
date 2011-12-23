@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -12,11 +12,6 @@ import unittest
 from storm.store import Store
 from testtools.matchers import LessThan
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
@@ -27,6 +22,11 @@ from lp.testing import (
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class TestAssignments(TestCaseWithFactory):
@@ -55,7 +55,7 @@ class TestAssignments(TestCaseWithFactory):
         specs = []
         for _ in range(10):
             specs.append(self.factory.makeSpecification(
-                **{targettype:target}))
+                **{targettype: target}))
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
@@ -90,7 +90,7 @@ class TestAssignments(TestCaseWithFactory):
         self.check_query_counts_scaling_with_unique_people(
             self.factory.makeDistribution(),
             'distribution')
-    
+
 
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)

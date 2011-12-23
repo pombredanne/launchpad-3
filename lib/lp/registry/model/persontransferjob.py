@@ -32,11 +32,11 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.mailnotification import MailWrapper
+from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
@@ -224,7 +224,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
     def run(self):
         """See `IMembershipNotificationJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         from_addr = format_address(
             self.team.displayname, config.canonical.noreply_from_address)
         admin_emails = self.team.getTeamAdminsEmailAddresses()
@@ -416,7 +416,7 @@ class PersonMergeJob(PersonTransferJobDerived):
         from_person_name = self.from_person.name
         to_person_name = self.to_person.name
 
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         personset = getUtility(IPersonSet)
         if self.metadata.get('delete', False):
             log.debug(

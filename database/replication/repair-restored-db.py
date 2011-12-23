@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
     connect, quote, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from lp.services.scripts import db_options, logger_options, logger
 
 import replication.helpers
 

@@ -11,7 +11,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

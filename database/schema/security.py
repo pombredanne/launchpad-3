@@ -18,7 +18,7 @@ import sys
 import psycopg2
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger_options, logger, db_options
+from lp.services.scripts import logger_options, logger, db_options
 from fti import quote_identifier
 import replication.helpers
 

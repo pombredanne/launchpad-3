@@ -624,7 +624,7 @@ Initially there are no nominations.
     >>> fooix.bug_supervisor = john
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
     >>> john_webservice = webservice_for_person(

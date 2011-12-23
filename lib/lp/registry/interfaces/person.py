@@ -93,7 +93,7 @@ from zope.schema import (
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,

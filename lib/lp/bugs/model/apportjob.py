@@ -27,11 +27,6 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import EnumCol
-from lp.services.temporaryblobstorage.model import (
-    TemporaryBlobStorage,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -48,9 +43,12 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 
 
 class ApportJob(StormBase):

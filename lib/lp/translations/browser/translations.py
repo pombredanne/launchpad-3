@@ -18,7 +18,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import IRosettaApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

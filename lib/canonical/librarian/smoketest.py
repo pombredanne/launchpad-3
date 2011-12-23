@@ -15,7 +15,7 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 
 FILE_SIZE = 1024

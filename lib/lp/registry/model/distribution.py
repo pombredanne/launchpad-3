@@ -52,12 +52,12 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -784,7 +784,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             whiteboard=whiteboard)
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IBugTarget`."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
@@ -1730,7 +1730,7 @@ class DistributionSet:
         return distribution
 
     def get(self, distributionid):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         return Distribution.get(distributionid)
 
     def count(self):

@@ -19,8 +19,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
@@ -28,6 +26,7 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -42,6 +41,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 

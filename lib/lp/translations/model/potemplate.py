@@ -62,7 +62,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )

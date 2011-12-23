@@ -17,7 +17,7 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.tests import run_script
+from lp.services.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
