@@ -17,6 +17,7 @@ from zope.component import (
 from zope.interface import Interface
 
 from canonical.config import config
+from canonical.database.sqlbase import quote
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -44,6 +45,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.bugs.model.bugtask import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -153,6 +155,9 @@ from lp.registry.interfaces.role import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
+from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -848,9 +853,15 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
 
-            # Grant visibility to people with subscriptions to branches owned
-            # by the private team.
+            # Grant visibility to people who can see branches owned by the
+            # private team.
             team_branches = IBranchCollection(self.obj)
+            if team_branches.visibleByUser(user.person).count() > 0:
+                return True
+
+            # Grant visibility to people who can see branches subscribed to
+            # by the private team.
+            team_branches = getUtility(IAllBranches).subscribedBy(self.obj)
             if team_branches.visibleByUser(user.person).count() > 0:
                 return True
 
@@ -862,6 +873,80 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if mp.count() > 0:
                 return True
 
+            # There are a number of other conditions under which a private
+            # team may be visible. These are:
+            #  - All blueprints are public, so if the team is subscribed to
+            #    any blueprints, they are in a public role and hence visible.
+            #  - If the team is directly subscribed or assigned to any bugs
+            #    the user can see, the team should be visible.
+            #
+            # For efficiency, we do not want to perform several
+            # TeamParticipation joins and we only want to do the user visible
+            # bug filtering once. We use a With statement for the team
+            # participation check. For the bug query, we first filter on team
+            # association (subscribed to, assigned to etc) and then on user
+            # visibility.
+
+            # The extra checks may be expensive so we'll use a feature flag.
+            extra_checks_enabled = bool(getFeatureFlag(
+                'disclosure.extra_private_team_LimitedView_security.enabled'))
+            if not extra_checks_enabled:
+                return False
+
+            store = IStore(Person)
+            team_bugs_visible_select = """
+                SELECT bug_id FROM (
+                    -- The direct team bug subscriptions
+                    SELECT BugSubscription.bug as bug_id
+                    FROM BugSubscription
+                    WHERE BugSubscription.person IN
+                        (SELECT team FROM teams)
+                    UNION
+                    -- The bugs assigned to the team
+                    SELECT BugTask.bug as bug_id
+                    FROM BugTask
+                    WHERE BugTask.assignee IN (SELECT team FROM teams)
+                    ) as TeamBugs
+                """
+            user_private_bugs_visible_filter = get_bug_privacy_filter(
+                user.person, private_only=True)
+
+            query = """
+                SELECT TRUE WHERE
+                EXISTS (
+                    WITH teams AS (
+                        SELECT team from TeamParticipation
+                        WHERE person = %(personid)s
+                    )
+                    -- The team blueprint subscriptions
+                    SELECT 1
+                    FROM SpecificationSubscription
+                    WHERE SpecificationSubscription.person IN
+                        (SELECT team FROM teams)
+                    UNION ALL
+                    -- Find the bugs associated with the team and filter by
+                    -- those that are visible to the user.
+                    -- Public bugs are simple to check and always visible so
+                    -- do those first.
+                    %(team_bug_select)s
+                    WHERE bug_id in (
+                        SELECT Bug.id FROM Bug WHERE Bug.private is FALSE
+                    )
+                    UNION ALL
+                    -- Now do the private bugs the user can see.
+                    %(team_bug_select)s
+                    WHERE bug_id in (
+                        SELECT Bug.id FROM Bug WHERE %(user_bug_filter)s
+                    )
+                )
+                """ % dict(
+                        personid=quote(self.obj.id),
+                        team_bug_select=team_bugs_visible_select,
+                        user_bug_filter=user_private_bugs_visible_filter)
+
+            rs = store.execute(query)
+            if rs.rowcount > 0:
+                return True
         return False
 
 

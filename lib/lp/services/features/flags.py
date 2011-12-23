@@ -210,6 +210,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.extra_private_team_LimitedView_security.enabled',
+     'boolean',
+     ('Enables additional checks to be done to determine whether a user has '
+      'launchpad.LimitedView permission on a private team.'),
+     '',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '

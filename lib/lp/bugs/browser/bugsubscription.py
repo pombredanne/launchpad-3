@@ -556,6 +556,8 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
+            # The security adaptor will do the job also but we don't want or
+            # need the expense of running several complex SQL queries.
             precache_permission_for_objects(
                         self.request, 'launchpad.LimitedView', [person])
             subscriber = {
@@ -583,7 +585,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
         others = list(bug.getIndirectSubscribers())
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any indirect subscribers.
         include_private = self.user is not None
         if include_private:
             precache_permission_for_objects(

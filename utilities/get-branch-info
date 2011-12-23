@@ -42,10 +42,6 @@ def main(args):
     if branch.url is not None:
         print 'External URL:', branch.url
     branch_path = branch_id_to_path(branch.id)
-    if branch.branch_type == BranchType.HOSTED:
-        hosted_path = join(
-            config.codehosting.hosted_branches_root, branch_path)
-        print 'Hosted copy:',  hosted_path
     mirrored_path = join(
         config.codehosting.mirrored_branches_root, branch_path)
     print 'Mirrored copy:', mirrored_path
