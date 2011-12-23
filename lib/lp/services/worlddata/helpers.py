@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'browserLanguages',
+    'browser_languages',
     'is_english_variant',
     'preferred_or_request_languages',
     ]
@@ -20,7 +20,7 @@ from lp.services.geoip.interfaces import (
     )
 
 
-def browserLanguages(request):
+def browser_languages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
 

@@ -55,7 +55,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.helpers import browserLanguages
+from lp.services.worlddata.helpers import browser_languages
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -458,7 +458,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     def browserLanguages(self):
         """The languages the user's browser requested."""
-        return browserLanguages(self.request)
+        return browser_languages(self.request)
 
     @property
     def request_import_link(self):

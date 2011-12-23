@@ -205,7 +205,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.helpers import browserLanguages
+from lp.services.worlddata.helpers import browser_languages
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
     )
@@ -1121,7 +1121,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]

@@ -17,14 +17,7 @@ import subprocess
 import tarfile
 import warnings
 
-from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.services.geoip.interfaces import (
-    IRequestLocalLanguages,
-    IRequestPreferredLanguages,
-    )
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -97,11 +90,6 @@ def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""
 
     return tarfile.open('', 'r', StringIO(s))
-
-
-def browserLanguages(request):
-    """Return a list of Language objects based on the browser preferences."""
-    return IRequestPreferredLanguages(request).getPreferredLanguages()
 
 
 def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
@@ -191,47 +179,6 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
             " sequences with no more than %d items.  There were %s items."
             % (longest_expected, size), stacklevel=2)
     return results
-
-
-def preferred_or_request_languages(request):
-    """Turn a request into a list of languages to show.
-
-    Return Person.languages when the user has preferred languages.
-    Otherwise, return the languages from the request either from the
-    headers or from the IP address.
-    """
-    user = getUtility(ILaunchBag).user
-    if user is not None and user.languages:
-        return user.languages
-
-    # If the user is not authenticated, or they are authenticated but have no
-    # languages set, try looking at the HTTP headers for clues.
-    languages = IRequestPreferredLanguages(request).getPreferredLanguages()
-    for lang in IRequestLocalLanguages(request).getLocalLanguages():
-        if lang not in languages:
-            languages.append(lang)
-    return languages
-
-
-def is_english_variant(language):
-    """Return whether the language is a variant of modern English .
-
-    >>> class Language:
-    ...     def __init__(self, code):
-    ...         self.code = code
-    >>> is_english_variant(Language('fr'))
-    False
-    >>> is_english_variant(Language('en'))
-    False
-    >>> is_english_variant(Language('en_CA'))
-    True
-    >>> is_english_variant(Language('enm'))
-    False
-    """
-    # XXX sinzui 2007-07-12 bug=125545:
-    # We would not need to use this function so often if variant languages
-    # knew their parent language.
-    return language.code[0:3] in ['en_']
 
 
 def is_tar_filename(filename):
