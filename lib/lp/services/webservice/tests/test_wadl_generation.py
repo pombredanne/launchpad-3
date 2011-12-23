@@ -9,7 +9,7 @@ from lazr.restful.interfaces import IWebServiceConfiguration
 from testtools.matchers import StartsWith
 from zope.component import getUtility
 
-from canonical.launchpad.rest.wadl import (
+from lp.services.webservice.wadl import (
     generate_json,
     generate_wadl,
     )

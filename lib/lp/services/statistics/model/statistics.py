@@ -57,7 +57,7 @@ class LaunchpadStatistic(SQLBase):
 
 
 class LaunchpadStatisticSet:
-    """See canonical.launchpad.interfaces.ILaunchpadStatisticSet."""
+    """See`ILaunchpadStatisticSet`."""
 
     implements(ILaunchpadStatisticSet)
 

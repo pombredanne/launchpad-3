@@ -150,7 +150,7 @@
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
-        handler="canonical.launchpad.rest.me.cache_me_link_when_principal_identified"
+        handler="lp.services.webservice.me.cache_me_link_when_principal_identified"
         />
 
     <subscriber

@@ -5,10 +5,6 @@
 
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.testing.pages import (
-    find_tag_by_id,
-    setupBrowserForUser,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
@@ -20,6 +16,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.pages import (
+    find_tag_by_id,
+    setupBrowserForUser,
+    )
 from lp.testing.views import create_initialized_view
 
 

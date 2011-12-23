@@ -15,8 +15,6 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-# fix circular import issue
-import canonical.launchpad.interfaces
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,)
 from lp.services.scripts.base import LaunchpadCronScript

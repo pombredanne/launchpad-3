@@ -968,7 +968,9 @@ class BugTextView(LaunchpadView):
 
     def initialize(self):
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any assignees and subscribers.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = []
         for task in self.bugtasks:
             if task.assignee is not None:

@@ -23,7 +23,7 @@ which will also include information about the available permission
 levels.
 
     >>> import simplejson
-    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> from lp.testing.pages import setupBrowser
 
     >>> json_browser = setupBrowser()
     >>> json_browser.addHeader('Accept', 'application/json')
