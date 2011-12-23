@@ -142,7 +142,7 @@ Plain users have no permission to call retry:
 
 Set up some more webservice users:
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')

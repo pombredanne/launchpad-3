@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for canonical.launchpad.testing.systemdocs module."""
+"""Tests for lp.testing.systemdocs module."""
 
 __metaclass__ = type
 
@@ -13,11 +13,11 @@ import tempfile
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.testing.systemdocs import (
+from canonical.testing import reset_logging
+from lp.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,
     )
-from canonical.testing import reset_logging
 
 
 class LayeredDocFileSuiteTests(unittest.TestCase):

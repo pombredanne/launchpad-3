@@ -8,10 +8,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'IRosettaSelfTest',
     'ISelfTest',
     'PrivateApplication',
-    'RosettaSelfTest',
     'SelfTest',
     ]
 
@@ -35,6 +33,7 @@ from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
+
 
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini
@@ -116,17 +115,3 @@ class SelfTest(LaunchpadXMLRPCView):
 
     def raise_exception(self):
         raise RuntimeError("selftest exception")
-
-
-class IRosettaSelfTest(Interface):
-
-    def run_test():
-        return "OK"
-
-
-class RosettaSelfTest(LaunchpadXMLRPCView):
-
-    implements(IRosettaSelfTest)
-
-    def run_test(self):
-        return "OK"

@@ -53,6 +53,8 @@ class BranchPortletSubscribersContent(LaunchpadView):
         """Return a decorated list of branch subscriptions."""
 
         # Cache permissions so private subscribers can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         if self.user is not None:
             subscribers = [
                 subscription.person

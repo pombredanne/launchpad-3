@@ -200,7 +200,7 @@ The owner of a PPA can delete packages.
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> logout()
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> cprov_webservice = webservice_for_person(cprov,
     ...     permission=OAuthPermission.WRITE_PUBLIC)

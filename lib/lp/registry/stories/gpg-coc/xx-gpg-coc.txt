@@ -140,7 +140,7 @@ Make sure that UIDs were properly processed; in particular, check that
 "sample.revoked@canonical.com", the revoked UID in the key, wasn't
 added as an email address:
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
