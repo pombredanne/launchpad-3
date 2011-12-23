@@ -40,7 +40,7 @@ from twisted.python import failure
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.services.sshserver import events
 from lp.services.sshserver.session import PatchedSSHSession
 from lp.services.sshserver.sftp import FileTransferServer

@@ -267,7 +267,7 @@ def register_zcml(package_names, old_top):
             unregistered = True
         if unregistered:
             continue
-        insert_after = r'(<include package="canonical.launchpad.xmlrpc" />)'
+        insert_after = r'(<include package="lp.xmlrpc" />)'
         include = r'\1\n\n  <include package="lp.%s" />' % package_name
         for dummy in find_matches(
             old_top, 'configure.zcml', insert_after, substitution=include):
