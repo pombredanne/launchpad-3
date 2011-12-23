@@ -1212,7 +1212,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         super(TestSlaveWithLibrarian, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-        # TODO: Needs policy
+        self.useFixture(BuilddManagerTestFixture())
 
     def test_ensurepresent_librarian(self):
         # ensurepresent, when given an http URL for a file will download the
@@ -1220,9 +1220,9 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         # downloaded.
 
         # Use the Librarian because it's a "convenient" web server.
-        lf = self.factory.makeLibraryFileAlias(
-            'HelloWorld.txt', content="Hello World")
-        self.layer.txn.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            lf = self.factory.makeLibraryFileAlias(
+                'HelloWorld.txt', content="Hello World")
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(
@@ -1235,9 +1235,9 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         # filename made from the sha1 of the content underneath the
         # 'filecache' directory.
         content = "Hello World"
-        lf = self.factory.makeLibraryFileAlias(
-            'HelloWorld.txt', content=content)
-        self.layer.txn.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            lf = self.factory.makeLibraryFileAlias(
+                'HelloWorld.txt', content=content)
         expected_url = '%s/filecache/%s' % (
             self.slave_helper.BASE_URL, lf.content.sha1)
         self.slave_helper.getServerSlave()
@@ -1263,7 +1263,6 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         def got_files(ignored):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
-            got_contents = []
             for sha1 in filemap:
                 local_file = filemap[sha1]
                 file = open(local_file)
@@ -1279,11 +1278,12 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         dl = []
         for content in contents:
             filename = content + '.txt'
-            lf = self.factory.makeLibraryFileAlias(filename, content=content)
+            with BuilddManagerTestFixture.extraSetUp():
+                lf = self.factory.makeLibraryFileAlias(
+                    filename, content=content)
             content_map[lf.content.sha1] = content
             fd, filemap[lf.content.sha1] = tempfile.mkstemp()
             self.addCleanup(os.remove, filemap[lf.content.sha1])
-            self.layer.txn.commit()
             d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
             dl.append(d)
 
