@@ -217,8 +217,9 @@ class SlaveScanner:
             return defer.succeed(True)
 
         self.logger.info("Cancelling build '%s'" % build.title)
-        buildqueue.cancel()
-        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            buildqueue.cancel()
+            transaction.commit()
         d = builder.resumeSlaveHost()
         d.addCallback(resume_done)
         return d

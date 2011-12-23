@@ -554,11 +554,12 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.scanner.builder = self.builder
         self.scanner.logger.name = 'slave-scanner'
 
-        # TODO: Needs policy
+        self.useFixture(BuilddManagerTestFixture())
 
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
-        self.builder.virtualized = False
+        with BuilddManagerTestFixture.extraSetUp():
+            self.builder.virtualized = False
         d = self.scanner.checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
@@ -566,7 +567,8 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If the builder has no buildqueue associated,
         # make sure we return False.
         buildqueue = self.builder.currentjob
-        buildqueue.reset()
+        with BuilddManagerTestFixture.extraSetUp():
+            buildqueue.reset()
         d = self.scanner.checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
@@ -574,7 +576,8 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If the active build is not in a CANCELLING state, ignore it.
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.BUILDING
+        with BuilddManagerTestFixture.extraSetUp():
+            build.status = BuildStatus.BUILDING
         d = self.scanner.checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
@@ -588,11 +591,13 @@ class TestCancellationChecking(TestCaseWithFactory):
             return defer.succeed((None, None, 0))
         slave = OkSlave()
         slave.resume = fake_resume
-        self.builder.vm_host = "fake_vm_host"
-        self.builder.setSlaveForTesting(slave)
-        buildqueue = self.builder.currentjob
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.CANCELLING
+
+        with BuilddManagerTestFixture.extraSetUp():
+            self.builder.vm_host = "fake_vm_host"
+            self.builder.setSlaveForTesting(slave)
+            buildqueue = self.builder.currentjob
+            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+            build.status = BuildStatus.CANCELLING
 
         def check(result):
             self.assertEqual(1, call_counter.call_count)
