@@ -198,7 +198,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                transaction.abort()
                 with DatabaseTransactionPolicy(read_only=False):
                     self.setBuildStatus(BuildStatus.FULLYBUILT)
                     transaction.commit()
