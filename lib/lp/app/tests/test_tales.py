@@ -3,32 +3,35 @@
 
 """tales.py doctests."""
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lxml import html
 from pytz import utc
 from zope.component import (
     getAdapter,
-    getUtility
+    getUtility,
     )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
+
 from canonical.launchpad.webapp.authorization import (
     clear_cache,
     precache_permission_for_objects,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.app.browser.tales import (
-    format_link,
     DateTimeFormatterAPI,
+    format_link,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
@@ -149,18 +152,20 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         self.assertEqual(expected, result)
 
 
-class TestTalesFormatterAPI(TestCaseWithFactory):
-    """ Test permissions required to access TalesFormatterAPI methods.
+class TestTeamFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TeamFormatterAPI methods.
 
     A user must have launchpad.LimitedView permission to use
-    TestTalesFormatterAPI with private teams.
+    TeamFormatterAPI with private teams.
     """
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestTalesFormatterAPI, self).setUp()
+        super(TestTeamFormatterAPI, self).setUp()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
         self.team = self.factory.makeTeam(
-            name='team', displayname='a team',
+            name='team', displayname='a team', icon=icon,
             visibility=PersonVisibility.PRIVATE)
 
     def _make_formatter(self, cache_permission=False):
@@ -175,10 +180,11 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
                 request, 'launchpad.LimitedView', [self.team])
         return formatter, request, any_person
 
-    def _tales_value(self, attr, request):
+    def _tales_value(self, attr, request, path='fmt'):
         # Evaluate the given formatted attribute value on team.
-        return test_tales(
-            "team/fmt:%s" % attr, team=self.team, request=request)
+        result = test_tales(
+            "team/%s:%s" % (path, attr), team=self.team, request=request)
+        return result
 
     def _test_can_view_attribute_no_login(self, attr, hidden=None):
         # Test attribute access with no login.
@@ -227,6 +233,10 @@ class TestTalesFormatterAPI(TestCaseWithFactory):
 
     def test_can_view_url(self):
         self._test_can_view_attribute('url')
+
+    def test_can_view_icon(self):
+        self._test_can_view_attribute(
+            'icon', '<span class="sprite team"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):

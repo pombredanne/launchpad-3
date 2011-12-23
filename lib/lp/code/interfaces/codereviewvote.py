@@ -30,7 +30,10 @@ from canonical.launchpad import _
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.registry.interfaces.person import IPerson
-from lp.services.fields import PublicPersonChoice
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    )
 
 
 class ICodeReviewVoteReferencePublic(Interface):
@@ -55,7 +58,7 @@ class ICodeReviewVoteReferencePublic(Interface):
             vocabulary='ValidPersonOrTeam'))
 
     reviewer = exported(
-        PublicPersonChoice(
+        PersonChoice(
             title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
             vocabulary='ValidPersonOrTeam'))

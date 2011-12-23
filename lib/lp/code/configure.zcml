@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -198,19 +198,19 @@
   </securedutility>
   <securedutility
       class="canonical.launchpad.systemhomes.BazaarApplication"
-      provides="canonical.launchpad.interfaces.launchpad.IBazaarApplication">
-    <allow interface="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
+      provides="lp.code.interfaces.codehosting.IBazaarApplication">
+    <allow interface="lp.code.interfaces.codehosting.IBazaarApplication"/>
   </securedutility>
 
   <!-- pages for the bazaar application -->
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+      for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IBranchSetAPI"
       class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+      for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
       class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
@@ -377,11 +377,11 @@
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_merge_proposed"/>
+      handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed"/>
+      handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
   <adapter
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
@@ -454,7 +454,7 @@
   <class class="lp.code.model.branch.Branch">
     <require
         permission="launchpad.View"
-        interface="canonical.launchpad.interfaces.launchpad.IPrivacy
+        interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.branch.IBranchAnyone
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic
@@ -481,10 +481,10 @@
   <adapter
       for="lp.code.interfaces.branch.IBranch"
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"/>
+      factory="lp.code.publisher.LaunchpadBranchContainer"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
-      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
@@ -494,7 +494,7 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.branch_created"/>
+      handler="lp.code.subscribers.karma.branch_created"/>
   <subscriber
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
@@ -644,7 +644,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            lp.code.interfaces.event.INewCodeReviewCommentEvent"
-      handler="canonical.launchpad.subscribers.karma.code_review_comment_added"/>
+      handler="lp.code.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"

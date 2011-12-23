@@ -420,7 +420,7 @@ Foo Bar's message gets sent to each individual member of he team.
 The Guadamen team now registers an external contact address (they could
 have also used their Launchpad mailing list address).
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> email_set = getUtility(IEmailAddressSet)
     >>> address = email_set.new('guadamen@example.com', guadamen)

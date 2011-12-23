@@ -33,9 +33,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -44,6 +41,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -368,7 +366,7 @@ class DistroArchSeriesSet:
         return iter(DistroArchSeries.select())
 
     def get(self, dar_id):
-        """See `canonical.launchpad.interfaces.IDistributionSet`."""
+        """See `IDistributionSet`."""
         return DistroArchSeries.get(dar_id)
 
     def count(self):

@@ -32,6 +32,7 @@
 
 from StringIO import StringIO
 
+
 def jsmin(js):
     ins = StringIO(js)
     outs = StringIO()

@@ -6,22 +6,20 @@
 __metaclass__ = type
 
 import os
-from simplejson import dumps
 from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
+from simplejson import dumps
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from lazr.restful.interfaces import (
-    IJSONRequestCache,
-    IWebServiceClientRequest,
-    )
-
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -37,6 +35,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,

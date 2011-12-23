@@ -17,8 +17,7 @@ from signal import (
 import time
 
 from canonical.config import config
-from lp.services.mailman.runmailman import stop_mailman
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     logger,
     logger_options,
     )
@@ -27,6 +26,7 @@ from canonical.lazr.pidfile import (
     pidfile_path,
     remove_pidfile,
     )
+from lp.services.mailman.runmailman import stop_mailman
 
 
 def main():

@@ -121,8 +121,8 @@ Including 'inactive' PPAs:
 
 The searchPPAs() method only returns the PPAs of active users.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+    >>> from lp.services.identity.interfaces.account import AccountStatus
+    >>> from lp.services.database.lpstorm import IMasterObject
 
     >>> login('admin@canonical.com')
     >>> account = IMasterObject(no_priv.account)

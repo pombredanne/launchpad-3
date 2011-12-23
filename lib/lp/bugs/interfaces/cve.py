@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -39,7 +39,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.validation import valid_cve_sequence
+from lp.app.validators.validation import valid_cve_sequence
 
 
 class CveStatus(DBEnumeratedType):
@@ -110,9 +110,9 @@ class ICve(Interface):
         CollectionField(
             title=_('Bugs related to this CVE entry.'),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Redefined in bug.py
+            value_type=Reference(schema=Interface))) #  Redefined in bug.py.
 
-    # other attributes
+    # Other attributes.
     url = exported(
         TextLine(title=_('URL'),
                  description=_("Return a URL to the site that has the CVE "

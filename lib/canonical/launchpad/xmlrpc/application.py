@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,10 +8,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'IRosettaSelfTest',
     'ISelfTest',
     'PrivateApplication',
-    'RosettaSelfTest',
     'SelfTest',
     ]
 
@@ -23,19 +21,17 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import (
-    IAuthServerApplication,
-    IPrivateApplication,
-    IPrivateMaloneApplication,
-    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.interfaces.launchpad import IPrivateApplication
+from lp.bugs.interfaces.malone import IPrivateMaloneApplication
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
 from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
+from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
 
 
@@ -119,17 +115,3 @@ class SelfTest(LaunchpadXMLRPCView):
 
     def raise_exception(self):
         raise RuntimeError("selftest exception")
-
-
-class IRosettaSelfTest(Interface):
-
-    def run_test():
-        return "OK"
-
-
-class RosettaSelfTest(LaunchpadXMLRPCView):
-
-    implements(IRosettaSelfTest)
-
-    def run_test(self):
-        return "OK"

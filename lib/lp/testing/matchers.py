@@ -73,7 +73,7 @@ class BrowsesWithQueryLimit(Matcher):
 
     def match(self, context):
         # circular dependencies.
-        from canonical.launchpad.testing.pages import setupBrowserForUser
+        from lp.testing.pages import setupBrowserForUser
         with person_logged_in(self.user):
             context_url = canonical_url(
                 context, view_name=self.view_name, **self.options)
@@ -368,7 +368,7 @@ def DocTestMatches(example):
 
     Uses the default doctest flags used across Launchpad.
     """
-    from canonical.launchpad.testing.systemdocs import default_optionflags
+    from lp.testing.systemdocs import default_optionflags
     return OriginalDocTestMatches(example, default_optionflags)
 
 
@@ -407,7 +407,7 @@ class MatchesTagText(Matcher):
 
     def match(self, matchee):
         # Here to avoid circular dependancies.
-        from canonical.launchpad.testing.pages import extract_text
+        from lp.testing.pages import extract_text
         widgets = self.soup_content.findAll(id=self.tag_id)
         if len(widgets) == 0:
             return MissingElement(self.tag_id, self.soup_content)
@@ -431,7 +431,7 @@ class MatchesPickerText(Matcher):
 
     def match(self, matchee):
         # Here to avoid circular dependancies.
-        from canonical.launchpad.testing.pages import extract_text
+        from lp.testing.pages import extract_text
         widgets = self.soup_content.findAll(id=self.widget_id)
         if len(widgets) == 0:
             return MissingElement(self.widget_id, self.soup_content)

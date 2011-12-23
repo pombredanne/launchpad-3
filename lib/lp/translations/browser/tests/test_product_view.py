@@ -11,8 +11,8 @@ from canonical.testing.layers import (
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
-    login_person,
     celebrity_logged_in,
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view

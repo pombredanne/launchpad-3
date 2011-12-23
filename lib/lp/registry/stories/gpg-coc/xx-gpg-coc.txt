@@ -106,7 +106,7 @@ instance to access this key and decrypt the message.
 
 Extract the token URL from the email:
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_string)
     >>> token_url = get_token_url_from_string(body)
 
@@ -140,7 +140,7 @@ Make sure that UIDs were properly processed; in particular, check that
 "sample.revoked@canonical.com", the revoked UID in the key, wasn't
 added as an email address:
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
@@ -220,7 +220,7 @@ token to a fixed value:
     >>> nothing, token_value = token_url.split('http://launchpad.dev/token/')
 
     >>> import pytz, datetime
-    >>> from canonical.launchpad.database.logintoken import LoginToken
+    >>> from lp.services.verification.model.logintoken import LoginToken
     >>> logintoken = LoginToken.selectOneBy(token=token_value)
     >>> logintoken.date_created = datetime.datetime(
     ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))

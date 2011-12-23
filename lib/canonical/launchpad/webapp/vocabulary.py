@@ -26,7 +26,6 @@ __all__ = [
 from collections import namedtuple
 
 from lazr.restful.utils import safe_hasattr
-
 from sqlobject import (
     AND,
     CONTAINSSTRING,

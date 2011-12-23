@@ -20,9 +20,9 @@ from lazr.restful.fields import Reference
 from zope.schema import Int
 
 from canonical.launchpad import _
-from lp.services.job.interfaces.job import IJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 

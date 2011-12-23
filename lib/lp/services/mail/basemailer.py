@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class for sending out emails."""
@@ -29,6 +29,8 @@ class BaseMailer:
     It is expected that subclasses may override _getHeaders,
     _getTemplateParams, and perhaps _getBody.
     """
+
+    app = None
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
@@ -132,7 +134,7 @@ class BaseMailer:
 
     def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
-        template = get_email_template(self._template_name)
+        template = get_email_template(self._template_name, app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
         footer = self._getFooter(params)

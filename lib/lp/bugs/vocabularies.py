@@ -25,12 +25,10 @@ from sqlobject import (
     CONTAINSSTRING,
     OR,
     )
-
 from storm.expr import (
     And,
     Or,
     )
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
@@ -46,14 +44,14 @@ from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bugtask import IBugTask

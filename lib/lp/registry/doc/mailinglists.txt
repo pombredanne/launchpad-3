@@ -164,7 +164,7 @@ a mailing list is made active, its email address is registered in Launchpad
 and associated with the team's mailing list, so that it can be used as the
 team's contact address.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
@@ -418,7 +418,7 @@ Activating the mailing list (changing it's status to 'available for
 subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> def print_event(object, event):

@@ -118,58 +118,21 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import (
-    Account,
-    AccountPassword,
-    )
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress,
-    HasOwnerMixin,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    AccountSuspendedError,
-    IAccount,
-    IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -281,6 +244,35 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import (
+    Account,
+    AccountPassword,
+    )
+from lp.services.identity.model.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
@@ -295,6 +287,10 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1475,12 +1471,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):

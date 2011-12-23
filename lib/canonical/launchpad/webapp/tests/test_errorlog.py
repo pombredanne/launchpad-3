@@ -15,6 +15,7 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
+from lp_sitecustomize import customize_get_converter
 import oops_amqp
 import pytz
 import testtools
@@ -49,7 +50,6 @@ from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
-from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.utc

@@ -36,9 +36,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    )
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.services.fields import (
     PersonChoice,
     SearchTag,

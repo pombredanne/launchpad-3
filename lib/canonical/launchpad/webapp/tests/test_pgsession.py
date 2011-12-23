@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test pgsession.py."""
@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 from unittest import TestCase
-
-from datetime import timedelta
 
 from zope.publisher.browser import TestRequest
 from zope.security.management import (
@@ -62,9 +60,9 @@ class TestPgSession(TestCase):
         client_id = 'Client Id'
 
         # __getitem__ does not raise a keyerror for an unknown client id.
-        # This is not correct, but needed to workaround a design flaw in
+        # This is not correct, but needed to work around a design flaw in
         # the session machinery.
-        ignored_result = self.sdc['Unknown client id']
+        self.assertNotEqual(None, self.sdc['Unknown client id'])
 
         # __setitem__ calls are ignored.
         self.sdc[client_id] = 'ignored'

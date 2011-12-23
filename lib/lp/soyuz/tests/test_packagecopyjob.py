@@ -4,18 +4,18 @@
 """Tests for sync package jobs."""
 
 import operator
+from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
-from textwrap import dedent
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
     LaunchpadFunctionalLayer,

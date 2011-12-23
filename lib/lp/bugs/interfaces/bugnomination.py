@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -47,14 +47,10 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    IHasDateCreated,
-    )
-from canonical.launchpad.interfaces.validation import (
-    can_be_nominated_for_series,
-    )
+from lp.app.interfaces.launchpad import IHasDateCreated
+from lp.app.validators.validation import can_be_nominated_for_series
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries

@@ -10,18 +10,18 @@ import os
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setGlobs,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.services.testing import build_test_suite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))

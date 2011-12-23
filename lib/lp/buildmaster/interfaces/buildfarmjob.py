@@ -33,9 +33,9 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 
 

@@ -2,25 +2,19 @@
 #
 # python port of the nice maintainace-check script by  Nick Barcet
 #
-# taken from:
+# Taken from:
 #  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
 # (where it will vanish once taken here)
 
-# this warning filter is only needed on older versions of python-apt,
-# once the machine runs lucid it can be removed
-import warnings
-warnings.filterwarnings("ignore", "apt API not stable yet")
-import apt
-warnings.resetwarnings()
-
-import apt_pkg
 import logging
+from optparse import OptionParser
 import os
 import sys
 import urllib2
 import urlparse
 
-from optparse import OptionParser
+import apt
+import apt_pkg
 
 # This is fun! We have a bunch of cases for 10.04 LTS
 #
@@ -82,14 +76,15 @@ UNSUPPORTED_DISTRO_RELEASED = [
 
 # germinate output base directory
 BASE_URL = os.environ.get(
-    "MAINTENANCE_CHECK_BASE_URL", 
+    "MAINTENANCE_CHECK_BASE_URL",
     "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
 HINTS_DIR_URL = os.environ.get(
-    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
-    "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
+    "MAINTENANCE_CHECK_HINTS_DIR_URL",
+    "http://people.canonical.com/"
+        "~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
@@ -188,12 +183,12 @@ def get_structure(distroname, version):
 
 
 def expand_seeds(structure, seedname):
-    """ Expand seed by its dependencies using the strucure file.
+    """Expand seed by its dependencies using the strucure file.
 
     :param structure: The content of the STRUCTURE file as string list.
     :param seedname: The name of the seed as string that needs to be expanded.
-    :return: a set() for the seed dependencies (excluding the original
-             seedname)
+    :return: A set() for the seed dependencies (excluding the original
+        seedname).
     """
     seeds = []
     for line in structure:
@@ -206,31 +201,31 @@ def expand_seeds(structure, seedname):
 
 def get_packages_for_seeds(name, distro, seeds):
     """
-    get packages for the given name (e.g. ubuntu) and distro release
+    Get packages for the given name (e.g. ubuntu) and distro release
     (e.g. lucid) that are in the given list of seeds
-    returns a set() of package names
+    returns a set() of package names.
     """
     pkgs_in_seeds = {}
-    for bseed in seeds:
-        for seed in [bseed]: #, bseed+".build-depends", bseed+".seed"]:
-            pkgs_in_seeds[seed] = set()
-            seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
-            logging.debug("looking for '%s'" % seedurl)
-            try:
-                f = urllib2.urlopen(seedurl)
-                for line in f:
-                    # ignore lines that are not a package name (headers etc)
-                    if line[0] < 'a' or line[0] > 'z':
-                        continue
-                    # lines are (package,source,why,maintainer,size,inst-size)
-                    if options.source_packages:
-                        pkgname = line.split("|")[1]
-                    else:
-                        pkgname = line.split("|")[0]
-                    pkgs_in_seeds[seed].add(pkgname.strip())
-                f.close()
-            except Exception, e:
-                logging.error("seed %s failed (%s)" % (seedurl, e))
+    for seed in seeds:
+        pkgs_in_seeds[seed] = set()
+        seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
+        logging.debug("looking for '%s'", seedurl)
+        try:
+            f = urllib2.urlopen(seedurl)
+            for line in f:
+                # Ignore lines that are not package names (headers etc).
+                if line[0] < 'a' or line[0] > 'z':
+                    continue
+                # Each line contains these fields:
+                # (package, source, why, maintainer, size, inst-size)
+                if options.source_packages:
+                    pkgname = line.split("|")[1]
+                else:
+                    pkgname = line.split("|")[0]
+                pkgs_in_seeds[seed].add(pkgname.strip())
+            f.close()
+        except Exception as e:
+            logging.error("seed %s failed (%s)" % (seedurl, e))
     return pkgs_in_seeds
 
 
@@ -292,7 +287,6 @@ def get_packages_support_time(structure, name, pkg_support_time,
                     pkg_support_time[pkg] += " (%s)" % ", ".join(
                         what_seeds(pkg, pkgs_in_seeds))
 
-
     return pkg_support_time
 
 
@@ -353,7 +347,7 @@ if __name__ == "__main__":
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
     for arch in PRIMARY_ARCHES:
-        rootdir="./aptroot.%s" % distro
+        rootdir = "./aptroot.%s" % distro
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:

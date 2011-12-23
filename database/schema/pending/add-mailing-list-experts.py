@@ -10,7 +10,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from lp.registry.interfaces.person import (
     IPersonSet,

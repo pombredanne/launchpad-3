@@ -26,17 +26,17 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
 from lp.app.errors import NotFoundError
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,
     IBinaryPackageNameSet,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
@@ -58,14 +58,14 @@ class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        """See `IBinaryPackageNameSet`."""
         try:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
     def getAll(self):
-        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        """See `IBinaryPackageNameSet`."""
         return BinaryPackageName.select()
 
     def findByName(self, name):

@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
@@ -49,16 +49,16 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranchSet,
-    )
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
     HasMergeProposalsMixin,
     )
-from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch,
+    SeriesSourcePackageBranchSet,
+    )
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -74,9 +74,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
@@ -535,8 +533,13 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IHasDrivers`."""
         return self.distroseries.drivers
 
+    @property
+    def owner(self):
+        """See `IHasOwner`."""
+        return self.distroseries.owner
+
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IBugTarget`."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
         # targeted to be fixed in a specific distroseries + sourcepackage.

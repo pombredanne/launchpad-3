@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import os
 from doctest import DocTestSuite
+import os
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.testing import build_test_suite

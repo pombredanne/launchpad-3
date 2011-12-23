@@ -217,8 +217,7 @@ method.
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along with the rationale for contacting them.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     INotificationRecipientSet)
+    >>> from lp.services.mail.interfaces import INotificationRecipientSet
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> def print_reason(subscribers):

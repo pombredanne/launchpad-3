@@ -34,10 +34,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -74,6 +70,10 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
@@ -302,8 +302,14 @@ class BuildView(LaunchpadView):
         return self.context.buildqueue_record
 
     @cachedproperty
-    def component(self):
-        return self.context.current_component
+    def component_name(self):
+        # Production has some buggy historic builds without
+        # source publications.
+        component = self.context.current_component
+        if component is not None:
+            return component.name
+        else:
+            return 'unknown'
 
     @cachedproperty
     def files(self):

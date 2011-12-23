@@ -211,7 +211,7 @@ also reactivate the project at the same time.
 He encounters an error, though, as the project does not have a bug
 supervisor set, which is required for turning on private bugs.
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> for error in view.errors:
     ...     print extract_text(error)
     Set a bug supervisor for this project first.
@@ -447,7 +447,7 @@ Product index view
 The index page of a product only shows the application portlets that it
 officially supports.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner

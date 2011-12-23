@@ -12,10 +12,6 @@ from soupmatchers import (
     Tag,
     )
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -27,6 +23,10 @@ from lp.testing import (
     extract_lp_cache,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationSharingDetailsView,
@@ -1006,6 +1006,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
 
             def link_matcher(url):
+                if url is None:
+                    return False
                 return re.search(match, url)
         else:
             link_matcher = '#'

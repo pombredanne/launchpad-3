@@ -27,16 +27,14 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
-from lp.translations.enums import TranslationPermission
 from lp.translations.browser.translationmessage import (
     contains_translations,
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     revert_unselected_translations,
     )
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    )
+from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer

@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 from sqlobject import OR
-
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 

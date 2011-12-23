@@ -9,6 +9,8 @@ import sys
 import urllib2
 
 import lp.codehosting  # Needed to load bzr plugins.
+
+
 lp  # squelch lint.sh
 
 from bzrlib import (
@@ -214,7 +216,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            BzrDir.open, self.policy.createDestinationBranch, source_branch,
+            self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):

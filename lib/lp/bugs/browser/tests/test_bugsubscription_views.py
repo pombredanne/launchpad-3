@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import Equals
@@ -16,7 +17,6 @@ from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
     BugSubscriptionAddView,
@@ -629,7 +629,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         direct_subscriber = self.factory.makeTeam(
             name='team', displayname='Team Name', owner=teamowner,
             visibility=PersonVisibility.PRIVATE)
-        with person_logged_in(direct_subscriber.teamowner):
+        with person_logged_in(teamowner):
             bug.subscribe(direct_subscriber, direct_subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
 

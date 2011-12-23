@@ -9,10 +9,9 @@ __all__ = [
     'BugSubscriptionFilterMute',
     ]
 
-import pytz
-
 from itertools import chain
 
+import pytz
 from storm.locals import (
     Bool,
     DateTime,
@@ -28,7 +27,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import (
     IBugSubscriptionFilter,

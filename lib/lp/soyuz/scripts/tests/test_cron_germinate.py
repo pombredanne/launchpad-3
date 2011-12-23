@@ -148,10 +148,8 @@ class TestCronGerminate(TestCase):
             os.path.join(archive_dir, "ubuntu"))
         fake_environ["TEST_LAUNCHPADROOT"] = os.path.abspath(
             os.path.join(basepath, "germinate-test-data/mock-lp-root"))
-        # Set the PATH in the fake environment so that our mock germinate
-        # is used. We could use the real germinate as well, but that will
-        # slow down the tests a lot and its also not interessting for this
-        # test as we do not use any of the germinate information.
+        # Set the PATH in the fake environment so that our mock lockfile is
+        # used.
         fake_environ["PATH"] = "%s:%s" % (
             os.path.abspath(os.path.join(
                 basepath, "germinate-test-data/mock-bin")),

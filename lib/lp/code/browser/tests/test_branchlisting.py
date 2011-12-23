@@ -20,11 +20,6 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
@@ -61,6 +56,11 @@ from lp.testing import (
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.matchers import DocTestMatches
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,
@@ -604,6 +604,27 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
+class TestProductConfigureCodehosting(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_configure_codehosting_hidden(self):
+        # If the user does not have driver permissions, they are not shown
+        # the configure codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'))
+        self.assertFalse('Configure code hosting' in browser.contents)
+
+    def test_configure_codehosting_shown(self):
+        # If the user has driver permissions, they are shown the configure
+        # codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'), user=product.owner)
+        self.assertTrue('Configure code hosting' in browser.contents)
+
+
 class TestPersonBranchesPage(BrowserTestCase):
     """Tests for the person branches page.
 
@@ -613,13 +634,14 @@ class TestPersonBranchesPage(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _make_branch_for_private_team(self):
+        owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
-            name='shh', displayname='Shh',
+            name='shh', displayname='Shh', owner=owner,
             visibility=PersonVisibility.PRIVATE)
         member = self.factory.makePerson(
             email='member@example.com', password='test')
-        with person_logged_in(private_team.teamowner):
-            private_team.addMember(member, private_team.teamowner)
+        with person_logged_in(owner):
+            private_team.addMember(member, owner)
         branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 

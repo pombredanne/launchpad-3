@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
@@ -31,6 +30,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.identity.interfaces.account import IAccount
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
@@ -209,4 +209,3 @@ def reset_developer_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that resets the developer flag."""
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setDeveloper(False)
-

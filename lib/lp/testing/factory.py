@@ -70,24 +70,6 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -241,8 +223,23 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    IAccountSet,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -252,6 +249,9 @@ from lp.services.messages.model.message import (
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -772,7 +772,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
-                 description=None,
+                 description=None, icon=None, logo=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -783,9 +783,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param description: Team team's description.
-        :type string:
+        :type description string:
         :param email: The email address to use as the team's contact address.
         :type email: string
+        :param icon: The team's icon.
+        :param logo: The team's logo.
         :param subscription_policy: The subscription policy of the team.
         :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
@@ -810,15 +812,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, teamdescription=description,
             subscriptionpolicy=subscription_policy)
+        naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
-            removeSecurityProxy(team).visibility = visibility
+            naked_team.visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
+        if icon is not None:
+            naked_team.icon = icon
+        if logo is not None:
+            naked_team.logo = logo
         if members is not None:
-            naked_team = removeSecurityProxy(team)
             for member in members:
                 naked_team.addMember(member, owner)
         return team
@@ -1124,7 +1130,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if registrant is None:
             if owner.is_team:
-                registrant = owner.teamowner
+                registrant = removeSecurityProxy(owner).teamowner
             else:
                 registrant = owner
 
@@ -4397,6 +4403,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             grantee, grantor, object)
         IStore(grant).flush()
         return grant
+
+    def makeFakeFileUpload(self, filename=None, content=None):
+        """Return a zope.publisher.browser.FileUpload like object.
+
+        This can be useful while testing multipart form submission.
+        """
+        if filename is None:
+            filename = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        fileupload = StringIO(content)
+        fileupload.filename = filename
+        fileupload.headers = {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%s"' % filename
+            }
+        return fileupload
 
 
 # Some factory methods return simple Python types. We don't add

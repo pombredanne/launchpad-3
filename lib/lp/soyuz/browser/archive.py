@@ -60,7 +60,6 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -71,7 +70,6 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
@@ -81,6 +79,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
     )
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -114,6 +113,7 @@ from lp.services.browser_helpers import (
     )
 from lp.services.database.bulk import load
 from lp.services.features import getFeatureFlag
+from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -1266,7 +1266,7 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
-                        check_permissions=True):
+                        check_permissions=True, sponsored=None):
     """Schedule jobs to copy packages later.
 
     :return: A `structured` with human-readable feedback about the
@@ -1288,7 +1288,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person)
+            requester=person, sponsored=sponsored)
 
     return copy_asynchronously_message(len(source_pubs))
 
@@ -1352,7 +1352,8 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True, force_async=False):
+                check_permissions=True, force_async=False,
+                sponsored_person=None):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1378,9 +1379,13 @@ class PackageCopyingMixin:
             requester's permissions to copy should be checked.
         :param force_async: Force the copy to create package copy jobs and
             perform the copy asynchronously.
+        :param sponsored_person: An IPerson representing the person being
+            sponsored (for asynchronous copies only).
 
         :return: True if the copying worked, False otherwise.
         """
+        assert force_async or not sponsored_person, (
+            "sponsored must be None for sync copies")
         try:
             if (force_async == False and
                     self.canCopySynchronously(source_pubs)):
@@ -1394,7 +1399,8 @@ class PackageCopyingMixin:
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,
                     dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions)
+                    check_permissions=check_permissions,
+                    sponsored=sponsored_person)
         except CannotCopy, error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))

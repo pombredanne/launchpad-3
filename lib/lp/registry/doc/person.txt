@@ -6,7 +6,7 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
@@ -84,7 +84,7 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
@@ -142,8 +142,8 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.database.account import Account
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.identity.model.account import Account
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
     >>> account.activate(
     ...     "Activated by doc test.",
@@ -259,7 +259,7 @@ account into an IPerson.
 
 We can't adapt an account which has no person associated with, though.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale, IAccountSet)
     >>> personless_account = getUtility(IAccountSet).new(
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
@@ -441,7 +441,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -696,6 +696,7 @@ Private teams can be subscribed to bugs.
     >>> private_team = factory.makeTeam(salgado, name='private-team',
     ...     displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
+    >>> private_team_owner = private_team.teamowner
     >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
     ...     subscribed_by=guadamen)
 
@@ -806,7 +807,7 @@ Anonymous users cannot see non-public teams, such as 'private-team'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login_person(private_team.teamowner)
+    >>> login_person(private_team_owner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
@@ -857,7 +858,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()

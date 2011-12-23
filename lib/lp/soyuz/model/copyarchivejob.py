@@ -18,8 +18,8 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.enums import ArchiveJobType
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivejob import (
     ICopyArchiveJob,
     ICopyArchiveJobSource,

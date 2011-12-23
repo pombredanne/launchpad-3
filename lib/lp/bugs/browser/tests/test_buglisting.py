@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import os
+
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -16,12 +17,6 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -36,9 +31,15 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

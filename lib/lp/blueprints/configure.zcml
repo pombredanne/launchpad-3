@@ -103,11 +103,11 @@
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_created"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_created"/>
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_modified"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_modified"/>
 
   <!-- SpecificationFeedback -->
 
@@ -138,7 +138,7 @@
   <subscriber
       for="lp.blueprints.interfaces.specificationbranch.ISpecificationBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_branch_created"/>
+      handler="lp.blueprints.subscribers.spec_branch_created"/>
 
   <!-- SpecificationBranchSet -->
 
@@ -186,11 +186,11 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_created"/>
+      handler="lp.blueprints.subscribers.spec_created"/>
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_modified"/>
+      handler="lp.blueprints.subscribers.spec_modified"/>
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -202,7 +202,7 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_modified"/>
 
   <!-- SpecificationSet -->
 

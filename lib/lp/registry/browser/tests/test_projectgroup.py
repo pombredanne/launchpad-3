@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 
+from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
-from testtools.matchers import Not
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer

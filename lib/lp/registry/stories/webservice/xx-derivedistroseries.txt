@@ -10,7 +10,7 @@ Set Up
 
     >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from zope.security.proxy import removeSecurityProxy
 
@@ -19,6 +19,7 @@ Set Up
     >>> soyuz_team = factory.makeTeam(
     ...     name='soyuz-team',
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+    >>> soyuz_team_owner = soyuz_team.teamowner
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
     >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)
     >>> removeSecurityProxy(parent_series).nominatedarchindep = arch
@@ -41,7 +42,7 @@ Set Up
     >>> logout()
 
     >>> soyuz_team_webservice = webservice_for_person(
-    ...     soyuz_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+    ...     soyuz_team_owner, permission=OAuthPermission.WRITE_PUBLIC)
 
 
 Calling

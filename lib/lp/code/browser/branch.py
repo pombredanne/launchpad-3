@@ -80,7 +80,7 @@ from canonical.launchpad import (
     _,
     searchbuilder,
     )
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
@@ -96,7 +96,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpad import Hierarchy
@@ -106,9 +109,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import (
-    EnumChoiceWidget,
-    )
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -442,6 +443,13 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def initialize(self):
         self.branch = self.context
         self.notices = []
+        # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = [self.branch.owner]
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", authorised_people)
         # Replace our context with a decorated branch, if it is not already
         # decorated.
         if not isinstance(self.context, DecoratedBranch):
