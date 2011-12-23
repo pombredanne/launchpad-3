@@ -14,7 +14,6 @@ from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-import transaction
 from twisted.internet import (
     defer,
     reactor,
@@ -47,6 +46,7 @@ from lp.buildmaster.manager import (
     )
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
@@ -56,7 +56,6 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
@@ -86,8 +85,6 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         'bob' builder.
         """
         super(TestSlaveScannerScan, self).setUp()
-        self.read_only = DatabaseTransactionPolicy(read_only=True)
-
         # Creating the required chroots needed for dispatching.
         test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -95,24 +92,14 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
 
-    def _enterReadOnly(self):
-        """Go into read-only transaction policy."""
-        self.read_only.__enter__()
-        self.addCleanup(self._exitReadOnly)
-
-    def _exitReadOnly(self):
-        """Leave read-only transaction policy."""
-        self.read_only.__exit__(None, None, None)
+        self.useFixture(BuilddManagerTestFixture())
 
     def _resetBuilder(self, builder):
         """Reset the given builder and its job."""
-
         builder.builderok = True
         job = builder.currentjob
         if job is not None:
             job.reset()
-
-        transaction.commit()
 
     def getFreshBuilder(self, slave=None, name=BOB_THE_BUILDER_NAME,
                         failure_count=0):
@@ -171,12 +158,11 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # Obtain a builder.   Initialize failure count to 1 so that
         # _checkDispatch can make sure that a successful dispatch resets
         # the count to 0.
-        builder = self.getFreshBuilder(failure_count=1)
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.getFreshBuilder(failure_count=1)
 
         # Run 'scan' and check its result.
-        self.layer.txn.commit()
         self.layer.switchDbUser(config.builddmaster.dbuser)
-        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
@@ -199,21 +185,19 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # When a required chroot is not present the `scan` method
         # should not return any `RecordingSlaves` to be processed
         # and the builder used should remain active and IDLE.
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.getFreshBuilder()
+            # Remove hoary/i386 chroot.
+            login('foo.bar@canonical.com')
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            hoary = ubuntu.getSeries('hoary')
+            pocket_chroot = hoary.getDistroArchSeries('i386').getPocketChroot()
+            removeSecurityProxy(pocket_chroot).chroot = None
 
-        builder = self.getFreshBuilder()
-
-        # Remove hoary/i386 chroot.
-        login('foo.bar@canonical.com')
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        pocket_chroot = hoary.getDistroArchSeries('i386').getPocketChroot()
-        removeSecurityProxy(pocket_chroot).chroot = None
-        transaction.commit()
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
-        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
@@ -249,13 +233,12 @@ class TestSlaveScannerScan(TestCaseWithFactory):
 
         # Disable the sampledata builder
         login('foo.bar@canonical.com')
-        builder.builderok = False
-        transaction.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder.builderok = False
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
-        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -281,9 +264,9 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
 
         login('foo.bar@canonical.com')
-        builder.builderok = True
-        builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
-        transaction.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder.builderok = True
+            builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
         login(ANONYMOUS)
 
         job = builder.currentjob
@@ -291,27 +274,24 @@ class TestSlaveScannerScan(TestCaseWithFactory):
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
-        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
     def test_scan_with_nothing_to_dispatch(self):
-        builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
-        transaction.commit()
-        self._enterReadOnly()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.factory.makeBuilder()
+            builder.setSlaveForTesting(OkSlave())
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
 
     def test_scan_with_manual_builder(self):
         # Reset sampledata builder.
-        builder = self.getFreshBuilder()
-        builder.manual = True
-        transaction.commit()
-        self._enterReadOnly()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.getFreshBuilder()
+            builder.manual = True
         scanner = self._getScanner()
         d = scanner.scan()
         d.addCallback(self._checkNoDispatch, builder)
@@ -319,10 +299,9 @@ class TestSlaveScannerScan(TestCaseWithFactory):
 
     def test_scan_with_not_ok_builder(self):
         # Reset sampledata builder.
-        builder = self.getFreshBuilder()
-        builder.builderok = False
-        transaction.commit()
-        self._enterReadOnly()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.getFreshBuilder()
+            builder.builderok = False
         scanner = self._getScanner()
         d = scanner.scan()
         # Because the builder is not ok, we can't use _checkNoDispatch.
@@ -331,9 +310,8 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         return d
 
     def test_scan_of_broken_slave(self):
-        builder = self.getFreshBuilder(slave=BrokenSlave())
-        transaction.commit()
-        self._enterReadOnly()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder = self.getFreshBuilder(slave=BrokenSlave())
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)
@@ -350,16 +328,17 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         def failing_scan():
             return defer.fail(Exception("fake exception"))
 
-        scanner = self._getScanner()
-        scanner.scan = failing_scan
-        self.patch(manager_module, 'assessFailureCounts', FakeMethod())
-        builder = getUtility(IBuilderSet)[scanner.builder_name]
+        with BuilddManagerTestFixture.extraSetUp():
+            scanner = self._getScanner()
+            scanner.scan = failing_scan
+            self.patch(manager_module, 'assessFailureCounts', FakeMethod())
+            builder = getUtility(IBuilderSet)[scanner.builder_name]
 
-        builder.failure_count = builder_count
-        builder.currentjob.specific_job.build.failure_count = job_count
-        # The _scanFailed() calls abort, so make sure our existing
-        # failure counts are persisted.
-        self.layer.txn.commit()
+            builder.failure_count = builder_count
+            builder.currentjob.specific_job.build.failure_count = job_count
+            # The _scanFailed() calls abort, so make sure our existing failure
+            # counts are persisted by exiting the extraSetUp() context (which
+            # commits).
 
         # singleCycle() calls scan() which is our fake one that throws an
         # exception.
@@ -405,9 +384,9 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         scanner = self._getScanner()
         scanner.scan = failing_scan
         builder = getUtility(IBuilderSet)[scanner.builder_name]
-        builder.failure_count = Builder.FAILURE_THRESHOLD
-        builder.currentjob.reset()
-        self.layer.txn.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder.failure_count = Builder.FAILURE_THRESHOLD
+            builder.currentjob.reset()
 
         d = scanner.singleCycle()
 
@@ -428,17 +407,19 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # Reset sampledata builder.
         builder = removeSecurityProxy(
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
-        self._resetBuilder(builder)
-        self.assertEqual(0, builder.failure_count)
-        builder.setSlaveForTesting(slave)
-        builder.vm_host = "fake_vm_host"
+        with BuilddManagerTestFixture.extraSetUp():
+            self._resetBuilder(builder)
+            self.assertEqual(0, builder.failure_count)
+            builder.setSlaveForTesting(slave)
+            builder.vm_host = "fake_vm_host"
 
         scanner = self._getScanner()
 
         # Get the next job that will be dispatched.
         job = removeSecurityProxy(builder._findBuildCandidate())
-        job.virtualized = True
-        builder.virtualized = True
+        with BuilddManagerTestFixture.extraSetUp():
+            job.virtualized = True
+            builder.virtualized = True
         d = scanner.singleCycle()
 
         def check(ignored):
@@ -470,19 +451,20 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # Set the sample data builder building with the slave from above.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         login('foo.bar@canonical.com')
-        builder.builderok = True
-        # For now, we can only cancel virtual builds.
-        builder.virtualized = True
-        builder.vm_host = "fake_vm_host"
-        builder.setSlaveForTesting(slave)
-        transaction.commit()
+        with BuilddManagerTestFixture.extraSetUp():
+            builder.builderok = True
+            # For now, we can only cancel virtual builds.
+            builder.virtualized = True
+            builder.vm_host = "fake_vm_host"
+            builder.setSlaveForTesting(slave)
         login(ANONYMOUS)
         buildqueue = builder.currentjob
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.CANCELLING
+        with BuilddManagerTestFixture.extraSetUp():
+            build.status = BuildStatus.CANCELLING
 
         # Run 'scan' and check its results.
         self.layer.switchDbUser(config.builddmaster.dbuser)
@@ -513,19 +495,22 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         # not affect the functioning builder.
         clock = task.Clock()
 
-        broken_builder = self.getFreshBuilder(
-            slave=BrokenSlave(), name=BOB_THE_BUILDER_NAME)
-        broken_scanner = self._getScanner(builder_name=broken_builder.name)
-        good_builder = self.getFreshBuilder(
-            slave=WaitingSlave(), name=FROG_THE_BUILDER_NAME)
-        good_build = self.factory.makeBinaryPackageBuild(
-            distroarchseries=self.factory.makeDistroArchSeries())
+        with BuilddManagerTestFixture.extraSetUp():
+            broken_builder = self.getFreshBuilder(
+                slave=BrokenSlave(), name=BOB_THE_BUILDER_NAME)
+            broken_scanner = self._getScanner(
+                builder_name=broken_builder.name)
+            good_builder = self.getFreshBuilder(
+                slave=WaitingSlave(), name=FROG_THE_BUILDER_NAME)
+            good_build = self.factory.makeBinaryPackageBuild(
+                distroarchseries=self.factory.makeDistroArchSeries())
 
-        # The good build is being handled by the good builder.
-        buildqueue = good_build.queueBuild()
-        buildqueue.builder = good_builder
+            # The good build is being handled by the good builder.
+            buildqueue = good_build.queueBuild()
+            buildqueue.builder = good_builder
 
-        removeSecurityProxy(good_build.build_farm_job).date_started = UTC_NOW
+            removeSecurityProxy(
+                good_build.build_farm_job).date_started = UTC_NOW
 
         # The good builder requests information from a successful build,
         # and up receiving it, updates the build's metadata.
@@ -568,6 +553,8 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.scanner = SlaveScanner(builder_name, BufferLogger())
         self.scanner.builder = self.builder
         self.scanner.logger.name = 'slave-scanner'
+
+        # TODO: Needs policy
 
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
