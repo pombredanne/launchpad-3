@@ -146,7 +146,7 @@ A client other than a web browser may request a JSON representation of
 the list of authentication levels.
 
     >>> import simplejson
-    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> from lp.testing.pages import setupBrowser
 
     >>> json_browser = setupBrowser()
     >>> json_browser.addHeader('Accept', 'application/json')

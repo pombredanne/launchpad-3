@@ -12,7 +12,7 @@ import unittest
 
 import wadllib
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 topdir = os.path.dirname(wadllib.__file__)

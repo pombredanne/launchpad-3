@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+    # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -11,28 +11,18 @@ import logging
 import os
 import unittest
 
-from zope.testing.cleanup import cleanUp
-
-from canonical.launchpad.testing import browser
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setGlobs,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import (
-    AppServerLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
-
-
-def layerlessTearDown(test):
-    """Clean up any Zope registrations."""
-    cleanUp()
 
 
 # Files that have special needs can construct their own suite
@@ -40,19 +30,6 @@ special = {
     # No setup or teardown at all, since it is demonstrating these features.
     'old-testing.txt': LayeredDocFileSuite(
         '../doc/old-testing.txt', layer=FunctionalLayer),
-    'webservice-configuration.txt': LayeredDocFileSuite(
-        '../doc/webservice-configuration.txt',
-        setUp=setGlobs, tearDown=layerlessTearDown, layer=None),
-    # This test is actually run twice to prove that the AppServerLayer
-    # properly isolates the database between tests.
-    'launchpadlib.txt': LayeredDocFileSuite(
-        '../doc/launchpadlib.txt',
-        layer=AppServerLayer,
-        setUp=browser.setUp, tearDown=browser.tearDown,),
-    'launchpadlib2.txt': LayeredDocFileSuite(
-        '../doc/launchpadlib.txt',
-        layer=AppServerLayer,
-        setUp=browser.setUp, tearDown=browser.tearDown,),
     }
 
 

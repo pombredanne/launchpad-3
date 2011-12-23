@@ -9,7 +9,7 @@ the ones with the ids between 130 and 151. By default, view shows the
 messages in the batches of 10 items.
 
     >>> import re
-    >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.testing.pages import extract_url_parameter
 
     # This describes the HTML tag ids we'll be looking for below.
 

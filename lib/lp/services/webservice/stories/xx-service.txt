@@ -48,7 +48,7 @@ Normally, Launchpad will reject any call made with an unrecognized
 consumer key, because access tokens are registered with specific
 consumer keys.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     LaunchpadWebServiceCaller)
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
 
@@ -186,7 +186,7 @@ to a different host.
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     LaunchpadWebServiceCaller)
     >>> noauth_webservice = LaunchpadWebServiceCaller(
     ...     domain='bugs.launchpad.dev')

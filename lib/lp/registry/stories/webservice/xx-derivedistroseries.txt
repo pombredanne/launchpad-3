@@ -10,7 +10,7 @@ Set Up
 
     >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from zope.security.proxy import removeSecurityProxy
 
