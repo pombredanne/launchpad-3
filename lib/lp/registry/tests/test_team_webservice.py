@@ -12,7 +12,10 @@ from lazr.restfulclient.errors import (
     Unauthorized,
     )
 
-from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer, 
+    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
