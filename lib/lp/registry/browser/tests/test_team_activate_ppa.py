@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
@@ -14,6 +13,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.pages import first_tag_by_class
 from lp.testing.views import create_initialized_view
 
 

@@ -596,8 +596,8 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.pillarset.PillarSetLink"
-        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
+        class="lp.services.webservice.pillarset.PillarSetLink"
+        provides="lp.services.webservice.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
@@ -974,8 +974,8 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.me.MeLink"
-            provides="canonical.launchpad.rest.me.IMeLink">
+            class="lp.services.webservice.me.MeLink"
+            provides="lp.services.webservice.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow

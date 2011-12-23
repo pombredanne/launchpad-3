@@ -8,12 +8,12 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.testing.browser import (
+from canonical.testing.layers import AppServerLayer
+from lp.testing.browser import (
     setUp,
     tearDown,
     )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import AppServerLayer
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():

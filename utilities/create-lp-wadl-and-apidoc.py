@@ -22,7 +22,7 @@ from bzrlib.branch import Branch
 from zope.component import getUtility
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
-from canonical.launchpad.rest.wadl import (
+from lp.services.webservice.wadl import (
     generate_html,
     generate_json,
     generate_wadl,

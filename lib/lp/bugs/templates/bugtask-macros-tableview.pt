@@ -694,16 +694,9 @@
             var model = navigator.get('model');
             model.get('history').after(
                 'change', function(e) {
-                    // Only update the sort buttons if we've got a valid batch
-                    // key.
-                    if (Y.Object.has_key(e.newVal, 'batch_key')) {
-                        Y.lp.buglisting_utils.update_sort_button_visibility(
-                            orderby,
-                            e.newVal
-                        );
-                    }
-                 }
-            );
+                     Y.lp.buglisting_utils.update_sort_button_visibility(
+                         orderby, e.newVal);
+                });
             var config_node = orderby.get('config_node');
             var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
                 srcNode: config_node,

@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.testing.pages import find_tag_by_id
+from lp.testing.pages import find_tag_by_id
 
 
 class TestMessageVisibilityMixin:

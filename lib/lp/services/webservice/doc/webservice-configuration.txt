@@ -7,7 +7,7 @@ how that code works.
 
     >>> from zope.component import provideUtility
     >>> from lazr.restful.interfaces import IWebServiceConfiguration
-    >>> from canonical.launchpad.rest.configuration import (
+    >>> from lp.services.webservice.configuration import (
     ...     LaunchpadWebServiceConfiguration)
     >>> webservice_config = LaunchpadWebServiceConfiguration()
 

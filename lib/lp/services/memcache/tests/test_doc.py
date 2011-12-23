@@ -12,17 +12,17 @@ import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     MemcachedLayer,
     )
 from lp.services.testing import build_test_suite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))

@@ -92,7 +92,7 @@ The team's overview page also displays the posting address.
 Now that the mailing list is active, it can be used as the team's contact
 address.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.getLink(url='+mailinglist').click()
     >>> print extract_text(find_tag_by_id(browser.contents,

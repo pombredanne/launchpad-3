@@ -6,7 +6,7 @@ this series.  The branch can be one that already exists in Launchpad,
 or a new branch in Launchpad can be defined, or it can be a repository
 that exists externally in a variety of version control systems.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
     >>> product = factory.makeProduct(name="chevy")
     >>> series = factory.makeProductSeries(name="impala", product=product)
     >>> transaction.commit()

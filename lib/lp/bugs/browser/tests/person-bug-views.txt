@@ -21,7 +21,7 @@ Let's define a helper function to make it easier to construct a view.
 All bug tasks assigned to this person.
 
 By default, only bugtasks with any of the statuses listed in
-canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
+lp.bugs.interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES are included:
 
     >>> assigned_bugtasks_view = create_view(name16, '+assignedbugs')
     >>> assigned_bugtasks = list(assigned_bugtasks_view.search().batch)
