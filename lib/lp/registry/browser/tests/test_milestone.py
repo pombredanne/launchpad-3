@@ -459,11 +459,41 @@ class TestMilestoneTagView(TestQueryCountBase):
                     product=self.product, owner=self.owner,
                     milestone=self.milestone)
 
+    def _make_form(self, tags):
+        return {
+            u'field.actions.search': u'Search',
+            u'field.tags': u' '.join(tags)
+            }
+
+    def _url_tail(self, url, separator='/'):
+        return url.rsplit(separator, 1)[1],
+
     def test_view_properties(self):
         # Ensure that the view is correctly initialized.
         view = create_initialized_view(self.milestonetag, '+index')
-        self.assertEqual(view.context, self.milestonetag)
-        self.assertEqual(view.page_title, self.milestonetag.title)
+        self.assertEqual(self.milestonetag, view.context)
+        self.assertEqual(self.milestonetag.title, view.page_title)
+        self.assertContentEqual(self.tags, view.tags)
+
+    def test_view_form_redirect(self):
+        # Ensure a correct redirection is performed when tags are searched.
+        tags = [u'tag1', u'tag2']
+        form = self._make_form(tags)
+        view = create_initialized_view(self.milestonetag, '+index', form=form)
+        self.assertEqual(302, view.request.response.getStatus())
+        new_milestonetag = ProjectGroupMilestoneTag(
+            target=self.project_group, tags=tags)
+        self.assertEqual(
+            self._url_tail(canonical_url(new_milestonetag)),
+            self._url_tail(view.request.response.getHeader('Location')))
+
+    def test_view_form_error(self):
+        # Ensure the form correctly handles invalid submissions.
+        tags = [u'tag1', u't']  # One char tag is not valid.
+        form = self._make_form(tags)
+        view = create_initialized_view(self.milestonetag, '+index', form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual('tags', view.errors[0].field_name)
 
     def test_buktask_query_count(self):
         # Ensure that a correct number of queries is executed for
