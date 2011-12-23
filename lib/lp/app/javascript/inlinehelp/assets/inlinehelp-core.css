@@ -1,0 +1,11 @@
+.yui3-inlinehelp-overlay {
+    width: 600px;
+    height: 300px;
+    overflow-y: scroll;
+}
+
+.yui3-inlinehelp-overlay-hidden {
+    visibility: hidden;
+}
+
+
