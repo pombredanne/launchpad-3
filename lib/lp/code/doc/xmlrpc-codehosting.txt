@@ -6,8 +6,7 @@ codehosting service and puller to find and update the status of
 branches.  It is available as the codehosting attribute of our private
 XMLRPC instance.
 
-    >>> from lp.app.interfaces.launchpad import (
-    ...     IPrivateApplication)
+    >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.code.interfaces.codehosting import (
     ...     ICodehostingApplication)
     >>> from canonical.launchpad.webapp.testing import verifyObject

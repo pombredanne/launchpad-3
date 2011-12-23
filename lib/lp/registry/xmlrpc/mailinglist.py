@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,

@@ -30,8 +30,8 @@ from canonical.launchpad.webapp import (
     LaunchpadXMLRPCView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.helpers import return_fault
+from lp.xmlrpc import faults
+from lp.xmlrpc.helpers import return_fault
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet

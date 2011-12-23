@@ -16,8 +16,8 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,
     )
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.launchpad.xmlrpc.helpers import return_fault
+from lp.xmlrpc.faults import NoSuchCodeImportJob
+from lp.xmlrpc.helpers import return_fault
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,

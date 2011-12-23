@@ -46,7 +46,7 @@ from paste.request import (
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,

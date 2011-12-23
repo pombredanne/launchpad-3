@@ -27,8 +27,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
-from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.helpers import return_fault
+from lp.xmlrpc import faults
+from lp.xmlrpc.helpers import return_fault
 from lp.app.errors import (
     NameLookupFailed,
     NotFoundError,
