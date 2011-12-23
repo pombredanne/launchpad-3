@@ -42,7 +42,7 @@ from storm.locals import (
 from zope.component import getUtility
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.code.errors import (
     NoSuchBranch,
     PrivateBranchRecipe,

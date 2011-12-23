@@ -23,8 +23,8 @@ from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError

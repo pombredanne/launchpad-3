@@ -14,7 +14,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enum import (

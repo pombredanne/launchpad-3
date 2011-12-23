@@ -19,7 +19,7 @@ from canonical.database.sqlbase import (
     connect,
     sqlvalues,
     )
-from canonical.launchpad.scripts import db_options
+from lp.services.scripts import db_options
 from lp.scripts.helpers import LPOptionParser
 from lp.services.database.namedrow import named_fetchall
 

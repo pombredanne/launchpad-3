@@ -20,7 +20,7 @@ from zope.interface import (
     )
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,

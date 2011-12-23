@@ -80,7 +80,7 @@ from canonical.launchpad import (
     _,
     searchbuilder,
     )
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
@@ -444,6 +444,8 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         self.branch = self.context
         self.notices = []
         # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [self.branch.owner]
         if self.user is not None:
             precache_permission_for_objects(

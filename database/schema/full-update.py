@@ -11,7 +11,7 @@ from optparse import OptionParser
 import subprocess
 import sys
 
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,

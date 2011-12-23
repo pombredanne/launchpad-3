@@ -17,7 +17,7 @@ from twisted.web import server
 
 from canonical.config import config, dbconfig
 from canonical.launchpad.daemons import readyservice
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
 from canonical.librarian.libraryprotocol import FileUploadFactory

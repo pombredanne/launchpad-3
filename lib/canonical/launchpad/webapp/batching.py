@@ -102,16 +102,7 @@ class UpperBatchNavigationView(LaunchpadView):
 
 
 class LowerBatchNavigationView(UpperBatchNavigationView):
-    """Only render bottom navigation links if there are multiple batches."""
-
     css_class = "lower-batch-nav"
-
-    def render(self):
-        if (self.context.currentBatch() and
-            (self.context.nextBatchURL() or
-            self.context.prevBatchURL())):
-            return LaunchpadView.render(self)
-        return u""
 
 
 class BatchNavigator(lazr.batchnavigator.BatchNavigator):
@@ -152,7 +143,7 @@ class InactiveBatchNavigator(BatchNavigator):
 
 
 class TableBatchNavigator(BatchNavigator):
-    """See canonical.launchpad.interfaces.ITableBatchNavigator."""
+    """See canonical.launchpad.webapp.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
     def __init__(self, results, request, start=0, size=None,

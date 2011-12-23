@@ -50,7 +50,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,

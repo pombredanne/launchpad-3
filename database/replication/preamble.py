@@ -17,7 +17,7 @@ import replication.helpers
 
 from canonical.config import config
 from canonical.database.sqlbase import connect
-from canonical.launchpad import scripts
+from lp.services import scripts
 
 
 if __name__ == '__main__':

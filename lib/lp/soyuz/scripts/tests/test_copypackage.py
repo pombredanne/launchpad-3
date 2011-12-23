@@ -23,7 +23,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.testing.layers import (
     DatabaseLayer,
@@ -41,6 +40,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError

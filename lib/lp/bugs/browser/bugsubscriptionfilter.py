@@ -119,8 +119,9 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
     custom_widget("importances", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
 
-    target = None # Define in concrete subclass to be the target of the
+    # Define in concrete subclass to be the target of the
     # structural subscription that we are modifying.
+    target = None
 
     # This is used by the AdvancedSubscriptionMixin.
     current_user_subscription = None

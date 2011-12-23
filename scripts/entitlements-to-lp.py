@@ -77,5 +77,5 @@ class ImportEntitlementsScript(LaunchpadScript):
 
 if __name__ == '__main__':
     script = ImportEntitlementsScript(
-        'canonical.launchpad.scripts.entitlements')
+        'lp.services.scripts.entitlements')
     script.run()

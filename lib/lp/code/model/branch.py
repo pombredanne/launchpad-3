@@ -60,8 +60,8 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.app.interfaces.launchpad import IPrivacy
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities

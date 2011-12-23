@@ -30,12 +30,12 @@ permitted_database_imports = text_lines_to_set("""
     lp.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
-    canonical.launchpad.browser.librarian
+    lp.services.librarian.browser
     canonical.launchpad.feed.branch
     lp.code.feed.branch
-    canonical.launchpad.interfaces.person
     lp.scripts.garbo
     lp.bugs.vocabularies
+    lp.registry.interfaces.person
     lp.registry.vocabularies
     lp.services.worlddata.vocabularies
     lp.soyuz.vocabularies
@@ -47,13 +47,11 @@ permitted_database_imports = text_lines_to_set("""
 
 
 warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.scripts.ftpmaster
-    canonical.launchpad.scripts.gina.handlers
-    canonical.launchpad.browser.distroseries
-    canonical.launchpad.scripts.builddmaster
+    lp.soyuz.scripts.ftpmaster
+    lp.soyuz.scripts.gina.handlers
+    lp.registry.browser.distroseries
     lp.translations.scripts.po_import
     canonical.launchpad.systemhomes
-    canonical.rosetta
     """)
 
 
@@ -67,6 +65,7 @@ valid_imports_not_in_all = {
     'openid.fetchers': set(['Urllib2Fetcher']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
+    'testtools.testresult.real': set(['_details_to_str']),
     'twisted.internet.threads': set(['deferToThreadPool']),
     'zope.component': set(
         ['adapter',

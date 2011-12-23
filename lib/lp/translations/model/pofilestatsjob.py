@@ -34,7 +34,6 @@ from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
@@ -73,8 +72,6 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
         logger.info('Updating statistics for %s' % self.pofile.title)
-        # First update the statistics for the POFile that was directly
-        # modified.
         self.pofile.updateStatistics()
 
         # Next we have to find any POFiles that share translations with the

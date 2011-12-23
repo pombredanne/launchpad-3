@@ -200,7 +200,7 @@ The owner of a PPA can delete packages.
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> logout()
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> cprov_webservice = webservice_for_person(cprov,
     ...     permission=OAuthPermission.WRITE_PUBLIC)
@@ -460,7 +460,7 @@ The URL is a standard proxied URL in case the file is private:
 It will match the fake content we added earlier:
 
     >>> login("admin@canonical.com")
-    >>> from canonical.launchpad.browser.librarian import (
+    >>> from lp.services.librarian.browser import (
     ...     ProxiedLibraryFileAlias)
     >>> diff_url == ProxiedLibraryFileAlias(
     ...     new_diff.diff_content, cprov.archive).http_url

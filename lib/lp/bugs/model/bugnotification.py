@@ -44,7 +44,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,

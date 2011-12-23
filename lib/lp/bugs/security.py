@@ -8,7 +8,7 @@ __all__ = []
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
@@ -27,7 +27,6 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.features import getFeatureFlag
 from lp.services.messages.interfaces.message import IMessage
 
 
@@ -62,8 +61,6 @@ class DeleteBugTask(AuthorizationBase):
         """Check that a user may delete a bugtask.
 
         A user may delete a bugtask if:
-         - The disclosure.delete_bugtask.enabled feature flag is enabled,
-         and they are:
          - project maintainer
          - task creator
          - bug supervisor
@@ -74,11 +71,6 @@ class DeleteBugTask(AuthorizationBase):
         # Admins can always delete bugtasks.
         if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             return True
-
-        delete_allowed = bool(getFeatureFlag(
-            'disclosure.delete_bugtask.enabled'))
-        if not delete_allowed:
-            return False
 
         bugtask = self.obj
         owner = None

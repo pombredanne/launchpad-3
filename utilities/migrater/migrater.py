@@ -35,7 +35,11 @@ TLA_MAP = dict(
     tra='translations',
     pkg='registry',
     hdb='hardwaredb',
-    idy='services/identity'
+    idy='services/identity',
+    ver='services/verification',
+    sta='services/statistics',
+    loo='services/looptuner',
+    fee='services/feeds',
     )
 
 RENAME_MAP = dict(
@@ -49,18 +53,13 @@ OLD_TOP = 'lib/canonical/launchpad'
 NEW_TOP = 'lib/lp'
 
 APP_DIRECTORIES = [
-    'adapters',
     'browser',
     'doc',
     'emailtemplates',
-    'event',
-    'feed',
     'interfaces',
     'model',
-    'notifications',
     'scripts',
     'stories',
-    'subscribers',
     'templates',
     'tests',
     'browser/tests',
@@ -421,7 +420,7 @@ def one_true_import(app_name, all_members):
 def fix_file_true_import(file_path, all_interfaces):
     """Fix the interface imports in a file."""
     from textwrap import fill
-    bad_pattern = 'from canonical.launchpad.interfaces import'
+    bad_pattern = 'from package.path.that.is.globbed import'
     delimiters_pattern = re.compile(r'[,()]+')
     import_lines = []
     content = []

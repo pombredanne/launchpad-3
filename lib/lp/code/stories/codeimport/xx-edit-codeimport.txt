@@ -91,7 +91,7 @@ We log in as "david.allouche" since he has super-user privileges for code
 imports.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_finished_import, get_import_for_branch_name)
     >>> from datetime import datetime
     >>> import pytz

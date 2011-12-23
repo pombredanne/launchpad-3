@@ -1,4 +1,5 @@
-= Permission checking =
+Permission checking
+===================
 
 The check_permission() helper is a wrapper around Zope's security API
 that makes it easy to check if a user has the requested permission on a
@@ -28,14 +29,16 @@ If the permission doesn't exist, it raises an error:
     >>> logout()
 
 
-== WebService-related restrictions ==
+WebService-related restrictions
+-------------------------------
 
 The webservice is supposed to be consumed by third party applications
 rather than human beings, so users must have finer grained control on
 what applications are allowed to do.
 
 
-=== Access level ===
+Access level
+............
 
 This specifies what level of access is allowed for the principal whose
 credentials were given in the request.  A principal with READ_PRIVATE
@@ -101,7 +104,8 @@ means they can read/change any object they have access to.
     True
 
 
-=== Scope of access ===
+Scope of access
+...............
 
 When users allow applications to access Launchpad on their behalf, they
 are also able to limit that access to a certain scope (ProjectGroup, Product,

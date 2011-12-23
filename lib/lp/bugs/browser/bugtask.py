@@ -125,12 +125,12 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.mailnotification import get_unified_diff
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
+from lp.services.mail.notification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -2504,17 +2504,17 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
-    ('id', 'Bug number', 'desc'),
-    ('title', 'Bug title', 'asc'),
+    ('id', 'Number', 'desc'),
+    ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
     ('milestone_name', 'Milestone', 'asc'),
-    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('date_last_updated', 'Date last updated', 'desc'),
     ('assignee', 'Assignee', 'asc'),
     ('reporter', 'Reporter', 'asc'),
-    ('datecreated', 'Bug age', 'desc'),
-    ('tag', 'Bug Tags', 'asc'),
-    ('heat', 'Bug heat', 'desc'),
-    ('date_closed', 'Date bug closed', 'desc'),
+    ('datecreated', 'Age', 'desc'),
+    ('tag', 'Tags', 'asc'),
+    ('heat', 'Heat', 'desc'),
+    ('date_closed', 'Date closed', 'desc'),
     ('dateassigned', 'Date when the bug task was assigned', 'desc'),
     ('number_of_duplicates', 'Number of duplicates', 'desc'),
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
@@ -3576,6 +3576,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any assignees.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [task.assignee for task in self.bugtasks
                              if task.assignee is not None]
         precache_permission_for_objects(

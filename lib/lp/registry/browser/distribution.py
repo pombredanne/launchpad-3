@@ -51,7 +51,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.services.feeds.browser import FeedsMixin
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     ApplicationMenu,

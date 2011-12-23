@@ -26,7 +26,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
