@@ -116,6 +116,8 @@
             <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
           </li>
         </ul>
+        <tal:search_by_tags_form
+          content="structure view/project_group_milestone_tag/@@+portlet-milestone-tag-search" />
       </div>
 
       <div class="yui-u" id="products">

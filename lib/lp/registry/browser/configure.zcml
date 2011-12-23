@@ -1303,13 +1303,20 @@
         class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
-    <browser:page
-        name="+index"
+    <browser:pages
         for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
         class="lp.registry.browser.milestone.MilestoneTagView"
-        permission="zope.Public"
-        template="../templates/milestone-index.pt"
-        />
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/milestone-index.pt"/>
+
+        <!-- Project Group Milestone Tag Portlets -->
+
+        <browser:page
+            name="+portlet-milestone-tag-search"
+            template="../templates/milestone-tag-search.pt"/>
+    </browser:pages>
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"

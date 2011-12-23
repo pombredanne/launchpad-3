@@ -397,6 +397,11 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
         """
         return self.context.products.count() > 10
 
+    @property
+    def project_group_milestone_tag(self):
+        """Return a ProjectGroupMilestoneTag based on this project."""
+        return ProjectGroupMilestoneTag(self.context, [])
+
 
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""

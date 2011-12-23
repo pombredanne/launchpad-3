@@ -1,0 +1,4 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-milestone-tag-search"
+  metal:use-macro="context/@@launchpad_form/form" />
