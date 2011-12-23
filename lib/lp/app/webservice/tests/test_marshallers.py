@@ -7,10 +7,6 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.launchpad.testing.pages import (
-    LaunchpadWebServiceCaller,
-    webservice_for_person,
-    )
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
@@ -18,6 +14,10 @@ from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
     )
 
 

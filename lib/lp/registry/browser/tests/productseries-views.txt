@@ -75,7 +75,7 @@ The default view for the productseries includes a script that augments the
 'Create milestone' link to show a formoverlay to create a milestone and
 update the milestones and releases table.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> login('foo.bar@canonical.com')
     >>> view = create_view(series, '+index', principal=product.owner)

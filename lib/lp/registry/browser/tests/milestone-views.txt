@@ -245,7 +245,7 @@ Milestone product release data
 The +productrelease-data named view uses the same view as +index to display
 the product release data for a milestone.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> view = create_view(

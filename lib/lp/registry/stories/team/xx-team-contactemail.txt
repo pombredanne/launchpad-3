@@ -23,7 +23,7 @@ send notifications to that team.  The possible contact methods are:
 
 As we can see, the landscape-developers team has no contact address.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]

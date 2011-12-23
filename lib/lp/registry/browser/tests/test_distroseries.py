@@ -37,10 +37,6 @@ from zope.security.proxy import (
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -120,6 +116,10 @@ from lp.testing.matchers import (
     DocTestMatches,
     EqualsIgnoringWhitespace,
     HasQueryCount,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
 

@@ -9,7 +9,7 @@ import tempfile
 
 from zope.testing.cleanup import cleanUp
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def setup(testobj):

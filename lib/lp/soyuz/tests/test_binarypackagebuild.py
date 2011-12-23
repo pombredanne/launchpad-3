@@ -14,7 +14,6 @@ from testtools.deferredruntest import AsynchronousDeferredRunTest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import webservice_for_person
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.testing.layers import (
@@ -55,6 +54,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.pages import webservice_for_person
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
