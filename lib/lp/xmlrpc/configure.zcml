@@ -14,6 +14,13 @@
       <allow interface="lp.app.interfaces.launchpad.IPrivateApplication"/>
   </securedutility>
 
+  <xmlrpc:view
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      interface="lp.xmlrpc.application.ISelfTest"
+      class="lp.xmlrpc.application.SelfTest"
+      permission="zope.Public"
+      />
+
   <securedutility
     class="canonical.launchpad.systemhomes.CodehostingApplication"
     provides="lp.code.interfaces.codehosting.ICodehostingApplication">
