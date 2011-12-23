@@ -4,18 +4,28 @@
 __metaclass__ = type
 
 import httplib
+import transaction
 
-from lazr.restfulclient.errors import HTTPError
+from zope.component import getUtility
+from lazr.restfulclient.errors import (
+    HTTPError,
+    Unauthorized,
+    )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.testing import (
+    ExpectedException,
     launchpadlib_for,
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -93,3 +103,77 @@ class TestTeamJoining(TestCaseWithFactory):
             [membership.team.name
                 for membership in self.person.team_memberships])
         logout()
+
+
+class TestTeamLimitedViewAccess(TestCaseWithFactory):
+    """Tests for team limitedView access via the webservice."""
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestTeamLimitedViewAccess, self).setUp()
+        flag = 'disclosure.extra_private_team_LimitedView_security.enabled'
+        flags = FeatureFixture({flag: 'true'})
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
+        # Make a private team.
+        team_owner = self.factory.makePerson()
+        db_team = self.factory.makeTeam(
+            name='private-team', owner=team_owner,
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        # Create a P3A for the team.
+        with person_logged_in(team_owner):
+            getUtility(IArchiveSet).new(
+                owner=db_team, purpose=ArchivePurpose.PPA,
+                private=True, name='private-ppa')
+        # Create an authorised user with limitedView permission on the team.
+        # We do that by subscribing the team and the user to the same
+        # private bug.
+        self.bug_owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=self.bug_owner, private=True)
+        self.authorised_person = self.factory.makePerson()
+        with person_logged_in(self.bug_owner):
+            bug.subscribe(db_team, self.bug_owner)
+            bug.subscribe(self.authorised_person, self.bug_owner)
+            self.bug_id = bug.id
+        self.factory.makeProduct(name='some-product', bug_supervisor=db_team)
+        transaction.commit()
+
+    def test_unauthorised_cannot_see_team(self):
+        # Test that an unauthorised user cannot see the team.
+        some_person = self.factory.makePerson()
+        launchpad = self.factory.makeLaunchpadService(some_person)
+        with ExpectedException(KeyError, '.*'):
+            launchpad.people['private-team']
+
+    def test_unauthorised_cannot_navigate_to_team_details(self):
+        # Test that a user cannot get a team reference from another model
+        # object and use that to access unauthorised details.
+        some_person = self.factory.makePerson()
+        launchpad = self.factory.makeLaunchpadService(some_person)
+        team = launchpad.projects['some-product'].bug_supervisor
+        failure_regex = '.*permission to see.*'
+        with ExpectedException(ValueError, failure_regex):
+            print team.name
+
+    def test_authorised_user_can_see_team_limitedView_details(self):
+        # Test that a user with limitedView permission can access the team and
+        # see attributes/methods on the IPersonLimitedView interface.
+        launchpad = self.factory.makeLaunchpadService(self.authorised_person)
+        team = launchpad.people['private-team']
+        self.assertEqual('private-team', team.name)
+        ppa = team.getPPAByName(name='private-ppa')
+        self.assertEqual('private-ppa', ppa.name)
+
+    def test_authorised_user_cannot_see_restricted_team_details(self):
+        # Test that a user with limitedView permission on a team cannot see
+        # prohibited detail, like attributes on IPersonViewRestricted.
+        launchpad = self.factory.makeLaunchpadService(self.authorised_person)
+        team = launchpad.people['private-team']
+        self.assertIn(':redacted', team.homepage_content)
+        failure_regex = '(.|\n)*api_activemembers.*launchpad.View(.|\n)*'
+        with ExpectedException(Unauthorized, failure_regex):
+            members = team.members
+            print members.total_size
