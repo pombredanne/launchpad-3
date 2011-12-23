@@ -14,10 +14,10 @@ from zope.interface import (
 
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.helpers import get_contact_email_addresses
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
+    get_contact_email_addresses,
     get_person_or_team,
     IncomingEmailError,
     parse_commands,

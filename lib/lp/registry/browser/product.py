@@ -81,7 +81,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad import (
     _,
-    helpers,
     )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
@@ -199,12 +198,14 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
+from canonical.launchpad.helpers import browserLanguages
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
     )
@@ -347,7 +348,7 @@ class ProductLicenseMixin:
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
-        template = helpers.get_email_template(
+        template = get_email_template(
             'product-other-license.txt', app='registry')
         message = template % substitutions
         simple_sendmail(
@@ -1120,7 +1121,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browserLanguages(self.request)
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
