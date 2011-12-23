@@ -115,10 +115,12 @@
     </script>
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll',
+        'lp.app.inlinehelp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
-            initInlineHelp();
+            Y.lp.app.inlinehelp.init_help();
+            //initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
