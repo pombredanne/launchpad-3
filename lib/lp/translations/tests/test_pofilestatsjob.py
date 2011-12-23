@@ -135,7 +135,6 @@ class TestPOFileStatsJob(TestCaseWithFactory):
 
         self.assertJobUpdatesStats(pofile1, pofile2)
 
-
     def test_run_with_product_and_distro_translation_sharing(self):
         language = self.factory.makeLanguage('en-tt')
         distroseries = self.factory.makeUbuntuDistroSeries()
@@ -168,12 +167,12 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         distroseries1 = self.factory.makeUbuntuDistroSeries()
         distroseries1.distribution.translation_focus = distroseries1
         sourcepackagename = self.factory.makeSourcePackageName()
-        sourcepackage1 = self.factory.makeSourcePackage(
+        self.factory.makeSourcePackage(
             distroseries=distroseries1,
             sourcepackagename=sourcepackagename)
         distroseries2 = self.factory.makeUbuntuDistroSeries()
         distroseries2.distribution.translation_focus = distroseries2
-        sourcepackage2 = self.factory.makeSourcePackage(
+        self.factory.makeSourcePackage(
             distroseries=distroseries2,
             sourcepackagename=sourcepackagename)
 
