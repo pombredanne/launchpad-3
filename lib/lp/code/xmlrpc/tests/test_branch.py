@@ -12,7 +12,7 @@ from bzrlib import urlutils
 from lazr.uri import URI
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX

@@ -10,7 +10,7 @@
 
   <include package="canonical.launchpad.webapp" />
   <authorizations module="canonical.launchpad.security" />
-  <include package="canonical.launchpad.xmlrpc" />
+  <include package="lp.xmlrpc" />
 
   <include package="lp.app" />
   <include package="lp.bugs" />

@@ -89,7 +89,7 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,

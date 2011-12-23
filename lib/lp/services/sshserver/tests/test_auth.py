@@ -33,7 +33,7 @@ from twisted.python import failure
 from twisted.python.util import sibpath
 from zope.interface import implements
 
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.services.sshserver import auth
 from lp.services.twistedsupport import suppress_stderr
 from lp.testing import TestCase

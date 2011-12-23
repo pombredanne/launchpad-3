@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.registry.interfaces.person import (
     IPersonSet,
     ISoftwareCenterAgentAPI,

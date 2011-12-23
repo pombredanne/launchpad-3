@@ -27,8 +27,8 @@
 
     <xmlrpc:view
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      interface="canonical.launchpad.xmlrpc.application.ISelfTest"
-      class="canonical.launchpad.xmlrpc.application.SelfTest"
+      interface="lp.xmlrpc.application.ISelfTest"
+      class="lp.xmlrpc.application.SelfTest"
       permission="zope.Public"
       />
 
