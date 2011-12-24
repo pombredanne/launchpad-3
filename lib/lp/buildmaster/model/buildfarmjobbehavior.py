@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,8 +16,8 @@ import logging
 import socket
 import xmlrpclib
 
-import transaction
 from twisted.internet import defer
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -32,7 +32,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.services import encoding
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -71,25 +70,6 @@ class BuildFarmJobBehaviorBase:
         if slave_build_cookie != expected_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 
-    def _getBuilderStatusHandler(self, status_text, logger):
-        """Look up the handler method for a given builder status.
-
-        If status is not a known one, logs an error and returns None.
-        """
-        builder_status_handlers = {
-            'BuilderStatus.IDLE': self.updateBuild_IDLE,
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
-            'BuilderStatus.WAITING': self.updateBuild_WAITING,
-            }
-        handler = builder_status_handlers.get(status_text)
-        if handler is None:
-            logger.critical(
-                "Builder on %s returned unknown status %s; failing it.",
-                self._builder.url, status_text)
-        return handler
-
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
@@ -97,7 +77,6 @@ class BuildFarmJobBehaviorBase:
         d = self._builder.slaveStatus()
 
         def got_failure(failure):
-            transaction.abort()
             failure.trap(xmlrpclib.Fault, socket.error)
             info = failure.value
             info = ("Could not contact the builder %s, caught a (%s)"
@@ -105,22 +84,27 @@ class BuildFarmJobBehaviorBase:
             raise BuildSlaveFailure(info)
 
         def got_status(slave_status):
+            builder_status_handlers = {
+                'BuilderStatus.IDLE': self.updateBuild_IDLE,
+                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+                'BuilderStatus.WAITING': self.updateBuild_WAITING,
+                }
+
             builder_status = slave_status['builder_status']
-            status_handler = self._getBuilderStatusHandler(
-                builder_status, logger)
-            if status_handler is None:
-                error = (
+            if builder_status not in builder_status_handlers:
+                logger.critical(
+                    "Builder on %s returned unknown status %s, failing it"
+                    % (self._builder.url, builder_status))
+                self._builder.failBuilder(
                     "Unknown status code (%s) returned from status() probe."
                     % builder_status)
-                transaction.commit()
-                with DatabaseTransactionPolicy(read_only=False):
-                    self._builder.failBuilder(error)
-                    # XXX: This will leave the build and job in a bad
-                    # state, but should never be possible since our
-                    # builder statuses are known.
-                    queueItem._builder = None
-                    queueItem.setDateStarted(None)
-                    transaction.commit()
+                # XXX: This will leave the build and job in a bad state, but
+                # should never be possible, since our builder statuses are
+                # known.
+                queueItem._builder = None
+                queueItem.setDateStarted(None)
                 return
 
             # Since logtail is a xmlrpclib.Binary container and it is
@@ -130,8 +114,9 @@ class BuildFarmJobBehaviorBase:
             # will simply remove the proxy.
             logtail = removeSecurityProxy(slave_status.get('logtail'))
 
+            method = builder_status_handlers[builder_status]
             return defer.maybeDeferred(
-                status_handler, queueItem, slave_status, logtail, logger)
+                method, queueItem, slave_status, logtail, logger)
 
         d.addErrback(got_failure)
         d.addCallback(got_status)
@@ -143,32 +128,22 @@ class BuildFarmJobBehaviorBase:
         Log this and reset the record.
         """
         logger.warn(
-            "Builder %s forgot about buildqueue %d -- "
-            "resetting buildqueue record.",
-            queueItem.builder.url, queueItem.id)
-        transaction.commit()
-        with DatabaseTransactionPolicy(read_only=False):
-            queueItem.reset()
-            transaction.commit()
+            "Builder %s forgot about buildqueue %d -- resetting buildqueue "
+            "record" % (queueItem.builder.url, queueItem.id))
+        queueItem.reset()
 
     def updateBuild_BUILDING(self, queueItem, slave_status, logtail, logger):
         """Build still building, collect the logtail"""
-        transaction.commit()
-        with DatabaseTransactionPolicy(read_only=False):
-            if queueItem.job.status != JobStatus.RUNNING:
-                queueItem.job.start()
-            queueItem.logtail = encoding.guess(str(logtail))
-            transaction.commit()
+        if queueItem.job.status != JobStatus.RUNNING:
+            queueItem.job.start()
+        queueItem.logtail = encoding.guess(str(logtail))
 
     def updateBuild_ABORTING(self, queueItem, slave_status, logtail, logger):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
         """
-        transaction.commit()
-        with DatabaseTransactionPolicy(read_only=False):
-            queueItem.logtail = "Waiting for slave process to be terminated"
-            transaction.commit()
+        queueItem.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, queueItem, slave_status, logtail, logger):
         """ABORTING process has successfully terminated.
@@ -176,16 +151,11 @@ class BuildFarmJobBehaviorBase:
         Clean the builder for another jobs.
         """
         d = queueItem.builder.cleanSlave()
-
         def got_cleaned(ignored):
-            transaction.commit()
-            with DatabaseTransactionPolicy(read_only=False):
-                queueItem.builder = None
-                if queueItem.job.status != JobStatus.FAILED:
-                    queueItem.job.fail()
-                queueItem.specific_job.jobAborted()
-                transaction.commit()
-
+            queueItem.builder = None
+            if queueItem.job.status != JobStatus.FAILED:
+                queueItem.job.fail()
+            queueItem.specific_job.jobAborted()
         return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):

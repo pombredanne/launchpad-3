@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -48,11 +48,11 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
     IArchive,
     )
-from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission,
     IArchivePermissionSet,

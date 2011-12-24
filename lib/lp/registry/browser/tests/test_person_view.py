@@ -14,7 +14,6 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
-
 import transaction
 from zope.component import getUtility
 
@@ -22,13 +21,6 @@ from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
-    )
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -62,6 +54,9 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.person import Person
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -75,6 +70,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,

@@ -658,10 +658,12 @@
     LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
       function(Y) {
         Y.on('domready', function() {
-            var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
+            var navigator = Y.lp.bugs.buglisting.BugListingNavigator
+            .from_page();
             if (Y.Lang.isNull(navigator)){
               return;
             }
+            var sort_keys = LP.cache.sort_keys;
             var active_sort_key = LP.cache.order_by;
             var sort_order = 'asc';
             if (active_sort_key.charAt(0) === '-') {
@@ -669,22 +671,18 @@
                     1, active_sort_key.length);
                 sort_order = 'desc';
             }
+            var unknown_sort_key = true;
+            Y.each(sort_keys, function(sort_key) {
+                if (sort_key[0] === active_sort_key) {
+                    unknown_sort_key = false;
+                }
+            });
+            if (unknown_sort_key) {
+                active_sort_key = 'importance';
+            }
             var orderby = new Y.lp.ordering.OrderByBar({
                 srcNode: Y.one('#bugs-orderby'),
-                sort_keys: [
-                    ['id', 'Bug number'],
-                    ['title', 'Bug title'],
-                    ['importance', 'Importance'],
-                    ['status', 'Status'],
-                    ['heat', 'Bug heat'],
-                    ['reporter', 'Reporter'],
-                    ['assignee', 'Assignee'],
-                    ['targetname', 'Package/Project/Series name'],
-                    ['milestone_name', 'Milestone'],
-                    ['datecreated', 'Bug age'],
-                    ['date_last_updated', 'Date bug last updated'],
-                    ['tag', 'Bug Tags']
-                ],
+                sort_keys: sort_keys,
                 active: active_sort_key,
                 sort_order: sort_order,
                 config_slot: true
@@ -693,22 +691,39 @@
             Y.on('orderbybar:sort', function(e) {
                 navigator.first_batch(e);
             });
-            navigator.get('model').get('history').after(
+            var model = navigator.get('model');
+            model.get('history').after(
                 'change', function(e) {
-                     Y.lp.buglisting_utils.update_sort_button_visibility(
-                         orderby, e.newVal);
-                });
+                    // Only update the sort buttons if we've got a valid batch
+                    // key.
+                    if (Y.Object.hasKey(e.newVal, 'batch_key')) {
+                        Y.lp.buglisting_utils.update_sort_button_visibility(
+                            orderby,
+                            e.newVal
+                        );
+                    }
+                 }
+            );
             var config_node = orderby.get('config_node');
             var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
                 srcNode: config_node,
-                model: navigator.get('model')
+                model: model
             });
             list_util.render();
             Y.on('buglisting-config-util:fields-changed', function(e) {
                 navigator.change_fields(list_util.get('field_visibility'));
             });
+            var field_visibility =
+                navigator.get('model').get_field_visibility();
+            orderby.always_display = ['title'];
+            // The advanced search page contains sort options that have
+            // no related data fields we can display. If a user has selected
+            // such a sort order, this sort option should always be visible.
+            if (field_visibility['show_' + active_sort_key] === undefined) {
+                orderby.always_display.push(active_sort_key);
+            }
             Y.lp.buglisting_utils.update_sort_button_visibility(
-                 orderby, navigator.get('model').get_field_visibility());
+                 orderby, field_visibility);
         });
     });
   </script>

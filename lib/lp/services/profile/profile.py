@@ -41,11 +41,11 @@ from canonical.launchpad.webapp.interfaces import (
     DisallowedStore,
     IStartRequestEvent,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.profile.mem import (
     memory,
     resident,
     )
-from lp.services.features import getFeatureFlag
 
 
 class ProfilingOops(Exception):

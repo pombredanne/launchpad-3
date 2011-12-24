@@ -20,7 +20,7 @@ from zope.session.interfaces import (
     ISessionPkgData,
     )
 
-from canonical.launchpad.helpers import ensure_unicode
+from lp.services.helpers import ensure_unicode
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 

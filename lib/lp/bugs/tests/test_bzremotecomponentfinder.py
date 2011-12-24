@@ -8,13 +8,12 @@ __metaclass__ = type
 __all__ = []
 
 import os
-import transaction
 from urllib2 import HTTPError
 
+import transaction
+
+from canonical.launchpad.ftests import login
 from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.ftests import (
-    login,
-    )
 from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     BugzillaRemoteComponentScraper,
@@ -22,9 +21,8 @@ from lp.bugs.scripts.bzremotecomponentfinder import (
     )
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
-from lp.testing.sampledata import (
-    ADMIN_EMAIL,
-    )
+from lp.testing.sampledata import ADMIN_EMAIL
+
 
 def read_test_file(name):
     """Return the contents of the test file named :name:

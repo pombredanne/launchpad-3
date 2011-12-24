@@ -10,10 +10,9 @@ __all__ = []
 
 from email.mime.application import MIMEApplication
 
-from zope.security.proxy import removeSecurityProxy
-
 from Mailman import Errors
 from Mailman.Handlers import LPSize
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import (

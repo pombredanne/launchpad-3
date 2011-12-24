@@ -229,9 +229,9 @@ The Hierarchy object is responsible for rendering the HTML for the
 location bar.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
 
-    # Borrowed from launchpad.testing.pages.print_location()
+    # Borrowed from lp.testing.pages.print_location()
     >>> def print_hierarchy(html):
     ...     soup = BeautifulSoup(html)
     ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(

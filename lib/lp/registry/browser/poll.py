@@ -28,7 +28,7 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

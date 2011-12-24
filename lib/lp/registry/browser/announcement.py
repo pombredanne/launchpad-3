@@ -28,7 +28,7 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
+from lp.services.feeds.browser import (
     AnnouncementsFeedLink,
     FeedsMixin,
     RootAnnouncementsFeedLink,

@@ -37,23 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.testing.browser import (
-    Browser,
-    setUp,
-    tearDown,
-    )
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    )
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadApplication,
@@ -70,6 +53,11 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.lpstorm import IStore
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
@@ -77,7 +65,19 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from lp.testing.fixture import ZopeViewReplacementFixture
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
+from lp.testing.systemdocs import LayeredDocFileSuite
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 
@@ -693,9 +693,9 @@ class TestOpenIDLogin(TestCaseWithFactory):
 
     def test_return_to_with_non_ascii_value_bug_61171(self):
         # Sometimes the +login link will have non-ascii characters in the
-        # query param values, and we need to include those in the return_to URL
-        # that we pass to the OpenID provider. The params may not be legimate
-        # utf8 even.
+        # query param values, and we need to include those in the return_to
+        # URL that we pass to the OpenID provider. The params may not be
+        # legimate utf8 even.
         self.assertThat('key=value\x85', ForwardsCorrectly())
 
     def test_return_to_with_non_ascii_key_bug_897039(self):
@@ -706,9 +706,9 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertThat('key\x85=value', ForwardsCorrectly())
 
     def test_unicode_form_params_bug_898638(self):
-        # Sometimes the form params are unicode because a decode('utf8') worked
-        # in the form machinery... and if so they cannot be trivially quoted
-        # but must be encoded first.
+        # Sometimes the form params are unicode because a decode('utf8')
+        # worked in the form machinery... and if so they cannot be trivially
+        # quoted but must be encoded first.
         key = urllib.quote(u'key\xf3'.encode('utf8'))
         value = urllib.quote(u'value\xf3'.encode('utf8'))
         query_string = "%s=%s" % (key, value)

@@ -9,26 +9,17 @@ import gzip
 import os
 import shutil
 import tempfile
-import transaction
-
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
 
 from storm.store import Store
-
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+import transaction
 from twisted.internet import defer
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing.layers import LaunchpadZopelessLayer
-
-from lp.buildmaster.enums import (
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -42,13 +33,12 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    )
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 
 

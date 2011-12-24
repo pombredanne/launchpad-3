@@ -13,10 +13,10 @@ __all__ = [
 
 from email.Utils import parseaddr
 from httplib import BadStatusLine
-from urllib2 import URLError
-from xml.dom import minidom
 import re
 import string
+from urllib2 import URLError
+from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
@@ -25,7 +25,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import (
     urlappend,
     urlparse,
@@ -55,6 +54,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     )
 from lp.services import encoding
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 class Bugzilla(ExternalBugTracker):

@@ -17,8 +17,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import IRosettaApplication
+from lp.translations.interfaces.translations import IRosettaApplication
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -33,6 +32,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.helpers import preferred_or_request_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.publisher import TranslationsLayer
 
@@ -44,7 +44,7 @@ class TranslationsMixin:
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILaunchpadCelebrities).english
-        languages = helpers.preferred_or_request_languages(self.request)
+        languages = preferred_or_request_languages(self.request)
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages

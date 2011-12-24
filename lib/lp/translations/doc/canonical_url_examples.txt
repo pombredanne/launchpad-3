@@ -11,7 +11,7 @@ Homepage
 
 The Rosetta homepage.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
+    >>> from lp.translations.interfaces.translations import (
     ...     IRosettaApplication)
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'

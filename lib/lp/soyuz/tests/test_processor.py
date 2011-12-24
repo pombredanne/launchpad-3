@@ -10,12 +10,10 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
@@ -28,6 +26,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class ProcessorFamilyTests(TestCaseWithFactory):

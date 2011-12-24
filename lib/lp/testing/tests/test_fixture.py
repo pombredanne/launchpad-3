@@ -26,7 +26,7 @@ from canonical.config import (
     config,
     dbconfig,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,
@@ -34,8 +34,8 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
-    LaunchpadZopelessLayer,
     LaunchpadLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.registry.model.person import Person
 from lp.services.messaging import rabbit

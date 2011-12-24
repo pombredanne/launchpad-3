@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -10,14 +10,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    AccountSuspendedError,
-    )
-from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
@@ -26,6 +20,10 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.model.person import PersonSet
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    AccountSuspendedError,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

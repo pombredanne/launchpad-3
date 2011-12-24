@@ -58,7 +58,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import is_english_variant
+from lp.services.worlddata.helpers import is_english_variant
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionAction,

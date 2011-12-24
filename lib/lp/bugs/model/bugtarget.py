@@ -25,11 +25,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     any,
     not_equals,
     NULL,

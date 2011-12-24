@@ -57,8 +57,8 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     SQLBase,
     )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.helpers import shortlist
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

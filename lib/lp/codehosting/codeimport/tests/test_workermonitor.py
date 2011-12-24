@@ -34,8 +34,8 @@ from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.webapp import errorlog
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
@@ -803,7 +803,8 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         url = get_default_bazaar_branch_store()._getMirrorURL(
             code_import.branch.id)
         branch = Branch.open(url)
-        self.assertEqual(self.foreign_commit_count, branch.revno())
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""

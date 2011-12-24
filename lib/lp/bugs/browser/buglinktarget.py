@@ -23,7 +23,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import any
+from lp.services.searchbuilder import any
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -38,7 +38,10 @@ from lp.bugs.interfaces.buglink import (
     IBugLinkForm,
     IUnlinkBugsForm,
     )
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

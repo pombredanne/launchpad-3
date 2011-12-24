@@ -54,21 +54,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.components.tokens import (
-    create_token,
-    create_unique_token_for_table,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -103,11 +88,24 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.tokens import (
+    create_token,
+    create_unique_token_for_table,
     )
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -714,7 +712,8 @@ class Archive(SQLBase):
 
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
-        pocket=None, exact_match=False, created_since_date=None):
+        pocket=None, exact_match=False, created_since_date=None,
+        ordered=True):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -728,8 +727,14 @@ class Archive(SQLBase):
                 BinaryPackageName.id
         """ % sqlvalues(self)]
         clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
-        orderBy = ['BinaryPackageName.name',
-                   '-BinaryPackagePublishingHistory.id']
+        if ordered:
+            orderBy = ['BinaryPackageName.name',
+                       '-BinaryPackagePublishingHistory.id']
+        else:
+            # Strictly speaking, this is ordering, but it's an indexed
+            # ordering so it will be quick.  It's needed so that we can
+            # batch results on the webservice.
+            orderBy = ['-BinaryPackagePublishingHistory.id']
 
         if name is not None:
             if exact_match:
@@ -750,7 +755,7 @@ class Archive(SQLBase):
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
-        else:
+        elif ordered:
             order_const = "BinaryPackageRelease.version"
             desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
@@ -790,12 +795,13 @@ class Archive(SQLBase):
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False, created_since_date=None):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
-            created_since_date=created_since_date)
+            created_since_date=created_since_date, ordered=ordered)
 
         all_binaries = BinaryPackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables,

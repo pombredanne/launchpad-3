@@ -21,13 +21,11 @@ class GoogleServiceTestSetup:
     """Set up the Google web service stub for use in functional tests.
     """
 
-
     # XXX gary 2008-12-06 bug=305858: Spurious test failures discovered on
     # buildbot, builds 40 and 43. The locations of the failures are marked
     # below with " # SPURIOUS FAILURE". To reinstate, add the text below back
     # to the docstring above.  Note that the test that uses this setup,
-    # google-service-stub.txt, is also disabled.  See
-    # canonical/launchpad/ftests/test_system_documentation.py.
+    # google-service-stub.txt, is also disabled.  See test_doc.py.
     """
     >>> from lp.services.googlesearch.googletestservice import (
     ...     service_is_available)

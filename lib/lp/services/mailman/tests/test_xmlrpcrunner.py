@@ -9,9 +9,11 @@ from contextlib import contextmanager
 from datetime import datetime
 import socket
 
-from Mailman import Errors
+from Mailman import (
+    Errors,
+    mm_cfg,
+    )
 from Mailman.Logging.Syslog import syslog
-from Mailman import mm_cfg
 from Mailman.Queue.XMLRPCRunner import (
     handle_proxy_error,
     XMLRPCRunner,
@@ -26,9 +28,9 @@ from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     get_mailing_list_api_proxy,
     )
 from lp.services.mailman.testing import (
-     get_mailing_list_api_test_proxy,
-     MailmanTestCase,
-     )
+    get_mailing_list_api_test_proxy,
+    MailmanTestCase,
+    )
 from lp.services.xmlrpc import Transport
 from lp.testing import TestCase
 

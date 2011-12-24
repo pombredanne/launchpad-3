@@ -8,7 +8,7 @@ from storm.zope.interfaces import IResultSet
 from zope.component import adapter
 from zope.interface import implementer
 
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 
 
 HARD_LIMIT_FOR_SNAPSHOT = 1000

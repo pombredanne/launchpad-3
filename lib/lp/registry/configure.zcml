@@ -528,7 +528,7 @@
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
+        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -596,8 +596,8 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.pillarset.PillarSetLink"
-        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
+        class="lp.services.webservice.pillarset.PillarSetLink"
+        provides="lp.services.webservice.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
@@ -846,7 +846,7 @@
             factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.badge.IHasBadges"
+            provides="lp.app.browser.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
@@ -974,8 +974,8 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.me.MeLink"
-            provides="canonical.launchpad.rest.me.IMeLink">
+            class="lp.services.webservice.me.MeLink"
+            provides="lp.services.webservice.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
@@ -1330,7 +1330,7 @@
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"/>
+        factory="lp.registry.publisher.LaunchpadProductContainer"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
@@ -1451,7 +1451,7 @@
 
     </class>
     <adapter
-        provides="canonical.launchpad.interfaces.launchpad.IHasExternalBugTracker"
+        provides="lp.bugs.interfaces.bugtracker.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>

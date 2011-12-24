@@ -7,7 +7,7 @@ from __future__ import with_statement
 
 import simplejson
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     AppServerLayer,
@@ -18,8 +18,8 @@ from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.testing import (
     ANONYMOUS,
-    person_logged_in,
     launchpadlib_for,
+    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )

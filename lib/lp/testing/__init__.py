@@ -17,6 +17,7 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeAdapterMixin',
     'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
@@ -97,12 +98,22 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import MatchesRegex
+from testtools.matchers import (
+    Equals,
+    MatchesRegex,
+    MatchesSetwise,
+    )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getSiteManager,
+    getUtility,
+    )
 import zope.event
+from zope.interface import Interface
 from zope.interface.verify import verifyClass
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -126,6 +137,7 @@ from canonical.launchpad.webapp.servers import (
     StepsToGo,
     WebServiceTestRequest,
     )
+from lp.app.interfaces.security import IAuthorization
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
@@ -511,10 +523,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
-        list1 = sorted(iter1)
-        list2 = sorted(iter2)
-        self.assertEqual(
-            list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
+        self.assertThat(iter1, MatchesSetwise(*(map(Equals, iter2))))
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -656,7 +665,7 @@ class TestCaseWithFactory(TestCase):
         self._use_bzr_branch_called = False
         # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
         # messing with global log state (see
-        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # lp.services.scripts.logger), trace._bzr_logger does not
         # necessarily equal logging.getLogger('bzr'), so we have to explicitly
         # make it so in order to avoid "No handlers for "bzr" logger'
         # messages.
@@ -670,7 +679,7 @@ class TestCaseWithFactory(TestCase):
             because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
-        from canonical.launchpad.testing.pages import setupBrowserForUser
+        from lp.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson(password=password)
@@ -799,7 +808,7 @@ class BrowserTestCase(TestCaseWithFactory):
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
-            from canonical.launchpad.testing.pages import setupBrowser
+            from lp.testing.pages import setupBrowser
             browser = setupBrowser()
             browser.open(url)
             return browser
@@ -809,7 +818,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainContent(self, context, view_name=None, rootsite=None,
                        no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
-        from canonical.launchpad.testing.pages import find_main_content
+        from lp.testing.pages import find_main_content
         browser = self.getViewBrowser(
             context, view_name, rootsite=rootsite, no_login=no_login,
             user=user)
@@ -818,7 +827,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainText(self, context, view_name=None, rootsite=None,
                     no_login=False, user=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import extract_text
+        from lp.testing.pages import extract_text
         return extract_text(
             self.getMainContent(context, view_name, rootsite, no_login, user))
 
@@ -1429,3 +1438,47 @@ class FakeLaunchpadRequest(FakeRequest):
     def stepstogo(self):
         """See `IBasicLaunchpadRequest`."""
         return StepsToGo(self)
+
+
+class FakeAdapterMixin:
+    """A testcase mixin that helps register/unregister Zope adapters.
+
+    These helper methods simplify the task to registering Zope adapters
+    during the setup of a test and they will be unregistered when the
+    test completes.
+    """
+    def registerAdapter(self, adapter_class, for_interfaces,
+                        provided_interface, name=None):
+        """Register an adapter from the required interfacs to the provided.
+
+        eg. registerAdapter(
+                TestOtherThing, (IThing, ILayer), IOther, name='fnord')
+        """
+        getSiteManager().registerAdapter(
+            adapter_class, for_interfaces, provided_interface, name=name)
+        self.addCleanup(
+            getSiteManager().unregisterAdapter, adapter_class,
+            for_interfaces, provided_interface, name=name)
+
+    def registerAuthorizationAdapter(self, authorization_class,
+                                     for_interface, permission_name):
+        """Register a security checker to test authorisation.
+
+        eg. registerAuthorizationAdapter(
+                TestChecker, IPerson, 'launchpad.View')
+        """
+        self.registerAdapter(
+            authorization_class, (for_interface, ), IAuthorization,
+            name=permission_name)
+
+    def registerBrowserViewAdapter(self, view_class, for_interface, name):
+        """Register a security checker to test authorization.
+
+        eg registerBrowserViewAdapter(TestView, IPerson, '+test-view')
+        """
+        self.registerAdapter(
+            view_class, (for_interface, IBrowserRequest), Interface,
+            name=name)
+
+    def getAdapter(self, for_interfaces, provided_interface, name=None):
+        return getMultiAdapter(for_interfaces, provided_interface, name=name)

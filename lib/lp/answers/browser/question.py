@@ -57,11 +57,11 @@ from zope.schema.vocabulary import (
 import zope.security
 
 from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp.services.worlddata.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
+from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp import (

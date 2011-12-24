@@ -46,7 +46,7 @@ from paste.request import (
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
@@ -238,7 +238,7 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
-            base_api_url = config.appserver_root_url('api')
+            base_api_url = allvhosts.configs['api'].rooturl
             branch_api_url = '%s/%s/%s' % (
                 base_api_url,
                 'devel',

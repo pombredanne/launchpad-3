@@ -60,9 +60,7 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     any,
     greater_than,
     )
@@ -120,6 +118,8 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.services import features
 from lp.services.fields import DuplicateBug
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 
 
@@ -968,7 +968,9 @@ class BugTextView(LaunchpadView):
 
     def initialize(self):
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any assignees and subscribers.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = []
         for task in self.bugtasks:
             if task.assignee is not None:

@@ -33,7 +33,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -58,11 +58,11 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
-from lp.app.browser.tales import CustomizableFormatter
 from lp.app.browser.stringformatter import (
     extract_bug_numbers,
     extract_email_addresses,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin

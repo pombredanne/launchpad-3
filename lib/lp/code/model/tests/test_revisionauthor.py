@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for RevisionAuthors."""
@@ -9,14 +9,14 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionSet,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
@@ -94,7 +94,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
 
     def test_new_harry_not_linked(self):
         # Check a NEW email address is not used to link.
-        harry = self._makeHarry(EmailAddressStatus.NEW)
+        self._makeHarry(EmailAddressStatus.NEW)
         author = self._createRevisionAuthor()
         self.assertEqual('harry@canonical.com', author.email)
         self.assertEqual(None, author.person)
@@ -146,26 +146,26 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
     def test_validated_email_updates(self):
         # A newly validated email for a user.
-        self.assertEqual(None, self.author.person,
-                         'No author should be initially set.')
+        self.assertEqual(
+            None, self.author.person, "No author should be initially set.")
         harry = self._makeHarry(EmailAddressStatus.NEW)
         # Since the email address is initially new, there should still be
         # no link.
-        self.assertEqual(None, self.author.person,
-                         'No author should be set yet.')
+        self.assertEqual(
+            None, self.author.person, "No author should be set yet.")
         email = harry.guessedemails[0]
         harry.validateAndEnsurePreferredEmail(email)
-        transaction.commit() # Sync all changes
+        transaction.commit()  # Sync changes.
 
         # The link still hasn't been created at this point.
-        self.assertEqual(None, self.author.person,
-                         'No author should be set yet.')
+        self.assertEqual(
+            None, self.author.person, "No author should be set yet.")
 
         # After the garbo RevisionAuthorEmailLinker job runs, the link
         # is made.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
-        self.assertEqual(harry, self.author.person,
-                         'Harry should now be the author.')
+        self.assertEqual(
+            harry, self.author.person, "Harry should now be the author.")
 
 
 class TestRevisionAuthor(TestCase):

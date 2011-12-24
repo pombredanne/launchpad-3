@@ -29,10 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -49,6 +46,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -362,6 +360,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         for job in cls.getPendingJobsForTargetSeries(target_series):
             result.setdefault(job.package_name, job)
         return result
+
+    @classmethod
+    def getIncompleteJobsForArchive(cls, archive):
+        """See `IPlainPackageCopyJobSource`."""
+        jobs = IStore(PackageCopyJob).find(
+            PackageCopyJob,
+            PackageCopyJob.target_archive == archive,
+            PackageCopyJob.job_type == cls.class_job_type,
+            Job.id == PackageCopyJob.job_id,
+            Job._status.is_in(
+                [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED])
+            )
+        return DecoratedResultSet(jobs, cls)
 
     @property
     def target_pocket(self):

@@ -269,7 +269,7 @@ The distribution index page may contain portlets for Launchpad applications.
 If the distribution does not officially use the apps, its portlet does
 not appear.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> owner = distribution.owner
     >>> login_person(owner)

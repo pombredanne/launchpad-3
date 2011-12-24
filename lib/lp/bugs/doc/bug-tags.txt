@@ -226,7 +226,7 @@ Searching
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.services.searchbuilder import all
     >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -238,7 +238,7 @@ We can search for bugs with some specific tag.
 
 We can also search for bugs with any of the tags in a supplied list.
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=any(u'crash', u'dataloss'), orderby='id', user=None))
     >>> for bugtask in crash_dataloss_tasks:
@@ -249,7 +249,7 @@ We can also search for bugs with any of the tags in a supplied list.
 
 And for bugs with all of the tags in a supplied list.
 
-    >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.services.searchbuilder import all
     >>> getUtility(IBugSet).get(10).tags = [u'crash', u'burn']
     >>> crash_burn_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=all(u'crash', u'burn'), orderby='id', user=None))

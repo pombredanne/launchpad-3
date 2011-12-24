@@ -26,8 +26,7 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.mailnotification import (
+from lp.services.mail.notification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.errorlog import (
@@ -46,6 +45,7 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,

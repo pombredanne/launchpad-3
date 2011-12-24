@@ -79,7 +79,7 @@ for the ubuntutest distribution.
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> ubuntu = Distribution.byName('ubuntu')
@@ -265,7 +265,10 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     if loglevel is None or loglevel <= logging.INFO:
     ...         print "Upload complete."
 
-    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import (
+    ...     pop_notifications,
+    ...     sort_addresses,
+    ...     )
     >>> def read_email():
     ...     """Pop all emails from the test mailbox, and summarize them.
     ...
@@ -274,7 +277,7 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     line.
     ...     """
     ...     for message in pop_notifications(commit=False):
-    ...         print "To:", message['to']
+    ...         print "To:", sort_addresses(message['to'])
     ...         print "Subject:", message['subject']
     ...         print message.get_payload()[0].as_string()
     ...         print ''
@@ -305,8 +308,8 @@ to a different 'bar_1.0.orig.tar.gz'.
 
     >>> read_email()
     To:
-	Foo Bar <foo.bar@canonical.com>,
-	Daniel Silverstone <daniel.silverstone@canonical.com>
+	Daniel Silverstone <daniel.silverstone@canonical.com>,
+	Foo Bar <foo.bar@canonical.com>
     Subject: bar_1.0-3_source.changes rejected
     ...
 
@@ -669,7 +672,7 @@ First a couple helpers.
 
     >>> import os
     >>> import stat
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
 
     >>> def run_publish_distro(careful=False, careful_publishing=False):
     ...     """Run publish-distro on ubuntutest with given extra args.

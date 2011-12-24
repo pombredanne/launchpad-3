@@ -8,8 +8,8 @@ __metaclass__ = type
 from testtools.testcase import ExpectedException
 import transaction
 
-from lp.testing import TestCase
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.testing import TestCase
 
 
 class TestTransactionFreeOperation(TestCase):

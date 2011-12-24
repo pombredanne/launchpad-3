@@ -11,8 +11,16 @@ __all__ = [
     'ISprintSpecification',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Text
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.blueprints.enums import SprintSpecificationStatus

@@ -33,11 +33,10 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp.services.helpers import (
     english_list,
     shortlist,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -49,6 +48,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import (
     ActiveBatchNavigator,

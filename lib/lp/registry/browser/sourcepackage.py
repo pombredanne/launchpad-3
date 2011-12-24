@@ -55,14 +55,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -81,6 +74,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
@@ -95,6 +92,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -543,7 +541,7 @@ class SourcePackageView(LaunchpadView):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     @property
     def potemplates(self):

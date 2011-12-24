@@ -10,17 +10,14 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-from testtools.matchers import StartsWith
 from unittest import TestCase
 
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
@@ -43,6 +40,9 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.lpstorm import IStore
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
@@ -61,7 +61,7 @@ from lp.soyuz.scripts.queue import (
     CommandRunnerError,
     name_queue_map,
     QueueAction,
-    QueueActionOverride
+    QueueActionOverride,
     )
 from lp.testing import (
     celebrity_logged_in,

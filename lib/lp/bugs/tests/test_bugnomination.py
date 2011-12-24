@@ -8,7 +8,10 @@ __metaclass__ = type
 from itertools import izip
 import re
 
-from testtools.content import Content, UTF8_TEXT
+from testtools.content import (
+    Content,
+    UTF8_TEXT,
+    )
 from testtools.matchers import (
     Equals,
     LessThan,

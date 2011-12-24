@@ -24,8 +24,8 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts import log
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.scripts import log
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,

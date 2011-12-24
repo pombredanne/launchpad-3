@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 from datetime import datetime
+from operator import isSequenceType
+import re
 
 from iso8601 import (
     parse_date,
@@ -11,8 +13,6 @@ from iso8601 import (
     )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
-from operator import isSequenceType
-import re
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -42,18 +42,15 @@ from canonical.database.sqlbase import (
     convert_storm_clause_to_string,
     sqlvalues,
     )
-
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
+    ITableBatchNavigator,
     MAIN_STORE,
     SLAVE_FLAVOR,
     StormRangeFactoryError,
-    ITableBatchNavigator,
     )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -105,16 +102,7 @@ class UpperBatchNavigationView(LaunchpadView):
 
 
 class LowerBatchNavigationView(UpperBatchNavigationView):
-    """Only render bottom navigation links if there are multiple batches."""
-
     css_class = "lower-batch-nav"
-
-    def render(self):
-        if (self.context.currentBatch() and
-            (self.context.nextBatchURL() or
-            self.context.prevBatchURL())):
-            return LaunchpadView.render(self)
-        return u""
 
 
 class BatchNavigator(lazr.batchnavigator.BatchNavigator):
@@ -155,7 +143,7 @@ class InactiveBatchNavigator(BatchNavigator):
 
 
 class TableBatchNavigator(BatchNavigator):
-    """See canonical.launchpad.interfaces.ITableBatchNavigator."""
+    """See canonical.launchpad.webapp.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
     def __init__(self, results, request, start=0, size=None,

@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

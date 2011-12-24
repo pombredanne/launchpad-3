@@ -23,8 +23,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.services.database.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -40,6 +39,7 @@ from lp.code.model.revision import (
     )
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import (
     TestCaseWithFactory,

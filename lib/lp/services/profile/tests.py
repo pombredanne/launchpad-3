@@ -1,17 +1,18 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.profile.
 
-See lib/canonical/doc/profiling.txt for an end-user description of
-the functionality.
+See doc.txt for an end-user description of the functionality.
 """
 
 __metaclass__ = type
 
 import glob
+import logging
 import os
 import random
+import unittest
 
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
@@ -21,14 +22,22 @@ from zope.component import getSiteManager
 
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
 from lp.testing import (
     TestCase,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -773,3 +782,15 @@ class TestSqlLogging(TestCaseWithFactory, BaseRequestEndHandlerTest):
             response)
         # This file should be part of several of the tracebacks.
         self.assertIn(__file__.replace('.pyc', '.py'), response)
+
+
+def test_suite():
+    """Return the `IBugTarget` TestSuite."""
+    suite = unittest.TestSuite()
+
+    doctest = LayeredDocFileSuite(
+        './profiling.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer, stdout_logging_level=logging.WARNING)
+    suite.addTest(doctest)
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite

@@ -6,7 +6,7 @@ NameBlacklist pages
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.nameblacklist import INameBlacklistSet
     >>> name_blacklist_set = getUtility(INameBlacklistSet)
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> registry_expert = factory.makePerson()

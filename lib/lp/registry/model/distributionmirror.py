@@ -45,12 +45,12 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import (
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
-    shortlist,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,

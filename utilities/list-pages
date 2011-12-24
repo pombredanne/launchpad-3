@@ -56,7 +56,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.config import config
 from canonical.launchpad import pagetitles
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 

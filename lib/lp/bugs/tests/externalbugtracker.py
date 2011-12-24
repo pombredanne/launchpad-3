@@ -28,8 +28,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -65,7 +63,9 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import celebrity_logged_in
+from lp.testing.systemdocs import ordered_dict_as_string
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):

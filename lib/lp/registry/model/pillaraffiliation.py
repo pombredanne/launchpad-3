@@ -28,7 +28,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import IHasIcon
+from lp.app.interfaces.launchpad import IHasIcon
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (

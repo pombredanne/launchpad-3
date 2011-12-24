@@ -7,9 +7,7 @@ __metaclass__ = type
 
 
 import logging
-from unittest import (
-    TestCase,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 

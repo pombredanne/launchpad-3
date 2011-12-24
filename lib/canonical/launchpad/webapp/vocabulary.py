@@ -26,7 +26,6 @@ __all__ = [
 from collections import namedtuple
 
 from lazr.restful.utils import safe_hasattr
-
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -47,7 +46,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.helpers import ensure_unicode
+from lp.services.helpers import ensure_unicode
 
 
 class ForgivingSimpleVocabulary(SimpleVocabulary):

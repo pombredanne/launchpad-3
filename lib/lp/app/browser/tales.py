@@ -23,40 +23,42 @@ from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app import zapi
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    queryAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import (
     Attribute,
-    Interface,
     implements,
+    Interface,
     )
-from zope.component import (
-    adapts,
-    getUtility,
-    queryAdapter,
-    getMultiAdapter,
-    )
-from zope.app import zapi
 from zope.publisher.browser import BrowserView
-from zope.traversing.interfaces import (
-    ITraversable,
-    IPathAdapter,
-    TraversalError,
-    )
+from zope.schema import TextLine
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from zope.schema import TextLine
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    TraversalError,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    IPrivacy
+    IPrivacy,
     )
 from canonical.launchpad.layers import LaunchpadLayer
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlappend,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -64,7 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     INavigationMenu,
     IPrimaryContext,
-    NoCanonicalUrl
+    NoCanonicalUrl,
     )
 from canonical.launchpad.webapp.menu import (
     get_current_view,
@@ -73,23 +75,20 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request,
     LaunchpadView,
-    nearest
+    nearest,
     )
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
-from lp.app.browser.stringformatter import escape, FormattersAPI
+from lp.app.browser.badge import IHasBadges
+from lp.app.browser.stringformatter import (
+    escape,
+    FormattersAPI,
+    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.services.features import getFeatureFlag
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryAndSourcePackageName,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -97,6 +96,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
 SEPARATOR = ' : '
@@ -2499,9 +2503,11 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
         view/macro:pagehas/portlets
+        view/macro:pagehas/main
 
         view/macro:pagetype
 
+        view/macro:is-page-contentless
     """
 
     implements(ITraversable)
@@ -2534,8 +2540,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'show_actions_menu':
-            return self.show_actions_menu()
+        elif name == 'is-page-contentless':
+            return self.isPageContentless()
         else:
             raise TraversalError(name)
 
@@ -2550,6 +2556,20 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def isPageContentless(self):
+        """Should the template avoid rendering detailed information.
+
+        Circumstances such as not possessing launchpad.View on a private
+        context require the template to not render detailed information. The
+        user may only know identifying information about the context.
+        """
+        view_context = self.context.context
+        privacy = IPrivacy(view_context, None)
+        if privacy is None or not privacy.private:
+            return False
+        can_view = check_permission('launchpad.View', view_context)
+        return not can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

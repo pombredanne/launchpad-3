@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
@@ -37,9 +37,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mailman.config import configure_prefix
 from lp.services.scripts.base import LaunchpadScript
 

@@ -22,8 +22,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.services.messages.model.message import Message, MessageChunk
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -32,6 +31,10 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 
 
 class DistroSeriesDifferenceComment(Storm):
