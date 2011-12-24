@@ -11,7 +11,7 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

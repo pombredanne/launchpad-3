@@ -9,7 +9,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Bool
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IObjectPrivacy(Interface):

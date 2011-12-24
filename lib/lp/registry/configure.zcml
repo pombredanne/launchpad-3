@@ -1080,7 +1080,7 @@
             interface="lp.registry.interfaces.mailinglist.IMailingListSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.systemhomes.MailingListApplication"
+        class="lp.systemhomes.MailingListApplication"
         provides="lp.registry.interfaces.mailinglist.IMailingListApplication">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingListApplication"/>

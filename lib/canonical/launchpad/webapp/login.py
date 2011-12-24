@@ -39,8 +39,8 @@ from zope.session.interfaces import (
     )
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.readonly import is_read_only
+from lp import _
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (

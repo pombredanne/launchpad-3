@@ -34,7 +34,7 @@
     <browser:page
         for="*"
         name="launchpad_form"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
+        layer="lp.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-form.pt"
         class="lp.app.browser.launchpad.Macro"
@@ -42,7 +42,7 @@
     <browser:page
         for="*"
         name="launchpad_widget_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
+        layer="lp.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-widget-macros.pt"
         class="lp.app.browser.launchpad.Macro"

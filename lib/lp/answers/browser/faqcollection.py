@@ -12,7 +12,7 @@ __all__ = [
 
 from urllib import urlencode
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     Link,

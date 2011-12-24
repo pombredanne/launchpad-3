@@ -5,17 +5,17 @@ __metaclass__ = type
 
 from lazr.restful.utils import get_current_browser_request
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.launchpad.readonly import (
+from lp.services.database.readonly import (
     is_read_only,
     read_only_file_exists,
     READ_ONLY_MODE_ANNOTATIONS_KEY,
     )
-from canonical.launchpad.tests.readonly import (
+from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )

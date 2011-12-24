@@ -25,7 +25,7 @@ from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
 from canonical.config import config
-import canonical.launchpad.layers
+import lp.layers
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.propertycache import cachedproperty
@@ -73,7 +73,7 @@ class SystemErrorView(LaunchpadView):
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True
-        if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
+        if lp.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
 
@@ -144,7 +144,7 @@ class SystemErrorView(LaunchpadView):
 
     @property
     def layer_help(self):
-        if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
+        if lp.layers.FeedsLayer.providedBy(self.request):
             return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:

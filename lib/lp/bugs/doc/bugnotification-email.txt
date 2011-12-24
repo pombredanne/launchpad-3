@@ -13,7 +13,7 @@ Launchpad development wiki:
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("test@canonical.com")
 
 To avoid having one gargantuan super function that formats any kind of

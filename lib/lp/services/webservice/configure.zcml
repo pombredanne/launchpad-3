@@ -23,7 +23,7 @@
     </utility>
 
     <securedutility
-        class="canonical.launchpad.systemhomes.WebServiceApplication"
+        class="lp.systemhomes.WebServiceApplication"
         provides="lp.services.webservice.interfaces.IWebServiceApplication">
         <allow
             interface="lp.services.webservice.interfaces.IWebServiceApplication" />
@@ -47,7 +47,7 @@
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
         for="lp.services.webservice.interfaces.IWebServiceApplication"
-        type="canonical.launchpad.layers.WebServiceLayer"
+        type="lp.layers.WebServiceLayer"
         factory="lp.app.browser.launchpad.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />

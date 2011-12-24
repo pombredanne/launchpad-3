@@ -18,7 +18,7 @@ application root.
     >>> login(ANONYMOUS, request)
     >>> request.processInputs()
 
-    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> from lp.systemhomes import WebServiceApplication
     >>> root = WebServiceApplication()
     >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(root)

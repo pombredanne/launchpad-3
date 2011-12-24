@@ -45,7 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.webservice.apihelpers import (
     patch_plain_parameter_type,
     )

@@ -37,7 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     login_person,

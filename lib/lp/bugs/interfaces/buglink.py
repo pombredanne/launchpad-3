@@ -40,7 +40,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bug import IBug
 from lp.services.fields import BugField

@@ -28,7 +28,7 @@ Now update Tomcat to actually have this data:
     >>> import transaction
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.registry.model.product import Product
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
     >>> tomcat = Product.selectOneBy(name="tomcat")

@@ -18,7 +18,7 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.security import AccessBranch
+from lp.security import AccessBranch
 from canonical.launchpad.webapp.authorization import (
     check_permission,
     clear_cache,

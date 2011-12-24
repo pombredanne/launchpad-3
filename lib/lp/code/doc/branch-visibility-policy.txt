@@ -241,7 +241,7 @@ defined, then None is returned.
 The branch visibility policy is checked during branch creation through
 the relevant IBranchNamespace implementation.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
     >>> evolution.setBranchVisibilityTeamPolicy(
     ...     None, BranchVisibilityRule.FORBIDDEN)

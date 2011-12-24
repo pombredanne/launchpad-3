@@ -217,7 +217,7 @@ An IBugTask on a distribution source package.
 
 An IBugTask on a distribution without a sourcepackage.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> temp_target = distro_task.target

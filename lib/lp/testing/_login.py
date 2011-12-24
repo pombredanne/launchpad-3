@@ -59,7 +59,7 @@ def _test_login_impl(participation):
 def login(email, participation=None):
     """Simulates a login, using the specified email.
 
-    If the canonical.launchpad.ftests.ANONYMOUS constant is supplied
+    If the lp.testing.ANONYMOUS constant is supplied
     as the email, you'll be logged in as the anonymous user.
 
     You can optionally pass in a participation to be used.  If no
@@ -129,7 +129,7 @@ def logout():
     """Tear down after login(...), ending the current interaction.
 
     Note that this is done automatically in
-    canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
+    LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
     endInteraction()

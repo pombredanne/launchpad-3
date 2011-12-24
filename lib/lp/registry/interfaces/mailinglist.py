@@ -45,7 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice

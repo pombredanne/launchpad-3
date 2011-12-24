@@ -30,7 +30,7 @@ from zope.schema import (
     Choice,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.enums import ServiceUsage
 
 

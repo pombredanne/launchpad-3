@@ -19,12 +19,13 @@ import os
 import threading
 
 from lazr.restful.utils import get_current_browser_request
+
 from zope.security.management import queryInteraction
 
+from canonical.config import config
 
-root = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
-read_only_file_path = os.path.join(root, 'read-only.txt')
+
+read_only_file_path = os.path.join(config.root, 'read-only.txt')
 READ_ONLY_MODE_ANNOTATIONS_KEY = 'launchpad.read_only_mode'
 
 

@@ -15,7 +15,7 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams

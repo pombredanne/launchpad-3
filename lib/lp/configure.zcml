@@ -10,13 +10,19 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <include file="permissions.zcml" />
+
+    <i18n:registerTranslations directory="locales" />
     <webservice:register module="lp.patchwebservice" />
+
+    <authorizations module="lp.security" />
 
     <include package="lp.services" />
 
     <include package="lp.answers" />
     <include package="lp.app" />
     <include package="lp.blueprints" />
+    <include package="lp.bugs" />
     <include package="lp.buildmaster" />
     <include package="lp.code" />
     <include package="lp.coop.answersbugs" />
@@ -27,6 +33,4 @@
     <include package="lp.registry" />
     <include package="lp.xmlrpc" />
 
-    <authorizations module="canonical.launchpad.security" />
-    <include package="lp.bugs" />
 </configure>

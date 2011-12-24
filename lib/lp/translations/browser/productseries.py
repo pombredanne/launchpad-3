@@ -24,7 +24,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
     canonical_url,

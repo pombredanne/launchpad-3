@@ -568,29 +568,29 @@ they are as we expect.
 == Registering menus in ZCML ==
 
 First, we define a couple of interfaces, and put them in the
-canonical.launchpad.ftests module.
+lp.testing module.
 
     >>> class IThingHavingFacets(Interface):
     ...     pass
-    >>> import canonical.launchpad.ftests
-    >>> getattr(canonical.launchpad.ftests, 'IThingHavingFacets', None) is None
+    >>> import lp.testing
+    >>> getattr(lp.testing, 'IThingHavingFacets', None) is None
     True
 
-    >>> canonical.launchpad.ftests.IThingHavingFacets = IThingHavingFacets
-    >>> IThingHavingFacets.__module__ = 'canonical.launchpad.ftests'
+    >>> lp.testing.IThingHavingFacets = IThingHavingFacets
+    >>> IThingHavingFacets.__module__ = 'lp.testing'
 
     >>> class IThingHavingMenus(Interface):
     ...     pass
-    >>> import canonical.launchpad.ftests
-    >>> getattr(canonical.launchpad.ftests, 'IThingHavingMenus', None) is None
+    >>> import lp.testing
+    >>> getattr(lp.testing, 'IThingHavingMenus', None) is None
     True
 
-    >>> canonical.launchpad.ftests.IThingHavingMenus = IThingHavingMenus
-    >>> IThingHavingMenus.__module__ = 'canonical.launchpad.ftests'
+    >>> lp.testing.IThingHavingMenus = IThingHavingMenus
+    >>> IThingHavingMenus.__module__ = 'lp.testing'
 
 Next, we define a FacetMenu subclass to be used for IThingHavingFacets,
 using a usedfor class attribute to say what interface it is to be
-registered for, and put it too in the canonical.launchpad.ftests module.
+registered for, and put it too in the lp.testing module.
 
     >>> class FacetsForThing(Facets):
     ...     usedfor = IThingHavingFacets
@@ -606,10 +606,10 @@ registered for, and put it too in the canonical.launchpad.ftests module.
     ...             summary = self.request.method
     ...         return Link(target, text, summary=summary)
 
-    >>> getattr(canonical.launchpad.ftests, 'FacetsForThing', None) is None
+    >>> getattr(lp.testing, 'FacetsForThing', None) is None
     True
 
-    >>> canonical.launchpad.ftests.FacetsForThing = FacetsForThing
+    >>> lp.testing.FacetsForThing = FacetsForThing
 
 And likewise for an application menu registered for IThingHavingMenus.
 
@@ -617,20 +617,20 @@ And likewise for an application menu registered for IThingHavingMenus.
     ...     usedfor = IThingHavingMenus
     ...     facet = 'foo'
 
-    >>> getattr(canonical.launchpad.ftests, 'FooMenuForThing', None) is None
+    >>> getattr(lp.testing, 'FooMenuForThing', None) is None
     True
 
-    >>> canonical.launchpad.ftests.FooMenuForThing = FooMenuForThing
+    >>> lp.testing.FooMenuForThing = FooMenuForThing
 
 We do the same for a context menu.
 
     >>> class ContextMenuForThing(MyContextMenu):
     ...     usedfor = IThingHavingMenus
 
-    >>> print getattr(canonical.launchpad.ftests, 'ContextMenuForThing', None)
+    >>> print getattr(lp.testing, 'ContextMenuForThing', None)
     None
 
-    >>> canonical.launchpad.ftests.ContextMenuForThing = ContextMenuForThing
+    >>> lp.testing.ContextMenuForThing = ContextMenuForThing
 
 Now, check that we have no IFacetMenu adapter for an IThingHavingFacets
 object.
@@ -660,7 +660,7 @@ Same for an IContextMenu adapter.
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:menus
-    ...       module="canonical.launchpad.ftests"
+    ...       module="lp.testing"
     ...       classes="FacetsForThing FooMenuForThing ContextMenuForThing"
     ...       />
     ... </configure>
@@ -897,13 +897,13 @@ render() method.
 == Cleaning up ==
 
 We're done testing the zcml, so we can clean up the
-canonical.launchpad.ftests module.
+lp.testing module.
 
-    >>> del canonical.launchpad.ftests.FacetsForThing
-    >>> del canonical.launchpad.ftests.FooMenuForThing
-    >>> del canonical.launchpad.ftests.ContextMenuForThing
-    >>> del canonical.launchpad.ftests.IThingHavingFacets
-    >>> del canonical.launchpad.ftests.IThingHavingMenus
+    >>> del lp.testing.FacetsForThing
+    >>> del lp.testing.FooMenuForThing
+    >>> del lp.testing.ContextMenuForThing
+    >>> del lp.testing.IThingHavingFacets
+    >>> del lp.testing.IThingHavingMenus
 
 
 == The enabled_with_permission function decorator ==

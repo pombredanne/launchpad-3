@@ -22,7 +22,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.blueprints.enums import SprintSpecificationStatus
 from lp.services.fields import PublicPersonChoice
 

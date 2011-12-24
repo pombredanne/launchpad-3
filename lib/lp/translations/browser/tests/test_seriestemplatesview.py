@@ -9,7 +9,7 @@ import re
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer

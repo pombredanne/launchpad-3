@@ -52,7 +52,7 @@ from zope.security.proxy import ProxyFactory
 from zope.security.zcml import IPermissionDirective
 
 from canonical.config import config
-from canonical.launchpad.layers import FeedsLayer
+from lp.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     ICanonicalUrlData,

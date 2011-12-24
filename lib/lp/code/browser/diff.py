@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import Navigation
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.browser.tales import ObjectFormatterAPI

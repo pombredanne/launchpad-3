@@ -121,7 +121,7 @@ from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,

@@ -46,14 +46,14 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.layers import LaunchpadLayer
+from lp.layers import LaunchpadLayer
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,

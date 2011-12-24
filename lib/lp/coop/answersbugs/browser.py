@@ -12,7 +12,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.browser.launchpadform import (
     action,

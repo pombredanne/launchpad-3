@@ -15,7 +15,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import LaunchpadView
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.propertycache import cachedproperty

@@ -40,7 +40,7 @@ accessed via the recent_watch_activity property of BugWatchView.
 
 We'll create a new watch in order to demonstrate this.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
     >>> new_watch = factory.makeBugWatch()
 

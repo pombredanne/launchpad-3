@@ -33,7 +33,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import shortlist
 from canonical.launchpad.webapp import (
     canonical_url,

@@ -61,7 +61,7 @@ from zope.traversing.interfaces import ITraversable
 
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import intOrZero
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
@@ -70,7 +70,7 @@ from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.layers import WebServiceLayer
+from lp.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
     canonical_name,
     canonical_url,

@@ -68,7 +68,7 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,

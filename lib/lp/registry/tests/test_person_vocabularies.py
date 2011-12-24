@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person
+from lp.testing import login_person
 from canonical.launchpad.webapp.vocabulary import FilteredVocabularyBase
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

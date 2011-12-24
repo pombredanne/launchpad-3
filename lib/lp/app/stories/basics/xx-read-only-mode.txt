@@ -5,7 +5,7 @@ file switch. When in read-only mode, queries can be made to the slave
 database but attempts to access the master database or make database
 changes fail, returning an error page to the user.
 
-    >>> from canonical.launchpad.tests.readonly import (
+    >>> from lp.services.database.tests.readonly import (
     ...     touch_read_only_file, remove_read_only_file)
     >>> touch_read_only_file()
 

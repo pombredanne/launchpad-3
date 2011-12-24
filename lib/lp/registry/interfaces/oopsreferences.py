@@ -18,7 +18,7 @@ from lazr.restful.declarations import (
 from zope.interface import Interface
 from zope.schema import Datetime
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasOOPSReferences(Interface):

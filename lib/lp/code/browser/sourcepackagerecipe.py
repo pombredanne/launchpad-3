@@ -60,7 +60,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

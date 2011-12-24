@@ -31,7 +31,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

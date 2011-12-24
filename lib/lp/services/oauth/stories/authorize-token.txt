@@ -14,7 +14,7 @@ and authorize or not the consumer to act on his behalf.
     # Create a new request token.
     >>> from zope.component import getUtility
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> logout()

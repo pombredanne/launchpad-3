@@ -39,7 +39,7 @@
       />
 
     <utility
-        component="canonical.launchpad.systemhomes.apidocroot"
+        component="lp.systemhomes.apidocroot"
         provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
 
     <adapter factory="canonical.launchpad.webapp.authentication.TemporaryPrincipalAnnotations" />

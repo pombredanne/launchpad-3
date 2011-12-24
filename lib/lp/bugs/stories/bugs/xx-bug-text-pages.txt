@@ -9,7 +9,7 @@ We'll start by adding some attachments to the bug:
 
     >>> import StringIO
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.model.bug import Bug
     >>> from lp.registry.model.person import Person
     >>> login("foo.bar@canonical.com")
