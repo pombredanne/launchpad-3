@@ -392,7 +392,7 @@ class WebServiceApplication(ServiceRootResource):
     def cachedWADLPath(cls, instance_name, version):
         """Helper method to calculate the path to a cached WADL file."""
         return os.path.join(
-            os.path.dirname(os.path.normpath(__file__)),
+            config.root, 'lib', 'canonical', 'launchpad',
             'apidoc', version, '%s.wadl' % (instance_name,))
 
     def toWADL(self):
