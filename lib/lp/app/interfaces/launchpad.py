@@ -16,7 +16,6 @@ __all__ = [
     'IHasMugshot',
     'ILaunchpadCelebrities',
     'ILaunchpadUsage',
-    'IPrivateApplication',
     'IPrivacy',
     'IServiceUsage',
     ]
@@ -32,7 +31,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.app.enums import ServiceUsage
 
 
@@ -130,25 +128,6 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire "Incomplete" bug reports when they become inactive'),
         required=True)
-
-
-class IPrivateApplication(ILaunchpadApplication):
-    """Launchpad private XML-RPC application root."""
-
-    authserver = Attribute("""Old Authserver API end point.""")
-
-    codeimportscheduler = Attribute("""Code import scheduler end point.""")
-
-    codehosting = Attribute("""Codehosting end point.""")
-
-    mailinglists = Attribute("""Mailing list XML-RPC end point.""")
-
-    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
-
-    softwarecenteragent = Attribute(
-        """Software center agent XML-RPC end point.""")
-
-    featureflags = Attribute("""Feature flag information endpoint""")
 
 
 class IHasIcon(Interface):

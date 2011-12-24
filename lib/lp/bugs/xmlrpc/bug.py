@@ -15,7 +15,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,
     )
-from canonical.launchpad.xmlrpc import faults
+from lp.xmlrpc import faults
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI

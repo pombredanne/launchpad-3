@@ -24,7 +24,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
