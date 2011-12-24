@@ -486,7 +486,7 @@ twice, once as posted from Malone, and once as held by Mailman.
     # Tweak the Subject so we can tell the two message apart.
     >>> del malone_msg['subject']
     >>> malone_msg['Subject'] = 'Firefox 2'
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('foo.bar@canonical.com')
     >>> MaloneHandler().process(malone_msg, malone_msg['to'])
     True

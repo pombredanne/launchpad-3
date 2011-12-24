@@ -12,7 +12,7 @@ from urllib2 import HTTPError
 
 import transaction
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,

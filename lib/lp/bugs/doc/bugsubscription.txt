@@ -9,7 +9,7 @@ Bug Subscriber APIs
 
 First, let's login:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
 IBug has a subscriptions attribute:

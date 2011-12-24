@@ -225,7 +225,7 @@ with different package names, so that we can see how filtering
 by name works.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
     >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> login(ANONYMOUS)
     >>> driver_set = getUtility(IHWDriverSet)

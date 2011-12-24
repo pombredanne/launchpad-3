@@ -25,7 +25,7 @@ We'll make a private archive and add a new build to it to demonstrate this.
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("foo.bar@canonical.com")

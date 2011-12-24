@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import logout
+from lp.testing import logout
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     RedirectionView,

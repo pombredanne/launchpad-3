@@ -7,7 +7,7 @@ project and monitor them as they change. Launchpad offers functionality
 to allow a distribution to focus on and improve this process.
 
     >>> from storm.store import Store
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.bugs.tests.bug import (
     ...     create_bug_from_strings)
     >>> from lp.registry.interfaces.sourcepackagename import (

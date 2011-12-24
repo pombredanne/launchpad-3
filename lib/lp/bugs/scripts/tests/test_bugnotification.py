@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,

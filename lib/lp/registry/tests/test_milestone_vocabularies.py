@@ -9,7 +9,7 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

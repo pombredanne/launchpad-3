@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from lazr.restful.utils import get_current_browser_request
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

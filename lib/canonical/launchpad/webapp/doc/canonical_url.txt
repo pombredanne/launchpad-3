@@ -9,7 +9,7 @@ The browser:url directive registers an ICanonicalUrlData adapter.
 In this test, we'll use a URL hierarchy /countries/England/+towns/London
 
 In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
-will put in canonical.launchpad.ftests.
+will put in lp.testing.
 
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import Interface, Attribute, implements
@@ -59,15 +59,15 @@ Define a navigation for the Country URL.
     ...     CountryNavigation, [ICountry, IDefaultBrowserLayer], 
     ...     IBrowserPublisher)
 
-Put the interfaces into canonical.launchpad.ftests, ensuring that there
+Put the interfaces into lp.testing, ensuring that there
 are not already objects with those names there.
 
-    >>> import canonical.launchpad.ftests
+    >>> import lp.testing
     >>> for interface in ICountrySet, ICountry, ITown:
     ...     name = interface.getName()
-    ...     assert getattr(canonical.launchpad.ftests, name, None) is None
-    ...     setattr(canonical.launchpad.ftests, name, interface)
-    ...     interface.__module__ = 'canonical.launchpad.ftests'
+    ...     assert getattr(lp.testing, name, None) is None
+    ...     setattr(lp.testing, name, interface)
+    ...     interface.__module__ = 'lp.testing'
 
 We don't have ICanonicalUrlData adapters for objects that provide any of these
 interfaces.  First, we create some countryset, country and town objects.
@@ -100,7 +100,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:url
-    ...       for="canonical.launchpad.ftests.ITown"
+    ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
     ...       attribute_to_parent="countryOopsTypo"
     ...       />
@@ -109,13 +109,13 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
     Traceback (most recent call last):
     ...
     ZopeXMLConfigurationError: File "<string>", line ...
-        AttributeError: The name "countryOopsTypo" is not in canonical.launchpad.ftests.ITown
+        AttributeError: The name "countryOopsTypo" is not in lp.testing.ITown
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:url
-    ...       for="canonical.launchpad.ftests.ITown"
+    ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
     ...       attribute_to_parent="country"
     ...       />
@@ -136,12 +136,12 @@ Now, there is an ICanonicalUrlData registered for ITown.
 The parent of an object might be accessible via an attribute, or it might
 be a utility.  This is the case for an ICountry object: its parent is the
 ICountrySet.  I need to put the countryset_instance somewhere we can get
-at it from zcml.  I'll put it in canonical.launchpad.ftests.
+at it from zcml.  I'll put it in lp.testing.
 
     >>> assert getattr(
-    ...     canonical.launchpad.ftests, 'countryset_instance', None) is None
+    ...     lp.testing, 'countryset_instance', None) is None
 
-    >>> canonical.launchpad.ftests.countryset_instance = countryset_instance
+    >>> lp.testing.countryset_instance = countryset_instance
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure
@@ -152,13 +152,13 @@ at it from zcml.  I'll put it in canonical.launchpad.ftests.
     ...       <include file="meta.zcml" />
     ...   </configure>
     ...   <utility
-    ...       provides="canonical.launchpad.ftests.ICountrySet"
-    ...       component="canonical.launchpad.ftests.countryset_instance"
+    ...       provides="lp.testing.ICountrySet"
+    ...       component="lp.testing.countryset_instance"
     ...       />
     ...   <browser:url
-    ...       for="canonical.launchpad.ftests.ICountry"
+    ...       for="lp.testing.ICountry"
     ...       path_expression="name"
-    ...       parent_utility="canonical.launchpad.ftests.ICountrySet"
+    ...       parent_utility="lp.testing.ICountrySet"
     ...       />
     ... </configure>
     ... """)
@@ -201,16 +201,16 @@ an adapter.
     ...         return getUtility(ILaunchpadRoot)
 
 The CountrySetUrl class needs to be accessible from zcml.  So, we put it
-in canonical.launchpad.ftests.
+in lp.testing.
 
-    >>> canonical.launchpad.ftests.CountrySetUrl = CountrySetUrl
+    >>> lp.testing.CountrySetUrl = CountrySetUrl
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:url
-    ...       for="canonical.launchpad.ftests.ICountrySet"
-    ...       urldata="canonical.launchpad.ftests.CountrySetUrl"
+    ...       for="lp.testing.ICountrySet"
+    ...       urldata="lp.testing.CountrySetUrl"
     ...       />
     ... </configure>
     ... """)
@@ -423,13 +423,13 @@ And if the configuration does provide a rootsite:
     ...       <include file="meta.zcml" />
     ...   </configure>
     ...   <utility
-    ...       provides="canonical.launchpad.ftests.ICountrySet"
-    ...       component="canonical.launchpad.ftests.countryset_instance"
+    ...       provides="lp.testing.ICountrySet"
+    ...       component="lp.testing.countryset_instance"
     ...       />
     ...   <browser:url
-    ...       for="canonical.launchpad.ftests.ICountry"
+    ...       for="lp.testing.ICountry"
     ...       path_expression="name"
-    ...       parent_utility="canonical.launchpad.ftests.ICountrySet"
+    ...       parent_utility="lp.testing.ICountrySet"
     ...       rootsite="bugs"
     ...       />
     ... </configure>
@@ -534,9 +534,9 @@ only the relative local path returned.
 == The end ==
 
 We've finished with our interfaces and utility component, so remove them from
-canonical.launchpad.ftests.
+lp.testing.
 
     >>> for name in ['ICountrySet', 'ICountry', 'ITown', 'countryset_instance',
     ...              'CountrySetUrl']:
-    ...     delattr(canonical.launchpad.ftests, name)
+    ...     delattr(lp.testing, name)
 

@@ -708,9 +708,6 @@ keeping those searchable.
     ...     def getDefaultFilter(self):
     ...         return dict(**self.default_filter)
 
-    # Set up a harness for easier testing.
-
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> search_view_harness = LaunchpadFormHarness(
     ...     ubuntu, MyCustomSearchQuestionsView)
 

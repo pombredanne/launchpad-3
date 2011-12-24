@@ -26,7 +26,7 @@ from zope.publisher.interfaces import (
     )
 
 from canonical.config import dbconfig
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )

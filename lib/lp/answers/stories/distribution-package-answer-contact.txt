@@ -6,7 +6,7 @@ contacts as well as the distribution answer contacts.
 
     # Register a Sample Person as an answer contact for the distribution.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.distribution import IDistributionSet

@@ -6,7 +6,7 @@ __metaclass__ = type
 import soupmatchers
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

@@ -8,7 +8,7 @@ from datetime import (
 
 import pytz
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
 

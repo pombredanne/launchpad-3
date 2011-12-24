@@ -42,7 +42,7 @@ Taking a bug
 To take a bug, you can choose the "me" radio button. First, let's
 pretend to be logged in as Foo Bar:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
 Then, let's simulate selecting the "me" radio button, to assign the
