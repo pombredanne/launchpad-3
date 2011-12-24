@@ -76,15 +76,13 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    searchbuilder,
-    )
+from canonical.launchpad import _
+from lp.services import searchbuilder
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.helpers import truncate_text
+from lp.services.helpers import truncate_text
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

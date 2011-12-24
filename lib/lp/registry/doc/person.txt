@@ -643,7 +643,7 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> from lp.services.mail.helpers import get_contact_email_addresses
     >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 

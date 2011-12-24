@@ -17,7 +17,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
+from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig

@@ -12,7 +12,7 @@ import os
 import _pythonpath
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import filenameToContentType
+from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.base import (
     LaunchpadScript,

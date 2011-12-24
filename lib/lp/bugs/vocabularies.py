@@ -40,7 +40,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.helpers import (
+from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )

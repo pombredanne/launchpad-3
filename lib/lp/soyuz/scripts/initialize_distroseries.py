@@ -15,7 +15,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.helpers import ensure_unicode
+from lp.services.helpers import ensure_unicode
 from lp.services.database.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

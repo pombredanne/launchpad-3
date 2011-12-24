@@ -80,7 +80,7 @@ it's currently the team contact method.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink(url="+editemails").click()
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
     Change your e-mail settings...
 

@@ -118,11 +118,13 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp.services.helpers import (
     ensure_unicode,
+    shortlist,
+    )
+from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
-    shortlist,
     )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag

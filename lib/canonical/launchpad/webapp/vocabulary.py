@@ -46,7 +46,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.helpers import ensure_unicode
+from lp.services.helpers import ensure_unicode
 
 
 class ForgivingSimpleVocabulary(SimpleVocabulary):

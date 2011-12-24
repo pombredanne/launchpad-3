@@ -51,8 +51,8 @@ from zope.schema.vocabulary import (
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
-from canonical.launchpad.helpers import (
-    browserLanguages,
+from lp.services.worlddata.helpers import (
+    browser_languages,
     is_english_variant,
     preferred_or_request_languages,
     )
@@ -804,8 +804,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                       mapping=team_mapping)
             response.addNotification(structured(msgid))
         else:
-            if len(browserLanguages(self.request)) > 0:
-                languages = browserLanguages(self.request)
+            if len(browser_languages(self.request)) > 0:
+                languages = browser_languages(self.request)
             else:
                 languages = [english]
             for language in languages:

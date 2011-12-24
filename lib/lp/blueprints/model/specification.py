@@ -46,7 +46,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import get_contact_email_addresses
+from lp.services.mail.helpers import get_contact_email_addresses
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (

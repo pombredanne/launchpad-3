@@ -27,7 +27,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.ftests import login
-from canonical.launchpad.helpers import (
+from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )

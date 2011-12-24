@@ -103,7 +103,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import (
+from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )

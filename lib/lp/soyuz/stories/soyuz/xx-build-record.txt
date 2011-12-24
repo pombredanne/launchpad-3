@@ -46,7 +46,7 @@ page. It's title briefly describes the build.
 
     >>> anon_browser.open(build_url)
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
     i386 build : 1.0 : \u201ctesting\u201d package : ubuntutest
 

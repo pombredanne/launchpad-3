@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
 from lp.services.tokens import (
     create_unique_token_for_table,
     )
-from canonical.launchpad.helpers import get_email_template
+from lp.services.mail.helpers import get_email_template
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import (
     ILoginToken,

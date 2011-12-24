@@ -33,7 +33,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import quote
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.searchbuilder import any
+from lp.services.searchbuilder import any
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

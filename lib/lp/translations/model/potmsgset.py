@@ -43,7 +43,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from lp.services.database.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.propertycache import get_property_cache

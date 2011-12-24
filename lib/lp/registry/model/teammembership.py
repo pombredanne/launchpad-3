@@ -36,7 +36,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import (
+from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )

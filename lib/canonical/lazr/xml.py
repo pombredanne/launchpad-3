@@ -11,7 +11,7 @@ __all__ = [
 
 import os
 from tempfile import NamedTemporaryFile
-from canonical.launchpad.helpers import simple_popen2
+from lp.services.helpers import simple_popen2
 
 class XMLValidator:
     """A validator for XML files against a schema."""
@@ -42,7 +42,7 @@ class XMLValidator:
         # Using the lxml validator, the tests in this module need ca.
         # 3 seconds on a 2GHz Core2Duo laptop.
         # If the xml data to be validated is passed to xmllint via
-        # canonical.launchpad.helpers.simple_popen2, the run time
+        # lp.services.helpers.simple_popen2, the run time
         # of the tests is 38..40 seconds; if the validation input
         # is not passed via stdin but saved in a temporary file,
         # the tests need 28..30 seconds.

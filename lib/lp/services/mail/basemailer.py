@@ -10,7 +10,7 @@ __all__ = ['BaseMailer', 'RecipientReason']
 import logging
 from smtplib import SMTPException
 
-from canonical.launchpad.helpers import get_email_template
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     append_footer,

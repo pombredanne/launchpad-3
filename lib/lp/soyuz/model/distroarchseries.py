@@ -33,7 +33,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,

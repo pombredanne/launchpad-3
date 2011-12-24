@@ -59,7 +59,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.database.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend

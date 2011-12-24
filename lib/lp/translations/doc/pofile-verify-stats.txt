@@ -177,7 +177,7 @@ all fixed already.
 
     >>> transaction.commit() # Ensure other process can see latest changes
 
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'cronscripts/rosetta-pofile-stats-daily.py')
     >>> print returncode

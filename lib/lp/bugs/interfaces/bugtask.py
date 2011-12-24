@@ -101,7 +101,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
 from lp.app.interfaces.launchpad import IHasDateCreated
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     NULL,

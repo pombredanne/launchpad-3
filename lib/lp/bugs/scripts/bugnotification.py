@@ -20,7 +20,7 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import get_email_template
+from lp.services.mail.helpers import get_email_template
 from lp.services.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.enum import BugNotificationLevel

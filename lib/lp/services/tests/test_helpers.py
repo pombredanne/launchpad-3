@@ -5,13 +5,7 @@ from doctest import DocTestSuite
 from textwrap import dedent
 import unittest
 
-from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserRequest
-
-from canonical.launchpad import helpers
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.interfaces.person import IPerson
-from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.services import helpers
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
@@ -87,139 +81,6 @@ def make_test_tarball_2():
     })
 
 
-class DummyLanguage:
-
-    def __init__(self, code, pluralforms):
-        self.code = code
-        self.pluralforms = pluralforms
-        self.alt_suggestion_language = None
-
-
-class DummyLanguageSet:
-    implements(ILanguageSet)
-
-    _languages = {
-        'ja': DummyLanguage('ja', 1),
-        'es': DummyLanguage('es', 2),
-        'fr': DummyLanguage('fr', 3),
-        'cy': DummyLanguage('cy', None),
-        }
-
-    def __getitem__(self, key):
-        return self._languages[key]
-
-
-class DummyPerson:
-    implements(IPerson)
-
-    def __init__(self, codes):
-        self.codes = codes
-        all_languages = DummyLanguageSet()
-
-        self.languages = [all_languages[code] for code in self.codes]
-
-
-dummyPerson = DummyPerson(('es',))
-dummyNoLanguagePerson = DummyPerson(())
-
-
-class DummyResponse:
-
-    def redirect(self, url):
-        pass
-
-
-class DummyRequest:
-    implements(IBrowserRequest)
-
-    def __init__(self, **form_data):
-        self.form = form_data
-        self.URL = "http://this.is.a/fake/url"
-        self.response = DummyResponse()
-
-    def get(self, key, default):
-        raise key
-
-
-def adaptRequestToLanguages(request):
-    return DummyRequestLanguages()
-
-
-class DummyRequestLanguages:
-
-    def getPreferredLanguages(self):
-        return [DummyLanguage('ja', 1),
-            DummyLanguage('es', 2),
-            DummyLanguage('fr', 3),
-            ]
-
-    def getLocalLanguages(self):
-        return [DummyLanguage('da', 4),
-            DummyLanguage('as', 5),
-            DummyLanguage('sr', 6),
-            ]
-
-
-class DummyLaunchBag:
-    implements(ILaunchBag)
-
-    def __init__(self, login=None, user=None):
-        self.login = login
-        self.user = user
-
-
-def test_preferred_or_request_languages():
-    '''
-    >>> from zope.app.testing.placelesssetup import setUp, tearDown
-    >>> from zope.app.testing import ztapi
-    >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from lp.services.geoip.interfaces import IRequestPreferredLanguages
-    >>> from lp.services.geoip.interfaces import IRequestLocalLanguages
-    >>> from canonical.launchpad.helpers import preferred_or_request_languages
-
-    First, test with a person who has a single preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestPreferredLanguages,
-    ...     adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = preferred_or_request_languages(DummyRequest())
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-
-    Then test with a person who has no preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestPreferredLanguages,
-    ...     adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = preferred_or_request_languages(DummyRequest())
-    >>> len(languages)
-    6
-    >>> languages[0].code
-    'ja'
-
-    >>> tearDown()
-    '''
-
-
 def test_shortlist_returns_all_elements():
     """
     Override the warning function since by default all warnings raises an
@@ -240,7 +101,7 @@ def test_shortlist_returns_all_elements():
     Show that shortlist doesn't crop the results when a warning is
     printed.
 
-    >>> from canonical.launchpad.helpers import shortlist
+    >>> from lp.services.helpers import shortlist
     >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPSIS
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -253,6 +114,53 @@ def test_shortlist_returns_all_elements():
 
     >>> warnings.warn = old_warn
 
+    """
+
+
+def test_english_list():
+    """
+    The english_list function takes a list of strings and concatenates them
+    in a form suitable for inclusion in an English sentence. For lists of 3
+    or more elements it follows the advice given in The Elements of Style,
+    chapter I, section 2.
+
+        >>> from lp.services.helpers import english_list
+
+    By default, it joins the last two elements in the list with 'and', and
+    joins the rest of the list with ','. It also adds whitespace around
+    these delimiters as appropriate.
+
+        >>> english_list([])
+        ''
+
+        >>> english_list(['Fred'])
+        'Fred'
+
+        >>> english_list(['Fred', 'Bob'])
+        'Fred and Bob'
+
+        >>> english_list(['Fred', 'Bob', 'Harold'])
+        'Fred, Bob, and Harold'
+
+    It accepts any iterable that yields strings:
+
+        >>> english_list('12345')
+        '1, 2, 3, 4, and 5'
+
+        >>> english_list(str(i) for i in xrange(5))
+        '0, 1, 2, 3, and 4'
+
+    It does not convert non-string elements:
+
+        >>> english_list(range(3))
+        Traceback (most recent call last):
+        ...
+        TypeError: sequence item 0: expected string, int found
+
+    The conjunction can be changed:
+
+        >>> english_list('123', 'or')
+        '1, 2, or 3'
     """
 
 

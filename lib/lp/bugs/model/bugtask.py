@@ -85,9 +85,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     greater_than,
