@@ -133,7 +133,7 @@ class PGSessionData(PGSessionBase):
                     'should not happen.  The code setting the session data '
                     'should be reviewed; and failing that, the cookie '
                     'timeout after logout (set in '
-                    'canonoical.launchpad.webapp.login) should perhaps be '
+                    'webapp.login) should perhaps be '
                     'increased a bit, if a ten minute fudge factor is not '
                     'enough to handle the vast majority of computers with '
                     'not-very-accurate system clocks.  In an exceptional '
