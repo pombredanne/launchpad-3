@@ -23,7 +23,7 @@
     </utility>
 
     <securedutility
-        class="canonical.launchpad.systemhomes.WebServiceApplication"
+        class="lp.systemhomes.WebServiceApplication"
         provides="lp.services.webservice.interfaces.IWebServiceApplication">
         <allow
             interface="lp.services.webservice.interfaces.IWebServiceApplication" />

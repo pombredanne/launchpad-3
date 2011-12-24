@@ -132,7 +132,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -140,7 +140,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 HWDevice.drivers returns the list of drivers associtaed with this device.
@@ -392,7 +392,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -400,7 +400,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Once we've got a driver, we can search for submissions associated with it.
@@ -870,7 +870,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -878,7 +878,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Known vendor IDs for a given bus can be queried with
