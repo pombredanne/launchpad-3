@@ -192,7 +192,7 @@ class Whatever(object):
         args.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
         # If we're being called with no args, assume this is part of crazy
         # TALES stuff:
-        #   lib/canonical/launchpad/webapp/metazcml.py(365)path()
+        #   webapp/metazcml.py(365)path()
         #   -> return self._compiled_path_expression(self._expression_context)
         if args:
             name = '%s(%s)' % (self._name, ', '.join(args))

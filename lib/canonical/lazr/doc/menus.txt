@@ -588,7 +588,7 @@ facet name.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <browser:menus
     ...     module="canonical.lazr.cookingexample"
     ...     classes="

@@ -136,7 +136,7 @@ Next, a functional/integration test of the overridden directive.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:page
     ...     for="lp.testing.IFoo"
@@ -200,45 +200,6 @@ facet is not specified for the inner page.
     >>> P.page(context, name, facet=facet)
     >>> P.page(context, "OTHER NAME")
 
-# This is a pointless test. See pointless test comment above
-# -- StuartBishop 20060411
-#     >>> context
-#     ((None,
-#       <function provideInterface>,
-#       ('', 'FOR_')),
-#      (('view',
-#        'FOR_',
-#        'NAME',
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#       <function handler>,
-#       ('Adapters',
-#        'register',
-#        ('FOR_',
-#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#        <InterfaceClass zope.interface.Interface>,
-#        'NAME',
-#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-#        'INFO')),
-#      (None,
-#       <function provideInterface>,
-#       ('', 'FOR_')),
-#      (('view',
-#        'FOR_',
-#        'OTHER NAME',
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#       <function handler>,
-#       ('Adapters',
-#        'register',
-#        ('FOR_',
-#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#        <InterfaceClass zope.interface.Interface>,
-#        'OTHER NAME',
-#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-#        'INFO')))
-
-
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
@@ -260,7 +221,7 @@ Next, a functional/integration test of the overridden directive.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:pages
     ...     for="lp.testing.IFoo"
@@ -354,7 +315,7 @@ Next, a functional/integration test of the overridden directive.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:editform
     ...     for="lp.testing.IFoo"
@@ -437,7 +398,7 @@ Next, a functional/integration test of the overridden directive.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:addform
     ...     for="lp.testing.IFoo"
@@ -517,7 +478,7 @@ Next, a functional/integration test of the overridden directive.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:schemadisplay
     ...     for="lp.testing.IFoo"
@@ -561,7 +522,7 @@ Next, a functional/integration test of the overridden directive.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser"
-    ...     package="canonical.launchpad">
+    ...     package="lp.services">
     ...   <include file="webapp/meta.zcml" />
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <facet facet="whole-facet">
@@ -634,7 +595,7 @@ an IPermission.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
     ...     i18n_domain="canonical">
-    ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta-overrides.zcml" />
     ...   <permission id="foo.bar" title="Foo Bar" access_level="read" />
     ... </configure>
     ... """)

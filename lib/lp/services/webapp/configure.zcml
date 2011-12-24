@@ -232,7 +232,7 @@
     </class>
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/launchpad.png" />
+    <browser:favicon for="*" file="../../../canonical/launchpad/images/launchpad.png" />
 
     <!-- LaunchBag Utility -->
     <utility

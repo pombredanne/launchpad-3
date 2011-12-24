@@ -48,7 +48,7 @@
     <browser:page
         for="lp.services.webapp.interfaces.ILaunchpadProtocolError"
         class="lp.services.webapp.error.ProtocolErrorView"
-        template="launchpad/webapp/templates/protocol-error.pt"
+        template="../lp/services/webapp/templates/protocol-error.pt"
         name="index.html"
         permission="zope.Public"
         />

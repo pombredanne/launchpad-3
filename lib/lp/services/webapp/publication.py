@@ -333,9 +333,8 @@ class LaunchpadBrowserPublication(
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = None
         # +opstats and +haproxy are status URLs that must not query the DB at
-        # all.  This is enforced (see
-        # lib/canonical/launchpad/webapp/dbpolicy.py). If the request is for
-        # one of those two pages, don't even try to authenticate, because we
+        # all.  This is enforced by webapp/dbpolicy.py. If the request is for
+        # one of those two pages, don't even try to authenticate, because it
         # may fail.  We haven't traversed yet, so we have to sniff the request
         # this way.  Even though PATH_INFO is always present in real requests,
         # we need to tread carefully (``get``) because of test requests in our

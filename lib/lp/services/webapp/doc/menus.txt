@@ -658,7 +658,7 @@ Same for an IContextMenu adapter.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <browser:menus
     ...       module="lp.testing"
     ...       classes="FacetsForThing FooMenuForThing ContextMenuForThing"

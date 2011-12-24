@@ -98,7 +98,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
@@ -113,7 +113,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
@@ -147,7 +147,7 @@ at it from zcml.  I'll put it in lp.testing.
     ... <configure
     ...     xmlns="http://namespaces.zope.org/zope"
     ...     xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <configure package="zope.app.component">
     ...       <include file="meta.zcml" />
     ...   </configure>
@@ -207,7 +207,7 @@ in lp.testing.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ICountrySet"
     ...       urldata="lp.testing.CountrySetUrl"
@@ -418,7 +418,7 @@ And if the configuration does provide a rootsite:
     ... <configure
     ...     xmlns="http://namespaces.zope.org/zope"
     ...     xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/lp/services/webapp/meta.zcml" />
     ...   <configure package="zope.app.component">
     ...       <include file="meta.zcml" />
     ...   </configure>

@@ -2,8 +2,7 @@
 
 Launchpad request shouldn't take more than a fix number of seconds to
 complete. The database adapter issues RequestExpired errors when the
-database takes too long to respond (see
-lib/canonical/launchpad/webapp/ftests/test_adapter.txt)
+database takes too long to respond (see webapp/ftests/test_adapter.txt)
 
 The app server is also configured with a default timeout function (for
 functions wrapped with the @with_timeout decorator) that computes the
