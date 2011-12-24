@@ -27,7 +27,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -60,10 +59,6 @@ from lp.registry.model.karma import (
 from lp.registry.model.person import (
     get_recipients,
     Person,
-    )
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
     )
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
