@@ -80,7 +80,7 @@ the form.
     # Setup a harness to easily test the view.
 
     >>> from lp.answers.browser.question import QuestionWorkflowView
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from lp.testing.deprecated import LaunchpadFormHarness
     >>> workflow_harness = LaunchpadFormHarness(
     ...     firefox_question, QuestionWorkflowView)
 

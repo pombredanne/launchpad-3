@@ -11,7 +11,7 @@ __all__ = [
     'logout',
     ]
 
-from canonical.launchpad.ftests._launchpadformharness import (
+from lp.testing.deprecated import (
     LaunchpadFormHarness,
     )
 from lp.testing import (
