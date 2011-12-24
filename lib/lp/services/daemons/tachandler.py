@@ -25,7 +25,7 @@ from txfixtures.tachandler import (
     TacTestFixture,
     )
 
-from canonical.launchpad.daemons import readyservice
+from lp.services.daemons import readyservice
 from lp.services.osutils import (
     get_pid_from_file,
     kill_by_pidfile,

@@ -16,7 +16,7 @@ from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.daemons import readyservice
+from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM

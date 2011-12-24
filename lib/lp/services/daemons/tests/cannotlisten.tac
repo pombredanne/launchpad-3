@@ -14,7 +14,7 @@ from twisted.application import (
     )
 from twisted.internet import protocol
 
-from canonical.launchpad.daemons import readyservice
+from lp.services.daemons import readyservice
 
 
 application = service.Application('CannotListen')
