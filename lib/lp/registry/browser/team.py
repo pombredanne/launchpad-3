@@ -72,7 +72,7 @@ from canonical.config import config
 from lp import _
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -81,18 +81,18 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     clear_cache,
     )
-from canonical.launchpad.webapp.batching import (
+from lp.services.webapp.batching import (
     ActiveBatchNavigator,
     BatchNavigator,
     InactiveBatchNavigator,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (

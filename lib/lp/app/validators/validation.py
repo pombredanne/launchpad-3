@@ -23,9 +23,9 @@ from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from lp import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.cve import valid_cve
@@ -130,7 +130,7 @@ def validate_new_person_email(email):
     user that the profile he's trying to create already exists, so there's no
     need to create another one.
     """
-    from canonical.launchpad.webapp.publisher import canonical_url
+    from lp.services.webapp.publisher import canonical_url
     from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)

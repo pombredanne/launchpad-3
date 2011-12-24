@@ -45,8 +45,8 @@ from lp.services.helpers import (
     shortlist,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
     NamedSQLObjectVocabulary,

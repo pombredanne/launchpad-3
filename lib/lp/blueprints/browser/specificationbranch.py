@@ -16,8 +16,8 @@ from lazr.restful.utils import smartquote
 from zope.interface import implements
 
 from lp import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

@@ -34,7 +34,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import shortlist
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,

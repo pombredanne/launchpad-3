@@ -62,19 +62,19 @@ from lp.services.feeds.browser import (
     ProjectBranchesFeedLink,
     ProjectRevisionsFeedLink,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
     Link,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,

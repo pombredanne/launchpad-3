@@ -19,12 +19,12 @@ from zope.security.management import (
     )
 
 from lp.layers import setFirstLayer
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessAuthUtility,
     )
-from canonical.launchpad.webapp.publisher import layer_for_rootsite
-from canonical.launchpad.webapp.servers import (
+from lp.services.webapp.publisher import layer_for_rootsite
+from lp.services.webapp.servers import (
     LaunchpadTestRequest,
     WebServiceTestRequest,
     )

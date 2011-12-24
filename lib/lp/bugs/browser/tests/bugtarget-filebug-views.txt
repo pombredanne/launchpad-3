@@ -6,7 +6,7 @@ contains enough functionality to file bug, the classes inheriting from
 it only adds some more functionality, like adding fields, searching for
 similar bug reports, etc.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bugtarget import FileBugViewBase
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

@@ -14,7 +14,7 @@
         />
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        provides="lp.services.webapp.interfaces.ICanonicalUrlData"
         for="..interfaces.server.ITestOpenIDApplication"
         factory=".server.TestOpenIDRootUrlData"
         />

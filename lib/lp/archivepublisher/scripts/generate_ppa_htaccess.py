@@ -19,7 +19,7 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,

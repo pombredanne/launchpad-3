@@ -34,18 +34,18 @@ from lp.services.verification.interfaces.logintoken import (
     IGPGKeyValidationForm,
     ILoginTokenSet,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     GetitemNavigation,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IPlacelessLoginSource,
     )
-from canonical.launchpad.webapp.login import logInPrincipal
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.menu import structured
+from lp.services.webapp.vhosts import allvhosts
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -54,12 +54,12 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.layers import LaunchpadLayer
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     urlappend,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
     IFacetMenu,
@@ -68,16 +68,16 @@ from canonical.launchpad.webapp.interfaces import (
     IPrimaryContext,
     NoCanonicalUrl,
     )
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.menu import (
     get_current_view,
     get_facet,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     get_current_browser_request,
     LaunchpadView,
     nearest,
     )
-from canonical.launchpad.webapp.session import get_cookie_domain
+from lp.services.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.badge import IHasBadges
 from lp.app.browser.stringformatter import (

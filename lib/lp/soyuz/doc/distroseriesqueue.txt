@@ -124,7 +124,7 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:

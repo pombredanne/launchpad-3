@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.url import urlappend
 from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,

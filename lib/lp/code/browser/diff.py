@@ -10,8 +10,8 @@ __all__ = [
 
 
 from lp import _
-from canonical.launchpad.webapp import Navigation
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp import Navigation
+from lp.services.webapp.publisher import canonical_url
 from lp.app.browser.tales import ObjectFormatterAPI
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.services.browser_helpers import get_plural_text

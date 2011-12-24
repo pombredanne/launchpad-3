@@ -7,7 +7,7 @@ Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
   >>> from lp.services.librarian.model import LibraryFileAlias
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> fake_chroot = LibraryFileAlias.get(1)
 
@@ -26,8 +26,8 @@ View parameters need to be set properly before start:
 
 After setup we have a 'batched' list:
 
-  >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-  >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.services.webapp.interfaces import IBatchNavigator
+  >>> from lp.services.webapp.testing import verifyObject
   >>> verifyObject(IBatchNavigator, queue_view.batchnav)
   True
 

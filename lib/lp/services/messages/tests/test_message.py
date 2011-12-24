@@ -18,7 +18,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.testing import login
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet

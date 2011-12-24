@@ -10,8 +10,8 @@ __all__ = [
 
 import cgi
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

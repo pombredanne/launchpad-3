@@ -13,7 +13,7 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from lp import _
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

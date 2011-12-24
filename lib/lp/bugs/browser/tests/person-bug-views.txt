@@ -9,7 +9,7 @@ that person. These pages provide simple and advanced search forms.
 Let's define a helper function to make it easier to construct a view.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
     ...     view = getMultiAdapter(
     ...         (context, LaunchpadTestRequest(form=form)), name=name)

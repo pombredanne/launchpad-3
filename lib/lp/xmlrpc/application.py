@@ -21,8 +21,8 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.bugs.interfaces.malone import IPrivateMaloneApplication
 from lp.code.interfaces.codehosting import ICodehostingApplication

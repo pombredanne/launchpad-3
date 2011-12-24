@@ -8,7 +8,7 @@ not Launchpad users.
     >>> from zope.component import getUtility
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
     ...     IPerson,
@@ -66,7 +66,7 @@ The IPersonSet utility
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> verifyObject(IPersonSet, personset)
     True
@@ -108,7 +108,7 @@ caused the entry to be created.
 Since this person has chosen to hide his email addresses they won't be
 visible to other users which are not admins.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
@@ -278,7 +278,7 @@ IPerson objects associated to the accounts we adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
     None

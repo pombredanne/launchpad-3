@@ -45,7 +45,7 @@ from zope.schema import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.url import urlparse
+from lp.services.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError

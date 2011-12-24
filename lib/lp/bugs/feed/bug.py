@@ -16,13 +16,13 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     urlparse,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import LaunchpadView
 from canonical.lazr.feed import (
     FeedBase,
     FeedEntry,

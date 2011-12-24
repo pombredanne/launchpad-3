@@ -34,12 +34,12 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     IPlacelessAuthUtility,
     )
-from canonical.launchpad.webapp.login import logInPrincipal
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.publisher import LaunchpadView
 from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,

@@ -40,7 +40,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.postgresql import ConnectionString
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

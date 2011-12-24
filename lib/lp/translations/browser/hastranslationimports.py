@@ -26,9 +26,9 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.vocabulary import ForgivingSimpleVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

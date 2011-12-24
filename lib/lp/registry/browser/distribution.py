@@ -53,7 +53,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.helpers import english_list
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     ContextMenu,
@@ -67,9 +67,9 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets,
     stepthrough,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,

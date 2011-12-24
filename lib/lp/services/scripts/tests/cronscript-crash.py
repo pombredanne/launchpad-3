@@ -9,7 +9,7 @@ __all__ = []
 
 import _pythonpath
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.scripts.base import LaunchpadCronScript
 
 

@@ -6,7 +6,7 @@ whatever the action used.
 
     >>> from lp.answers.browser.question import QuestionWorkflowView
     >>> from lp.testing.deprecated import LaunchpadFormHarness
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')

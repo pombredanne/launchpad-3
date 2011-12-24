@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp import Navigation
+from lp.services.webapp import Navigation
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.processor import (
     IProcessorFamilySet,

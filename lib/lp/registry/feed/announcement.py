@@ -19,7 +19,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     urlappend,
     )

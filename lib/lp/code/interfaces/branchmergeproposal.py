@@ -70,7 +70,7 @@ from zope.schema import (
 from canonical.database.constants import DEFAULT
 from lp import _
 from lp.app.interfaces.launchpad import IPrivacy
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp.services.webapp.interfaces import ITableBatchNavigator
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,

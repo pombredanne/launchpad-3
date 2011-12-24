@@ -19,11 +19,11 @@ from zope.component import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.security import AccessBranch
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     clear_cache,
     )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interaction import ANONYMOUS
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization

@@ -23,8 +23,8 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
+from lp.services.webapp import canonical_url
+from lp.services.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.librarian.interfaces import ILibraryFileAliasSet

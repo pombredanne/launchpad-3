@@ -11,7 +11,7 @@ import unittest
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )

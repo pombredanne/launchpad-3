@@ -14,15 +14,15 @@ __all__ = [
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.productseries import ProductSeriesOverviewMenu
 from lp.registry.browser.sourcepackage import SourcePackageOverviewMenu

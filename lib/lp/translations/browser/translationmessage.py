@@ -39,7 +39,7 @@ from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.services.database.readonly import is_read_only
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -47,9 +47,9 @@ from canonical.launchpad.webapp import (
     Link,
     urlparse,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.app.errors import UnexpectedFormData
 from lp.services.propertycache import cachedproperty
 from lp.translations.browser.browser_helpers import (

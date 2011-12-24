@@ -54,7 +54,7 @@ If new members are added/proposed, they'll show up at the top of the lists.
 
 Posting malformed data to the team home page raises an error.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> broken_request = LaunchpadTestRequest(
     ...     form={})
     >>> broken_request.method = 'POST'

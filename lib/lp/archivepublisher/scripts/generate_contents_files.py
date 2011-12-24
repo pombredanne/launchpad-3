@@ -14,7 +14,7 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.dbpolicy import (
+from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )

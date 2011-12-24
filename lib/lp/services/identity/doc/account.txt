@@ -295,8 +295,8 @@ Launchpad accounts with an attached Person.
 
     # We need to change database policy here again, as the SSO Server cannot
     # modify tables in the lpmain replication set.
-    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> from lp.registry.interfaces.person import PersonCreationRationale

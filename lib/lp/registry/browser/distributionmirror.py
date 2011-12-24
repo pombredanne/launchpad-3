@@ -23,15 +23,15 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import TitleBreadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

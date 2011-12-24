@@ -88,7 +88,7 @@ from zope.interface import (
     )
 
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from lp.xmlrpc import faults
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (

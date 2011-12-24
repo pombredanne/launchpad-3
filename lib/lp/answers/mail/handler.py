@@ -13,7 +13,7 @@ import re
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.services.mail.interfaces import IMailHandler

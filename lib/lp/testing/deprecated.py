@@ -15,8 +15,8 @@ from zope.security.management import (
     restoreInteraction,
     )
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.servers import LaunchpadTestRequest
 
 
 class LaunchpadFormHarness:

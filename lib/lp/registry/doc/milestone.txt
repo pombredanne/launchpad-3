@@ -429,7 +429,7 @@ product.
 The driver for a milestone's target cannot change a milestone, but the
 driver of the series_target is a release manager can can make changes.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> driver = factory.makePerson(name='driver')
     >>> fizzy_milestone.target.driver = driver

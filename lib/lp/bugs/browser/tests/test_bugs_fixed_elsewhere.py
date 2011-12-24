@@ -16,7 +16,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.testing import login
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus

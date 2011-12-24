@@ -5,7 +5,7 @@ An Archive models a Debian Archive, providing operations like
 publication lookups and the complete publishing-pipeline from database
 records to disk, including configuration and indexes.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
@@ -2067,7 +2067,7 @@ You'll get the same error if you use a component object that's not main.
 As important as the right to upload packages to Joe's PPA, Carlos
 also got the corresponding permissions on it.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login("carlos@canonical.com")
 
     >>> check_permission('launchpad.View', joes_ppa)

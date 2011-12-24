@@ -30,19 +30,19 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from lp.layers import FeedsLayer
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_name,
     canonical_url,
     Navigation,
     stepto,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchpadRoot,
     )
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IHasBugs

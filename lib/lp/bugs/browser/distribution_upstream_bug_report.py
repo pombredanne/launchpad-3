@@ -11,11 +11,11 @@ __all__ = [
 
 from operator import attrgetter
 
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.url import urlappend
 from lp.app.enums import ServiceUsage
 from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
 from lp.services.propertycache import cachedproperty

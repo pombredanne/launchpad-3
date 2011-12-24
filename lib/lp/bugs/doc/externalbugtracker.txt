@@ -864,7 +864,7 @@ where to file the bug upstream.
 
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> external_bugtracker = TestExternalBugTracker(
     ...     'http://example.com')

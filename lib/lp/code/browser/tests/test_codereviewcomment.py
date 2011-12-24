@@ -10,8 +10,8 @@ from soupmatchers import (
     Tag,
     )
 
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,

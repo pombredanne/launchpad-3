@@ -14,7 +14,7 @@ can be used for subordinate field indentation, for example.
     >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
     >>> from lp.testing.pages import find_tags_by_class
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> class ITestSchema(Interface):
     ...     displayname = TextLine(title=u"Title")

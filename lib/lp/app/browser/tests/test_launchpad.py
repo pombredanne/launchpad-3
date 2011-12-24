@@ -13,13 +13,13 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchpadRoot,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.url import urlappend
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

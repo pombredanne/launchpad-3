@@ -315,7 +315,7 @@ representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtask import (
     ...        BugTaskStatus,
     ...        IBugTaskDelta,

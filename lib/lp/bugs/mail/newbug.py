@@ -8,7 +8,7 @@ __all__ = [
     'generate_bug_add_email',
     ]
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.services.mail.mailwrapper import MailWrapper
 
 

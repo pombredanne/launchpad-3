@@ -20,7 +20,7 @@ user tried to re-post the form after validating one of their email addresses.
     ...     LoginTokenType)
     >>> from lp.services.verification.interfaces.logintoken import (
     ...     ILoginTokenSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')

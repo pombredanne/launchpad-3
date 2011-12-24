@@ -20,10 +20,10 @@ from zope.app.publication.interfaces import (
     )
 from zope.component import getSiteManager
 
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.interfaces import StartRequestEvent
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+import lp.services.webapp.adapter as da
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.interfaces import StartRequestEvent
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.features.testing import FeatureFixture

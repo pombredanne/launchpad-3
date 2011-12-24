@@ -14,7 +14,7 @@ from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     LaunchpadView,

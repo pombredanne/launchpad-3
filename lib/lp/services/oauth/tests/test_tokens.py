@@ -18,11 +18,11 @@ from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
 
 from lp.testing import login_person
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,

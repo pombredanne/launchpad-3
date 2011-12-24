@@ -18,7 +18,7 @@ from zope.interface import Interface
 
 from canonical.config import config
 from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion

@@ -6,7 +6,7 @@ Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.mailinglist import (
     ...     IMailingList,
     ...     IMailingListSet,

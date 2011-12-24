@@ -38,7 +38,7 @@ from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     AccessLevel,
     IStoreSelector,
     MAIN_STORE,

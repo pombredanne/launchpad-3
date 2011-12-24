@@ -8,7 +8,7 @@ branches. If the logged-in user is allowed to edit the code import then they
 can see a link to edit the details.
 
     >>> from lp.testing import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
 
     >>> login(ANONYMOUS)
     >>> registrant = factory.makePerson(password='test')

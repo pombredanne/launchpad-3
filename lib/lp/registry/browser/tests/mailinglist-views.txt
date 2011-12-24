@@ -23,7 +23,7 @@ Sample Person creates the team, thus becoming its owner.
 
 Sample Person can access the +mailinglist page.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')

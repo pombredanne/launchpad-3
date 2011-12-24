@@ -19,7 +19,7 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )

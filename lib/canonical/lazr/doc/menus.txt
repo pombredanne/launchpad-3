@@ -44,7 +44,7 @@ They are derived from a base class that provides the required behaviours
 for traversable objects.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> from lp.services.webapp.interfaces import ICanonicalUrlData
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
@@ -76,7 +76,7 @@ object has a canonical url derived from its place in the hierarchy.
     # objects. This function does most of the work, but views must be
     # assigned to the _last_obj_traversed attribute.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from canonical.lazr.testing.menus import make_fake_request
 
     >>> root = Root('', None)
@@ -102,7 +102,7 @@ from the last traversed content object. Some views implement a marker
 interface to associate themselves with a specific sub menu below a
 content object's menu.
 
-    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from lp.services.webapp import LaunchpadView
 
     >>> class IRecipeEditMenuMarker(Interface):
     ...     """A marker interface of the RecipeEditMenu."""
@@ -156,7 +156,7 @@ they are assigned to the same facet.
     ...            xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include package="zope.app" file="meta.zcml" />
     ...   <includeOverrides
-    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
+    ...     package="lp.services.webapp" file="meta-overrides.zcml" />
     ...   <browser:defaultView
     ...     for="canonical.lazr.cookingexample.IRecipe"
     ...     name="+index"
@@ -212,7 +212,7 @@ questions and answers about the content object.
 FacetMenus are meant to be used as a base-class for writing your own
 IFacetMenu classes.  An error is raise if it is directly called.
 
-    >>> from canonical.launchpad.webapp import FacetMenu
+    >>> from lp.services.webapp import FacetMenu
 
     >>> bad_idea_menu = FacetMenu(object())
     >>> for link in bad_idea_menu.iterlinks():
@@ -230,7 +230,7 @@ facet is not known for the context being viewed. The enable_links
 attribute is a list of links that are enabled; a subset of links that
 are appropriate for a context object.
 
-    >>> from canonical.launchpad.webapp import Link
+    >>> from lp.services.webapp import Link
 
     >>> class CookeryFacetMenu(FacetMenu):
     ...
@@ -266,9 +266,9 @@ can access `self.context`.
     >>> from zope.component import provideAdapter
     >>> from zope.security.checker import (
     ...     defineChecker, InterfaceChecker, NamesChecker)
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IFacetLink, ILink, ILinkData)
-    >>> from canonical.launchpad.webapp.menu import (
+    >>> from lp.services.webapp.menu import (
     ...     FacetLink, MenuLink)
     >>> from lazr.uri import URI
 
@@ -336,7 +336,7 @@ be subordinate to the content object's menu.
 NavigationMenu is a base class for writing your own INavigationMenu
 implementations. It cannot be used directly.
 
-    >>> from canonical.launchpad.webapp import NavigationMenu
+    >>> from lp.services.webapp import NavigationMenu
 
     >>> bad_idea_menu = NavigationMenu(object())
 
@@ -570,7 +570,7 @@ normally performed in ZCML; without the ZCML registration, the cookery
 objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IFacetMenu, INavigationMenu)
 
     >>> request = make_fake_request(
@@ -1088,7 +1088,7 @@ NavigationMenus used in the previous TALES section.
     >>> import tempfile
     >>> from zope.app.pagetemplate.viewpagetemplatefile import (
     ...     ViewPageTemplateFile)
-    >>> from canonical.launchpad.webapp.menu import (
+    >>> from lp.services.webapp.menu import (
     ...     get_facet, get_current_view)
 
     >>> menu_fragement = """\

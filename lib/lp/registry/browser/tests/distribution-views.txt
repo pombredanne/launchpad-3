@@ -95,7 +95,7 @@ The view accepts the basic fields to register a distribution.
 
 Only admins and owners can access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Admin', view)
     True

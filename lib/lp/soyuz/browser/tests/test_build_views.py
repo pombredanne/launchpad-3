@@ -21,9 +21,9 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import StormRangeFactoryError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet

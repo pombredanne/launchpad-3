@@ -15,7 +15,7 @@ a bug task.
     ...     if not bugwatch.bugtasks]
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> linked_bugwatch_view = getMultiAdapter(
     ...     (linked_bugwatches.pop(), LaunchpadTestRequest()), name='+edit')
     >>> linked_bugwatch_view.initialize()

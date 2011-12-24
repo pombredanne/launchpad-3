@@ -34,12 +34,12 @@ from zope.interface import implements
 from canonical.database.sqlbase import quote
 from lp.services.database.lpstorm import IStore
 from lp.services.searchbuilder import any
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.vocabulary import CountableIterator
+from lp.services.webapp.vocabulary import CountableIterator
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,

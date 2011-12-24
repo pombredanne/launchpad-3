@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
     QuestionTargetMixin,

@@ -56,8 +56,8 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.config import config
 from lp.services.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import canonical_url
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

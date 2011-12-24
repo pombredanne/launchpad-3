@@ -36,8 +36,8 @@ from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
 from canonical.config import config
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import (
+import lp.services.webapp.adapter as da
+from lp.services.webapp.interfaces import (
     DisallowedStore,
     IStartRequestEvent,
     )

@@ -34,7 +34,7 @@ from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from lp.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,

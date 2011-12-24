@@ -20,14 +20,14 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from lp.layers import WebServiceLayer
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     RedirectionView,
     stepthrough,
     )
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.url import urlappend
 from canonical.librarian.client import url_path_quote
 from lp.app.errors import GoneError
 from lp.services.librarian.interfaces import ILibraryFileAlias

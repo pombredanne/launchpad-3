@@ -411,7 +411,7 @@ this test.
 
 When not logged in as a privileged user, no link:
 
-    >>> from canonical.launchpad.webapp.launchbag import (
+    >>> from lp.services.webapp.launchbag import (
     ...     set_developer_in_launchbag_before_traversal)
     >>> login('test@canonical.com')
     >>> set_developer_in_launchbag_before_traversal(None)
