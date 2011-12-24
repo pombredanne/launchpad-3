@@ -56,7 +56,7 @@ from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-import canonical.launchpad.layers as layers
+import lp.layers as layers
 from lp.services.database.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy

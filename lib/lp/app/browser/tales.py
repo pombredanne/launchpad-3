@@ -53,7 +53,7 @@ from lp.app.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.layers import LaunchpadLayer
+from lp.layers import LaunchpadLayer
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,

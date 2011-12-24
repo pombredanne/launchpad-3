@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from canonical.config import config
-from canonical.launchpad.layers import WebServiceLayer
+from lp.layers import WebServiceLayer
 from canonical.testing.layers import FunctionalLayer
 from lp.bugs.publisher import BugsLayer
 from lp.testing import TestCase

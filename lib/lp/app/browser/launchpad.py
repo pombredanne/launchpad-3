@@ -70,7 +70,7 @@ from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
-from canonical.launchpad.layers import WebServiceLayer
+from lp.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
     canonical_name,
     canonical_url,

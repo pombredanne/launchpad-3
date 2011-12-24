@@ -60,7 +60,7 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.launchpad.layers import (
+from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
     WebServiceLayer,

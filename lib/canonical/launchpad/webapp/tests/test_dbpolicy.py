@@ -25,7 +25,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from canonical.launchpad.layers import (
+from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     WebServiceLayer,
