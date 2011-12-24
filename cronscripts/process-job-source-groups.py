@@ -16,7 +16,7 @@ import textwrap
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.helpers import english_list
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import LaunchpadCronScript
 

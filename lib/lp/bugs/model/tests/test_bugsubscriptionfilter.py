@@ -12,7 +12,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad import searchbuilder
+from lp.services import searchbuilder
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (

@@ -1,7 +1,7 @@
 We have a report that we run as necessary to see what is using the Librarian
 storage.
 
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
     >>> script = 'scripts/librarian-report.py'
 
     >>> rv, out, err = run_script(script)

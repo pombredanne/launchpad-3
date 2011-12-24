@@ -672,7 +672,7 @@ First a couple helpers.
 
     >>> import os
     >>> import stat
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
 
     >>> def run_publish_distro(careful=False, careful_publishing=False):
     ...     """Run publish-distro on ubuntutest with given extra args.

@@ -60,7 +60,7 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     any,
     greater_than,
     )

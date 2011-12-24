@@ -10,7 +10,7 @@ from lpbuildd.pottery.generate_translation_templates import (
     GenerateTranslationTemplates,
     )
 
-from canonical.launchpad.ftests.script import run_script
+from lp.testing.script import run_script
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.testing import TestCaseWithFactory

@@ -28,7 +28,7 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.helpers import (
+from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )

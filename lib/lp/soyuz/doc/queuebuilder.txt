@@ -27,8 +27,7 @@ Import the bunch of required database classes:
     ...     DistroArchSeries, PocketChroot)
 
 The Master side of Buildd requires access to Launchpad Database, the
-user designed for this kind of access is 'fiera', see
-test_system_documentation.py for more information.
+user designed for this kind of access is 'fiera'.
 
     >>> from lp.services.log.logger import DevNullLogger
     >>> logger = DevNullLogger()

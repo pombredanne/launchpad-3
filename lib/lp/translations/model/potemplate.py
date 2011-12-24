@@ -61,7 +61,8 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad import helpers
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -1013,7 +1014,7 @@ class POTemplate(SQLBase, RosettaStats):
                             "Statistics update failed: %s" % unicode(error))
 
         if template_mail is not None:
-            template = helpers.get_email_template(
+            template = get_email_template(
                 template_mail, 'translations')
             message = template % replacements
             return (subject, message)
@@ -1336,7 +1337,7 @@ class POTemplateSet:
                 conditions, POTemplate.distroseries == distroseries)
 
         store = IStore(POTemplate)
-        matches = helpers.shortlist(store.find(POTemplate, conditions))
+        matches = shortlist(store.find(POTemplate, conditions))
 
         if len(matches) == 0:
             # Nope.  Sorry.

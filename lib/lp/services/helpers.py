@@ -11,21 +11,13 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 from difflib import unified_diff
-import os
 import re
 from StringIO import StringIO
 import subprocess
 import tarfile
 import warnings
 
-from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.services.geoip.interfaces import (
-    IRequestLocalLanguages,
-    IRequestPreferredLanguages,
-    )
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -100,11 +92,6 @@ def string_to_tarfile(s):
     return tarfile.open('', 'r', StringIO(s))
 
 
-def browserLanguages(request):
-    """Return a list of Language objects based on the browser preferences."""
-    return IRequestPreferredLanguages(request).getPreferredLanguages()
-
-
 def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
     standard output.
@@ -124,22 +111,6 @@ def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, nothing) = p.communicate(input)
     return output
-
-
-def get_contact_email_addresses(person):
-    """Return a set of email addresses to contact this Person.
-
-    In general, it is better to use lp.registry.model.person.get_recipients
-    instead.
-    """
-    # Need to remove the security proxy of the email address because the
-    # logged in user may not have permission to see it.
-    from zope.security.proxy import removeSecurityProxy
-    # Circular imports force this import.
-    from lp.registry.model.person import get_recipients
-    return set(
-        str(removeSecurityProxy(mail_person.preferredemail).email)
-        for mail_person in get_recipients(person))
 
 
 class ShortListTooBigError(Exception):
@@ -208,47 +179,6 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
             " sequences with no more than %d items.  There were %s items."
             % (longest_expected, size), stacklevel=2)
     return results
-
-
-def preferred_or_request_languages(request):
-    """Turn a request into a list of languages to show.
-
-    Return Person.languages when the user has preferred languages.
-    Otherwise, return the languages from the request either from the
-    headers or from the IP address.
-    """
-    user = getUtility(ILaunchBag).user
-    if user is not None and user.languages:
-        return user.languages
-
-    # If the user is not authenticated, or they are authenticated but have no
-    # languages set, try looking at the HTTP headers for clues.
-    languages = IRequestPreferredLanguages(request).getPreferredLanguages()
-    for lang in IRequestLocalLanguages(request).getLocalLanguages():
-        if lang not in languages:
-            languages.append(lang)
-    return languages
-
-
-def is_english_variant(language):
-    """Return whether the language is a variant of modern English .
-
-    >>> class Language:
-    ...     def __init__(self, code):
-    ...         self.code = code
-    >>> is_english_variant(Language('fr'))
-    False
-    >>> is_english_variant(Language('en'))
-    False
-    >>> is_english_variant(Language('en_CA'))
-    True
-    >>> is_english_variant(Language('enm'))
-    False
-    """
-    # XXX sinzui 2007-07-12 bug=125545:
-    # We would not need to use this function so often if variant languages
-    # knew their parent language.
-    return language.code[0:3] in ['en_']
 
 
 def is_tar_filename(filename):
@@ -329,21 +259,6 @@ def intOrZero(value):
         return int(value)
     except (ValueError, TypeError):
         return 0
-
-
-def get_email_template(filename, app=None):
-    """Returns the email template with the given file name.
-
-    The templates are located in 'lib/canonical/launchpad/emailtemplates'.
-    """
-    if app is None:
-        base = os.path.dirname(__file__)
-        fullpath = os.path.join(base, 'emailtemplates', filename)
-    else:
-        import lp
-        base = os.path.dirname(lp.__file__)
-        fullpath = os.path.join(base, app, 'emailtemplates', filename)
-    return open(fullpath).read()
 
 
 def truncate_text(text, max_length):

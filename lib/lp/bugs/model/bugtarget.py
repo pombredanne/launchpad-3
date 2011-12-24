@@ -29,7 +29,7 @@ from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     any,
     not_equals,
     NULL,

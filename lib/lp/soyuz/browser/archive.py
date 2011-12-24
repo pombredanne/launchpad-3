@@ -60,7 +60,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.helpers import english_list
+from lp.services.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,

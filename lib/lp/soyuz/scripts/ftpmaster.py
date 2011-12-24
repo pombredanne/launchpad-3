@@ -28,7 +28,7 @@ from debian.deb822 import Changes
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.helpers import filenameToContentType
+from lp.services.helpers import filenameToContentType
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     UploadFailed,

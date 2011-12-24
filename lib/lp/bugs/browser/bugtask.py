@@ -121,17 +121,14 @@ from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
+from canonical.launchpad import _
 from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.services.mail.notification import get_unified_diff
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     NULL,
@@ -278,6 +275,7 @@ from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
+from lp.services.helpers import shortlist
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -3071,7 +3069,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=12)
+        return shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
