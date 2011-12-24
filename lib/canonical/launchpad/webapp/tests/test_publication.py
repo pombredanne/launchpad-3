@@ -31,8 +31,8 @@ from lp.testing import (
     login,
     )
 from lp.services.database.lpstorm import IMasterStore
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.tests.readonly import (
+from lp.services.database.readonly import is_read_only
+from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )

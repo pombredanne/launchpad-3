@@ -30,7 +30,7 @@ from canonical.launchpad.layers import (
     setFirstLayer,
     WebServiceLayer,
     )
-from canonical.launchpad.tests.readonly import (
+from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )

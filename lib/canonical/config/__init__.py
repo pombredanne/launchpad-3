@@ -429,7 +429,7 @@ class DatabaseConfig:
         # rw_main_master will never be used, as read-only-mode will
         # fail attempts to access the master database with a
         # ReadOnlyModeDisallowedStore exception.
-        from canonical.launchpad.readonly import is_read_only
+        from lp.services.database.readonly import is_read_only
         if is_read_only():
             return self.ro_main_master
         else:
@@ -437,7 +437,7 @@ class DatabaseConfig:
 
     @property
     def main_slave(self):
-        from canonical.launchpad.readonly import is_read_only
+        from lp.services.database.readonly import is_read_only
         if is_read_only():
             return self.ro_main_slave
         else:

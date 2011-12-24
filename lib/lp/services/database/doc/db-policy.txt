@@ -131,7 +131,7 @@ During database outages, we run in read-only mode. In this mode, no
 matter what database policy is currently installed, explicit requests
 for a master store fail and the default store is always the slave.
 
-    >>> from canonical.launchpad.tests.readonly import read_only_mode
+    >>> from lp.services.database.tests.readonly import read_only_mode
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> from contextlib import nested
 
