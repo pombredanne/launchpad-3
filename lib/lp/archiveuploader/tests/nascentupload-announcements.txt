@@ -299,7 +299,7 @@ original changesfile.
     IndexError: list index out of range
 
 See further tests upon PPA upload notifications on
-archiveuploader/ftests/test_ppauploadprocessor.
+archiveuploader/tests/test_ppauploadprocessor.
 
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):

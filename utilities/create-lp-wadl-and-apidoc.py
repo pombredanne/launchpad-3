@@ -28,7 +28,7 @@ from lp.services.webservice.wadl import (
     generate_wadl,
     )
 from lp.services.scripts import execute_zcml_for_scripts
-from canonical.launchpad.systemhomes import WebServiceApplication
+from lp.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
 
 

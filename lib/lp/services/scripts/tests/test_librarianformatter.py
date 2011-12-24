@@ -20,7 +20,7 @@ from urllib2 import urlopen
 from pytz import utc
 import transaction
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

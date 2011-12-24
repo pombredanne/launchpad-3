@@ -52,7 +52,7 @@
             interface="lp.translations.interfaces.pomsgid.IPOMsgID"/>
     </class>
     <securedutility
-        class="canonical.launchpad.systemhomes.RosettaApplication"
+        class="lp.systemhomes.RosettaApplication"
         provides="lp.translations.interfaces.translations.IRosettaApplication">
         <allow
             interface="lp.translations.interfaces.translations.IRosettaApplication"/>

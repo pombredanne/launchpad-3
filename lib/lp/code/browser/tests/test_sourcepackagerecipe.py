@@ -23,7 +23,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -71,6 +70,7 @@ from lp.testing.pages import (
     get_feedback_messages,
     get_radio_button_text_for_field,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
 from lp.testing.views import create_initialized_view
 
 

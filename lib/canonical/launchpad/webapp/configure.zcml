@@ -45,22 +45,22 @@
         factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
         />
     <adapter
-        for="canonical.launchpad.layers.WebServiceLayer"
+        for="lp.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
-        for="canonical.launchpad.layers.FeedsLayer"
+        for="lp.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
     <adapter
-        for="canonical.launchpad.layers.WebServiceLayer"
+        for="lp.layers.WebServiceLayer"
         provides="lazr.restful.interfaces.IWebBrowserOriginatingRequest"
         factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
     <adapter
-        for="canonical.launchpad.layers.WebServiceLayer"
+        for="lp.layers.WebServiceLayer"
         provides="lazr.restful.interfaces.INotificationsProvider"
         factory="canonical.launchpad.webapp.interfaces.INotificationRequest"
         />
@@ -440,7 +440,7 @@
         name="+whichdb"
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
-        layer="canonical.launchpad.layers.PageTestLayer"
+        layer="lp.layers.PageTestLayer"
         />
 
     <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">

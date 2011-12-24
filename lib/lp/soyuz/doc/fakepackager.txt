@@ -128,8 +128,7 @@ The error was raised because no signing key was set.
     None
 
 A GPG key can only be set on initialization so we will have to create a
-new packager passing a filename available in our test_keys directory
-(see launchpad/ftests/keys_for_tests.py)
+new packager passing a filename available in our test_keys directory.
 
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')

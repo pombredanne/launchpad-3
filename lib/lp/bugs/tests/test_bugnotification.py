@@ -21,7 +21,7 @@ from zope.interface import providedBy
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

@@ -26,7 +26,7 @@ from zope.component import (
     )
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import shortlist
 from canonical.launchpad.webapp import (
     canonical_url,

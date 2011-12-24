@@ -35,18 +35,18 @@ zcml directives. :-(
 
 == Setting up some interfaces and objects to test with ==
 
-We'll put an interface in canonical.launchpad.ftests.IFoo, and set the
+We'll put an interface in lp.testing.IFoo, and set the
 default view for the IFooLayer layer.
 
     >>> from zope.component import queryMultiAdapter
-    >>> import canonical.launchpad.ftests
+    >>> import lp.testing
     >>> from zope.interface import Interface, implements
     >>> class IFoo(Interface):
     ...     pass
     >>> class IFooLayer(Interface):
     ...     pass
-    >>> canonical.launchpad.ftests.IFoo = IFoo
-    >>> canonical.launchpad.ftests.IFooLayer = IFooLayer
+    >>> lp.testing.IFoo = IFoo
+    >>> lp.testing.IFooLayer = IFooLayer
 
     >>> class FooObject:
     ...     implements(IFoo)
@@ -62,7 +62,7 @@ default view for the IFooLayer layer.
     ...
     ...     def __call__(self):
     ...         return "FooView was called"
-    >>> canonical.launchpad.ftests.FooView = FooView
+    >>> lp.testing.FooView = FooView
 
 
 == Overriding the browser:page directive ==
@@ -139,21 +139,21 @@ Next, a functional/integration test of the overridden directive.
     ...     package="canonical.launchpad">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:page
-    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     for="lp.testing.IFoo"
     ...     name="+whatever"
     ...     permission="zope.Public"
-    ...     class="canonical.launchpad.ftests.FooView"
+    ...     class="lp.testing.FooView"
     ...     attribute="__call__"
     ...     facet="the_evil_facet"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     layer="lp.testing.IFooLayer"
     ...     />
     ...   <browser:page
-    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     for="lp.testing.IFoo"
     ...     name="+mandrill"
     ...     permission="zope.Public"
     ...     template="../../lp/app/templates/base-layout.pt"
     ...     facet="another-mister-lizard"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     layer="lp.testing.IFooLayer"
     ...     />
     ... </configure>
     ... """)
@@ -263,9 +263,9 @@ Next, a functional/integration test of the overridden directive.
     ...     package="canonical.launchpad">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:pages
-    ...     for="canonical.launchpad.ftests.IFoo"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
-    ...     class="canonical.launchpad.ftests.FooView"
+    ...     for="lp.testing.IFoo"
+    ...     layer="lp.testing.IFooLayer"
+    ...     class="lp.testing.FooView"
     ...     facet="outerspace"
     ...     permission="zope.Public">
     ...     <browser:page
@@ -357,9 +357,9 @@ Next, a functional/integration test of the overridden directive.
     ...     package="canonical.launchpad">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:editform
-    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     for="lp.testing.IFoo"
     ...     name="+someeditform"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     layer="lp.testing.IFooLayer"
     ...     schema="zope.interface.Interface"
     ...     facet="another_mister_lizard"
     ...     permission="zope.Public"/>
@@ -440,9 +440,9 @@ Next, a functional/integration test of the overridden directive.
     ...     package="canonical.launchpad">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:addform
-    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     for="lp.testing.IFoo"
     ...     name="+someaddform"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     layer="lp.testing.IFooLayer"
     ...     schema="zope.interface.Interface"
     ...     facet="yet_another_mister_lizard"
     ...     permission="zope.Public"/>
@@ -520,9 +520,9 @@ Next, a functional/integration test of the overridden directive.
     ...     package="canonical.launchpad">
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <browser:schemadisplay
-    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     for="lp.testing.IFoo"
     ...     name="+someschemadisplay"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     layer="lp.testing.IFooLayer"
     ...     schema="zope.interface.Interface"
     ...     facet="hurrah_yet_another_mister_lizard"
     ...     permission="zope.Public"/>
@@ -566,29 +566,29 @@ Next, a functional/integration test of the overridden directive.
     ...   <include file="webapp/meta-overrides.zcml" />
     ...   <facet facet="whole-facet">
     ...     <browser:page
-    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       for="lp.testing.IFoo"
     ...       name="+impliedfacet"
     ...       permission="zope.Public"
-    ...       class="canonical.launchpad.ftests.FooView"
+    ...       class="lp.testing.FooView"
     ...       attribute="__call__"
-    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       layer="lp.testing.IFooLayer"
     ...       />
     ...     <browser:addform
-    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       for="lp.testing.IFoo"
     ...       name="+impliedfacet-add"
-    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       layer="lp.testing.IFooLayer"
     ...       schema="zope.interface.Interface"
     ...       permission="zope.Public"/>
     ...     <browser:editform
-    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       for="lp.testing.IFoo"
     ...       name="+impliedfacet-edit"
-    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       layer="lp.testing.IFooLayer"
     ...       schema="zope.interface.Interface"
     ...       permission="zope.Public"/>
     ...     <browser:schemadisplay
-    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       for="lp.testing.IFoo"
     ...       name="+impliedfacet-schemadisplay"
-    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       layer="lp.testing.IFooLayer"
     ...       schema="zope.interface.Interface"
     ...       permission="zope.Public"/>
     ...   </facet>
@@ -651,6 +651,6 @@ an IPermission.
 
 Clean up the interfaces we created for testing with.
 
-    >>> del canonical.launchpad.ftests.IFoo
-    >>> del canonical.launchpad.ftests.IFooLayer
-    >>> del canonical.launchpad.ftests.FooView
+    >>> del lp.testing.IFoo
+    >>> del lp.testing.IFooLayer
+    >>> del lp.testing.FooView

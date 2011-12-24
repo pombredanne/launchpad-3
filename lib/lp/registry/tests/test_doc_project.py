@@ -7,7 +7,7 @@ from doctest import DocTestSuite
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )

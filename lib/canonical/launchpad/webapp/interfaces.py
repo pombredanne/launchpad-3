@@ -36,7 +36,7 @@ from zope.schema import (
     )
 from zope.traversing.interfaces import IContainmentRoot
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IAPIDocRoot(IContainmentRoot):

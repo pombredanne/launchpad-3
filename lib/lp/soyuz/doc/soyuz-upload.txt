@@ -392,7 +392,7 @@ Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')

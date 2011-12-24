@@ -35,7 +35,7 @@ logged in to call this method:
 
 Let's login then to add a subscription:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> debian_firefox.addBugSubscription(sample_person, sample_person)

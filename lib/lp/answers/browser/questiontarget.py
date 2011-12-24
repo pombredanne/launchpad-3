@@ -50,7 +50,7 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.worlddata.helpers import (
     browser_languages,
     is_english_variant,

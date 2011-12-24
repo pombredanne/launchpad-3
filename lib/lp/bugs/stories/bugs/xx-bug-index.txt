@@ -143,7 +143,7 @@ Some bugs have many bug tasks, which causes the Javascript initialization
 code for them take too long. As a last resort optimization we disable that
 initialization code if there's more than 10 bug tasks.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
     >>> login('foo.bar@canonical.com')
     >>> bug = factory.makeBug()

@@ -8,7 +8,7 @@ from urlparse import urlparse
 import transaction
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

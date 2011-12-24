@@ -8,7 +8,7 @@ __metaclass__ = type
 import StringIO
 
 from canonical.config import config
-from canonical.launchpad.layers import WebServiceLayer
+from lp.layers import WebServiceLayer
 from canonical.testing.layers import FunctionalLayer
 from lp.answers.publisher import (
     AnswersBrowserRequest,

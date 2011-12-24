@@ -22,7 +22,7 @@ from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.management import restoreInteraction
 from zope.security.proxy import removeSecurityProxy
 
-import canonical.launchpad.layers as layers
+import lp.layers as layers
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.interaction import (
     get_current_principal,

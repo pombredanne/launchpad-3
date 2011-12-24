@@ -14,8 +14,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.ftests import (
+from lp import _
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

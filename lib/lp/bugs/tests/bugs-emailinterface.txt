@@ -64,7 +64,7 @@ to sign each email, we'll create a class which fakes a signed email:
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the

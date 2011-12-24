@@ -14,7 +14,7 @@ from lazr.delegates import delegates
 from simplejson import dumps
 from zope.component import getUtility
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects,

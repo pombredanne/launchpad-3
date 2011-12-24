@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

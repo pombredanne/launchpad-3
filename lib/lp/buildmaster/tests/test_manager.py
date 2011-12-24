@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from lpbuildd.tests import BuilddSlaveTestSetup
 
 from canonical.config import config
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )

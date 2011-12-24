@@ -241,10 +241,10 @@ The zcml processor `browser:navigation` registers navigation classes.
     ...     def __call__(self):
     ...         return "a view on a thingset"
 
-    >>> import canonical.launchpad.ftests
-    >>> canonical.launchpad.ftests.ThingSetView = ThingSetView
-    >>> canonical.launchpad.ftests.ThingSetNavigation = ThingSetNavigation
-    >>> canonical.launchpad.ftests.IThingSet = IThingSet
+    >>> import lp.testing
+    >>> lp.testing.ThingSetView = ThingSetView
+    >>> lp.testing.ThingSetNavigation = ThingSetNavigation
+    >>> lp.testing.IThingSet = IThingSet
 
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
@@ -252,13 +252,13 @@ The zcml processor `browser:navigation` registers navigation classes.
     ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
     ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:navigation
-    ...       module="canonical.launchpad.ftests"
+    ...       module="lp.testing"
     ...       classes="ThingSetNavigation"
     ...       />
     ...   <browser:page
-    ...       for="canonical.launchpad.ftests.IThingSet"
+    ...       for="lp.testing.IThingSet"
     ...       name="thingview"
-    ...       class="canonical.launchpad.ftests.ThingSetView"
+    ...       class="lp.testing.ThingSetView"
     ...       attribute="__call__"
     ...       permission="zope.Public"
     ...       layer="zope.publisher.interfaces.browser.IBrowserRequest"

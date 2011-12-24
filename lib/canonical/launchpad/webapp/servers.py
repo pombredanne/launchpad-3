@@ -63,7 +63,7 @@ from zope.session.interfaces import ISession
 
 from canonical.config import config
 from lp.xmlrpc.interfaces import IPrivateApplication
-import canonical.launchpad.layers
+import lp.layers
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
     get_oauth_authorization,
@@ -615,7 +615,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
     implements(
         ILaunchpadBrowserApplicationRequest, ISynchronizer,
-        canonical.launchpad.layers.LaunchpadLayer)
+        lp.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
@@ -825,7 +825,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     It provides LaunchpadLayer and adds a mock INotificationRequest
     implementation.
 
-    >>> canonical.launchpad.layers.LaunchpadLayer.providedBy(request)
+    >>> lp.layers.LaunchpadLayer.providedBy(request)
     True
     >>> INotificationRequest.providedBy(request)
     True
@@ -860,7 +860,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     """
     implements(
         INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-        canonical.launchpad.layers.LaunchpadLayer)
+        lp.layers.LaunchpadLayer)
 
     # These two attributes satisfy IParticipation.
     principal = None
@@ -959,11 +959,11 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         assert output_stream is None, 'output_stream is deprecated in Z3.2'
 
-        # Mark the request with the 'canonical.launchpad.layers.debug' layer
+        # Mark the request with the 'lp.layers.debug' layer
         request = HTTPPublicationRequestFactory.__call__(
             self, input_stream, env)
-        canonical.launchpad.layers.setFirstLayer(
-            request, canonical.launchpad.layers.DebugLayer)
+        lp.layers.setFirstLayer(
+            request, lp.layers.DebugLayer)
         return request
 
 
@@ -1122,13 +1122,13 @@ class FeedsPublication(LaunchpadBrowserPublication):
 
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
-    implements(canonical.launchpad.layers.FeedsLayer)
+    implements(lp.layers.FeedsLayer)
 
 
 # ---- apidoc
 
 class APIDocBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.APIDocLayer)
+    implements(lp.layers.APIDocLayer)
 
 
 class APIDocBrowserPublication(LaunchpadBrowserPublication):
@@ -1138,7 +1138,7 @@ class APIDocBrowserPublication(LaunchpadBrowserPublication):
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.TestOpenIDLayer)
+    implements(lp.layers.TestOpenIDLayer)
 
 
 class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
@@ -1307,7 +1307,7 @@ class WebServicePublication(WebServicePublicationMixin,
 
 
 class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
-    implements(canonical.launchpad.layers.WebServiceLayer)
+    implements(lp.layers.WebServiceLayer)
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""

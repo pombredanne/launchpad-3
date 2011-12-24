@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,

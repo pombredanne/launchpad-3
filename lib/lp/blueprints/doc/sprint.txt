@@ -155,7 +155,7 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')

@@ -9,7 +9,7 @@ __all__ = []
 
 import transaction
 
-from canonical.launchpad.ftests import login_person
+from lp.testing import login_person
 from canonical.testing import (
     AppServerLayer,
     DatabaseFunctionalLayer,

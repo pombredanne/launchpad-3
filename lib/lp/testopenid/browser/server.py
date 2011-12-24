@@ -32,7 +32,7 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,

@@ -128,7 +128,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import _
+from lp import _
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.mail.interfaces import (

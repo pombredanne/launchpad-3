@@ -56,7 +56,7 @@ administrators but not for ordinary users.
 The link is also available for the bug supervisor.
 
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login(ADMIN_EMAIL)
     >>> supervisor = factory.makePerson(password='g00dpassword')
     >>> youbuntu = factory.makeProduct(name='youbuntu',

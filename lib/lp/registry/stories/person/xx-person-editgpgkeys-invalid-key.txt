@@ -3,7 +3,7 @@ Imports and setup of stub keyserver:
     >>> from zope.component import getUtility
     >>> from lp.services.verification.interfaces.authtoken import (
     ...     LoginTokenType)
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
     >>> from lp.services.verification.interfaces.logintoken import (
     ...     ILoginTokenSet)
     >>> from lp.testing.keyserver import KeyServerTac

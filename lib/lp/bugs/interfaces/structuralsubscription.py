@@ -42,7 +42,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PersonChoice,
