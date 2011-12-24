@@ -448,4 +448,4 @@ ProjectGroup.getMilestone(name) returns the project milestone with the name
     >>> print milestone
     None
 
-For details see doc/milestone.txt and ftests/test_project_milestone.py.
+For details see doc/milestone.txt and tests/test_project_milestone.py.
