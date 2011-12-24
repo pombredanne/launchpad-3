@@ -6,9 +6,6 @@
 """Logging setup for scripts.
 
 Don't import from this module. Import it from lp.services.scripts.
-
-Parts of this may be moved into canonical.launchpad somewhere if it is
-to be used for non-script stuff.
 """
 
 __metaclass__ = type

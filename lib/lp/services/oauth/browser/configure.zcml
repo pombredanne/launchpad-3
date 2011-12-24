@@ -6,7 +6,7 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-  i18n_domain="canonical.launchpad">
+  i18n_domain="launchpad">
   <facet facet="overview">
     <browser:page
         for="lp.services.webapp.interfaces.ILaunchpadApplication"
