@@ -25,7 +25,7 @@ from zope.interface import (
 from zope.schema import Text
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

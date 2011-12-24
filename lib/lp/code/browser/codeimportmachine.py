@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

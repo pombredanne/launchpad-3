@@ -61,7 +61,7 @@ from zope.traversing.interfaces import ITraversable
 
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import intOrZero
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,

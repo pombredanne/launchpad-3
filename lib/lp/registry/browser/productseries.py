@@ -54,7 +54,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.worlddata.helpers import browser_languages
 from canonical.launchpad.webapp import (
     ApplicationMenu,

@@ -9,7 +9,7 @@ from cgi import escape
 import re
 from textwrap import dedent
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 

@@ -25,7 +25,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.registry.interfaces.role import IHasOwner

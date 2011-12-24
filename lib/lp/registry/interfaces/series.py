@@ -23,7 +23,7 @@ from lazr.restful.fields import (
     )
 from zope.schema import Bool
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasDrivers
 from lp.services.fields import (

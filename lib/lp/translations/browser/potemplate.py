@@ -42,7 +42,7 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     action,
     canonical_url,

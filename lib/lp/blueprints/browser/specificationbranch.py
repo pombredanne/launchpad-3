@@ -15,7 +15,7 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.interface import implements
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.app.browser.launchpadform import (
