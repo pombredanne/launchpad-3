@@ -27,7 +27,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
