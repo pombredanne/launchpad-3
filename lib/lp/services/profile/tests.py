@@ -18,7 +18,11 @@ from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
     EndRequestEvent,
     )
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    queryUtility,
+    )
+from zope.error.interfaces import IErrorReportingUtility
 
 import lp.services.webapp.adapter as da
 from lp.services.webapp.errorlog import ErrorReportingUtility
@@ -360,10 +364,14 @@ class BaseRequestEndHandlerTest(BaseTest):
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
-        self.eru = ErrorReportingUtility()
-        sm = getSiteManager()
-        sm.registerUtility(self.eru)
-        self.addCleanup(sm.unregisterUtility, self.eru)
+        eru = queryUtility(IErrorReportingUtility)
+        if eru is None:
+            # Register an Error reporting utility for this layer.
+            # This will break tests when run with an ERU already registered.
+            self.eru = ErrorReportingUtility()
+            sm = getSiteManager()
+            sm.registerUtility(self.eru)
+            self.addCleanup(sm.unregisterUtility, self.eru)
 
     def endRequest(self, path='/', exception=None, pageid=None, work=None):
         start_event = self._get_start_event(path)
