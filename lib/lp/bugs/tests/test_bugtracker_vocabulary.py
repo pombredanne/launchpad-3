@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     login_person,
     )

@@ -10,7 +10,7 @@ from operator import attrgetter
 from storm.store import Store
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )

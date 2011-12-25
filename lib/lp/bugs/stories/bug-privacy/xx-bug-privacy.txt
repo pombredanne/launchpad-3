@@ -115,7 +115,7 @@ Foo Bar sees the private bug he filed.
 Foo Bar and the Ubuntu Team are subscribed to the bug.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> login("foo.bar@canonical.com")
@@ -210,7 +210,7 @@ Ubuntu evolution is, so we can avoid hardcoding its ID here:
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet,
     ...     )
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
 
     >>> login("foo.bar@canonical.com")
     >>> launchbag = getUtility(ILaunchBag)

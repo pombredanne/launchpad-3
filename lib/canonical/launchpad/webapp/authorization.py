@@ -36,7 +36,7 @@ from zope.security.simplepolicies import (
     )
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.readonly import is_read_only
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp.interaction import InteractionExtras
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,

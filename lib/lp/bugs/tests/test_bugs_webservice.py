@@ -21,7 +21,7 @@ from testtools.matchers import (
     )
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

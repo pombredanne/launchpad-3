@@ -607,7 +607,7 @@ initialize the test harness.
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.bugtargetdisplayname
     u'Mozilla Firefox'
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from lp.testing.deprecated import LaunchpadFormHarness
     >>> bug_edit = LaunchpadFormHarness(firefox_task, BugEditViewTest)
 
 Initially, the normal edit page is shown, with a single button.

@@ -114,7 +114,7 @@ The project group "All milestones" page lists all milestones for all
 products and series, including the inactive ones. They do not include
 the bug and blueprint counts (because they are costly to retrieve).
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.registry.tests.test_project_milestone import (
     ...     ProjectMilestoneTest)
     >>> login('foo.bar@canonical.com')

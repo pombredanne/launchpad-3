@@ -9,7 +9,7 @@
   <adapter
       for="zope.publisher.interfaces.browser.IBrowserRequest"
       provides="zope.publisher.interfaces.browser.IDefaultSkin"
-      factory="canonical.launchpad.layers.PageTestLayer"
+      factory="lp.layers.PageTestLayer"
       />
 
 </configure>

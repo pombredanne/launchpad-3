@@ -54,7 +54,7 @@ Bart does not leave the team though, his subscription merely gets disabled.
     >>> helpers.unsubscribe('Bart', 'itest-one')
 
     # Change Anne's email address to her alternative.
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.tests import mailinglists_helper

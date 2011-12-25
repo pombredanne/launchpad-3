@@ -29,7 +29,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

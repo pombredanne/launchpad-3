@@ -19,7 +19,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 from zope.schema import Int
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.job.interfaces.job import IJob

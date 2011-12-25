@@ -59,7 +59,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,

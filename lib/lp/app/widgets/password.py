@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout,
     IPasswordEncryptor,

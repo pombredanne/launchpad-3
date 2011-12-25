@@ -8,7 +8,7 @@ these documents are cached to files.
 This test shows how the cache works. We'll start by temporarily
 clearing the cache.
 
-    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> from lp.systemhomes import WebServiceApplication
     >>> old_cached_wadl = WebServiceApplication.cached_wadl
     >>> WebServiceApplication.cached_wadl = {}
 

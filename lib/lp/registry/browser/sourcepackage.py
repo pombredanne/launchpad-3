@@ -55,7 +55,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

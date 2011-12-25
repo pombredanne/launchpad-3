@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

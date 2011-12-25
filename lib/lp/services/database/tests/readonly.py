@@ -16,7 +16,7 @@ import os
 
 from lazr.restful.utils import get_current_browser_request
 
-from canonical.launchpad.readonly import (
+from lp.services.database.readonly import (
     is_read_only,
     read_only_file_exists,
     read_only_file_path,

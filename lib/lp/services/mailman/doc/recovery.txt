@@ -43,7 +43,7 @@ state.
     ...     IMailingListSet,
     ...     MailingListStatus,
     ...     )
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))

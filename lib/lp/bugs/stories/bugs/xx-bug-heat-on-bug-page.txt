@@ -11,7 +11,7 @@ Packages use their distribution as context when generating flame icons
 for a bug page, since a package of low heat value could be displayed
 with four flames if there are few reported bugs against the package.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> login('foo.bar@canonical.com')

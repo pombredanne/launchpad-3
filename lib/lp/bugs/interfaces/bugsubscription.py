@@ -31,7 +31,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.webservice.apihelpers import patch_reference_property
 from lp.bugs.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice

@@ -10,7 +10,7 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from lp.registry.interfaces.commercialsubscription import (
     ...     ICommercialSubscription)
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from lp.testing import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
 
 An open source project should not have a commercial subscription,

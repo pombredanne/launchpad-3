@@ -29,7 +29,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.layers import FeedsLayer
+from lp.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name,
     canonical_url,

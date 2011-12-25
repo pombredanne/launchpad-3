@@ -13,7 +13,7 @@ from soupmatchers import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

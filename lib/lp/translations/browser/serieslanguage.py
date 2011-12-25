@@ -12,7 +12,7 @@ __all__ = [
     'ProductSeriesLanguageView',
     ]
 
-from canonical.launchpad.readonly import is_read_only
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation

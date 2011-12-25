@@ -58,7 +58,7 @@ from canonical.database.sqlbase import (
     )
 from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.readonly import is_read_only
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

@@ -19,7 +19,7 @@ from zope.interface import (
     )
 from zope.schema import Bool
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import (
     BugField,
     PersonChoice,
