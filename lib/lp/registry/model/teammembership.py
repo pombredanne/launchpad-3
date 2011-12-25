@@ -42,7 +42,7 @@ from lp.services.mail.helpers import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.mail.mailwrapper import MailWrapper
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import (

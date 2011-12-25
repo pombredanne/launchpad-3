@@ -14,7 +14,7 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     action,
     canonical_url,
     LaunchpadEditFormView,

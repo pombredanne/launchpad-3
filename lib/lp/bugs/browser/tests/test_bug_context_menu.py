@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.enum import BugNotificationLevel

@@ -35,7 +35,7 @@ from lazr.uri import (
     )
 
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,

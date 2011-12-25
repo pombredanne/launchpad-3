@@ -19,9 +19,9 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,

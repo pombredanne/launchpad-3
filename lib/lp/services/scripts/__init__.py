@@ -37,11 +37,11 @@ from lp.services.scripts.logger import (
     )
 # Intentional re-export, following along the lines of the logger module.
 from lp.services.scripts.loghandlers import WatchedFileHandler
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     LaunchpadPermissiveSecurityPolicy,
     LaunchpadSecurityPolicy,
     )
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     )

@@ -56,7 +56,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     GetitemNavigation,
@@ -64,10 +64,10 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets,
     stepto,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

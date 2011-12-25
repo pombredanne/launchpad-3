@@ -24,7 +24,7 @@ from lp.testing import (
     logout,
     )
 from lp.services.database.lpstorm import IMasterObject
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

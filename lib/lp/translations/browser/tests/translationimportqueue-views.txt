@@ -6,7 +6,7 @@ ITranslationImportQueueEntry object.
 
     >>> from zope.component import getUtility, getMultiAdapter
     >>> from lp.layers import setFirstLayer
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.browser.translationimportqueue import (

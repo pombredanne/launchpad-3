@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

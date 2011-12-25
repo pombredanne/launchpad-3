@@ -37,7 +37,7 @@ from lp.services.helpers import (
     english_list,
     shortlist,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     GetitemNavigation,
@@ -48,15 +48,15 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
     ActiveBatchNavigator,
     BatchNavigator,
     InactiveBatchNavigator,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import NavigationMenu
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

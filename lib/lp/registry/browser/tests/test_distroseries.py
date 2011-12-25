@@ -37,17 +37,17 @@ from zope.security.proxy import (
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

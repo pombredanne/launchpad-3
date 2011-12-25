@@ -24,8 +24,8 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,

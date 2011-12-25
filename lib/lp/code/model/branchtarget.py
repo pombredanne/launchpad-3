@@ -17,9 +17,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.sorting import sorted_version_numbers
 from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (

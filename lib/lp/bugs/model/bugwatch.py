@@ -52,7 +52,7 @@ from canonical.database.sqlbase import (
     )
 from lp.services.helpers import shortlist
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     urlappend,
     urlsplit,
     )

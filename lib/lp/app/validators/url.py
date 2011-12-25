@@ -15,7 +15,7 @@ from textwrap import dedent
 import urllib
 
 from lp import _
-from canonical.launchpad.webapp.url import urlparse
+from lp.services.webapp.url import urlparse
 from lp.app.validators import LaunchpadValidationError
 
 

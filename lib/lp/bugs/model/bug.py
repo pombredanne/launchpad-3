@@ -95,8 +95,8 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import shortlist
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     ILaunchBag,
     IStoreSelector,

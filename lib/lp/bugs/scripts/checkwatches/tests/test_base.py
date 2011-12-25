@@ -9,8 +9,8 @@ from contextlib import contextmanager
 
 import transaction
 
-from canonical.launchpad.webapp.adapter import get_request_statements
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.adapter import get_request_statements
+from lp.services.webapp.interaction import (
     endInteraction,
     queryInteraction,
     )

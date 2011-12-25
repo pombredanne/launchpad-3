@@ -46,7 +46,7 @@ from testtools.deferredruntest import (
     )
 from twisted.internet import defer
 
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (

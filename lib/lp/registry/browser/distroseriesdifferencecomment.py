@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import LaunchpadView
+from lp.services.webapp import LaunchpadView
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
 

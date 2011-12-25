@@ -6,7 +6,7 @@ product contains a property for a URL to a list of bugs fixed
 elsewhere.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> view = getMultiAdapter(
     ...     (bugtarget, LaunchpadTestRequest()),

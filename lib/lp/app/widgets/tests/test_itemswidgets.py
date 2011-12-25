@@ -16,8 +16,8 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.menu import structured
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,

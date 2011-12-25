@@ -133,7 +133,7 @@ from lp.services.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     GetitemNavigation,
@@ -144,14 +144,14 @@ from canonical.launchpad.webapp import (
     redirection,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
@@ -418,7 +418,7 @@ def get_visible_comments(comments, user=None):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
     >>> get_sortorder_from_request(

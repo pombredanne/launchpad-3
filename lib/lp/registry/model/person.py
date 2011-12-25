@@ -126,8 +126,8 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import (
     IHasIcon,

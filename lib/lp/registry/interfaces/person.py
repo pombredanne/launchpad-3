@@ -99,8 +99,8 @@ from lp.app.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext

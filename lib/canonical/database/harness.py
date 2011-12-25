@@ -31,8 +31,8 @@ from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

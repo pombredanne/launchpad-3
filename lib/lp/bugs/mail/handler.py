@@ -22,7 +22,7 @@ from lp.services.mail.helpers import get_email_template
 from lp.services.mail.notification import (
     send_process_error_notification,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     CreatedBugWithNoBugTasksError,

@@ -10,8 +10,8 @@ the bug to series for which they are drivers.
     >>> from zope.component import getUtility, getMultiAdapter
 
     >>> from lp.testing import login_person
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -311,7 +311,7 @@ traversed in the URL.
     # XXX sinzui 2008-08-12 bug=257341:
     # We need a test helper to "publish" the request's traversed objects
     # and update the launchbag.
-    >>> from canonical.launchpad.webapp.interfaces import IPrimaryContext
+    >>> from lp.services.webapp.interfaces import IPrimaryContext
     >>> from lp.bugs.interfaces.bugnomination import (
     ...     IBugNominationSet)
 

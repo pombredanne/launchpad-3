@@ -83,7 +83,7 @@ from lp.services.feeds.browser import (
     FeedsMixin,
     )
 from lp.services.helpers import truncate_text
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
@@ -94,12 +94,12 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,

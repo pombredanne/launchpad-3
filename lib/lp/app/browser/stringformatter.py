@@ -32,8 +32,8 @@ from zope.traversing.interfaces import (
     )
 
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.utils import (

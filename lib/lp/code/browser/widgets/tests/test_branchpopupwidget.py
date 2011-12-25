@@ -20,8 +20,8 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.browser.widgets.branch import (
     BranchPopupWidget,

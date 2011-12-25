@@ -41,9 +41,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.webapp.url import urlsplit
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.url import urlsplit
 from canonical.testing.layers import PageTestLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NameAlreadyTaken

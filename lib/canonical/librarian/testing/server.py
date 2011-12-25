@@ -22,7 +22,7 @@ from fixtures import (
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.daemons.tachandler import (
+from lp.services.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )

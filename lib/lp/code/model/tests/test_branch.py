@@ -28,7 +28,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp import _
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,

@@ -13,9 +13,9 @@ from lazr.restful.utils import safe_hasattr
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.management import endInteraction, newInteraction
 
-from canonical.launchpad.webapp import urlsplit
-from canonical.launchpad.webapp.interfaces import ILink
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp import urlsplit
+from lp.services.webapp.interfaces import ILink
+from lp.services.webapp.servers import LaunchpadTestRequest
 
 
 def summarise_tal_links(links):

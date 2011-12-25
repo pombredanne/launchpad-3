@@ -17,7 +17,7 @@ from paste.httpexceptions import HTTPExceptionHandler
 import zope.event
 
 from canonical.config import config
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
 from launchpad_loggerhead.app import (
     RootApp,

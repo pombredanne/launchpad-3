@@ -30,18 +30,18 @@ from zope.interface import (
 from zope.schema import Choice
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     GetitemNavigation,
     LaunchpadView,
     Navigation,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
     ApplicationMenu,
     ContextMenu,
     Link,

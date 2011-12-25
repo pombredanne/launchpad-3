@@ -21,7 +21,7 @@ from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RunRevisionMailJobs(LaunchpadCronScript):

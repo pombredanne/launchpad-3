@@ -31,7 +31,7 @@ from storm.locals import Not
 from zope.component import getUtility
 
 from lp.services.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 

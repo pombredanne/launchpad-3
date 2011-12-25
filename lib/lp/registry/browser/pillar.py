@@ -19,13 +19,13 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     LaunchpadView,
     nearest,
     )

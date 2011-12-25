@@ -10,10 +10,10 @@
     i18n_domain="canonical">
 
     <includeOverrides
-        package="canonical.launchpad.webapp"
+        package="lp.services.webapp"
         file="meta-overrides.zcml" />
     <include package="grokcore.component" file="meta.zcml" />
-    <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    <include package="lp.services.webapp" file="meta.zcml" />
     <include package="lazr.restful" file="meta.zcml" />
     <include package="lazr.uri" />
     <include package="lp" />
@@ -46,9 +46,9 @@
     <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
          with a minimalist template. -->
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadProtocolError"
-        class="canonical.launchpad.webapp.error.ProtocolErrorView"
-        template="launchpad/webapp/templates/protocol-error.pt"
+        for="lp.services.webapp.interfaces.ILaunchpadProtocolError"
+        class="lp.services.webapp.error.ProtocolErrorView"
+        template="../lp/services/webapp/templates/protocol-error.pt"
         name="index.html"
         permission="zope.Public"
         />
@@ -64,13 +64,13 @@
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="specs"
         layer="lp.blueprints.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.blueprints.publisher.BlueprintsLayer"
@@ -78,13 +78,13 @@
 
     <!-- virtual host: code -->
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="+code"
         layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.code.publisher.CodeLayer"
@@ -92,13 +92,13 @@
 
     <!-- virtual host: translations -->
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="translations"
         layer="lp.translations.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.translations.publisher.TranslationsLayer"
@@ -106,13 +106,13 @@
 
     <!-- virtual host: bugs -->
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="bugs"
         layer="lp.bugs.publisher.BugsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.bugs.publisher.BugsLayer"
@@ -120,19 +120,18 @@
 
     <!-- virtual host: answers -->
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="questions"
         layer="lp.answers.publisher.AnswersLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.answers.publisher.AnswersLayer"
         />
 
-    <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
 
 </configure>

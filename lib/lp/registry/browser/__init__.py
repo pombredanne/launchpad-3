@@ -23,11 +23,11 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.launchpadform import (
+from lp.services.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

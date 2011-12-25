@@ -62,7 +62,7 @@ from lp import _
 from lp.services.helpers import shortlist
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.database.lpstorm import IMasterStore
-from canonical.launchpad.webapp import urlappend
+from lp.services.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (

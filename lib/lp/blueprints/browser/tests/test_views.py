@@ -12,7 +12,7 @@ import unittest
 from storm.store import Store
 from testtools.matchers import LessThan
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
@@ -63,7 +63,7 @@ class TestAssignments(TestCaseWithFactory):
         browser = self.getUserBrowser(user=viewer)
         url = canonical_url(target) + "/+assignments"
         # Seed the cookie cache and any other cross-request state we may gain
-        # in future.  See canonical.launchpad.webapp.serssion: _get_secret.
+        # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(url)
         self.invalidate_and_render(browser, target, url)
         # Set a baseline

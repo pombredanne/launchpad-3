@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

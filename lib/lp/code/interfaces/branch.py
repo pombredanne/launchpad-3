@@ -70,8 +70,8 @@ from zope.schema import (
 
 from canonical.config import config
 from lp import _
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.interfaces import ITableBatchNavigator
+from lp.services.webapp.menu import structured
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
@@ -151,7 +151,7 @@ class BranchURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
-        from canonical.launchpad.webapp import canonical_url
+        from lp.services.webapp import canonical_url
         from lazr.uri import URI
 
         # Can't use super-- this derives from an old-style class

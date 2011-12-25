@@ -20,13 +20,13 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     clear_cache,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import (

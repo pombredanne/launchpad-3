@@ -18,7 +18,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.librarian.interfaces import (
     ILibraryFileAliasSet,
     ILibraryFileAliasWithParent,

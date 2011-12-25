@@ -14,7 +14,7 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.services.feeds.browser import FeedsMixin
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     LaunchpadView,
     Link,
     )

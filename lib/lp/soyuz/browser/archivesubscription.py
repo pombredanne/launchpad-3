@@ -32,7 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

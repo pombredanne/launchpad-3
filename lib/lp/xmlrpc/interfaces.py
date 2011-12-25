@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import Attribute
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 class IPrivateApplication(ILaunchpadApplication):

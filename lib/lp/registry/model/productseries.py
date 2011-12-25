@@ -40,8 +40,8 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (

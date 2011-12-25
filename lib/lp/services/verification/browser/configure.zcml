@@ -7,7 +7,7 @@
     <browser:url
       for="lp.services.verification.interfaces.logintoken.ILoginTokenSet"
       path_expression="string:token"
-      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
       />
     <facet
         facet="overview">

@@ -70,14 +70,14 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     OAuthPermission,
     )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.services.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

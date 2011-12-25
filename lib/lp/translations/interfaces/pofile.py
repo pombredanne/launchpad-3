@@ -40,7 +40,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate

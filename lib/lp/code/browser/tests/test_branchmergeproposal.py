@@ -29,13 +29,13 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     IPrimaryContext,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

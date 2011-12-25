@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugchange import (
     BUG_CHANGE_LOOKUP,

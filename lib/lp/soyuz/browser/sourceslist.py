@@ -16,7 +16,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp import LaunchpadView
+from lp.services.webapp import LaunchpadView
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet

@@ -13,6 +13,7 @@
     <include file="permissions.zcml" />
 
     <i18n:registerTranslations directory="locales" />
+
     <webservice:register module="lp.patchwebservice" />
 
     <authorizations module="lp.security" />
@@ -33,4 +34,7 @@
     <include package="lp.registry" />
     <include package="lp.xmlrpc" />
 
+    <!-- Register a handler to fix things up just before the application
+         starts (and after zcml has been processed). -->
+    <subscriber handler=".services.webapp.initialization.handle_process_start" />
 </configure>

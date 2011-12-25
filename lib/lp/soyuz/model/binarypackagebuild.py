@@ -43,8 +43,8 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

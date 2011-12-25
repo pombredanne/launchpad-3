@@ -19,7 +19,7 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.launchpad.webapp.url import urlparse
+from lp.services.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,

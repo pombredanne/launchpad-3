@@ -19,7 +19,7 @@ import datetime
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_contact_email_addresses
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
     BugTaskAssigneeChange,

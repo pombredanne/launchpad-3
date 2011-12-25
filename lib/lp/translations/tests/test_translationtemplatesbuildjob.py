@@ -8,12 +8,12 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

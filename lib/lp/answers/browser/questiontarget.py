@@ -56,18 +56,18 @@ from lp.services.worlddata.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     Link,
     stepthrough,
     stepto,
     urlappend,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection

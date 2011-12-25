@@ -12,7 +12,7 @@ for a bug page, since a package of low heat value could be displayed
 with four flames if there are few reported bugs against the package.
 
     >>> from lp.testing import login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> login('foo.bar@canonical.com')
     >>> max_heat = 5000.0

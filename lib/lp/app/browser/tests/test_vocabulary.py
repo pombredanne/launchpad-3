@@ -20,8 +20,8 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
     VocabularyFilter,

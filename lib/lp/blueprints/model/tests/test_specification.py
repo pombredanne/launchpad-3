@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification

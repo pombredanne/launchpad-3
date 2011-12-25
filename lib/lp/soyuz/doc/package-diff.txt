@@ -33,7 +33,7 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
 
     >>> verifyObject(IPackageDiff, package_diff)
@@ -377,7 +377,7 @@ and 'text/plain' content-type. This combination instructs the browser
 to decompress the file and display it inline, which makes it easier
 for users to view it.
 
-    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> from lp.services.webapp.url import urlparse
     >>> parsed_url = urlparse(diff.diff_content.http_url)
     >>> netloc, path = parsed_url[1:3]
 

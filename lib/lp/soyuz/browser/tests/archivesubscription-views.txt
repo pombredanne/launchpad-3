@@ -367,7 +367,7 @@ The view can also be used to regenerate the source.list entries.
 The security for the PersonalArchiveSubscription provides spiv, as the
 subscriber, with view access:
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> check_permission('launchpad.View', spiv_subscription)
     True
 

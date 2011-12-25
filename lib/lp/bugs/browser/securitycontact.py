@@ -9,7 +9,7 @@ __all__ = [
     "SecurityContactEditView",
     ]
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

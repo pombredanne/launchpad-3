@@ -33,17 +33,17 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from lp import _
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessLoginSource,
     )
-from canonical.launchpad.webapp.login import (
+from lp.services.webapp.login import (
     allowUnauthenticatedSession,
     logInPrincipal,
     logoutPerson,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     Navigation,
     stepthrough,
     )

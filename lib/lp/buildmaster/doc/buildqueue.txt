@@ -12,7 +12,7 @@ and collecting build results.
 As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.buildmaster.interfaces.buildqueue import (
     ...     IBuildQueue, IBuildQueueSet)
 

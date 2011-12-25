@@ -10,7 +10,7 @@ from bzrlib import urlutils
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.adapter import (
+from lp.services.webapp.adapter import (
     clear_request_started,
     set_request_started,
     )

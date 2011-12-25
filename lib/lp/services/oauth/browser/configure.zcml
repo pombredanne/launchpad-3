@@ -9,20 +9,20 @@
   i18n_domain="launchpad">
   <facet facet="overview">
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        for="lp.services.webapp.interfaces.ILaunchpadApplication"
         name="+request-token"
         class="lp.services.oauth.browser.OAuthRequestTokenView"
         permission="zope.Public" />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        for="lp.services.webapp.interfaces.ILaunchpadApplication"
         name="+authorize-token"
         class="lp.services.oauth.browser.OAuthAuthorizeTokenView"
         template="../templates/oauth-authorize.pt"
         permission="launchpad.AnyPerson" />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        for="lp.services.webapp.interfaces.ILaunchpadApplication"
         name="+access-token"
         class="lp.services.oauth.browser.OAuthAccessTokenView"
         permission="zope.Public" />

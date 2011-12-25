@@ -6,7 +6,7 @@
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications

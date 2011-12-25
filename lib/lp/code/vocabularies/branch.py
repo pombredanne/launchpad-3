@@ -16,8 +16,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
     SQLObjectVocabularyBase,

@@ -24,7 +24,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

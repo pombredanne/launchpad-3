@@ -117,7 +117,7 @@ The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> login('test@canonical.com')
     >>> filecontent = StringIO('')

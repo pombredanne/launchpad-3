@@ -13,8 +13,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (

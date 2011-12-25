@@ -109,9 +109,9 @@ exceptions are rendered using the same view ensuring that the observed
 behavior is the same.
 
     >>> from zope.app import zapi
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     ReadOnlyModeDisallowedStore, ReadOnlyModeViolation)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> view_name = zapi.queryDefaultViewName(
     ...     ReadOnlyModeDisallowedStore, request)

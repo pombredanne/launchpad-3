@@ -21,7 +21,7 @@ from lp.codehosting.vfs.branchfs import get_ro_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RunRosettaBranchJobs(LaunchpadCronScript):

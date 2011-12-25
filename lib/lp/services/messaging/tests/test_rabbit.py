@@ -15,7 +15,7 @@ from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
+from lp.services.webapp.interfaces import FinishReadOnlyRequestEvent
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     RabbitMQLayer,

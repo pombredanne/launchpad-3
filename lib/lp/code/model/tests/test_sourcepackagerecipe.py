@@ -22,8 +22,8 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,

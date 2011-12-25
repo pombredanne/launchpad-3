@@ -22,7 +22,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus

@@ -34,7 +34,7 @@ from zope.interface import (
     )
 
 from lp.services.helpers import shortlist
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     action,
     canonical_url,
     LaunchpadEditFormView,
@@ -43,15 +43,15 @@ from canonical.launchpad.webapp import (
     redirection,
     StandardLaunchpadFacets,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,

@@ -384,7 +384,7 @@
       handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
   <adapter
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      provides="lp.services.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"/>
 
   <!-- hierarchy -->
@@ -446,7 +446,7 @@
   </class>
   <adapter
       for="lp.code.interfaces.branchsubscription.IBranchSubscription"
-      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      provides="lp.services.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.branchsubscription.BranchSubscriptionPrimaryContext"/>
 
   <!-- Branch -->
@@ -480,7 +480,7 @@
   </class>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
-      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      provides="lp.services.webapp.interfaces.ILaunchpadContainer"
       factory="lp.code.publisher.LaunchpadBranchContainer"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
@@ -488,7 +488,7 @@
       factory="lp.code.browser.branchlisting.BranchBadges"/>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
-      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      provides="lp.services.webapp.interfaces.IPrimaryContext"
       factory="lp.code.model.branchtarget.branch_to_target"/>
 
   <subscriber
@@ -625,7 +625,7 @@
       factory="lp.code.model.branchtarget.product_series_to_branch_target"/>
   <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
-      provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+      provides="lp.services.webapp.interfaces.ICanonicalUrlData"
       factory="lp.code.model.branchtarget.get_canonical_url_data_for_target"/>
   <class class="lp.code.model.branchrevision.BranchRevision">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
@@ -647,7 +647,7 @@
       handler="lp.code.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      provides="lp.services.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.codereviewcomment.CodeReviewCommentPrimaryContext"/>
 
   <!-- hierarchy -->
@@ -731,7 +731,7 @@
 
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.code.interfaces.codeimport.ICodeImportSet"
       factory="lp.code.browser.codeimport.CodeImportSetBreadcrumb"
       permission="zope.Public"/>

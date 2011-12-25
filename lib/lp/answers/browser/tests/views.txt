@@ -4,7 +4,7 @@ Answer Tracker Pages
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -635,7 +635,7 @@ interested.
 
     >>> from lp.answers.browser.questiontarget import (
     ...     UserSupportLanguagesMixin)
-    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from lp.services.webapp import LaunchpadView
 
     >>> class UserSupportLanguagesView(UserSupportLanguagesMixin,
     ...                                LaunchpadView):
@@ -733,7 +733,7 @@ searchResults() method. The returned results are batched.
 
     >>> questions = search_view.searchResults()
     >>> questions
-    <canonical.launchpad.webapp.batching.BatchNavigator ...>
+    <lp.services.webapp.batching.BatchNavigator ...>
 
     >>> for question in questions.batch:
     ...     print question.title.encode('us-ascii', 'backslashreplace')

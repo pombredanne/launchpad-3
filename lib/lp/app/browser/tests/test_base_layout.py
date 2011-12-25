@@ -16,8 +16,8 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (

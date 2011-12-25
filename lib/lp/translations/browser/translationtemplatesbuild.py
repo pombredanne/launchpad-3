@@ -12,7 +12,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.model.translationtemplatesbuildjob import (

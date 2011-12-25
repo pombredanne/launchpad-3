@@ -71,7 +71,7 @@ from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
 from lp.layers import WebServiceLayer
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_name,
     canonical_url,
     LaunchpadView,
@@ -80,17 +80,17 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
     IBreadcrumb,
     ILaunchBag,
     ILaunchpadRoot,
     INavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,

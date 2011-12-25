@@ -9,7 +9,7 @@ __all__ = ["AppointDriverView"]
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     action,
     canonical_url,
     LaunchpadEditFormView,

@@ -46,7 +46,7 @@ from zope.schema import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddress

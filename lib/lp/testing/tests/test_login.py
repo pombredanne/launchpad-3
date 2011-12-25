@@ -9,8 +9,8 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.security.management import getInteraction
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import (

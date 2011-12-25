@@ -294,7 +294,7 @@
     >
     <table
       tal:condition="request/features/visible_render_time"
-      tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions"
+      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
       class="debug-timeline listing"
       >
       <thead>

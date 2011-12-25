@@ -6,7 +6,7 @@ doesn't use its context for anything, so we don't have to supply one
 when creating it.
 
     >>> from lp.systemhomes import MaloneApplication
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bug import MaloneView
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()

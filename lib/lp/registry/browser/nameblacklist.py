@@ -19,16 +19,16 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.webapp import action
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp import action
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     Navigation,

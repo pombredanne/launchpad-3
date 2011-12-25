@@ -27,8 +27,8 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
