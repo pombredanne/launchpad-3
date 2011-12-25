@@ -40,10 +40,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
+from lp import _
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -106,6 +103,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.browser_helpers import get_plural_text
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
@@ -437,7 +435,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.

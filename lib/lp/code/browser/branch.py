@@ -76,15 +76,13 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    searchbuilder,
-    )
+from lp import _
+from lp.services import searchbuilder
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.helpers import truncate_text
+from lp.services.helpers import truncate_text
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -444,6 +442,8 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         self.branch = self.context
         self.notices = []
         # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [self.branch.owner]
         if self.user is not None:
             precache_permission_for_objects(

@@ -38,7 +38,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.readonly import is_read_only
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

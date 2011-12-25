@@ -88,5 +88,5 @@ class BugImportScript(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    script = BugImportScript('canonical.launchpad.scripts.bugimport')
+    script = BugImportScript('lp.services.scripts.bugimport')
     script.run()

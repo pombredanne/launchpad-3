@@ -42,7 +42,7 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.feeds.browser import FeedsMixin
 from canonical.launchpad.webapp import (
     ApplicationMenu,

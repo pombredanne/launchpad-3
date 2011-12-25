@@ -696,7 +696,7 @@
                 'change', function(e) {
                     // Only update the sort buttons if we've got a valid batch
                     // key.
-                    if (Y.Object.has_key(e.newVal, 'batch_key')) {
+                    if (Y.Object.hasKey(e.newVal, 'batch_key')) {
                         Y.lp.buglisting_utils.update_sort_button_visibility(
                             orderby,
                             e.newVal

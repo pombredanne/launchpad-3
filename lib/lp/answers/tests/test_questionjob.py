@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionJobType,

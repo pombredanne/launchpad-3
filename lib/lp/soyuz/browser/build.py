@@ -33,11 +33,7 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -74,6 +70,10 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (

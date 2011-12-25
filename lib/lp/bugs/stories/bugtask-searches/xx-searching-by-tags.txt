@@ -12,7 +12,7 @@ First, we create some bugs.
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
 
     >>> login("no-priv@canonical.com")
     >>> firefox = getUtility(IProductSet).get(4)

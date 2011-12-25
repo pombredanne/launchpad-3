@@ -117,7 +117,7 @@ class NotificationResponse:
 
     And an odd one to test Bug #54987
 
-    >>> from canonical.launchpad import _
+    >>> from lp import _
     >>> response.addErrorNotification(_('Error${value}', mapping={'value':''}))
 
     >>> INotificationList.providedBy(response.notifications)

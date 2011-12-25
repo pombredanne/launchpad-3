@@ -15,11 +15,11 @@ from twisted.internet import (
 from twisted.python import log as tplog
 
 from canonical.config import config
-from canonical.launchpad.scripts import logger_options
 from lp.codehosting.puller import (
     mirror,
     scheduler,
     )
+from lp.services.scripts import logger_options
 from lp.services.twistedsupport.loggingsupport import (
     LoggingProxy,
     set_up_logging_for_script,

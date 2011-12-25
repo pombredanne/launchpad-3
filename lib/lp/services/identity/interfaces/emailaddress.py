@@ -30,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.identity.interfaces.account import IAccount
 

@@ -63,7 +63,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -120,6 +119,7 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 

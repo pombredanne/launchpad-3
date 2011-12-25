@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from zope.component import getUtility
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

@@ -15,18 +15,18 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
+from lp.testing import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 def bugtarget_filebug(bugtarget, summary):

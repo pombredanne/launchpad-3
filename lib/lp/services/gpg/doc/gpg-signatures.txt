@@ -7,7 +7,7 @@ OpenPGP Signature Verification
 
     >>> transaction.commit()
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> bag = getUtility(ILaunchBag)

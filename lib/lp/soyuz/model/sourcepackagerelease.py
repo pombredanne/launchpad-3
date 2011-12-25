@@ -46,11 +46,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import shortlist
+from lp.services.helpers import shortlist
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -60,6 +56,10 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageUrgency,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     PackageDiffStatus,

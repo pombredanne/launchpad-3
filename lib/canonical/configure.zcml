@@ -12,11 +12,11 @@
     <includeOverrides
         package="canonical.launchpad.webapp"
         file="meta-overrides.zcml" />
-    <include package="canonical.launchpad" file="permissions.zcml" />
+    <include package="grokcore.component" file="meta.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="lazr.restful" file="meta.zcml" />
-    <include package="lp.services" />
     <include package="lazr.uri" />
+    <include package="lp" />
     <include package="canonical.librarian" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is

@@ -63,7 +63,7 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.errors import NotFoundError
 from lp.app.validators.attachment import attachment_size_constraint
@@ -591,8 +591,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         The INotificationRecipientSet instance will contain details of
         all recipients for bug notifications sent by this bug; this
         includes email addresses and textual and header-ready
-        rationales. See
-        canonical.launchpad.interfaces.BugNotificationRecipients for
+        rationales. See `BugNotificationRecipients` for
         details of this implementation.
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.

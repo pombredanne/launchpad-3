@@ -18,7 +18,7 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.security import AccessBranch
+from lp.security import AccessBranch
 from canonical.launchpad.webapp.authorization import (
     check_permission,
     clear_cache,
@@ -78,7 +78,7 @@ class TestBranchVisibility(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=owner, private=True)
         naked_branch = removeSecurityProxy(branch)
 
-        clear_cache() # clear authorization cache for check_permission
+        clear_cache()  # Clear authorization cache for check_permission.
         access = AccessBranch(naked_branch)
         self.assertFalse(access.checkUnauthenticated())
         self.assertTrue(

@@ -11,15 +11,9 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
-    )
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
     )
 from canonical.testing.layers import (
     DatabaseLayer,
@@ -32,6 +26,12 @@ from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,
     uploadQueueSetUp,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

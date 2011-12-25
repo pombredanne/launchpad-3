@@ -31,7 +31,7 @@ import _pythonpath
 
 import sys
 
-from canonical.launchpad.scripts.sort_sql import Parser, print_lines_sorted
+from canonical.database.sort_sql import Parser, print_lines_sorted
 
 def main(argv):
     if len(argv) > 1:

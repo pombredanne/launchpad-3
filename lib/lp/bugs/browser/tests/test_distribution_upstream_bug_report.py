@@ -13,12 +13,11 @@ from soupmatchers import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.launchpad.testing.systemdocs import create_view
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -30,6 +29,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.systemdocs import create_view
 from lp.testing.views import create_initialized_view
 
 

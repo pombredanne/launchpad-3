@@ -48,8 +48,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.helpers import filenameToContentType
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -78,6 +77,7 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

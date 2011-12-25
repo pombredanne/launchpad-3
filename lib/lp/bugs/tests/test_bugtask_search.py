@@ -15,7 +15,7 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import (
+from lp.services.searchbuilder import (
     all,
     any,
     greater_than,

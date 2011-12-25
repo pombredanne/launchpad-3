@@ -65,7 +65,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

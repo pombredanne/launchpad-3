@@ -73,7 +73,7 @@ structured() directly with an internationalized object.  structured()
 performs the translation and substitution, and the resulting object
 may then be passed to addNotification().
 
-    >>> from canonical.launchpad import _
+    >>> from lp import _
     >>> msgid   = _(u'<good/>%(evil)s')
     >>> escapee = '<evil/>'
     >>> text    = structured(msgid, evil=escapee)

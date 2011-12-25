@@ -61,7 +61,7 @@ not be found.
 
 Set the layer on the request for all subsequent uses.
 
-    >>> from canonical.launchpad.layers import setFirstLayer, FeedsLayer
+    >>> from lp.layers import setFirstLayer, FeedsLayer
     >>> setFirstLayer(request, FeedsLayer)
 
 If the context object is not an IThing then the view will not be

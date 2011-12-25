@@ -44,7 +44,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage

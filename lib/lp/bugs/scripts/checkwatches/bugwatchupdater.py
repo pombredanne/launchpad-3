@@ -14,7 +14,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.helpers import get_email_template
+from lp.services.mail.helpers import get_email_template
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities

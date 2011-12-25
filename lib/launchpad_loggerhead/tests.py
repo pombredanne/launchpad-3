@@ -130,7 +130,7 @@ class TestLogout(TestCase):
         # When we visit +logout with a 'next_to' value in the query string,
         # the logout page will redirect to the given URI.  As of this
         # writing, this is used by Launchpad to redirect to our OpenId
-        # provider (see canonical.launchpad.tests.test_login.
+        # provider (see lp.testing.tests.test_login.
         # TestLoginAndLogout.test_CookieLogoutPage).
 
         # Here, we will have a more useless example of the basic machinery.

@@ -45,7 +45,7 @@ atom feed for that one bug.
 But if the bug is private, there should be no link.
 
     # Set up an authenticated browser.
-    >>> from canonical.launchpad.testing.pages import setupBrowserForUser
+    >>> from lp.testing.pages import setupBrowserForUser
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
@@ -140,7 +140,7 @@ Only bug feeds should be linked to on bugs.launchpad.dev.
 Since the link title attribute contains the displayname of the prodect,
 it must have quotes and html escaped.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility

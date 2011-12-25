@@ -46,7 +46,7 @@ from zope.schema import (
     Set,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators.validation import can_be_nominated_for_series
 from lp.bugs.interfaces.bug import IBug

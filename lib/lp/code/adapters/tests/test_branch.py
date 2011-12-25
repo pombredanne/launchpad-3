@@ -5,7 +5,7 @@
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus

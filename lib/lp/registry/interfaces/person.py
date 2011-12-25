@@ -92,7 +92,7 @@ from zope.schema import (
     )
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -691,6 +691,9 @@ class IPersonPublic(IPrivacy):
         title=_("Why are you deactivating your account?"), required=False,
         readonly=True)
 
+    def anyone_can_join():
+        """Quick check as to whether a team allows anyone to join."""
+
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
     """IPerson attributes that require launchpad.LimitedView permission."""
@@ -1040,9 +1043,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     administrated_teams = Attribute(
         u"the teams that this person/team is an administrator of.")
-
-    def anyone_can_join():
-        """Quick check as to whether a team allows anyone to join."""
 
     @invariant
     def personCannotHaveIcon(person):

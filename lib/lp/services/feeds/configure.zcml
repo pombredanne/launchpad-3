@@ -9,7 +9,7 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.systemhomes.FeedsApplication"
+        class="lp.systemhomes.FeedsApplication"
         provides="lp.services.feeds.interfaces.IFeedsApplication">
         <allow
             interface="lp.services.feeds.interfaces.IFeedsApplication" />
@@ -47,7 +47,7 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.login.FeedsUnauthorizedView"
         attribute="__call__"
-        layer="canonical.launchpad.layers.FeedsLayer"
+        layer="lp.layers.FeedsLayer"
         />
 
 </configure>

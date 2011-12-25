@@ -11,7 +11,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

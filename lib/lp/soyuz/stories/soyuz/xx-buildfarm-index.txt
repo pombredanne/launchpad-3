@@ -167,7 +167,7 @@ Once the form is submitted the users will be redirected to the
 just-created builder page.
 
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> admin_browser.getControl("Register builder").click()
     >>> print backslashreplace(admin_browser.title)
     Tubaina : Build Farm

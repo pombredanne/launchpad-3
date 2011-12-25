@@ -7,7 +7,7 @@ means a file files that relates to the bug in some other way, like a log
 file or a screenshot.
 
 Let's look at a bug that has no attachments:
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> from lp.services.messages.interfaces.message import IMessageSet
@@ -400,7 +400,7 @@ We can search for attachment of a specific types:
     >>> bugs[0].id
     4
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> attachmenttype = any(*BugAttachmentType.items)
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
     >>> bugtasks = bugtaskset.search(params)
@@ -537,7 +537,7 @@ LibraryFileAlias.restricted and Bug.private. See also the section
 "Adding bug attachments to private bugs" below.
 
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
 
     >>> file_content = "Hello, world"

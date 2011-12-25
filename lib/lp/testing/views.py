@@ -18,7 +18,7 @@ from zope.security.management import (
     newInteraction,
     )
 
-from canonical.launchpad.layers import setFirstLayer
+from lp.layers import setFirstLayer
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessAuthUtility,

@@ -17,7 +17,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.helpers import ensure_unicode
+from lp.services.helpers import ensure_unicode
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,

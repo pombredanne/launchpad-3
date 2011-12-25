@@ -55,9 +55,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.database.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -125,6 +122,9 @@ from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
@@ -1529,7 +1529,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             name=name, version=version, exact_match=exact_match)
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IBugTarget`."""
         # We don't currently support opening a new bug on an IDistroSeries,
         # because internally bugs are reported against IDistroSeries only when
         # targeted to be fixed in that series, which is rarely the case for a

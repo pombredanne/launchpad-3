@@ -21,11 +21,10 @@ from testtools.matchers import (
     )
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -42,6 +41,7 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,

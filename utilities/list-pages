@@ -55,8 +55,7 @@ from zope.interface import directlyProvides, implements
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.config import config
-from canonical.launchpad import pagetitles
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -113,8 +112,7 @@ def has_page_title(adapter):
     if template is None:
         return False
     name = os.path.splitext(os.path.basename(template))[0].replace('-', '_')
-    if (getattr(view, 'page_title', marker) is marker and
-        getattr(pagetitles, name, marker) is marker):
+    if (getattr(view, 'page_title', marker) is marker):
         return False
     return has_html_element(template)
 

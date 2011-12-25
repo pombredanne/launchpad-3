@@ -22,7 +22,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,

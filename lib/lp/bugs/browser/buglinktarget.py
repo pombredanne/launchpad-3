@@ -22,8 +22,8 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import any
+from lp import _
+from lp.services.searchbuilder import any
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import LaunchpadView

@@ -114,7 +114,7 @@ The project group "All milestones" page lists all milestones for all
 products and series, including the inactive ones. They do not include
 the bug and blueprint counts (because they are costly to retrieve).
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.registry.tests.test_project_milestone import (
     ...     ProjectMilestoneTest)
     >>> login('foo.bar@canonical.com')
@@ -374,7 +374,7 @@ We'll also create a new test milestone within the "trunk" series:
 
 Let's target an existing bug to both series "1.0" and series "2.0":
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> browser.open(bug_1_url)
     >>> print backslashreplace(browser.title)
     Bug...in Mozilla Firefox...

@@ -32,8 +32,8 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp import _
+from lp.services.helpers import (
     english_list,
     shortlist,
     )

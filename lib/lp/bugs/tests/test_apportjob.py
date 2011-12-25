@@ -13,11 +13,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -38,6 +33,11 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugDataParser,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts.tests import run_script
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,

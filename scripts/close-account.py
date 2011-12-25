@@ -17,7 +17,7 @@ from canonical.database.sqlbase import (
     connect,
     sqlvalues,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,

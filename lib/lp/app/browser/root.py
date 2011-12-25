@@ -22,7 +22,7 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )

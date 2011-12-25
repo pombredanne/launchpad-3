@@ -42,10 +42,7 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
+from lp import _
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -82,6 +79,7 @@ from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.helpers import is_tar_filename
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -467,7 +465,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     '<a href="%s/+imports">Translation Import Queue</a>',
                         canonical_url(self.context.translationtarget)))
 
-        elif helpers.is_tar_filename(filename):
+        elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             (num, conflicts) = (
                 translation_import_queue.addOrUpdateEntriesFromTarball(

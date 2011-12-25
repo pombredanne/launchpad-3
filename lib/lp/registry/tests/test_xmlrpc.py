@@ -10,7 +10,7 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import IPrivateApplication
+from lp.xmlrpc.interfaces import IPrivateApplication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (

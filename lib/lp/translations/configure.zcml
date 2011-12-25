@@ -23,13 +23,6 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="translations" />
 
-  <xmlrpc:view
-      for="lp.translations.interfaces.translations.IRosettaApplication"
-      interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
-      class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
-      permission="zope.Public"
-      />
-
     <lp:help-folder folder="help" name="+help-translations" />
 
     <class
@@ -59,7 +52,7 @@
             interface="lp.translations.interfaces.pomsgid.IPOMsgID"/>
     </class>
     <securedutility
-        class="canonical.launchpad.systemhomes.RosettaApplication"
+        class="lp.systemhomes.RosettaApplication"
         provides="lp.translations.interfaces.translations.IRosettaApplication">
         <allow
             interface="lp.translations.interfaces.translations.IRosettaApplication"/>

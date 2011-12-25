@@ -26,7 +26,6 @@ from lazr.config.interfaces import ConfigErrors
 import pkg_resources
 import ZConfig
 
-from canonical.launchpad.readonly import is_read_only
 from lp.services.osutils import open_for_writing
 
 
@@ -412,12 +411,11 @@ class DatabaseConfig:
     """A class to provide the Launchpad database configuration."""
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'auth_dbuser',
-        'rw_main_master', 'rw_main_slave',
-        'ro_main_master', 'ro_main_slave',
+        'dbuser',
+        'rw_main_master', 'rw_main_slave', 'ro_main_master', 'ro_main_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
-        'isolation_level', 'randomise_select_results',
-        'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
+        'isolation_level', 'soft_request_timeout',
+        'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
         'ro_main_slave'])
@@ -431,6 +429,7 @@ class DatabaseConfig:
         # rw_main_master will never be used, as read-only-mode will
         # fail attempts to access the master database with a
         # ReadOnlyModeDisallowedStore exception.
+        from lp.services.database.readonly import is_read_only
         if is_read_only():
             return self.ro_main_master
         else:
@@ -438,6 +437,7 @@ class DatabaseConfig:
 
     @property
     def main_slave(self):
+        from lp.services.database.readonly import is_read_only
         if is_read_only():
             return self.ro_main_slave
         else:

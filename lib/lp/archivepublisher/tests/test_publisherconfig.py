@@ -12,7 +12,6 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.ftests import login
-from lp.services.database.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
@@ -22,6 +21,7 @@ from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfigSet,
     )
 from lp.archivepublisher.model.publisherconfig import PublisherConfig
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
     ANONYMOUS,
     TestCaseWithFactory,

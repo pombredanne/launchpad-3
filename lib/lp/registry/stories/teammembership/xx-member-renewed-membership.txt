@@ -11,7 +11,7 @@ demonstrate that. That team's renewal policy is not ONDEMAND and the
 membership is not about to expire, so it can't be renewed unless we make
 some changes.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import (

@@ -56,9 +56,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad import helpers
+from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.readonly import is_read_only
+from lp.services.database.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -1173,7 +1173,7 @@ class POFile(SQLBase, POFileMixIn):
             # Now we update the statistics after this new import
             self.updateStatistics()
 
-        template = helpers.get_email_template(template_mail, 'translations')
+        template = get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
 

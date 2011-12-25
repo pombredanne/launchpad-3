@@ -64,7 +64,7 @@ to sign each email, we'll create a class which fakes a signed email:
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
@@ -2032,7 +2032,7 @@ error, so let's create one.
 Now we can send an error mail, passing the created message to
 send_process_error_notification().
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',

@@ -59,9 +59,8 @@ from zope.schema.vocabulary import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.helpers import english_list
+from lp import _
+from lp.services.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -114,6 +113,7 @@ from lp.services.browser_helpers import (
     )
 from lp.services.database.bulk import load
 from lp.services.features import getFeatureFlag
+from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (

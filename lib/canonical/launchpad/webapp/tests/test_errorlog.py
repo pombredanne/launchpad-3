@@ -30,7 +30,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.layers import WebServiceLayer
+from lp.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,

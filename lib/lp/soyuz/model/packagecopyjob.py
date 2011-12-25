@@ -361,6 +361,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             result.setdefault(job.package_name, job)
         return result
 
+    @classmethod
+    def getIncompleteJobsForArchive(cls, archive):
+        """See `IPlainPackageCopyJobSource`."""
+        jobs = IStore(PackageCopyJob).find(
+            PackageCopyJob,
+            PackageCopyJob.target_archive == archive,
+            PackageCopyJob.job_type == cls.class_job_type,
+            Job.id == PackageCopyJob.job_id,
+            Job._status.is_in(
+                [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED])
+            )
+        return DecoratedResultSet(jobs, cls)
+
     @property
     def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]

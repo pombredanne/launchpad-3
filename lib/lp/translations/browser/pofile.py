@@ -26,7 +26,7 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,

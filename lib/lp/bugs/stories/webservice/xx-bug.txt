@@ -120,7 +120,7 @@ bugs.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
     >>> login(ANONYMOUS)
@@ -624,7 +624,7 @@ Initially there are no nominations.
     >>> fooix.bug_supervisor = john
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
     >>> john_webservice = webservice_for_person(

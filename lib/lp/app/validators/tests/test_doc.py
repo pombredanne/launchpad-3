@@ -7,12 +7,12 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_suite():

@@ -128,10 +128,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
+from lp import _
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.mail.interfaces import (
@@ -253,6 +250,7 @@ from lp.registry.model.milestone import (
     milestone_sort_key,
     )
 from lp.services.fields import LocationField
+from lp.services.helpers import shortlist
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
@@ -1592,7 +1590,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
 
-        return helpers.shortlist([
+        return shortlist([
             dict(title=milestone.title, value=milestone.token, checked=False)
             for milestone in vocabulary],
             longest_expected=10)

@@ -56,8 +56,8 @@ from zope.schema.vocabulary import (
     )
 import zope.security
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
+from lp import _
+from lp.services.worlddata.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )

@@ -14,7 +14,7 @@ from lazr.delegates import delegates
 from simplejson import dumps
 from zope.component import getUtility
 
-from canonical.launchpad import _
+from lp import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects,
@@ -158,6 +158,8 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
             else:
                 cannot_unsubscribe.append(subscription)
         # Cache permission so private subscribers can be viewed.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         precache_permission_for_objects(
                     self.request, 'launchpad.LimitedView', subscribers)
 

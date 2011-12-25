@@ -23,7 +23,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionParticipation,
