@@ -592,10 +592,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             distroseries=distroseries_one, component=component)
         self.factory.makeComponentSelection(
             distroseries=distroseries_two, component=component)
-        das_one = self.factory.makeDistroArchSeries(
-            distroseries=distroseries_one)
-        das_two = self.factory.makeDistroArchSeries(
-            distroseries=distroseries_two)
+        self.factory.makeDistroArchSeries(distroseries=distroseries_one)
+        self.factory.makeDistroArchSeries(distroseries=distroseries_two)
         flavour = self.factory.getUniqueString()
         script = self.makeScript(distro, extra_args=[flavour])
         self.makeIndexFiles(script, distroseries_two)
