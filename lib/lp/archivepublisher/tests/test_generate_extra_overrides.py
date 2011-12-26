@@ -334,6 +334,46 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 arch),
             output)
 
+    def test_make_seed_structures_missing_seeds(self):
+        # makeSeedStructures ignores missing seeds.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        series_name = distroseries.name
+        script = self.makeScript(distro)
+        flavour = self.factory.getUniqueString()
+
+        structures = script.makeSeedStructures(
+            series_name, [flavour], seed_bases=["file://%s" % self.seeddir])
+        self.assertEqual({}, structures)
+
+    def test_make_seed_structures_empty_seed_structure(self):
+        # makeSeedStructures ignores an empty seed structure.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        series_name = distroseries.name
+        script = self.makeScript(distro)
+        flavour = self.factory.getUniqueString()
+        self.makeSeedStructure(flavour, series_name, [])
+
+        structures = script.makeSeedStructures(
+            series_name, [flavour], seed_bases=["file://%s" % self.seeddir])
+        self.assertEqual({}, structures)
+
+    def test_make_seed_structures_valid_seeds(self):
+        # makeSeedStructures reads valid seeds successfully.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        series_name = distroseries.name
+        script = self.makeScript(distro)
+        flavour = self.factory.getUniqueString()
+        seed = self.factory.getUniqueString()
+        self.makeSeedStructure(flavour, series_name, [seed])
+        self.makeSeed(flavour, series_name, seed, [])
+
+        structures = script.makeSeedStructures(
+            series_name, [flavour], seed_bases=["file://%s" % self.seeddir])
+        self.assertIn(flavour, structures)
+
     def fetchGerminatedOverrides(self, script, distroseries, arch, flavours):
         """Helper to call script.germinateArch and return overrides."""
         structures = script.makeSeedStructures(
@@ -541,6 +581,35 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             script, distroseries, arch, [flavour])
         self.assertContentEqual(
             ["%s/%s  Build-Essential  yes" % (package.name, arch)], overrides)
+
+    def test_process_missing_seeds(self):
+        # The script ignores series with no seed structures.
+        distro = self.makeDistro()
+        distroseries_one = self.factory.makeDistroSeries(distribution=distro)
+        distroseries_two = self.factory.makeDistroSeries(distribution=distro)
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries_one, component=component)
+        self.factory.makeComponentSelection(
+            distroseries=distroseries_two, component=component)
+        das_one = self.factory.makeDistroArchSeries(
+            distroseries=distroseries_one)
+        das_two = self.factory.makeDistroArchSeries(
+            distroseries=distroseries_two)
+        flavour = self.factory.getUniqueString()
+        script = self.makeScript(distro, extra_args=[flavour])
+        self.makeIndexFiles(script, distroseries_two)
+        seed = self.factory.getUniqueString()
+        self.makeSeedStructure(flavour, distroseries_two.name, [seed])
+        self.makeSeed(flavour, distroseries_two.name, seed, [])
+
+        script.process(seed_bases=["file://%s" % self.seeddir])
+        self.assertFalse(os.path.exists(os.path.join(
+            script.config.miscroot,
+            "more-extra.override.%s.main" % distroseries_one.name)))
+        self.assertTrue(os.path.exists(os.path.join(
+            script.config.miscroot,
+            "more-extra.override.%s.main" % distroseries_two.name)))
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
