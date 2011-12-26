@@ -10,7 +10,12 @@ import sys
 
 import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
-from zope.component import getUtility
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    queryUtility,
+    )
+from zope.error.interfaces import IErrorReportingUtility
 
 from lp.services.webapp import errorlog
 from canonical.testing.layers import (
@@ -55,6 +60,17 @@ class TestCaptureOops(TestCaseWithFactory):
     # test_fixture for tests of the CaptureOops fixture.
 
     layer = FunctionalLayer
+
+    def setUp(self):
+        super(TestCaptureOops, self).setUp()
+        eru = queryUtility(IErrorReportingUtility)
+        if eru is None:
+            # Register an Error reporting utility for this layer.
+            # This will break tests when run with an ERU already registered.
+            self.eru = errorlog.ErrorReportingUtility()
+            sm = getSiteManager()
+            sm.registerUtility(self.eru)
+            self.addCleanup(sm.unregisterUtility, self.eru)
 
     def trigger_oops(self):
         try:
