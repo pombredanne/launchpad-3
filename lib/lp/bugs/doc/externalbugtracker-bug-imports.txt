@@ -1,4 +1,5 @@
-= ExternalBugTracker bug imports =
+ExternalBugTracker bug imports
+==============================
 
 Some ExternalBugTracker implementations support importing bugs from the
 remote bug tracker into Launchpad. They indicate that they support doing
@@ -88,7 +89,8 @@ Since he didn't have a Launchpad account before, he doesn't have a
 preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
-    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
     >>> for email_address in reporter_email_addresses:
@@ -122,7 +124,8 @@ kept in sync.
     u'3'
 
 
-=== Non-existent source package ===
+Non-existent source package
+---------------------------
 
 If a package doesn't exist in Launchpad already, it will be filed on the
 distribution itself, with no source package specified. The package is
@@ -147,7 +150,8 @@ the script gets notified about it.
     None
 
 
-=== Syncing status ===
+Syncing status
+--------------
 
 After the bug watch has been created for the imported bug, the status is
 not synced immediately. The status will be updated the next time all the
@@ -160,7 +164,8 @@ one request per imported bug.
     None
 
 
-=== Reporter already registered in Launchpad ===
+Reporter already registered in Launchpad
+----------------------------------------
 
 Even if the reporter of the bug has an account in Launchpad (and thus a
 valid e-mail address), he still won't be subscribed to the imported bug.
