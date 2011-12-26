@@ -26,8 +26,8 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
@@ -35,9 +35,9 @@ from canonical.launchpad.webapp import (
     Navigation,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,

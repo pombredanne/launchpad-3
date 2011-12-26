@@ -22,12 +22,12 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
+from lp.services.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,

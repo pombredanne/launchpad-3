@@ -12,7 +12,7 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     Navigation,
     stepthrough,
     stepto,

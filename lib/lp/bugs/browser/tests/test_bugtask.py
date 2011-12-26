@@ -37,19 +37,19 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     )
 from lp.testing.pages import find_tag_by_id
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import clear_cache
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import clear_cache
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadRoot,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

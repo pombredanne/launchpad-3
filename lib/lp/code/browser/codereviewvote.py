@@ -8,8 +8,8 @@ __metaclass__ = type
 
 from zope.interface import Interface
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
+from lp import _
+from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

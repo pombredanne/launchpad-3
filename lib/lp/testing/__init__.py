@@ -122,17 +122,17 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.adapter import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.adapter import (
     print_queries,
     start_sql_logging,
     stop_sql_logging,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     clear_cache as clear_permission_cache,
     )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.servers import (
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.servers import (
     LaunchpadTestRequest,
     StepsToGo,
     WebServiceTestRequest,
@@ -283,7 +283,7 @@ class StormStatementRecorder:
     of every SQL query, or a callable that takes the SQL query string and
     returns a boolean decision as to whether a traceback is desired.
     """
-    # Note that tests for this are in canonical.launchpad.webapp.tests.
+    # Note that tests for this are in lp.services.webapp.tests.
     # test_statementtracer, because this is really just a small wrapper of
     # the functionality found there.
 

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
     BranchSubscriptionDiffSize,

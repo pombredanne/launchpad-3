@@ -13,7 +13,7 @@
   </securedutility>
 
   <class class="lp.services.worlddata.vocabularies.CountryNameVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -26,7 +26,7 @@
   </securedutility>
 
   <class class="lp.services.worlddata.vocabularies.LanguageVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 

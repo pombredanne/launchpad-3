@@ -1,4 +1,5 @@
-= Getting remote products from SourceForge projects =
+Getting remote products from SourceForge projects
+=================================================
 
 Launchpad Products can be linked to SourceForge projects by setting
 their 'sourceforgeproject' attribute.
@@ -99,7 +100,8 @@ There are no other SourceForge-linked products that have no remote product.
     0
 
 
-== update-sourceforge-remote-products.py ==
+update-sourceforge-remote-products.py
+-------------------------------------
 
 There is a cronscript, update-sourceforge-remote-products.py, which will use
 the SourceForgeRemoteProductFinder to periodically update Products'

@@ -10,7 +10,7 @@ from testtools.matchers import (
     Not,
     )
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (

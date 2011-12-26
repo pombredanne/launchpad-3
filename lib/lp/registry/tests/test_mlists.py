@@ -18,7 +18,7 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     login_person,
     )

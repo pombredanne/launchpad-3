@@ -19,7 +19,7 @@ from testtools.matchers import (
     )
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

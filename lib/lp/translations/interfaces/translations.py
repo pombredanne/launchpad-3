@@ -8,7 +8,7 @@ from lazr.enum import (
     DBItem,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 __metaclass__ = type
 

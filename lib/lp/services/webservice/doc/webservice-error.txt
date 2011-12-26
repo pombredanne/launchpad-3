@@ -5,8 +5,8 @@ response code will be 500. But specific exception classes can override
 this behavior and set some other response code.
 
     >>> import threading
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp.adapter import (
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.adapter import (
     ...     set_request_started, clear_request_started)
     >>> from zope.component import getMultiAdapter
 
@@ -29,7 +29,7 @@ this behavior and set some other response code.
 
 IRequestExpired exceptions have a 503 status code.
 
-    >>> from canonical.launchpad.webapp.adapter import RequestExpired
+    >>> from lp.services.webapp.adapter import RequestExpired
     >>> response, result = render_using_default_view(RequestExpired())
     >>> response.getStatus()
     503

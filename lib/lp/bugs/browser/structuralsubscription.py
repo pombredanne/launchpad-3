@@ -35,13 +35,13 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     Navigation,

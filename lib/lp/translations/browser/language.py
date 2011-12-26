@@ -21,7 +21,7 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

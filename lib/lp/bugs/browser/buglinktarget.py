@@ -22,11 +22,11 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.searchbuilder import any
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

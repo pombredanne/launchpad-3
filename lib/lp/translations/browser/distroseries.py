@@ -16,15 +16,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import action
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp import action
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.launchpadform import LaunchpadEditFormView
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

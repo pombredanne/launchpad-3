@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.security.management import endInteraction
 
-from canonical.launchpad.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interaction import ANONYMOUS
 from canonical.testing import (
     AppServerLayer,
     DatabaseFunctionalLayer,

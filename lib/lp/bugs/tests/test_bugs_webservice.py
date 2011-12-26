@@ -21,12 +21,12 @@ from testtools.matchers import (
     )
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )
-from canonical.launchpad.webapp import snapshot
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp import snapshot
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

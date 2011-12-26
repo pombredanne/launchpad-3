@@ -8,7 +8,7 @@ from __future__ import with_statement
 import simplejson
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,

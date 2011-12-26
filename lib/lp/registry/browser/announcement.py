@@ -27,20 +27,20 @@ from zope.schema import (
     )
 
 from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.services.feeds.browser import (
     AnnouncementsFeedLink,
     FeedsMixin,
     RootAnnouncementsFeedLink,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

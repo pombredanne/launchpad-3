@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     )
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct,

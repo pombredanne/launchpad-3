@@ -15,16 +15,16 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.interface import implements
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

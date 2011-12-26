@@ -13,8 +13,8 @@ from datetime import timedelta
 
 import pytz
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
+from lp import _
+from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

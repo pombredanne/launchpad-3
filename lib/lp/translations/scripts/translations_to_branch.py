@@ -35,8 +35,8 @@ from lp.services.mail.helpers import (
     get_email_template,
     )
 from lp.services.database.lpstorm import IMasterStore
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import errorlog
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,

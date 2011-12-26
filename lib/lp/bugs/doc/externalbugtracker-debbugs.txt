@@ -1,4 +1,6 @@
-= ExternalBugTracker: DebBugs =
+===========================
+ExternalBugTracker: DebBugs
+===========================
 
 Differently from Bugzilla, debbugs watch syncing is done by reading from
 a local database, so we can use a real class for testing: we just need
@@ -33,7 +35,7 @@ DebBugs, of course, implements IExternalBugTracker.
 
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> verifyObject(IExternalBugTracker, external_debbugs)
     True
@@ -46,7 +48,8 @@ DebBugs instances don't have a batch_size limit.
     True
 
 
-== Retrieving bug status from the debbugs database ==
+Retrieving bug status from the debbugs database
+===============================================
 
 The retrieval of the remote status is done through the
 getRemoteStatus() method. If we pass a bug number that doesn't exist in
@@ -78,7 +81,8 @@ Bug 563 resides in the archive. It is also fetchable:
     'done normal'
 
 
-== Getting the time ==
+Getting the time
+================
 
 We don't have acccess to the Debian servers exact time, but we trust it
 being correct.
@@ -87,7 +91,8 @@ being correct.
     datetime.datetime(...)
 
 
-== Checking debbugs bug watches ==
+Checking debbugs bug watches
+============================
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
@@ -155,8 +160,8 @@ And the linked bugtasks got updated:
     15 thunderbird New Unknown
 
 Sometimes the severity field is missing in the bug summary. That will
-cause importance to be set to medium, equivalent to the default normal severity
-in debbugs.
+cause importance to be set to medium, equivalent to the default normal
+severity in debbugs.
 
     >>> import email
     >>> summary = email.message_from_file(
@@ -169,7 +174,8 @@ in debbugs.
     'open normal'
 
 
-== Debbugs status conversions ==
+Debbugs status conversions
+==========================
 
 Let's take closer look at the status conversion. Debbugs has basically
 only two statuses, 'open' and 'done', so in order to get a more fine
@@ -223,7 +229,8 @@ requesting help with the bug, so it's most likely a confirmed bug.
 The 'pending' tag means that a fix is about to be uploaded, so it maps
 to 'Fix Committed'.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal pending').title
+    >>> print (
+    ...     external_debbugs.convertRemoteStatus('open normal pending').title)
     Fix Committed
 
 The 'fixed' tag means that the bug has been either fixed or work around
@@ -275,11 +282,12 @@ be raised.
     UnknownRemoteStatusError: open
 
 
-== Importing bugs ==
+Importing bugs
+==============
 
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> verifyObject(ISupportsBugImport, external_debbugs)
     True
@@ -340,7 +348,8 @@ getBugTargetName() method.
     evolution
 
 
-== Importing Comments ==
+Importing Comments
+==================
 
 Along with importing debian bug reports, comments on those bug reports
 can also be imported. The DebBugs class implements the
@@ -349,7 +358,8 @@ ISupportsCommentImport interface.
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
-    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> external_debbugs = get_external_bugtracker(
@@ -551,13 +561,15 @@ date in that header will take precedence.
     datetime.datetime(2008, 7, 15, 9, 20, 11, tzinfo=<UTC>)
 
 
-=== Pushing comments to DebBugs ===
+Pushing comments to DebBugs
+---------------------------
 
 The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
 interface, which allows checkwatches to use it to push Launchpad
 comments back to the remote DebBugs instance.
 
-    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
     >>> ISupportsCommentPushing.providedBy(external_debbugs)
     True
 
@@ -602,7 +614,8 @@ sent.
     A little fermented curd will do the trick!
 
 
-=== Script for importing Debian bugs, linking them to Ubutu ===
+Script for importing Debian bugs, linking them to Ubuntu
+--------------------------------------------------------
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
@@ -665,7 +678,8 @@ whether they affects Ubuntu.
     evolution (Debian): NEW
 
 
-==== Importing bugs twice ====
+Importing bugs twice
+....................
 
 If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
 won't be imported again. A warning is logged so that the person runnning
@@ -682,7 +696,8 @@ the script gets notified about it.
     [1]
 
 
-== Getting the remote product for a bug ==
+Getting the remote product for a bug
+====================================
 
 We can get the remote product for a bug by calling getRemoteProduct() on
 a DebBugs instance. In actual fact this is a wrapper around

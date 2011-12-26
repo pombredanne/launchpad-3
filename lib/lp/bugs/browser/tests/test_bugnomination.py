@@ -11,12 +11,12 @@ import soupmatchers
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (

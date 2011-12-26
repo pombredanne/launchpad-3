@@ -25,7 +25,7 @@ from zope.publisher.interfaces.http import IResult
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import IProductSet
 from lp.services.osutils import override_environ

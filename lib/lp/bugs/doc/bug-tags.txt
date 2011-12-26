@@ -69,7 +69,7 @@ Widgets
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bug import BugTagsWidget
     >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
@@ -359,7 +359,8 @@ in the specific package.
     >>> sorted(debian_woody.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
-    >>> sorted(debian_woody_firefox.getUsedBugTagsWithOpenCounts(None).items())
+    >>> sorted(
+    ...     debian_woody_firefox.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
 Only bugs that the supplied user has access to will be counted:

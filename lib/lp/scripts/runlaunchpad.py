@@ -20,7 +20,7 @@ from testtools.testresult.real import _details_to_str
 from zope.app.server.main import main
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
+from lp.services.daemons import tachandler
 from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,

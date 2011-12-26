@@ -17,14 +17,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     GetitemNavigation,
     LaunchpadView,
     Link,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.services.webapp.batching import BatchNavigator
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

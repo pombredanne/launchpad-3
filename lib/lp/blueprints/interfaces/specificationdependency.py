@@ -25,7 +25,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class ISpecificationDependency(Interface):

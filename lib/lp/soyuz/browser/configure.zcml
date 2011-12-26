@@ -11,7 +11,7 @@
     <browser:url
       for="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"
       path_expression="string:binarypackagenames"
-      parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
       />
     <facet
         facet="overview">
@@ -39,14 +39,14 @@
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
         <browser:url for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
             path_expression="string:+processor-families"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:url
 	    for="lp.soyuz.interfaces.processor.IProcessorFamily"
             path_expression="string:${name}"
             parent_utility="lp.soyuz.interfaces.processor.IProcessorFamilySet" />
         <browser:url for="lp.soyuz.interfaces.processor.IProcessorSet"
             path_expression="string:+processors"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:url
 	    for="lp.soyuz.interfaces.processor.IProcessor"
             path_expression="string:${name}"
@@ -397,7 +397,7 @@
     <browser:url
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         path_expression="string:builders"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         name="+index"/>
@@ -786,7 +786,7 @@
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackagesetSet"
         path_expression="string:package-sets"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         />
     <browser:navigation
         module="lp.soyuz.browser.packageset"
@@ -817,19 +817,19 @@
     <browser:page
         for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
         name="+current"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        class="lp.services.webapp.publisher.LaunchpadView"
         permission="launchpad.View"
         template="../templates/buildqueue-current.pt"/>
     <browser:page
         for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
         name="+current"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        class="lp.services.webapp.publisher.LaunchpadView"
         permission="launchpad.View"
         template="../templates/buildfarmbranchjob-current.pt"/>
     <browser:page
         for="lp.soyuz.interfaces.buildfarmbuildjob.IBuildFarmBuildJob"
         name="+current"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        class="lp.services.webapp.publisher.LaunchpadView"
         permission="launchpad.View"
         template="../templates/buildfarmbuildjob-current.pt"/>
     <browser:pages

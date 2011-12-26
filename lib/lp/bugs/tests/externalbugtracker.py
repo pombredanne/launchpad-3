@@ -97,10 +97,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
 
 
 def read_test_file(name):
-    """Return the contents of the test file named :name:
-
-    Test files are located in lib/canonical/launchpad/ftests/testfiles
-    """
+    """Return the contents of the test file named :name:"""
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
 
     test_file = open(file_path, 'r')

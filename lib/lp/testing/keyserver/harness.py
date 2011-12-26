@@ -7,7 +7,7 @@ import os
 import shutil
 
 from canonical.config import config
-from canonical.launchpad.daemons.tachandler import TacTestSetup
+from lp.services.daemons.tachandler import TacTestSetup
 
 
 KEYS_DIR = os.path.join(os.path.dirname(__file__), 'tests/keys')

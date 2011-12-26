@@ -8,7 +8,7 @@ from twisted.application import service, strports
 from twisted.web import server
 
 from canonical.config import config
-from canonical.launchpad.daemons import readyservice
+from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.testing.keyserver.web import KeyServerResource
 

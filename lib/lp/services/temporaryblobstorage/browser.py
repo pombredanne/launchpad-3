@@ -18,8 +18,8 @@ from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
-from canonical.launchpad.webapp import GetitemNavigation
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp import GetitemNavigation
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from canonical.librarian.interfaces import UploadFailed
 from lp.app.browser.launchpadform import (
     action,

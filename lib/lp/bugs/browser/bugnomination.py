@@ -18,13 +18,13 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.publisher.interfaces import implements
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     IPrimaryContext,
     )

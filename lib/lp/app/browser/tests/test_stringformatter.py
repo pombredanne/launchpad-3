@@ -16,7 +16,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import (
     FormattersAPI,

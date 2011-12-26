@@ -17,10 +17,10 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,

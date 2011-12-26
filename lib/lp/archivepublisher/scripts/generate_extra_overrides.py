@@ -20,7 +20,7 @@ from germinate.log import GerminateFormatter
 from germinate.seeds import SeedStructure
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.dbpolicy import (
+from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )

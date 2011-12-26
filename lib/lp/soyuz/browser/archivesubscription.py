@@ -31,8 +31,8 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.publisher import (
+from lp import _
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

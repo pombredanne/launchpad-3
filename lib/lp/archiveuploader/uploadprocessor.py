@@ -56,7 +56,7 @@ from contrib.glock import GlobalLock
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )

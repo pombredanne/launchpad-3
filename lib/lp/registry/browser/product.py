@@ -79,8 +79,8 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -93,14 +93,14 @@ from canonical.launchpad.webapp import (
     stepto,
     structured,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.services.webapp.menu import NavigationMenu
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -1092,7 +1092,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         The home page link is not included because its link must have the
         rel=nofollow attribute.
         """
-        from canonical.launchpad.webapp.menu import MenuLink
+        from lp.services.webapp.menu import MenuLink
         urls = [
             ('Sourceforge project', self.sourceforge_url),
             ('Freshmeat record', self.freshmeat_url),

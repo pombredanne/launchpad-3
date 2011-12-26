@@ -6,9 +6,6 @@
 """Logging setup for scripts.
 
 Don't import from this module. Import it from lp.services.scripts.
-
-Parts of this may be moved into canonical.launchpad somewhere if it is
-to be used for non-script stuff.
 """
 
 __metaclass__ = type
@@ -49,7 +46,7 @@ from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     globalErrorUtility,
     ScriptRequest,
     )

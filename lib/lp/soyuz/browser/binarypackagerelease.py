@@ -10,7 +10,7 @@ __all__ = [
 
 from apt_pkg import parse_depends
 
-from canonical.launchpad.webapp import Navigation
+from lp.services.webapp import Navigation
 from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 

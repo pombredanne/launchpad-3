@@ -11,7 +11,7 @@ from storm.expr import (
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

@@ -134,7 +134,7 @@ However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
 header in the request to 'http', even when 'use_https' is True.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'http'})
@@ -569,7 +569,7 @@ A librarian file has a default view that should redirect to the download
 URL.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(
     ...     'text2.txt', len(data), StringIO(data), 'text/plain',
@@ -602,7 +602,7 @@ We need some files to test different ways of accessing them.
     # record. Such records are considered as being deleted.
 
     >>> from lp.services.librarian.model import LibraryFileAlias
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

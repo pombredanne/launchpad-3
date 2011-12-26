@@ -13,7 +13,7 @@ from zope.component import queryAdapter
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     login,

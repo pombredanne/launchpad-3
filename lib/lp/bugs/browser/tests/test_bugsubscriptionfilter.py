@@ -14,8 +14,8 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,

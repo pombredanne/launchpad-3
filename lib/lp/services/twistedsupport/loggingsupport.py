@@ -32,7 +32,7 @@ from twisted.web import xmlrpc
 from zope.interface import implements
 
 from lp.services.scripts import logger
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from canonical.librarian.utils import copy_and_close
 
 

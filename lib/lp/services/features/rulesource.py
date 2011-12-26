@@ -20,7 +20,7 @@ import re
 
 from storm.locals import Desc
 
-from canonical.launchpad.webapp import adapter
+from lp.services.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,

@@ -13,7 +13,7 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     LaunchpadView,
     Navigation,
     )

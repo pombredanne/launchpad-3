@@ -190,7 +190,7 @@ Administer Productseries
 The productseries +review view allows an admin to administer the name and
 parent project.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('admin@canonical.com')
     >>> view = create_initialized_view(series, '+review')
@@ -260,7 +260,7 @@ mistake.
 
 Users without edit permission cannot access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('no-priv@canonical.com')
     >>> view = create_view(productseries, name='+delete')

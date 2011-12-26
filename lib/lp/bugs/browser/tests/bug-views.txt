@@ -29,11 +29,11 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     ILaunchBag,
     ...     IOpenLaunchBag,
     ...     )
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams,
@@ -607,7 +607,7 @@ initialize the test harness.
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.bugtargetdisplayname
     u'Mozilla Firefox'
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from lp.testing.deprecated import LaunchpadFormHarness
     >>> bug_edit = LaunchpadFormHarness(firefox_task, BugEditViewTest)
 
 Initially, the normal edit page is shown, with a single button.

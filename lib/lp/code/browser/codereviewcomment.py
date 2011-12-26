@@ -25,14 +25,14 @@ from zope.interface import (
 from zope.schema import Text
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     LaunchpadView,
     Link,
     )
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.interfaces import IPrimaryContext
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

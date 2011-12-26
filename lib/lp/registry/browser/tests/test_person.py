@@ -8,8 +8,8 @@ __metaclass__ = type
 from textwrap import dedent
 
 from canonical.config import config
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.testing import login_person
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
 from lp.testing import TestCaseWithFactory

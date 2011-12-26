@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
+from lp.services.webapp.servers import WebServiceTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
 from lp.testing import (

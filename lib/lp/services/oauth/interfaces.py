@@ -38,8 +38,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import (
+from lp import _
+from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )

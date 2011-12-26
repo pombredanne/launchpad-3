@@ -25,7 +25,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.webapp.url import (
+from lp.services.webapp.url import (
     urlappend,
     urlparse,
     )

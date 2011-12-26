@@ -19,7 +19,7 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
@@ -127,8 +127,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     the upload is processed and committed.
 
     In practice, 'changesfile_object' is only set when we are closing bugs
-    in upload-time (see
-    archiveuploader/ftests/nascentupload-closing-bugs.txt).
+    in upload-time (see nascentupload-closing-bugs.txt).
 
     Skip bug-closing if the upload is target to pocket PROPOSED or if
     the upload is for a PPA.

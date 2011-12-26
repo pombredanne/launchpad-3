@@ -11,9 +11,9 @@ import unittest
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,

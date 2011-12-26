@@ -39,7 +39,7 @@ import bzrlib.repository
 from lp.code.enums import BranchType
 from lp.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 branch_type_map = {

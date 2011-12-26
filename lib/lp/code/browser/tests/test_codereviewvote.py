@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     person_logged_in,

@@ -12,7 +12,7 @@ import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     MemcachedLayer,

@@ -10,8 +10,8 @@ __all__ = [
     'FAQCreateView',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     stepthrough,
     )

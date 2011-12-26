@@ -14,11 +14,11 @@ import operator
 
 from lazr.restful.utils import smartquote
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     LaunchpadView,
     Navigation,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.archivepublisher.debversion import Version
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty

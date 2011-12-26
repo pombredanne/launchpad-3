@@ -59,7 +59,7 @@ from canonical.database.sqlbase import (
     )
 from lp.services.helpers import shortlist
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

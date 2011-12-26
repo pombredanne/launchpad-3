@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.testing import login
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.soyuz.browser.distroarchseries import DistroArchSeriesAdminView
 from lp.testing import TestCaseWithFactory

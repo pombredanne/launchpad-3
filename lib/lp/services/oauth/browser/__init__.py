@@ -24,12 +24,12 @@ from zope.formlib.form import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.authentication import (
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.authentication import (
     check_oauth_signature,
     get_oauth_authorization,
     )
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet

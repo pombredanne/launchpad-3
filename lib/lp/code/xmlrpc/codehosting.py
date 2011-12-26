@@ -24,9 +24,9 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interaction import setupInteractionForPerson
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interaction import setupInteractionForPerson
 from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 from lp.app.errors import (

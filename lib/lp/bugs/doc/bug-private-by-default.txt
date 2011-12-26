@@ -1,4 +1,5 @@
-= Private by default bugs =
+Private by default bugs
+=======================
 
 A product with private bugs by default must always have a bug supervisor
 (this is enforced by a DB constraint).
@@ -50,7 +51,7 @@ related bug.
     >>> security_bug_task.bug.private
     True
 
-For a security related bug, the security contact or the product owner 
+For a security related bug, the security contact or the product owner
 (if no security contact) is subscribed.
 
     >>> security_bug_task.bug.security_related
@@ -59,5 +60,6 @@ For a security related bug, the security contact or the product owner
     >>> landscape.security_contact.name
     u'name16'
 
-    >>> sorted(sub.name for sub in security_bug_task.bug.getDirectSubscribers())
+    >>> sorted(
+    ...     sub.name for sub in security_bug_task.bug.getDirectSubscribers())
     [u'name16', u'no-priv']

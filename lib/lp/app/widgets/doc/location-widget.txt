@@ -3,7 +3,7 @@ Location widget
 
 A widget used when setting the geographic location of a given person.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.location import LocationWidget
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.services.fields import LocationField

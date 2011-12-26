@@ -28,8 +28,8 @@ from zope.testing.loggingsupport import Handler
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 from lp.testing import (
     ANONYMOUS,

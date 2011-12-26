@@ -13,7 +13,7 @@ import pytz
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

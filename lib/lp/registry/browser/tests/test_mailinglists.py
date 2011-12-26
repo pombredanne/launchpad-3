@@ -7,7 +7,7 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.ftests import login_person
+from lp.testing import login_person
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (

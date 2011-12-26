@@ -15,7 +15,7 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,

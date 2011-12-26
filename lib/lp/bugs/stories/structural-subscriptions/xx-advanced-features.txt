@@ -4,7 +4,7 @@ Advanced structural subscriptions
 When a user visits the +subscriptions page of a product they are given the
 option to subscribe to add a new subscription
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.testing.sampledata import USER_EMAIL
     >>> login(USER_EMAIL)
     >>> product = factory.makeProduct()

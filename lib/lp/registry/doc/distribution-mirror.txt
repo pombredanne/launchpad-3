@@ -146,7 +146,7 @@ We also have a property which returns all unofficial mirrors.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distributionmirror import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
@@ -158,7 +158,7 @@ It's possible to retrieve a mirror by its name:
 Or by any of its URLs (HTTP, FTP or Rsync)
 First we'll have to add some of this URLs to sample data:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("mark@example.com")
     >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
@@ -369,7 +369,7 @@ up on the public mirror listings.
     ...
 
     # Enable the mirror again.
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> valid_mirror.enabled = True
 
 If we pass notify_owner=False to the disable() method, then we'll send a
@@ -800,7 +800,7 @@ First we import the classes required to test the view:
   >>> from zope.component import getMultiAdapter
   >>> from lp.registry.browser.distribution import (
   ...     DistributionMirrorsView)
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
 Create a view to test:
 

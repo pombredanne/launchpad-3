@@ -13,14 +13,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     Link,
     Navigation,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import NavigationMenu
 from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet

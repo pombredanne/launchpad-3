@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,

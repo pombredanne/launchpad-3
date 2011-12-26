@@ -29,8 +29,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -41,7 +41,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets,
     stepthrough,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

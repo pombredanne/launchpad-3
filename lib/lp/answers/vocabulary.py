@@ -13,7 +13,7 @@ from sqlobject import OR
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.vocabulary import (
     CountableIterator,
     FilteredVocabularyBase,
     IHugeVocabulary,

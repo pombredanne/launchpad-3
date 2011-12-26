@@ -9,9 +9,9 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import english_list
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
