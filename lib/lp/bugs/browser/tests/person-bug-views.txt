@@ -1,4 +1,5 @@
-= Person Pages =
+Person Pages
+============
 
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
@@ -16,7 +17,9 @@ Let's define a helper function to make it easier to construct a view.
     ...     view.initialize()
     ...     return view
 
-== Assigned bugs ==
+
+Assigned bugs
+-------------
 
 All bug tasks assigned to this person.
 
@@ -43,7 +46,9 @@ Using the advanced form we can query for closed bugs.
     ...     for bugtask in closed_bugtasks]
     [(8, 'FIXRELEASED')]
 
-== Reported bugs ==
+
+Reported bugs
+-------------
 
 All bug tasks reported by someone. By default we'll get assigned and
 unassigned bug tasks.
@@ -128,7 +133,8 @@ And now we query for it.
     >>> flush_database_updates()
 
 
-== Subscribed bugs ==
+Subscribed bugs
+---------------
 
 All bug tasks someone is subscribed to. By default we'll get bug tasks
 with any importance.
@@ -164,7 +170,8 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     [(8, 'FIXRELEASED', u'name16')]
 
 
-== Bugs for Bug Supervisor ==
+Bugs for Bug Supervisor
+-----------------------
 
 Malone can generate bug reports for packages on which a user is a bug
 supervisor. The Person context is used only to get a list of packages that
@@ -453,7 +460,8 @@ If we deactivate our new milestone it'll disappear from the list again.
     []
 
 
-== Bugs commented on by a Person ==
+Bugs commented on by a Person
+-----------------------------
 
 It is possible to search for all the bugs commented on by a specific Person
 using that Person's +commentedbugs page. Since No Privileges Person hasn't
@@ -481,7 +489,8 @@ bug 1357):
     [1, 1, 1]
 
 
-== Milestone lists in Person advanced bug search pages ==
+Milestone lists in Person advanced bug search pages
+---------------------------------------------------
 
 The lists of milestones to select from on bug search pages is
 calculated by doing an unmodified search (i.e. as if the user had gone
@@ -492,7 +501,8 @@ bug tasks found.
     >>> user = factory.makePerson()
 
 
-=== Related bugs ===
+Related bugs
+............
 
     >>> related_bugs_view = create_view(
     ...     user, '+bugs', {'advanced': 1})
@@ -537,7 +547,8 @@ search page allow selection of a milestone.
       'value': ...}]
 
 
-=== Reported bugs ===
+Reported bugs
+.............
 
 Similar behavior is found when searching for reported bugs.
 
@@ -568,7 +579,8 @@ milestone appear amongst the possible options.
       'value': ...}]
 
 
-=== Assigned bugs ===
+Assigned bugs
+.............
 
     >>> assigned_bugs_view = create_view(
     ...     user, '+assignedbugs', {'advanced': 1})
@@ -589,7 +601,8 @@ Once a bug has been assigned, the milestone appears.
       'value': ...}]
 
 
-=== Commented bugs ===
+Commented bugs
+..............
 
     >>> commented_bugs_view = create_view(
     ...     user, '+commentedbugs', {'advanced': 1})
@@ -611,7 +624,8 @@ Once the user has commented, the related milestone does appear.
       'value': ...}]
 
 
-=== Subscribed bugs ===
+Subscribed bugs
+...............
 
     >>> new_user = factory.makePerson()
     >>> subscribed_bugs_view = create_view(
