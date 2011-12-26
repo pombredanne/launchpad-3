@@ -17,7 +17,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
 
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -22,7 +22,7 @@ import subprocess
 import time
 
 from canonical.config import config
-from canonical.launchpad.webapp.url import urlsplit
+from lp.services.webapp.url import urlsplit
 from canonical.lazr.pidfile import (
     get_pid,
     make_pidfile,

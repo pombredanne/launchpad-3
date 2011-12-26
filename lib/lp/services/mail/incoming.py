@@ -29,15 +29,15 @@ from zope.interface import (
 from lp.services.mail.notification import (
     send_process_error_notification,
     )
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag

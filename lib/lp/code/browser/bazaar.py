@@ -16,11 +16,11 @@ import bzrlib
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.code.enums import CodeImportReviewStatus

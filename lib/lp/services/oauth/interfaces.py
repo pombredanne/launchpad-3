@@ -39,7 +39,7 @@ from zope.schema import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )

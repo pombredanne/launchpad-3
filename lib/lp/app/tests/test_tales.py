@@ -19,11 +19,11 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     clear_cache,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

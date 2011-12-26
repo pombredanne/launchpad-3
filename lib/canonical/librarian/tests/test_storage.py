@@ -8,7 +8,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation

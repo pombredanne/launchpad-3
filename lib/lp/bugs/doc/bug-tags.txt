@@ -69,7 +69,7 @@ Widgets
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bug import BugTagsWidget
     >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)

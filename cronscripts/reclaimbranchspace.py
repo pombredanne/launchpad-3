@@ -13,7 +13,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 from lp.code.interfaces.branchjob import (
     IReclaimBranchSpaceJobSource)
 from lp.services.job.runner import JobRunner

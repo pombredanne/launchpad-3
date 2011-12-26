@@ -25,12 +25,12 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     urlparse,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from canonical.lazr.feed import (
     FeedBase,
     FeedEntry,

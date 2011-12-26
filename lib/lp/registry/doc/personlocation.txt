@@ -6,7 +6,7 @@ zone of a person.  It also remembers who provided that information, and
 when. This is designed to make it possible to have people provide
 location / time zone info for other people in a wiki style.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.location import IObjectWithLocation
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)

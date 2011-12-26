@@ -20,17 +20,17 @@ from zope.interface import (
     )
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

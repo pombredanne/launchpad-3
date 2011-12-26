@@ -8,7 +8,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,

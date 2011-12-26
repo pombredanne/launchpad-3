@@ -3,8 +3,8 @@ LaunchpadView
 
 This is the base-class we should use for all View classes in Launchpad.
 
-    >>> from canonical.launchpad.webapp import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> class MyView(LaunchpadView):
     ...
@@ -97,7 +97,7 @@ an IStructuredString implementation.
     >>> print view.info_message
     None
 
-    >>> from canonical.launchpad.webapp.menu import structured
+    >>> from lp.services.webapp.menu import structured
     >>> view.error_message = structured(
     ...    'A structure is just "%s".', 'smoke & mirrors')
     >>> view.error_message.escapedtext

@@ -7,7 +7,7 @@ import unittest
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserRequest
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguageSet
 

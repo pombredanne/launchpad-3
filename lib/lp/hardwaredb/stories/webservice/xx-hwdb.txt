@@ -1320,7 +1320,7 @@ We can additionally ask for bugsubscribers...
 or users affected by a bug.
 
     >>> from lp.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')

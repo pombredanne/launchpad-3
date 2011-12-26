@@ -20,11 +20,11 @@ from zope.formlib import form
 from zope.schema import Date
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.errors import UnexpectedFormData
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.date import DateWidget

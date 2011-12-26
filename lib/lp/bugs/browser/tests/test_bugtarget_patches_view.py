@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from lp.testing import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import BugsPatchesView
 from lp.bugs.browser.bugtask import (

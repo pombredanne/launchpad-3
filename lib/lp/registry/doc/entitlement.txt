@@ -9,7 +9,7 @@ arrangement or through a grant that applies to everyone.
     >>> import pytz
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.testing import login
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.entitlement import (
     ...     EntitlementQuota,
     ...     EntitlementState,

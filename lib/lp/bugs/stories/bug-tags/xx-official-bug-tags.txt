@@ -89,7 +89,7 @@ Official Tags on Bug Pages
 Official tags are displayed using a different style from unofficial ones.
 They are grouped together at the beginning of the list.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
     >>> login('foo.bar@canonical.com')

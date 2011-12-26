@@ -96,7 +96,7 @@ We need a feature flag so that multi-pillar bugs can be made private.
     >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', firefox_svg_bug)
     False

@@ -17,11 +17,11 @@ from operator import attrgetter
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.webapp import Navigation
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp import Navigation
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

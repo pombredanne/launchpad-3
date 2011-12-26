@@ -18,7 +18,7 @@ from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 
 from lp import _
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IMultiLineWidgetLayout,
     IPasswordEncryptor,
     )
@@ -70,7 +70,7 @@ class PasswordChangeWidget(PasswordWidget):
     def getInputValue(self):
         """Ensure both text boxes contain the same value and inherited checks
 
-        >>> from canonical.launchpad.webapp.servers import (
+        >>> from lp.services.webapp.servers import (
         ...     LaunchpadTestRequest)
         >>> from zope.schema import Field
         >>> field = Field(__name__='foo', title=u'Foo')

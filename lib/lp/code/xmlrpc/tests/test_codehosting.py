@@ -22,7 +22,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc import faults
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

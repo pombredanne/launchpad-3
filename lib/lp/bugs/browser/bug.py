@@ -64,7 +64,7 @@ from lp.services.searchbuilder import (
     any,
     greater_than,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     LaunchpadView,
@@ -74,11 +74,11 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )

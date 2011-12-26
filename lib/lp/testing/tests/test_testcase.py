@@ -12,7 +12,7 @@ import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

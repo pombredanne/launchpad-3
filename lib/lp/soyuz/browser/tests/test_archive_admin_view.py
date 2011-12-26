@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from lp.testing import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveAdminView
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

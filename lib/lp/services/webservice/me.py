@@ -16,7 +16,7 @@ from lazr.restful.interfaces import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

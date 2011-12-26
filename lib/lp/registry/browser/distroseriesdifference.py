@@ -26,13 +26,13 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     LaunchpadView,
     Navigation,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.launchpadform import custom_widget
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.launchpadform import custom_widget
 from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,

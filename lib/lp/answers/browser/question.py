@@ -64,7 +64,7 @@ from lp.services.worlddata.helpers import (
 from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     ContextMenu,
@@ -74,10 +74,10 @@ from canonical.launchpad.webapp import (
     Navigation,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.webapp.menu import structured
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import (
     QuestionAction,

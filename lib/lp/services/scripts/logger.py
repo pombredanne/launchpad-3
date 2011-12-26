@@ -46,7 +46,7 @@ from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     globalErrorUtility,
     ScriptRequest,
     )

@@ -334,7 +334,7 @@ BugzillaLPPlugin implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True

@@ -16,7 +16,7 @@
     </securedutility>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        provides="lp.services.webapp.interfaces.ICanonicalUrlData"
         for="lp.services.feeds.interfaces.IFeedsApplication"
         factory="lp.services.feeds.browser.FeedsRootUrlData"
         />
@@ -45,7 +45,7 @@
         for="zope.exceptions.IUnauthorized"
         name="index.html"
         permission="zope.Public"
-        class="canonical.launchpad.webapp.login.FeedsUnauthorizedView"
+        class="lp.services.webapp.login.FeedsUnauthorizedView"
         attribute="__call__"
         layer="lp.layers.FeedsLayer"
         />

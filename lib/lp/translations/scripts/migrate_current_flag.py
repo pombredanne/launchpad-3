@@ -22,7 +22,7 @@ from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

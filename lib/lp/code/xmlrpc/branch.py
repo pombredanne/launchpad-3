@@ -25,11 +25,11 @@ from zope.interface import (
     )
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 from lp.app.errors import NotFoundError

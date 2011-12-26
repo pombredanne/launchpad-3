@@ -8,8 +8,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,

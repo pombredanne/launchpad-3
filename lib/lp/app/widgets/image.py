@@ -26,7 +26,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.services.fields import KEEP_SAME_IMAGE

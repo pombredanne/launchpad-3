@@ -19,12 +19,12 @@ from zope.security.checker import (
     defineChecker,
     )
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadRoot,
     )
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import get_current_browser_request
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,

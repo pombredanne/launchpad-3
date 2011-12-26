@@ -37,7 +37,7 @@ from lp.services.looptuner import (
     ITunableLoop,
     LoopTuner,
     )
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )

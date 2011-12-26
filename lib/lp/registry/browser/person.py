@@ -136,7 +136,7 @@ from lp.services.mail.interfaces import (
     UnknownRecipientError,
     )
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     ContextMenu,
@@ -149,15 +149,15 @@ from canonical.launchpad.webapp import (
     stepto,
     structured,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     IOpenLaunchBag,
     )
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import get_current_view
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet

@@ -61,7 +61,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.services.helpers import english_list
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
@@ -69,13 +69,13 @@ from canonical.launchpad.webapp import (
     Navigation,
     stepthrough,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IStructuredString,
     )
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.menu import (
     NavigationMenu,
     structured,
     )

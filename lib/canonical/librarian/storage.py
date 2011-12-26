@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.config import dbconfig
 from canonical.database.postgresql import ConnectionString
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.services.database import write_transaction
 

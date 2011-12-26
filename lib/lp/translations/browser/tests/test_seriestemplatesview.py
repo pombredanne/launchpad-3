@@ -10,8 +10,8 @@ import re
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries

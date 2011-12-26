@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet

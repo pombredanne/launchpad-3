@@ -66,7 +66,7 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
@@ -76,10 +76,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import (
     NavigationMenu,
     structured,
     )

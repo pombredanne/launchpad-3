@@ -23,9 +23,9 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
 from lp.registry.interfaces.person import (
     IPersonSet,

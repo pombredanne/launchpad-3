@@ -11,7 +11,7 @@ from random import randint
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,

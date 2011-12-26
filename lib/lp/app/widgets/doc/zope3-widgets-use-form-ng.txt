@@ -10,7 +10,7 @@ the form value.
 
 The monkey patch is installed by default:
 
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from lp.services.webapp.servers import (
     ...     Zope3WidgetsUseIBrowserFormNGMonkeyPatch)
     >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.installed
     True
@@ -20,7 +20,7 @@ exception:
 
     >>> import zope.schema as schema
     >>> from zope.app.form.browser import IntWidget, TextWidget
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.uninstall()
 

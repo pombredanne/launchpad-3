@@ -28,8 +28,8 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,

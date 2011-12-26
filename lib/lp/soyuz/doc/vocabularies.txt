@@ -11,7 +11,7 @@ style widget) "speaks", i.e., its allowed values.
     >>> from zope.component import getUtility
     >>> from lp.testing import login
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> person_set = getUtility(IPersonSet)
@@ -168,8 +168,8 @@ PPA
 The PPA vocabulary contains all the PPAs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.vocabulary import IHugeVocabulary
 
     >>> vocabulary = get_naked_vocab(None, 'PPA')
     >>> verifyObject(IHugeVocabulary, vocabulary)

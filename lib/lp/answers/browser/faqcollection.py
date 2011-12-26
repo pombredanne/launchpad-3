@@ -13,13 +13,13 @@ __all__ = [
 from urllib import urlencode
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import enabled_with_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.menu import enabled_with_permission
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionSort,

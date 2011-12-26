@@ -23,13 +23,13 @@ from zope.security.management import restoreInteraction
 from zope.security.proxy import removeSecurityProxy
 
 import lp.layers as layers
-from canonical.launchpad.webapp import urlsplit
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp import urlsplit
+from lp.services.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.servers import ProtocolErrorPublication
 
 
 # Defines an helper function that returns the appropriate

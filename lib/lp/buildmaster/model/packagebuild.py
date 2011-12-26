@@ -34,7 +34,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
 from lp.services.helpers import filenameToContentType
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

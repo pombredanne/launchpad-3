@@ -16,14 +16,14 @@ from zope.interface import Interface
 
 from canonical.database.constants import UTC_NOW
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     GetitemNavigation,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

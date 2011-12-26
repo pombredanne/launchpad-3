@@ -112,20 +112,20 @@ from canonical.config.fixture import (
     )
 from canonical.database.sqlbase import session_store
 from lp.services.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     LaunchpadPermissiveSecurityPolicy,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IOpenLaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.servers import (
+from lp.services.webapp.servers import (
     LaunchpadAccessLogger,
     register_launchpad_request_publication_factories,
     )
-import canonical.launchpad.webapp.session
+import lp.services.webapp.session
 from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
@@ -795,7 +795,7 @@ class DatabaseLayer(BaseLayer):
         cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
-        from canonical.launchpad.webapp.adapter import StoreSelector
+        from lp.services.webapp.adapter import StoreSelector
         while StoreSelector.get_current() is not None:
             BaseLayer.flagTestIsolationFailure(
                 "Database policy %s still installed"
@@ -1039,7 +1039,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
         """
         if LaunchpadLayer._raw_sessiondb_connection is None:
             from storm.uri import URI
-            from canonical.launchpad.webapp.adapter import (
+            from lp.services.webapp.adapter import (
                 LaunchpadSessionDatabase)
             launchpad_session_database = LaunchpadSessionDatabase(
                 URI('launchpad-session:'))
@@ -1111,7 +1111,7 @@ class FunctionalLayer(BaseLayer):
 
         # Access the cookie manager's secret to get the cache populated.
         # If we don't, it may issue extra queries depending on test order.
-        canonical.launchpad.webapp.session.idmanager.secret
+        lp.services.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
         # they'd be set up by set_up_functional_test().setUp(). Since
         # they're defined by Python code, we need to call that code
@@ -1375,7 +1375,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @profiled
     def testSetUp(cls):
         # Reset any statistics
-        from canonical.launchpad.webapp.opstats import OpStats
+        from lp.services.webapp.opstats import OpStats
         OpStats.resetStats()
 
         # Connect Storm
@@ -1389,7 +1389,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         endInteraction()
 
         # Reset any statistics
-        from canonical.launchpad.webapp.opstats import OpStats
+        from lp.services.webapp.opstats import OpStats
         OpStats.resetStats()
 
         # Disconnect Storm so it doesn't get in the way of database resets

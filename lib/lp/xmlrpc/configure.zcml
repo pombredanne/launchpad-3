@@ -15,7 +15,7 @@
   </securedutility>
 
   <xmlrpc:view
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      for="lp.services.webapp.interfaces.ILaunchpadRoot"
       interface="lp.xmlrpc.application.ISelfTest"
       class="lp.xmlrpc.application.SelfTest"
       permission="zope.Public"

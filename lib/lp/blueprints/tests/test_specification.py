@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,

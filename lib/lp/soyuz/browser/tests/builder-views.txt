@@ -4,7 +4,7 @@
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
 

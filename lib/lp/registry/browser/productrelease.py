@@ -34,7 +34,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,

@@ -37,7 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from storm.store import Store
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet

@@ -13,7 +13,7 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.answers.enums import (
     QuestionAction,
     QuestionRecipientSet,

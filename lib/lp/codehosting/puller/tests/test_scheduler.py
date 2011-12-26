@@ -29,7 +29,7 @@ from twisted.protocols.basic import NetstringParseError
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from canonical.testing import (
     reset_logging,
     ZopelessAppServerLayer,

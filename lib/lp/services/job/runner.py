@@ -57,7 +57,7 @@ from canonical.config import (
     dbconfig,
     )
 from lp.services import scripts
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,

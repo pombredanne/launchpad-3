@@ -61,9 +61,9 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interaction import setupInteraction
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import errorlog
+from lp.services.webapp.interaction import setupInteraction
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IPlacelessAuthUtility,
     IStoreSelector,

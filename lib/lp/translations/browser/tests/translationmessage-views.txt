@@ -8,7 +8,7 @@ ITranslationMessage object.
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.publisher import TranslationsLayer
 

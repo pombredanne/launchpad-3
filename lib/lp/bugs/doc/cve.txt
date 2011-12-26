@@ -119,7 +119,7 @@ ICveSet.getBugCvesForBugTasks:
 This method is used in the CVEReportView:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> cve_report = getMultiAdapter((ubuntu, request), name="+cve")
     >>> cve_report.initialize()

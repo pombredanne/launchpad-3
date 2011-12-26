@@ -9,7 +9,7 @@ from textwrap import dedent
 
 from canonical.config import config
 from lp.testing import login_person
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
 from lp.testing import TestCaseWithFactory

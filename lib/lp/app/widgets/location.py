@@ -28,7 +28,7 @@ from zope.schema import (
 
 from canonical.config import config
 from lp import _
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     ILaunchBag,
     IMultiLineWidgetLayout,
     )

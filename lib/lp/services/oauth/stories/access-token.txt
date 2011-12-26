@@ -7,7 +7,7 @@ access token.
     # First we create a new request token and review it.
     >>> from zope.component import getUtility
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.testing import login, logout

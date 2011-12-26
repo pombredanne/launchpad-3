@@ -51,11 +51,11 @@ from lp.services.mail.helpers import (
     get_email_template,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     urlappend,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

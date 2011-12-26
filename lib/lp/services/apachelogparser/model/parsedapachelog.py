@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

@@ -29,7 +29,7 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp.services.helpers import shortlist
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -39,7 +39,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     stepthrough,
     )
-from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
+from lp.services.webapp.breadcrumb import TitleBreadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -30,13 +30,13 @@ from zope.security.management import (
     thread_local as zope_security_thread_local,
     )
 
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.vhosts import allvhosts
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.utils import decorate_with
 from lp.testing.sampledata import ADMIN_EMAIL

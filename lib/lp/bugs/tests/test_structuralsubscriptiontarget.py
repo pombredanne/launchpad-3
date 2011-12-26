@@ -16,8 +16,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

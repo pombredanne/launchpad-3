@@ -19,7 +19,7 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 from lp.app.interfaces.headings import (
     IEditableContextTitle,

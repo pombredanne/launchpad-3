@@ -28,7 +28,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.daemons.tachandler import TacTestSetup
+from lp.services.daemons.tachandler import TacTestSetup
 from canonical.testing.layers import (
     ZopelessAppServerLayer,
     ZopelessDatabaseLayer,

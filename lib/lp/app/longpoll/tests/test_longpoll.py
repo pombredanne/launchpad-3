@@ -15,7 +15,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.longpoll import (
     emit,

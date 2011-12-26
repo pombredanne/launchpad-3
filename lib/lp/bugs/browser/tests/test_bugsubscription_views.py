@@ -13,8 +13,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,

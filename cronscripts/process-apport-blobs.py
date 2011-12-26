@@ -11,7 +11,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.webapp import errorlog
+from lp.services.webapp import errorlog
 
 from lp.services.job.runner import JobCronScript
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource

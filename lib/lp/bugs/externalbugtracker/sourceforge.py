@@ -11,7 +11,7 @@ import urllib
 
 from BeautifulSoup import BeautifulSoup
 
-from canonical.launchpad.webapp import urlsplit
+from lp.services.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     ExternalBugTracker,

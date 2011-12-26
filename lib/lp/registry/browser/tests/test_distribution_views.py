@@ -7,7 +7,7 @@ import soupmatchers
 from zope.component import getUtility
 
 from lp.testing import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView

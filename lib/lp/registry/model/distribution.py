@@ -58,7 +58,7 @@ from lp.app.interfaces.launchpad import (
     IHasMugshot,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.url import urlparse
+from lp.services.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (

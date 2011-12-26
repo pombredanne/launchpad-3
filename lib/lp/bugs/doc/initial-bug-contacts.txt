@@ -426,7 +426,7 @@ The list of teams that a user may add to a package as a bug supervisor
 will only contain those teams of which the user is an administrator.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

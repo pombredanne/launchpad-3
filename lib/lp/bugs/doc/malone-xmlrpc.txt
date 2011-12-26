@@ -235,7 +235,7 @@ for authentication with external bug trackers.
     >>> from zope.component import getUtility
     >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.bugs.interfaces.malone import IPrivateMaloneApplication
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(IPrivateMaloneApplication,
@@ -247,7 +247,7 @@ the ID of the new LoginToken.
 
     >>> from lp.services.verification.interfaces.logintoken import (
     ...     ILoginTokenSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTrackerTokenAPI)
     >>> from lp.bugs.xmlrpc.bug import (

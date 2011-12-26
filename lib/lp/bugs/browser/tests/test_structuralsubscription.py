@@ -12,7 +12,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
