@@ -10,12 +10,7 @@ import sys
 
 import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
-from zope.component import (
-    getSiteManager,
-    getUtility,
-    queryUtility,
-    )
-from zope.error.interfaces import IErrorReportingUtility
+from zope.component import getUtility
 
 from lp.services.webapp import errorlog
 from canonical.testing.layers import (
@@ -61,17 +56,6 @@ class TestCaptureOops(TestCaseWithFactory):
 
     layer = FunctionalLayer
 
-    def setUp(self):
-        super(TestCaptureOops, self).setUp()
-        eru = queryUtility(IErrorReportingUtility)
-        if eru is None:
-            # Register an Error reporting utility for this layer.
-            # This will break tests when run with an ERU already registered.
-            self.eru = errorlog.ErrorReportingUtility()
-            sm = getSiteManager()
-            sm.registerUtility(self.eru)
-            self.addCleanup(sm.unregisterUtility, self.eru)
-
     def trigger_oops(self):
         try:
             raise AssertionError("Exception to get a traceback.")
@@ -91,7 +75,9 @@ class TestCaptureOops(TestCaseWithFactory):
         self.assertEqual(
             ["oops-0"], [a for a in self.getDetails() if "oops" in a])
 
-    def test_two_oops_gives_two_details(self):
+    def xxxtest_two_oops_gives_two_details(self):
+        # XXX sinzui 2011-12-26: bug=908799: This test intermittently
+        # fails because there is only one oops.
         self.assertEqual(0, len(self.oopses))
         self.trigger_oops()
         self.trigger_oops()
