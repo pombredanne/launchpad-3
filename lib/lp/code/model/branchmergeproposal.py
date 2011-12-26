@@ -698,8 +698,7 @@ class BranchMergeProposal(SQLBase):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Until these are moved into the lp module, import here to avoid
-        # circular dependencies from canonical.launchpad.database.__init__.py
+        # Avoid circular dependencies.
         from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(

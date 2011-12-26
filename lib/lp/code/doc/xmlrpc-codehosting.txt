@@ -9,7 +9,7 @@ XMLRPC instance.
     >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.code.interfaces.codehosting import (
     ...     ICodehostingApplication)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(
@@ -19,7 +19,7 @@ XMLRPC instance.
 
 The CodehostingAPI view provides the ICodehostingAPI XML-RPC API:
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codehosting import ICodehostingAPI
     >>> from lp.code.xmlrpc.codehosting import CodehostingAPI
 

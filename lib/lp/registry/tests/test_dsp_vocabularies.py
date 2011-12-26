@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.testing import TestCaseWithFactory

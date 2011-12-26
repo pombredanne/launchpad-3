@@ -10,8 +10,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,

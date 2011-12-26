@@ -18,7 +18,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.services.scripts.logger import log as default_log
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     urlappend,
     urlsplit,
     )

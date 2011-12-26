@@ -11,7 +11,7 @@ are associated to distributions or products. The IFAQTarget interface is
 provided by objects that can host FAQs.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> from lp.answers.interfaces.faqtarget import IFAQTarget
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -35,7 +35,7 @@ contacts.)
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> sample_person = getUtility(ILaunchBag).user
     >>> print firefox.owner.displayname
     Sample Person
@@ -175,7 +175,7 @@ IFAQ permissions
 
 Only the project owners or answer contacts can edit an IFAQ.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.Edit', firefox_faq)
@@ -200,7 +200,7 @@ Answer contacts can also edit FAQs:
     >>> firefox.addAnswerContact(no_priv, no_priv)
     True
 
-    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> from lp.services.webapp.authorization import clear_cache
     >>> clear_cache()
     >>> check_permission('launchpad.Edit', firefox_faq)
     True

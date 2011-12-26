@@ -16,7 +16,7 @@ were updated since the export date for the associate FULL export.
     >>> from lp.translations.interfaces.languagepack import (
     ...     ILanguagePack,
     ...     ILanguagePackSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
 Let's upload a dummy file to librarian.

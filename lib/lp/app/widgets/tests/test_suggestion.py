@@ -21,8 +21,8 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
     IHugeVocabulary,
     )

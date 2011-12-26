@@ -14,7 +14,7 @@ __all__ = [
 from zope.interface import Attribute
 from zope.schema import Object
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 

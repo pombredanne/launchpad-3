@@ -94,7 +94,7 @@ from lp.services.searchbuilder import (
     not_equals,
     NULL,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     ILaunchBag,
     IStoreSelector,

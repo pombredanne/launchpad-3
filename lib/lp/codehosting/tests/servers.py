@@ -24,7 +24,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.daemons.tachandler import TacTestSetup
+from lp.services.daemons.tachandler import TacTestSetup
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,

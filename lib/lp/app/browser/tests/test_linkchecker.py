@@ -10,7 +10,7 @@ from random import shuffle
 import simplejson
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.linkchecker import LinkCheckerAPI
 from lp.testing import TestCaseWithFactory

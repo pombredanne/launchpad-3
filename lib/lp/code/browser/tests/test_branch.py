@@ -16,8 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

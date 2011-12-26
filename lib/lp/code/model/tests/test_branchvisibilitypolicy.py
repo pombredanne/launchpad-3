@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (

@@ -140,11 +140,11 @@ Only bug feeds should be linked to on bugs.launchpad.dev.
 Since the link title attribute contains the displayname of the prodect,
 it must have quotes and html escaped.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.product import (
     ...     IProductSet,
     ...     License,

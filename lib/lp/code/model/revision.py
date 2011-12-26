@@ -64,7 +64,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

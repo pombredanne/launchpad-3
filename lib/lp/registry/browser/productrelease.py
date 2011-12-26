@@ -33,8 +33,8 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,

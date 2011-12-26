@@ -19,7 +19,7 @@ from twisted.web.xmlrpc import Proxy
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.daemons import readyservice
+from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 
 from lp.poppy import get_poppy_root

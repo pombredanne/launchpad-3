@@ -18,8 +18,8 @@ from bzrlib.patches import (
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp import canonical_url
+from lp.services.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

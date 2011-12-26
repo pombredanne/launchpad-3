@@ -38,12 +38,12 @@ from zope.interface import (
     )
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias

@@ -10,7 +10,7 @@ adaptation.
 First, we'll construct an example object hierarchy.
 
     >>> from zope.interface import implements, Interface
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> from lp.services.webapp.interfaces import ICanonicalUrlData
 
     >>> class ICookbook(Interface):
     ...     pass

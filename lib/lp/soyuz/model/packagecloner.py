@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

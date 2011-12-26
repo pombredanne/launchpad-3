@@ -27,9 +27,9 @@ from zope.security.interfaces import Unauthorized
 from lp.services.mail.notification import (
     send_process_error_notification,
     )
-from canonical.launchpad.webapp import urlparse
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp import urlparse
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.code.bzr import get_branch_formats
 from lp.code.enums import (
     BranchType,

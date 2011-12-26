@@ -73,16 +73,16 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
     stepto,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import (
     ContextMenu,
     enabled_with_permission,
     Link,

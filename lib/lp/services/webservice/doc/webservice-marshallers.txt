@@ -7,8 +7,8 @@ fields. This is similar to Zope's widget interface, but much smaller.
 To test the various marshallers we create a dummy request and
 application root.
 
-    >>> from canonical.launchpad.webapp.adapter import set_request_started
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from lp.services.webapp.adapter import set_request_started
+    >>> from lp.services.webapp.servers import (
     ...     WebServicePublication,
     ...     WebServiceTestRequest,
     ...     )
@@ -18,9 +18,9 @@ application root.
     >>> login(ANONYMOUS, request)
     >>> request.processInputs()
 
-    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> from lp.systemhomes import WebServiceApplication
     >>> root = WebServiceApplication()
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(root)
 
 

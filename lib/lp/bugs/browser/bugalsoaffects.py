@@ -29,10 +29,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

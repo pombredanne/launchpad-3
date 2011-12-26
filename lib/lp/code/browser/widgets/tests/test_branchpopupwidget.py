@@ -14,14 +14,14 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.ftests import (
+from lp import _
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.browser.widgets.branch import (
     BranchPopupWidget,

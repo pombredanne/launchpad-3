@@ -30,14 +30,14 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     )
 from canonical.lazr.testing.event import TestEventListener
-from canonical.launchpad.webapp.authorization import clear_cache
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.authorization import clear_cache
+from lp.services.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionAction,

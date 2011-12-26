@@ -11,7 +11,7 @@ __all__ = [
 
 from collections import namedtuple
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.features.flags import (
     flag_info,
     undocumented_flags,

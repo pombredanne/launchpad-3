@@ -10,7 +10,7 @@ from lp.services.mail.helpers import (
     get_email_template,
     )
 from lp.services.mail.notification import get_unified_diff
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper

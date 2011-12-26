@@ -10,11 +10,11 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson,

@@ -18,7 +18,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,

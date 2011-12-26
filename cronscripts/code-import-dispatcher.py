@@ -13,7 +13,7 @@ from xmlrpclib import ServerProxy
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class CodeImportDispatcherScript(LaunchpadScript):

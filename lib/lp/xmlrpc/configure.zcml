@@ -15,14 +15,14 @@
   </securedutility>
 
   <xmlrpc:view
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      for="lp.services.webapp.interfaces.ILaunchpadRoot"
       interface="lp.xmlrpc.application.ISelfTest"
       class="lp.xmlrpc.application.SelfTest"
       permission="zope.Public"
       />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.CodehostingApplication"
+    class="lp.systemhomes.CodehostingApplication"
     provides="lp.code.interfaces.codehosting.ICodehostingApplication">
     <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>
   </securedutility>
@@ -35,7 +35,7 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
+    class="lp.systemhomes.CodeImportSchedulerApplication"
     provides="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication">
     <allow interface="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"/>
   </securedutility>
@@ -48,7 +48,7 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.PrivateMaloneApplication"
+    class="lp.systemhomes.PrivateMaloneApplication"
     provides="lp.bugs.interfaces.malone.IPrivateMaloneApplication">
     <allow interface="lp.bugs.interfaces.malone.IPrivateMaloneApplication"/>
   </securedutility>

@@ -12,7 +12,7 @@ import simplejson
 from zope.component import getUtility
 
 from lp.services.searchbuilder import any
-from canonical.launchpad.webapp import LaunchpadView
+from lp.services.webapp import LaunchpadView
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

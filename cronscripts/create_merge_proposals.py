@@ -17,7 +17,7 @@ from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,)
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RunCreateMergeProposalJobs(LaunchpadCronScript):

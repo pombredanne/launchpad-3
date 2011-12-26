@@ -13,8 +13,8 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     action,
     canonical_url,
     LaunchpadEditFormView,

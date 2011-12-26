@@ -16,9 +16,9 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,

@@ -44,9 +44,6 @@ def handle_zcml(
             continue
         migrate_zcml(old_top, old_path, new_path)
         dummy, file_name = os.path.split(old_path)
-        rewrite_zcml_class_paths(
-            old_top, new_path, file_name, app_members, app_name)
-        create_browser_zcml(app_name, new_path, file_name, app_members)
         not_moved.remove(lib_path)
     package_names = consolidate_app_zcml(app_name, new_path)
     register_zcml(package_names, old_top)
@@ -62,89 +59,6 @@ def migrate_zcml(old_top, old_path, new_path):
     for dummy in find_matches(
         old_zcml_dir, 'configure.zcml', delete_pattern, substitution=''):
         print "    Removed old configure include."
-
-
-def rewrite_zcml_class_paths(old_top, new_path,
-                             file_name, app_members, app_name):
-    """Rewrite app classes to use relative paths."""
-    abs_lib = 'canonical\.launchpad'
-    module_name, dummy = os.path.splitext(file_name)
-    for package_name in app_members:
-        try:
-            members = '|'.join(app_members[package_name][module_name])
-        except KeyError:
-            old_module_path = os.path.join(
-                old_top, package_name, '%s.py' % module_name)
-            if os.path.isfile(old_module_path):
-                print '    ** missing %s.%s' % (package_name, module_name)
-            continue
-        module_pattern = r'\b%s(\.%s\.)(?:\w*\.)?(%s)\b' % (
-            abs_lib, package_name, members)
-        substitution = r'lp.%s\1%s.\2' % (app_name, module_name)
-        for dummy in find_matches(
-            new_path, file_name, module_pattern, substitution=substitution):
-            # This function is an iterator, but we do not care about the
-            # summary of what is changed.
-            pass
-    # Update the menu and navigation directives.
-    module_pattern = r'module="canonical.launchpad.browser"'
-    substitution = r'module="lp.%s.browser.%s"' % (app_name, module_name)
-    for dummy in find_matches(
-        new_path, file_name, module_pattern, substitution=substitution):
-        pass
-
-
-def create_browser_zcml(app_name, new_path, file_name, app_members):
-    """Extract browser ZCML to the browser/ directory."""
-    module_name, dummy = os.path.splitext(file_name)
-    browser_module_name = '.browser.%s' % module_name
-    new_file_path = os.path.join(new_path, file_name)
-    source = open(new_file_path)
-    try:
-        parser = etree.XMLParser(remove_blank_text=True)
-        tree = etree.parse(source, parser)
-    finally:
-        source.close()
-    doc = tree.getroot()
-    browser_doc = etree.fromstring(EMPTY_ZCML)
-    # Move the facet browser directives first.
-    for facet_node in doc.xpath('./zope:facet', namespaces=namespaces):
-        facet = facet_node.get('facet')
-        browser_facet = etree.Element('facet', facet=facet)
-        for node in facet_node.xpath('./browser:*', namespaces=namespaces):
-            facet_node.remove(node)
-            browser_facet.append(node)
-        if len(browser_facet) > 0:
-            browser_doc.append(browser_facet)
-    # All remaining browser directives can be moved.
-    for node in doc.xpath('./browser:*', namespaces=namespaces):
-        doc.remove(node)
-        browser_doc.append(node)
-    # Split the menus directive into two nodes, one for the this app, and
-    # one for the old Launchpad app.
-    module_class_path = "lp.%s.browser.%s" % (app_name, module_name)
-    other_class_path = "canonical.launchpad.browser"
-    for node in browser_doc.xpath('./browser:menus', namespaces=namespaces):
-        app_menus = []
-        other_menus = []
-        module_members = app_members['browser'][module_name]
-        for menu in node.get('classes').split():
-            if menu in module_members:
-                app_menus.append(menu)
-            else:
-                other_menus.append(menu)
-        if len(other_menus) > 0:
-            browser_doc.append(
-                create_menu_node(other_class_path, other_menus))
-        if len(app_menus) > 0:
-            browser_doc.append(
-                create_menu_node(module_class_path, app_menus))
-        browser_doc.remove(node)
-    # Only save the browser and other doc if information was put into them.
-    if len(browser_doc) > 0:
-        file_path = os.path.join(new_path, 'browser', file_name)
-        write_zcml_file(file_path, browser_doc)
-        write_zcml_file(new_file_path, doc)
 
 
 def create_menu_node(module, menus):

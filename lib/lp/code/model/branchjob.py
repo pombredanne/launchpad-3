@@ -60,11 +60,11 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     errorlog,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

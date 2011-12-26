@@ -17,7 +17,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
+from lp.services.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country

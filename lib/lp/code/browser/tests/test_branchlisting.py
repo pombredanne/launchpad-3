@@ -20,8 +20,8 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.branchlisting import (

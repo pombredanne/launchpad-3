@@ -10,8 +10,8 @@ __metaclass__ = type
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

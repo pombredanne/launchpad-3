@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import ensure_unicode
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

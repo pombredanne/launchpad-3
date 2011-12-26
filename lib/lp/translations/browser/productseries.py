@@ -24,17 +24,17 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.helpers import is_tar_filename
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

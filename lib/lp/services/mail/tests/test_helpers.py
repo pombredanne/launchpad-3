@@ -12,7 +12,7 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.webapp.interaction import get_current_principal
+from lp.services.webapp.interaction import get_current_principal
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,

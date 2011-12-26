@@ -12,9 +12,9 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.layers import setFirstLayer
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import (

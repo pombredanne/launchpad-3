@@ -33,7 +33,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
 
 # Set the expires attribute to this constant to flag a file that

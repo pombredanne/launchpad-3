@@ -189,7 +189,7 @@ class RabbitUnreliableSession(RabbitSession):
         except self.suppressed_errors:
             pass
         except Exception:
-            from canonical.launchpad.webapp import errorlog
+            from lp.services.webapp import errorlog
             errorlog.globalErrorUtility.raising(sys.exc_info())
 
 

@@ -26,7 +26,7 @@ The zcml `browser:feeds` directive describes a feed view.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
     ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:feeds
     ...       module="lp.services.feeds.tests.helper"
@@ -38,8 +38,8 @@ The zcml `browser:feeds` directive describes a feed view.
 Get the view from a `thing` on 'thing-feed' for a request.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> request = LaunchpadTestRequest()
 
@@ -61,7 +61,7 @@ not be found.
 
 Set the layer on the request for all subsequent uses.
 
-    >>> from canonical.launchpad.layers import setFirstLayer, FeedsLayer
+    >>> from lp.layers import setFirstLayer, FeedsLayer
     >>> setFirstLayer(request, FeedsLayer)
 
 If the context object is not an IThing then the view will not be

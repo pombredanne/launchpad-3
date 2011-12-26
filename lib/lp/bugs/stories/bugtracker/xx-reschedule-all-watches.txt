@@ -5,7 +5,7 @@ It's possible for all the watches on a bug tracker to be rescheduled, in
 much the same way as it's possible to reschedule a single bug watch that
 is failing to update.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from lp.testing import login, logout
 

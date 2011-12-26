@@ -42,9 +42,9 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.feeds.browser import FeedsMixin
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     ContextMenu,
@@ -56,9 +56,9 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import NavigationMenu
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,

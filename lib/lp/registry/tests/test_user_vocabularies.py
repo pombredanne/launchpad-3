@@ -8,12 +8,12 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

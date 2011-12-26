@@ -31,17 +31,17 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import (
+from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.launchpadform import ReturnToReferrerMixin
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

@@ -17,12 +17,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc import faults
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

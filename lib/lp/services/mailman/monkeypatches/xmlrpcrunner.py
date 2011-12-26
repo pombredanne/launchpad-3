@@ -38,7 +38,7 @@ from Mailman.Queue.sbcache import get_switchboard
 
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.errorlog import ErrorReportingUtility
 from lp.services.xmlrpc import Transport
 
 

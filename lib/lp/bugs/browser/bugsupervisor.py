@@ -12,12 +12,12 @@ __all__ = [
 from lazr.restful.interface import copy_field
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.launchpadform import (
+from lp.services.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import canonical_url
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 

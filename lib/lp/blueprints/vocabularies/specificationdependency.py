@@ -20,11 +20,11 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     urlparse,
     )
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
     NamedSQLObjectVocabulary,

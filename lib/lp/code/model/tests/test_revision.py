@@ -19,12 +19,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )
 from lp.services.database.lpstorm import IMasterObject
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

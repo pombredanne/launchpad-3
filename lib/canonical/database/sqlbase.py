@@ -112,7 +112,7 @@ def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
     # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
     # around a particularly convoluted circular import.
-    from canonical.launchpad.webapp.interfaces import (
+    from lp.services.webapp.interfaces import (
             IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -540,7 +540,7 @@ def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
 
     def block_implicit_flushes_decorator(*args, **kwargs):
-        from canonical.launchpad.webapp.interfaces import DisallowedStore
+        from lp.services.webapp.interfaces import DisallowedStore
         try:
             store = _get_sqlobject_store()
         except DisallowedStore:

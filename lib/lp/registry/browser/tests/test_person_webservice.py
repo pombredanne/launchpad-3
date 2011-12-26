@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
+from lp.testing import login
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,

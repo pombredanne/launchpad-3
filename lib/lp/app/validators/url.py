@@ -14,8 +14,8 @@ __all__ = [
 from textwrap import dedent
 import urllib
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.url import urlparse
+from lp import _
+from lp.services.webapp.url import urlparse
 from lp.app.validators import LaunchpadValidationError
 
 

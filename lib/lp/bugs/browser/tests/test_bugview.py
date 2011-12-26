@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.testing import login
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bug import BugView
 from lp.testing import TestCaseWithFactory

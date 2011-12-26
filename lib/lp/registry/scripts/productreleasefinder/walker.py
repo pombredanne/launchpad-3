@@ -32,7 +32,7 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.launchpad.webapp.url import urlappend
+from lp.services.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
 
 

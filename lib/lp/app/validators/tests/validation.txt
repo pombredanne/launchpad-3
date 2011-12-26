@@ -3,7 +3,7 @@ Launchpad field validators
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet

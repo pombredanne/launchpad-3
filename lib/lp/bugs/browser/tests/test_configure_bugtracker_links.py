@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     )

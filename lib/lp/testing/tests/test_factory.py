@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

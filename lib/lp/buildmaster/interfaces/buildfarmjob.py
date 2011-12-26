@@ -32,7 +32,7 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.services.librarian.interfaces import ILibraryFileAlias

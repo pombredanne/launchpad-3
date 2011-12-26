@@ -23,7 +23,7 @@ from germinate.seeds import (
     )
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.dbpolicy import (
+from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )

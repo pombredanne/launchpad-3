@@ -20,7 +20,7 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

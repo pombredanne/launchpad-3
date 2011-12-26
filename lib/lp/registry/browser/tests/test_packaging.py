@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     login,
     logout,
     )

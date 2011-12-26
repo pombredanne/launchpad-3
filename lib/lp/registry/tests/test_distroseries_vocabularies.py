@@ -23,7 +23,7 @@ from zope.schema.interfaces import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.vocabularies import (

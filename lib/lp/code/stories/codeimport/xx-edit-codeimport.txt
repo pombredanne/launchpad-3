@@ -7,8 +7,8 @@ The code import details are displayed on the main branch page for imported
 branches. If the logged-in user is allowed to edit the code import then they
 can see a link to edit the details.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> from lp.services.webapp import canonical_url
 
     >>> login(ANONYMOUS)
     >>> registrant = factory.makePerson(password='test')

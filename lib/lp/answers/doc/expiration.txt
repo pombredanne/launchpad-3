@@ -42,7 +42,7 @@ somebody are subject to expiration.
     >>> now = datetime.now(UTC)
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')

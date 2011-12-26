@@ -22,8 +22,8 @@ These LoginTokens are used by Launchpad to authenticate with external
 bug trackers. We pass the token to the bug tracker and it then makes a
 POST request to the token's canonical URL to validate it.
 
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from lp.services.webapp import canonical_url
+    >>> from lp.services.webapp.servers import (
     ...     LaunchpadTestRequest)
     >>> test_request = LaunchpadTestRequest(method='POST')
     >>> token_url = canonical_url(

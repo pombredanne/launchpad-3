@@ -108,15 +108,15 @@ from lp.services.helpers import (
     shortlist,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.publisher import nearest
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.publisher import nearest
+from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
     FilteredVocabularyBase,

@@ -58,14 +58,14 @@ from canonical.database.sqlbase import (
     )
 from lp.services.mail.helpers import get_email_template
 from lp.services.database.lpstorm import IStore
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.readonly import is_read_only
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty

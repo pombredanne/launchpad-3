@@ -19,7 +19,7 @@ from zope.security.checker import (
     NamesChecker,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.inlinehelp.browser import HelpFolder
 
 

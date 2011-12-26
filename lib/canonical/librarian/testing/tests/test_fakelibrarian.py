@@ -12,7 +12,7 @@ from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.testing import verifyObject
+from lp.services.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.testing.fake import FakeLibrarian

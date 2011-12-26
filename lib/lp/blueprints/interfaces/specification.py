@@ -45,9 +45,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp import _
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (

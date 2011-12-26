@@ -10,8 +10,8 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.testing import login
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import (
     FileBugInlineFormView,

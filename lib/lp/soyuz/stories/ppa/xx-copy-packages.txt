@@ -108,7 +108,7 @@ for packages. This is certainly not part of the doctest story.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.services.librarian.interfaces import (

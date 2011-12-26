@@ -13,7 +13,7 @@ from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )

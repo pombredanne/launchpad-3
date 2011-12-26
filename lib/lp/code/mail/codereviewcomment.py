@@ -10,7 +10,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,

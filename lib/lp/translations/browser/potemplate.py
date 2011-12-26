@@ -42,8 +42,8 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.services.webapp import (
     action,
     canonical_url,
     enabled_with_permission,
@@ -55,13 +55,13 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     StandardLaunchpadFacets,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.menu import structured
+from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (

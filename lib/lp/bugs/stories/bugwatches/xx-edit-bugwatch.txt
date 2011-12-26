@@ -64,7 +64,7 @@ Next check column.
     >>> from datetime import datetime
     >>> from pytz import utc
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> login('foo.bar@canonical.com')

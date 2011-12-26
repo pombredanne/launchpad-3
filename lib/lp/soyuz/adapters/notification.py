@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.services.mail.helpers import get_email_template
-from canonical.launchpad.webapp import canonical_url
+from lp.services.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile

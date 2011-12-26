@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.services.mail.helpers import get_email_template
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError

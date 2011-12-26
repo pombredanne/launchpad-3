@@ -48,9 +48,9 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.app.errors import (
     NotFoundError,

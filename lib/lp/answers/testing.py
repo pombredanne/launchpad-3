@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.pillar import IPillarNameSet
 

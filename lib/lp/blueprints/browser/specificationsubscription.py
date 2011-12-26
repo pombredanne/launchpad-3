@@ -14,13 +14,13 @@ from lazr.delegates import delegates
 from simplejson import dumps
 from zope.component import getUtility
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import (
+from lp import _
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

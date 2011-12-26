@@ -22,7 +22,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.config import config
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import (
