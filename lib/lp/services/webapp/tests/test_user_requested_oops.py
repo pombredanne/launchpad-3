@@ -6,8 +6,6 @@ __metaclass__ = type
 
 
 from lazr.restful.utils import get_current_browser_request
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 
 from lp.services.webapp.errorlog import (
     LAZR_OOPS_USER_REQUESTED_KEY,
