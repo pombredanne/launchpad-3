@@ -23,7 +23,6 @@ from canonical.testing.layers import (
     )
 from lp.archivepublisher.scripts.generate_extra_overrides import (
     AtomicFile,
-    CachedDistroSeries,
     GenerateExtraOverrides,
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
@@ -315,7 +314,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             distroseries=distroseries, component="partner")
         script = self.makeScript(distro)
         self.assertEqual(1, len(script.series))
-        self.assertEqual(["main"], script.series[0].components)
+        self.assertEqual(["main"], script.getComponents(script.series[0]))
 
     def test_compose_output_path_in_germinateroot(self):
         # Output files are written to the correct locations under
@@ -383,8 +382,9 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         override_fd, override_path = tempfile.mkstemp()
         with os.fdopen(override_fd, "w") as override_file:
             script.germinateArch(
-                override_file, CachedDistroSeries(distroseries), arch,
-                flavours, structures)
+                override_file, distroseries.name,
+                script.getComponents(distroseries), arch, flavours,
+                structures)
         return file_contents(override_path).splitlines()
 
     def test_germinate_output(self):
