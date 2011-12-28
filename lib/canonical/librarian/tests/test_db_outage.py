@@ -14,7 +14,7 @@ from fixtures import Fixture
 
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.testing.layers import (
+from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
     )

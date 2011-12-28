@@ -8,7 +8,7 @@ __all__ = []
 
 import threading
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.testing import TestCase
 
 

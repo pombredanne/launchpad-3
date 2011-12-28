@@ -49,7 +49,7 @@ import subvertpy.client
 import subvertpy.ra
 
 from canonical.config import config
-from canonical.testing.layers import (
+from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
     )

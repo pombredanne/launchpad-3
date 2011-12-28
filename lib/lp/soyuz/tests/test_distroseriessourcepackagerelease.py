@@ -6,7 +6,7 @@
 from storm.store import Store
 from testtools.matchers import Equals
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,

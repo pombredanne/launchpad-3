@@ -11,7 +11,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 def setUp(test):

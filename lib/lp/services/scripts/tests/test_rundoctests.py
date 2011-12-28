@@ -6,7 +6,7 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import unittest
 
-from canonical.testing import reset_logging
+from lp.testing import reset_logging
 
 
 def tearDown(test):

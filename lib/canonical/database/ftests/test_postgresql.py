@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.testing.pgsql import PgTestSetup
 
 def setUp(test):

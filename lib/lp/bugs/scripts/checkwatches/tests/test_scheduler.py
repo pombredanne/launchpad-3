@@ -14,7 +14,7 @@ from pytz import utc
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus,
     IBugWatchSet,

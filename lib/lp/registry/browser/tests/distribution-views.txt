@@ -292,7 +292,7 @@ not appear.
 
 If the distribution officially uses the application, its portlet does appear.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
     >>> from lp.app.enums import ServiceUsage
 
     # When the cache regenerated, all users will see the change.

@@ -8,7 +8,7 @@ from textwrap import dedent
 from zope.interface.verify import verifyObject
 
 from lp.services.helpers import test_diff
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationexporter import (
     ITranslationFormatExporter,

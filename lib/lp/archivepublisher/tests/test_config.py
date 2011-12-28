@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.testing import TestCaseWithFactory
 

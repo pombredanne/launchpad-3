@@ -54,7 +54,7 @@ from lp.services.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

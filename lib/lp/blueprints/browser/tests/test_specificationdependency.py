@@ -9,7 +9,7 @@ There are also tests in lp/blueprints/stories/blueprints/xx-dependencies.txt.
 __metaclass__ = type
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import BrowserTestCase
 
 

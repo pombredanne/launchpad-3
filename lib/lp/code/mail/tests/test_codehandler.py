@@ -28,7 +28,7 @@ from lp.services.webapp.interaction import (
     setupInteraction,
     )
 from lp.services.webapp.interfaces import IPlacelessAuthUtility
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
     )

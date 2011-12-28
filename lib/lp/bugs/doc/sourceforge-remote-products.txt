@@ -43,7 +43,7 @@ try to access SourceForge.
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.tests.sfremoteproductfinder import (
     ...     TestSFRemoteProductFinder)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> finder = TestSFRemoteProductFinder(
     ...     txn=LaunchpadZopelessLayer.txn, logger=FakeLogger())
 

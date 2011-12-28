@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import NotFoundError
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet

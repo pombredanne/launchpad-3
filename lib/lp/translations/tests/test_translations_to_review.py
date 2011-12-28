@@ -14,7 +14,7 @@ from pytz import timezone
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.model.language import LanguageSet
 from lp.testing import TestCaseWithFactory

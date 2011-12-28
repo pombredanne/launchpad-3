@@ -15,7 +15,7 @@ from lp.testing import (
     login,
     )
 from lp.services.webapp.authorization import check_permission
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson,
     PersonCreationRationale,

@@ -11,7 +11,7 @@ from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

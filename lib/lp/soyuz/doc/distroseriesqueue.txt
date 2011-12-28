@@ -882,7 +882,7 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
 
 

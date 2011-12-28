@@ -14,7 +14,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.product import (
     IProduct,
     License,

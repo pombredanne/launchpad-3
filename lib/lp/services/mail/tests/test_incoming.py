@@ -15,7 +15,7 @@ from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import helpers
 from lp.services.mail.incoming import (

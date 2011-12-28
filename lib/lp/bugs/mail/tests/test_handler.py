@@ -19,7 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

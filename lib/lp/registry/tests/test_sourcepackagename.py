@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from testtools.testcase import ExpectedException
 
-from canonical.testing.layers import DatabaseLayer
+from lp.testing.layers import DatabaseLayer
 from lp.registry.errors import InvalidName
 from lp.registry.model.sourcepackagename import SourcePackageNameSet
 from lp.testing import TestCase

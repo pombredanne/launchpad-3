@@ -16,7 +16,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 
 

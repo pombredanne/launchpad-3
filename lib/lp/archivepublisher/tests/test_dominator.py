@@ -13,7 +13,7 @@ from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
     ArchSpecificPublicationsCache,
     contains_arch_indep,

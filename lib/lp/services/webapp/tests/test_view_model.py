@@ -15,7 +15,7 @@ from lp.services.webapp import LaunchpadView
 from lp.services.webapp.namespace import JsonModelNamespaceView
 from lp.services.webapp.publisher import canonical_url
 import lp.services.webapp.tests
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.testing import (
     ANONYMOUS,

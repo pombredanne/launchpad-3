@@ -10,7 +10,7 @@ __all__ = []
 import transaction
 
 from lp.testing import login_person
-from canonical.testing import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )

@@ -14,7 +14,7 @@ from canonical.database.sqlbase import (
     clear_current_connection_cache,
     flush_database_updates,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (

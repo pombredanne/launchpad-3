@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.testing import (
     person_logged_in,

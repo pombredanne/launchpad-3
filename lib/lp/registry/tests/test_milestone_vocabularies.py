@@ -13,7 +13,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet

@@ -30,10 +30,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.services.webapp import errorlog
-from canonical.testing import (
-    reset_logging,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -48,7 +44,11 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     ProcessTestsMixin,
     suppress_stderr,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    reset_logging,
+    TestCase,
+    )
+from lp.testing import ZopelessAppServerLayer
 
 
 class FakeCodehostingEndpointProxy:

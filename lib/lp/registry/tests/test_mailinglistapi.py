@@ -10,7 +10,7 @@ __all__ = []
 import transaction
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,

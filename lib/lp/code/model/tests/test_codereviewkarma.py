@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from lp.testing import login_person
 from canonical.lazr.testing.event import TestEventListener
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
 from lp.testing import TestCaseWithFactory

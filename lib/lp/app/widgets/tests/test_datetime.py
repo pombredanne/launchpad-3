@@ -4,7 +4,7 @@ from zope.app.form.interfaces import ConversionError
 from zope.schema import Field
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.date import DateTimeWidget
 from lp.testing import TestCase
 

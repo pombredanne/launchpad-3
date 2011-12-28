@@ -47,7 +47,7 @@ from lp.services.webapp.login import (
     OpenIDLogin,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     FunctionalLayer,

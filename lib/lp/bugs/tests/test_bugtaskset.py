@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,

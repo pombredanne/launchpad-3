@@ -12,7 +12,7 @@ from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.interfaces.launchpad import IPrivacy
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

@@ -9,7 +9,7 @@ import StringIO
 
 from canonical.config import config
 from lp.layers import WebServiceLayer
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.answers.publisher import (
     AnswersBrowserRequest,
     AnswersLayer,

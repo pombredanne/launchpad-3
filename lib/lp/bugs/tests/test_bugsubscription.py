@@ -12,7 +12,7 @@ from testtools.matchers import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (

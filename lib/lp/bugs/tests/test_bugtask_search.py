@@ -20,7 +20,7 @@ from lp.services.searchbuilder import (
     any,
     greater_than,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

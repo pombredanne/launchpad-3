@@ -10,7 +10,7 @@ import os.path
 from StringIO import StringIO
 
 from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
 from lp.translations.scripts.po_export_queue import ExportResult

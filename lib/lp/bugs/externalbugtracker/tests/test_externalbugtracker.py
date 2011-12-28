@@ -10,7 +10,7 @@ import urllib2
 
 from zope.interface import implements
 
-from canonical.testing.layers import ZopelessLayer
+from lp.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker.base import (
     BugTrackerConnectError,
     ExternalBugTracker,

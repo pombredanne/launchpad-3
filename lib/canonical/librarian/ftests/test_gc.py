@@ -28,7 +28,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,

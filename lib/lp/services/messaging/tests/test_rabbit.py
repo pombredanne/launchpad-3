@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.services.webapp.interfaces import FinishReadOnlyRequestEvent
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     RabbitMQLayer,
     )

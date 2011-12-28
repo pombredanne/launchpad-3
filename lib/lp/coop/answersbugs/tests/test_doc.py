@@ -13,7 +13,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

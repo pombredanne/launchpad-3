@@ -5,7 +5,7 @@
 
 import transaction
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 

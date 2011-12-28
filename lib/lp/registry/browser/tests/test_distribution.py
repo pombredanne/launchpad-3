@@ -11,7 +11,7 @@ from testtools.matchers import (
     )
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_celebrity,

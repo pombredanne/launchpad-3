@@ -9,7 +9,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
 from lp.soyuz.interfaces.binarypackagereleasecontents import (
     IBinaryPackageReleaseContentsSet,

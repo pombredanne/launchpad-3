@@ -10,7 +10,7 @@ import transaction
 
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView,

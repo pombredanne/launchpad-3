@@ -44,7 +44,7 @@ from lp.services.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
-from canonical.testing.layers import LaunchpadLayer
+from lp.testing.layers import LaunchpadLayer
 from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,

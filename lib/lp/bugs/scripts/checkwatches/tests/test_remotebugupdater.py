@@ -9,7 +9,7 @@ import unittest
 
 import transaction
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.base import (
     UnknownRemoteImportanceError,
     UnknownRemoteStatusError,

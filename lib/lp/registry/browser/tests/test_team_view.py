@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

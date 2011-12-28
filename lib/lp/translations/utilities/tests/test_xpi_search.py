@@ -8,7 +8,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.enums import RosettaImportStatus

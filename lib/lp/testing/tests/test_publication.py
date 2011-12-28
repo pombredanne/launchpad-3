@@ -25,7 +25,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,

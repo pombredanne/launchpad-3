@@ -13,7 +13,7 @@ from lp.services.webservice.wadl import (
     generate_json,
     generate_wadl,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
 
 

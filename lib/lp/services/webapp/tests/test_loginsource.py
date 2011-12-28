@@ -12,7 +12,7 @@ from lp.testing import (
     )
 from lp.services.webapp.authentication import IPlacelessLoginSource
 from lp.services.webapp.interfaces import AccessLevel
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 
 

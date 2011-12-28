@@ -8,7 +8,7 @@ __all__ = []
 from Mailman import Errors
 from Mailman.Handlers import LPStanding
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonalStanding
 from lp.services.mailman.testing import MailmanTestCase
 from lp.testing import celebrity_logged_in

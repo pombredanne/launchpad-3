@@ -8,7 +8,7 @@ link, they'll be sent to the OP to authenticate.
 
     # Set handleErrors to True so that the Unauthorized exception is handled
     # by the publisher and we get redirected to the +login page.
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser()
     >>> browser.handleErrors = True

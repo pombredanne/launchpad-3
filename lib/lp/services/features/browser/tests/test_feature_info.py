@@ -12,7 +12,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.flags import (
     documented_flags,

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseLayer
+from lp.testing.layers import DatabaseLayer
 from lp.registry.model.person import person_sort_key
 from lp.testing import TestCase
 

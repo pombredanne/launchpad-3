@@ -17,7 +17,7 @@ from germinate import (
     )
 import transaction
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

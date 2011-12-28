@@ -13,10 +13,6 @@ from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
 from canonical.config import config
-from canonical.testing import (
-    LaunchpadZopelessLayer,
-    reset_logging,
-    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductReleaseFile,
@@ -28,7 +24,13 @@ from lp.registry.scripts.productreleasefinder.finder import (
     extract_version,
     ProductReleaseFinder,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    reset_logging,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    )
 
 
 class FindReleasesTestCase(unittest.TestCase):
@@ -100,10 +102,10 @@ class GetFiltersTestCase(TestCaseWithFactory):
         ztm.begin()
         product = self.factory.makeProduct(name="bunny")
         active_series = product.getSeries('trunk')
-        active_series.releasefileglob  = 'http://eg.dom/bunny/trunk/*'
+        active_series.releasefileglob = 'http://eg.dom/bunny/trunk/*'
         obsolete_series = self.factory.makeProductSeries(
             product=product, name='rabbit')
-        obsolete_series.releasefileglob  = 'http://eg.dom/bunny/rabbit/*'
+        obsolete_series.releasefileglob = 'http://eg.dom/bunny/rabbit/*'
         obsolete_series.status = SeriesStatus.OBSOLETE
         ztm.commit()
         logging.basicConfig(level=logging.CRITICAL)
@@ -164,7 +166,6 @@ class HandleProductTestCase(unittest.TestCase):
             FilterPattern('series2', self.release_url +
                           '/product/2/product-2.*.tar.gz'),
             ]
-
 
         prf.handleProduct('product', filters)
         prf.seen_releases.sort()

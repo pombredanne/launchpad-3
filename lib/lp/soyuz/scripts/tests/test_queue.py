@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.utils import filechunks
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     LibrarianLayer,

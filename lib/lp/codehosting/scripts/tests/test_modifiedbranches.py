@@ -11,7 +11,7 @@ import os
 import pytz
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.codehosting.scripts.modifiedbranches import ModifiedBranchesScript
 from lp.codehosting.vfs import branch_id_to_path

@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,

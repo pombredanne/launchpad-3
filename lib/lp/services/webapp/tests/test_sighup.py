@@ -12,7 +12,7 @@ from lp.services.webapp import (
     haproxy,
     sighup,
     )
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
 
 

@@ -21,7 +21,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     LibrarianLayer,
     )

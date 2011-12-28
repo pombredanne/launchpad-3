@@ -11,7 +11,7 @@ We will need extra permissions to use this method.
 
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
 
 Select an existing ITranslationMessage and try to remove it.
