@@ -48,7 +48,7 @@ from lp.testing import (
     reset_logging,
     TestCase,
     )
-from lp.testing import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class FakeCodehostingEndpointProxy:

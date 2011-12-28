@@ -18,7 +18,7 @@ import zope.event
 
 from canonical.config import config
 from lp.services.webapp.vhosts import allvhosts
-from lp.testing.layers.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from launchpad_loggerhead.app import (
     RootApp,
     )
