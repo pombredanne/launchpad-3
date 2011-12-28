@@ -15,7 +15,7 @@ from storm.properties import Int
 from zope.event import notify
 from zope.interface import Attribute
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.storm import (
     gen_primary_key,
     get_primary_key,

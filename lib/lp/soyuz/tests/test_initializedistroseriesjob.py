@@ -8,7 +8,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.scripts.tests import run_script
-from canonical.testing import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

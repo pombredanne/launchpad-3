@@ -33,7 +33,7 @@ containing the target PPA owner name, see bug #172377.
 
 We need to be logged into the security model in order to get any further
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
 

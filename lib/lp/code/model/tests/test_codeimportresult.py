@@ -10,7 +10,7 @@ from datetime import datetime
 from pytz import UTC
 from testtools.matchers import LessThan
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.testing import TestCaseWithFactory
 

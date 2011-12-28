@@ -13,7 +13,7 @@ from storm.store import (
 from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.services.features.scopes import (
     BaseScope,

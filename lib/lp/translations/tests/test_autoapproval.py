@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.series import SeriesStatus

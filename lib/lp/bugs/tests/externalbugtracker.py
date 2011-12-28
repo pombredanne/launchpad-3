@@ -28,7 +28,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
     BugNotFound,

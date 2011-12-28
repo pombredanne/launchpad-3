@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import TargetSubscriptionView
 from lp.testing import (
     person_logged_in,

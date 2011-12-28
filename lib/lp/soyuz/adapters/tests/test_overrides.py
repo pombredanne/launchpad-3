@@ -9,7 +9,7 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_caches
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.database import bulk
 from lp.soyuz.adapters.overrides import (
     BinaryOverride,

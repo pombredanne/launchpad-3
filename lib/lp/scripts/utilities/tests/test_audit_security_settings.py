@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.scripts.utilities.settingsauditor import SettingsAuditor
 from lp.testing import TestCase
 

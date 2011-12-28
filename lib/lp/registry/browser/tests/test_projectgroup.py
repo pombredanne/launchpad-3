@@ -11,7 +11,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     celebrity_logged_in,

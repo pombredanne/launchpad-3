@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.enums import BinaryPackageFormat
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority

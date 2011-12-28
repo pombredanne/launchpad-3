@@ -57,7 +57,7 @@ from lp.services.webapp.servers import (
     WebServicePublication,
     )
 from lp.services.webapp.vhosts import allvhosts
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

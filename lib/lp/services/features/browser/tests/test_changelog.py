@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.changelog import ChangeLog
 from lp.testing import (
     login_celebrity,

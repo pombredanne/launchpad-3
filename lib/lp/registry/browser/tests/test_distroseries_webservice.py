@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import AppServerLayer
+from lp.testing.layers import AppServerLayer
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,

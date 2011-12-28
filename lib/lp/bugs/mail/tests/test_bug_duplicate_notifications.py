@@ -11,7 +11,7 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory

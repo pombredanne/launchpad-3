@@ -26,7 +26,7 @@ from canonical.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

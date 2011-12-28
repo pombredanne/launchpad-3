@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
     OPEN_TEAM_POLICY,

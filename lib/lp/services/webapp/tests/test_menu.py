@@ -11,7 +11,7 @@ from lp.services.webapp.menu import (
     MenuBase,
     )
 from lp.services.webapp.publisher import get_current_browser_request
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,

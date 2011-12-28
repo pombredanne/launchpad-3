@@ -18,7 +18,7 @@ from zope.security.proxy import (
 
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

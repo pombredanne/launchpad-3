@@ -19,7 +19,7 @@ import transaction
 from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (

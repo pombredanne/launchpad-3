@@ -22,7 +22,7 @@ from Mailman.Queue import XMLRPCRunner
 from Mailman.Queue.sbcache import get_switchboard
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import MailingListXMLRPCTestProxy
 from lp.testing import TestCaseWithFactory
 

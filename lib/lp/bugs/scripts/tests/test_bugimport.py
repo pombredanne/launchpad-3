@@ -18,7 +18,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
     CreateBugParams,

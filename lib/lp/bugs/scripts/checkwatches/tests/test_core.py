@@ -14,7 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.testing import login
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI

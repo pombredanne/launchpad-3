@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy

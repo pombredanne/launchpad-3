@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,

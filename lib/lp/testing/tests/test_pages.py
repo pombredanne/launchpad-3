@@ -12,7 +12,7 @@ import unittest
 
 from bzrlib.tests import iter_suite_tests
 
-from canonical.testing.layers import PageTestLayer
+from lp.testing.layers import PageTestLayer
 from lp.testing.pages import PageTestSuite
 
 

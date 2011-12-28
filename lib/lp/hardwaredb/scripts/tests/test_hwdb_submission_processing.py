@@ -17,7 +17,7 @@ from zope.testing.loghandler import Handler
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.testing.layers import (
+from lp.testing.layers import (
     BaseLayer,
     LaunchpadZopelessLayer,
     )

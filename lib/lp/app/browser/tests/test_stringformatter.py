@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,

@@ -11,7 +11,7 @@ from StringIO import StringIO
 import dkim
 import dns.resolver
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail

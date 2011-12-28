@@ -14,7 +14,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,

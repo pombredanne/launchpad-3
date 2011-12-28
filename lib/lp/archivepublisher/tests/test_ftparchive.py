@@ -15,7 +15,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

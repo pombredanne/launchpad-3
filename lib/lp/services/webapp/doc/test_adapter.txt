@@ -18,7 +18,7 @@ Imports and test setup:
     >>> from lp.services.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
     ...     set_request_started)
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
 
 There are several possible database connections available via the

@@ -12,7 +12,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )

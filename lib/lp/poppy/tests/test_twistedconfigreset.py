@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 
-from canonical.testing.layers import ZopelessLayer
+from lp.testing.layers import ZopelessLayer
 from lp.poppy.twistedconfigreset import GPGHandlerConfigResetJob
 from lp.testing import TestCase
 

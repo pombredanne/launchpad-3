@@ -14,7 +14,7 @@ from lp.services.webapp.sigdumpmem import (
     SIGDUMPMEM,
     )
 from canonical.lazr.pidfile import get_pid
-from canonical.testing.layers import AppServerLayer
+from lp.testing.layers import AppServerLayer
 from lp.testing import TestCase
 
 

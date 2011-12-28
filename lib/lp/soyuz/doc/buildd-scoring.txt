@@ -34,7 +34,7 @@ BuildQueue entries.
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> test_publisher = SoyuzTestPublisher()
 

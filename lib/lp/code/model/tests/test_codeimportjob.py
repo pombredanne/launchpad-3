@@ -23,7 +23,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

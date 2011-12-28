@@ -32,7 +32,7 @@ from lp.services.mail.helpers import (
     get_email_template,
     )
 from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,

@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 
 from lp.services.webapp.servers import WebServiceTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
 from lp.testing import (
     logout,

@@ -24,7 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
 from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

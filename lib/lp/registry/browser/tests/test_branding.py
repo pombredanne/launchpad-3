@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.branding import BrandingChangeView
 from lp.testing import TestCaseWithFactory
 

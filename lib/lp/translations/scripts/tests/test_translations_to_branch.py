@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

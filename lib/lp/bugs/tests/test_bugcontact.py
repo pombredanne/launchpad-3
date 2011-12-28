@@ -7,7 +7,7 @@ implementations.
 
 import unittest
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.tests.test_structuralsubscriptiontarget import (
     distributionSetUp,
     productSetUp,

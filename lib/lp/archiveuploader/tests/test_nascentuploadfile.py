@@ -14,7 +14,7 @@ from debian.deb822 import (
     Dsc,
     )
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (

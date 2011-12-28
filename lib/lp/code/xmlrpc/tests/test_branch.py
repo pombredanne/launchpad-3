@@ -13,7 +13,7 @@ from lazr.uri import URI
 from zope.security.proxy import removeSecurityProxy
 
 from lp.xmlrpc import faults
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch

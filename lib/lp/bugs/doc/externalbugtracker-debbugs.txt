@@ -17,7 +17,7 @@ You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
     ...     BATCH_SIZE_UNLIMITED, DebBugs)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
@@ -631,7 +631,7 @@ tracker.
 
     # Make sane data to play this test.
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

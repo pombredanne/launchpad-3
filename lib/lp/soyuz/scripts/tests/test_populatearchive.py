@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadZopelessLayer,
     )

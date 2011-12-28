@@ -21,7 +21,7 @@ test too much.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)

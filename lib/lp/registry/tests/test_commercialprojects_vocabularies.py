@@ -15,7 +15,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
     IProductSet,
     License,

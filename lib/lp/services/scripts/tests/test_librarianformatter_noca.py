@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing import reset_logging
+from lp.testing import reset_logging
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

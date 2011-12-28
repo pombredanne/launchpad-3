@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.testing import reset_logging
+from lp.testing import reset_logging
 from lp.codehosting.codeimport.tests.helpers import (
     instrument_method,
     InstrumentedMethodObserver,

@@ -7,7 +7,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory

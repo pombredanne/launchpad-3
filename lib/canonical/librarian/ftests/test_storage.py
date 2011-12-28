@@ -14,7 +14,7 @@ from canonical.librarian.storage import (
     LibrarianStorage,
     LibraryFileUpload,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.librarian.model import LibraryFileContent
 
 

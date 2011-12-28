@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import BuildStatus

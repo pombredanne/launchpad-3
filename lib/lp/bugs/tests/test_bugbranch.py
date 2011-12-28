@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,

@@ -10,7 +10,7 @@ from testtools.matchers import (
     Is,
     )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.mail.handler import (
     BlueprintHandler,
     get_spec_url_from_moin_mail,

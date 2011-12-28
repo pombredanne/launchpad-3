@@ -13,7 +13,7 @@ from canonical.database.sqlbase import (
     cursor,
     quote,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )

@@ -12,7 +12,7 @@ from lp.services.webapp.errorlog import (
     maybe_record_user_requested_oops,
     OopsNamespace,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,

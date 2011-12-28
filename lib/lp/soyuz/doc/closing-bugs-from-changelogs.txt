@@ -22,7 +22,7 @@ The package uploads are associated with specific releases of the
 package, but the bugs they reference may be filed on the generic
 distribution package.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('no-priv@canonical.com')

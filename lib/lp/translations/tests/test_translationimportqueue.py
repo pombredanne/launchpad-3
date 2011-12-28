@@ -15,7 +15,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

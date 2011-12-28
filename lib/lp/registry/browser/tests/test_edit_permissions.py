@@ -14,7 +14,7 @@ from lp.testing import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

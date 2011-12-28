@@ -22,7 +22,7 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

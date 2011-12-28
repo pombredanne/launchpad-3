@@ -11,7 +11,7 @@ from zope.proxy import isProxy
 from zope.schema.interfaces import IVocabularyFactory
 from zope.security._proxy import _Proxy
 
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
 
 

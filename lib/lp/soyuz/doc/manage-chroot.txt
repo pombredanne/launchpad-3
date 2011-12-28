@@ -132,7 +132,7 @@ Adding a chroot using a non-existent path will result in an error.
 
 Commit the work done so far so the librarian has the uploaded file.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
 
 Using the "get" command will retrieve a specified chroot to a given
@@ -181,7 +181,7 @@ Trying to retrieve a removed chroot will fail.
 When the librarian is not running, attempting to upload a chroot file
 results in an appropriate error.
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.hide()
 
     >>> filepath = os.path.join(config.root, "COPYING")

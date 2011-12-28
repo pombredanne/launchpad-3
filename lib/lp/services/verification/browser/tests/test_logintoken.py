@@ -11,7 +11,7 @@ from lp.services.verification.browser.logintoken import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.deprecated import LaunchpadFormHarness

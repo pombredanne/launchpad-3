@@ -8,7 +8,7 @@ __metaclass__ = type
 import testtools
 
 from canonical.database.sqlbase import session_store
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.librarian.model import TimeLimitedToken
 
 

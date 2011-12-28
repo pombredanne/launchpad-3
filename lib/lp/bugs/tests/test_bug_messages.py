@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from lp.testing import login
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_celebrity,

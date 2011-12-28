@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import (
     login_person,

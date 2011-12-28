@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from testtools.matchers import LessThan
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
 from lp.testing import (

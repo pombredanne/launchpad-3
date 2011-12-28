@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (

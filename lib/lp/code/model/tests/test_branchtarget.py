@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import IPrimaryContext
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,

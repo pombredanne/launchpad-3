@@ -19,7 +19,7 @@ from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
 
 

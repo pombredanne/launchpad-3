@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
 from lp.xmlrpc import faults
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.testing import TestCaseWithFactory

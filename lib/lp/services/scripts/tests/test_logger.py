@@ -12,7 +12,7 @@ import unittest
 
 from testtools.matchers import DocTestMatches
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.services.scripts.logger import LaunchpadFormatter
 from lp.services.utils import traceback_info
 from lp.testing import TestCase

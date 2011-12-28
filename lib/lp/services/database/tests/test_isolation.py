@@ -10,7 +10,7 @@ from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.database import isolation
 from lp.testing import TestCase
 

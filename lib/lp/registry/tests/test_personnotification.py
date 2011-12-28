@@ -18,13 +18,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    reset_logging,
-    )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.scripts.personnotification import PersonNotificationManager
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    reset_logging,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPersonNotification(TestCaseWithFactory):

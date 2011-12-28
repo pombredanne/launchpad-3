@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IStore
 from lp.services.scripts import log
-from canonical.testing import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,

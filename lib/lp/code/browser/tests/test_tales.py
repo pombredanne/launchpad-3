@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     login,
     person_logged_in,

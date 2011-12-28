@@ -4,7 +4,7 @@ Just to show that we're actually talking to the appserver, first check to see
 if a specific user exists...
 
     >>> browser = Browser('foo.bar@canonical.com:test')
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser.open(root_url)
     >>> browser.vhost

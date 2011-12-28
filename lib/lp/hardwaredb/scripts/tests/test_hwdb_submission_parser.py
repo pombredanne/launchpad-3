@@ -14,7 +14,7 @@ import pytz
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import (
     ROOT_UDI,
     SubmissionParser,

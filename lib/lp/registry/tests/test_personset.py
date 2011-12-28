@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,

@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet

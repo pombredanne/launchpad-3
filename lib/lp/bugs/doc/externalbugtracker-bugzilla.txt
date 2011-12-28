@@ -24,7 +24,7 @@ The Bugzilla ExternalBugTracker works differently depending on which
 version of Bugzilla it is talking to. If it's a version we can't parse,
 UnparsableBugTrackerVersion is raised:
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):

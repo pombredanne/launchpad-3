@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

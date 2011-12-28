@@ -15,7 +15,7 @@ import pytz
 from zope.component import getUtility
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.code.enums import (
     BranchType,

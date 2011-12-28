@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,

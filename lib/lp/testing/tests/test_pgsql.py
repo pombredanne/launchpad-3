@@ -11,7 +11,7 @@ import testtools
 
 from canonical.config import dbconfig
 from canonical.config.fixture import ConfigUseFixture
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.testing.pgsql import (
     ConnectionWrapper,
     PgTestSetup,

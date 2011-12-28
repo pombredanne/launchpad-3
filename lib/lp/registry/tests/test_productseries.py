@@ -11,7 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login
 from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,

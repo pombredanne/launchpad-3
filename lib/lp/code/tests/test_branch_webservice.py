@@ -6,7 +6,7 @@ __metaclass__ = type
 from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket

@@ -11,7 +11,7 @@ __all__ = []
 
 import unittest
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

@@ -15,7 +15,7 @@ from canonical.librarian.smoketest import (
     store_file,
     )
 from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 

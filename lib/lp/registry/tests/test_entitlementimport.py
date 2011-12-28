@@ -11,7 +11,7 @@ import unittest
 
 from zope.testing.loghandler import Handler
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts.entitlement import (
     EntitlementExchange,
     EntitlementImporter,

@@ -10,7 +10,7 @@ import os
 
 import transaction
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadFunctionalLayer,

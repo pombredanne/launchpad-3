@@ -21,7 +21,7 @@ from lp.services.webapp.pgsession import (
     PGSessionData,
     PGSessionDataContainer,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadLayer,
     )

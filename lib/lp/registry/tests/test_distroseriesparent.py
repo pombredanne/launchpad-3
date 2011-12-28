@@ -11,7 +11,7 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
 from lp.testing import login
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )

@@ -16,7 +16,7 @@ from lp.services.looptuner import (
     ITunableLoop,
     LoopTuner,
     )
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.services.log.logger import FakeLogger
 from lp.testing import TestCase
 

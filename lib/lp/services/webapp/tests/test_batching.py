@@ -28,7 +28,7 @@ from lp.services.webapp.batching import (
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.model.person import Person
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.librarian.model import LibraryFileAlias

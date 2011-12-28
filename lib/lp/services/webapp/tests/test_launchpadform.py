@@ -18,7 +18,7 @@ from lp.services.webapp.interfaces import (
     IMultiLineWidgetLayout,
     ISingleLineWidgetLayout,
     )
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.app.browser.launchpadform import LaunchpadFormView
 
 

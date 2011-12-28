@@ -4,7 +4,7 @@
 from doctest import DocTestSuite
 from unittest import TestLoader
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus

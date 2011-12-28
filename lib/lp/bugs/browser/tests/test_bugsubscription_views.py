@@ -15,7 +15,7 @@ from zope.traversing.browser import absoluteURL
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
     BugSubscriptionAddView,

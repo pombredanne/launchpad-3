@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import httplib
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.services.xmlrpc import (
     HTTP,
     Transport,
