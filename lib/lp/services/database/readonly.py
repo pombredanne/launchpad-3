@@ -22,7 +22,7 @@ from lazr.restful.utils import get_current_browser_request
 
 from zope.security.management import queryInteraction
 
-from canonical.config import config
+from lp.services.config import config
 
 
 read_only_file_path = os.path.join(config.root, 'read-only.txt')

@@ -50,7 +50,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.version import sane_version

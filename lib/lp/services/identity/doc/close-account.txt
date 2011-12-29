@@ -35,7 +35,7 @@ Store the id's so we can retrieve the records later.
 Lets close his account.
 
 >>> import os.path
->>> from canonical.config import config
+>>> from lp.services.config import config
 >>> from lp.testing.script import run_script
 >>> script = os.path.join(config.root, 'scripts', 'close-account.py')
 >>> (result, out, err) = run_script(script, args=['mark@example.com'])

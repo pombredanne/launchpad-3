@@ -82,7 +82,7 @@
   <tal:has-branches condition="view/branch_count">
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
-         tal:define="config modules/canonical.config/config;
+         tal:define="config modules/lp.services.config/config;
                      dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">

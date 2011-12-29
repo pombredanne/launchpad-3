@@ -16,7 +16,7 @@ import sys
 import _pythonpath
 import helpers
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.postgresql import (
     all_sequences_in_schema,
     all_tables_in_schema,

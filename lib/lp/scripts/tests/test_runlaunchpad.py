@@ -16,8 +16,8 @@ import tempfile
 
 import testtools
 
-import canonical.config
-from canonical.config import config
+import lp.services.config
+from lp.services.config import config
 from lp.scripts.runlaunchpad import (
     get_services_to_run,
     process_config_arguments,
@@ -78,13 +78,13 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         super(TestDefaultConfigArgument, self).setUp()
         self.config_root = tempfile.mkdtemp('configs')
         self.saved_instance = config.instance_name
-        self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS
-        canonical.config.CONFIG_ROOT_DIRS = [self.config_root]
+        self.saved_config_roots = lp.services.config.CONFIG_ROOT_DIRS
+        lp.services.config.CONFIG_ROOT_DIRS = [self.config_root]
         self.addCleanup(self.cleanUp)
 
     def cleanUp(self):
         shutil.rmtree(self.config_root)
-        canonical.config.CONFIG_ROOT_DIRS = self.saved_config_roots
+        lp.services.config.CONFIG_ROOT_DIRS = self.saved_config_roots
         config.setInstance(self.saved_instance)
 
     def test_keep_argument(self):

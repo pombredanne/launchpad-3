@@ -11,7 +11,7 @@ import os
 import subprocess
 
 import canonical
-from canonical.config import config
+from lp.services.config import config
 
 
 LP_TREE = os.path.dirname(

@@ -92,7 +92,7 @@ sha1.
 
 We can get its URL too
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> import re
     >>> re.search(
     ...     r'^%s\d+/text.txt$' % config.librarian.download_url,

@@ -12,7 +12,7 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (

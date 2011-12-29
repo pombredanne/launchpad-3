@@ -12,7 +12,7 @@ import _pythonpath
 
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 from lp.soyuz.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)

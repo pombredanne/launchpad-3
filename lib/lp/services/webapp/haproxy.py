@@ -11,7 +11,7 @@ __all__ = [
     'switch_going_down_flag',
     ]
 
-from canonical.config import config
+from lp.services.config import config
 
 # This is the global flag, when this is True, the HAProxy view
 # will return 500, it returns 200 otherwise.
@@ -51,7 +51,7 @@ class HAProxyStatusView:
 
     The returned result code when the server is going down can be configured
     through the haproxy_status_view.going_down_status configuration variable.
-    It defaults to 500 (as set in lib/canonical/config/schema-lazr.conf).
+    It defaults to 500 (as set in lib/lp/services/config/schema-lazr.conf).
     """
 
     def __init__(self, context, request):

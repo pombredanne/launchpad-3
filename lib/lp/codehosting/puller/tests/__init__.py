@@ -18,7 +18,7 @@ from bzrlib.tests.http_server import (
     TestingThreadingHTTPServer,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.codehosting.puller.worker import (
     BranchMirrorer,
     BranchMirrorerPolicy,

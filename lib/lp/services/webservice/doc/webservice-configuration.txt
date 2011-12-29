@@ -24,7 +24,7 @@ Launchpad web service shows or hides information about exceptions
 based on the site configuration and whether the requesting user is a
 developer.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
 
     >>> from zope.interface import implements

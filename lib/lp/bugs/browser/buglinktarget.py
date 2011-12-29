@@ -21,7 +21,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.searchbuilder import any
 from lp.services.webapp import canonical_url

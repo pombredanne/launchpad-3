@@ -101,12 +101,12 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.config import (
+from lp.services.config import (
     CanonicalConfig,
     config,
     dbconfig,
     )
-from canonical.config.fixture import (
+from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )

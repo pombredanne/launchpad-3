@@ -38,7 +38,7 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.database.readonly import is_read_only
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy

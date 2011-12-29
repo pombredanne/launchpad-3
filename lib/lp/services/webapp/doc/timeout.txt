@@ -25,7 +25,7 @@ time remaining before the request should time out.
 The timeout to use is the number of seconds remaining before
 db_statement_timeout is expired.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> config.push('timeout', dedent('''\
     ... [database]

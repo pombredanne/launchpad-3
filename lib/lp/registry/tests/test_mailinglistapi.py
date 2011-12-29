@@ -9,7 +9,7 @@ __all__ = []
 
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (

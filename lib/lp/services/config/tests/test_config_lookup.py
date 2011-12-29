@@ -10,7 +10,7 @@ import os
 import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
 
-from canonical import config
+from lp.services import config
 from lp.testing import TestCase
 
 

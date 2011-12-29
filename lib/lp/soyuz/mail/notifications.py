@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
 from lp.services.webapp.interfaces import ILaunchpadRoot

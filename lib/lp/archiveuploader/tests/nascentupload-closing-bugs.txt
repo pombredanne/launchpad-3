@@ -61,7 +61,7 @@ Inspect the current bugtasks for bug #6:
 Return to the original test environment:
 
     >>> commit()
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
     >>> login('foo.bar@canonical.com')
 

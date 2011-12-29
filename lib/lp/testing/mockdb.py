@@ -27,7 +27,7 @@ import urllib
 import psycopg2
 # from zope.testing.testrunner import RetryTest
 
-from canonical.config import config
+from lp.services.config import config
 
 
 SCRIPT_DIR = os.path.join(config.root, 'mockdbscripts~')

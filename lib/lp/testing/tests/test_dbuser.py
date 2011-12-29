@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person

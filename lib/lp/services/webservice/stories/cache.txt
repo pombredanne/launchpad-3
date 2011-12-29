@@ -11,7 +11,7 @@ By default, the cache is disabled, even in the testrunner
 environment. (This will change once we improve the Launchpad cache's
 cache invalidation.) Let's enable the cache just for this test.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.vhost.api.enable_server_side_representation_cache
     False
     >>> config.push('enable cache', """\

@@ -24,7 +24,7 @@ from twisted.internet import defer, reactor
 from twisted.python import log
 from twisted.web import xmlrpc
 
-from canonical.config import config
+from lp.services.config import config
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)

@@ -22,7 +22,7 @@ does not happen automatically.
     >>> import transaction
     >>> from lp.services.log.logger import BufferLogger
     >>> logger = BufferLogger()
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import dbuser
     >>> def updateCache():
     ...     # Switch to the statistician user who is the only user with

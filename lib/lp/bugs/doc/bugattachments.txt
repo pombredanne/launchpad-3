@@ -173,7 +173,7 @@ upload it:
 If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_attachment_size = """
     ...     [launchpad]
     ...     max_attachment_size: 0

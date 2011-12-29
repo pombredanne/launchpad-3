@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interaction import (
     endInteraction,
     setupInteraction,

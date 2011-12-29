@@ -56,7 +56,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import dbconfig
+from lp.services.config import dbconfig
 from canonical.database.interfaces import ISQLBase
 from lp.services.propertycache import clear_property_cache
 

@@ -12,7 +12,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.bugs.scripts.cveimport import CVEUpdater
 
 

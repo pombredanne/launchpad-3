@@ -93,7 +93,7 @@ If a comment is too long, we truncate it before we display it and
 display a link to view the full comment. Let's change the default
 threshold so that all comments truncate.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_comment_size = """
     ...     [malone]
     ...     max_comment_size: 20
@@ -246,7 +246,7 @@ control the thresholds. If there are more comments than
 comments_list_max_length, the list is truncated to show the oldest and
 newest bugs, with a visual break in between.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 10

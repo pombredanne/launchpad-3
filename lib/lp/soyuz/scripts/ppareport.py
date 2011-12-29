@@ -19,7 +19,7 @@ from storm.locals import Join
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.person import get_recipients

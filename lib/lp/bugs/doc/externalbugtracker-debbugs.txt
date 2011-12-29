@@ -8,7 +8,7 @@ to point it to our test debbugs db. Let's set up the db location for our
 test:
 
     >>> import os.path
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.bugs.tests import __file__
     >>> test_db_location = os.path.join(
     ...     os.path.dirname(__file__), 'data/debbugs_db')
@@ -630,7 +630,7 @@ tracker.
     >>> commit()
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> transaction.commit()

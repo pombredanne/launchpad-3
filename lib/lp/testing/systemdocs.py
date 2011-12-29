@@ -26,7 +26,7 @@ import transaction
 from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import flush_database_updates
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.testing import verifyObject

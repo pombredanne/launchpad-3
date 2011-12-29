@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing import login_person
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing.layers import DatabaseFunctionalLayer

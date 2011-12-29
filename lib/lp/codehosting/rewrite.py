@@ -9,7 +9,7 @@ import time
 from bzrlib import urlutils
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.adapter import (
     clear_request_started,
     set_request_started,

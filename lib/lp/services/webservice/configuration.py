@@ -11,7 +11,7 @@ __all__ = [
 from lazr.restful.simple import BaseWebServiceConfiguration
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import (
     WebServiceClientRequest,

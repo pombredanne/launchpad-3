@@ -195,7 +195,7 @@ those widgets are checkboxes and menus.
 Teams can be owners of submissions.
 
     >>> import os
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> team_form = form.copy()
     >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
     >>> team_form['field.submission_key'] = u'unique-id-68'

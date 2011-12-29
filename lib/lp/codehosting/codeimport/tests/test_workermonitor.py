@@ -33,7 +33,7 @@ from twisted.python import log
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.xmlrpc.faults import NoSuchCodeImportJob
 from lp.testing.layers import (

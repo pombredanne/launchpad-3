@@ -10,8 +10,8 @@ from textwrap import dedent
 
 from testtools import TestCase
 
-from canonical.config import config
-from canonical.config.fixture import (
+from lp.services.config import config
+from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )

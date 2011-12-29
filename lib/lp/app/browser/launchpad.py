@@ -60,7 +60,7 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.helpers import intOrZero
 from lp.services.statistics.interfaces.statistic import (

@@ -54,7 +54,7 @@ PACKAGE_DIR = os.path.abspath(os.path.dirname(__file__))
 # Root of the launchpad tree so code can stop jumping through hoops
 # with __file__.
 TREE_ROOT = os.path.abspath(
-    os.path.join(PACKAGE_DIR, os.pardir, os.pardir, os.pardir))
+    os.path.join(PACKAGE_DIR, os.pardir, os.pardir, os.pardir, os.pardir))
 
 # The directories containing instances configuration directories.
 CONFIG_ROOT_DIRS = [
@@ -246,7 +246,7 @@ class CanonicalConfig:
         print >> loader, """
             <configure xmlns="http://namespaces.zope.org/zope">
                 <!-- This file automatically generated using
-                     canonical.config.CanonicalConfig.generate_overrides.
+                     lp.services.config.CanonicalConfig.generate_overrides.
                      DO NOT EDIT. -->
                 <include files="%s/*.zcml" />
                 </configure>""" % self.config_dir

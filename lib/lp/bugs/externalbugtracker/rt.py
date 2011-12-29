@@ -10,7 +10,7 @@ import email
 import urllib
 import urllib2
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,

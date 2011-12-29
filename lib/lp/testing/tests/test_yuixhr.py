@@ -24,7 +24,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IResult
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import IProductSet

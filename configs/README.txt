@@ -68,7 +68,7 @@ All this information is available in the config object.
 
 The CanonicalConfig singleton is exposed as config in its module.
 
-    from canonical.config import config
+    from lp.services.config import config
 
 The config can be accessed as a dictionary...
 
@@ -86,7 +86,7 @@ The config can be accessed as a dictionary...
     >>> config.librarian.download_port
     58000
 
-You can learn more about canonical.config in the doctest located at
+You can learn more about lp.services.config in the doctest located at
 
     lib/canonical/launchpad/doc/canonical-config.txt
 
@@ -128,7 +128,7 @@ the config.
 == lazr.conf schema and confs ==
 
 All Launchpad configs inherit from the Launchpad schema defined
-in ../lib/canonical/config/schema-lazr.conf (it is symlinked
+in ../lib/lp/services/config/schema-lazr.conf (it is symlinked
 as ./schema-lazr.conf for convenience).
 
 lazr.config conf and schema files look like ini-based conf files, but
@@ -273,7 +273,7 @@ port to an int.
 The lazr configurations in this directory descend from the
 Launchpad schema. This is a general outline of inheritance:
 
-    ../lib/canonical/config/schema-lazr.conf
+    ../lib/lp/services/config/schema-lazr.conf
         |
         + development/launchpad-lazr.conf
         |    |
@@ -354,15 +354,15 @@ section. eg:
     # This configuration derives from:
     #     ./configs/production/launchpad-lazr.conf
     #     ./configs/lpnet-lazr.conf
-    #     ./lib/canonical/config/schema-lazr.conf
+    #     ./lib/lp/services/config/schema-lazr.conf
 
     [answertracker]
-    # Defined in: lib/canonical/config/schema-lazr.conf
+    # Defined in: lib/lp/services/config/schema-lazr.conf
     days_before_expiration: 15
 
-    # Defined in: lib/canonical/config/schema-lazr.conf
+    # Defined in: lib/lp/services/config/schema-lazr.conf
     dbuser: answertracker
 
-    # Defined in: lib/canonical/config/schema-lazr.conf
+    # Defined in: lib/lp/services/config/schema-lazr.conf
     email_domain: answers.launchpad.net
 

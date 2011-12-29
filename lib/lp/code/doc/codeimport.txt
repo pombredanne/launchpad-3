@@ -337,7 +337,7 @@ code import can specify a custom update interval, or use a default value.
 There is a separate default update interval for each version control system,
 set in the Launchpad configuration system.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from datetime import timedelta
     >>> default_interval_cvs = timedelta(
     ...     seconds=config.codeimport.default_interval_cvs)

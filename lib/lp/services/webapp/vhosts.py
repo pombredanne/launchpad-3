@@ -84,7 +84,7 @@ class AllVirtualHostsConfiguration:
         # Avoid the circular imports inherent with the use of canonical.lazr.
         if self._has_vhost_data:
             return
-        from canonical.config import config
+        from lp.services.config import config
         self._use_https = config.vhosts.use_https
         self._configs = {}
         self._hostnames = set()

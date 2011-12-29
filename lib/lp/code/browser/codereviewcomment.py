@@ -24,7 +24,7 @@ from zope.interface import (
     )
 from zope.schema import Text
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp import (
     canonical_url,

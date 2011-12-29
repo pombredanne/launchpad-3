@@ -58,7 +58,7 @@ from lazr.uri import (
     )
 import SCM
 
-from canonical.config import config
+from lp.services.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codehosting import (

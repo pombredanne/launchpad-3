@@ -24,7 +24,7 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.config import config
+from lp.services.config import config
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision

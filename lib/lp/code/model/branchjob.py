@@ -56,7 +56,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.services.database.lpstorm import IStore

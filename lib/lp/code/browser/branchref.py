@@ -11,7 +11,7 @@ __all__ = [
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import (
     Navigation,
     stepthrough,

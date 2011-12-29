@@ -400,7 +400,7 @@ If it had subscribers, though, they'd be shown on that page, in a batched
 list.
 
     # Forge two new subscribers to the team's mailing list.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('default-batch-size', """
     ... [launchpad]
     ... default_batch_size: 1

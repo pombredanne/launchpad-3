@@ -157,7 +157,7 @@ mapping.setLocation() method to lookup the time zone for the location.
 The launchpad.geonames_identity config key provides the identity required to
 access ba-ws.geonames.net's service.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> config.push('geoname_data', """
     ...     [launchpad]

@@ -55,7 +55,7 @@ doing the authentication work with the remote server. We'll override the
 _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)

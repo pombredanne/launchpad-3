@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.xmlrpc import faults
 from lp.registry.interfaces.mailinglist import (

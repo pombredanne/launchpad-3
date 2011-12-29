@@ -9,7 +9,7 @@ from ConfigParser import SafeConfigParser
 import os
 from StringIO import StringIO
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import RabbitMQLayer
 from lp.services.txlongpoll.server import TxLongPollServer
 from lp.testing import TestCase

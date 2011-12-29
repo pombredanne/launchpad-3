@@ -10,7 +10,7 @@ The expiration period is set using the
 config.answertracker.days_before_expiration configuration variable. It
 defaults to 15 days.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.answertracker.days_before_expiration
     15
 

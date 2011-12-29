@@ -47,7 +47,7 @@ imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

@@ -17,7 +17,7 @@ from bzrlib.errors import LockContention
 from bzrlib.lock import WriteLock
 import psycopg2
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.postgresql import (
     generateResetSequencesSQL,
     resetSequences,

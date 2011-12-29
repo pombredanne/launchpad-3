@@ -21,7 +21,7 @@ from zope.interface import (
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.services.webapp.interaction import (
     get_current_principal,

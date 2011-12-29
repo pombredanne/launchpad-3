@@ -13,7 +13,7 @@ import functools
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import NoSuchPPA
 from lp.soyuz.scripts.ppa_apache_log_parser import DBUSER, get_ppa_file_key

@@ -23,7 +23,7 @@ import hashlib
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.librarian.utils import filechunks
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError

@@ -13,7 +13,7 @@ import xml.etree.cElementTree as etree
 import pytz
 from zope.testing.loghandler import Handler
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import (
     ROOT_UDI,

@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp.testing import verifyObject
 from lp.testing.layers import (

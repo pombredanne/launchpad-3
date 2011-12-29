@@ -29,7 +29,7 @@ import urllib
 from lazr.uri import URI
 from zope.interface import Interface
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.app.validators.name import valid_name
 

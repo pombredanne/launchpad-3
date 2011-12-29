@@ -52,7 +52,7 @@ from twisted.python import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
+from lp.services.config import (
     config,
     dbconfig,
     )

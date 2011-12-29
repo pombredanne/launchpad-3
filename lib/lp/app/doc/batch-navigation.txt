@@ -73,7 +73,7 @@ potentially exhaust server resources, an upper limit is put on the batch
 size. If the requested batch parameter is higher than this, an
 InvalidBatchSizeError is raised.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> config.push('max-batch-size', dedent("""\
     ...     [launchpad]

@@ -78,7 +78,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp import (
     ApplicationMenu,

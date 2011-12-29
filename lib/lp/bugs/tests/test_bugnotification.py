@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import sqlvalues
 from lp.testing import login
 from lp.testing.layers import (

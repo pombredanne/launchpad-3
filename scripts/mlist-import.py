@@ -23,7 +23,7 @@ import textwrap
 # pylint: disable-msg=W0403
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.scripts.base import LaunchpadScript
 

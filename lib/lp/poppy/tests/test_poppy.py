@@ -27,7 +27,7 @@ from fixtures import (
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.daemons.tachandler import TacTestSetup
 from lp.testing.layers import (
     ZopelessAppServerLayer,

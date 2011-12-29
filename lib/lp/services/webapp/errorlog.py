@@ -31,7 +31,7 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import WebServiceLayer
 from lp.services.webapp.adapter import (
     get_request_duration,

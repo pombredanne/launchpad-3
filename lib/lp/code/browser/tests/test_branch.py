@@ -13,7 +13,7 @@ import pytz
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url

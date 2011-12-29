@@ -22,7 +22,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.scripts import log

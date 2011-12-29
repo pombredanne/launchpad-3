@@ -35,7 +35,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import (
+from lp.services.config import (
     config,
     dbconfig,
     )
