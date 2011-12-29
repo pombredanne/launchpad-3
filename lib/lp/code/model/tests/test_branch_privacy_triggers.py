@@ -9,7 +9,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.database.sqlbase import cursor
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BranchPrivacyTriggersTestCase(unittest.TestCase):

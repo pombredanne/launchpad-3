@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,

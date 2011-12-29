@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import PillarFormatterAPI
 from lp.testing import TestCaseWithFactory
 

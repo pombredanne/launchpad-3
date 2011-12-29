@@ -17,7 +17,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,

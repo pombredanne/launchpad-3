@@ -205,7 +205,7 @@ DistroArchSeriesBinaryPackage.summary should be simplified.
 First, update the cache tables for Celso's PPA:
 
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
     >>> from lp.services.log.logger import FakeLogger

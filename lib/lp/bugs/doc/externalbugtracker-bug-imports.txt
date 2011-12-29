@@ -48,7 +48,7 @@ distributions are supported as the bug target.
 
     # Make sane data to play this test.
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> debian = getUtility(IDistributionSet).getByName('debian')

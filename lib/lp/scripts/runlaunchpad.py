@@ -346,7 +346,7 @@ def process_config_arguments(args):
 
 def start_testapp(argv=list(sys.argv)):
     from canonical.config.fixture import ConfigUseFixture
-    from canonical.testing.layers import (
+    from lp.testing.layers import (
         BaseLayer,
         DatabaseLayer,
         LayerProcessController,

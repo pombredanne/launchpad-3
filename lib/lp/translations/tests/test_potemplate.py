@@ -8,7 +8,7 @@ from operator import methodcaller
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )

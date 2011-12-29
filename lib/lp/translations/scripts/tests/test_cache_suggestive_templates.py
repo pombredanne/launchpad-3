@@ -12,7 +12,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet

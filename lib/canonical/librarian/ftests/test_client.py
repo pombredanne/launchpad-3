@@ -21,7 +21,7 @@ from canonical.librarian.client import (
     RestrictedLibrarianClient,
     )
 from canonical.librarian.interfaces import UploadFailed
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     )

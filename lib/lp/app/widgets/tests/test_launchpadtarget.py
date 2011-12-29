@@ -16,7 +16,7 @@ from zope.interface import (
 
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (

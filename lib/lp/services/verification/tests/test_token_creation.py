@@ -14,7 +14,7 @@ from lp.services.tokens import (
     )
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class Test_create_token(testtools.TestCase):

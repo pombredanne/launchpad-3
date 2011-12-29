@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

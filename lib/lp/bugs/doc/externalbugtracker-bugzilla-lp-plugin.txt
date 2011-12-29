@@ -56,7 +56,7 @@ _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
 

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.binarypackagepath import IBinaryPackagePathSet
 from lp.testing import TestCaseWithFactory
 

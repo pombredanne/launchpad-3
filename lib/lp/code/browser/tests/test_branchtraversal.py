@@ -8,7 +8,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonNavigation
 from lp.registry.browser.personproduct import PersonProductNavigation
 from lp.registry.interfaces.personproduct import (

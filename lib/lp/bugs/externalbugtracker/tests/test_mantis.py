@@ -12,7 +12,7 @@ from testtools.matchers import (
     Is,
     )
 
-from canonical.testing.layers import ZopelessLayer
+from lp.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker import UnparsableBugData
 from lp.bugs.externalbugtracker.mantis import (
     Mantis,

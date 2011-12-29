@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

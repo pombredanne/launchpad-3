@@ -12,7 +12,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.librarian import db
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.database import (
     read_transaction,
     write_transaction,

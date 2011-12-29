@@ -8,7 +8,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from lp.testing.script import run_command
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.gettext_mo_exporter import GettextMOExporter
 from lp.translations.utilities.gettext_po_parser import POParser

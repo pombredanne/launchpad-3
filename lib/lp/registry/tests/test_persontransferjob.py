@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.model.persontransferjob import (
     PersonTransferJob,

@@ -9,7 +9,7 @@ from datetime import datetime
 
 import transaction
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtask import (

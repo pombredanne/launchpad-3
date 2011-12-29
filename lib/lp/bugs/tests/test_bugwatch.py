@@ -26,7 +26,7 @@ from lp.testing import (
     login,
     )
 from lp.services.webapp import urlsplit
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

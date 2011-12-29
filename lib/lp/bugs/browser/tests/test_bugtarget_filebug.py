@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import (
     FileBugInlineFormView,
     FileBugViewBase,

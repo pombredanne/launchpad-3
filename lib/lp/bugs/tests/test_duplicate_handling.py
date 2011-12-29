@@ -7,7 +7,7 @@ from textwrap import dedent
 
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.testing import (
     StormStatementRecorder,

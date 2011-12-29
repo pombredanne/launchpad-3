@@ -15,7 +15,7 @@ from storm.locals import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchCloud
 from lp.code.model.revision import RevisionCache
 from lp.code.tests.helpers import (

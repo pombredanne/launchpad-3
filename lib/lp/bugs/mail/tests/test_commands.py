@@ -6,7 +6,7 @@ from lazr.lifecycle.interfaces import (
     IObjectModifiedEvent,
     )
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

@@ -47,7 +47,7 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from canonical.database.sqlbase import commit
     >>> from lp.services.mail.tests.helpers import read_test_message
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
 
 For these examples, we don't want the Precedence header added. Domains
@@ -393,7 +393,7 @@ lose any emails. All that should happen is that an error should get
 logged.
 
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.hide()
 
     >>> msg = read_test_message('signed_detached.txt')

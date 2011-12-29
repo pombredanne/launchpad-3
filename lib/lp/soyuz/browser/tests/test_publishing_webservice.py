@@ -4,7 +4,7 @@
 """Test webservice methods related to the publisher."""
 
 from lp.services.webapp.interfaces import OAuthPermission
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     api_url,
     person_logged_in,

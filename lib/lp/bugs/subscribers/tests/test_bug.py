@@ -7,7 +7,7 @@ from storm.store import Store
 from testtools.matchers import Is
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus

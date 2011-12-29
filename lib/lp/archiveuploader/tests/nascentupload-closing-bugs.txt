@@ -32,7 +32,7 @@ Check the current status of the bug we are supposed to fix:
 
     >>> the_bug_id = 6
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet

@@ -9,7 +9,7 @@ import os
 
 from zope.testing.cleanup import cleanUp
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )

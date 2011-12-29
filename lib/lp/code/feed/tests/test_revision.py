@@ -11,7 +11,7 @@ from pytz import UTC
 from zope.component import getUtility
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.feed.branch import (
     ProductRevisionFeed,
     revision_feed_id,

@@ -17,7 +17,7 @@ from lp.services.webapp.error import (
     SystemErrorView,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
 from lp.testing.fixture import (
     PGBouncerFixture,

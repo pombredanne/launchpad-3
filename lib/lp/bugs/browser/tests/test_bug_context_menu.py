@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.enum import BugNotificationLevel
 from lp.services.features import get_relevant_feature_controller

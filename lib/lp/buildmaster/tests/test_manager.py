@@ -35,7 +35,7 @@ from lp.testing import (
     login,
     )
 from lp.services.log.logger import BufferLogger
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

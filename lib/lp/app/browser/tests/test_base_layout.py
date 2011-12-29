@@ -18,7 +18,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     person_logged_in,

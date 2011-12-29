@@ -133,9 +133,9 @@ from canonical.lazr.timeout import (
     set_default_timeout_function,
     )
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.testing import reset_logging
+from lp.testing import reset_logging
 from canonical.testing.profiled import profiled
-from canonical.testing.smtpd import SMTPController
+from lp.testing.smtpd import SMTPController
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
@@ -813,7 +813,7 @@ class DatabaseLayer(BaseLayer):
     def installMockDb(cls):
         assert cls.mockdb_mode is None, 'mock db already installed'
 
-        from canonical.testing.mockdb import (
+        from lp.testing.mockdb import (
                 script_filename, ScriptRecorder, ScriptPlayer,
                 )
 

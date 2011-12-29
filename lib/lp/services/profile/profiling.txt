@@ -18,7 +18,7 @@ variable.
 
 The pagetests profiler is created by the layer during its setUp.
 
-    >>> from canonical.testing.layers import PageTestLayer
+    >>> from lp.testing.layers import PageTestLayer
 
 (Save the existing configuration.)
 

@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.librarian.utils import copy_and_close
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (

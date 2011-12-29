@@ -265,7 +265,7 @@ def logger_options(parser, default=logging.INFO):
     True
 
     Cleanup:
-    >>> from canonical.testing import reset_logging
+    >>> from lp.testing import reset_logging
     >>> reset_logging()
 
     As part of the options parsing, the 'log' global variable is updated.
@@ -346,7 +346,7 @@ def logger(options=None, name=None):
 
     Cleanup:
 
-    >>> from canonical.testing import reset_logging
+    >>> from lp.testing import reset_logging
     >>> reset_logging()
     """
     if options is None:

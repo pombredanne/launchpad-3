@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp.testing import verifyObject
-from canonical.testing import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

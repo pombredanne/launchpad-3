@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (

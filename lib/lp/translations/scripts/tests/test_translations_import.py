@@ -8,7 +8,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.services.webapp import errorlog
-from canonical.testing.layers import LaunchpadScriptLayer
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory

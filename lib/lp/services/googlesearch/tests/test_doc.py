@@ -7,7 +7,7 @@ Run the doctests.
 
 import os
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     GoogleLaunchpadFunctionalLayer,
     )

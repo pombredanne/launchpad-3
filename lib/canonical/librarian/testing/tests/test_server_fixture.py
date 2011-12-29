@@ -18,11 +18,11 @@ from testtools.content_type import UTF8_TEXT
 from canonical.config import config
 from canonical.config.fixture import ConfigFixture
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.testing.ftests.test_layers import (
+from lp.testing.tests.test_layers_functional import (
     BaseLayerIsolator,
     LayerFixture,
     )
-from canonical.testing.layers import BaseLayer, DatabaseLayer
+from lp.testing.layers import BaseLayer, DatabaseLayer
 from lp.testing import TestCase
 
 

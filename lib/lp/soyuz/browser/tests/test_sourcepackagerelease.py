@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

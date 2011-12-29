@@ -6,7 +6,7 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase

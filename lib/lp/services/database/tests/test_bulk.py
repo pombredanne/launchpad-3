@@ -19,7 +19,7 @@ from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import BugAffectsPerson
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.model.person import Person

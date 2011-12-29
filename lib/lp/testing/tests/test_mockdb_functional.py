@@ -14,8 +14,9 @@ import psycopg2
 # from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.config import config, dbconfig
-from canonical.testing import mockdb, DatabaseLayer
-from canonical.testing.mockdb import ScriptPlayer, ScriptRecorder
+from lp.testing.layers import DatabaseLayer
+from lp.testing import mockdb
+from lp.testing.mockdb import ScriptPlayer, ScriptRecorder
 
 
 class MockDbTestCase(unittest.TestCase):

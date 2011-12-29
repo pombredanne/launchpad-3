@@ -27,7 +27,7 @@ from canonical.database.constants import UTC_NOW
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.webapp import canonical_url
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

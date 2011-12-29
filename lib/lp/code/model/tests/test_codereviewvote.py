@@ -4,7 +4,7 @@
 from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import (
     ClaimReviewFailed,

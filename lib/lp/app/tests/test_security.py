@@ -9,7 +9,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AuthorizationBase,

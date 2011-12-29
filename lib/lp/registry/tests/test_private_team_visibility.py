@@ -27,7 +27,7 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import (
     PersonVisibility,

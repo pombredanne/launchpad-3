@@ -11,7 +11,7 @@ from zope.interface.verify import verifyObject
 
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp.authorization import check_permission
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )

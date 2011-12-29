@@ -9,7 +9,7 @@ import transaction
 from zope.security.management import endInteraction
 
 from lp.services.webapp.interaction import ANONYMOUS
-from canonical.testing import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )

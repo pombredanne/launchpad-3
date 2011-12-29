@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

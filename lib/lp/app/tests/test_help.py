@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from lp.services.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.folder import ExportedFolder
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.testing.systemdocs import create_view
 
 # The root of the tree

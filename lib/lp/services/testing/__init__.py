@@ -21,7 +21,7 @@ import logging
 import os
 import unittest
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import PageTestSuite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,

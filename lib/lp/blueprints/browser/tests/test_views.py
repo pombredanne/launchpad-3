@@ -13,7 +13,7 @@ from storm.store import Store
 from testtools.matchers import LessThan
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
     logout,

@@ -7,7 +7,7 @@ Run the doctests and pagetests.
 
 import os
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

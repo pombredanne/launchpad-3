@@ -14,7 +14,7 @@ import tarfile
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.librarian.model import LibraryFileAliasSet
 from lp.services.scripts.tests import run_script

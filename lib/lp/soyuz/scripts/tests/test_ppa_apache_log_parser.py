@@ -11,7 +11,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.model.binarypackagerelease import (

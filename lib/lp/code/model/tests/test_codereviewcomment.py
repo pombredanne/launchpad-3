@@ -5,7 +5,7 @@
 
 from textwrap import dedent
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

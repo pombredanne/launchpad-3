@@ -8,7 +8,7 @@
 import transaction
 
 from lp.services.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 

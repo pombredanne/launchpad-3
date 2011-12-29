@@ -24,7 +24,7 @@ from lp.services.webapp.authorization import (
     clear_cache,
     )
 from lp.services.webapp.interaction import ANONYMOUS
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (

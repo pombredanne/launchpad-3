@@ -27,7 +27,7 @@ from lp.testing import (
     )
 from lp.services.webapp import snapshot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

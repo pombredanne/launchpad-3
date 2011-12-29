@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessLayer,
     )

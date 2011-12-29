@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import os
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
     cleanup_unpacked_dir,
     DSCFile,

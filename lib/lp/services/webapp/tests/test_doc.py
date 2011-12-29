@@ -10,7 +10,7 @@ __metaclass__ = type
 import os
 
 from lp.services.webapp.tests import test_notifications
-from canonical.testing.layers import (
+from lp.testing.layers import (
     FunctionalLayer,
     LaunchpadFunctionalLayer,
     )

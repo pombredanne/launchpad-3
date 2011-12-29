@@ -129,7 +129,7 @@ And then we need a way to process the uploads from the queue
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.scripts.soyuz_process_upload import (
     ...     ProcessUpload)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
     ...     """Simulate process-upload.py script run.
     ...

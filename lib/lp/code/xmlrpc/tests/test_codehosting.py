@@ -24,7 +24,7 @@ from lp.testing import (
     )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc import faults
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

@@ -6,7 +6,7 @@ __metaclass__ = type
 from launchpadlib.testing.helpers import salgado_with_full_permissions
 import transaction
 
-from canonical.testing.layers import AppServerLayer
+from lp.testing.layers import AppServerLayer
 from lp.testing import TestCaseWithFactory
 
 

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageName,
     BinaryAndSourcePackageNameVocabulary,

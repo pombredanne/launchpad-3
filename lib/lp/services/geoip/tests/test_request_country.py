@@ -11,7 +11,7 @@ from lp.testing import (
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.geoip.helpers import request_country
 
 

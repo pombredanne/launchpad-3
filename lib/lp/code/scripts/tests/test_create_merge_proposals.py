@@ -10,7 +10,7 @@ from cStringIO import StringIO
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.tests import run_script

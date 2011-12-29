@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
     cursor,
     ISOLATION_LEVEL_SERIALIZABLE,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     disconnect_stores,
     LaunchpadZopelessLayer,
     )

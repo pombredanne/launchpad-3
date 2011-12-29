@@ -133,7 +133,7 @@ exact circumstances we want to test below.
     >>> from canonical.database.sqlbase import commit
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

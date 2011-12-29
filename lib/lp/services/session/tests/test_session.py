@@ -10,7 +10,7 @@ from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,

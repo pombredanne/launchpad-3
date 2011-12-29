@@ -24,7 +24,7 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     LaunchpadFunctionalLayer,

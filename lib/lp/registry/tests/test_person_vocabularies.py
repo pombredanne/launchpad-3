@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login_person
 from lp.services.webapp.vocabulary import FilteredVocabularyBase
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

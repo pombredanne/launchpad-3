@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,

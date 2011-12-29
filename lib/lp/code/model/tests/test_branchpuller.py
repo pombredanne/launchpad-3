@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.testing import (

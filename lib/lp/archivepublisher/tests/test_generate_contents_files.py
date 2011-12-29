@@ -10,7 +10,7 @@ import os
 
 from testtools.matchers import StartsWith
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

@@ -10,7 +10,6 @@ from textwrap import dedent
 from canonical.config import config
 from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing import layers
 from lp.services.features import (
     getFeatureFlag,
     webapp,
@@ -18,6 +17,7 @@ from lp.services.features import (
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     CaptureOops,
+    layers,
     login_as,
     TestCase,
     TestCaseWithFactory,

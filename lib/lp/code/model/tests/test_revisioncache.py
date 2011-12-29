@@ -19,7 +19,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.model.revision import RevisionCache
 from lp.testing import (

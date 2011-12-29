@@ -9,7 +9,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

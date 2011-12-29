@@ -48,7 +48,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.url import urlappend
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

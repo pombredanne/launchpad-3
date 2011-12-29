@@ -25,7 +25,7 @@ from lp.services.searchbuilder import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

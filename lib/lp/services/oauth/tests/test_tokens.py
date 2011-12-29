@@ -23,7 +23,7 @@ from lp.services.webapp.interfaces import (
     OAuthPermission,
     )
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,

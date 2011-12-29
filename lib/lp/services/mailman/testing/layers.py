@@ -12,7 +12,7 @@ __all__ = [
 import atexit
 import os
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     LayerProcessController,
     )

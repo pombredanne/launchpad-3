@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
     IPersonSet,
     ISoftwareCenterAgentAPI,

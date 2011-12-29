@@ -5,7 +5,7 @@ import logging
 
 import transaction
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.model.translationimportqueue import (
