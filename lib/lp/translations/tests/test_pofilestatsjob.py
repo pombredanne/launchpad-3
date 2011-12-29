@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.testing import verifyObject
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage

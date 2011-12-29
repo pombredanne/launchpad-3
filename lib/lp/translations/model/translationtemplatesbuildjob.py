@@ -19,7 +19,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,

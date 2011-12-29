@@ -31,7 +31,7 @@ from zope.security.proxy import (
 
 from lpbuildd.slave import BuilderStatus
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import flush_database_updates
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,

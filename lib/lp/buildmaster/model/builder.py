@@ -43,7 +43,7 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,

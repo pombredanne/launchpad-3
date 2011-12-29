@@ -24,7 +24,7 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.url import (
     urlappend,
     urlparse,

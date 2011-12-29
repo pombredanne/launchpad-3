@@ -14,7 +14,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.scripts.tests import run_script
 from lp.testing.layers import ZopelessAppServerLayer

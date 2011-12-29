@@ -14,7 +14,7 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import subprocess
   >>> import os
   >>> import sys
-  >>> from canonical.config import config
+  >>> from lp.services.config import config
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",

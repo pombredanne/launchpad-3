@@ -11,7 +11,7 @@ import os
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.registry.interfaces.distributionmirror import MirrorContent
 from lp.registry.scripts.distributionmirror_prober import DistroMirrorProber
 from lp.services.scripts.base import (

@@ -450,7 +450,7 @@ OOPS references can take a number of forms:
 If the configuration value doesn't end with a slash, we won't add one. This
 lets us configure the URL to use query parameters.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> oops_root_url = """
     ...     [launchpad]
     ...     oops_root_url: http://foo/bar

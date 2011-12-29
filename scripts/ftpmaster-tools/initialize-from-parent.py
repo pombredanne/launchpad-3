@@ -10,7 +10,7 @@ import _pythonpath
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure

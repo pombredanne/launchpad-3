@@ -14,7 +14,7 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,

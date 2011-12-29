@@ -12,7 +12,7 @@ from twisted.python import log
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.librarian.client import url_path_quote
 from lp.services.database import (
     read_transaction,

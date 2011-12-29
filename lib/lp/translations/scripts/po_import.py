@@ -19,7 +19,7 @@ import sys
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.webapp import errorlog

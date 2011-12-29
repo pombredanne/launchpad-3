@@ -23,7 +23,7 @@ Launchpad develper:
 Foo Bar is a Launchpad developer, so he has access to the page. Since
 no timeout value is set, no soft timeout will be generated, though.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.database.soft_request_timeout is None
     True
 

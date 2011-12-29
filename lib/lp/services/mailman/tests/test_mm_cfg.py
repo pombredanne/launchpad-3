@@ -12,7 +12,7 @@ from Mailman import (
     Utils,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import FunctionalLayer
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.monkeypatches import monkey_patch

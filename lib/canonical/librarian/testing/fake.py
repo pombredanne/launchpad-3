@@ -25,7 +25,7 @@ from transaction.interfaces import ISynchronizer
 import zope.component
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     ILibrarianClient,

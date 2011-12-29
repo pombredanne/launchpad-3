@@ -120,7 +120,7 @@ from zope.security.proxy import (
     )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.adapter import (

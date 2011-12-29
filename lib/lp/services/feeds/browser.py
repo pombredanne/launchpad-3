@@ -28,7 +28,7 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import FeedsLayer
 from lp.services.webapp import (
     canonical_name,

@@ -1,6 +1,6 @@
 Ensure that canonical.database.sqlbase connects as we expect.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from canonical.database.sqlbase import (
     ...     connect, ISOLATION_LEVEL_DEFAULT, ISOLATION_LEVEL_SERIALIZABLE)
 

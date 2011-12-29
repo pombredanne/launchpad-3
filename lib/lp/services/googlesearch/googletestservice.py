@@ -21,7 +21,7 @@ import socket
 import subprocess
 import time
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.url import urlsplit
 from canonical.lazr.pidfile import (
     get_pid,

@@ -7,7 +7,7 @@ from the web interface.
 We set the `ubuntu_disable_filebug` flag to true, and set the URL to redirect
 to a local page (the default configuration is for a page on the Ubuntu wiki).
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... ubuntu_disable_filebug: true

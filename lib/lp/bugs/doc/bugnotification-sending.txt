@@ -351,7 +351,7 @@ Duplicates
 
 We will need some helper functions.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from lp.testing.layers import LaunchpadZopelessLayer
 

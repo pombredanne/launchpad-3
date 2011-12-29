@@ -10,7 +10,7 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing import (
     ANONYMOUS,
     login,

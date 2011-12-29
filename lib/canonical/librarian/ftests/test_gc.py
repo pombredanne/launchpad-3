@@ -20,7 +20,7 @@ import tempfile
 from sqlobject import SQLObjectNotFound
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import (
     connect,
     cursor,

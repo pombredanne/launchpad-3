@@ -14,7 +14,7 @@ import os
 from pytz import utc
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK

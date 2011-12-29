@@ -21,7 +21,7 @@ from fixtures import (
     )
 
 import canonical
-from canonical.config import config
+from lp.services.config import config
 from lp.services.daemons.tachandler import (
     TacException,
     TacTestSetup,

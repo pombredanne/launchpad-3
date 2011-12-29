@@ -59,7 +59,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.enumcol import EnumCol
 from lp.services.webapp import errorlog
 from lp.services.webapp.interaction import setupInteraction

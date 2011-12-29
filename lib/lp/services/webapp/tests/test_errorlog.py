@@ -29,7 +29,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import WebServiceLayer
 from lp.services.webapp.errorlog import (
     _filter_session_statement,

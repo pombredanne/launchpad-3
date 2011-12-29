@@ -37,7 +37,7 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.config import (
+from lp.services.config import (
     config,
     dbconfig,
     )

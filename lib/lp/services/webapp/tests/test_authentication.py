@@ -11,7 +11,7 @@ import unittest
 from contrib.oauth import OAuthRequest
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing import login
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.login import logInPrincipal

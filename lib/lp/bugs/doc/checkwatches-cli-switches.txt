@@ -27,7 +27,7 @@ external connections.
 
 If a bug tracker is disabled checkwatches won't try to update it.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

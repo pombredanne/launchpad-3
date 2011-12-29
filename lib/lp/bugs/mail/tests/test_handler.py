@@ -16,7 +16,7 @@ from zope.security.management import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import commit
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing.layers import (

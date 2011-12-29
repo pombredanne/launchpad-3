@@ -21,7 +21,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.testing import verifyObject
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta

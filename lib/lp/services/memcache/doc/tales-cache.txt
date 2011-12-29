@@ -254,7 +254,7 @@ different timeouts of different visibilities.
 
 We will disable the cache hit comments by claiming to be in production.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> original_instance_name = config.instance_name
     >>> config.push('is_production', """
     ...     [launchpad]

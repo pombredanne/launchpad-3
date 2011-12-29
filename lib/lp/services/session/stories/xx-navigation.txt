@@ -64,7 +64,7 @@ has to be refreshed.
 XXX: statik 2007-10-18 bug=154114: We don't yet normalize case in
 query strings.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> bug_search_feed_data = """
     ...     [launchpad]
     ...     is_bug_search_feed_active: True

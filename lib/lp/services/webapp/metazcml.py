@@ -51,7 +51,7 @@ from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 from zope.security.zcml import IPermissionDirective
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import FeedsLayer
 from lp.services.webapp.interfaces import (
     IApplicationMenu,

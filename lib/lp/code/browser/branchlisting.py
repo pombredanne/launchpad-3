@@ -51,7 +51,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.feeds.browser import (
     FeedsMixin,

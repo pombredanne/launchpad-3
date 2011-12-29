@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.vhosts import allvhosts
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.validators import LaunchpadValidationError

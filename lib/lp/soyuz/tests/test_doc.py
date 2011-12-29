@@ -9,7 +9,7 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import commit
 from lp.testing import logout
 from lp.testing.layers import (

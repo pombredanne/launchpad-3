@@ -53,7 +53,7 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp import (
     canonical_url,

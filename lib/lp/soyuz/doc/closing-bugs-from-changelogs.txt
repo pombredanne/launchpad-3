@@ -322,7 +322,7 @@ queue items have been processed.
     >>> import os.path
     >>> import subprocess
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> process = subprocess.Popen(
     ...     [sys.executable, script, "ubuntu"],

@@ -15,7 +15,7 @@ __metaclass__ = type
 import _pythonpath
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.codehosting.vfs import get_ro_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import (

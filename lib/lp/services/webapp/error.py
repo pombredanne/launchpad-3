@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 import lp.layers
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView

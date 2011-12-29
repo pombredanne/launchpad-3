@@ -30,7 +30,7 @@ import urllib2
 
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.bugs.adapters import treelookup
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (

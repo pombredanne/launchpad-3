@@ -43,7 +43,7 @@ We can delete a blob by UUID too:
 
 Size limits can be enforced, although this is turned off by default:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.max_blob_size
     0
     >>> max_blob_size = """

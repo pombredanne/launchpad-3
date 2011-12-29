@@ -14,7 +14,7 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

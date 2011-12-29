@@ -13,7 +13,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet

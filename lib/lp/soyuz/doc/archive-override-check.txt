@@ -18,7 +18,7 @@ history" in the sampledata to test those tools properly.
     >>> import os
     >>> import subprocess
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...     config.root, "scripts", "ftpmaster-tools",

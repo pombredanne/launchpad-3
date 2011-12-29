@@ -25,7 +25,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.helpers import shortlist
 from lp.services.webapp import (

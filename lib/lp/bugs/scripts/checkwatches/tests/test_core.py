@@ -12,7 +12,7 @@ from xmlrpclib import ProtocolError
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing import login
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet

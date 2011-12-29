@@ -7,7 +7,7 @@
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.translations.scripts.po_import import TranslationsImport
 
 if __name__ == '__main__':

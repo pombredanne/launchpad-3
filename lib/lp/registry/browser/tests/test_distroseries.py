@@ -34,7 +34,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from lp.services.webapp.authorization import check_permission

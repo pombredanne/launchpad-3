@@ -272,7 +272,7 @@ to test with, though.
 sendmail automatically adds Return-Path and Errors-To headers to
 provide better bounce handling.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from_addr, to_add, raw_message = stub.test_emails.pop()
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['Return-Path'] == config.canonical.bounce_address
