@@ -26,7 +26,7 @@ from lp.services.webapp.login import (
     logoutPerson,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     IAccountSet,

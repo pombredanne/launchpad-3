@@ -17,7 +17,7 @@ from textwrap import dedent
 import gpgme
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.mail.incoming import (

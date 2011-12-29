@@ -38,7 +38,7 @@ from lp.testing import (
 from canonical.lazr.testing.event import TestEventListener
 from lp.services.webapp.authorization import clear_cache
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,

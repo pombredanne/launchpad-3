@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     test_tales,
     TestCase,

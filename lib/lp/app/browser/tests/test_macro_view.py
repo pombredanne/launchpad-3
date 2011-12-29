@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.publisher.interfaces import NotFound
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.testing.publication import test_traverse
 

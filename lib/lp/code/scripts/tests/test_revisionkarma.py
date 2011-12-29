@@ -9,7 +9,7 @@ from storm.store import Store
 import transaction
 
 from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma

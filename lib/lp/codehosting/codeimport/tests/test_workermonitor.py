@@ -36,7 +36,7 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.services.webapp import errorlog
 from lp.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
     )

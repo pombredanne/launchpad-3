@@ -9,7 +9,7 @@ from datetime import (
 import pytz
 
 from lp.testing import login
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

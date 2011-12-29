@@ -10,7 +10,7 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,

@@ -26,7 +26,7 @@ from bzrlib.workingtree import WorkingTree
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 from lp.code.bzr import (
     BranchFormat,

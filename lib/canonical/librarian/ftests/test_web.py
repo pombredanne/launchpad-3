@@ -28,7 +28,7 @@ from canonical.librarian.client import (
     LibrarianClient,
     )
 from canonical.librarian.interfaces import DownloadFailed
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

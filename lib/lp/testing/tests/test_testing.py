@@ -9,7 +9,7 @@ import os
 import tempfile
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,

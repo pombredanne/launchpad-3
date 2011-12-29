@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,

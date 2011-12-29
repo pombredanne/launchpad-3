@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
 

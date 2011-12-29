@@ -12,7 +12,7 @@ from testtools.matchers import Equals
 from zope.component import queryAdapter
 from zope.security.checker import getChecker
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.security import IAuthorization
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import (

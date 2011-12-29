@@ -110,7 +110,7 @@ possibilities for the user.
 
     >>> import transaction
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

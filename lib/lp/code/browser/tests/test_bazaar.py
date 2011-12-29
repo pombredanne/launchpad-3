@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.bazaar import BazaarApplicationView
 from lp.testing import (
     ANONYMOUS,

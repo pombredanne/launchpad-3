@@ -29,7 +29,7 @@ from canonical.database.constants import UTC_NOW
 from lp import _
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,

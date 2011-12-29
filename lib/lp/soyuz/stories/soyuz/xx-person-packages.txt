@@ -290,7 +290,7 @@ his private one:
 It will now disppear from the listings because it's not published in any
 public archives.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge()
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")

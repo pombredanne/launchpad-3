@@ -26,7 +26,7 @@ from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
     IHugeVocabulary,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.suggestion import (
     SuggestionWidget,
     TargetBranchWidget,

@@ -10,7 +10,7 @@ from StringIO import StringIO
 
 from fixtures import EnvironmentVariableFixture
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.services.rabbit.server import RabbitServer
 from lp.testing import TestCase
 

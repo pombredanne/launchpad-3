@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.testing import TestCaseWithFactory
 

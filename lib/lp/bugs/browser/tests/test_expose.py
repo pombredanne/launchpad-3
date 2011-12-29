@@ -22,7 +22,7 @@ from zope.traversing.browser import absoluteURL
 
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
     expose_enum_to_js,
     expose_user_administered_teams_to_js,

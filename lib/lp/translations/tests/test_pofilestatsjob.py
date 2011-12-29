@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from canonical.config import config
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.services.job.interfaces.job import (
     IJobSource,

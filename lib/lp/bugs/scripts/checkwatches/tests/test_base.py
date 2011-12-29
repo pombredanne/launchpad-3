@@ -14,7 +14,7 @@ from lp.services.webapp.interaction import (
     endInteraction,
     queryInteraction,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.services.database.isolation import (
     is_transaction_in_progress,

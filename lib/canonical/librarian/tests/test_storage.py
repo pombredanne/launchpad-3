@@ -13,7 +13,7 @@ from lp.services.webapp.interfaces import (
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class LibrarianStorageTestCase(unittest.TestCase):

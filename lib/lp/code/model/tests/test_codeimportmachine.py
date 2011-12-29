@@ -8,7 +8,7 @@ Other tests are in codeimport-machine.txt."""
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     CodeImportMachineOfflineReason,
     CodeImportMachineState,

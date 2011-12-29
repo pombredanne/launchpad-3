@@ -8,7 +8,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.propertycache import cachedproperty
 from lp.testing import (

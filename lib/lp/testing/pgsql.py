@@ -187,7 +187,7 @@ class PgTestSetup:
         if template is not None:
             self.template = template
         if dbname is PgTestSetup.dynamic:
-            from canonical.testing.layers import BaseLayer
+            from lp.testing.layers import BaseLayer
             if os.environ.get('LP_TEST_INSTANCE'):
                 self.dbname = "%s_%s" % (
                     self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))

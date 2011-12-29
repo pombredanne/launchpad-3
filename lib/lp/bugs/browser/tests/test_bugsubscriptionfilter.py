@@ -16,7 +16,7 @@ import transaction
 
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

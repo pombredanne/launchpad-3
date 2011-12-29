@@ -8,7 +8,7 @@ __metaclass__ = type
 import StringIO
 import sys
 
-from canonical.testing.layers import BaseLayer
+from lp.testing.layers import BaseLayer
 from lp.services import stacktrace
 from lp.testing import TestCase
 

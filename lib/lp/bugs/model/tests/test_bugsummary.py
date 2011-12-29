@@ -11,7 +11,7 @@ from pytz import utc
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IMasterStore
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,

@@ -9,7 +9,7 @@ from lazr.restfulclient.errors import Unauthorized
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,

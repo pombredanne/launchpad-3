@@ -8,7 +8,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.interfaces.specification import ISpecificationSet

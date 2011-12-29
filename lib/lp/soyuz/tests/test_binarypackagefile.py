@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.files import IBinaryPackageFileSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import Provides

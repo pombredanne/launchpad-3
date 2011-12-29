@@ -10,7 +10,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,

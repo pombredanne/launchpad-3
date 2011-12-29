@@ -47,7 +47,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,

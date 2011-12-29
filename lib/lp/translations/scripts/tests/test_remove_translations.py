@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.loghandler import Handler
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import (

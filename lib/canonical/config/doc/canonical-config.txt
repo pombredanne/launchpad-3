@@ -16,7 +16,7 @@ safe (not that this will be a problem if we stick with simple
 configuration).
 
     >>> from canonical.config import config
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> expected = (
     ...     'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
     >>> expected == config.database.rw_main_master
@@ -46,7 +46,7 @@ otherwise it loads launchpad-lazr.conf. The general rule is
 configs/<instance_name>/<process_name>.conf. The testrunner sets the
 instance_name to 'testrunner' and additionally uses unique temporary
 configs to permit changing the config during tests (but not if we are
-using persistent helpers - see canonical.testing.layers).
+using persistent helpers - see lp.testing.layers).
 
     >>> (config.instance_name == 'testrunner' or
     ...     config.instance_name == os.environ['LPCONFIG'])

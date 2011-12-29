@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from zope.component import getUtility
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

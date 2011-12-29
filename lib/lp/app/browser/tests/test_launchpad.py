@@ -20,7 +20,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlappend
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

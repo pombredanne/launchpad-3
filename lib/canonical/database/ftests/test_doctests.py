@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

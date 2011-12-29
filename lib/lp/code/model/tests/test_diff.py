@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

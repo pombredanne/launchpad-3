@@ -2,7 +2,7 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<!-- Used by the FunctionalLayer in canonical.testing.layers. -->
+<!-- Used by the FunctionalLayer in lp.testing.layers. -->
 
 <configure
     xmlns="http://namespaces.zope.org/zope"

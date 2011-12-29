@@ -22,7 +22,7 @@ from lp.testing import (
     login,
     login_person,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     BaseLayer,
     DatabaseFunctionalLayer,

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from storm.locals import Store
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import BrowsesWithQueryLimit
 

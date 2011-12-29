@@ -27,7 +27,7 @@ from zope.security.proxy import removeSecurityProxy
 import canonical
 from canonical.config import config
 from lp.services.daemons.tachandler import TacTestSetup
-from canonical.testing.layers import (
+from lp.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
     )

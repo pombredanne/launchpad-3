@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.testing import TestCaseWithFactory

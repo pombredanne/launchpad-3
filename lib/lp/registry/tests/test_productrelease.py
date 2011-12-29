@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.testing import TestCaseWithFactory
 

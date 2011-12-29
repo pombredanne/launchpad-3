@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus

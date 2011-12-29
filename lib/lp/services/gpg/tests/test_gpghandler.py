@@ -27,7 +27,7 @@ from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,

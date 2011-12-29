@@ -22,7 +22,7 @@ from lp.testing import (
     )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.code.browser.widgets.branch import (
     BranchPopupWidget,
     NoProductError,

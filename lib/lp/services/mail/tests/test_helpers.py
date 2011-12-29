@@ -13,7 +13,7 @@ from zope.interface import (
     )
 
 from lp.services.webapp.interaction import get_current_principal
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,

@@ -11,7 +11,7 @@ from zope.security.management import getInteraction
 
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import (
     ANONYMOUS,

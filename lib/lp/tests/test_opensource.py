@@ -23,7 +23,7 @@ import unittest
 import launchpadlib
 import wadllib
 
-from canonical.testing.layers import AppServerLayer
+from lp.testing.layers import AppServerLayer
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

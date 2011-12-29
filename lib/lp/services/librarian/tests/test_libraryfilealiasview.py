@@ -9,7 +9,7 @@ from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.app.errors import GoneError
 from lp.testing import TestCaseWithFactory
 

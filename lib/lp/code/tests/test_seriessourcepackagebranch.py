@@ -11,7 +11,7 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     ISeriesSourcePackageBranch,

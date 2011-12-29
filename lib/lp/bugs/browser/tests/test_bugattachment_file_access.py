@@ -22,7 +22,7 @@ from zope.security.management import endInteraction
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )

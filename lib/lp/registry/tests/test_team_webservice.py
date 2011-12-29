@@ -12,7 +12,7 @@ from lazr.restfulclient.errors import (
     Unauthorized,
     )
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer, 
     )

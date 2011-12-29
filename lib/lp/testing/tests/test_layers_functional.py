@@ -38,7 +38,7 @@ from canonical.librarian.client import (
     UploadFailed,
     )
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     BaseLayer,
     DatabaseLayer,
@@ -571,4 +571,4 @@ class TestNameTestCase(testtools.TestCase):
         self.failUnlessEqual(
                 BaseLayer.test_name,
                 "testTestName "
-                "(canonical.testing.ftests.test_layers.TestNameTestCase)")
+                "(lp.testing.tests.test_layers_functional.TestNameTestCase)")

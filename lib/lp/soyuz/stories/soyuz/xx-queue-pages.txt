@@ -595,6 +595,6 @@ button will be disabled.
 Clean up
 ========
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
 

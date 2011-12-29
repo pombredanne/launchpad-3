@@ -10,7 +10,7 @@ from storm.locals import Store
 import transaction
 
 from lp.services.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

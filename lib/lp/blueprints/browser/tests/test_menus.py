@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.browser.specification import (
     SpecificationActionMenu,
     SpecificationContextMenu,

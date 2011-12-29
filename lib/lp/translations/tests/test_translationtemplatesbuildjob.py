@@ -14,7 +14,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

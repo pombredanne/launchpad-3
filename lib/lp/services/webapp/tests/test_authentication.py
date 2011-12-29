@@ -17,7 +17,7 @@ from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.login import logInPrincipal
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

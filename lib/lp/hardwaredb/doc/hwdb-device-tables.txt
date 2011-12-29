@@ -22,7 +22,7 @@ row with the same name raises an IntegrityError error.
 
     >>> from storm.store import Store
     >>> store = Store.of(intel_name)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> vendor_name_set.create('Intel')
     <HWVendorName ...

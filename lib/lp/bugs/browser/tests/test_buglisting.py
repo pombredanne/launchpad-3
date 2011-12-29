@@ -18,7 +18,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person

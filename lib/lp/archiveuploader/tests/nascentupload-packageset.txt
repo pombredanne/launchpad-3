@@ -3,7 +3,7 @@ In order to prepare the tests below some initialization is required.
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import datadir, getPolicy
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from lp.soyuz.enums import ArchivePermissionType

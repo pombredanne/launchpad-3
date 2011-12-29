@@ -17,7 +17,7 @@ from zope.interface.verify import verifyObject
 from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

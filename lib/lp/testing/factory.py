@@ -4266,7 +4266,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
-        from canonical.testing import BaseLayer
+        from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
             "test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)

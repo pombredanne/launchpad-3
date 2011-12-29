@@ -17,7 +17,7 @@ from canonical.database.sqlbase import (
     )
 from lp.testing import login
 from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet

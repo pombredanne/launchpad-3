@@ -20,7 +20,7 @@ from Mailman.Queue.XMLRPCRunner import (
     )
 
 from canonical.config import config
-from canonical.testing.layers import (
+from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
     )

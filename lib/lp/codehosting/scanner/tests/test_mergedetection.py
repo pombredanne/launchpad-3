@@ -14,7 +14,7 @@ from zope.event import notify
 
 from canonical.config import config
 from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,

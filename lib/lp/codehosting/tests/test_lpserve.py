@@ -10,7 +10,7 @@ from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 from bzrlib.smart import medium
 from bzrlib.transport import remote
 
-from canonical.testing.layers import LaunchpadLayer
+from lp.testing.layers import LaunchpadLayer
 from lp.testing.fixture import CaptureOops
 
 

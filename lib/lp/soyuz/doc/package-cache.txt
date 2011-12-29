@@ -492,7 +492,7 @@ We will use `SoyuzTestPublisher` for creating convenient publications.
     ...              PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...              SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> test_publisher = SoyuzTestPublisher()
 

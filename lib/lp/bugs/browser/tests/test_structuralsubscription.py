@@ -13,7 +13,7 @@ from lp.testing import (
     logout,
     )
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import (
+from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )

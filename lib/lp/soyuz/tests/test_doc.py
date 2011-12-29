@@ -12,7 +12,7 @@ import unittest
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from lp.testing import logout
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

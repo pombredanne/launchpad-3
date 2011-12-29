@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.services.job.interfaces.job import (
     IRunnableJob,

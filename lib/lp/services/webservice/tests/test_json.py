@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from lazr.restful.interfaces import IJSONPublishable
 
-from canonical.testing.layers import FunctionalLayer
+from lp.testing.layers import FunctionalLayer
 from lp.services.webservice.json import StrJSONSerializer
 from lp.testing import TestCase
 

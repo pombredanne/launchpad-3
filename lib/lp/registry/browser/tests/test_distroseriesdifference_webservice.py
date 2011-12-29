@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.publisher import canonical_url
-from canonical.testing import AppServerLayer
+from lp.testing.layers import AppServerLayer
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,

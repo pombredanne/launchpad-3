@@ -8,7 +8,7 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,

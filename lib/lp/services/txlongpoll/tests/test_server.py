@@ -10,7 +10,7 @@ import os
 from StringIO import StringIO
 
 from canonical.config import config
-from canonical.testing.layers import RabbitMQLayer
+from lp.testing.layers import RabbitMQLayer
 from lp.services.txlongpoll.server import TxLongPollServer
 from lp.testing import TestCase
 

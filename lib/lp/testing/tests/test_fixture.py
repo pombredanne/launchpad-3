@@ -31,7 +31,7 @@ from lp.services.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     BaseLayer,
     DatabaseLayer,
     LaunchpadLayer,

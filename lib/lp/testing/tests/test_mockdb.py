@@ -11,7 +11,7 @@ import os
 import os.path
 import unittest
 
-from canonical.testing import mockdb
+from lp.testing import mockdb
 
 
 class MockDbTestCase(unittest.TestCase):

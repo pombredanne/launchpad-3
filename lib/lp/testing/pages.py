@@ -44,7 +44,7 @@ from zope.testbrowser.testing import Browser
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.url import urlsplit
-from canonical.testing.layers import PageTestLayer
+from lp.testing.layers import PageTestLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NameAlreadyTaken
 from lp.registry.interfaces.teammembership import TeamMembershipStatus

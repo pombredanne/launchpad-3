@@ -36,6 +36,7 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'reset_logging',
     'run_process',
     'run_script',
     'run_with_login',
@@ -71,7 +72,6 @@ from inspect import (
     )
 import logging
 import os
-from pprint import pformat
 import re
 from select import select
 import shutil
@@ -176,6 +176,7 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
+import lp_sitecustomize
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
@@ -195,6 +196,44 @@ test_tales
 with_anonymous_login
 with_celebrity_logged_in
 with_person_logged_in
+
+
+def reset_logging():
+    """Reset the logging system back to defaults
+
+    Currently, defaults means 'the way the Z3 testrunner sets it up'
+    plus customizations made in lp_sitecustomize
+    """
+    # Remove all handlers from non-root loggers, and remove the loggers too.
+    loggerDict = logging.Logger.manager.loggerDict
+    for name, logger in list(loggerDict.items()):
+        if name == 'pagetests-access':
+            # Don't reset the hit logger used by the test infrastructure.
+            continue
+        if not isinstance(logger, logging.PlaceHolder):
+            for handler in list(logger.handlers):
+                logger.removeHandler(handler)
+        del loggerDict[name]
+
+    # Remove all handlers from the root logger
+    root = logging.getLogger('')
+    for handler in root.handlers:
+        root.removeHandler(handler)
+
+    # Set the root logger's log level back to the default level: WARNING.
+    root.setLevel(logging.WARNING)
+
+    # Clean out the guts of the logging module. We don't want handlers that
+    # have already been closed hanging around for the atexit handler to barf
+    # on, for example.
+    del logging._handlerList[:]
+    logging._handlers.clear()
+
+    # Reset the setup
+    from zope.testing.testrunner.runner import Runner
+    from zope.testing.testrunner.logsupport import Logging
+    Logging(Runner()).global_setup()
+    lp_sitecustomize.customize_logger()
 
 
 class FakeTime:
@@ -594,7 +633,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         super(TestCase, self).setUp()
         # Circular imports.
         from lp.testing.factory import ObjectFactory
-        from canonical.testing.layers import LibrarianLayer
+        from lp.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         # You can call self.oops_capture.sync() to collect oopses from
@@ -840,7 +879,7 @@ class WebServiceTestCase(TestCaseWithFactory):
         # XXX wgrant 2011-03-09 bug=505913:
         # TestTwistedJobRunner.test_timeout fails if this is at the
         # module level. There is probably some hidden circular import.
-        from canonical.testing.layers import AppServerLayer
+        from lp.testing.layers import AppServerLayer
         return AppServerLayer
 
     def setUp(self):

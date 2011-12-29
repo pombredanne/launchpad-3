@@ -40,7 +40,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.login import logInPrincipal
 from lp.services.webapp.publisher import LaunchpadView
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
     LayerProcessController,

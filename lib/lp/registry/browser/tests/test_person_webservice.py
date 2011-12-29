@@ -7,7 +7,7 @@ from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,
     TestCaseWithFactory,

@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.scripts.tests import run_script
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
