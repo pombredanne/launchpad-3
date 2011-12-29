@@ -92,7 +92,7 @@ def find_config_dir(instance_name):
         "Can't find %s in %s" % (instance_name, ", ".join(CONFIG_ROOT_DIRS)))
 
 
-class CanonicalConfig:
+class LaunchpadConfig:
     """
     Singleton configuration, accessed via the `config` module global.
 
@@ -102,7 +102,7 @@ class CanonicalConfig:
     """
 
     def __init__(self, instance_name=None, process_name=None):
-        """Create a new instance of CanonicalConfig.
+        """Create a new instance of LaunchpadConfig.
 
         :param instance_name: the configuration instance to use. Defaults to
             the value of the LPCONFIG environment variable.
@@ -171,7 +171,7 @@ class CanonicalConfig:
     def process_name(self):
         """Return or set the current process's name to select a conf.
 
-        CanonicalConfig loads the conf file named for the process. When
+        LaunchpadConfig loads the conf file named for the process. When
         the conf file does not exist, it loads launchpad-lazr.conf instead.
         """
         return self._process_name
@@ -180,7 +180,7 @@ class CanonicalConfig:
         """Set the name of the process to select a conf file.
 
         This method is used to set the process_name if it should be
-        different from the name obtained from sys.argv[0]. CanonicalConfig
+        different from the name obtained from sys.argv[0]. LaunchpadConfig
         will try to load <process_name>-lazr.conf if it exists. Otherwise,
         it will load launchpad-lazr.conf.
         """
@@ -246,7 +246,7 @@ class CanonicalConfig:
         print >> loader, """
             <configure xmlns="http://namespaces.zope.org/zope">
                 <!-- This file automatically generated using
-                     lp.services.config.CanonicalConfig.generate_overrides.
+                     lp.services.config.LaunchpadConfig.generate_overrides.
                      DO NOT EDIT. -->
                 <include files="%s/*.zcml" />
                 </configure>""" % self.config_dir
@@ -291,7 +291,7 @@ class CanonicalConfig:
         return iter(self._config)
 
 
-config = CanonicalConfig()
+config = LaunchpadConfig()
 
 
 def url(value):

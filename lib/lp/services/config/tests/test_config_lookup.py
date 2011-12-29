@@ -117,7 +117,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
     def test_Config_uses_find_config_dir(self):
         instance_config_dir = self.setUpInstanceConfig('an_instance')
         # Create a very simple config file.
-        cfg = config.CanonicalConfig('an_instance')
+        cfg = config.LaunchpadConfig('an_instance')
         config_file = open(
             os.path.join(instance_config_dir, 'launchpad-lazr.conf'), 'w')
         config_file.write('[launchpad]\ndefault_batch_size=2323')
@@ -129,11 +129,11 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
 
 
 class TestGenerateOverrides(ConfigTestCase):
-    """Test the generate_overrides method of CanonicalConfig."""
+    """Test the generate_overrides method of LaunchpadConfig."""
 
     def test_generate_overrides(self):
         instance_dir = self.setUpInstanceConfig('zcmltest')
-        cfg = config.CanonicalConfig('zcmltest')
+        cfg = config.LaunchpadConfig('zcmltest')
         # The ZCML override file is generated in the root of the tree.
         # Set that root to the temporary directory.
         cfg.root = self.temp_config_root_dir

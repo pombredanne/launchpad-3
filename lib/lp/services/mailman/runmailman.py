@@ -27,7 +27,7 @@ def mailmanctl(command, quiet=False, config=None, *additional_arguments):
     :param command: the command to use.
     :param quiet: when this is true, no output will happen unless, an error
         happens.
-    :param config: The CanonicalConfig object to take configuration from.
+    :param config: The LaunchpadConfig object to take configuration from.
         Defaults to the global one.
     :param additional_arguments: additional command arguments to pass to the
         mailmanctl program.
@@ -108,7 +108,7 @@ def start_mailman(quiet=False, config=None):
 
     :param quiet: when this is true, no output will happen unless, an error
         happens.
-    :param config: The CanonicalConfig object to take configuration from.
+    :param config: The LaunchpadConfig object to take configuration from.
         Defaults to the global one.
     :raises RuntimeException: when Mailman fails to start successfully.
     """

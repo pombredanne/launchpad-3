@@ -28,9 +28,9 @@ servers and log files. These will be replaced when lazr.config is
 bootstrapped into the Zope startup process.
 
 
-== CanonicalConfig ==
+== LaunchpadConfig ==
 
-Launchpad uses a singleton CanonicalConfig object to select the config
+Launchpad uses a singleton LaunchpadConfig object to select the config
 to load and manage its state.
 
 
@@ -46,8 +46,8 @@ this. The test.py calls:
 to force the testrunner configuration to be loaded.
 
 An instance directory may contain several lazr.config conf files.
-CanonicalConfig loads the config file named for the process that is
-running, eg. if the processes name is 'test', CanonicalConfig looks for
+LaunchpadConfig loads the config file named for the process that is
+running, eg. if the processes name is 'test', LaunchpadConfig looks for
 test-lazr.conf. launchpad-lazr.conf is loaded if not a lazr config files
 named for the process.
 
@@ -64,9 +64,9 @@ All this information is available in the config object.
     '.../configs/development/launchpad-lazr.conf'
 
 
-=== Accessing the CanonicalConfig in code ===
+=== Accessing the LaunchpadConfig in code ===
 
-The CanonicalConfig singleton is exposed as config in its module.
+The LaunchpadConfig singleton is exposed as config in its module.
 
     from lp.services.config import config
 
@@ -91,18 +91,18 @@ You can learn more about lp.services.config in the doctest located at
     lib/canonical/launchpad/doc/canonical-config.txt
 
 
-=== Testing with CanonicalConfig ===
+=== Testing with LaunchpadConfig ===
 
 Configurations are meant to be immutable--applications should never
 alter the config. Nor should tests. Older code and tests assumed
 that because the keys looked like attributes of the config, they
 could be set. This was *wrong*. The code was actually adding an
-attribute to the CanonicalConfig instance rather that updating to
+attribute to the LaunchpadConfig instance rather that updating to
 underlying config object. While the code intended to reset the key's
 value to the original value, it would have to delete the new attribute
 to really restore the config singleton.
 
-CanonicalConfig supports testing by exposing lazr.config's push() and
+LaunchpadConfig supports testing by exposing lazr.config's push() and
 pop() methods to add and remove configurations to the stack of
 ConfigData. The configuration can be modified and safely restored.
 

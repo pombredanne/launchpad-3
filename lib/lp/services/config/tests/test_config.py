@@ -70,7 +70,7 @@ def make_config_test(config_file, description):
     return LAZRConfigTestCase
 
 
-class TestCanonicalConfig(unittest.TestCase):
+class TestLaunchpadConfig(unittest.TestCase):
 
     def test_dir(self):
         # dir(config) returns methods, variables and section names.
@@ -119,5 +119,5 @@ def test_suite():
                     # This file is not a config that can be validated.
                     pass
     # Other tests.
-    suite.addTest(load_testcase(TestCanonicalConfig))
+    suite.addTest(load_testcase(TestLaunchpadConfig))
     return suite
