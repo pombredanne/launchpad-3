@@ -24,6 +24,9 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'menus.txt': LayeredDocFileSuite(
+        '../doc/menus.txt', layer=None,
+        ),
     }
 
 
