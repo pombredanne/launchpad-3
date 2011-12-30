@@ -31,13 +31,14 @@ from zope.component import (
     getUtility,
     )
 
-from lp.services.config import config
 from canonical.lazr.pidfile import pidfile_path
-from canonical.librarian.client import (
+from lp.services.config import config
+from lp.services.librarian.client import (
     LibrarianClient,
     UploadFailed,
     )
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
+from lp.services.memcache.client import memcache_client_factory
 from lp.testing.layers import (
     AppServerLayer,
     BaseLayer,
@@ -56,7 +57,6 @@ from lp.testing.layers import (
     RabbitMQLayer,
     ZopelessLayer,
     )
-from lp.services.memcache.client import memcache_client_factory
 
 
 class BaseLayerIsolator(Fixture):

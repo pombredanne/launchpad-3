@@ -27,12 +27,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.librarian.utils import copy_and_close
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
@@ -40,6 +34,12 @@ from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
+    )
+from lp.services.librarian.utils import copy_and_close
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (

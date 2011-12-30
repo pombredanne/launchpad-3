@@ -22,7 +22,6 @@ from debian.deb822 import (
     )
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -41,6 +40,7 @@ from lp.archivepublisher.utils import (
     RepositoryIndexFile,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,

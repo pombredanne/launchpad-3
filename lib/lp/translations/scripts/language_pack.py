@@ -26,11 +26,11 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.librarian.interfaces import (
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.translations.enums import LanguagePackType
 from lp.translations.interfaces.languagepack import ILanguagePackSet

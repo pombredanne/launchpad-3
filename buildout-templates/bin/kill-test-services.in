@@ -18,9 +18,9 @@ config.generate_overrides()
 
 import sys
 
-from lp.testing.layers import MemcachedLayer
-from canonical.librarian.testing.server import LibrarianTestSetup
+from lp.services.librarianserver.testing.server import LibrarianTestSetup
 from lp.services.osutils import kill_by_pidfile
+from lp.testing.layers import MemcachedLayer
 
 
 def main(args):
