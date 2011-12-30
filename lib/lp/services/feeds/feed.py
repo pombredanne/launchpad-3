@@ -30,18 +30,7 @@ from zope.datetime import rfc1123_date
 from zope.interface import implements
 
 from lp.services.config import config
-# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
-# from canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    urlappend,
-    urlparse,
-    )
-from lp.services.webapp.vhosts import allvhosts
-from canonical.lazr.interfaces import (
+from lp.services.feeds.interfaces.feed import (
     IFeed,
     IFeedEntry,
     IFeedPerson,
@@ -50,6 +39,17 @@ from canonical.lazr.interfaces import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.utils import utc_now
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    urlparse,
+    )
+# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
+# from canonical.launchpad, but we're doing it here as an expediency to get a
+# working prototype.
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vhosts import allvhosts
 
 
 SUPPORTED_FEEDS = ('.atom', '.html')

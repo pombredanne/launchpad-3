@@ -24,7 +24,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.lazr.interfaces import IFeedPerson
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -43,6 +42,7 @@ from lp.services.feeds.feed import (
     FeedTypedData,
     MINUTES,
     )
+from lp.services.feeds.interfaces.feed import IFeedPerson
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,

@@ -33,7 +33,7 @@ from lp.services.feeds.feed import (
     FeedPerson,
     FeedTypedData,
     )
-from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.webapp import (
     canonical_url,
     urlappend,

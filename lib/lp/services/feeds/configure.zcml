@@ -10,19 +10,19 @@
 
     <securedutility
         class="lp.systemhomes.FeedsApplication"
-        provides="lp.services.feeds.interfaces.IFeedsApplication">
+        provides="lp.services.feeds.interfaces.application.IFeedsApplication">
         <allow
-            interface="lp.services.feeds.interfaces.IFeedsApplication" />
+            interface="lp.services.feeds.interfaces.application.IFeedsApplication" />
     </securedutility>
 
     <adapter
         provides="lp.services.webapp.interfaces.ICanonicalUrlData"
-        for="lp.services.feeds.interfaces.IFeedsApplication"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         factory="lp.services.feeds.browser.FeedsRootUrlData"
         />
 
     <browser:defaultView
-        for="lp.services.feeds.interfaces.IFeedsApplication"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         name="+index"
         />
 
@@ -33,7 +33,7 @@
 
     <!-- Macros -->
     <browser:page
-        for="canonical.lazr.interfaces.feed.IFeedEntry"
+        for="lp.services.feeds.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
         template="templates/feed-entry-atom.pt"
