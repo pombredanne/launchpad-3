@@ -102,7 +102,6 @@ from zope.security.management import (
 from zope.server.logger.pythonlogger import PythonLogger
 
 from canonical.lazr import pidfile
-from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -253,6 +252,20 @@ def wait_children(seconds=120):
             break
         if until is not None and now() > until:
             break
+
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of FunctionalLayer.testSetUp() to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+
+    def sync(self):
+        pass
 
 
 class BaseLayer:
