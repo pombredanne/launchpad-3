@@ -91,7 +91,7 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from canonical.lazr import (
+from canonical.lazr.folder import (
     ExportedFolder,
     ExportedImageFolder,
     )
