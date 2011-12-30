@@ -8,7 +8,7 @@ containing inline help documentation.
 These are lazr.folder.ExportedFolder that automatically export
 their subdirectories.
 
-    >>> from canonical.lazr.folder import ExportedFolder
+    >>> from lp.app.browser.folder import ExportedFolder
     >>> from lp.services.inlinehelp.browser import HelpFolder
 
     >>> issubclass(HelpFolder, ExportedFolder)

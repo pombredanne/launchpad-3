@@ -9,7 +9,7 @@ import unittest
 from zope.component import getUtility
 
 from lp.services.webapp.interfaces import ILaunchpadApplication
-from canonical.lazr.folder import ExportedFolder
+from lp.app.browser.folder import ExportedFolder
 from lp.testing.layers import FunctionalLayer
 from lp.testing.systemdocs import create_view
 

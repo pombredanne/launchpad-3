@@ -62,7 +62,7 @@ is generated from scratch.
 
 Unlike the test strings we used earlier, this is a valid WADL file.
 
-    >>> from canonical.lazr.xml import XMLValidator
+    >>> from lp.services.xml import XMLValidator
     >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
 

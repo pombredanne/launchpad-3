@@ -31,7 +31,7 @@ from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.lazr.folder import ExportedFolder
+from lp.app.browser.folder import ExportedFolder
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
