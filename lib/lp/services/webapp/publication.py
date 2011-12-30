@@ -55,7 +55,7 @@ from zope.publisher.publish import mapply
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 import lp.layers as layers
 from lp.services.database.readonly import is_read_only
 import lp.services.webapp.adapter as da

@@ -107,7 +107,7 @@ configurations are provided to allow overriding the Expires
 and Cache-Control headers so that the feeds will be cached longer
 by browsers and the reverse-proxy in front of the feeds servers.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from canonical.lazr.feed.feed import FeedBase
     >>> from lp.bugs.feed.bug import BugsFeedBase
     >>> config.launchpad.max_feed_cache_minutes

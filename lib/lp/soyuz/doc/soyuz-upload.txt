@@ -38,7 +38,7 @@ uploaded files in.
 Now let's copy the files into separate upload directories, as if they'd
 been uploaded over FTP.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.archiveuploader.tagfiles import parse_tagfile
     >>> import glob
     >>> test_files_dir = os.path.join(config.root,

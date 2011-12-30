@@ -73,7 +73,7 @@ on our testdata are old, and in these tests we don't care to be told.
 Since the User gets authenticated using OpenPGP signatures we have to
 import the keys before handleMail is called.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
     >>> commit()

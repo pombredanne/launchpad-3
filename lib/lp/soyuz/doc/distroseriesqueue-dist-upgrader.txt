@@ -85,7 +85,7 @@ Let's check how queue tool handles dist_upgrader uploads:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...     config.root, "scripts", "ftpmaster-tools", "queue")

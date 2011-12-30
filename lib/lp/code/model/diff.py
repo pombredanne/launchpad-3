@@ -40,7 +40,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (

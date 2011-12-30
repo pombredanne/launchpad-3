@@ -24,7 +24,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from lp import _
 from lp.services.database.lpstorm import IStore

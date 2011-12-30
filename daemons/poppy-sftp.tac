@@ -18,7 +18,7 @@ from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 

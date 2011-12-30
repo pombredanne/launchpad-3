@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import tempfile
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (

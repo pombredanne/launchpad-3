@@ -14,7 +14,7 @@ from Mailman import Errors
 from Mailman.Handlers import LPSize
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

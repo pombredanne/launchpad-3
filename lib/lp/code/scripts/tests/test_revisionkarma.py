@@ -8,7 +8,7 @@ __metaclass__ = type
 from storm.store import Store
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator

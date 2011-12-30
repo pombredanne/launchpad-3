@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet

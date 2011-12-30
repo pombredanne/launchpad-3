@@ -10,7 +10,7 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import sqlvalues
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,

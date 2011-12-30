@@ -21,7 +21,7 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

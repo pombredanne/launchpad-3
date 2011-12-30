@@ -154,7 +154,7 @@ The google search service is configured by the google section in
 lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.googlesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()

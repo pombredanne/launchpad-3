@@ -78,8 +78,8 @@ def exit_with_atexit_handlers(*ignored):
     sys.exit(-1 * signal.SIGTERM)
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
-# Tell canonical.config to use the testrunner config instance.
-from canonical.config import config
+# Tell lp.services.config to use the testrunner config instance.
+from lp.services.config import config
 config.setInstance('testrunner')
 config.generate_overrides()
 

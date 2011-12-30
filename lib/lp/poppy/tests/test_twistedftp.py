@@ -12,7 +12,7 @@ import transaction
 from twisted.protocols import ftp
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.poppy.twistedftp import PoppyFileWriter
 from lp.registry.interfaces.gpg import (

@@ -18,11 +18,11 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
+from lp.services.config import config
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,

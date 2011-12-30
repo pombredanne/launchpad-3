@@ -61,7 +61,7 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.config import config
+from lp.services.config import config
 from lp.xmlrpc.interfaces import IPrivateApplication
 import lp.layers
 from lp.services.webapp.authentication import (

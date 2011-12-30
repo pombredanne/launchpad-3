@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
-from canonical.config import config
+from lp.services.config import config
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductReleaseFile,

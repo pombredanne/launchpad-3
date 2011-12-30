@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import time
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.sigdumpmem import (
     DUMP_FILE,
     SIGDUMPMEM,

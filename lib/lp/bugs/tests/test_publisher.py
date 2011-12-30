@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import WebServiceLayer
 from lp.testing.layers import FunctionalLayer
 from lp.bugs.publisher import BugsLayer

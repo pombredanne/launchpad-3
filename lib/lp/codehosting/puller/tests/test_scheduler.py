@@ -28,7 +28,7 @@ from twisted.internet import (
 from twisted.protocols.basic import NetstringParseError
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup

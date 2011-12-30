@@ -18,7 +18,7 @@ import unittest
 
 import transaction
 
-from canonical.config import dbconfig
+from lp.services.config import dbconfig
 from canonical.database.sqlbase import (
     connect,
     cursor,

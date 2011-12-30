@@ -8,7 +8,7 @@ import _pythonpath
 
 import time
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,

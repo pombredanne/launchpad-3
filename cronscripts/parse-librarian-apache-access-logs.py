@@ -21,7 +21,7 @@ import _pythonpath
 from storm.sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.apachelogparser.script import ParseApacheLogs
 from lp.services.librarian.apachelogparser import (
     DBUSER,

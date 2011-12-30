@@ -17,7 +17,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from lp.services.mail.sendmail import sendmail
 from lp.bugs.enum import BugNotificationStatus

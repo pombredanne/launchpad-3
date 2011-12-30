@@ -12,7 +12,7 @@ import socket
 import tempfile
 import subprocess
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.mailman.config import (
     configure_prefix, configure_siteowner)
 from lp.services.mailman.monkeypatches import monkey_patch

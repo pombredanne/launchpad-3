@@ -15,7 +15,7 @@ import time
 import _pythonpath
 import replication.helpers
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import connect
 from lp.services import scripts
 

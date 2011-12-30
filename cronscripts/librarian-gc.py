@@ -18,7 +18,7 @@ import logging
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.librarian import librariangc
 from lp.services.database.lpstorm import IStore
 from lp.services.librarian.model import LibraryFileAlias

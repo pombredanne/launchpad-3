@@ -17,7 +17,7 @@ import rfc822
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.helpers import shortlist
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet

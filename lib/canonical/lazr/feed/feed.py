@@ -29,7 +29,7 @@ from zope.component import getUtility
 from zope.datetime import rfc1123_date
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 # XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
 # from canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.

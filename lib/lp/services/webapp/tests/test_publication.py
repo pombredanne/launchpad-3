@@ -25,7 +25,7 @@ from zope.publisher.interfaces import (
     Retry,
     )
 
-from canonical.config import dbconfig
+from lp.services.config import dbconfig
 from lp.testing import (
     ANONYMOUS,
     login,

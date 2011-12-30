@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.tests import run_script
 from lp.testing.layers import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (

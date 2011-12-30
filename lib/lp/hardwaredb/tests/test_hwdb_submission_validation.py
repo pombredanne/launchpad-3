@@ -10,7 +10,7 @@ import re
 
 from zope.testing.loghandler import Handler
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.logger import OopsHandler
 from lp.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser

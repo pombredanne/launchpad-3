@@ -24,7 +24,7 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError

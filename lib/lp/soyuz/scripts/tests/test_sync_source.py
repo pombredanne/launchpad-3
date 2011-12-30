@@ -19,7 +19,7 @@ from debian.deb822 import (
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.librarian.testing.server import fillLibrarianFile
 from lp.testing.layers import (
     LaunchpadZopelessLayer,

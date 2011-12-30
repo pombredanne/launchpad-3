@@ -126,7 +126,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import flush_database_updates
 from lp import _
 from lp.services.feeds.browser import FeedsMixin

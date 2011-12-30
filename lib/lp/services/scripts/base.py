@@ -33,7 +33,7 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import (
+from lp.services.config import (
     config,
     dbconfig,
     )

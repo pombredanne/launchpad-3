@@ -120,7 +120,7 @@ from zope.security.proxy import (
 from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.feeds.browser import (
     BugTargetLatestBugsFeedLink,

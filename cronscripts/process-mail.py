@@ -10,7 +10,7 @@ import _pythonpath
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.services.mail.incoming import handleMail

@@ -68,7 +68,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp.interfaces import ITableBatchNavigator
 from lp.services.webapp.menu import structured

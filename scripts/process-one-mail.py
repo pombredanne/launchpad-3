@@ -9,7 +9,7 @@ import _pythonpath
 
 import sys
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.services.mail.incoming import (
     handle_one_mail)

@@ -19,7 +19,7 @@ __all__ = ['ExpireQuestions']
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.answers.scripts.questionexpiration import QuestionJanitor
 

@@ -23,7 +23,7 @@ import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,

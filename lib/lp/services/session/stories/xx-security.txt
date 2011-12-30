@@ -30,7 +30,7 @@ There should be zero entries in these feeds, since all the bugs are private.
     >>> BSS(browser.contents)('entry')
     []
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> bug_search_feed_data = """
     ...     [launchpad]
     ...     is_bug_search_feed_active: True

@@ -16,12 +16,12 @@ differentiate between instances.  It consists of the following functions:
 
 `pidfile_path` is the key to all four of them. Usually, you simply pass it the
 name of a service. It then gets the configured name for the current instance
-from `canonical.config.config`, and returns a pidfile path that combines the
+from `lp.services.config.config`, and returns a pidfile path that combines the
 instance name with the service name.
 
     >>> from canonical.lazr.pidfile import (
     ...     pidfile_path, make_pidfile, remove_pidfile, get_pid)
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> pidfile_path('nuts') == '/var/tmp/%s-nuts.pid' % config.instance_name
     True

@@ -34,7 +34,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol

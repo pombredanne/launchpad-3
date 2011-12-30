@@ -11,7 +11,7 @@ import _pythonpath
 from xmlrpclib import ServerProxy
 
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
-from canonical.config import config
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.services.webapp.errorlog import globalErrorUtility
 

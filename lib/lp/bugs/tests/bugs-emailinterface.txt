@@ -193,7 +193,7 @@ package:
 It's possible to file a bug on more than product/package at once:
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import xmlrpclib
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services import features
 from lp.services.features.flags import FeatureController

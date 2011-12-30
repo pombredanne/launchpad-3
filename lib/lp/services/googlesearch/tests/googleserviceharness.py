@@ -29,7 +29,7 @@ class GoogleServiceTestSetup:
     """
     >>> from lp.services.googlesearch.googletestservice import (
     ...     service_is_available)
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> assert not service_is_available()  # Sanity check. # SPURIOUS FAILURE
 

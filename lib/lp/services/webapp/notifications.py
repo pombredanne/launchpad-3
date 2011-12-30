@@ -19,7 +19,7 @@ from datetime import datetime
 from zope.interface import implements
 from zope.session.interfaces import ISession
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     INotification,

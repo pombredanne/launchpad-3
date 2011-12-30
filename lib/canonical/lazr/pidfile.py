@@ -9,7 +9,7 @@ import atexit
 import sys
 from signal import signal, SIGTERM
 
-from canonical.config import config
+from lp.services.config import config
 
 def pidfile_path(service_name, use_config=None):
     """Return the full pidfile path for the given service

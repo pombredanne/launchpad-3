@@ -34,7 +34,7 @@ from twisted.python import (
     log,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller import get_lock_id_for_branch_id

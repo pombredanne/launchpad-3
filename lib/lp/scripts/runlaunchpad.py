@@ -19,7 +19,7 @@ from rabbitfixture.server import RabbitServerResources
 from testtools.testresult.real import _details_to_str
 from zope.app.server.main import main
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.daemons import tachandler
 from canonical.lazr.pidfile import (
     make_pidfile,
@@ -345,7 +345,7 @@ def process_config_arguments(args):
 
 
 def start_testapp(argv=list(sys.argv)):
-    from canonical.config.fixture import ConfigUseFixture
+    from lp.services.config.fixture import ConfigUseFixture
     from lp.testing.layers import (
         BaseLayer,
         DatabaseLayer,

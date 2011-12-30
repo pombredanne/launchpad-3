@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import (
     clear_current_connection_cache,
     flush_database_updates,

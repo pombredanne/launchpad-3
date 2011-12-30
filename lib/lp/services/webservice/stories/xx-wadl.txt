@@ -18,7 +18,7 @@ loaded from disk and not generated from scratch. But the test config
 does not have any WADL files written to disk.
 
     >>> import os
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> wadl_filename = WebServiceApplication.cachedWADLPath(
     ...     config.instance_name, 'devel')
     >>> os.path.exists(wadl_filename)

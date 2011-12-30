@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = ['attachment_size_constraint']
 
-from canonical.config import config
+from lp.services.config import config
 from lp.app.validators import LaunchpadValidationError
 
 
