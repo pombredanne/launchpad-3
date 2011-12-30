@@ -19,10 +19,10 @@ from lp.services.config import config, dbconfig
 from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 
-from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
+from lp.services.librarian.interfaces.client import DUMP_FILE, SIGDUMPMEM
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
