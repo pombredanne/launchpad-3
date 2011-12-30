@@ -8,14 +8,14 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.librarian.testing.fake import FakeLibrarian
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.name import valid_name
+from lp.services.librarianserver.testing.fake import FakeLibrarian
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators.name import valid_name
-from lp.testing import TestCaseWithFactory
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,

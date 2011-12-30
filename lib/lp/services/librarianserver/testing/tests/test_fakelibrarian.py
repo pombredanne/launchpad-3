@@ -12,14 +12,14 @@ from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.librarian.interfaces.client import ILibrarianClient
-from canonical.librarian.testing.fake import FakeLibrarian
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileAliasSet,
     )
+from lp.services.librarianserver.testing.fake import FakeLibrarian
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (

@@ -101,20 +101,38 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
+from canonical.database.sqlbase import session_store
+from canonical.lazr import pidfile
+from canonical.lazr.testing.layers import MockRootFolder
+from canonical.lazr.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
+from canonical.testing.profiled import profiled
 from lp.services.config import (
-    LaunchpadConfig,
     config,
     dbconfig,
+    LaunchpadConfig,
     )
 from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.sqlbase import session_store
-from lp.services.scripts import execute_zcml_for_scripts
-from lp.services.webapp.authorization import (
-    LaunchpadPermissiveSecurityPolicy,
+from lp.services.googlesearch.tests.googleserviceharness import (
+    GoogleServiceTestSetup,
     )
+from lp.services.librarianserver.testing.server import LibrarianServerFixture
+from lp.services.mail.mailbox import (
+    IMailBox,
+    TestMailBox,
+    )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
+import lp.services.mail.stub
+from lp.services.memcache.client import memcache_client_factory
+from lp.services.osutils import kill_by_pidfile
+from lp.services.rabbit.server import RabbitServer
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IOpenLaunchBag,
@@ -126,35 +144,15 @@ from lp.services.webapp.servers import (
     register_launchpad_request_publication_factories,
     )
 import lp.services.webapp.session
-from canonical.lazr import pidfile
-from canonical.lazr.testing.layers import MockRootFolder
-from canonical.lazr.timeout import (
-    get_default_timeout_function,
-    set_default_timeout_function,
-    )
-from canonical.librarian.testing.server import LibrarianServerFixture
-from lp.testing import reset_logging
-from canonical.testing.profiled import profiled
-from lp.testing.smtpd import SMTPController
-from lp.services.googlesearch.tests.googleserviceharness import (
-    GoogleServiceTestSetup,
-    )
-from lp.services.mail.mailbox import (
-    IMailBox,
-    TestMailBox,
-    )
-from lp.services.mail.sendmail import set_immediate_mail_delivery
-import lp.services.mail.stub
-from lp.services.memcache.client import memcache_client_factory
-from lp.services.osutils import kill_by_pidfile
-from lp.services.rabbit.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
     login,
     logout,
+    reset_logging,
     )
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
+from lp.testing.smtpd import SMTPController
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__

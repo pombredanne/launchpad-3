@@ -11,13 +11,13 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.testing.fake import FakeLibrarian
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.librarianserver.testing.fake import FakeLibrarian
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.registry.interfaces.person import IPersonSet
-from lp.testing import TestCaseWithFactory
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide

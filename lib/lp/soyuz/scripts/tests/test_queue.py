@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.testing.server import fillLibrarianFile
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -38,6 +37,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import filechunks
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (

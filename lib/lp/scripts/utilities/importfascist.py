@@ -41,7 +41,7 @@ permitted_database_imports = text_lines_to_set("""
     lp.soyuz.vocabularies
     lp.translations.vocabularies
     lp.services.librarian.client
-    canonical.librarian.db
+    lp.services.librarianserver.db
     doctest
     """)
 

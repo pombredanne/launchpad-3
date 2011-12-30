@@ -34,7 +34,6 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.librarian.client import LibrarianClient
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
@@ -42,6 +41,7 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.librarian.client import LibrarianClient
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,

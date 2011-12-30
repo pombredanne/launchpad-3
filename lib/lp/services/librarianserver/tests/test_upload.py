@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from canonical.librarian.libraryprotocol import FileUploadProtocol
-from canonical.librarian.storage import WrongDatabaseError
+from lp.services.librarianserver.libraryprotocol import FileUploadProtocol
+from lp.services.librarianserver.storage import WrongDatabaseError
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

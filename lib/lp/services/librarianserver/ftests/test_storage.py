@@ -7,15 +7,15 @@ import tempfile
 import unittest
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.librarian import db
-from canonical.librarian.storage import (
+from lp.services.librarian.model import LibraryFileContent
+from lp.services.librarianserver import db
+from lp.services.librarianserver.storage import (
     DigestMismatchError,
     DuplicateFileIDError,
     LibrarianStorage,
     LibraryFileUpload,
     )
 from lp.testing.layers import LaunchpadZopelessLayer
-from lp.services.librarian.model import LibraryFileContent
 
 
 class LibrarianStorageDBTests(unittest.TestCase):

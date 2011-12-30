@@ -25,13 +25,13 @@ from canonical.database.sqlbase import (
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.librarian import librariangc
 from lp.services.config import config
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.librarianserver import librariangc
 from lp.services.log.logger import BufferLogger
 from lp.services.utils import utc_now
 from lp.testing import TestCase
