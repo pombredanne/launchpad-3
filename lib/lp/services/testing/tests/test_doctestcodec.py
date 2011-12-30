@@ -8,7 +8,8 @@ __all__ = []
 
 from doctest import DocTestSuite
 
-import canonical.testing.doctestcodec
+import lp.services.testing.doctestcodec
+
 
 def test_suite():
-    return DocTestSuite(canonical.testing.doctestcodec)
+    return DocTestSuite(lp.services.testing.doctestcodec)

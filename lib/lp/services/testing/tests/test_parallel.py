@@ -9,16 +9,16 @@ from StringIO import StringIO
 import subprocess
 import tempfile
 
-from testtools import (
-    TestCase,
-    TestResult,
-    )
 from fixtures import (
     PopenFixture,
     TestWithFixtures,
     )
+from testtools import (
+    TestCase,
+    TestResult,
+    )
 
-from canonical.testing.parallel import (
+from lp.services.testing.parallel import (
     find_load_list,
     find_tests,
     ListTestCase,

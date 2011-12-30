@@ -13,7 +13,7 @@ from lp.testing import TestCase
 class TestSomething(TestCase):
     # XXX: Sample test class.  Replace with your own test class(es).
 
-    # XXX: layer--see lib/canonical/testing/layers.py
+    # XXX: layer--see lib/lp/testing/layers.py
     # Get the simplest layer that your test will work on. For unit tests
     # requiring no resources, this is BaseLayer.
     layer = DatabaseFunctionalLayer

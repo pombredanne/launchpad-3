@@ -29,6 +29,9 @@ from lp.testing.systemdocs import (
     tearDown,
     )
 
+# This import registers the 'doctest' Unicode codec.
+import lp.services.testing.doctestcodec
+
 
 def build_doctest_suite(base_dir, tests_path, special_tests={},
                         layer=DatabaseFunctionalLayer,
