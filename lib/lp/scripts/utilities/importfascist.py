@@ -40,7 +40,7 @@ permitted_database_imports = text_lines_to_set("""
     lp.services.worlddata.vocabularies
     lp.soyuz.vocabularies
     lp.translations.vocabularies
-    canonical.librarian.client
+    lp.services.librarian.client
     canonical.librarian.db
     doctest
     """)

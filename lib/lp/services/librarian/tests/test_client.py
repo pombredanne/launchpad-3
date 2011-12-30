@@ -11,22 +11,22 @@ from urllib2 import (
 
 import transaction
 
-from lp.services.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.librarian import client as client_module
-from canonical.librarian.client import (
+from canonical.librarian.interfaces import UploadFailed
+from lp.services.config import config
+from lp.services.database.lpstorm import ISlaveStore
+from lp.services.librarian.client import (
     LibrarianClient,
     LibrarianServerError,
     RestrictedLibrarianClient,
     )
-from canonical.librarian.interfaces import UploadFailed
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.services.database.lpstorm import ISlaveStore
-from lp.services.librarian.model import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):

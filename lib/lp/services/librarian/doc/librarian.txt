@@ -393,7 +393,7 @@ you'll get a DownloadFailed error.
 But using the restricted librarian will work:
 
     >>> restricted_client.getFileByAlias(private_file_id)
-    <canonical.librarian.client._File...>
+    <lp.services.librarian.client._File...>
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url

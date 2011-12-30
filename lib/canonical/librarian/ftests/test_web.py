@@ -17,26 +17,26 @@ from storm.expr import SQL
 import transaction
 from zope.component import getUtility
 
-from lp.services.config import config
 from canonical.database.sqlbase import (
     cursor,
     flush_database_updates,
     session_store,
     )
-from canonical.librarian.client import (
+from canonical.librarian.interfaces import DownloadFailed
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,
     )
-from canonical.librarian.interfaces import DownloadFailed
-from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,
     TimeLimitedToken,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 

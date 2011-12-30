@@ -25,12 +25,12 @@ from transaction.interfaces import ISynchronizer
 import zope.component
 from zope.interface import implements
 
-from lp.services.config import config
-from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.config import config
+from lp.services.librarian.client import get_libraryfilealias_download_path
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,

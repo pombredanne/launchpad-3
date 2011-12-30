@@ -20,15 +20,14 @@ import tempfile
 from sqlobject import SQLObjectNotFound
 import transaction
 
-from lp.services.config import config
 from canonical.database.sqlbase import (
     connect,
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
 from canonical.librarian import librariangc
-from canonical.librarian.client import LibrarianClient
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
+from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -36,6 +35,7 @@ from lp.services.librarian.model import (
 from lp.services.log.logger import BufferLogger
 from lp.services.utils import utc_now
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestLibrarianGarbageCollection(TestCase):
