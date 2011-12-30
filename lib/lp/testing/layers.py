@@ -101,11 +101,7 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.lazr import pidfile
-from canonical.lazr.timeout import (
-    get_default_timeout_function,
-    set_default_timeout_function,
-    )
+from lp.services import pidfile
 from lp.services.config import (
     config,
     dbconfig,
@@ -131,6 +127,10 @@ from lp.services.osutils import kill_by_pidfile
 from lp.services.rabbit.server import RabbitServer
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.testing.profiled import profiled
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,

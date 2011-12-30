@@ -317,7 +317,7 @@
 
   <!-- TimeoutError -->
   <browser:page
-      for="canonical.lazr.timeout.TimeoutError"
+      for="lp.services.timeout.TimeoutError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"

@@ -4,13 +4,13 @@ When making a request to an external resource (web service, external
 process), we want to make sure that this request is interrupted if it
 takes too long to complete.
 
-The canonical.lazr.timeout module provides a @with_timeout decorator
+The lp.services.timeout module provides a @with_timeout decorator
 that makes implementing that kind of behaviour easy.
 
 The time to wait can be passed using the timeout parameter to the
 decorator.
 
-    >>> from canonical.lazr.timeout import with_timeout
+    >>> from lp.services.timeout import with_timeout
     >>> from select import select
 
     >>> @with_timeout(timeout=0.5)
@@ -120,7 +120,7 @@ to be 16s.
 
 By default, there is no default_timeout_function.
 
-    >>> from canonical.lazr.timeout import (get_default_timeout_function,
+    >>> from lp.services.timeout import (get_default_timeout_function,
     ...     set_default_timeout_function)
 
     >>> print get_default_timeout_function()
@@ -162,7 +162,7 @@ socket properly.
     >>> sock.settimeout(2)
     >>> sock.bind(('127.0.0.1', 0))
 
-    >>> from canonical.lazr.timeout import urlfetch
+    >>> from lp.services.timeout import urlfetch
 
     # Use 1s as default timeout.
     >>> set_default_timeout_function(lambda: 1)
@@ -299,7 +299,7 @@ successful request followed by one that times out.
     >>> server_thread = threading.Thread(target=server.serve_2_requests)
     >>> server_thread.start()
 
-    >>> from canonical.lazr.timeout import TransportWithTimeout
+    >>> from lp.services.timeout import TransportWithTimeout
     >>> from xmlrpclib import ServerProxy
     >>> proxy = ServerProxy('https://localhost:%d' % port,
     ...                     transport=TransportWithTimeout())

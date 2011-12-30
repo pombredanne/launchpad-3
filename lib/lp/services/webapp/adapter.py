@@ -53,7 +53,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.config import (
     config,
@@ -76,6 +75,7 @@ from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,
     )
+from lp.services.timeout import set_default_timeout_function
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interaction import get_interaction_extras
 from lp.services.webapp.interfaces import (
