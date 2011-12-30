@@ -56,7 +56,7 @@ from canonical.database.sqlbase import (
     session_store,
     SQLBase,
     )
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     DownloadFailed,
     ILibrarianClient,
     IRestrictedLibrarianClient,

@@ -12,8 +12,8 @@ from urllib2 import (
 import transaction
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.librarian import client as client_module
-from canonical.librarian.interfaces import UploadFailed
+from lp.services.librarian.interfaces import client as client_module
+from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.config import config
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.librarian.client import (

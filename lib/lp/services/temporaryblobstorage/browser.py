@@ -20,7 +20,7 @@ from lp.services.temporaryblobstorage.interfaces import (
     )
 from lp.services.webapp import GetitemNavigation
 from lp.services.webapp.interfaces import ICanonicalUrlData
-from canonical.librarian.interfaces import UploadFailed
+from lp.services.librarian.interfaces.client import UploadFailed
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

@@ -46,7 +46,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.librarian.interfaces import DownloadFailed
+from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid

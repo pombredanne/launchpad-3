@@ -38,7 +38,7 @@ from lp.services.webapp.interaction import (
     setupInteraction,
     )
 from lp.services.webapp.interfaces import IPlacelessAuthUtility
-from canonical.librarian.interfaces import UploadFailed
+from lp.services.librarian.interfaces.client import UploadFailed
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (

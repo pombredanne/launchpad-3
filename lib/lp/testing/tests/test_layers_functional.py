@@ -32,7 +32,7 @@ from zope.component import (
     )
 
 from canonical.lazr.pidfile import pidfile_path
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.config import config
 from lp.services.librarian.client import (
     LibrarianClient,

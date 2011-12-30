@@ -60,7 +60,7 @@ from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization

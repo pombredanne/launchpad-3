@@ -22,7 +22,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     CorruptBuildCookie,

@@ -42,7 +42,7 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from canonical.lazr.xml import RelaxNGValidator
-from canonical.librarian.interfaces import LibrarianServerError
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,

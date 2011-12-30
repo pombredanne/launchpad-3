@@ -50,7 +50,7 @@ from lp.services.webapp.errorlog import (
     globalErrorUtility,
     ScriptRequest,
     )
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,
     )

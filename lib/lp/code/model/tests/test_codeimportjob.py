@@ -22,7 +22,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

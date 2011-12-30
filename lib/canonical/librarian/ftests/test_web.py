@@ -22,7 +22,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     session_store,
     )
-from canonical.librarian.interfaces import DownloadFailed
+from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.config import config
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.librarian.client import (

@@ -16,7 +16,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.librarian.model import LibraryFileAlias
 
 

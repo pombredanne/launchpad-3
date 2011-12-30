@@ -45,7 +45,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     DownloadFailed,
     ILibrarianClient,
     IRestrictedLibrarianClient,

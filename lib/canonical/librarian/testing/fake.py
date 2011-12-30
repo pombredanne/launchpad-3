@@ -25,7 +25,7 @@ from transaction.interfaces import ISynchronizer
 import zope.component
 from zope.interface import implements
 
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )

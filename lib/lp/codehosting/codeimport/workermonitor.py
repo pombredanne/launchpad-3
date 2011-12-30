@@ -25,7 +25,7 @@ from zope.component import getUtility
 from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.librarian.interfaces import IFileUploadClient
+from lp.services.librarian.interfaces.client import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
 from lp.services.twistedsupport.processmonitor import (

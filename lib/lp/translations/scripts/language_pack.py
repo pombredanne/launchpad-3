@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,
     )

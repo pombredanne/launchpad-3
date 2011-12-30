@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
 from lp.services.config import config
-from canonical.librarian.interfaces import LibrarianServerError
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from canonical.librarian.testing.server import fillLibrarianFile
 from lp.testing.layers import (
     BaseLayer,
