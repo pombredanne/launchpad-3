@@ -10,8 +10,11 @@ __all__ = [
     ]
 
 from lazr.restful.utils import safe_hasattr
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    )
 from zope.security.proxy import isinstance as zope_isinstance
-from zope.security.management import endInteraction, newInteraction
 
 from lp.services.webapp import urlsplit
 from lp.services.webapp.interfaces import ILink

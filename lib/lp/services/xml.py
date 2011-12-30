@@ -11,7 +11,9 @@ __all__ = [
 
 import os
 from tempfile import NamedTemporaryFile
+
 from lp.services.helpers import simple_popen2
+
 
 class XMLValidator:
     """A validator for XML files against a schema."""

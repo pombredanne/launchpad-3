@@ -23,14 +23,6 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.services.webapp.launchpadform import (
-    action,
-    LaunchpadEditFormView,
-    )
-from lp.services.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.folder import ExportedFolder
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
@@ -39,6 +31,14 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class StatusCount:
