@@ -417,7 +417,7 @@ BugWatch's status or importance are updated. We can demonstrate this by
 creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.bugs.interfaces.bugtracker import (

@@ -565,7 +565,7 @@ updateBugWatches() issues only one request to update all watches:
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> gnome_bugzilla.watches_needing_update.count()
     0

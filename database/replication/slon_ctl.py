@@ -18,7 +18,7 @@ import _pythonpath
 import replication.helpers
 
 from lp.services.config import config
-from canonical.database.sqlbase import connect
+from lp.services.database.sqlbase import connect
 from lp.services.scripts import (
     logger,
     logger_options,

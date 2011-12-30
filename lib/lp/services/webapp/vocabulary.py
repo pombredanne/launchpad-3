@@ -45,7 +45,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zisinstance
 
-from canonical.database.sqlbase import SQLBase
+from lp.services.database.sqlbase import SQLBase
 from lp.services.helpers import ensure_unicode
 
 

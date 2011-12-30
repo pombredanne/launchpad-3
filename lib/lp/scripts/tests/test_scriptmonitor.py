@@ -7,9 +7,9 @@ __metaclass__ = type
 
 from unittest import TestCase
 
-from canonical.database.sqlbase import connect
-from lp.services.scripts import logger
 from lp.scripts.scriptmonitor import check_script
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import logger
 from lp.testing.layers import DatabaseLayer
 
 

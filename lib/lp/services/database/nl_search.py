@@ -11,7 +11,11 @@ __all__ = ['nl_phrase_search']
 
 import re
 
-from canonical.database.sqlbase import cursor, quote, sqlvalues
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    sqlvalues,
+    )
 
 # Regular expression to extract terms from the printout of a ts_query
 TS_QUERY_TERM_RE = re.compile(r"'([^']+)'")

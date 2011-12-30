@@ -20,7 +20,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import (
+from lp.registry.model.person import Person
+from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
@@ -30,7 +31,6 @@ from lp.services.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from lp.registry.model.person import Person
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component

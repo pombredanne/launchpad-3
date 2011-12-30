@@ -18,20 +18,25 @@ to install replication fresh.). This script does this procedure.
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 import sys
 
+import _pythonpath
 import psycopg2
+import replication.helpers
 
 from lp.services.config import config
-from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
-    connect, quote, ISOLATION_LEVEL_AUTOCOMMIT)
-from lp.services.scripts import db_options, logger_options, logger
-
-import replication.helpers
+from lp.services.database.postgresql import ConnectionString
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    quote,
+    )
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
 
 def main():

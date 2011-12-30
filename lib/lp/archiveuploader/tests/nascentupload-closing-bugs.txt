@@ -25,7 +25,7 @@ Publishing package and creating a bugtask
     >>> bar_src.queue_root.setAccepted()
     >>> pub_records = bar_src.queue_root.realiseUpload()
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
 Check the current status of the bug we are supposed to fix:

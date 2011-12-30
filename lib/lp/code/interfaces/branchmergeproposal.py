@@ -67,10 +67,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.database.constants import DEFAULT
 from lp import _
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.services.webapp.interfaces import ITableBatchNavigator
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -78,6 +76,7 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.constants import DEFAULT
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
@@ -90,6 +89,7 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     ITwistedJobSource,
     )
+from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (

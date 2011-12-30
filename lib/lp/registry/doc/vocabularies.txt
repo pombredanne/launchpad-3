@@ -1,7 +1,7 @@
 Registry vocabularies
 =====================
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet

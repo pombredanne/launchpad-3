@@ -84,7 +84,7 @@ Now we can make a bug and a package upload for pmount.
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
 Right after the queue items have been processed by the publishing

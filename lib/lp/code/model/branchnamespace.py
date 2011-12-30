@@ -19,12 +19,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
@@ -73,7 +67,13 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.database.constants import UTC_NOW
 from lp.services.utils import iter_split
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class _BaseNamespace:

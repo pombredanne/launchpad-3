@@ -7,7 +7,7 @@ arrangement or through a grant that applies to everyone.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.testing import login
     >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.entitlement import (

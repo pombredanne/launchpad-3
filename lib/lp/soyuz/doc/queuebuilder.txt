@@ -130,7 +130,7 @@ exact circumstances we want to test below.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.testing.layers import LaunchpadZopelessLayer

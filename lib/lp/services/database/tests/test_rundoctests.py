@@ -9,5 +9,5 @@ import unittest
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite('canonical.database.sort_sql'))
+    suite.addTest(DocTestSuite('lp.services.database.sort_sql'))
     return suite

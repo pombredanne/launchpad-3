@@ -24,8 +24,8 @@ from replication.helpers import (
     get_master_node,
     )
 
-from canonical.database.sqlbase import connect
 from lp.services import scripts
+from lp.services.database.sqlbase import connect
 
 
 con = None

@@ -17,13 +17,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from canonical.database.constants import UTC_NOW
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -33,6 +26,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
@@ -69,6 +64,11 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 

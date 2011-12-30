@@ -1,7 +1,7 @@
-Ensure that canonical.database.sqlbase connects as we expect.
+Ensure that lp.services.database.sqlbase connects as we expect.
 
     >>> from lp.services.config import config
-    >>> from canonical.database.sqlbase import (
+    >>> from lp.services.database.sqlbase import (
     ...     connect, ISOLATION_LEVEL_DEFAULT, ISOLATION_LEVEL_SERIALIZABLE)
 
     >>> def do_connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):

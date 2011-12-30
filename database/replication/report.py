@@ -24,7 +24,7 @@ import sys
 import _pythonpath
 import replication.helpers
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     quote_identifier,
     sqlvalues,

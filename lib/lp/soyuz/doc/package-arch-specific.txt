@@ -43,7 +43,7 @@ Create a PPA source publication.
 Good, all done, we can commit the publications and continue the tests
 with the buildmaster DB user.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 

@@ -17,12 +17,12 @@ import _pythonpath
 import helpers
 
 from lp.services.config import config
-from canonical.database.postgresql import (
+from lp.services.database.postgresql import (
     all_sequences_in_schema,
     all_tables_in_schema,
     ConnectionString,
     )
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )

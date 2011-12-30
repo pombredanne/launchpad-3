@@ -47,9 +47,13 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.readonly import is_read_only
+from lp.services.database.sqlbase import (
     flush_database_updates,
     quote,
     quote_like,
@@ -57,8 +61,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.mail.helpers import get_email_template
-from lp.services.database.lpstorm import IStore
-from lp.services.database.readonly import is_read_only
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -66,9 +69,6 @@ from lp.services.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from lp.services.webapp.publisher import canonical_url
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import validate_public_person
-from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import (
     IPOFile,

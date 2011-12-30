@@ -176,7 +176,7 @@ Searching for Bugs
 
 To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> def current_user():

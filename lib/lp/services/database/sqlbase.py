@@ -57,7 +57,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import dbconfig
-from canonical.database.interfaces import ISQLBase
+from lp.services.database.interfaces import ISQLBase
 from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -590,7 +590,7 @@ def connect_string(user=None, dbname=None):
     """
     # We must connect to the read-write DB here, so we use rw_main_master
     # directly.
-    from canonical.database.postgresql import ConnectionString
+    from lp.services.database.postgresql import ConnectionString
     con_str = ConnectionString(dbconfig.rw_main_master)
     if user is not None:
         con_str.user = user

@@ -20,12 +20,12 @@ import tempfile
 from sqlobject import SQLObjectNotFound
 import transaction
 
-from canonical.database.sqlbase import (
+from lp.services.config import config
+from lp.services.database.sqlbase import (
     connect,
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from lp.services.config import config
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,

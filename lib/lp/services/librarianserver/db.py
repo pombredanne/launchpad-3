@@ -13,7 +13,7 @@ __all__ = [
 from sqlobject.sqlbuilder import AND
 from storm.expr import SQL
 
-from canonical.database.sqlbase import session_store
+from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,

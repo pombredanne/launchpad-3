@@ -3,19 +3,23 @@
 
 __metaclass__ = type
 
-import os
 import errno
 import hashlib
+import os
 import shutil
 import tempfile
 
 from zope.component import getUtility
 
 from lp.services.config import dbconfig
-from canonical.database.postgresql import ConnectionString
-from lp.services.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.services.database import write_transaction
+from lp.services.database.postgresql import ConnectionString
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+
 
 __all__ = [
     'DigestMismatchError',

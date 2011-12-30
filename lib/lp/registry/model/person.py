@@ -105,29 +105,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.services.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
 from lp import _
-from lp.services.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -246,11 +225,26 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
     )
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
@@ -275,6 +269,10 @@ from lp.services.identity.model.emailaddress import (
     HasOwnerMixin,
     )
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
@@ -293,6 +291,8 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,

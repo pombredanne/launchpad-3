@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import re
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     quote,
     quoteIdentifier,
     sqlvalues,

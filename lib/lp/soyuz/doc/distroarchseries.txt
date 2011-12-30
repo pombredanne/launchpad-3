@@ -335,7 +335,7 @@ Let's activate ppa support for hoary/hppa and check if
     >>> print_architectures(hoary.virtualized_architectures)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
 
     >>> hoary['hppa'].supports_virtualized = True

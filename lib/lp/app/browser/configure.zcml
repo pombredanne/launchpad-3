@@ -308,7 +308,7 @@
 
   <!-- RequestExpired -->
   <browser:page
-      for="canonical.database.interfaces.IRequestExpired"
+      for="lp.services.database.interfaces.IRequestExpired"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"

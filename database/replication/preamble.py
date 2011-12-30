@@ -15,9 +15,9 @@ import time
 import _pythonpath
 import replication.helpers
 
-from lp.services.config import config
-from canonical.database.sqlbase import connect
 from lp.services import scripts
+from lp.services.config import config
+from lp.services.database.sqlbase import connect
 
 
 if __name__ == '__main__':

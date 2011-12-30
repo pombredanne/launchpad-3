@@ -8,6 +8,7 @@ from doctest import DocTestSuite
 from lp.testing.layers import BaseLayer
 from lp.testing.pgsql import PgTestSetup
 
+
 def setUp(test):
 
     # Build a fresh, empty database and connect
@@ -61,7 +62,7 @@ def tearDown(test):
 
 def test_suite():
     suite = DocTestSuite(
-            "canonical.database.postgresql",
+            "lp.services.database.postgresql",
             setUp=setUp, tearDown=tearDown
             )
     suite.layer = BaseLayer

@@ -11,23 +11,23 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from lp.services.database.lpstorm import IStore
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     DistributionSourcePackageInDatabase,
     )
 from lp.registry.model.karma import KarmaTotalCache
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
 

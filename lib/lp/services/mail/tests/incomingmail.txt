@@ -45,7 +45,7 @@ handle, and register them for some domains:
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.services.mail.tests.helpers import read_test_message
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
@@ -335,7 +335,7 @@ be printed, and the mail should be deleted from the queue.
 
 Let's create and register a handler which raises a SQL error:
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database.sqlbase import cursor
     >>> class DBExceptionRaiser:
     ...     implements(IMailHandler)
     ...     def process(self, mail, to_addr, filealias):

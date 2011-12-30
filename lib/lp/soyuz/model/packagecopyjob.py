@@ -27,12 +27,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import DistroSeriesDifferenceStatus
@@ -47,6 +41,12 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,

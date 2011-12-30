@@ -56,19 +56,6 @@ from zope.interface import (
     implements,
     )
 
-from lp.services.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp import (
-    canonical_url,
-    errorlog,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.bzr import get_branch_formats
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -101,10 +88,23 @@ from lp.codehosting.vfs import (
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.webapp import (
+    canonical_url,
+    errorlog,
+    )
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )

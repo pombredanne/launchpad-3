@@ -26,7 +26,7 @@ Evolution has no external links.
 Now update Tomcat to actually have this data:
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.model.product import Product
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
