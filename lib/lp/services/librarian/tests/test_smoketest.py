@@ -8,8 +8,8 @@ __metaclass__ = type
 from cStringIO import StringIO
 from contextlib import contextmanager
 
-from canonical.librarian import smoketest
-from canonical.librarian.smoketest import (
+from lp.services.librarian import smoketest
+from lp.services.librarian.smoketest import (
     do_smoketest,
     FILE_DATA,
     store_file,
