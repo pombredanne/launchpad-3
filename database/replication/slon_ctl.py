@@ -9,13 +9,12 @@ On production and staging we probably want to use the standard
 /etc/init.d/slony1 script instead of this tool.
 """
 
+import _pythonpath
+
 from optparse import OptionParser
 import os.path
 import subprocess
 import sys
-
-import _pythonpath
-import replication.helpers
 
 from lp.services.config import config
 from lp.services.database.sqlbase import connect
@@ -23,6 +22,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+import replication.helpers
 
 
 __metaclass__ = type

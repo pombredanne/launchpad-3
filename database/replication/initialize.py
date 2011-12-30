@@ -9,11 +9,12 @@ This script is run once to convert a singledb Launchpad instance to
 a replicated setup.
 """
 
+import _pythonpath
+
 from optparse import OptionParser
 import subprocess
 import sys
 
-import _pythonpath
 import helpers
 
 from lp.services.config import config

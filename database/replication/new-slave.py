@@ -8,16 +8,15 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import subprocess
 import sys
 from textwrap import dedent
 import time
 
-import _pythonpath
 import psycopg2
-import replication.helpers
-from replication.helpers import LPMAIN_SET_ID
 
 from lp.services.database.postgresql import ConnectionString
 from lp.services.database.sqlbase import (
@@ -29,6 +28,8 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+import replication.helpers
+from replication.helpers import LPMAIN_SET_ID
 
 
 def main():

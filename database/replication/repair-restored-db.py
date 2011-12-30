@@ -18,12 +18,12 @@ to install replication fresh.). This script does this procedure.
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import sys
 
-import _pythonpath
 import psycopg2
-import replication.helpers
 
 from lp.services.config import config
 from lp.services.database.postgresql import ConnectionString
@@ -37,6 +37,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+import replication.helpers
 
 
 def main():
