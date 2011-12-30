@@ -22,7 +22,6 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     session_store,
     )
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.config import config
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.librarian.client import (
@@ -30,6 +29,7 @@ from lp.services.librarian.client import (
     LibrarianClient,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import (
     LibraryFileAlias,
     TimeLimitedToken,

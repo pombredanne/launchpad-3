@@ -8,9 +8,12 @@ __metaclass__ = type
 import os
 import time
 
-from lp.services.librarian.interfaces.client import DUMP_FILE, SIGDUMPMEM
-from lp.testing.layers import LibrarianLayer
+from lp.services.librarian.interfaces.client import (
+    DUMP_FILE,
+    SIGDUMPMEM,
+    )
 from lp.testing import TestCase
+from lp.testing.layers import LibrarianLayer
 
 
 class SIGDUMPMEMTestCase(TestCase):

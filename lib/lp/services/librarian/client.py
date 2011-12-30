@@ -35,15 +35,10 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.postgresql import ConnectionString
 from lp.services.config import (
     config,
     dbconfig,
-    )
-from canonical.database.postgresql import ConnectionString
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     )
 from lp.services.librarian.interfaces.client import (
     DownloadFailed,
@@ -54,6 +49,11 @@ from lp.services.librarian.interfaces.client import (
     UploadFailed,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 def url_path_quote(filename):

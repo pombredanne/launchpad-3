@@ -28,10 +28,6 @@ from debian.deb822 import Changes
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from lp.services.librarian.interfaces.client import (
-    ILibrarianClient,
-    UploadFailed,
-    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.person import IPersonSet
@@ -41,6 +37,10 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.browser_helpers import get_plural_text
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import (
+    ILibrarianClient,
+    UploadFailed,
+    )
 from lp.services.librarian.utils import copy_and_close
 from lp.services.scripts.base import (
     LaunchpadScript,

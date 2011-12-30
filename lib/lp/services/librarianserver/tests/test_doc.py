@@ -9,10 +9,10 @@ __metaclass__ = type
 
 import os
 
-from lp.testing.layers import LaunchpadZopelessLayer
-from lp.services.testing import build_test_suite
 from lp.services.librarianserver.libraryprotocol import FileUploadProtocol
 from lp.services.librarianserver.storage import WrongDatabaseError
+from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

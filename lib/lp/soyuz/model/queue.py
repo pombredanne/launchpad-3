@@ -46,7 +46,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -62,6 +61,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature

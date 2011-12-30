@@ -55,12 +55,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    IStore,
-    )
-from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
@@ -75,6 +69,12 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
