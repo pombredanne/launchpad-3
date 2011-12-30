@@ -418,7 +418,7 @@ Activating the mailing list (changing it's status to 'available for
 subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> def print_event(object, event):

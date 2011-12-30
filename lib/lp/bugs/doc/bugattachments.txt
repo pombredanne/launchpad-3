@@ -28,7 +28,7 @@ ObjectCreatedEvent in order to trigger email notifications:
 
     >>> from StringIO import StringIO
 
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> def attachment_added(attachment, event):
     ...     print "Attachment added: %r" % attachment.libraryfile.filename

@@ -11,7 +11,7 @@ an event listener to demonstrate this.
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> import transaction
 
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
