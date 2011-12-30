@@ -39,7 +39,7 @@ from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
     )
-from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessLayer,

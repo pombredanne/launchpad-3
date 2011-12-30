@@ -43,7 +43,7 @@
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter
-        provides="canonical.lazr.interfaces.IObjectPrivacy"
+        provides="canonical.lazr.interfaces.objectprivacy.IObjectPrivacy"
         for="zope.interface.Interface"
         factory="canonical.lazr.privacy.ObjectPrivacy"
         permission="zope.Public"

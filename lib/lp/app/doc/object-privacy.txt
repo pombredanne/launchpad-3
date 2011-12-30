@@ -8,7 +8,7 @@ people.
 To tell whether or not an object is private we adapt it into an
 IObjectPrivacy and check its is_private attribute.
 
-    >>> from canonical.lazr.interfaces import IObjectPrivacy
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet

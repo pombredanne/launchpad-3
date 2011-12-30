@@ -152,7 +152,7 @@ from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
