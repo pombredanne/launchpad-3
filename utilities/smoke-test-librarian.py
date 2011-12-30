@@ -6,10 +6,10 @@
 """Perform simple librarian operations to verify the current configuration.
 """
 
+import _pythonpath # Not lint, actually needed.
+
 import sys
 
-import _pythonpath # Not lint
-import actually needed.
 from zope.component import getUtility
 
 from lp.services.librarian.interfaces.client import (
