@@ -19,7 +19,7 @@ from bzrlib.transform import (
     TransformPreview,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IMasterObject
 from lp.code.errors import StaleLastMirrored
 from lp.codehosting.bzrutils import (

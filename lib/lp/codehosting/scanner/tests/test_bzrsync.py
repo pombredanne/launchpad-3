@@ -23,7 +23,7 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource

@@ -11,7 +11,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import flush_database_updates
 from lp.testing.layers import (
     LaunchpadLayer,

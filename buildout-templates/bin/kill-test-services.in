@@ -10,9 +10,9 @@ import sys
 sys.path.insert(0, ${scripts:parts-directory|path-repr})
 import site
 
-# Tell canonical.config to use the testrunner config instance, so that
+# Tell lp.services.config to use the testrunner config instance, so that
 # we don't kill the real services.
-from canonical.config import config
+from lp.services.config import config
 config.setInstance('testrunner')
 config.generate_overrides()
 

@@ -12,7 +12,7 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import commit
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet

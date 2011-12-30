@@ -43,7 +43,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol

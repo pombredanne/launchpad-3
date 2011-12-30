@@ -12,7 +12,7 @@ from textwrap import dedent
 
 import psycopg2
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_DEFAULT,

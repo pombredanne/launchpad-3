@@ -18,7 +18,7 @@ warnings.filterwarnings(
 
 import transaction
 
-from canonical.config import dbconfig
+from lp.services.config import dbconfig
 from canonical.database.sqlbase import cursor
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.testing.layers import disconnect_stores

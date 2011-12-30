@@ -26,7 +26,7 @@ from zope.schema import (
     Float,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp.interfaces import (
     ILaunchBag,

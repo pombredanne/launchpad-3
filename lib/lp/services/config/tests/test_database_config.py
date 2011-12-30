@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.config import DatabaseConfig
+from lp.services.config import DatabaseConfig
 from lp.services.database.readonly import read_only_file_exists
 from lp.services.database.tests.readonly import (
     remove_read_only_file,

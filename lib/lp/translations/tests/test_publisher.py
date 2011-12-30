@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import StringIO
 
-from canonical.config import config
+from lp.services.config import config
 from lp.layers import WebServiceLayer
 from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase

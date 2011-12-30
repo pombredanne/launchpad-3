@@ -25,7 +25,7 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp import (
     canonical_url,

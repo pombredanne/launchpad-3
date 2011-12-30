@@ -11,7 +11,7 @@ MailmanErrorUtility
 The MailmanErrorUtility is a ErrorReportingUtility that is configured
 in the [mailman] section of config.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     ...     MailmanErrorUtility)
 

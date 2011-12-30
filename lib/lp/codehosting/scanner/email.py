@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource,

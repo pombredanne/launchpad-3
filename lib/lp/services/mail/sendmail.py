@@ -53,7 +53,7 @@ from zope.security.proxy import (
     )
 from zope.sendmail.interfaces import IMailDelivery
 
-from canonical.config import config
+from lp.services.config import config
 from lp.app import versioninfo
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer

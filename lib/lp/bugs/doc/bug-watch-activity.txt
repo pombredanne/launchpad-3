@@ -7,7 +7,7 @@ table.
 We can create a new BugWatchActivity record for a bug watch using that
 BugWatch's addActivity() method.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.database.lpstorm import IStore
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.model.bugwatch import BugWatchActivity

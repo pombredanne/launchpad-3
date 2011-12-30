@@ -16,7 +16,7 @@ import gpgme
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.archivesigningkey import (

@@ -10,7 +10,7 @@ import os
 
 import pytz
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.codehosting.scripts.modifiedbranches import ModifiedBranchesScript

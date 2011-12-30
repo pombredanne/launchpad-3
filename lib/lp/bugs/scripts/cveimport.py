@@ -18,7 +18,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectModifiedEvent
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.looptuner import (
     ITunableLoop,
     LoopTuner,

@@ -17,7 +17,7 @@ import sys
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.database.lpstorm import ISlaveStore
 from lp.code.model.branch import Branch
 from lp.codehosting.rewrite import BranchRewriter

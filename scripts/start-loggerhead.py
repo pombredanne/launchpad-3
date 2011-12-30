@@ -18,7 +18,7 @@ from paste.request import construct_url
 from paste.translogger import TransLogger
 from paste.wsgilib import catch_errors
 
-from canonical.config import config
+from lp.services.config import config
 import lp.codehosting
 
 

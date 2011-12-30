@@ -101,12 +101,12 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.config import (
-    CanonicalConfig,
+from lp.services.config import (
+    LaunchpadConfig,
     config,
     dbconfig,
     )
-from canonical.config.fixture import (
+from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
@@ -548,7 +548,7 @@ class BaseLayer:
     @classmethod
     def appserver_config(cls):
         """Return a config suitable for AppServer tests."""
-        return CanonicalConfig(cls.appserver_config_name)
+        return LaunchpadConfig(cls.appserver_config_name)
 
     @classmethod
     def appserver_root_url(cls, facet='mainsite', ensureSlash=False):
@@ -1729,7 +1729,7 @@ class LayerProcessController:
     @classmethod
     def setConfig(cls):
         """Stash a config for use."""
-        cls.appserver_config = CanonicalConfig(
+        cls.appserver_config = LaunchpadConfig(
             BaseLayer.appserver_config_name, 'runlaunchpad')
 
     @classmethod

@@ -10,7 +10,7 @@ from datetime import timedelta
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus

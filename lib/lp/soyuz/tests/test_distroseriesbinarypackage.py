@@ -14,7 +14,7 @@ from testtools.matchers import (
     )
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage

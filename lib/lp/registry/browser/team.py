@@ -68,7 +68,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet

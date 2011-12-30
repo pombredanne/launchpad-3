@@ -36,7 +36,7 @@ import subprocess
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet

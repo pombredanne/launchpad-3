@@ -48,7 +48,7 @@ from zope.security.checker import (
     undefineChecker,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services import webapp
 from lp.services.webapp.errorlog import ErrorReportEvent
 from lp.services.messaging.interfaces import MessagingUnavailable

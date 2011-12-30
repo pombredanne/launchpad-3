@@ -14,7 +14,7 @@ from twisted.internet import (
     )
 from twisted.python import log as tplog
 
-from canonical.config import config
+from lp.services.config import config
 from lp.codehosting.puller import (
     mirror,
     scheduler,

@@ -53,7 +53,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
+from lp.services.config import (
     config,
     dbconfig,
     )

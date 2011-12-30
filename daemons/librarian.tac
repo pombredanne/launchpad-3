@@ -15,7 +15,7 @@ from twisted.python import log
 from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
-from canonical.config import config, dbconfig
+from lp.services.config import config, dbconfig
 from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 

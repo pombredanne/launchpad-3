@@ -14,7 +14,7 @@ import os
 
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.postgresql import drop_tables, quoteIdentifier
 from lp.services.looptuner import (
     DBLoopTuner,

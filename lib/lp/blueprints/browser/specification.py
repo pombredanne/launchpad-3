@@ -72,7 +72,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp import _
 from lp.services.webapp import (
     canonical_url,

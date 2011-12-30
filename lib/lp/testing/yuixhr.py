@@ -33,7 +33,7 @@ from zope.security.checker import (
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     IPlacelessAuthUtility,

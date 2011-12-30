@@ -19,7 +19,7 @@ from textwrap import dedent
 
 from fixtures import Fixture
 
-from canonical.config import config
+from lp.services.config import config
 
 
 class ConfigFixture(Fixture):

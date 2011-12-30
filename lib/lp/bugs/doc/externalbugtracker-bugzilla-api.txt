@@ -395,7 +395,7 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from lp.testing.layers import LaunchpadZopelessLayer
 

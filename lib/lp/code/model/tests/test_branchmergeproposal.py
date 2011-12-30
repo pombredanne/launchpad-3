@@ -1775,7 +1775,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             "+from storm.locals import Int, Reference\n"
             " from sqlobject import ForeignKey, IntCol\n"
             "\n"
-            " from canonical.config import config\n")
+            " from lp.services.config import config\n")
         diff_stat = {'sample': (1, 1)}
         login_person(merge_proposal.registrant)
         merge_proposal.updatePreviewDiff(

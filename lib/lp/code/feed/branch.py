@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,

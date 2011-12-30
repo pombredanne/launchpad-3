@@ -45,7 +45,7 @@ from traceback import format_exception_only
 from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.errorlog import (
     globalErrorUtility,
     ScriptRequest,

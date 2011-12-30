@@ -34,7 +34,7 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.code.bzr import (
     BranchFormat,

@@ -23,7 +23,7 @@ import sys
 
 from bzrlib.transport import get_transport
 
-from canonical.config import config
+from lp.services.config import config
 from lp.codehosting.codeimport.worker import (
     BzrImportWorker, BzrSvnImportWorker, CSCVSImportWorker,
     CodeImportBranchOpenPolicy, CodeImportSourceDetails, GitImportWorker,

@@ -31,7 +31,7 @@ from zope.component import (
     getUtility,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.lazr.pidfile import pidfile_path
 from canonical.librarian.client import (
     LibrarianClient,

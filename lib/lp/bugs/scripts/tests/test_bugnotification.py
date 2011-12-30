@@ -21,7 +21,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,

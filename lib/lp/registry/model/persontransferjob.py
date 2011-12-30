@@ -26,7 +26,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.enumcol import EnumCol
 from lp.services.mail.helpers import (
     get_contact_email_addresses,

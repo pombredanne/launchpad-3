@@ -15,7 +15,7 @@ __all__ = [
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import (
     canonical_url,
     urlparse,

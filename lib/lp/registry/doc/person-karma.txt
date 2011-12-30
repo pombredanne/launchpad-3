@@ -140,7 +140,7 @@ is updated by the foaf-update-karma-cache.py cronscript.
     <BLANKLINE>
     >>> process.returncode
     0
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.karmacacheupdater.max_scaling
     2
 

@@ -10,7 +10,7 @@ from textwrap import dedent
 
 from zope.app.testing.functional import HTTPCaller
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import haproxy
 from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,

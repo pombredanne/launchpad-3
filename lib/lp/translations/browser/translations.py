@@ -16,7 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.translations.interfaces.translations import IRosettaApplication
 from lp.services.webapp import (
     canonical_url,

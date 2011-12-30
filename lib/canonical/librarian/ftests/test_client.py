@@ -11,7 +11,7 @@ from urllib2 import (
 
 import transaction
 
-from canonical.config import config
+from lp.services.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.librarian import client as client_module

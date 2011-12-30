@@ -13,7 +13,7 @@ from testtools.matchers import (
 import transaction
 from zope.security.management import setSecurityPolicy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger

@@ -1,21 +1,21 @@
 Canonical Config
 ================
 
-`canonical.config` provides singleton access to the Launchpad
+`lp.services.config` provides singleton access to the Launchpad
 configuration, accessed via the `config` module global. It is
 responsible for loading the Launchpad schema and the environment's
 correct config.
 
 
-CanonicalConfig AKA config
+LaunchpadConfig AKA config
 --------------------------
 
-CanonicalConfig is a singleton that manages access to the config. Cached
+LaunchpadConfig is a singleton that manages access to the config. Cached
 copies are kept in thread locals ensuring the configuration is thread
 safe (not that this will be a problem if we stick with simple
 configuration).
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.layers import DatabaseLayer
     >>> expected = (
     ...     'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
@@ -38,7 +38,7 @@ Configs are kept from the 'configs' directory.
     ...     canonical.__file__)
     True
 
-CanonicalConfig loads the conf file from the directory that matches its
+LaunchpadConfig loads the conf file from the directory that matches its
 instance_name. The instance name is often the same as the LPCONFIG
 environment variable (scripts can override this using setInstance()). It
 will choose the conf file that matches its process_name if it exists,
@@ -61,7 +61,7 @@ using persistent helpers - see lp.testing.layers).
     >>> config.extends.filename
     '.../launchpad-lazr.conf'
 
-CanonicalConfig provides __contains__ and __getitem__ to check and
+LaunchpadConfig provides __contains__ and __getitem__ to check and
 access lazr.config sections and keys.
 
     >>> 'launchpad' in config
@@ -72,13 +72,13 @@ access lazr.config sections and keys.
 
 The application root directory is assigned to the root attribute.
 
-    >>> import canonical.config
-    >>> example_path = canonical.config.__file__
+    >>> import lp.services.config
+    >>> example_path = lp.services.config.__file__
     >>> config.root in example_path
     True
 
     >>> example_path[len(config.root):]
-    '/lib/canonical/...'
+    '/lib/lp/services/...'
 
 The config instance has additional attributes that come from the
 ZConfig.
@@ -127,8 +127,8 @@ changing the instance and process names will have no affect.
 Setting just the instance_name will change the directory from which the
 conf file is loaded.
 
-    >>> from canonical.config import CanonicalConfig
-    >>> test_config = CanonicalConfig('testrunner', 'test')
+    >>> from lp.services.config import LaunchpadConfig
+    >>> test_config = LaunchpadConfig('testrunner', 'test')
     >>> test_config.setInstance('development')
     >>> test_config.instance_name
     'development'
@@ -190,13 +190,13 @@ process's name.
 The initial instance_name is set via the LPCONFIG environment variable.
 Because Config is designed to failover to the default development
 environment, and the testrunner overrides the environment and config, we
-need to reconfigure the environment and reload the canonical.config
-module to test CanonicalConfig's behaviour.
+need to reconfigure the environment and reload the lp.services.config
+module to test LaunchpadConfig's behaviour.
 
 Alternatively, the instance name and process name can be specified as
 argument to the constructor.
 
-    >>> dev_config = CanonicalConfig('development', 'authserver')
+    >>> dev_config = LaunchpadConfig('development', 'authserver')
     >>> dev_config.instance_name
     'development'
 
@@ -210,13 +210,13 @@ argument to the constructor.
 # config can be restored when this test is torn down.
 #    >>> true_config = config
 #    >>> import os
-#    >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
+#    >>> from lp.services.config import LPCONFIG, DEFAULT_SECTION
 #    >>> os.environ[LPCONFIG] = 'mailman-itests'
 #    >>> os.environ[DEFAULT_SECTION] = 'default'
 
-#    # reload the CanonicalConfig class object.
-#    >>> config_module = reload(canonical.config)
-#    >>> from canonical.config import config
+#    # reload the LaunchpadConfig class object.
+#    >>> config_module = reload(lp.services.config)
+#    >>> from lp.services.config import config
 #    >>> config.filename
 #    '.../configs/mailman-itests/launchpad-lazr.conf'
 #    >>> config.extends.filename
@@ -238,7 +238,7 @@ argument to the constructor.
 #We need to reset the config for the testrunner.
 
 #    >>> config = true_config
-#    >>> canonical.config.config = config
+#    >>> lp.services.config.config = config
 #    >>> config.filename
 #    '.../configs/testrunner/launchpad-lazr.conf'
 #    >>> config.dbname == DatabaseLayer._db_fixture.dbname

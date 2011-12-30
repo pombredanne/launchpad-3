@@ -13,7 +13,7 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import errorlog
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource

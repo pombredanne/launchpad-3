@@ -9,7 +9,7 @@ can be used for subordinate field indentation, for example.
     >>> from zope.app.form.browser import TextWidget
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)

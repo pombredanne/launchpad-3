@@ -10,7 +10,7 @@ import logging
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.services.config import config
 from lp.bugs.scripts.bugimport import BugImporter
 from lp.registry.interfaces.product import IProductSet
 from lp.services.scripts.base import LaunchpadScript

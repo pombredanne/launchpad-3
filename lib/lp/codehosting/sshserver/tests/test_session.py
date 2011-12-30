@@ -12,7 +12,7 @@ from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.config import config
+from lp.services.config import config
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,

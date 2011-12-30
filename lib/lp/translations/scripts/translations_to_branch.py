@@ -27,7 +27,7 @@ from zope.component import getUtility
 # other Launchpad imports.
 import lp.codehosting
 
-from canonical.config import config
+from lp.services.config import config
 
 from lp.services.helpers import shortlist
 from lp.services.mail.helpers import (

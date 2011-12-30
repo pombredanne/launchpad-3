@@ -22,8 +22,8 @@ from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
 
 # Calculate some landmark paths.
-import canonical.config
-here = os.path.dirname(canonical.config.__file__)
+import lp.services.config
+here = os.path.dirname(lp.services.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 lazr_schema = ConfigSchema(lazr_schema_file)
 zconfig_schema_file = os.path.join(

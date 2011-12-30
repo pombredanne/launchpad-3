@@ -218,7 +218,7 @@ We archive messages by sending them to The Mail Archive
 message is posted to so all we need to do is include them in the recipients
 list and the rest is taken care of.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.mailman.archive_address
     'archive@mail-archive.dev'
 
