@@ -841,7 +841,7 @@
         <!-- Person -->
 
         <adapter
-            provides="canonical.lazr.interfaces.objectprivacy.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>

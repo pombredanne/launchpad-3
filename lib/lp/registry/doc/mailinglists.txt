@@ -281,7 +281,7 @@ permissions on the team.
 You cannot turn a team with a mailing list into a private team.
 
     >>> from zope.component import queryAdapter
-    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.services.privacy.interfaces import IObjectPrivacy
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> queryAdapter(team_one, IObjectPrivacy).is_private
     False

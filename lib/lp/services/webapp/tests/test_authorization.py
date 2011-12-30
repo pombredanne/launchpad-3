@@ -20,6 +20,10 @@ from zope.interface import (
     )
 import zope.testing.cleanup
 
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import AuthorizationBase
+from lp.services.identity.interfaces.account import IAccount
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.authorization import (
     check_permission,
@@ -39,14 +43,6 @@ from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
     )
-from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessLayer,
-    )
-from lp.app.interfaces.security import IAuthorization
-from lp.app.security import AuthorizationBase
-from lp.services.identity.interfaces.account import IAccount
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -54,6 +50,10 @@ from lp.testing import (
     )
 from lp.testing.factory import ObjectFactory
 from lp.testing.fixture import ZopeAdapterFixture
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessLayer,
+    )
 
 
 class Allow(AuthorizationBase):
