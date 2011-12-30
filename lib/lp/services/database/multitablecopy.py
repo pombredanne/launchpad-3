@@ -11,7 +11,7 @@ import time
 
 from zope.interface import implements
 
-from canonical.database import postgresql
+from lp.services.database import postgresql
 from lp.services.database.sqlbase import (
     cursor,
     quote,

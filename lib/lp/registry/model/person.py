@@ -105,7 +105,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.database import postgresql
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import (
@@ -226,6 +225,7 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.services.config import config
+from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet

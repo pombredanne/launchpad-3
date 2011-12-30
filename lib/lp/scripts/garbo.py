@@ -35,7 +35,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database import postgresql
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
@@ -56,6 +55,7 @@ from lp.code.model.revision import (
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.config import config
+from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (

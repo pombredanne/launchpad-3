@@ -20,5 +20,3 @@ lp/answers
 canonical/librarian
 canonical/lazr
 canonical/launchpad
-canonical/database/testing
-canonical/database

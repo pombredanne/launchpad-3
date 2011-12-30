@@ -88,8 +88,8 @@ config.generate_overrides()
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != BUILD_DIR]
 
 # Turn on psycopg debugging wrapper
-#import canonical.database.debug
-#canonical.database.debug.install()
+#import lp.services.database.debug
+#lp.services.database.debug.install()
 
 # Unset the http_proxy environment variable, because we're going to make
 # requests to localhost and we don't wand this to be proxied.

@@ -4,7 +4,7 @@ Here we test the facility for coherently copying data inside the database that
 may be interlinked through foreign keys.
 
     >>> import transaction
-    >>> from canonical.database import postgresql
+    >>> from lp.services.database import postgresql
     >>> from lp.services.database.multitablecopy import MultiTableCopy
     >>> from lp.services.database.sqlbase import cursor
 

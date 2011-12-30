@@ -34,7 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database import sqlbase
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -68,6 +67,7 @@ from lp.scripts.garbo import (
     UnusedSessionPruner,
     )
 from lp.services.config import config
+from lp.services.database import sqlbase
 from lp.services.database.constants import (
     ONE_DAY_AGO,
     SEVEN_DAYS_AGO,
