@@ -16,7 +16,7 @@ import signal
 import subprocess
 import sys
 
-import canonical
+import lp.services.config
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.monkeypatches import monkey_patch
 
