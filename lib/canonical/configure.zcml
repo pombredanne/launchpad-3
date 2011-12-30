@@ -14,6 +14,7 @@
         file="meta-overrides.zcml" />
     <include package="grokcore.component" file="meta.zcml" />
     <include package="lp.services.webapp" file="meta.zcml" />
+    <include package="lazr.enum" />
     <include package="lazr.restful" file="meta.zcml" />
     <include package="lazr.uri" />
     <include package="lp" />
@@ -130,7 +131,5 @@
         permission="zope.Public"
         layer="lp.answers.publisher.AnswersLayer"
         />
-
-    <include package="canonical.lazr" />
 
 </configure>
