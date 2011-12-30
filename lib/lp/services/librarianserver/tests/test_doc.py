@@ -1,11 +1,23 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""
+Run the doctests and pagetests.
+"""
+
 __metaclass__ = type
 
-from canonical.librarian.libraryprotocol import FileUploadProtocol
-from canonical.librarian.storage import WrongDatabaseError
-from lp.testing.systemdocs import LayeredDocFileSuite
+import os
+
+from lp.services.librarianserver.libraryprotocol import FileUploadProtocol
+from lp.services.librarianserver.storage import WrongDatabaseError
+from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class MockTransport:
@@ -114,8 +126,21 @@ def upload_request(request):
     log.removeObserver(log_observer)
 
 
-def test_suite():
-    return LayeredDocFileSuite(
-        'test_upload.txt', globs={'upload_request': upload_request},
-        stdout_logging=False)
+here = os.path.dirname(os.path.realpath(__file__))
 
+special = {
+    'librarian-report.txt': LayeredDocFileSuite(
+            '../doc/librarian-report.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'upload.txt': LayeredDocFileSuite(
+            '../doc/upload.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            globs={'upload_request': upload_request},
+            ),
+}
+
+def test_suite():
+    return build_test_suite(here, special)

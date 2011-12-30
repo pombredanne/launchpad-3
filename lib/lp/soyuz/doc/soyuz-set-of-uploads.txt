@@ -101,7 +101,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.

@@ -43,20 +43,10 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.helpers import filenameToContentType
-from lp.services.webapp import urlappend
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
@@ -75,15 +65,25 @@ from lp.buildmaster.model.buildqueue import (
     specific_job_classes,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.config import config
+from lp.services.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.webapp import urlappend
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.

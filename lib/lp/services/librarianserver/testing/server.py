@@ -26,7 +26,7 @@ from lp.services.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )
-from canonical.librarian.storage import _relFileLocation
+from lp.services.librarianserver.storage import _relFileLocation
 from lp.services.osutils import get_pid_from_file
 
 
@@ -158,12 +158,12 @@ class LibrarianServerFixture(TacTestSetup):
         #2010-10-20 14:28:21+0530 [-] Log opened.
         #2010-10-20 14:28:21+0530 [-] twistd 10.1.0 (/usr/bin/python 2.6.5) starting up.
         #2010-10-20 14:28:21+0530 [-] reactor class: twisted.internet.selectreactor.SelectReactor.
-        #2010-10-20 14:28:21+0530 [-] canonical.librarian.libraryprotocol.FileUploadFactory starting on 59090
-        #2010-10-20 14:28:21+0530 [-] Starting factory <canonical.librarian.libraryprotocol.FileUploadFactory instance at 0x6f8ff38>
+        #2010-10-20 14:28:21+0530 [-] lp.services.librarianserver.libraryprotocol.FileUploadFactory starting on 59090
+        #2010-10-20 14:28:21+0530 [-] Starting factory <lp.services.librarianserver.libraryprotocol.FileUploadFactory instance at 0x6f8ff38>
         #2010-10-20 14:28:21+0530 [-] twisted.web.server.Site starting on 58000
         #2010-10-20 14:28:21+0530 [-] Starting factory <twisted.web.server.Site instance at 0x6fb2638>
-        #2010-10-20 14:28:21+0530 [-] canonical.librarian.libraryprotocol.FileUploadFactory starting on 59095
-        #2010-10-20 14:28:21+0530 [-] Starting factory <canonical.librarian.libraryprotocol.FileUploadFactory instance at 0x6fb25f0>
+        #2010-10-20 14:28:21+0530 [-] lp.services.librarianserver.libraryprotocol.FileUploadFactory starting on 59095
+        #2010-10-20 14:28:21+0530 [-] Starting factory <lp.services.librarianserver.libraryprotocol.FileUploadFactory instance at 0x6fb25f0>
         #2010-10-20 14:28:21+0530 [-] twisted.web.server.Site starting on 58005
         self.upload_port = int(chunks[3].split()[-1])
         self.download_port = int(chunks[5].split()[-1])

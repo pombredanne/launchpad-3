@@ -12,14 +12,14 @@ import urllib2
 
 from fixtures import Fixture
 
-from canonical.librarian.client import LibrarianClient
-from canonical.librarian.testing.server import LibrarianServerFixture
+from lp.services.librarian.client import LibrarianClient
+from lp.services.librarianserver.testing.server import LibrarianServerFixture
+from lp.testing import TestCase
+from lp.testing.fixture import PGBouncerFixture
 from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
     )
-from lp.testing import TestCase
-from lp.testing.fixture import PGBouncerFixture
 
 
 class PGBouncerLibrarianLayer(DatabaseFunctionalLayer):

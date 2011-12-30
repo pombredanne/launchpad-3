@@ -34,7 +34,9 @@ from zope.schema import (
     )
 
 from lp import _
-from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 
 # Set the expires attribute to this constant to flag a file that
 # should never be removed from the Librarian.

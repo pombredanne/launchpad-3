@@ -5,18 +5,18 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from contextlib import contextmanager
+from cStringIO import StringIO
 
-from canonical.librarian import smoketest
-from canonical.librarian.smoketest import (
+from lp.services.librarian import smoketest
+from lp.services.librarian.smoketest import (
     do_smoketest,
     FILE_DATA,
     store_file,
     )
-from canonical.librarian.testing.fake import FakeLibrarian
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.services.librarianserver.testing.fake import FakeLibrarian
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class GoodUrllib:

@@ -21,14 +21,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
 from canonical.database.sqlbase import flush_database_caches
-from canonical.librarian.testing.server import fillLibrarianFile
-from lp.testing.layers import (
-    DatabaseLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -40,7 +33,9 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError
@@ -87,6 +82,11 @@ from lp.testing import (
     ExpectedException,
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount

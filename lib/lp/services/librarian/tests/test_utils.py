@@ -3,7 +3,7 @@
 
 import unittest
 
-from canonical.librarian.utils import guess_librarian_encoding
+from lp.services.librarian.utils import guess_librarian_encoding
 
 
 class LibrarianUtils(unittest.TestCase):

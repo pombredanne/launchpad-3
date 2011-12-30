@@ -8,11 +8,17 @@ import unittest
 
 from zope.component import getUtility
 
+from lp.services.librarianserver import db
+from lp.services.librarianserver.storage import (
+    _relFileLocation,
+    _sameFile,
+    LibrarianStorage,
+    )
 from lp.services.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.librarian.storage import LibrarianStorage
-from canonical.librarian.storage import _sameFile, _relFileLocation
-from canonical.librarian import db
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
 
 

@@ -14,13 +14,6 @@ import pytz
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
-from lp.services.config import config
-from canonical.librarian.interfaces import LibrarianServerError
-from canonical.librarian.testing.server import fillLibrarianFile
-from lp.testing.layers import (
-    BaseLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -47,9 +40,16 @@ from lp.hardwaredb.scripts.hwdbsubmissions import (
     SubmissionParser,
     UdevDevice,
     )
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import LibrarianServerError
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.testing import (
     TestCase,
     validate_mock_class,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    LaunchpadZopelessLayer,
     )
 
 

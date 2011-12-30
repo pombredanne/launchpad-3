@@ -216,7 +216,7 @@ Low Level
 We can also use the ILibrarianClient Utility directly to store and
 access files in the Librarian.
 
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.services.librarian.interfaces.client import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
     >>> aid = client.addFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
@@ -317,7 +317,7 @@ to the host. You use the IRestrictedLibrarianClient to access this
 librarian.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.librarian.interfaces import IRestrictedLibrarianClient
+    >>> from lp.services.librarian.interfaces.client import IRestrictedLibrarianClient
     >>> restricted_client = getUtility(IRestrictedLibrarianClient)
     >>> verifyObject(IRestrictedLibrarianClient, restricted_client)
     True
@@ -393,7 +393,7 @@ you'll get a DownloadFailed error.
 But using the restricted librarian will work:
 
     >>> restricted_client.getFileByAlias(private_file_id)
-    <canonical.librarian.client._File...>
+    <lp.services.librarian.client._File...>
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url

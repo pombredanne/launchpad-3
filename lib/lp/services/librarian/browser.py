@@ -19,7 +19,10 @@ from lazr.restful.utils import get_current_browser_request
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
+from lp.app.errors import GoneError
 from lp.layers import WebServiceLayer
+from lp.services.librarian.client import url_path_quote
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import (
     canonical_url,
@@ -28,9 +31,6 @@ from lp.services.webapp.publisher import (
     stepthrough,
     )
 from lp.services.webapp.url import urlappend
-from canonical.librarian.client import url_path_quote
-from lp.app.errors import GoneError
-from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class LibraryFileAliasView(LaunchpadView):

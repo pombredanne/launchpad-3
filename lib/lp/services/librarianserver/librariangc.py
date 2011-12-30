@@ -5,24 +5,33 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import errno
+import os
 import re
 import sys
 from time import time
-import os
 
 from zope.interface import implements
 
+from canonical.database.postgresql import (
+    drop_tables,
+    listReferences,
+    quoteIdentifier,
+    )
 from lp.services.config import config
-from canonical.database.postgresql import drop_tables, quoteIdentifier
+from lp.services.librarianserver.storage import (
+    _relFileLocation as relative_file_path,
+    _sameFile,
+    )
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,
     )
-from canonical.librarian.storage import _relFileLocation as relative_file_path
-from canonical.librarian.storage import _sameFile
-from canonical.database.postgresql import listReferences
+
 
 log = None  # This is set by cronscripts/librarian-gc.py
 debug = False

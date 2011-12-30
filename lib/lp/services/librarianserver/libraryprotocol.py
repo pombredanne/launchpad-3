@@ -11,7 +11,7 @@ from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
 from twisted.python import log
 
-from canonical.librarian.storage import WrongDatabaseError
+from lp.services.librarianserver.storage import WrongDatabaseError
 
 
 class ProtocolViolation(Exception):

@@ -10,14 +10,14 @@
 
     <securedutility
         class=".client.LibrarianClient"
-        provides=".interfaces.ILibrarianClient">
-        <allow interface=".interfaces.ILibrarianClient" />
+        provides=".interfaces.client.ILibrarianClient">
+        <allow interface=".interfaces.client.ILibrarianClient" />
     </securedutility>
 
     <securedutility
         class=".client.RestrictedLibrarianClient"
-        provides=".interfaces.IRestrictedLibrarianClient">
-        <allow interface=".interfaces.IRestrictedLibrarianClient" />
+        provides=".interfaces.client.IRestrictedLibrarianClient">
+        <allow interface=".interfaces.client.IRestrictedLibrarianClient" />
     </securedutility>
 </configure>
 
