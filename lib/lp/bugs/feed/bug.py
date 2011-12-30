@@ -15,21 +15,6 @@ __all__ = [
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.services.webapp import (
-    canonical_url,
-    urlparse,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.services.webapp.publisher import LaunchpadView
-from canonical.lazr.feed import (
-    FeedBase,
-    FeedEntry,
-    FeedPerson,
-    FeedTypedData,
-    MINUTES,
-    )
 from lp.bugs.browser.bugtask import (
     BugsBugTaskSearchListingView,
     BugTargetView,
@@ -43,6 +28,21 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
+from lp.services.feeds.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    MINUTES,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    urlparse,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class BugFeedContentView(LaunchpadView):

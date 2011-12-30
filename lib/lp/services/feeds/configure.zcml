@@ -36,7 +36,7 @@
         for="canonical.lazr.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
-        template="../../../canonical/lazr/feed/templates/feed-entry-atom.pt"
+        template="templates/feed-entry-atom.pt"
         />
 
 

@@ -19,16 +19,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.webapp import (
-    canonical_url,
-    urlappend,
-    )
-from canonical.lazr.feed import (
-    FeedBase,
-    FeedEntry,
-    FeedPerson,
-    FeedTypedData,
-    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.registry.interfaces.announcement import (
     IAnnouncementSet,
@@ -37,7 +27,17 @@ from lp.registry.interfaces.announcement import (
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.feeds.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    )
 from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
 
 
 class AnnouncementsFeedBase(FeedBase):
