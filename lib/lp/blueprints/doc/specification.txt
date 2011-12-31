@@ -233,7 +233,7 @@ specifications:
 
 Specs from inactive products are filtered out.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('mark@example.com')
 
     # Unlink the source packages so the project can be deactivated.

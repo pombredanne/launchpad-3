@@ -22,11 +22,11 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,

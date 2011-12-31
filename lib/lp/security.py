@@ -16,9 +16,6 @@ from zope.component import (
     )
 from zope.interface import Interface
 
-from lp.services.config import config
-from canonical.database.sqlbase import quote
-from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
@@ -156,7 +153,9 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
 from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
@@ -167,6 +166,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,

@@ -41,12 +41,12 @@ from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.database.sqlbase import StupidCache
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
 from lp.services.database.readonly import is_read_only
+from lp.services.database.sqlbase import StupidCache
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,

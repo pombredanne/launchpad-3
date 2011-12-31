@@ -6,8 +6,8 @@ bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.sqlbase import cursor, sqlvalues
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 

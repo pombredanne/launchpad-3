@@ -279,6 +279,16 @@
       class="lp.services.webapp.error.SystemErrorView"
       />
 
+  <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
+       with a minimalist template. -->
+  <browser:page
+      for="lp.services.webapp.interfaces.ILaunchpadProtocolError"
+      class="lp.services.webapp.error.ProtocolErrorView"
+      template="../templates/protocol-error.pt"
+      name="index.html"
+      permission="zope.Public"
+      />
+
   <!-- Unauthorized -->
   <browser:page
       for="zope.exceptions.IUnauthorized"
@@ -308,7 +318,7 @@
 
   <!-- RequestExpired -->
   <browser:page
-      for="canonical.database.interfaces.IRequestExpired"
+      for="lp.services.database.interfaces.IRequestExpired"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
@@ -317,7 +327,7 @@
 
   <!-- TimeoutError -->
   <browser:page
-      for="canonical.lazr.timeout.TimeoutError"
+      for="lp.services.timeout.TimeoutError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
@@ -1058,5 +1068,83 @@
       factory="lp.app.browser.webservice.reference_xhtml_representation"/>
   <adapter
       factory="lp.app.browser.webservice.text_xhtml_representation"/>
+
+    <!-- The following directives set up root front pages for the different
+         virtual host layers.  The directives come in pairs.
+         The separate registration for the resources namespace (@@) is needed
+         because otherwise the lookup for /@@/ will fail because the
+         layer-specific defaultView directive also registers the
+         default view name as an unnamed adapter.
+         -->
+      -->
+    <!-- virtual host: blueprints -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="specs"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
+        />
+
+    <!-- virtual host: code -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="+code"
+        layer="lp.code.publisher.CodeLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.code.publisher.CodeLayer"
+        />
+
+    <!-- virtual host: translations -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="translations"
+        layer="lp.translations.publisher.TranslationsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.translations.publisher.TranslationsLayer"
+        />
+
+    <!-- virtual host: bugs -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="bugs"
+        layer="lp.bugs.publisher.BugsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.bugs.publisher.BugsLayer"
+        />
+
+    <!-- virtual host: answers -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="questions"
+        layer="lp.answers.publisher.AnswersLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.answers.publisher.AnswersLayer"
+        />
 
 </configure>

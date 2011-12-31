@@ -737,7 +737,7 @@ entitled _Privacy and Team Awareness_):
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 If we now login as someone who was neither implicitly nor explicitly
@@ -1025,7 +1025,7 @@ is used here.
     # XXX Guilherme Salgado 2005-11-07:
     # If we don't call flush_database_caches() here, we won't see the
     # changes made by the cronscript in objects we already have cached.
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> transaction.commit()
 

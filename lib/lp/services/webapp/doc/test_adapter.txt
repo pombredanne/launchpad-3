@@ -1,5 +1,5 @@
 
-The canonical.database.adapter module provides a Storm store that can
+The lp.services.database.adapter module provides a Storm store that can
 prevent SQL statements from being executed if a request takes longer
 than a configured length of time to execute.  It uses lp.services.config for
 configuration parameters.

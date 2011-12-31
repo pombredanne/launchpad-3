@@ -24,12 +24,6 @@ from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config
-from lp.services.webapp.interfaces import (
-    IAPIDocRoot,
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
 from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -71,8 +65,14 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.config import config
+from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import (
+    IAPIDocRoot,
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication

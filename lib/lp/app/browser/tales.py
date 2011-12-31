@@ -47,18 +47,37 @@ from zope.traversing.interfaces import (
     )
 
 from lp import _
+from lp.app.browser.badge import IHasBadges
+from lp.app.browser.stringformatter import (
+    escape,
+    FormattersAPI,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.bug import IBug
+from lp.buildmaster.enums import BuildStatus
+from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     urlappend,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -78,25 +97,6 @@ from lp.services.webapp.publisher import (
     nearest,
     )
 from lp.services.webapp.session import get_cookie_domain
-from canonical.lazr.canonicalurl import nearest_adapter
-from lp.app.browser.badge import IHasBadges
-from lp.app.browser.stringformatter import (
-    escape,
-    FormattersAPI,
-    )
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.interfaces.sprint import ISprint
-from lp.bugs.interfaces.bug import IBug
-from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet

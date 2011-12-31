@@ -8,15 +8,16 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.services.config import config
-from canonical.database.sqlbase import block_implicit_flushes
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.services.webapp.publisher import canonical_url
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
+
 
 CC = "CC"
 

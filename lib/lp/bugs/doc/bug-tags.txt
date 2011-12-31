@@ -272,7 +272,7 @@ example, if we search for 'some-tag', we find nothing at the moment:
 
 If we now set bug one's tag to 'some-tag', it will be found.
 
-    XXX from canonical.database.sqlbase import flush_database_updates
+    XXX from lp.services.database.sqlbase import flush_database_updates
     XXX bug_one.tags = [u'some-tag']
     XXX flush_database_updates()
 
@@ -301,7 +301,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     ...     tag=all(u'layout-test'), user=None)):
     ...     bugtask.transitionToStatus(
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
     >>> firefox.getUsedBugTags()

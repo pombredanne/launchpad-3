@@ -10,16 +10,16 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_caches
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.karma import KarmaCache
+from lp.services.database.sqlbase import flush_database_caches
 from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.karma import KarmaCache
 
 
 class TestKarmaCacheUpdater(unittest.TestCase):

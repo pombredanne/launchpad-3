@@ -33,12 +33,6 @@ from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -59,6 +53,12 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.model.productrelease import ProductRelease
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.webapp.sorting import expand_numbers
 
 
 FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)

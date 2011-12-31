@@ -24,9 +24,6 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from canonical.database.constants import UTC_NOW
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.nascentuploadfile import DdebBinaryUploadFile
@@ -59,6 +56,8 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import (
@@ -104,6 +103,7 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

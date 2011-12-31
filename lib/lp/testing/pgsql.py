@@ -18,7 +18,7 @@ from bzrlib.lock import WriteLock
 import psycopg2
 
 from lp.services.config import config
-from canonical.database.postgresql import (
+from lp.services.database.postgresql import (
     generateResetSequencesSQL,
     resetSequences,
     )

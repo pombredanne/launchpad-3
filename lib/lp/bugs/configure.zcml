@@ -270,7 +270,7 @@
                     "/>
         </class>
         <adapter
-            provides="canonical.lazr.interfaces.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
             permission="zope.Public"/>

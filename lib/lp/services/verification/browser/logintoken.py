@@ -27,8 +27,32 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
 from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.registry.browser.team import HasRenewalPolicyMixin
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    ITeam,
+    )
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.gpg.interfaces import (
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGVerificationError,
+    IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import (
     IGPGKeyValidationForm,
@@ -46,30 +70,6 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.login import logInPrincipal
 from lp.services.webapp.menu import structured
 from lp.services.webapp.vhosts import allvhosts
-from lp.app.browser.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
-from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    ITeam,
-    )
-from lp.services.gpg.interfaces import (
-    GPGKeyExpired,
-    GPGKeyNotFoundError,
-    GPGKeyRevoked,
-    GPGVerificationError,
-    IGPGHandler,
-    )
-from lp.services.identity.interfaces.account import AccountStatus
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 
 
 class LoginTokenSetNavigation(GetitemNavigation):

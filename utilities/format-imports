@@ -285,9 +285,15 @@ def parse_import_statements(import_section):
 
     return imports
 
+LOCAL_PACKAGES = (
+    'canonical', 'lp', 'launchpad_loggerhead', 'devscripts',
+    # database/* have some implicit relative imports.
+    'fti', 'replication', 'upgrade',
+    )
 
 def format_imports(imports):
     """Group and order imports, return the new import statements."""
+    early_section = {}
     standard_section = {}
     first_section = {}
     thirdparty_section = {}
@@ -296,9 +302,11 @@ def format_imports(imports):
     for module, statement in imports.iteritems():
         module_base = module.split('.')[0]
         comment = statement.comment
-        if comment is not None and comment.startswith("# FIRST"):
+        if module_base == '_pythonpath':
+            early_section[module] = statement
+        elif comment is not None and comment.startswith("# FIRST"):
             first_section[module] = statement
-        elif module_base in ('canonical', 'lp'):
+        elif module_base in LOCAL_PACKAGES:
             local_section[module] = statement
         elif module_base in python_standard_libs:
             standard_section[module] = statement
@@ -308,6 +316,7 @@ def format_imports(imports):
     all_import_lines = []
     # Sort within each section and generate statement strings.
     sections = (
+        early_section,
         standard_section,
         first_section,
         thirdparty_section,

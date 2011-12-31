@@ -150,7 +150,7 @@ team's renewal policy is ONDEMAND.
     ...     landscape_devs, mirror_admins)
     >>> membership.setExpirationDate(
     ...     now + timedelta(days=1), mirror_admins.teamowner)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

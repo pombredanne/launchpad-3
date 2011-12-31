@@ -86,7 +86,7 @@ bug got submitted correctly:
 
     >>> process_email(submit_mail)
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -636,7 +636,7 @@ otherwise permission to complete the operation will be denied.)
 
 We flush the database caches to ensure that the timestamp is set:
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 A timestamp and the user that sets the bug private is also recorded:
@@ -1600,7 +1600,7 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.importance.title)
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)

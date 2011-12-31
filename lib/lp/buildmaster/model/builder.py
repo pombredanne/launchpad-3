@@ -43,10 +43,6 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
@@ -66,6 +62,10 @@ from lp.buildmaster.model.buildqueue import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job

@@ -10,7 +10,7 @@ import os
 import unittest
 
 from lp.services.config import config
-from canonical.database.sqlbase import commit
+from lp.services.database.sqlbase import commit
 from lp.testing import logout
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,

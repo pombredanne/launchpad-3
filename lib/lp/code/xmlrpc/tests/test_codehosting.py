@@ -16,18 +16,6 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.xmlrpc import faults
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.code.bzr import (
     BranchFormat,
@@ -55,9 +43,21 @@ from lp.code.xmlrpc.codehosting import (
     run_with_login,
     )
 from lp.codehosting.inmemory import InMemoryFrontend
+from lp.services.database.constants import UTC_NOW
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.xmlrpc import faults
 
 
 UTC = pytz.timezone('UTC')

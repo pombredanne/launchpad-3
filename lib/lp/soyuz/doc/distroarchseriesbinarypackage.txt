@@ -25,7 +25,7 @@ builds that are in sampledata!
 
     >>> from lp.soyuz.model.publishing import (
     ...        BinaryPackagePublishingHistory)
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from lp.soyuz.model.component import Component
     >>> from lp.soyuz.model.section import Section
@@ -227,7 +227,7 @@ First, update the cache tables for Celso's PPA:
     ...
 
     >>> cprov.archive.updateArchiveCache()
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
     >>> flush_database_updates()
 

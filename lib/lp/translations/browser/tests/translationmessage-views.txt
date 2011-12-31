@@ -4,7 +4,7 @@ TranslationMessage View
 On this section, we are going to test the view class for an
 ITranslationMessage object.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)

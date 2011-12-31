@@ -97,7 +97,7 @@ permission to manipulate them.
     ...     binary.component = universe
     >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

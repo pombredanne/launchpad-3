@@ -596,7 +596,7 @@ cases a TimeoutError is issued.
 
     >>> from socket import socket
     >>> from textwrap import dedent
-    >>> from canonical.lazr.timeout import (
+    >>> from lp.services.timeout import (
     ...     get_default_timeout_function, set_default_timeout_function)
 
     >>> server = socket()

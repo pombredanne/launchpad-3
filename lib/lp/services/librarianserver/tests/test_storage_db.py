@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.database.sqlbase import flush_database_updates
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.librarian.model import LibraryFileContent
 from lp.services.librarianserver import db
 from lp.services.librarianserver.storage import (

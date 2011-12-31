@@ -36,7 +36,7 @@ from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
-from canonical.database.constants import UTC_NOW
+from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     ANONYMOUS,
     login,

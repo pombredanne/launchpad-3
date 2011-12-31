@@ -640,7 +640,7 @@ to upload to -UPDATES in a DEVELOPMENT series.
 
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> hoary.status = SeriesStatus.CURRENT
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')

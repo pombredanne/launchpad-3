@@ -18,6 +18,7 @@ __metaclass__ = type
 
 # pylint: disable-msg=W0403
 import _pythonpath
+
 from storm.sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 

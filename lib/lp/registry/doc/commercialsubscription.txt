@@ -371,7 +371,7 @@ be reviewed. You can search by text in the Product table's full text index
 as well as the license_info field. The results are ordered by date ceated
 then display name.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
     >>> flush_database_updates()

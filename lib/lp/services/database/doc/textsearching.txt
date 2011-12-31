@@ -43,7 +43,7 @@ Querying
 The examples use the following helper function to execute SQL commands
 against the database and display the results:
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database.sqlbase import cursor
     >>> def runsql(query, *args):
     ...     '''Run an SQL query and return the results as text'''
     ...     colsize = 25
@@ -121,7 +121,7 @@ any syntax error exceptions being generated.
 The following examples show the text version of the query using
 `_ftq(text)`, and the compiled version returned by `ftq(text)`
 
-    >>> from canonical.database.sqlbase import SQLBase
+    >>> from lp.services.database.sqlbase import SQLBase
     >>> def ftq(query):
     ...     query = query.encode('UTF-8')
     ...     cur = cursor()
@@ -564,7 +564,7 @@ we can use the nl_term_candidates() function. This function uses ftq()
 internally to removes stop words and other words that will be ignored
 by tsearch2. All words are also stemmed.
 
-    >>> from canonical.database.nl_search import nl_term_candidates
+    >>> from lp.services.database.nl_search import nl_term_candidates
 
     >>> nl_term_candidates('When I start firefox, it crashes')
     [u'start', u'firefox', u'crash']
@@ -601,8 +601,8 @@ The select method of that class will be use to count the number of rows
 that is matched by each term. Term matching 50% or more of the total
 rows will be excluded from the final search.
 
-    >>> from canonical.database.nl_search import nl_phrase_search
-    >>> from canonical.database.sqlbase import quote
+    >>> from lp.services.database.nl_search import nl_phrase_search
+    >>> from lp.services.database.sqlbase import quote
     >>> from lp.answers.model.question import Question
 
 More than 50% of the questions matches firefox:
@@ -689,7 +689,7 @@ keywords could be eliminated. For that reason, when there are less than
 For example, there are less than 5 questions filed on the
 mozilla-firefox source package.
 
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')

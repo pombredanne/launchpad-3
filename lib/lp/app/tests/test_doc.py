@@ -7,8 +7,8 @@ Run the doctests and pagetests.
 
 import os
 
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -23,6 +23,9 @@ special = {
         '../doc/tales.txt',
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
+        ),
+    'menus.txt': LayeredDocFileSuite(
+        '../doc/menus.txt', layer=None,
         ),
     }
 

@@ -13,16 +13,21 @@ from textwrap import dedent
 import psycopg2
 
 from lp.services.config import config
-from canonical.database.sqlbase import (
+from lp.services.database.postgresql import (
+    all_sequences_in_schema,
+    all_tables_in_schema,
+    ConnectionString,
+    fqn,
+    )
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_DEFAULT,
-    sqlvalues
+    sqlvalues,
     )
-from canonical.database.postgresql import (
-    fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
+from lp.services.scripts.logger import (
+    DEBUG2,
+    log,
     )
-from lp.services.scripts.logger import log, DEBUG2
-
 
 # The Slony-I clustername we use with Launchpad. Hardcoded because there
 # is no point changing this, ever.

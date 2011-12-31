@@ -127,7 +127,7 @@ upload, even though it gets changed in the publishing record.
     PENDING main
     PUBLISHED main
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.soyuz.model.component import Component
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
