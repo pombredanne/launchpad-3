@@ -33,17 +33,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
@@ -54,8 +43,19 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
+from lp.services.database.constants import DEFAULT
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 def normalize_virtualization(virtualized):

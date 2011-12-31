@@ -384,7 +384,7 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
     >>> modified_spph = spph
@@ -1323,7 +1323,7 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> print iceweasel_diff.title
     diff from 0.1-1 (in Ubuntu) to 1.0
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The `PackageDiff` are availble via getPackageDiffsForSources() even if

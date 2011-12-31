@@ -74,32 +74,7 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.interfaces import IPathAdapter
 
-from lp.services.config import config
-from canonical.database.constants import UTC_NOW
 from lp import _
-from lp.services import searchbuilder
-from lp.services.feeds.browser import (
-    BranchFeedLink,
-    FeedsMixin,
-    )
-from lp.services.helpers import truncate_text
-from lp.services.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    stepthrough,
-    stepto,
-    )
-from lp.services.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.interfaces import ICanonicalUrlData
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -153,7 +128,32 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services import searchbuilder
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.feeds.browser import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
+from lp.services.helpers import truncate_text
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.menu import structured
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )

@@ -31,7 +31,7 @@ team and the name of the team owner as arguments.
 
     # Flush the caches because our objects were changed in another
     # transaction.
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')

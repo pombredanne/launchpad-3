@@ -7,7 +7,7 @@ First, we need some imports.
 
     >>> from zope.publisher.browser import FileUpload
     >>> from StringIO import StringIO
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from lp.translations.interfaces.translationimportqueue import (

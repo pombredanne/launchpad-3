@@ -28,7 +28,7 @@ ObjectCreatedEvent in order to trigger email notifications:
 
     >>> from StringIO import StringIO
 
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> def attachment_added(attachment, event):
     ...     print "Attachment added: %r" % attachment.libraryfile.filename
@@ -423,7 +423,7 @@ There are no patches attached to any bugs:
 
 Let's make our attachment a patch and search again:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
     >>> attachment.type = BugAttachmentType.PATCH
     >>> flush_database_updates()

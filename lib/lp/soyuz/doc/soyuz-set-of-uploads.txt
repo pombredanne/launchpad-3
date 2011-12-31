@@ -198,7 +198,7 @@ given upload into the published state, so here's a very simplistic publisher
     ...     SourcePackagePublishingHistory as SPPH,
     ...     BinaryPackagePublishingHistory as BPPH)
     >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> def simple_publish(distro):
     ...     srcs_to_publish = SPPH.select("""
     ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
@@ -645,7 +645,7 @@ Upload the i386 binary:
 
 Should still just have one build, and it should now be FULLYBUILT.
 
-    >>> from canonical.database.sqlbase import clear_current_connection_cache
+    >>> from lp.services.database.sqlbase import clear_current_connection_cache
     >>> clear_current_connection_cache()
 
     >>> builds = list(BinaryPackageBuild.selectBy(

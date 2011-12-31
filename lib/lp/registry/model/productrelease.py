@@ -26,18 +26,6 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     validate_person,
@@ -49,8 +37,20 @@ from lp.registry.interfaces.productrelease import (
     IProductReleaseSet,
     UpstreamFileType,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.

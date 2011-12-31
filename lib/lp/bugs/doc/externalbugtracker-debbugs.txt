@@ -621,7 +621,7 @@ There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []

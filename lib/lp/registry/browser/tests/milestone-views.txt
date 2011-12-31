@@ -38,7 +38,7 @@ The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
 for use with inline presentation of milestones.
 
     >>> from lp.services.webapp.interfaces import INavigationMenu
-    >>> from canonical.lazr.canonicalurl import nearest_adapter
+    >>> from lp.services.webapp.canonicalurl import nearest_adapter
 
     >>> view = create_view(milestone, name='+productseries-table-row')
     >>> nearest_adapter(view, INavigationMenu, name='overview')

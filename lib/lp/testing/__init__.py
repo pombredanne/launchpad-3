@@ -90,6 +90,7 @@ from bzrlib.transport import get_transport
 import fixtures
 from lazr.restful.testing.tales import test_tales
 from lazr.restful.testing.webservice import FakeRequest
+import lp_sitecustomize
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
@@ -120,8 +121,22 @@ from zope.security.proxy import (
     )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
+from lp.app.interfaces.security import IAuthorization
+from lp.codehosting.vfs import (
+    branch_id_to_path,
+    get_rw_server,
+    )
+from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services import features
 from lp.services.config import config
-from canonical.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import flush_database_caches
+from lp.services.features.flags import FeatureController
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
+from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.services.webapp.adapter import (
     print_queries,
@@ -137,20 +152,6 @@ from lp.services.webapp.servers import (
     StepsToGo,
     WebServiceTestRequest,
     )
-from lp.app.interfaces.security import IAuthorization
-from lp.codehosting.vfs import (
-    branch_id_to_path,
-    get_rw_server,
-    )
-from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.services import features
-from lp.services.features.flags import FeatureController
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
-    )
-from lp.services.features.webapp import ScopesFromRequest
-from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -176,7 +177,6 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
-import lp_sitecustomize
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.

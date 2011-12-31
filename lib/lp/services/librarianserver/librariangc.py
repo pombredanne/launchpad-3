@@ -17,12 +17,12 @@ from time import time
 
 from zope.interface import implements
 
-from canonical.database.postgresql import (
+from lp.services.config import config
+from lp.services.database.postgresql import (
     drop_tables,
     listReferences,
     quoteIdentifier,
     )
-from lp.services.config import config
 from lp.services.librarianserver.storage import (
     _relFileLocation as relative_file_path,
     _sameFile,

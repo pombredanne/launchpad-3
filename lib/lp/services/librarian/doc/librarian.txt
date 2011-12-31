@@ -31,7 +31,7 @@ clients.
 setUp
 -----
 
-    >>> from canonical.database.sqlbase import session_store
+    >>> from lp.services.database.sqlbase import session_store
     >>> from lp.services.librarian.model import TimeLimitedToken
 
 
@@ -612,7 +612,7 @@ We need some files to test different ways of accessing them.
 
 Commit the just-created files.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
     >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]

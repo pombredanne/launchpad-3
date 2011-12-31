@@ -271,7 +271,7 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
     ...    hoary, pocket_release, cprov.archive)
     >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
     >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 A build record is clearly not required here, since both, source and

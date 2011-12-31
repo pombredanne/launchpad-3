@@ -24,22 +24,22 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.bugs.interfaces.bugjob import (
     BugJobType,
     IBugJob,
     IBugJobSource,
     )
 from lp.bugs.model.bug import Bug
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 class BugJob(StormBase):

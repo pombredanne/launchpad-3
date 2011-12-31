@@ -17,13 +17,13 @@ from storm.expr import SQL
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
     cursor,
     flush_database_updates,
     session_store,
     )
-from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,

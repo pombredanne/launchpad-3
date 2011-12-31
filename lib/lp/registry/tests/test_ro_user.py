@@ -9,7 +9,7 @@ import unittest
 
 import psycopg2
 
-from canonical.database.sqlbase import cursor
+from lp.services.database.sqlbase import cursor
 from lp.testing.layers import LaunchpadZopelessLayer
 
 

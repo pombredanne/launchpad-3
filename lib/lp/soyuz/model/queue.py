@@ -39,13 +39,6 @@ from storm.store import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -57,9 +50,16 @@ from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
     )
 from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import LibraryFileAlias

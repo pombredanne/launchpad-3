@@ -21,7 +21,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 
-from canonical.database.datetimecol import UtcDateTimeCol
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

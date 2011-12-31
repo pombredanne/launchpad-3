@@ -6,7 +6,7 @@ options from them, Not meeting these preconditions is a programming error and
 should be threated as so.
 
   >>> from zope.component import getUtility
-  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from lp.services.database.sqlbase import flush_database_updates
   >>> from lp.testing import login
   >>> from datetime import timedelta
   >>> from lp.registry.interfaces.person import IPersonSet

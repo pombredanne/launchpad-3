@@ -31,15 +31,6 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import quote
-from lp.services.database.lpstorm import IStore
-from lp.services.searchbuilder import any
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.webapp.vocabulary import CountableIterator
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -79,7 +70,16 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
 from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.vocabulary import CountableIterator
 
 
 class GenericBranchCollection:

@@ -377,8 +377,8 @@ taken into consideration with branch deletion.
 
 The current references to the branch table are shown here.
 
-    >>> from canonical.database import postgresql
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database import postgresql
+    >>> from lp.services.database.sqlbase import cursor
     >>> cur = cursor()
     >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
 

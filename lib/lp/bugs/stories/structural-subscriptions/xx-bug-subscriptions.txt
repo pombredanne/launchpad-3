@@ -79,7 +79,7 @@ can subscribe any Launchpad user.
 
 Firstly, we appoint Sample Person as the driver for the distribution.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.testing import login, logout

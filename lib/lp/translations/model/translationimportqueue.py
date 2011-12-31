@@ -42,19 +42,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
@@ -69,10 +56,23 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
     )
 from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.worlddata.interfaces.language import ILanguageSet

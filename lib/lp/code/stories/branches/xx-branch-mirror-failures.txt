@@ -134,7 +134,7 @@ report the absence of an error message.
     >>> login('eric@example.com') # To get Launchpad.Edit on the branch.
     >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.mirror_status_message = None
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

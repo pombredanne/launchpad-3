@@ -20,17 +20,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    )
-from lp.services.webapp import urlsplit
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -53,10 +42,19 @@ from lp.bugs.model.bugwatch import (
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import BugWatchActivityPruner
+from lp.services.database.constants import UTC_NOW
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import urlsplit
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 

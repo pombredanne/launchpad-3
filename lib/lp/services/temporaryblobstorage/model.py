@@ -24,9 +24,9 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import config
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.interfaces import (

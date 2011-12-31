@@ -21,7 +21,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -34,6 +33,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import BufferLogger

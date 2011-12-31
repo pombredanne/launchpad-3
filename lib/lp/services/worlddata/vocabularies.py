@@ -18,8 +18,8 @@ from zope.schema.vocabulary import (
     )
 
 from lp.services.webapp.vocabulary import SQLObjectVocabularyBase
-from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.timezone import ITimezoneNameVocabulary
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
 

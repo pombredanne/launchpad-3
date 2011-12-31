@@ -18,7 +18,7 @@ linkPersonToSelf() method of IBugTracker.
 
 We'll rename the bugtracker to make the tests more readable.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 

@@ -56,7 +56,7 @@ XXX: This doctest needs a lot of cleanups!
     >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
     >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
     >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 

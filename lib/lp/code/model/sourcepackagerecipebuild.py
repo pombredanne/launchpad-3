@@ -33,7 +33,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -62,6 +61,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import (
     IMasterStore,

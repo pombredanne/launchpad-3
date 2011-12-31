@@ -9,7 +9,7 @@ First, set all the bugs to private.
     >>> bugs = Bug.select()
     >>> for bug in bugs:
     ...     bug.private = True
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 There should be zero entries in these feeds, since all the bugs are private.

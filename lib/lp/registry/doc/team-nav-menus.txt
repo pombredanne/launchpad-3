@@ -5,7 +5,7 @@ The team pages have their own navigation menu.
     >>> from zope.component import queryAdapter
     >>> from lp.testing import test_tales
     >>> from lp.services.webapp.interfaces import INavigationMenu
-    >>> from canonical.lazr.testing.menus import summarise_tal_links
+    >>> from lp.testing.menu import summarise_tal_links
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)

@@ -17,15 +17,6 @@ from zope.component import (
     getUtility,
     )
 
-from lp.services.config import config
-from canonical.database.sqlbase import block_implicit_flushes
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.url import urlappend
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -34,6 +25,12 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
+    )
+from lp.services.config import config
+from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
     )
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -46,6 +43,9 @@ from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 
 # Silence lint warnings.
 NotificationRecipientSet

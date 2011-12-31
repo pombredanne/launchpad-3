@@ -14,16 +14,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.database.constants import UTC_NOW
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    GetitemNavigation,
-    LaunchpadView,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -38,7 +29,16 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.services.database.constants import UTC_NOW
 from lp.services.fields import URIField
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class BugWatchSetNavigation(GetitemNavigation):

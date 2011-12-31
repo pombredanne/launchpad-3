@@ -27,17 +27,12 @@ import gpgme
 from lazr.restful.utils import get_current_browser_request
 from zope.interface import implements
 
-from lp.services.config import config
-from lp.services.webapp import errorlog
-from canonical.lazr.timeout import (
-    TimeoutError,
-    urlfetch,
-    )
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     valid_fingerprint,
     )
+from lp.services.config import config
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
@@ -54,6 +49,11 @@ from lp.services.gpg.interfaces import (
     SecretGPGKeyImportDetected,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
+from lp.services.webapp import errorlog
 
 
 signing_only_param = """
