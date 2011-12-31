@@ -32,7 +32,6 @@ import time
 import urllib
 
 from lazr.uri import URI
-
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
@@ -59,43 +58,12 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
-
-from lp.services.config import config
 from lp import _
-from lp.services.helpers import intOrZero
-from lp.services.statistics.interfaces.statistic import (
-    ILaunchpadStatisticSet,
-    )
-from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryStorageManager,
-    )
-from lp.layers import WebServiceLayer
-from lp.services.webapp import (
-    canonical_name,
-    canonical_url,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepto,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import (
-    IBreadcrumb,
-    ILaunchBag,
-    ILaunchpadRoot,
-    INavigationMenu,
-    )
-from lp.services.webapp.publisher import RedirectionView
-from lp.services.webapp.url import urlappend
-from lp.services.webapp.vhosts import allvhosts
-from canonical.lazr import (
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.folder import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -127,6 +95,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -140,9 +109,36 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.helpers import intOrZero
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import utc_now
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -152,11 +148,11 @@ from lp.soyuz.interfaces.processor import (
     IProcessorSet,
     )
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
-from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.interfaces.translations import IRosettaApplication
 
 
 class NavigationMenuTabs(LaunchpadView):

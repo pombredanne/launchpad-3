@@ -35,11 +35,11 @@ from zope.security.simplepolicies import (
     PermissiveSecurityPolicy,
     )
 
-from canonical.lazr.canonicalurl import nearest_adapter
-from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.interfaces.security import IAuthorization
 from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.privacy.interfaces import IObjectPrivacy
+from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.interaction import InteractionExtras
 from lp.services.webapp.interfaces import (
     AccessLevel,

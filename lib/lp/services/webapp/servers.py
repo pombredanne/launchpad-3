@@ -61,9 +61,19 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from lp.services.config import config
-from lp.xmlrpc.interfaces import IPrivateApplication
+from lp.app.errors import UnexpectedFormData
 import lp.layers
+from lp.services.config import config
+from lp.services.features import get_relevant_feature_controller
+from lp.services.features.flags import NullFeatureController
+from lp.services.feeds.interfaces.application import IFeedsApplication
+from lp.services.feeds.interfaces.feed import IFeed
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    TokenException,
+    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authentication import (
     check_oauth_signature,
     get_oauth_authorization,
@@ -97,19 +107,9 @@ from lp.services.webapp.publisher import (
     RedirectionView,
     )
 from lp.services.webapp.vhosts import allvhosts
-from canonical.lazr.interfaces.feed import IFeed
-from lp.app.errors import UnexpectedFormData
-from lp.services.features import get_relevant_feature_controller
-from lp.services.features.flags import NullFeatureController
-from lp.services.feeds.interfaces import IFeedsApplication
-from lp.services.oauth.interfaces import (
-    IOAuthConsumerSet,
-    IOAuthSignedRequest,
-    TokenException,
-    )
-from lp.services.propertycache import cachedproperty
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 class StepsToGo:

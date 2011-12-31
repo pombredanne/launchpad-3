@@ -21,7 +21,7 @@ the directory to expose.
     >>> file(os.path.join(resource_dir, 'other.txt'), 'w').write(
     ...     'Other file')
 
-    >>> from canonical.lazr.folder import ExportedFolder
+    >>> from lp.app.browser.folder import ExportedFolder
     >>> class MyFolder(ExportedFolder):
     ...     folder = resource_dir
 
@@ -106,7 +106,7 @@ without extension.  For example, requesting 'image1' or 'image2' will
 serve the correct file. The supported extensions are defined in the
 image_extensions property.
 
-    >>> from canonical.lazr.folder import ExportedImageFolder
+    >>> from lp.app.browser.folder import ExportedImageFolder
 
     >>> class MyImageFolder(ExportedImageFolder):
     ...     folder = resource_dir

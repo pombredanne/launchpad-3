@@ -120,39 +120,7 @@ from zope.security.proxy import (
 from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
-from lp.services.config import config
 from lp import _
-from lp.services.feeds.browser import (
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
-from lp.services.mail.notification import get_unified_diff
-from lp.services.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from lp.services.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    stepthrough,
-    )
-from lp.services.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
@@ -247,7 +215,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IHasExternalBugTracker,
+    )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -273,14 +244,45 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
 from lp.services.fields import PersonChoice
 from lp.services.helpers import shortlist
+from lp.services.mail.notification import get_unified_diff
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from lp.services.utils import obfuscate_structure
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 vocabulary_registry = getVocabularyRegistry()

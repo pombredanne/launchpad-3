@@ -8,7 +8,7 @@ The app server is also configured with a default timeout function (for
 functions wrapped with the @with_timeout decorator) that computes the
 time remaining before the request should time out.
 
-    >>> from canonical.lazr.timeout import get_default_timeout_function
+    >>> from lp.services.timeout import get_default_timeout_function
     >>> from lp.services.webapp.adapter import (
     ...     set_launchpad_default_timeout)
     >>> old_func = get_default_timeout_function()
@@ -56,7 +56,7 @@ If the timeout is already expired, a RequestExpired error is raised:
 
 Same thing if a function decorated using @with_timeout is called.
 
-    >>> from canonical.lazr.timeout import with_timeout
+    >>> from lp.services.timeout import with_timeout
     >>> @with_timeout()
     ... def wait_a_little():
     ...     time.sleep(1)
@@ -117,7 +117,7 @@ Now the request can take 20 seconds to complete.
 
     >>> ignored = config.pop('timeout')
 
-    >>> from canonical.lazr.timeout import set_default_timeout_function
+    >>> from lp.services.timeout import set_default_timeout_function
     >>> set_default_timeout_function(old_func)
 
     >>> clear_request_started()

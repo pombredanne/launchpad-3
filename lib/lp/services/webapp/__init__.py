@@ -17,7 +17,6 @@ __all__ = [
     'custom_widget',
     'enabled_with_permission',
     'expand_numbers',
-    'ExportedFolder',
     'FacetMenu',
     'GetitemNavigation',
     'LaunchpadEditFormView',

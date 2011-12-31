@@ -53,7 +53,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp import _
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
@@ -97,6 +96,7 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.messages.model.message import Message
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
 
 

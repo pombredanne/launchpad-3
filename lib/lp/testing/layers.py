@@ -101,12 +101,7 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.lazr import pidfile
-from canonical.lazr.testing.layers import MockRootFolder
-from canonical.lazr.timeout import (
-    get_default_timeout_function,
-    set_default_timeout_function,
-    )
+from lp.services import pidfile
 from lp.services.config import (
     config,
     dbconfig,
@@ -132,6 +127,10 @@ from lp.services.osutils import kill_by_pidfile
 from lp.services.rabbit.server import RabbitServer
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.testing.profiled import profiled
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -253,6 +252,20 @@ def wait_children(seconds=120):
             break
         if until is not None and now() > until:
             break
+
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of FunctionalLayer.testSetUp() to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+
+    def sync(self):
+        pass
 
 
 class BaseLayer:

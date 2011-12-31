@@ -1600,7 +1600,7 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.importance.title)
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)

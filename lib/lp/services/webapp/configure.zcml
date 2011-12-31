@@ -285,7 +285,7 @@
         />
     <browser:page
         name=""
-        for="lp.services.feeds.interfaces.IFeedsApplication"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

@@ -11,7 +11,9 @@ __all__ = [
 
 import os
 from tempfile import NamedTemporaryFile
+
 from lp.services.helpers import simple_popen2
+
 
 class XMLValidator:
     """A validator for XML files against a schema."""
@@ -54,7 +56,7 @@ class XMLValidator:
                    '--%s' % self.SCHEMA_ARGUMENT,
                    self.schema_filename, xml_file.name]
         local_catalog_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "tests",
+            os.path.join(os.path.dirname(__file__), "tests", "testfiles",
                          "catalog", "catalog"))
         catalogs = " ".join(
             [local_catalog_path, "/etc/xml/catalog"])

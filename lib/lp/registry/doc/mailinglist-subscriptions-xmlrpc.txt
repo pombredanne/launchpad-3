@@ -291,7 +291,7 @@ itself is private, so is its archive, and then messages are not sent to the
 archiver email address.
 
     >>> from zope.component import queryAdapter
-    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.services.privacy.interfaces import IObjectPrivacy
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_three = new_team('team-three')
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
