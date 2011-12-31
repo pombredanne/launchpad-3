@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.database.sqlbase import cursor
+from lp.services.database.sqlbase import cursor
 from lp.testing.layers import LaunchpadZopelessLayer
 
 

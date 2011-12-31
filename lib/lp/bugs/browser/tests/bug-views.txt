@@ -8,7 +8,7 @@ There are three objects on which you can file a bug. An
 ObjectCreatedEvent is published when the bug is filed. Let's register
 an event listener to demonstrate this.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> import transaction
 
     >>> from canonical.lazr.testing.event import TestEventListener

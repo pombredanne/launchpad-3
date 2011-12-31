@@ -35,8 +35,11 @@ from zope.security.simplepolicies import (
     PermissiveSecurityPolicy,
     )
 
-from canonical.database.sqlbase import block_implicit_flushes
+from canonical.lazr.canonicalurl import nearest_adapter
+from canonical.lazr.interfaces import IObjectPrivacy
+from lp.app.interfaces.security import IAuthorization
 from lp.services.database.readonly import is_read_only
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.webapp.interaction import InteractionExtras
 from lp.services.webapp.interfaces import (
     AccessLevel,
@@ -44,9 +47,6 @@ from lp.services.webapp.interfaces import (
     ILaunchpadPrincipal,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
-from canonical.lazr.canonicalurl import nearest_adapter
-from canonical.lazr.interfaces import IObjectPrivacy
-from lp.app.interfaces.security import IAuthorization
 
 
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'

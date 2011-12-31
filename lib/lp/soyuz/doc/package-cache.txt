@@ -487,7 +487,7 @@ Only PENDING and PUBLISHED publications are considered.
 
 We will use `SoyuzTestPublisher` for creating convenient publications.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.soyuz.enums import (
     ...              PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (

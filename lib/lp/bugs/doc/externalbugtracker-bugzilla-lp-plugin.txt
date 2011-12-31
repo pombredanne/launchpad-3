@@ -342,7 +342,7 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.registry.interfaces.person import IPersonSet

@@ -1,10 +1,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.database import sqlbase
-import unittest, doctest
+import doctest
+from doctest import (
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    REPORT_NDIFF,
+    )
+import unittest
 
-from doctest import ELLIPSIS, NORMALIZE_WHITESPACE, REPORT_NDIFF
+from lp.services.database import sqlbase
 
 
 def test_suite():

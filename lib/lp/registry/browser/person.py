@@ -126,38 +126,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from canonical.database.sqlbase import flush_database_updates
 from lp import _
-from lp.services.feeds.browser import FeedsMixin
-from lp.services.verification.interfaces.authtoken import LoginTokenType
-from lp.services.mail.interfaces import (
-    INotificationRecipientSet,
-    UnknownRecipientError,
-    )
-from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    IOpenLaunchBag,
-    )
-from lp.services.webapp.login import logoutPerson
-from lp.services.webapp.menu import get_current_view
-from lp.services.webapp.publisher import LaunchpadView
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -249,13 +218,16 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import LocationField
-from lp.services.helpers import shortlist
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     )
+from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -264,6 +236,10 @@ from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,
+    )
+from lp.services.mail.interfaces import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -283,6 +259,30 @@ from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
     )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
+from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (

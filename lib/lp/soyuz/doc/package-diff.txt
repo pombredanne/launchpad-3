@@ -401,7 +401,7 @@ directly with PackageDiffs objects.
 
 Let's flush all the updates done.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Those methods are useful when the callsites are not interested only in

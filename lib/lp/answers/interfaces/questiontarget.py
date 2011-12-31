@@ -162,7 +162,7 @@ class IQuestionTargetView(Interface):
         :language: An ILanguage. If that parameter is omitted, the question
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
-                attribute. Defaults to canonical.database.constants.UTC_NOW.
+                attribute. Defaults to lp.services.database.constants.UTC_NOW.
         """
 
     def createQuestionFromBug(bug):

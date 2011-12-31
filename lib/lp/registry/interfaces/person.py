@@ -91,19 +91,16 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp import _
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchpadApplication
-from lp.answers.interfaces.questionsperson import IQuestionsPerson
-from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.validators.name import name_validator
@@ -140,6 +137,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
@@ -157,6 +155,8 @@ from lp.services.identity.interfaces.account import (
     IAccount,
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,

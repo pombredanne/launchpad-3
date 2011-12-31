@@ -101,7 +101,6 @@ from zope.security.management import (
     )
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.database.sqlbase import session_store
 from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
@@ -117,6 +116,7 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
+from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )

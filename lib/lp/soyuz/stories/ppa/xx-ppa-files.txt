@@ -90,7 +90,7 @@ Create a subsequent source publication so a package diff can be provided.
 
 Commit everything.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
 

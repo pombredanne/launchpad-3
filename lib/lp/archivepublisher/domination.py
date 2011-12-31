@@ -71,16 +71,16 @@ from storm.expr import (
     Select,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.orderingcheck import OrderingCheck
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.bulk import load_related
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,

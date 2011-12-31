@@ -17,13 +17,13 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from lp.services.webapp.publisher import canonical_url
-from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translatablemessage import (

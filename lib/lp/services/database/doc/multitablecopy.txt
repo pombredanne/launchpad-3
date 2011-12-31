@@ -4,9 +4,9 @@ Here we test the facility for coherently copying data inside the database that
 may be interlinked through foreign keys.
 
     >>> import transaction
-    >>> from canonical.database import postgresql
-    >>> from canonical.database.multitablecopy import MultiTableCopy
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database import postgresql
+    >>> from lp.services.database.multitablecopy import MultiTableCopy
+    >>> from lp.services.database.sqlbase import cursor
 
     >>> # Keep track of tables we'll want to clean up later
     >>> tables_to_clean_up = []

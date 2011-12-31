@@ -11,8 +11,12 @@ import time
 
 from zope.interface import implements
 
-from canonical.database import postgresql
-from canonical.database.sqlbase import (cursor, quote, quoteIdentifier)
+from lp.services.database import postgresql
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quoteIdentifier,
+    )
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,

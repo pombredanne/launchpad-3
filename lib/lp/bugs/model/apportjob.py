@@ -26,12 +26,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -43,12 +37,18 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class ApportJob(StormBase):

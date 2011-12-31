@@ -423,7 +423,7 @@ There are no patches attached to any bugs:
 
 Let's make our attachment a patch and search again:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
     >>> attachment.type = BugAttachmentType.PATCH
     >>> flush_database_updates()

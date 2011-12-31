@@ -220,7 +220,7 @@ operation is completely identical.
 For example, it will correctly update Robert's standing, but leave Carlos's
 standing untouched.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
 
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> mark.personal_standing = PersonalStanding.UNKNOWN

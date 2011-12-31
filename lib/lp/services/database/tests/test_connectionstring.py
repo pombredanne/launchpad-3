@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.database.postgresql import ConnectionString
+from lp.services.database.postgresql import ConnectionString
 from lp.testing import TestCase
 
 

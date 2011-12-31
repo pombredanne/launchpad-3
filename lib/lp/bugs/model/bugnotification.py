@@ -37,14 +37,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.database.lpstorm import IStore
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
@@ -59,6 +51,14 @@ from lp.bugs.model.bugsubscriptionfilter import (
     )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import Message
 

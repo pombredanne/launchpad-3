@@ -6,8 +6,10 @@ Replace the psycopg connect method with one that returns a wrapped connection.
 '''
 
 import logging
+import textwrap
+import traceback
+
 import psycopg
-import traceback, textwrap
 
 # From http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/279155
 def LN(*args, **kwargs):
@@ -51,7 +53,7 @@ class ConnectionWrapper(object):
     _real_con = None
     def __init__(self, real_con):
         self.__dict__['_log'] = \
-                logging.getLogger('canonical.database.debug').debug
+                logging.getLogger('lp.services.database.debug').debug
         self.__dict__['_real_con'] = real_con
 
     def __getattr__(self, key):
@@ -70,7 +72,7 @@ _org_connect = None
 def debug_connect(*args, **kw):
     global _org_connect
     con = ConnectionWrapper(_org_connect(*args, **kw))
-    logging.getLogger('canonical.database.debug').debug(
+    logging.getLogger('lp.services.database.debug').debug(
             'connect(*%r, **%r) == %r', args, kw, con
             )
     print '%s connect(*%r, **%r) == %r' % (LN(), args, kw, con)

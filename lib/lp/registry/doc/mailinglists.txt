@@ -178,7 +178,7 @@ team's contact address.
     ACTIVE
     >>> print email_set.getByEmail(list_one.address).status.name
     VALIDATED
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
     >>> list_one.date_activated == transaction_timestamp
     True

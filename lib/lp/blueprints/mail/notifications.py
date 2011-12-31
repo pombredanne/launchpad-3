@@ -4,17 +4,17 @@
 
 __metaclass__ = type
 
-from canonical.database.sqlbase import block_implicit_flushes
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from lp.services.mail.notification import get_unified_diff
-from lp.services.webapp.publisher import canonical_url
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notification import get_unified_diff
 from lp.services.mail.sendmail import simple_sendmail_from_person
+from lp.services.webapp.publisher import canonical_url
 
 
 def specification_notification_subject(spec):

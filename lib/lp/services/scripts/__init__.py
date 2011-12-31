@@ -27,7 +27,7 @@ import zope.sendmail.delivery
 import zope.site.hooks
 
 from lp.services.config import config
-from canonical.database.postgresql import ConnectionString
+from lp.services.database.postgresql import ConnectionString
 # these are intentional re-exports, apparently, used by *many* files.
 from lp.services.scripts.logger import (
     dummy_logger_options,

@@ -19,7 +19,7 @@ import unittest
 import transaction
 
 from lp.services.config import dbconfig
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     cursor,
     ISOLATION_LEVEL_SERIALIZABLE,

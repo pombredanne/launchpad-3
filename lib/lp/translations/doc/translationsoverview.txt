@@ -187,7 +187,7 @@ karma.  Our algorithm takes the logarithm of its karma, but it's
 properly armoured against the occurrence of karmaless projects.
 
     >>> start_karma_update()
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database.sqlbase import cursor
     >>> cur = cursor()
     >>> cur.execute("""
     ...     UPDATE KarmaCache

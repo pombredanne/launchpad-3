@@ -16,11 +16,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -34,9 +29,14 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
     login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

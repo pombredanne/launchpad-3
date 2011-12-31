@@ -14,9 +14,9 @@ rows in the database.
 
 __metaclass__ = type
 
-import logging
-
 import _pythonpath
+
+import logging
 
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore

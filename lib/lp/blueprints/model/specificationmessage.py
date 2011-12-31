@@ -15,11 +15,11 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.specificationmessage import (
     ISpecificationMessage,
     ISpecificationMessageSet,
     )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.messages.model.message import (
     Message,
     MessageChunk,
