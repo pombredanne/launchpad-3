@@ -24,15 +24,7 @@ from zope.interface import (
     )
 from zope.schema import Text
 
-from lp.services.config import config
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    ContextMenu,
-    LaunchpadView,
-    Link,
-    )
-from lp.services.webapp.interfaces import IPrimaryContext
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -41,11 +33,19 @@ from lp.app.browser.launchpadform import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):

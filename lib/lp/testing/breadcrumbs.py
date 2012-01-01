@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from lp.services.webapp.publisher import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 from lp.testing.views import create_initialized_view
 

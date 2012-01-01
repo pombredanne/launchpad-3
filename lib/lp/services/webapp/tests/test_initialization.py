@@ -12,8 +12,8 @@ from zope.traversing.interfaces import ITraversable
 
 from lp.services.webapp.errorlog import OopsNamespace
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class AnyObject:

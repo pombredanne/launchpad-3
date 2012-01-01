@@ -11,8 +11,8 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import unittest
 
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces import product
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     setUp,
     tearDown,

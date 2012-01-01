@@ -11,6 +11,7 @@ import re
 import unittest
 
 import psycopg2
+
 # from zope.testing.testrunner import dont_retry, RetryTest
 
 from lp.services.config import config, dbconfig

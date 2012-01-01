@@ -41,10 +41,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import OAuthPermission
-from lp.services.webapp.url import urlsplit
-from lp.testing.layers import PageTestLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NameAlreadyTaken
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -52,6 +48,9 @@ from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     OAUTH_REALM,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.url import urlsplit
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,
@@ -60,6 +59,7 @@ from lp.testing import (
     logout,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import PageTestLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     stop,

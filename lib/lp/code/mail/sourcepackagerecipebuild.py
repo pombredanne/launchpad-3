@@ -8,13 +8,13 @@ __all__ = [
     ]
 
 
-from lp.services.config import config
-from lp.services.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.config import config
 from lp.services.mail.basemailer import (
     BaseMailer,
     RecipientReason,
     )
+from lp.services.webapp import canonical_url
 
 
 class SourcePackageRecipeBuildMailer(BaseMailer):

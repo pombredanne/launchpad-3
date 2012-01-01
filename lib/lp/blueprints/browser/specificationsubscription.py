@@ -15,12 +15,6 @@ from simplejson import dumps
 from zope.component import getUtility
 
 from lp import _
-from lp.services.webapp import canonical_url
-from lp.services.webapp.authorization import (
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -30,6 +24,10 @@ from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import precache_permission_for_objects
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class SpecificationSubscriptionAddView(LaunchpadFormView):

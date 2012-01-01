@@ -13,8 +13,8 @@ import unittest
 from zope.component import getUtility
 
 from lp.services.config import config
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessUpload(unittest.TestCase):

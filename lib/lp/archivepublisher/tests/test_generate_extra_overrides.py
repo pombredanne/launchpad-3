@@ -17,10 +17,6 @@ from germinate import (
     )
 import transaction
 
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.scripts.generate_extra_overrides import (
     AtomicFile,
     GenerateExtraOverrides,
@@ -38,6 +34,10 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def file_contents(path):

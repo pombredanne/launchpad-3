@@ -12,13 +12,13 @@ from lp.services.webapp.errorlog import (
     maybe_record_user_requested_oops,
     OopsNamespace,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     TestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestUserRequestedOops(TestCase):

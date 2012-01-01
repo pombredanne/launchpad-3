@@ -11,8 +11,8 @@ from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
     VocabularyFilter,
     )
-from lp.testing.layers import ZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessLayer
 
 
 class TestVocabulary(FilteredVocabularyBase):

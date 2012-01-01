@@ -6,10 +6,6 @@ from lazr.lifecycle.interfaces import (
     IObjectModifiedEvent,
     )
 
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
@@ -32,6 +28,10 @@ from lp.testing import (
     login_person,
     normalize_whitespace,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

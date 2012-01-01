@@ -28,18 +28,6 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from lp.services.helpers import shortlist
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    stepthrough,
-    )
-from lp.services.webapp.breadcrumb import TitleBreadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -56,6 +44,18 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollSecrecy,
     )
+from lp.services.helpers import shortlist
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import TitleBreadcrumb
 
 
 class PollEditLinksMixin:

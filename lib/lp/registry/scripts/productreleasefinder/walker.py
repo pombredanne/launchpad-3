@@ -32,8 +32,8 @@ from lazr.uri import (
     URI,
     )
 
-from lp.services.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
+from lp.services.webapp.url import urlappend
 
 
 class WalkerError(Exception):

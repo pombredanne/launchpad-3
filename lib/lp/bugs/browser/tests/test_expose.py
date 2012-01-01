@@ -20,9 +20,6 @@ from testtools.matchers import (
 from zope.interface import implements
 from zope.traversing.browser import absoluteURL
 
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
     expose_enum_to_js,
     expose_user_administered_teams_to_js,
@@ -30,12 +27,15 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 
 

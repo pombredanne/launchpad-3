@@ -19,8 +19,6 @@ from soupmatchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import login_person
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugcomment import group_comments_with_activity
 from lp.coop.answersbugs.visibility import (
@@ -31,9 +29,11 @@ from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
+    login_person,
     person_logged_in,
     TestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id
 
 

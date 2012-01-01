@@ -31,11 +31,11 @@ from twisted.python import filepath
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config
 from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.config import config
 from lp.services.database import read_transaction
 from lp.services.gpg.interfaces import (
     GPGVerificationError,

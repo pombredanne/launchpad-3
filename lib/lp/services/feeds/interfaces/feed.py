@@ -15,8 +15,18 @@ __all__ = [
     'UnsupportedFeedFormat',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Int, List, Text, TextLine, URI
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Datetime,
+    Int,
+    List,
+    Text,
+    TextLine,
+    URI,
+    )
 
 
 class UnsupportedFeedFormat(Exception):

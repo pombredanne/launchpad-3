@@ -25,12 +25,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 import canonical
-from lp.services.config import config
-from lp.services.daemons.tachandler import TacTestSetup
-from lp.testing.layers import (
-    TwistedLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -64,9 +58,15 @@ from lp.registry.scripts.distributionmirror_prober import (
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
     )
+from lp.services.config import config
+from lp.services.daemons.tachandler import TacTestSetup
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    TwistedLayer,
+    ZopelessDatabaseLayer,
     )
 
 

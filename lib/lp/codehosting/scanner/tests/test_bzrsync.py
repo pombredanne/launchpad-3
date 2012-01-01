@@ -23,9 +23,6 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.services.database.lpstorm import IStore
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
@@ -46,12 +43,15 @@ from lp.codehosting.bzrutils import (
     )
 from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
 from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )

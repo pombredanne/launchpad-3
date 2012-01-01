@@ -15,9 +15,7 @@ __all__ = [
     ]
 
 from lp import _schema_circular_imports
-from lp.services.messages.interfaces.message import (
-    IMessage,
-    )
+from lp.services.messages.interfaces.message import IMessage
 
 
 _schema_circular_imports

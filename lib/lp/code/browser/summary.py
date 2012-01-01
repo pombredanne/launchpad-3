@@ -10,12 +10,12 @@ __all__ = [
 
 
 from lp import _
-from lp.services.webapp.publisher import LaunchpadView
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.services.browser_helpers import get_plural_text
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class BranchCountSummaryView(LaunchpadView):

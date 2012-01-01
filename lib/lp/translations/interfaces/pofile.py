@@ -40,8 +40,8 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats

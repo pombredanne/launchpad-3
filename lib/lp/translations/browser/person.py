@@ -28,14 +28,6 @@ from zope.interface import (
     )
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    Link,
-    )
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import NavigationMenu
-from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -44,6 +36,14 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
     )

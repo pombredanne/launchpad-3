@@ -13,13 +13,13 @@ from storm.store import Store
 from testtools.matchers import LessThan
 
 from lp.services.webapp import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
     logout,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.systemdocs import (

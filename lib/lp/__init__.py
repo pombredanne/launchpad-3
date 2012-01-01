@@ -45,4 +45,6 @@ Here are these layers:
 # Modules should 'from lp import _' instead of constructing their
 # own MessageFactory
 from zope.i18nmessageid import MessageFactory
+
+
 _ = MessageFactory("launchpad")

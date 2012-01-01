@@ -29,8 +29,13 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from lp.services.config import config
+from lp.app import versioninfo
+from lp.app.errors import (
+    GoneError,
+    TranslationUnavailable,
+    )
 from lp.layers import WebServiceLayer
+from lp.services.config import config
 from lp.services.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
@@ -45,11 +50,6 @@ from lp.services.webapp.interfaces import (
     NoReferrerError,
     )
 from lp.testing.layers import LaunchpadLayer
-from lp.app import versioninfo
-from lp.app.errors import (
-    GoneError,
-    TranslationUnavailable,
-    )
 
 
 UTC = pytz.utc

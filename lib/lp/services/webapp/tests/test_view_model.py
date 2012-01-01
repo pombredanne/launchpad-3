@@ -11,12 +11,11 @@ from simplejson import loads
 from testtools.matchers import KeysEqual
 from zope.configuration import xmlconfig
 
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.namespace import JsonModelNamespaceView
 from lp.services.webapp.publisher import canonical_url
 import lp.services.webapp.tests
-from lp.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -24,6 +23,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class FakeView:

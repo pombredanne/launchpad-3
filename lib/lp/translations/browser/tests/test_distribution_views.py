@@ -8,11 +8,11 @@ __metaclass__ = type
 from zope.security.interfaces import Unauthorized
 
 from lp.services.webapp import canonical_url
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

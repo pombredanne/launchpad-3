@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translator import ITranslatorSet
 

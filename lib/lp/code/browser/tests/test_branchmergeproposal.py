@@ -29,17 +29,6 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IPrimaryContext,
-    )
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -65,6 +54,13 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.model.message import MessageSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -73,6 +69,10 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_initialized_view
 

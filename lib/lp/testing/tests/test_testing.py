@@ -9,7 +9,6 @@ import os
 import tempfile
 
 from lp.services.config import config
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,
@@ -18,6 +17,7 @@ from lp.testing import (
     TestCase,
     YUIUnitTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestFeatureFlags(TestCase):

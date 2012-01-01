@@ -23,15 +23,6 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import TitleBreadcrumb
-from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -42,6 +33,15 @@ from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import IDistributionMirrorMenuMarker
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import TitleBreadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,

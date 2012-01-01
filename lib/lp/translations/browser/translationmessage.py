@@ -38,7 +38,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lp.app.errors import UnexpectedFormData
 from lp.services.database.readonly import is_read_only
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -50,8 +52,6 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import structured
-from lp.app.errors import UnexpectedFormData
-from lp.services.propertycache import cachedproperty
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,
     convert_newlines_to_web_form,

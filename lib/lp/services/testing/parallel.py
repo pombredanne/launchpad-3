@@ -15,12 +15,12 @@ import tempfile
 from bzrlib.osutils import local_concurrency
 from subunit import ProtocolTestCase
 from subunit.run import SubunitTestRunner
-from testtools.compat import unicode_output_stream
 from testtools import (
     ConcurrentTestSuite,
     TestResult,
     TextTestResult,
     )
+from testtools.compat import unicode_output_stream
 
 
 def prepare_argv(argv):

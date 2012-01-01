@@ -18,17 +18,17 @@ from zope.component import (
     getUtility,
     )
 
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.webapp import canonical_url
 from lp.services.webapp.dbpolicy import SlaveOnlyDatabasePolicy
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.sendmail import simple_sendmail
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate

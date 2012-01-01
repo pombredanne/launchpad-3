@@ -12,7 +12,6 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
-from lp.services.config import config
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductReleaseFile,
@@ -24,13 +23,12 @@ from lp.registry.scripts.productreleasefinder.finder import (
     extract_version,
     ProductReleaseFinder,
     )
+from lp.services.config import config
 from lp.testing import (
     reset_logging,
     TestCaseWithFactory,
     )
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class FindReleasesTestCase(unittest.TestCase):

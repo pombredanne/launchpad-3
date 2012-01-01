@@ -24,11 +24,11 @@ from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
-from lp.services.config import config
 import lp.layers
+from lp.services.config import config
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
-from lp.services.propertycache import cachedproperty
 
 
 class SystemErrorView(LaunchpadView):

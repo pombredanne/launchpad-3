@@ -18,13 +18,6 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.security import AccessBranch
-from lp.services.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
-from lp.services.webapp.interaction import ANONYMOUS
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (
@@ -33,10 +26,17 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet
+from lp.security import AccessBranch
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchVisibility(TestCaseWithFactory):

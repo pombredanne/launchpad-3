@@ -11,11 +11,6 @@ from testtools.matchers import MatchesAll
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import (
@@ -52,6 +47,11 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import (
     DoesNotSnapshot,

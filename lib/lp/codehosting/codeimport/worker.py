@@ -58,7 +58,6 @@ from lazr.uri import (
     )
 import SCM
 
-from lp.services.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codehosting import (
@@ -80,6 +79,7 @@ from lp.codehosting.safe_open import (
     BranchOpenPolicy,
     SafeBranchOpener,
     )
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 
 

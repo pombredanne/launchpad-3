@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
     cleanup_unpacked_dir,
     DSCFile,
@@ -29,6 +28,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL

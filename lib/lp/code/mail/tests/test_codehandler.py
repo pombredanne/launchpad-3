@@ -21,17 +21,6 @@ from zope.interface import (
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.services.webapp.authorization import LaunchpadSecurityPolicy
-from lp.services.webapp.interaction import (
-    get_current_principal,
-    setupInteraction,
-    )
-from lp.services.webapp.interfaces import IPlacelessAuthUtility
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -62,6 +51,7 @@ from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.job.runner import JobRunner
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.interfaces import (
@@ -70,12 +60,22 @@ from lp.services.mail.interfaces import (
     )
 from lp.services.messages.model.message import MessageSet
 from lp.services.osutils import override_environ
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
+from lp.services.webapp.interaction import (
+    get_current_principal,
+    setupInteraction,
+    )
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 from lp.testing import (
     login,
     login_person,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 

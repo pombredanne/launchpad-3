@@ -14,8 +14,6 @@ import transaction
 from zope.security.management import setSecurityPolicy
 
 from lp.services.config import config
-from lp.services.webapp.authorization import LaunchpadSecurityPolicy
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import helpers
 from lp.services.mail.incoming import (
@@ -27,9 +25,11 @@ from lp.services.mail.incoming import (
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
 

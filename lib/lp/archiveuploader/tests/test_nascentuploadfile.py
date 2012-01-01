@@ -14,7 +14,6 @@ from debian.deb822 import (
     Dsc,
     )
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -31,6 +30,7 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class NascentUploadFileTestCase(TestCaseWithFactory):

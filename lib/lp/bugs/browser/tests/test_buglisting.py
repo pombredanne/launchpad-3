@@ -17,12 +17,11 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
-from lp.services.webapp.publisher import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -30,6 +29,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,

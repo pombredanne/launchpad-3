@@ -26,7 +26,6 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from lp.services.webapp.publisher import canonical_url
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -38,6 +37,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.database.stormexpr import CountDistinct
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease

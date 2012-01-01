@@ -24,12 +24,6 @@ from zope.formlib.form import (
     )
 from zope.security.interfaces import Unauthorized
 
-from lp.services.webapp import LaunchpadView
-from lp.services.webapp.authentication import (
-    check_oauth_signature,
-    get_oauth_authorization,
-    )
-from lp.services.webapp.interfaces import OAuthPermission
 from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -40,6 +34,12 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestTokenSet,
     OAUTH_CHALLENGE,
     )
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.authentication import (
+    check_oauth_signature,
+    get_oauth_authorization,
+    )
+from lp.services.webapp.interfaces import OAuthPermission
 
 
 class JSONTokenMixin:

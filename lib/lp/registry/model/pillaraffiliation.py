@@ -28,8 +28,8 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.interfaces.launchpad import IHasIcon
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.interfaces.launchpad import IHasIcon
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

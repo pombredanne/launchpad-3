@@ -13,6 +13,11 @@ __all__ = [
 
 import operator
 
+from lp.app.enums import service_uses_launchpad
+from lp.registry.browser import RegistryEditFormView
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     action,
     canonical_url,
@@ -23,11 +28,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.menu import NavigationMenu
-from lp.app.enums import service_uses_launchpad
-from lp.registry.browser import RegistryEditFormView
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
-from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 

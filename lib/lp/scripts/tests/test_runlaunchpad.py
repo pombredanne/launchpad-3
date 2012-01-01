@@ -16,14 +16,14 @@ import tempfile
 
 import testtools
 
-import lp.services.config
-from lp.services.config import config
 from lp.scripts.runlaunchpad import (
     get_services_to_run,
     process_config_arguments,
     SERVICES,
     split_out_runlaunchpad_arguments,
     )
+import lp.services.config
+from lp.services.config import config
 import lp.testing
 
 

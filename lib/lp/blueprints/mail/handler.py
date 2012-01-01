@@ -14,12 +14,12 @@ from urlparse import urlunparse
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config
-from lp.services.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.services.config import config
 from lp.services.mail.helpers import get_main_body
 from lp.services.mail.interfaces import IMailHandler
 from lp.services.mail.sendmail import sendmail
+from lp.services.webapp import urlparse
 
 
 MOIN_URL_RE = re.compile(r'(https?://[^ \r\n]+)')

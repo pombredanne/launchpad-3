@@ -14,7 +14,6 @@ import tarfile
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.librarian.model import LibraryFileAliasSet
 from lp.services.scripts.tests import run_script
@@ -22,6 +21,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     _filter_ubuntu_translation_file,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue,
     )

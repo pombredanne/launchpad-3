@@ -51,30 +51,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from lp.services.config import config
 from lp import _
-from lp.services.feeds.browser import (
-    FeedsMixin,
-    PersonBranchesFeedLink,
-    PersonRevisionsFeedLink,
-    ProductBranchesFeedLink,
-    ProductRevisionsFeedLink,
-    ProjectBranchesFeedLink,
-    ProjectRevisionsFeedLink,
-    )
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    Link,
-    )
-from lp.services.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
@@ -135,8 +112,31 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    FeedsMixin,
+    PersonBranchesFeedLink,
+    PersonRevisionsFeedLink,
+    ProductBranchesFeedLink,
+    ProductRevisionsFeedLink,
+    ProjectBranchesFeedLink,
+    ProjectRevisionsFeedLink,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class CodeVHostBreadcrumb(Breadcrumb):

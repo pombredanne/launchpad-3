@@ -17,8 +17,8 @@ from lp.services.webapp.dbpolicy import (
     LaunchpadDatabasePolicyFactory,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class HAProxyIntegrationTest(TestCase):

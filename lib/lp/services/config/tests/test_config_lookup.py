@@ -8,7 +8,10 @@ __all__ = []
 
 import os
 import shutil
-from tempfile import mkdtemp, NamedTemporaryFile
+from tempfile import (
+    mkdtemp,
+    NamedTemporaryFile,
+    )
 
 from lp.services import config
 from lp.testing import TestCase

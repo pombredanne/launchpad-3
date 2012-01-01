@@ -12,15 +12,15 @@ import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.services.webapp import errorlog
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.code.interfaces.branch import IBranchSet
+from lp.services.webapp import errorlog
 from lp.testing import (
     record_statements,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 
 

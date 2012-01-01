@@ -7,11 +7,11 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 
-from lp.services.webapp import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSpecificationDependencies(TestCaseWithFactory):

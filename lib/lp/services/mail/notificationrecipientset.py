@@ -14,11 +14,11 @@ from operator import attrgetter
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lp.registry.interfaces.person import IPerson
 from lp.services.mail.interfaces import (
     INotificationRecipientSet,
     UnknownRecipientError,
     )
-from lp.registry.interfaces.person import IPerson
 
 
 class NotificationRecipientSet:

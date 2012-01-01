@@ -17,9 +17,9 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.scripts.personnotification import PersonNotificationManager
+from lp.services.config import config
 from lp.testing import (
     reset_logging,
     TestCaseWithFactory,

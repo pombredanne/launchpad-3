@@ -11,17 +11,17 @@ import unittest
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 
-from lp.services.webapp.interfaces import (
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthConsumer,
     OAuthNonce,
     OAuthRequestToken,
     )
+from lp.services.webapp.interfaces import (
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BaseOAuthTestCase(unittest.TestCase):

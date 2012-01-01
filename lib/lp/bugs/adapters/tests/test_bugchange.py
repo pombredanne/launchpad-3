@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from lp.services.webapp.publisher import canonical_url
-from lp.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.adapters.bugchange import (
     BUG_CHANGE_LOOKUP,
     BugDescriptionChange,
@@ -17,7 +15,9 @@ from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugtask import BugTaskDelta
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class BugChangeTestCase(TestCaseWithFactory):

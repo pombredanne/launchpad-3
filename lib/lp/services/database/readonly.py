@@ -19,7 +19,6 @@ import os
 import threading
 
 from lazr.restful.utils import get_current_browser_request
-
 from zope.security.management import queryInteraction
 
 from lp.services.config import config

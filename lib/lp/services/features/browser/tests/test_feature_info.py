@@ -10,9 +10,6 @@ from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.flags import (
     documented_flags,
@@ -25,11 +22,14 @@ from lp.services.features.scopes import (
     HANDLERS,
     undocumented_scopes,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     TestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 
 

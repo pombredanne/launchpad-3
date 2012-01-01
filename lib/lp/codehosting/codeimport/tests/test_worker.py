@@ -48,11 +48,6 @@ import subvertpy
 import subvertpy.client
 import subvertpy.ra
 
-from lp.services.config import config
-from lp.testing.layers import (
-    BaseLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
@@ -92,10 +87,15 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseFunctionalLayer,
     )
 
 

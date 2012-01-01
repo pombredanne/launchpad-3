@@ -7,18 +7,18 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp.publisher import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonNavigation
 from lp.registry.browser.personproduct import PersonProductNavigation
 from lp.registry.interfaces.personproduct import (
     IPersonProduct,
     IPersonProductFactory,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     FakeLaunchpadRequest,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPersonBranchTraversal(TestCaseWithFactory):

@@ -22,25 +22,6 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
-# Load the normal plugin set.  Your linter may complain, and automated
-# imports formatting tools will rearrange this, but keep it above the
-# other Launchpad imports.
-import lp.codehosting
-
-from lp.services.config import config
-
-from lp.services.helpers import shortlist
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.database.lpstorm import IMasterStore
-from lp.services.webapp import errorlog
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.enums import ServiceUsage
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
@@ -50,12 +31,29 @@ from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
     )
+# Load the normal plugin set.  Your linter may complain, and automated
+# imports formatting tools will rearrange this, but keep it above the
+# other Launchpad imports.
+import lp.codehosting
 from lp.codehosting.vfs import get_rw_server
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 

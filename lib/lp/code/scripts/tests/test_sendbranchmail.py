@@ -5,8 +5,6 @@
 
 import transaction
 
-from lp.services.scripts.tests import run_script
-from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -17,7 +15,9 @@ from lp.code.model.branchjob import (
     RevisionsAddedJob,
     )
 from lp.services.osutils import override_environ
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestSendbranchmail(TestCaseWithFactory):

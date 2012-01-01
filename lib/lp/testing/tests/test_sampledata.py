@@ -13,8 +13,8 @@ __all__ = []
 
 import subprocess
 
-from lp.testing.layers import DatabaseLayer
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseLayer
 from lp.testing.pgsql import PgTestSetup
 
 

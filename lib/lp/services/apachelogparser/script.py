@@ -10,13 +10,13 @@ import os
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 
-from lp.services.config import config
 from lp.app.errors import NotFoundError
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
     get_files_to_parse,
     parse_file,
     )
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.worlddata.interfaces.country import ICountrySet
 

@@ -17,7 +17,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -25,6 +24,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.webapp import canonical_url
 
 
 class FeaturedProjectForm(Interface):

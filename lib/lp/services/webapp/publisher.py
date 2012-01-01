@@ -60,11 +60,18 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lp.app.errors import NotFoundError
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
     WebServiceLayer,
     )
+from lp.services.encoding import is_ascii_only
+from lp.services.features import (
+    defaultFlagValue,
+    getFeatureFlag,
+    )
+from lp.services.utils import obfuscate_structure
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
@@ -77,13 +84,6 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.app.errors import NotFoundError
-from lp.services.encoding import is_ascii_only
-from lp.services.features import (
-    defaultFlagValue,
-    getFeatureFlag,
-    )
-from lp.services.utils import obfuscate_structure
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.

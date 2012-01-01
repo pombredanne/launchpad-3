@@ -14,7 +14,6 @@ from datetime import timedelta
 import pytz
 
 from lp import _
-from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -23,6 +22,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateTimeWidget
 from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
+from lp.services.webapp import canonical_url
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):

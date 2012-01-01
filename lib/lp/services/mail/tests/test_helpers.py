@@ -12,8 +12,6 @@ from zope.interface import (
     directlyProvides,
     )
 
-from lp.services.webapp.interaction import get_current_principal
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
@@ -26,11 +24,13 @@ from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from lp.services.webapp.interaction import get_current_principal
 from lp.testing import (
     login_person,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestParseCommands(TestCase):
