@@ -15,7 +15,11 @@ import re
 from find import find_matches
 from lxml import etree
 from rename_module import (
-    bzr_add, bzr_has_filename, bzr_move_file, bzr_remove_file)
+    bzr_add,
+    bzr_has_filename,
+    bzr_move_file,
+    bzr_remove_file,
+    )
 
 
 EMPTY_ZCML = """\

@@ -43,6 +43,8 @@ because our cheat objects don't match the app-encoded business logic.
 # - print the nourishing nutty goodness to stdout
 
 import _pythonpath
+
+
 _pythonpath
 
 from inspect import getmro
