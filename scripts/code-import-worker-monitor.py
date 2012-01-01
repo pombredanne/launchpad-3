@@ -20,14 +20,15 @@ import _pythonpath
 
 import os
 
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.python import log
 from twisted.web import xmlrpc
 
+from lp.codehosting.codeimport.workermonitor import CodeImportWorkerMonitor
 from lp.services.config import config
-
-from lp.codehosting.codeimport.workermonitor import (
-    CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 

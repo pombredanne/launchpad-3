@@ -7,8 +7,9 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.add_missing_builds import AddMissingBuilds
 from lp.services.config import config
+from lp.soyuz.scripts.add_missing_builds import AddMissingBuilds
+
 
 if __name__ == "__main__":
     script = AddMissingBuilds(

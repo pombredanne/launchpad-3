@@ -5,16 +5,18 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import logging
 import sys
 
-import _pythonpath
-
+from lp.registry.scripts.listteammembers import (
+    NoSuchTeamError,
+    process_team,
+    )
 from lp.services.config import config
-
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.scripts.base import LaunchpadScript
-from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
 
 
 class ListTeamMembersScript(LaunchpadScript):

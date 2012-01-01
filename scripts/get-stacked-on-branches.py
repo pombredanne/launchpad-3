@@ -32,7 +32,10 @@ from zope.component import getUtility
 
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 
 
 def get_stacked_branches():

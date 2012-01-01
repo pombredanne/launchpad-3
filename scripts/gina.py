@@ -19,10 +19,11 @@ The callstack is essentially:
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
 import time
 
-import _pythonpath
 import psycopg2
 from zope.component import getUtility
 

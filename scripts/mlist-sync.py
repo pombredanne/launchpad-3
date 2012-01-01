@@ -27,18 +27,18 @@
 # pylint: disable-msg=W0403
 import _pythonpath
 
-import os
-import sys
 import logging
-import textwrap
+import os
 import subprocess
+import sys
+import textwrap
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mailman.config import configure_prefix
 from lp.services.scripts.base import LaunchpadScript
