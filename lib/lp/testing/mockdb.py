@@ -19,11 +19,11 @@ __all__ = [
         'ScriptPlayer', 'ScriptRecorder',
         ]
 
+import cPickle as pickle
 import gzip
 import os.path
 import urllib
 
-import cPickle as pickle
 import psycopg2
 
 # from zope.testing.testrunner import RetryTest
