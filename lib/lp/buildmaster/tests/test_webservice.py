@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     api_url,
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 

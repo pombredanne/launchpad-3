@@ -16,12 +16,6 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -38,6 +32,8 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -56,6 +52,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def path_exists(*path_components):

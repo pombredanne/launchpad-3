@@ -27,8 +27,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.codehosting.branchdistro import (
@@ -37,12 +35,14 @@ from lp.codehosting.branchdistro import (
     )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.log.logger import (
     BufferLogger,
     FakeLogger,
     )
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
 # each time.

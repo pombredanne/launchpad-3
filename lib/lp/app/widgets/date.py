@@ -39,8 +39,8 @@ from zope.datetime import (
     parse,
     )
 
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class DateTimeWidget(TextWidget):

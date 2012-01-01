@@ -88,8 +88,8 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson

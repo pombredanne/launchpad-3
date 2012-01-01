@@ -7,11 +7,11 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPersonRoles(TestCaseWithFactory):

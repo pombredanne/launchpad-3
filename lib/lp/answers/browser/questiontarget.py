@@ -51,23 +51,6 @@ from zope.schema.vocabulary import (
 from zope.traversing.browser import absoluteURL
 
 from lp import _
-from lp.services.worlddata.helpers import (
-    browser_languages,
-    is_english_variant,
-    preferred_or_request_languages,
-    )
-from lp.services.webapp import (
-    canonical_url,
-    Link,
-    stepthrough,
-    stepto,
-    urlappend,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import structured
-from lp.services.webapp.publisher import LaunchpadView
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -95,6 +78,23 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.worlddata.helpers import (
+    browser_languages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 

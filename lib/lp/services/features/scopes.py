@@ -25,8 +25,8 @@ __metaclass__ = type
 
 import re
 
-import lp.services.config
 from lp.registry.interfaces.person import IPerson
+import lp.services.config
 from lp.services.propertycache import cachedproperty
 
 

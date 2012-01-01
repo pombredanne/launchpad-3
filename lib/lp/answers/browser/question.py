@@ -57,27 +57,6 @@ from zope.schema.vocabulary import (
 import zope.security
 
 from lp import _
-from lp.services.worlddata.helpers import (
-    is_english_variant,
-    preferred_or_request_languages,
-    )
-from lp.services.statistics.interfaces.statistic import (
-    ILaunchpadStatisticSet,
-    )
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
-from lp.services.webapp.menu import structured
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import (
     QuestionAction,
@@ -118,6 +97,25 @@ from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.personroles import PersonRoles
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.webapp.menu import structured
+from lp.services.worlddata.helpers import (
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 
 
 class QuestionLinksMixin:

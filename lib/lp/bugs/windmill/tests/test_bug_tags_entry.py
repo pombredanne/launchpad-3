@@ -9,8 +9,8 @@ __all__ = []
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp import canonical_url
 from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.services.webapp import canonical_url
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
     constants,

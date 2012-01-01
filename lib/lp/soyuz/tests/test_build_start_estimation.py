@@ -12,7 +12,6 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -20,6 +19,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     BOB_THE_BUILDER_NAME,

@@ -23,10 +23,6 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
-from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -34,6 +30,10 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch,
+    )
+from lp.buildmaster.model.builder import Builder
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"

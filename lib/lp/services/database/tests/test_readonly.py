@@ -5,11 +5,6 @@ __metaclass__ = type
 
 from lazr.restful.utils import get_current_browser_request
 
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
 from lp.services.database.readonly import (
     is_read_only,
     read_only_file_exists,
@@ -19,8 +14,13 @@ from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    TestCase,
+    )
 from lp.testing.layers import FunctionalLayer
-from lp.testing import TestCase
 
 
 class TestReadOnlyModeDetection(TestCase):

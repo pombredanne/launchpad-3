@@ -26,8 +26,8 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.launchpad import IHasDateCreated
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson

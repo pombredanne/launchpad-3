@@ -28,8 +28,6 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -77,6 +75,8 @@ from lp.services.mail.interfaces import (
     IBugTaskEmailCommand,
     )
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')

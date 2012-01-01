@@ -12,9 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from lp.services.config import config
-from lp.services.database.lpstorm import IStore
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -33,11 +30,14 @@ from lp.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase,
     run_as_db_user,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

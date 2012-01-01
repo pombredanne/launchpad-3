@@ -12,7 +12,11 @@ __all__ = [
     ]
 
 
-from lazr.enum import DBEnumeratedType, DBItem, use_template
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
 
 
 class DBTestEnumeration(DBEnumeratedType):

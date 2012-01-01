@@ -21,14 +21,14 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
 from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     WebServiceLayer,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
     )
 from lp.services.database.tests.readonly import (
     remove_read_only_file,
@@ -54,11 +54,11 @@ from lp.services.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import TestCase
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
-from lp.testing import TestCase
 
 
 class ImplicitDatabasePolicyTestCase(TestCase):

@@ -7,12 +7,12 @@ from textwrap import dedent
 
 from zope.security.interfaces import ForbiddenAttribute
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestDuplicateAttributes(TestCaseWithFactory):

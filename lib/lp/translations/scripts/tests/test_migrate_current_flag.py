@@ -5,8 +5,8 @@ __metaclass__ = type
 
 import logging
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.scripts.migrate_current_flag import (
     MigrateCurrentFlagProcess,
     TranslationMessageImportedFlagUpdater,

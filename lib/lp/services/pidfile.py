@@ -3,13 +3,17 @@
 
 __metaclass__ = type
 
-import tempfile
-import os
 import atexit
+import os
+from signal import (
+    signal,
+    SIGTERM,
+    )
 import sys
-from signal import signal, SIGTERM
+import tempfile
 
 from lp.services.config import config
+
 
 def pidfile_path(service_name, use_config=None):
     """Return the full pidfile path for the given service

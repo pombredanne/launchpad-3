@@ -16,14 +16,14 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
     )
 
 

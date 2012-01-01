@@ -8,8 +8,6 @@ from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
-from lp.services.database.lpstorm import IStore
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
     IAccessPolicy,
@@ -19,7 +17,9 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides
 
 

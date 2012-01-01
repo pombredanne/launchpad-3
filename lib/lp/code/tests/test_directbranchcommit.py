@@ -8,10 +8,6 @@ __metaclass__ = type
 from testtools.testcase import ExpectedException
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.code.errors import StaleLastMirrored
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
@@ -22,6 +18,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class DirectBranchCommitTestCase:

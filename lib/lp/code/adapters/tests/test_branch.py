@@ -5,15 +5,15 @@
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 
-from lp.testing import login
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.testing import (
     EventRecorder,
+    login,
     TestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBranchMergeProposalDelta(TestCase):

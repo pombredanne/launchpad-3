@@ -9,7 +9,6 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -24,6 +23,7 @@ from lp.soyuz.scripts.changeoverride import (
     )
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestChangeOverride(unittest.TestCase):

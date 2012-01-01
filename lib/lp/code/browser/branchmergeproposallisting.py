@@ -29,10 +29,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from lp.services.config import config
 from lp import _
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import TableBatchNavigator
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -53,10 +50,13 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalListingBatchNavigator,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.services.config import config
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
 
 
 class BranchMergeProposalListingItem:

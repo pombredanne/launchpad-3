@@ -7,12 +7,14 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from lp.services.config import config
-from lp.testing import login_person
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
-from lp.testing import TestCaseWithFactory
+from lp.services.config import config
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):

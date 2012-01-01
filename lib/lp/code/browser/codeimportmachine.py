@@ -20,12 +20,6 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    )
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -37,6 +31,12 @@ from lp.code.enums import (
 from lp.code.interfaces.codeimportevent import ICodeImportEvent
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
 class CodeImportMachineBreadcrumb(Breadcrumb):

@@ -8,6 +8,7 @@ import _pythonpath
 import os
 import sys
 
+
 home = os.path.realpath(os.path.dirname(__file__))
 pidfile = os.path.join(home, 'loggerhead.pid')
 

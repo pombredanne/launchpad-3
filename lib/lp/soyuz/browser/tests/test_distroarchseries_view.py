@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 
-from lp.testing import login
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.distroarchseries import DistroArchSeriesAdminView
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
 

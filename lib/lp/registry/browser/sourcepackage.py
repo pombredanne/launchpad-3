@@ -56,18 +56,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    GetitemNavigation,
-    Link,
-    StandardLaunchpadFacets,
-    stepto,
-    )
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import IBreadcrumb
-from lp.services.webapp.menu import structured
-from lp.services.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -92,6 +80,18 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    GetitemNavigation,
+    Link,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.browser.packagerelationship import relationship_builder

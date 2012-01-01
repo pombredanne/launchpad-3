@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

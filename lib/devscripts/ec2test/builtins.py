@@ -28,6 +28,9 @@ from bzrlib.option import (
     )
 from bzrlib.trace import is_verbose
 from bzrlib.transport import get_transport
+from pytz import UTC
+import simplejson
+
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
@@ -42,8 +45,6 @@ from devscripts.ec2test.testrunner import (
     EC2TestRunner,
     TRUNK_BRANCH,
     )
-from pytz import UTC
-import simplejson
 
 # Options accepted by more than one command.
 

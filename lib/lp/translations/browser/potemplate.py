@@ -43,6 +43,24 @@ from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
+from lp.app.browser.launchpadform import ReturnToReferrerMixin
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
+from lp.registry.browser.productseries import ProductSeriesFacets
+from lp.registry.browser.sourcepackage import SourcePackageFacets
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.helpers import is_tar_filename
 from lp.services.webapp import (
     action,
     canonical_url,
@@ -62,24 +80,6 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     )
 from lp.services.webapp.menu import structured
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
-from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.app.enums import (
-    service_uses_launchpad,
-    ServiceUsage,
-    )
-from lp.app.errors import NotFoundError
-from lp.app.validators.name import valid_name
-from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.registry.browser.sourcepackage import SourcePackageFacets
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.packaging import Packaging
-from lp.registry.model.product import Product
-from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.helpers import is_tar_filename
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin

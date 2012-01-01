@@ -24,7 +24,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -36,6 +35,7 @@ from lp.registry.interfaces.person import (
     IObjectReassignment,
     IPersonSet,
     )
+from lp.services.webapp import canonical_url
 
 
 class ObjectReassignmentView(LaunchpadFormView):

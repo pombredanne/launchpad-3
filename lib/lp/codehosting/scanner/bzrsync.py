@@ -24,12 +24,12 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from lp.services.config import config
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import Revision
 from lp.codehosting.scanner import events
+from lp.services.config import config
 from lp.services.utils import iter_list_chunks
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,

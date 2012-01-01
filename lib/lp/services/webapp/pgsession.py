@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
+import cPickle as pickle
 import time
 from UserDict import DictMixin
 
-import cPickle as pickle
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility

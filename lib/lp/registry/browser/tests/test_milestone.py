@@ -10,12 +10,11 @@ from textwrap import dedent
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.services.webapp import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -27,6 +26,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,

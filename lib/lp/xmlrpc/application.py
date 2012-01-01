@@ -21,9 +21,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.webapp import LaunchpadXMLRPCView
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.bugs.interfaces.malone import IPrivateMaloneApplication
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
@@ -33,7 +30,9 @@ from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
-
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini

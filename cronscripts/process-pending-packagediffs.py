@@ -29,6 +29,7 @@ import _pythonpath
 from lp.services.config import config
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 
+
 if __name__ == '__main__':
     script = ProcessPendingPackageDiffs(
         'process-pending-packagediffs', dbuser=config.uploader.dbuser)

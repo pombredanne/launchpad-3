@@ -12,16 +12,18 @@ from contrib.oauth import OAuthRequest
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from lp.services.config import config
-from lp.testing import login
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.login import logInPrincipal
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing import TestCaseWithFactory
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

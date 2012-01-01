@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import operator as std_operator
+
 from zope.interface import implements
 
 from lp.services.webapp import canonical_url

@@ -21,20 +21,20 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
+from lp.app.widgets.suggestion import (
+    SuggestionWidget,
+    TargetBranchWidget,
+    )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vocabulary import (
     FilteredVocabularyBase,
     IHugeVocabulary,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
-from lp.app.widgets.suggestion import (
-    SuggestionWidget,
-    TargetBranchWidget,
-    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class Simple:

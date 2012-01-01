@@ -17,8 +17,8 @@ from zope.browserresource.file import setCacheControl
 from zope.contenttype import guess_content_type
 from zope.datetime import rfc1123_date
 from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
 
 class File:

@@ -33,6 +33,7 @@ from zope.security.checker import (
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
+from lp.app.versioninfo import revno
 from lp.services.config import config
 from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
@@ -40,6 +41,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.login import logInPrincipal
 from lp.services.webapp.publisher import LaunchpadView
+from lp.testing import AbstractYUITestCase
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
@@ -47,8 +49,6 @@ from lp.testing.layers import (
     LibrarianLayer,
     YUIAppServerLayer,
     )
-from lp.app.versioninfo import revno
-from lp.testing import AbstractYUITestCase
 
 
 EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)

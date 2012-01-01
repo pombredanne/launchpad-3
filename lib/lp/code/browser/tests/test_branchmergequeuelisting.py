@@ -11,18 +11,18 @@ from mechanize import LinkNotFoundError
 import soupmatchers
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp import canonical_url
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     extract_link_from_tag,
     extract_text,

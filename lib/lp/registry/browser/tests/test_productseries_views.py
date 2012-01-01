@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -15,6 +14,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
 

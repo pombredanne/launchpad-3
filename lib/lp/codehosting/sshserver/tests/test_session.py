@@ -12,7 +12,6 @@ from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from lp.services.config import config
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
@@ -27,6 +26,7 @@ from lp.codehosting.sshserver.session import (
     RestrictedExecOnlySession,
     )
 from lp.codehosting.tests.helpers import AvatarTestCase
+from lp.services.config import config
 from lp.testing import TestCase
 
 

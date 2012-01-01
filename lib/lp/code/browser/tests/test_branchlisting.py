@@ -20,10 +20,6 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import LaunchpadFunctionalLayer
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
@@ -45,6 +41,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -55,6 +53,10 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import DocTestMatches
 from lp.testing.pages import (
     extract_text,

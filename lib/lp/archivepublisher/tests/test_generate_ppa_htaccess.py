@@ -18,8 +18,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator,
@@ -27,6 +25,7 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -35,6 +34,7 @@ from lp.soyuz.enums import (
     ArchiveSubscriberStatus,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

@@ -19,20 +19,20 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.pages import find_tag_by_id
 from lp.testing.views import (

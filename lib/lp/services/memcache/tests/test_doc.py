@@ -12,12 +12,12 @@ import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
+from lp.services.testing import build_test_suite
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     MemcachedLayer,
     )
-from lp.services.testing import build_test_suite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

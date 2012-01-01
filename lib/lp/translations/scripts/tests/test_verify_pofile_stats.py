@@ -7,8 +7,8 @@ __metaclass__ = type
 
 import transaction
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.side import TranslationSide
 
 

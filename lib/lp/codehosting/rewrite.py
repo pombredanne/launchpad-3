@@ -9,15 +9,15 @@ import time
 from bzrlib import urlutils
 from zope.component import getUtility
 
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.codehosting.vfs import branch_id_to_path
 from lp.services.config import config
+from lp.services.utils import iter_split
 from lp.services.webapp.adapter import (
     clear_request_started,
     set_request_started,
     )
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
-from lp.codehosting.vfs import branch_id_to_path
-from lp.services.utils import iter_split
 
 
 __all__ = ['BranchRewriter']

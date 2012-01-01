@@ -8,9 +8,11 @@ from datetime import (
 
 import pytz
 
-from lp.testing import login
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import LaunchpadFunctionalLayer
-from lp.testing import TestCaseWithFactory
 
 
 class TestPoll(TestCaseWithFactory):

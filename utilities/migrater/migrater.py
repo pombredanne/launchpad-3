@@ -8,15 +8,27 @@ a control file and the exising mover script that Francis wrote.
 """
 
 import errno
+from optparse import OptionParser
 import os
 import re
 
-from find import find_files, find_matches
-from optparse import OptionParser
+from find import (
+    find_files,
+    find_matches,
+    )
 from rename_module import (
-    bzr_add, bzr_move_file, bzr_remove_file, rename_module, update_references)
+    bzr_add,
+    bzr_move_file,
+    bzr_remove_file,
+    rename_module,
+    update_references,
+    )
 from rename_zcml import handle_zcml
-from utils import log, run, spew
+from utils import (
+    log,
+    run,
+    spew,
+    )
 
 
 MOVER = os.path.join(os.path.dirname(__file__), 'rename_module.py')

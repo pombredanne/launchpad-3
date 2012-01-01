@@ -19,16 +19,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from lp.services.webapp.publisher import (
-    LaunchpadView,
-    nearest,
-    )
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -45,6 +35,16 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import (
+    LaunchpadView,
+    nearest,
+    )
 
 
 class IInvolved(Interface):

@@ -18,6 +18,11 @@ import re
 
 from lazr.restful.utils import smartquote
 
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -26,11 +31,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import structured
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
-from lp.app.errors import NotFoundError
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode,
     IHasCustomLanguageCodes,

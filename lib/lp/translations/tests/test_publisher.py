@@ -7,10 +7,10 @@ __metaclass__ = type
 
 import StringIO
 
-from lp.services.config import config
 from lp.layers import WebServiceLayer
-from lp.testing.layers import FunctionalLayer
+from lp.services.config import config
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 from lp.testing.publication import get_request_and_publication
 from lp.translations.publisher import (
     TranslationsBrowserRequest,

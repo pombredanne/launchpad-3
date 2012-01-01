@@ -21,15 +21,14 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import StormRangeFactoryError
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import StormRangeFactoryError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import BuildContextMenu
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -39,6 +38,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 

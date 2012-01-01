@@ -11,7 +11,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -24,6 +23,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 

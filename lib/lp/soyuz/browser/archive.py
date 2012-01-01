@@ -60,25 +60,6 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.services.helpers import english_list
-from lp.services.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.interfaces import (
-    ICanonicalUrlData,
-    IStructuredString,
-    )
-from lp.services.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
@@ -113,8 +94,27 @@ from lp.services.browser_helpers import (
     )
 from lp.services.database.bulk import load
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import english_list
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
+from lp.services.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,

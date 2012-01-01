@@ -34,19 +34,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp import _
-from lp.services.helpers import shortlist
-from lp.services.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    )
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -79,7 +66,20 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.bulk import load_referencing
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
 class SprintFacets(StandardLaunchpadFacets):

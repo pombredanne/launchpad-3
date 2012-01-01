@@ -8,11 +8,11 @@ __all__ = []
 
 import unittest
 
-from lp.testing.layers import AppServerLayer
 from lp.testing.browser import (
     setUp,
     tearDown,
     )
+from lp.testing.layers import AppServerLayer
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

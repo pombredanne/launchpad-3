@@ -11,8 +11,8 @@ from lp.services.webapp.interfaces import (
     ILaunchpadApplication,
     ILaunchpadRoot,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_view
 
 

@@ -42,13 +42,13 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IServiceUsage,
     )
-from lp.app.interfaces.headings import IRootContext
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints

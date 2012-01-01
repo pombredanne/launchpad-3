@@ -14,9 +14,10 @@ import _pythonpath
 import transaction
 from zope.component import getUtility
 
-from lp.services.config import config
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,)
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.webapp.errorlog import globalErrorUtility
 

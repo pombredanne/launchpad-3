@@ -5,9 +5,9 @@
 
 import transaction
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):

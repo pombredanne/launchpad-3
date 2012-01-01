@@ -5,6 +5,7 @@
 
 from storm.expr import SQL
 
+
 UTC_NOW = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 
 DEFAULT = SQL("DEFAULT")

@@ -30,9 +30,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -87,6 +84,9 @@ from lp.registry.interfaces.product import (
 from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):

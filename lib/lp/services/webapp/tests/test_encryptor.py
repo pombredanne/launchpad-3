@@ -12,8 +12,8 @@ from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.component import getUtility
 
-from lp.services.webapp.interfaces import IPasswordEncryptor
 from lp.services.webapp.authentication import SSHADigestEncryptor
+from lp.services.webapp.interfaces import IPasswordEncryptor
 
 
 class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):

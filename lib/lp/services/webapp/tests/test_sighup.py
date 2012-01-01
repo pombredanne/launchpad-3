@@ -12,8 +12,8 @@ from lp.services.webapp import (
     haproxy,
     sighup,
     )
-from lp.testing.layers import FunctionalLayer
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class SIGHUPTestCase(TestCase):

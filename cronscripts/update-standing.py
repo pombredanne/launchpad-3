@@ -12,8 +12,8 @@ __all__ = []
 # pylint: disable-msg=W0403
 import _pythonpath
 
-from lp.services.config import config
 from lp.registry.scripts.standing import UpdatePersonalStanding
+from lp.services.config import config
 
 
 if __name__ == '__main__':

@@ -41,8 +41,8 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import BugField
 
 

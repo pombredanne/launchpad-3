@@ -19,20 +19,20 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 
+from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
+from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    AppServerLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
-from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.testing import (
     launchpadlib_for,
     login_person,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.pages import LaunchpadWebServiceCaller
 

@@ -25,20 +25,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 
-from lp.services.config import config
 from lp import _
-from lp.services.helpers import shortlist
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
@@ -57,7 +44,20 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     )
 from lp.registry.interfaces.role import IHasDrivers
+from lp.services.config import config
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 
 
 class HasSpecificationsMenuMixin:

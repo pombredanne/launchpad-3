@@ -44,8 +44,8 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import StrippedTextLine
 
 

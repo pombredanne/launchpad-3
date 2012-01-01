@@ -11,15 +11,14 @@ import shutil
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.services.database.lpstorm import IStore
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
@@ -38,6 +37,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Provides
 
 

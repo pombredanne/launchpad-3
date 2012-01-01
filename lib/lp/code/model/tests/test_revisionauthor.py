@@ -8,18 +8,18 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionSet,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestRevisionEmailExtraction(TestCase):

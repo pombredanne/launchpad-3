@@ -17,6 +17,7 @@ import _pythonpath
 from lp.services.config import config
 from lp.soyuz.scripts.changeoverride import ChangeOverride
 
+
 if __name__ == '__main__':
     script = ChangeOverride(
         'change-override', dbuser=config.archivepublisher.dbuser)

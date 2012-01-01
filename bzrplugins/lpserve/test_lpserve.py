@@ -20,11 +20,11 @@ from bzrlib import (
 from bzrlib.plugins import lpserve
 from testtools import content
 
-from lp.services.config import config
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
     )
+from lp.services.config import config
 from lp.testing.fakemethod import FakeMethod
 
 

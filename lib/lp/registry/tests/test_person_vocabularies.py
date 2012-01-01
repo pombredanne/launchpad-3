@@ -11,12 +11,6 @@ from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import login_person
-from lp.services.webapp.vocabulary import FilteredVocabularyBase
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -26,11 +20,17 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
+    login_person,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 

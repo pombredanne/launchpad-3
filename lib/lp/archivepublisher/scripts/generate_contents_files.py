@@ -13,11 +13,6 @@ import os
 
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.services.webapp.dbpolicy import (
-    DatabaseBlockedPolicy,
-    SlaveOnlyDatabasePolicy,
-    )
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -26,11 +21,16 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
+from lp.services.webapp.dbpolicy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 
 

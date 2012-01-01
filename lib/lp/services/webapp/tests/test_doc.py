@@ -9,12 +9,12 @@ __metaclass__ = type
 
 import os
 
+from lp.services.testing import build_test_suite
 from lp.services.webapp.tests import test_notifications
 from lp.testing.layers import (
     FunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.services.testing import build_test_suite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

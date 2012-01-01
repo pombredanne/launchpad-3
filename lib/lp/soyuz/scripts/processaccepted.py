@@ -19,10 +19,6 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.tagfiles import parse_tagfile_content
@@ -33,6 +29,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
+    )
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,

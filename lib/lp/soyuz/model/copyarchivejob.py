@@ -9,14 +9,14 @@ from zope.interface import (
     implements,
     )
 
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archive import IArchiveSet

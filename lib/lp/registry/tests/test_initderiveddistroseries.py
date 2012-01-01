@@ -11,10 +11,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.distroseries import DerivationError
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.distributionjob import (
@@ -33,6 +29,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestDeriveDistroSeries(TestCaseWithFactory):

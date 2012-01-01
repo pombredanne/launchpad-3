@@ -31,8 +31,11 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from lp.services.config import config
+from lp.app import versioninfo
 from lp.layers import WebServiceLayer
+from lp.services.config import config
+from lp.services.messaging import rabbit
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.adapter import (
     get_request_duration,
     soft_timeout_expired,
@@ -46,9 +49,6 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.pgsession import PGSessionBase
 from lp.services.webapp.vhosts import allvhosts
-from lp.app import versioninfo
-from lp.services.messaging import rabbit
-from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 UTC = pytz.utc

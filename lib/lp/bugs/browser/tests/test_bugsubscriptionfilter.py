@@ -14,13 +14,6 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
 
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
@@ -29,6 +22,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -36,6 +31,11 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_initialized_view
 

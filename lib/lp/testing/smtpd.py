@@ -11,7 +11,6 @@ __all__ = [
 
 
 import fcntl
-
 import logging
 import Queue as queue
 
