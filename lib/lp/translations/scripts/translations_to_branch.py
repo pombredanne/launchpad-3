@@ -13,6 +13,10 @@ from datetime import (
     )
 import os.path
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.errors import NotBranchError
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -31,10 +35,6 @@ from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
     )
-# Load the normal plugin set.  Your linter may complain, and automated
-# imports formatting tools will rearrange this, but keep it above the
-# other Launchpad imports.
-import lp.codehosting
 from lp.codehosting.vfs import get_rw_server
 from lp.services.config import config
 from lp.services.database.lpstorm import IMasterStore

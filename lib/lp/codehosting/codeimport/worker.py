@@ -23,6 +23,10 @@ __all__ = [
 import os
 import shutil
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.branch import (
     Branch,
     InterBranch,
@@ -64,7 +68,6 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
-import lp.codehosting # for bzr plugins
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
