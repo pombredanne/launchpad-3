@@ -12,8 +12,8 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.services.config import config
 from lp.bugs.scripts.cveimport import CVEUpdater
+from lp.services.config import config
 
 
 if __name__ == '__main__':

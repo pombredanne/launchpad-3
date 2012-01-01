@@ -14,12 +14,13 @@ pending.
 __metaclass__ = type
 
 import _pythonpath
+
 from zope.component import getUtility
 
-from lp.services.config import config
-from lp.codehosting.vfs.branchfs import get_ro_server
-from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.codehosting.vfs.branchfs import get_ro_server
+from lp.services.config import config
+from lp.services.job.runner import JobRunner
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.webapp.errorlog import globalErrorUtility
 

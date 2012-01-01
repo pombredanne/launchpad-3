@@ -14,10 +14,9 @@ import _pythonpath
 
 import time
 
+from lp.bugs.scripts.updateremoteproduct import RemoteProductUpdater
 from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.bugs.scripts.updateremoteproduct import (
-    RemoteProductUpdater)
 
 
 class UpdateRemoteProduct(LaunchpadCronScript):

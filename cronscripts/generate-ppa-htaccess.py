@@ -9,9 +9,10 @@
 
 import _pythonpath
 
-from lp.services.config import config
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
-    HtaccessTokenGenerator)
+    HtaccessTokenGenerator,
+    )
+from lp.services.config import config
 
 
 if __name__ == '__main__':
