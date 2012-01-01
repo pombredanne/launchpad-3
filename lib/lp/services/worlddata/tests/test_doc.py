@@ -7,8 +7,8 @@ Run the doctests and pagetests.
 
 import os
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

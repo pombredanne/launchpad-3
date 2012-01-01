@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugjob import BugJobType
 from lp.bugs.model.bugjob import (
     BugJob,
     BugJobDerived,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BugJobTestCase(TestCaseWithFactory):

@@ -8,8 +8,8 @@ __all__ = []
 
 import threading
 
-from lp.testing.layers import BaseLayer
 from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 
 class TestThreadWaiting(TestCase):

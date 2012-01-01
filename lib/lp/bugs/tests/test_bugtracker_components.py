@@ -9,14 +9,14 @@ __all__ = []
 
 import transaction
 
-from lp.testing import login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    ws_object,
+    )
 from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
-    )
-from lp.testing import (
-    TestCaseWithFactory,
-    ws_object,
     )
 
 

@@ -10,10 +10,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
@@ -25,6 +21,10 @@ from lp.testing import (
     ExpectedException,
     logout,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.pages import LaunchpadWebServiceCaller
 

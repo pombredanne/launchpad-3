@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = []
 
 from bzrlib.plugin import load_plugins
+
+
 load_plugins()
 import paramiko
 

@@ -10,12 +10,12 @@ import os
 from zope.security.management import setSecurityPolicy
 
 from lp.services.config import config
+from lp.services.testing import build_test_suite
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.services.testing import build_test_suite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,

@@ -9,8 +9,8 @@ from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )
-from lp.testing.layers import DatabaseLayer
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseLayer
 
 
 class TestDatabaseConfig(TestCase):

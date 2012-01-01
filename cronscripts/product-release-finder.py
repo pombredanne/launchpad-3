@@ -12,10 +12,11 @@ to identify files and create new ProductRelease records for them.
 
 import _pythonpath
 
+from lp.registry.scripts.productreleasefinder.finder import (
+    ProductReleaseFinder,
+    )
 from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.registry.scripts.productreleasefinder.finder import (
-    ProductReleaseFinder)
 
 
 class ReleaseFinderScript(LaunchpadCronScript):

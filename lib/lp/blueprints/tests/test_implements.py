@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class ImplementsIHasSpecificationsTests(TestCaseWithFactory):

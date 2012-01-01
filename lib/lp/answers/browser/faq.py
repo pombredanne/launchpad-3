@@ -13,6 +13,9 @@ __all__ = [
     ]
 
 from lp import _
+from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.services.webapp import (
     action,
     canonical_url,
@@ -23,9 +26,6 @@ from lp.services.webapp import (
     NavigationMenu,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.faqcollection import IFAQCollection
 
 
 class FAQNavigationMenu(NavigationMenu):

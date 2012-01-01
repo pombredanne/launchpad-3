@@ -16,6 +16,8 @@ from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
+from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.authentication import (
     LaunchpadPrincipal,
     PlacelessAuthUtility,
@@ -25,8 +27,6 @@ from lp.services.webapp.interfaces import (
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
-from lp.registry.interfaces.person import IPerson
-from lp.services.identity.interfaces.account import IAccount
 
 
 class DummyPerson(object):

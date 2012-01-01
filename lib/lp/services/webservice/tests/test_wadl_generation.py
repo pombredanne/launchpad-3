@@ -13,8 +13,8 @@ from lp.services.webservice.wadl import (
     generate_json,
     generate_wadl,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class SmokeTestWadlAndDocGeneration(TestCase):

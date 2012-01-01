@@ -24,10 +24,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -45,6 +41,10 @@ from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):

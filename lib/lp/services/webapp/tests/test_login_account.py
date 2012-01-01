@@ -10,9 +10,9 @@ from zope.event import notify
 from zope.session.interfaces import ISession
 
 from lp.services.config import config
-from lp.testing import (
-    ANONYMOUS,
-    login,
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    IAccountSet,
     )
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.interfaces import (
@@ -26,12 +26,12 @@ from lp.services.webapp.login import (
     logoutPerson,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import DatabaseFunctionalLayer
-from lp.services.identity.interfaces.account import (
-    AccountCreationRationale,
-    IAccountSet,
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCaseWithFactory,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLoginAndLogout(TestCaseWithFactory):

@@ -14,6 +14,7 @@ import os
 import boto
 import boto.ec2
 from bzrlib.errors import BzrCommandError
+
 from devscripts.ec2test import instance
 from devscripts.ec2test.account import EC2Account
 

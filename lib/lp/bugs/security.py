@@ -8,7 +8,6 @@ __all__ = []
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
@@ -25,6 +24,7 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import IBugTaskDelete
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.messages.interfaces.message import IMessage

@@ -78,12 +78,15 @@ COPYRIGHT = (
     'TCPWatch %s Copyright 2001 Shane Hathaway, Zope Corporation'
     % VERSION)
 
-import sys
-import os
-import socket
 import asyncore
 import getopt
-from time import time, localtime
+import os
+import socket
+import sys
+from time import (
+    localtime,
+    time,
+    )
 
 
 RECV_BUFFER_SIZE = 8192

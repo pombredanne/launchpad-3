@@ -36,13 +36,13 @@ this program; if not, write to the Free Software Foundation, Inc., 675 Mass
 Ave, Cambridge, MA 02139, USA.
 """
 
-import os
-import sys
-import getopt
 import compiler
-import linecache
 from compiler import ast
 from compiler.visitor import ASTVisitor
+import getopt
+import linecache
+import os
+import sys
 
 
 class ImportFinder(ASTVisitor):

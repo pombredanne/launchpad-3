@@ -9,16 +9,16 @@ import re
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import login
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    login,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.translations.browser.distroseries import DistroSeriesTemplatesView
 from lp.translations.browser.productseries import ProductSeriesTemplatesView

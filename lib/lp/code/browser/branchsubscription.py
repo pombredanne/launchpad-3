@@ -15,6 +15,13 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.interface import implements
 
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.code.enums import BranchSubscriptionNotificationLevel
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -25,13 +32,6 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.interfaces import IPrimaryContext
 from lp.services.webapp.menu import structured
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
-from lp.code.enums import BranchSubscriptionNotificationLevel
-from lp.code.interfaces.branchsubscription import IBranchSubscription
 
 
 class BranchSubscriptionPrimaryContext:

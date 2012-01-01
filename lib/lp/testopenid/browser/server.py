@@ -33,20 +33,6 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from lp import _
-from lp.services.webapp import LaunchpadView
-from lp.services.webapp.interfaces import (
-    ICanonicalUrlData,
-    IPlacelessLoginSource,
-    )
-from lp.services.webapp.login import (
-    allowUnauthenticatedSession,
-    logInPrincipal,
-    logoutPerson,
-    )
-from lp.services.webapp.publisher import (
-    Navigation,
-    stepthrough,
-    )
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -63,6 +49,20 @@ from lp.services.openid.browser.openiddiscovery import (
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IPlacelessLoginSource,
+    )
+from lp.services.webapp.login import (
+    allowUnauthenticatedSession,
+    logInPrincipal,
+    logoutPerson,
+    )
+from lp.services.webapp.publisher import (
+    Navigation,
+    stepthrough,
     )
 from lp.testopenid.interfaces.server import (
     get_server_url,

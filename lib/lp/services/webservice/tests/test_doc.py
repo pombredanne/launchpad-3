@@ -9,12 +9,12 @@ import os
 
 from zope.testing.cleanup import cleanUp
 
+from lp.services.testing import build_test_suite
+from lp.testing import browser
 from lp.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.services.testing import build_test_suite
-from lp.testing import browser
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,

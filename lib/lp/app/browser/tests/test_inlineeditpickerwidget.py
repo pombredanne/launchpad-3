@@ -11,7 +11,6 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.lazrjs import (
     InlineEditPickerWidget,
     InlinePersonEditPickerWidget,
@@ -20,6 +19,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestInlineEditPickerWidget(TestCaseWithFactory):

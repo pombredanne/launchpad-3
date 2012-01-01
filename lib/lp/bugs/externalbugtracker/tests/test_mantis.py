@@ -12,7 +12,6 @@ from testtools.matchers import (
     Is,
     )
 
-from lp.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker import UnparsableBugData
 from lp.bugs.externalbugtracker.mantis import (
     Mantis,
@@ -24,6 +23,7 @@ from lp.testing import (
     TestCase,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessLayer
 
 
 class TestMantisBugBatchParser(TestCase):

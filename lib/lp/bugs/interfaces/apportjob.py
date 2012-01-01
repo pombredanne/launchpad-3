@@ -25,14 +25,12 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryBlobStorage,
-    )
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
     )
+from lp.services.temporaryblobstorage.interfaces import ITemporaryBlobStorage
 
 
 class ApportJobType(DBEnumeratedType):

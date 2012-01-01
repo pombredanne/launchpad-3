@@ -5,10 +5,12 @@
 
 from zope.component import getUtility
 
-from lp.testing import login
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestPillarNameSet(TestCaseWithFactory):

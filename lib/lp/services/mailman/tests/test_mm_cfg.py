@@ -13,10 +13,10 @@ from Mailman import (
     )
 
 from lp.services.config import config
-from lp.testing.layers import FunctionalLayer
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.monkeypatches import monkey_patch
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class TestMMCfgDefaultsTestCase(TestCase):

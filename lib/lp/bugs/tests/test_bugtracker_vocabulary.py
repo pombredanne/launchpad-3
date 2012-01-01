@@ -7,13 +7,13 @@ __metaclass__ = type
 
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.testing import (
     login,
     login_person,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bugtracker import BugTrackerType
-from lp.testing import TestCaseWithFactory
 
 
 class TestBugTrackerVocabulary(TestCaseWithFactory):

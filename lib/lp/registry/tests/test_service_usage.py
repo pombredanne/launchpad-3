@@ -3,13 +3,13 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class UsageEnumsMixin(object):

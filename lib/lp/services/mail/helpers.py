@@ -11,14 +11,14 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interaction import get_current_principal
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class IncomingEmailError(Exception):

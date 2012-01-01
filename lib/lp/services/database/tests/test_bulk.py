@@ -14,21 +14,21 @@ from zope.security import (
     proxy,
     )
 
+from lp.bugs.model.bug import BugAffectsPerson
+from lp.code.model.branchsubscription import BranchSubscription
+from lp.registry.model.person import Person
+from lp.services.database import bulk
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.model.bug import BugAffectsPerson
-from lp.code.model.branchsubscription import BranchSubscription
-from lp.registry.model.person import Person
-from lp.services.database import bulk
 from lp.soyuz.model.component import Component
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 object_is_key = lambda thing: thing

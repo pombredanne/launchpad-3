@@ -5,11 +5,13 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import login
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bug import BugView
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBugView(TestCaseWithFactory):

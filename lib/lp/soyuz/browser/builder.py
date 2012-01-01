@@ -30,18 +30,6 @@ from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -54,6 +42,18 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,

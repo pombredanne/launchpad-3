@@ -16,8 +16,12 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
-from lp.translations.interfaces.translations import IRosettaApplication
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -27,13 +31,9 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.services.geoip.interfaces import IRequestPreferredLanguages
-from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.helpers import preferred_or_request_languages
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.publisher import TranslationsLayer
 
 

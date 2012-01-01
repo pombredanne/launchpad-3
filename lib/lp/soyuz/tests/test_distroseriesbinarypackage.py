@@ -15,7 +15,6 @@ from testtools.matchers import (
 import transaction
 
 from lp.services.config import config
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -24,6 +23,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import HasQueryCount
 
 

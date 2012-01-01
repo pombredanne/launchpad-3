@@ -12,6 +12,7 @@ import os
 import tempfile
 import time
 
+
 _profile_stats_filename = os.environ.get('lp_layer_profile_filename', None)
 _profiling_setup_time = None
 

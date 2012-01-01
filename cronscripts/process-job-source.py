@@ -7,9 +7,10 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
 
-import _pythonpath
 from twisted.python import log
 
 from lp.services.config import config

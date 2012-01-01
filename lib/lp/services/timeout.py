@@ -20,8 +20,12 @@ import httplib
 import socket
 import sys
 from threading import Thread
-from xmlrpclib import SafeTransport, Transport
 import urllib2
+from xmlrpclib import (
+    SafeTransport,
+    Transport,
+    )
+
 
 default_timeout_function = None
 

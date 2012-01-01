@@ -5,12 +5,12 @@
 
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.services.fields import (
     SearchTag,
     Tag,
     )
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestTag(TestCase):

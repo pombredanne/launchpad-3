@@ -48,12 +48,12 @@ from zope.security.checker import (
     undefineChecker,
     )
 
-from lp.services.config import config
 from lp.services import webapp
-from lp.services.webapp.errorlog import ErrorReportEvent
+from lp.services.config import config
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.errorlog import ErrorReportEvent
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):

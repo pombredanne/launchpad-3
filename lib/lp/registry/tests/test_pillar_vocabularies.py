@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import (
     DistributionOrProductOrProjectGroupVocabulary,
     DistributionOrProductVocabulary,
@@ -15,6 +14,7 @@ from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPillarVocabularyBase(TestCaseWithFactory):

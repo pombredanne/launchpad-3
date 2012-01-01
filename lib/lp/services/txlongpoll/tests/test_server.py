@@ -10,9 +10,9 @@ import os
 from StringIO import StringIO
 
 from lp.services.config import config
-from lp.testing.layers import RabbitMQLayer
 from lp.services.txlongpoll.server import TxLongPollServer
 from lp.testing import TestCase
+from lp.testing.layers import RabbitMQLayer
 
 
 class TestTxLongPollServer(TestCase):

@@ -6,11 +6,11 @@ __all__ = [
     "mail_handlers",
     ]
 
-from lp.services.config import config
 from lp.answers.mail.handler import AnswerTrackerHandler
 from lp.blueprints.mail.handler import BlueprintHandler
 from lp.bugs.mail.handler import MaloneHandler
 from lp.code.mail.codehandler import CodeHandler
+from lp.services.config import config
 
 
 class MailHandlers:

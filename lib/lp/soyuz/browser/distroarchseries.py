@@ -20,6 +20,10 @@ from zope.interface import (
     )
 
 from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadEditFormView,
@@ -31,10 +35,6 @@ from lp.services.webapp.menu import (
     NavigationMenu,
     )
 from lp.services.webapp.publisher import canonical_url
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 

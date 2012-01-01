@@ -24,18 +24,18 @@ from zope.component import (
     )
 from zope.error.interfaces import IErrorReportingUtility
 
+from lp.services.features.testing import FeatureFixture
+from lp.services.profile import profile
 import lp.services.webapp.adapter as da
 from lp.services.webapp.errorlog import ErrorReportingUtility
 from lp.services.webapp.interfaces import StartRequestEvent
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import LaunchpadFunctionalLayer
-from lp.services.features.testing import FeatureFixture
-from lp.services.profile import profile
 from lp.testing import (
     layers,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

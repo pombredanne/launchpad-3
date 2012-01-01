@@ -34,15 +34,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -59,6 +50,15 @@ from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFileAddForm,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
     )
 
 

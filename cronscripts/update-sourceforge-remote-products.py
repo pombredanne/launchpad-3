@@ -10,10 +10,11 @@ import _pythonpath
 
 import time
 
+from lp.bugs.scripts.sfremoteproductfinder import (
+    SourceForgeRemoteProductFinder,
+    )
 from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.bugs.scripts.sfremoteproductfinder import (
-    SourceForgeRemoteProductFinder)
 
 
 class UpdateRemoteProductsFromSourceForge(LaunchpadCronScript):

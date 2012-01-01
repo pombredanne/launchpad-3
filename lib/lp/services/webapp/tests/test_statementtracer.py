@@ -11,16 +11,16 @@ import sys
 
 from lazr.restful.utils import get_current_browser_request
 
-from lp.services.webapp import adapter as da
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.services.osutils import override_environ
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp import adapter as da
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 @contextmanager

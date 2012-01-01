@@ -7,9 +7,9 @@ __metaclass__ = type
 
 import os
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.poll import PollAlgorithm
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_view
 
 

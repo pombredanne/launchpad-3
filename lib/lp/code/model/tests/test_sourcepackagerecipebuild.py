@@ -18,13 +18,6 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.testing import verifyObject
-from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -46,8 +39,11 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -57,6 +53,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

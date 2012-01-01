@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-from lp.services.config import config
-from lp.layers import WebServiceLayer
-from lp.testing.layers import FunctionalLayer
 from lp.code.publisher import CodeLayer
+from lp.layers import WebServiceLayer
+from lp.services.config import config
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 from lp.testing.publication import get_request_and_publication
 
 

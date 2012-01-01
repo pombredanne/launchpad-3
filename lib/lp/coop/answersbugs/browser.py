@@ -13,7 +13,6 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from lp import _
-from lp.services.webapp.publisher import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -22,6 +21,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
     )
+from lp.services.webapp.publisher import canonical_url
 
 
 class QuestionMakeBugView(LaunchpadFormView):

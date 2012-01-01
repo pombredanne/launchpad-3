@@ -11,10 +11,6 @@ __all__ = [
     ]
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    stepthrough,
-    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.app.browser.launchpadform import (
     action,
@@ -23,6 +19,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.textwidgets import TokensTextWidget
+from lp.services.webapp import (
+    canonical_url,
+    stepthrough,
+    )
 
 
 class FAQTargetNavigationMixin:

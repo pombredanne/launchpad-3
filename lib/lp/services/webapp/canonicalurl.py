@@ -14,11 +14,11 @@ __all__ = [
 
 from zope.component import queryAdapter
 
+from lp.services.webapp.interfaces import NoCanonicalUrl
 # XXX mars 2008-07-17
 # This function should be moved into lazr.canonicalurl.
 # See bug #185958.
 from lp.services.webapp.publisher import canonical_url_iterator
-from lp.services.webapp.interfaces import NoCanonicalUrl
 
 
 def nearest_context_with_adapter(obj, interface, name=u''):

@@ -18,8 +18,10 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
+
 from lp.translations.scripts.translations_to_branch import (
-    ExportTranslationsToBranch)
+    ExportTranslationsToBranch,
+    )
 
 
 if __name__ == '__main__':

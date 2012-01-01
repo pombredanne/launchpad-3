@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 from lp.services.webapp.interfaces import IPrimaryContext
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):

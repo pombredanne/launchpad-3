@@ -55,7 +55,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.services.fields import (
@@ -64,6 +63,7 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
+from lp.services.webapp.menu import structured
 from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again

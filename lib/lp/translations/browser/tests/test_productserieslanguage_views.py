@@ -6,14 +6,14 @@ __metaclass__ = type
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.browser.productseries import ProductSeriesView
 from lp.translations.browser.serieslanguage import ProductSeriesLanguageView

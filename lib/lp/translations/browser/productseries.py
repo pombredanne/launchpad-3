@@ -25,16 +25,6 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from lp import _
-from lp.services.helpers import is_tar_filename
-from lp.services.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -46,7 +36,17 @@ from lp.app.enums import service_uses_launchpad
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.helpers import is_tar_filename
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import structured
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin

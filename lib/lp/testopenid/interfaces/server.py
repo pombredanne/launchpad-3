@@ -11,11 +11,11 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import TextLine
 
+from lp.services.fields import PasswordField
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.services.fields import PasswordField
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 
 
 class ITestOpenIDApplication(ILaunchpadApplication):

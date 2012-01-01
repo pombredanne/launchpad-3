@@ -35,12 +35,12 @@ from zope.security.checker import (
     canWrite,
     )
 
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vocabulary import IHugeVocabulary
 
 
 class WidgetBase:

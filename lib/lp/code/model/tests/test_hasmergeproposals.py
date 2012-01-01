@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from zope.interface.verify import verifyObject
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestIHasMergeProposals(TestCaseWithFactory):

@@ -55,23 +55,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.worlddata.helpers import browser_languages
-from lp.services.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -137,6 +120,23 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet

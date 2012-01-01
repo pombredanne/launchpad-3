@@ -10,13 +10,13 @@ from cStringIO import StringIO
 import transaction
 from zope.component import getUtility
 
-from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestCreateMergeProposals(TestCaseWithFactory):

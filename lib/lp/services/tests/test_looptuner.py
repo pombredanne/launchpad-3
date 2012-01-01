@@ -12,13 +12,13 @@ from cStringIO import StringIO
 
 from zope.interface import implements
 
+from lp.services.log.logger import FakeLogger
 from lp.services.looptuner import (
     ITunableLoop,
     LoopTuner,
     )
-from lp.testing.layers import BaseLayer
-from lp.services.log.logger import FakeLogger
 from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 
 class MainException(Exception):

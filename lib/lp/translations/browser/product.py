@@ -11,6 +11,12 @@ __all__ = [
     'ProductView',
     ]
 
+from lp.app.enums import service_uses_launchpad
+from lp.registry.browser.product import ProductConfigureBase
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -19,12 +25,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.menu import NavigationMenu
-from lp.app.enums import service_uses_launchpad
-from lp.registry.browser.product import ProductConfigureBase
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
-from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 

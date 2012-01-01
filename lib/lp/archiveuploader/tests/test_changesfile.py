@@ -10,10 +10,6 @@ import os
 from debian.deb822 import Changes
 from zope.component import getUtility
 
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -37,6 +33,10 @@ from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class TestDetermineFileClassAndName(TestCase):

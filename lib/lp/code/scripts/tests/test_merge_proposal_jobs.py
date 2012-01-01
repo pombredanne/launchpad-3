@@ -8,13 +8,13 @@
 from testtools.matchers import MatchesRegex
 import transaction
 
-from lp.services.scripts.tests import run_script
-from lp.testing.layers import ZopelessAppServerLayer
 from lp.code.model.tests.test_branchmergeproposaljobs import (
     make_runnable_incremental_diff_job,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestMergeProposalJobScript(TestCaseWithFactory):

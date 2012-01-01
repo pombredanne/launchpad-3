@@ -11,12 +11,12 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource,
     IRevisionsAddedJobSource,
     )
+from lp.services.config import config
 
 
 def subscribers_want_notification(db_branch):

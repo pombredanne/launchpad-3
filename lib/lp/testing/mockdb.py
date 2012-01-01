@@ -25,6 +25,7 @@ import os.path
 import urllib
 
 import psycopg2
+
 # from zope.testing.testrunner import RetryTest
 
 from lp.services.config import config

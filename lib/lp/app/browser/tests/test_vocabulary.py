@@ -20,16 +20,6 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from lp.services.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    VocabularyFilter,
-    )
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
@@ -38,9 +28,19 @@ from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    VocabularyFilter,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_view
 

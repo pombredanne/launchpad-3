@@ -10,10 +10,9 @@ from debian.deb822 import Changes
 from testtools.matchers import LessThan
 import transaction
 
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
-from lp.testing.layers import LaunchpadZopelessLayer
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
@@ -28,6 +27,7 @@ from lp.soyuz.scripts.processaccepted import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessAccepted(TestCaseWithFactory):

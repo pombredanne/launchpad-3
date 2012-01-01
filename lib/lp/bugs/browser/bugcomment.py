@@ -37,16 +37,16 @@ from zope.interface import (
     Interface,
     )
 
+from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugmessage import IBugComment
-from lp.services.features import getFeatureFlag
-from lp.services.librarian.browser import ProxiedLibraryFileAlias
 
 
 COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)

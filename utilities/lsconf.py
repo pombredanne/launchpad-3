@@ -11,14 +11,15 @@ __metatype__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from operator import attrgetter
+from optparse import OptionParser
 import os
 import sys
-from optparse import OptionParser
-from operator import attrgetter
 from textwrap import dedent
 
-import lp.services.config
 from lazr.config import ImplicitTypeSchema
+
+import lp.services.config
 
 
 _schema_dir = os.path.abspath(os.path.dirname(lp.services.config.__file__))

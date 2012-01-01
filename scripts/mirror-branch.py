@@ -29,6 +29,7 @@ Where:
 
 
 import _pythonpath
+
 from optparse import OptionParser
 import os
 import resource
@@ -38,7 +39,10 @@ import bzrlib.repository
 
 from lp.code.enums import BranchType
 from lp.codehosting.puller.worker import (
-    install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
+    install_worker_ui_factory,
+    PullerWorker,
+    PullerWorkerProtocol,
+    )
 from lp.services.webapp.errorlog import globalErrorUtility
 
 

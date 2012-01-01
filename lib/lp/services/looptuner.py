@@ -18,8 +18,8 @@ import time
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    Interface,
     implements,
+    Interface,
     )
 
 import lp.services.scripts

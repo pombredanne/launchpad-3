@@ -11,13 +11,13 @@ import unittest
 
 from zope.testing.loghandler import Handler
 
-from lp.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts.entitlement import (
     EntitlementExchange,
     EntitlementImporter,
     InvalidFormat,
     UnsupportedVersion,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class EntitlementExchangeTestCase(unittest.TestCase):
