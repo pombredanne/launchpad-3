@@ -289,7 +289,7 @@ def parse_import_statements(import_section):
 LOCAL_PACKAGES = (
     'canonical', 'lp', 'launchpad_loggerhead', 'devscripts',
     # database/* have some implicit relative imports.
-    'fti', 'replication', 'upgrade',
+    'fti', 'replication', 'preflight', 'security', 'upgrade',
     )
 
 def format_imports(imports):
