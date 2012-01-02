@@ -56,19 +56,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import (
-    canonical_url,
-    errorlog,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.bzr import get_branch_formats
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -101,10 +88,23 @@ from lp.codehosting.vfs import (
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.webapp import (
+    canonical_url,
+    errorlog,
+    )
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -297,7 +297,7 @@ class BranchScanJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchScanJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         bzrsync = BzrSync(self.branch, log)
         bzrsync.syncBranchAndClose()
 
@@ -486,20 +486,15 @@ class RevisionsAddedJob(BranchJobDerived):
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
         repository = self.bzr_branch.repository
-        graph = repository.get_graph()
-        branch_last_revinfo = self.bzr_branch.last_revision_info()
-        last_revno = graph.find_distance_to_null(
-            self.last_revision_id,
-            [(branch_last_revinfo[1], branch_last_revinfo[0])])
-        added_revisions = graph.find_unique_ancestors(
+        added_revisions = repository.get_graph().find_unique_ancestors(
             self.last_revision_id, [self.last_scanned_id])
         # Avoid hitting the database since bzrlib makes it easy to check.
-        history = graph.iter_lefthand_ancestry(
-            self.last_revision_id, (NULL_REVISION, None))
-        for distance, revid in enumerate(history):
-            if not revid in added_revisions:
-                break
-            yield revid, last_revno - distance
+        # There are possibly more efficient ways to get the mainline
+        # revisions, but this is simple and it works.
+        history = self.bzr_branch.revision_history()
+        for num, revid in enumerate(history):
+            if revid in added_revisions:
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -520,11 +515,8 @@ class RevisionsAddedJob(BranchJobDerived):
 
         self.bzr_branch.lock_read()
         try:
-            for revision_id, revno in reversed(
-                    list(self.iterAddedMainline())):
+            for revision, revno in self.iterAddedMainline():
                 assert revno is not None
-                revision = self.bzr_branch.repository.get_revision(
-                    revision_id)
                 mailer = self.getMailerForRevision(
                     revision, revno, self.generateDiffs())
                 mailer.sendAll()

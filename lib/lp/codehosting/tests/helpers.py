@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -26,20 +26,16 @@ from bzrlib.tests import (
     TestNotApplicable,
     TestSkipped,
     )
-
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
-
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import (
     defer,
     threads,
     )
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.config import config
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.testing import TestCase
 
 
@@ -116,6 +112,7 @@ def deferToThread(f):
     """
     def decorated(*args, **kwargs):
         d = defer.Deferred()
+
         def runInThread():
             return threads._putResultInDeferred(d, f, args, kwargs)
 
@@ -129,8 +126,10 @@ def clone_test(test, new_id):
     """Return a clone of the given test."""
     from copy import deepcopy
     new_test = deepcopy(test)
+
     def make_new_test_id():
         return lambda: new_id
+
     new_test.id = make_new_test_id()
     return new_test
 
@@ -160,7 +159,7 @@ def make_bazaar_branch_and_tree(db_branch):
         "Can only create branches for HOSTED branches: %r"
         % db_branch)
     branch_dir = os.path.join(
-        config.codehosting.hosted_branches_root,
+        config.codehosting.mirrored_branches_root,
         branch_id_to_path(db_branch.id))
     return create_branch_with_one_revision(branch_dir)
 

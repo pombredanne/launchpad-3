@@ -45,10 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import (
-    patch_plain_parameter_type,
-    )
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
@@ -65,6 +62,7 @@ from lp.services.fields import (
     NoneableDescription,
     NoneableTextLine,
     )
+from lp.services.webservice.apihelpers import patch_plain_parameter_type
 
 
 class MilestoneNameField(ContentNameField):

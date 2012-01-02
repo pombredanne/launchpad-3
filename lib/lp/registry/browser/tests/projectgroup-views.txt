@@ -49,7 +49,7 @@ The index page of a project only shows the application portlets that it
 officially supports. The mothership projectgroup does not officially
 support any applications.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> product = projectgroup.products[1]
     >>> question = factory.makeQuestion(target=product)

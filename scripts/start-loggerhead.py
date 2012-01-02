@@ -18,8 +18,8 @@ from paste.request import construct_url
 from paste.translogger import TransLogger
 from paste.wsgilib import catch_errors
 
-from canonical.config import config
 import lp.codehosting
+from lp.services.config import config
 
 
 LISTEN_HOST = config.codebrowse.listen_host

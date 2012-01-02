@@ -26,33 +26,33 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
     IArchive,
     )
-from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission,
     IArchivePermissionSet,

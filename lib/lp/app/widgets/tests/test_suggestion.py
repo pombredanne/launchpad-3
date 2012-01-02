@@ -11,7 +11,7 @@ from datetime import (
 import doctest
 
 from pytz import utc
-
+from testtools.matchers import DocTestMatches
 from zope.component import provideUtility
 from zope.interface import implements
 from zope.schema import Choice
@@ -21,22 +21,20 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from testtools.matchers import DocTestMatches
-
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vocabulary import (
-    FilteredVocabularyBase,
-    IHugeVocabulary,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.suggestion import (
     SuggestionWidget,
     TargetBranchWidget,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.vocabulary import (
+    FilteredVocabularyBase,
+    IHugeVocabulary,
     )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class Simple:

@@ -44,15 +44,15 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
     IMultiLineWidgetLayout,
     INotificationResponse,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.menu import escape
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )

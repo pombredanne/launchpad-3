@@ -28,7 +28,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.services.job.interfaces.job import (
@@ -180,6 +180,15 @@ class IPlainPackageCopyJobSource(IJobSource):
             `PlainPackageCopyJob` pending.  Each of these DSDs maps to its
             oldest pending job.  The `version` corresponds to
             `DistroSeriesDifference.parent_source_version`.
+        """
+
+    def getIncompleteJobsForArchive(archive):
+        """Find incomplete jobs for each package in `archive`.
+
+        Incomplete jobs are ones in status WAITING, RUNNING or FAILED.
+
+        :param archive: The target `IArchive` for the job.
+        :return: An iterable of `PackageCopyJob`.
         """
 
 

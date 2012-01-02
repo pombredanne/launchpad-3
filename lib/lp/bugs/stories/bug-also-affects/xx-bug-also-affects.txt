@@ -195,8 +195,8 @@ redirected to the bug page.
 We cannot allow private bugs to affect more than one pillar.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp import canonical_url
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.product import IProductSet
 

@@ -14,10 +14,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -27,15 +23,19 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import getSpecificJobs
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
     celebrity_logged_in,
+    login,
     record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view

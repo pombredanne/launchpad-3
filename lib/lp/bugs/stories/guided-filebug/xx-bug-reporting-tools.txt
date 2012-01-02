@@ -13,7 +13,7 @@ that are important not to change are marked with a "Don't change!"
 comment.
 
     >>> import os.path
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
     >>> extra_filebug_data = open(
     ...     os.path.join(testfiles, 'extra_filebug_data.msg'))

@@ -7,7 +7,7 @@ quiet mode over it.
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from lp.soyuz.interfaces.publishing import active_publishing_status
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
@@ -574,7 +574,7 @@ Check that the overrides we did were correctly issued. We can't use
 selectOneBy because, of course, there may be multiple rows published for that
 package -- that's what overrides actually do.
 
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> x11_pub = SSPPH.select("""
     ...     sourcepackagerelease = %s AND
     ...     distroseries = %s AND

@@ -10,22 +10,23 @@ from collections import defaultdict
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
 from lp.bugs.model.bugtask import (
-    BugTask,
     bug_target_from_key,
+    BugTask,
     )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
-
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
 
 # These two tuples must be in the same order. They specify the ID
 # columns to get from BugTask, and the classes that they correspond to.

@@ -13,14 +13,14 @@ from lazr.uri import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.config import config
+from lp.services.geoip.interfaces import IGeoIP
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
-from lp.services.geoip.interfaces import IGeoIP
 
 
 parser = apachelog.parser(apachelog.formats['extended'])

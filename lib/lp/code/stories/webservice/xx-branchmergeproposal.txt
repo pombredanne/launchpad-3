@@ -2,13 +2,13 @@
 
 Branch merge proposals can be created through the API.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> login('admin@canonical.com')
     >>> target = factory.makeBranch()
 
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from lp.services.webapp.servers import WebServiceTestRequest
     >>> request = WebServiceTestRequest(version="beta")
     >>> request.processInputs()
 

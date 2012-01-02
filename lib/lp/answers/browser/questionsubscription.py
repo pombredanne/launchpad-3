@@ -9,19 +9,17 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import (
-    IWebServiceClientRequest,
-)
+from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class QuestionPortletSubscribersWithDetails(LaunchpadView):

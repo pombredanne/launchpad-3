@@ -6,31 +6,29 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-
+from lazr.restful.fields import Reference
+from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.interface import (
     implements,
     Interface,
     )
-from zope.app.form.browser.interfaces import IBrowserWidget
-from zope.app.form.interfaces import IInputWidget
 
-from lazr.restful.fields import Reference
-
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.validators import LaunchpadValidationError
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
-    DistributionVocabulary,
     DistributionSourcePackageVocabulary,
+    DistributionVocabulary,
     ProductVocabulary,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class IThing(Interface):

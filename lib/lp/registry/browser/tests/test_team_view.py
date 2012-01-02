@@ -10,12 +10,6 @@ __metaclass__ = type
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -25,11 +19,17 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import (
     create_initialized_view,

@@ -26,26 +26,14 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.mailnotification import (
-    send_process_error_notification,
-    )
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
-from canonical.launchpad.webapp.interaction import (
-    get_current_principal,
-    setupInteraction,
-    )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,
@@ -54,8 +42,18 @@ from lp.services.mail.helpers import (
     )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.mailbox import IMailBox
+from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.services.webapp.interaction import (
+    get_current_principal,
+    setupInteraction,
+    )
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a '\n', and all '\n' that are not preceded by a '\r'.

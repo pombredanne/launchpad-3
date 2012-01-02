@@ -12,10 +12,15 @@ import httplib
 import xmlrpclib
 
 from zope.app.testing.functional import HTTPCaller
-from zope.security.management import endInteraction, queryInteraction
+from zope.security.management import (
+    endInteraction,
+    queryInteraction,
+    )
 
-from canonical.launchpad.webapp.interaction import (
-    get_current_principal, setupInteraction)
+from lp.services.webapp.interaction import (
+    get_current_principal,
+    setupInteraction,
+    )
 
 
 class HTTPCallerHTTPConnection(httplib.HTTPConnection):

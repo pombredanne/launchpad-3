@@ -28,17 +28,15 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber,
-    )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.enumcol import DBEnum
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 

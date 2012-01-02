@@ -9,16 +9,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.code.enums import (
     BranchType,
@@ -26,6 +21,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -35,9 +31,14 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

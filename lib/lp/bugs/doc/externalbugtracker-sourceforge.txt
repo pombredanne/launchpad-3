@@ -12,7 +12,7 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     SourceForge)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> verifyObject(IExternalBugTracker,
@@ -161,7 +161,7 @@ remote status for, the bug watch that we have created.
 
     >>> transaction.commit()
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)

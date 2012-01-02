@@ -19,7 +19,7 @@ Person (name12).
 No Privileges Person is taking over the project, but he cannot access the
 view because he is not yet an owner/maintainer or admin.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('no-priv@canonical.com')
     >>> view = create_view(firefox, '+edit-people')

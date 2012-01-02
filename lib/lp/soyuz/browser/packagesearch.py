@@ -7,9 +7,9 @@ __all__ = [
     'PackageSearchViewBase'
     ]
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class PackageSearchViewBase(LaunchpadView):

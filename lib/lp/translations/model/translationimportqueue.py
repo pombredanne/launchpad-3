@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212, W0403
@@ -13,6 +13,7 @@ __all__ = [
 from cStringIO import StringIO
 import datetime
 import logging
+from operator import attrgetter
 import os.path
 import re
 import tarfile
@@ -29,6 +30,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Or,
+    Select,
     )
 from storm.locals import (
     Int,
@@ -40,25 +42,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
@@ -73,6 +56,25 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -846,6 +848,64 @@ class TranslationImportQueueEntry(SQLBase):
         return elapsedtime_text
 
 
+def list_product_request_targets(status_condition):
+    """Return list of Products with import queue entries.
+
+    :param status_condition: Storm conditional restricting the
+        queue-entry status to look for.
+    :return: A list of `Product`, distinct and ordered by name.
+    """
+    # Avoid circular imports.
+    from lp.registry.model.product import Product
+    from lp.registry.model.productseries import ProductSeries
+
+    products = IStore(Product).find(
+        Product,
+        Product.id == ProductSeries.productID,
+        Product.active == True,
+        ProductSeries.id.is_in(Select(
+            TranslationImportQueueEntry.productseries_id,
+            And(
+                TranslationImportQueueEntry.productseries_id != None,
+                status_condition),
+            distinct=True)))
+
+    # Products may occur multiple times due to the join with
+    # ProductSeries.
+    products = products.config(distinct=True)
+
+    # Sort python-side; doing it in SQL conflicts with the
+    # "distinct."
+    return sorted(products, key=attrgetter('name'))
+
+
+def list_distroseries_request_targets(status_condition):
+    """Return list of DistroSeries with import queue entries.
+
+    :param status_condition: Storm conditional restricting the
+        queue-entry status to look for.
+    :return: A list of `DistroSeries`, distinct and ordered by
+        (`Distribution.name`, `DistroSeries.name`).
+    """
+    # Avoid circular imports.
+    from lp.registry.model.distribution import Distribution
+    from lp.registry.model.distroseries import DistroSeries
+
+    # DistroSeries with queue entries.
+    distroseries = IStore(DistroSeries).find(
+        DistroSeries,
+        DistroSeries.defer_translation_imports == False,
+        Distribution.id == DistroSeries.distributionID,
+        DistroSeries.id.is_in(Select(
+            TranslationImportQueueEntry.distroseries_id,
+            And(
+                TranslationImportQueueEntry.distroseries_id != None,
+                status_condition),
+            distinct=True)))
+    distroseries = distroseries.order_by(Distribution.name, DistroSeries.name)
+    return list(distroseries)
+
+
 class TranslationImportQueue:
     implements(ITranslationImportQueue)
 
@@ -1223,43 +1283,16 @@ class TranslationImportQueue:
 
     def getRequestTargets(self, status=None):
         """See `ITranslationImportQueue`."""
-        # XXX DaniloSegan 2007-05-22: When imported on the module level,
-        # it errs out with: "ImportError: cannot import name Person"
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.product import Product
 
         if status is None:
-            status_clause = "TRUE"
+            status_clause = True
         else:
-            status_clause = (
-                "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
+            status_clause = (TranslationImportQueueEntry.status == status)
 
-        def distroseries_sort_key(distroseries):
-            return (distroseries.distribution.name, distroseries.name)
+        distroseries = list_distroseries_request_targets(status_clause)
+        products = list_product_request_targets(status_clause)
 
-        query = [
-            'ProductSeries.product = Product.id',
-            'TranslationImportQueueEntry.productseries = ProductSeries.id',
-            'Product.active IS TRUE']
-        if status is not None:
-            query.append(status_clause)
-
-        products = list(Product.select(
-            ' AND '.join(query),
-            clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
-            distinct=True, orderBy='Product.name'))
-
-        distroseriess = shortlist(DistroSeries.select("""
-            defer_translation_imports IS FALSE AND
-            id IN (
-                SELECT DISTINCT distroseries
-                FROM TranslationImportQueueEntry
-                WHERE %s
-                )
-            """ % status_clause))
-        distroseriess.sort(key=distroseries_sort_key)
-
-        return distroseriess + products
+        return distroseries + products
 
     def _attemptToSet(self, entry, potemplate=None, pofile=None):
         """Set potemplate or pofile on a `TranslationImportQueueEntry`.

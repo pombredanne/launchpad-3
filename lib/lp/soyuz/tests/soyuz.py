@@ -14,21 +14,21 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.librarian.model import LibraryFileAlias
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.testing.dbuser import dbuser
 from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.sampledata import (
     BUILDD_ADMIN_USERNAME,
     CHROOT_LIBRARYFILEALIAS,

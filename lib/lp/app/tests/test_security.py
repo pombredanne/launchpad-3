@@ -9,7 +9,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AuthorizationBase,
@@ -20,6 +19,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 def registerFakeSecurityAdapter(interface, permission, adapter=None):

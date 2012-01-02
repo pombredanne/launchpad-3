@@ -6,32 +6,25 @@
 __metaclass__ = type
 
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.translations.model.translationsharingjob import (
-    TranslationSharingJob,
-    TranslationSharingJobDerived,
-    )
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
@@ -42,6 +35,10 @@ from lp.translations.model.translationpackagingjob import (
     TranslationPackagingJob,
     TranslationSplitJob,
     TranslationTemplateChangeJob,
+    )
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
     )
 from lp.translations.tests.test_translationsplitter import (
     make_shared_potmsgset,

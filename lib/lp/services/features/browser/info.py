@@ -11,7 +11,6 @@ __all__ = [
 
 from collections import namedtuple
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.features.flags import (
     flag_info,
     undocumented_flags,
@@ -22,7 +21,7 @@ from lp.services.features.scopes import (
     undocumented_scopes,
     )
 from lp.services.utils import docstring_dedent
-
+from lp.services.webapp.publisher import LaunchpadView
 
 # Named tuples to use when passing flag and scope data to the template.
 Flag = namedtuple(

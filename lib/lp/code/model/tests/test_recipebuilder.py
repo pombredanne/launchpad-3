@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehavior."""
@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 from textwrap import dedent
-import transaction
 
 from testtools import run_test_with
 from testtools.deferredruntest import (
@@ -16,12 +15,10 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 from testtools.matchers import StartsWith
+import transaction
 from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -45,6 +42,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestRecipeBuilder(TestCaseWithFactory):
@@ -296,7 +294,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
         job = self.makeJob()
-        test_publisher = SoyuzTestPublisher()
+        #test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer", OkSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]

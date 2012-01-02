@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XML-RPC APIs for Malone."""
@@ -9,19 +9,19 @@ __all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadXMLRPCView,
-    )
-from canonical.launchpad.xmlrpc import faults
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
+from lp.xmlrpc import faults
 
 
 class FileBugAPI(LaunchpadXMLRPCView):

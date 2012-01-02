@@ -15,17 +15,6 @@ __all__ = [
     'ProcessorNotFound',
     ]
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-from zope.schema import (
-    Bool,
-    Text,
-    TextLine,
-    )
-
-from canonical.launchpad import _
 from lazr.restful.declarations import (
     collection_default_content,
     export_as_webservice_collection,
@@ -40,6 +29,17 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Text,
+    TextLine,
+    )
+
+from lp import _
 from lp.app.errors import NameLookupFailed
 
 

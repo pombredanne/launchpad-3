@@ -5,8 +5,8 @@ Launchpad can tell you about the code imports that power a branch
 if it is an import branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
 
 First we create some objects for use in the tests.
 

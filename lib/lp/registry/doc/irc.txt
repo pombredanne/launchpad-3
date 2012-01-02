@@ -16,7 +16,7 @@ with the IRC ID, the IRC network and nickname.
 
 The returned IrcID object provides both IIrcID and IHasOwner.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IIrcID, irc_id)
     True
     >>> verifyObject(IHasOwner, irc_id)

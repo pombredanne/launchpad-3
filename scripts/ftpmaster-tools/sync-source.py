@@ -15,6 +15,8 @@ will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
 
+import _pythonpath
+
 import errno
 import os
 import re
@@ -24,17 +26,11 @@ import string
 import tempfile
 import urllib
 
-import _pythonpath
 from _syncorigins import origins
 import apt_pkg
 from debian.deb822 import Dsc
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
-from canonical.librarian.client import LibrarianClient
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
@@ -42,6 +38,11 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.services.librarian.client import LibrarianClient
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,

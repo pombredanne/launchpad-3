@@ -14,18 +14,17 @@ import socket
 import sys
 import urlparse
 
-from zope.event import notify
-from zope.interface import implements
-
 from twisted.internet import (
     error,
     interfaces,
     process,
     )
 from twisted.python import log
+from zope.event import notify
+from zope.interface import implements
 
-from canonical.config import config
 from lp.codehosting import get_bzr_path
+from lp.services.config import config
 from lp.services.sshserver.events import AvatarEvent
 from lp.services.sshserver.session import DoNothingSession
 

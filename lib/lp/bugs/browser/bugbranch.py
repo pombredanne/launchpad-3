@@ -23,12 +23,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -40,6 +35,11 @@ from lp.code.browser.branchmergeproposal import (
     )
 from lp.code.enums import BranchLifecycleStatus
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class BugBranchPrimaryContext:

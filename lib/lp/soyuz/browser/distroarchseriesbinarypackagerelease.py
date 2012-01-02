@@ -11,12 +11,12 @@ __all__ = [
 
 from lazr.restful.utils import smartquote
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     LaunchpadView,
     Navigation,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )

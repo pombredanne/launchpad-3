@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
@@ -16,12 +16,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -32,11 +26,12 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login,
     login_person,
@@ -44,6 +39,10 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -282,7 +281,10 @@ class TestGetUploadMethodsMixin:
 
 
 class TestHandleStatusMixin:
-    """Tests for `IPackageBuild`s handleStatus method."""
+    """Tests for `IPackageBuild`s handleStatus method.
+
+    This should be run with a Trial TestCase.
+    """
 
     layer = LaunchpadZopelessLayer
 
@@ -301,7 +303,7 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
+        builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -342,7 +344,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIs(None, self.build.buildqueue_record)
+            self.assertIdentical(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
@@ -384,10 +386,14 @@ class TestHandleStatusMixin:
 
         def got_status(ignored):
             if expected_notification:
-                self.assertNotEqual(
-                    0, len(pop_notifications()), "No notifications received.")
+                self.failIf(
+                    len(pop_notifications()) == 0,
+                    "No notifications received")
             else:
-                self.assertContentEqual([], pop_notifications())
+                self.failIf(
+                    len(pop_notifications()) > 0,
+                    "Notifications received")
+
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
 

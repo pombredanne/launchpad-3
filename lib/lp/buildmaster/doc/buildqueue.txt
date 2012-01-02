@@ -12,7 +12,7 @@ and collecting build results.
 As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.buildmaster.interfaces.buildqueue import (
     ...     IBuildQueue, IBuildQueueSet)
 
@@ -249,7 +249,7 @@ for testing if we will also be able to deal with more than one architecture.
 
 Materialize the changes in database:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Note that the results are ordered by descending BuildQueue.lastscore

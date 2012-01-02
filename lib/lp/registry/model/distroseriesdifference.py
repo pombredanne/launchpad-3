@@ -39,14 +39,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -75,6 +67,12 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import (
     Message,

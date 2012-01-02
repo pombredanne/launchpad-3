@@ -23,18 +23,18 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     ISeriesSourcePackageBranch,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.enumcol import DBEnum
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 class SeriesSourcePackageBranch(Storm):

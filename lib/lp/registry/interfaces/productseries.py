@@ -44,8 +44,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.url import urlparse
+from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
@@ -78,6 +77,7 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
+from lp.services.webapp.url import urlparse
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )

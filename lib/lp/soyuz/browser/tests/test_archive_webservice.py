@@ -7,16 +7,14 @@ from datetime import timedelta
 
 from lazr.restfulclient.errors import (
     BadRequest,
-    NotFound,
     HTTPError,
+    NotFound,
     Unauthorized as LRUnauthorized,
-)
+    )
 from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
@@ -33,6 +31,8 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestArchiveWebservice(TestCaseWithFactory):
@@ -384,23 +384,30 @@ class TestCopyPackage(WebServiceTestCase):
 class TestgetPublishedBinaries(WebServiceTestCase):
     """test getPublishedSources."""
 
-    def test_getPublishedBinaries(self):
+    def setUp(self):
+        super(TestgetPublishedBinaries, self).setUp()
         self.ws_version = 'beta'
-        person = self.factory.makePerson()
-        archive = self.factory.makeArchive()
-        self.factory.makeBinaryPackagePublishingHistory(archive=archive)
-        ws_archive = self.wsObject(archive, user=person)
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive()
+
+    def test_getPublishedBinaries(self):
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        ws_archive = self.wsObject(self.archive, user=self.person)
         self.assertEqual(1, len(ws_archive.getPublishedBinaries()))
 
     def test_getPublishedBinaries_created_since_date(self):
-        self.ws_version = 'beta'
-        person = self.factory.makePerson()
-        archive = self.factory.makeArchive()
         datecreated = self.factory.getUniqueDate()
         later_date = datecreated + timedelta(minutes=1)
         self.factory.makeBinaryPackagePublishingHistory(
-                archive=archive, datecreated=datecreated)
-        ws_archive = self.wsObject(archive, user=person)
+                archive=self.archive, datecreated=datecreated)
+        ws_archive = self.wsObject(self.archive, user=self.person)
         publications = ws_archive.getPublishedBinaries(
                 created_since_date=later_date)
         self.assertEqual(0, len(publications))
+
+    def test_getPublishedBinaries_no_ordering(self):
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        publications = ws_archive.getPublishedBinaries(ordered=False)
+        self.assertEqual(2, len(publications))
