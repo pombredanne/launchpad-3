@@ -16,7 +16,9 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import groupby
 import logging
+from operator import attrgetter
 
 import pytz
 from sqlobject import (
@@ -141,6 +143,21 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
+
+    @staticmethod
+    def preloadSpecificJobData(queues):
+        key = attrgetter('job_type')
+        for job_type, grouped_queues in groupby(queues, key=key):
+            specific_class = specific_job_classes()[job_type]
+            queue_subset = list(grouped_queues)
+            # We need to preload the build farm jobs early to avoid
+            # the call to _set_build_farm_job to look up BuildFarmBuildJobs
+            # one by one.
+            specific_class.preloadBuildFarmJobs(queue_subset)
+            specific_jobs = specific_class.getByJobs(queue_subset)
+            if len(list(specific_jobs)) == 0:
+                continue
+            specific_class.preloadJobsData(specific_jobs)
 
     @property
     def date_started(self):
