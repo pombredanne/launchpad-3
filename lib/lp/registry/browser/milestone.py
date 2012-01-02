@@ -604,7 +604,7 @@ class MilestoneTagView(
         return {'tags': u' '.join(self.tags)}
 
     @safe_action
-    @action(u'Search', name='search')
+    @action(u'Search Milestone Tags', name='search')
     def search_by_tags(self, action, data):
         tags = data['tags'].split()
         milestone_tag = ProjectGroupMilestoneTag(self.context.target, tags)
