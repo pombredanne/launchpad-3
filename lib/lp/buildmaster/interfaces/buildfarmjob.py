@@ -140,6 +140,13 @@ class IBuildFarmJobOld(Interface):
         has an entry associated with `job`.
         """
 
+    def getByJobs(jobs):
+        """Get the specific `IBuildFarmJob`s for the given `Job`s.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has entries associated with `job`s.
+        """
+
     def generateSlaveBuildCookie():
         """Produce a cookie for the slave as a token of the job it's doing.
 
