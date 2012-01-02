@@ -1339,18 +1339,34 @@ class MultipleParams:
     accepts exactly one instance.
     """
 
-    def test_two_param_objects(self):
-        # We can pass more than one BugTaskSearchParams instance to
-        # BugTaskSet.search().
+    def setUpTwoSearchParams(self, orderby=None):
+        # Prepare the test data for the tests in this class.
         params1 = self.getBugTaskSearchParams(
-            user=None, status=BugTaskStatus.FIXCOMMITTED)
+            user=None, status=BugTaskStatus.FIXCOMMITTED, orderby=orderby)
         subscriber = self.factory.makePerson()
         self.subscribeToTarget(subscriber)
         params2 = self.getBugTaskSearchParams(
             user=None, status=BugTaskStatus.NEW,
-            structural_subscriber=subscriber)
+            structural_subscriber=subscriber, orderby=orderby)
+        return params1, params2
+
+    def test_two_param_objects(self):
+        # We can pass more than one BugTaskSearchParams instance to
+        # BugTaskSet.search().
+        params1, params2 = self.setUpTwoSearchParams()
         search_result = self.runSearch(params1, params2)
         expected = self.resultValuesForBugtasks(self.bugtasks[1:])
+        self.assertEqual(expected, search_result)
+
+    def test_two_param_objects_sorting_needs_extra_join(self):
+        params1, params2 = self.setUpTwoSearchParams(orderby='reporter')
+        search_result = self.runSearch(params1, params2)
+
+        def sortkey(bugtask):
+            return bugtask.owner.name
+
+        expected_bugtasks = sorted(self.bugtasks[1:], key=sortkey)
+        expected = self.resultValuesForBugtasks(expected_bugtasks)
         self.assertEqual(expected, search_result)
 
 
