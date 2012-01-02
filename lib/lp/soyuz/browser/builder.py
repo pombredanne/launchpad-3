@@ -41,6 +41,9 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -144,7 +147,16 @@ class BuilderSetView(LaunchpadView):
     @cachedproperty
     def builders(self):
         """All active builders"""
-        return list(self.context.getBuilders())
+        def do_eager_load(builders):
+            # Prefetch the jobs' data.
+            queues = IStore(BuildQueue).find(
+                BuildQueue,
+                BuildQueue.builderID.is_in(
+                    builder.id for builder in builders))
+            BuildQueue.preloadSpecificJobData(queues)
+
+        return list(DecoratedResultSet(
+            list(self.context.getBuilders()), pre_iter_hook=do_eager_load))
 
     @property
     def number_of_registered_builders(self):
