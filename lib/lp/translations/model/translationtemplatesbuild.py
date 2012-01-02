@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`TranslationTemplatesBuild` class."""
@@ -18,6 +18,10 @@ from zope.interface import (
     implements,
     )
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
@@ -27,8 +31,6 @@ from lp.code.model.branchjob import (
     )
 from lp.registry.model.product import Product
 from lp.services.database.bulk import load_related
-from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
@@ -127,7 +129,7 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
     @classmethod
     def preloadBuildsData(cls, builds):
         # Circular imports.
-        from canonical.launchpad.database.librarian import LibraryFileAlias
+        from lp.services.librarian.model import LibraryFileAlias
         # Load the related branches, products.
         branches = load_related(
             Branch, builds, ['branch_id'])
