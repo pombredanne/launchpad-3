@@ -112,7 +112,7 @@
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
     <securedutility
-        class="canonical.launchpad.systemhomes.MaloneApplication"
+        class="lp.systemhomes.MaloneApplication"
         provides="lp.bugs.interfaces.malone.IMaloneApplication">
         <allow
             interface="lp.bugs.interfaces.malone.IMaloneApplication"/>
@@ -270,13 +270,13 @@
                     "/>
         </class>
         <adapter
-            provides="canonical.lazr.interfaces.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            provides="canonical.launchpad.interfaces.launchpad.IPrivacy"
+            provides="lp.app.interfaces.launchpad.IPrivacy"
             factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -286,12 +286,12 @@
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugmessage.IBugComment"
             factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
             permission="zope.Public"/>
@@ -419,9 +419,9 @@
                 set_attributes="active"/>
         </class>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
 
         <!-- BugTrackerSet -->
@@ -438,7 +438,7 @@
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
             permission="zope.Public"/>
@@ -533,7 +533,7 @@
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        provides="lp.services.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
 
     <!-- hierarchy -->
@@ -874,8 +874,8 @@
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
-            provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-            factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
+            provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+            factory="lp.bugs.publisher.LaunchpadBugContainer"/>
 
         <!-- BugSet -->
 
@@ -925,7 +925,7 @@
     </securedutility>
     <adapter
         for="lp.bugs.interfaces.bugnomination.IBugNomination"
-        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        provides="lp.services.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
@@ -952,6 +952,10 @@
                 attributes="
                     approve
                     decline"/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    destroySelf"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugnomination.BugNominationSet"
@@ -1097,7 +1101,7 @@
     <class
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+            interface="lp.services.mail.interfaces.INotificationRecipientSet"/>
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
@@ -1111,13 +1115,13 @@
     </securedutility>
     <adapter
         name="bugs"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="bugs"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>

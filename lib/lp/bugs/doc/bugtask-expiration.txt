@@ -470,7 +470,7 @@ defaults to 60 days. The period is measured from the date_incomplete
 field. We expire bugtasks that are Incomplete and unattended for 60
 days or more.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> old_age_days = config.malone.days_before_expiration
     >>> old_age_days
     60

@@ -18,16 +18,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.publisher.interfaces import implements
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IPrimaryContext,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -40,6 +31,15 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNominationForm,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IPrimaryContext,
+    )
 
 
 class BugNominationPrimaryContext:

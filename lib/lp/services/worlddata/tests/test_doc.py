@@ -7,13 +7,13 @@ Run the doctests and pagetests.
 
 import os
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))

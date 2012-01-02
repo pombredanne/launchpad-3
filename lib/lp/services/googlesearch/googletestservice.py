@@ -21,15 +21,14 @@ import socket
 import subprocess
 import time
 
-from canonical.config import config
-from canonical.launchpad.webapp.url import urlsplit
-from canonical.lazr.pidfile import (
+from lp.services.config import config
+from lp.services.osutils import ensure_directory_exists
+from lp.services.pidfile import (
     get_pid,
     make_pidfile,
     pidfile_path,
     )
-
-from lp.services.osutils import ensure_directory_exists
+from lp.services.webapp.url import urlsplit
 
 # Set up basic logging.
 log = logging.getLogger(__name__)

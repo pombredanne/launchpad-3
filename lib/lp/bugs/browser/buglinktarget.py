@@ -21,12 +21,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -38,11 +33,19 @@ from lp.bugs.interfaces.buglink import (
     IBugLinkForm,
     IUnlinkBugsForm,
     )
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.services.config import config
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.searchbuilder import any
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class BugLinkView(LaunchpadFormView):

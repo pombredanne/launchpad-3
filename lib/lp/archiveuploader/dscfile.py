@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -29,7 +29,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
@@ -65,6 +64,7 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -287,7 +287,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.format is None:
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
-
 
     #
     # Useful properties.

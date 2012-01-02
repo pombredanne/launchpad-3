@@ -43,6 +43,8 @@ because our cheat objects don't match the app-encoded business logic.
 # - print the nourishing nutty goodness to stdout
 
 import _pythonpath
+
+
 _pythonpath
 
 from inspect import getmro
@@ -54,11 +56,10 @@ from zope.component import adapts, getGlobalSiteManager
 from zope.interface import directlyProvides, implements
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
-from canonical.config import config
-from canonical.launchpad import pagetitles
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.config import config
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import canonical_url
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -113,8 +114,7 @@ def has_page_title(adapter):
     if template is None:
         return False
     name = os.path.splitext(os.path.basename(template))[0].replace('-', '_')
-    if (getattr(view, 'page_title', marker) is marker and
-        getattr(pagetitles, name, marker) is marker):
+    if (getattr(view, 'page_title', marker) is marker):
         return False
     return has_html_element(template)
 
@@ -194,7 +194,7 @@ class Whatever(object):
         args.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
         # If we're being called with no args, assume this is part of crazy
         # TALES stuff:
-        #   lib/canonical/launchpad/webapp/metazcml.py(365)path()
+        #   webapp/metazcml.py(365)path()
         #   -> return self._compiled_path_expression(self._expression_context)
         if args:
             name = '%s(%s)' % (self._name, ', '.join(args))

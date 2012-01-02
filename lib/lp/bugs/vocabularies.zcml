@@ -13,7 +13,7 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.BugVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -26,11 +26,11 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.BugNominatableProductSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <class class="lp.bugs.vocabularies.BugNominatableDistroSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -43,7 +43,7 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.BugTrackerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -56,7 +56,7 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.WebBugTrackerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -69,7 +69,7 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.BugWatchVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -82,7 +82,7 @@
   </securedutility>
 
   <class class="lp.bugs.vocabularies.DistributionUsingMaloneVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 

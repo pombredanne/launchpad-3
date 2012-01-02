@@ -130,7 +130,7 @@ Changing the product's usage is reflected in the view properties.
 
 The progress bar is shown as a green bar.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
     >>> rendered = view.render()
     >>> print find_tag_by_id(rendered, 'progressbar')
     <div ... id="progressbar">

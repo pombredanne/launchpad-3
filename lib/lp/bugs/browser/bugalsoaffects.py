@@ -29,18 +29,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -87,6 +84,9 @@ from lp.registry.interfaces.product import (
 from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):

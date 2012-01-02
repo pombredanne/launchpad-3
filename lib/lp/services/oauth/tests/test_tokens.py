@@ -17,15 +17,6 @@ from zope.component import getUtility
 from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import (
-    login_person,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    AccessLevel,
-    OAuthPermission,
-    )
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -33,10 +24,17 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
     )
+from lp.services.webapp.interfaces import (
+    AccessLevel,
+    OAuthPermission,
+    )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
+    login_person,
     oauth_access_token_for,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestOAuth(TestCaseWithFactory):

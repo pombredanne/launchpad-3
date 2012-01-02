@@ -10,13 +10,14 @@ __all__ = [
     ]
 
 from psycopg2.extensions import TransactionRollbackError
-from storm.exceptions import DisconnectionError, IntegrityError
+from storm.exceptions import (
+    DisconnectionError,
+    IntegrityError,
+    )
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.database.sqlbase import (
-    reset_store,
-    )
+from lp.services.database.sqlbase import reset_store
 
 
 RETRY_ATTEMPTS = 3

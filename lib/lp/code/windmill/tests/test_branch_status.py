@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch statuses."""
@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from storm.store import Store
+import transaction
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.model.branch import Branch
@@ -43,7 +42,9 @@ class TestBranchStatus(WindmillTestCase):
         client.asserts.assertTextIn(
             id=u'edit-lifecycle_status', validator=u'Experimental')
         client.asserts.assertNode(
-            jquery=u'("div#edit-lifecycle_status span.value.branchstatusEXPERIMENTAL")')
+            jquery=(
+                u'("div#edit-lifecycle_status '
+                u'span.value.branchstatusEXPERIMENTAL")'))
 
         transaction.commit()
         freshly_fetched_branch = Store.of(branch).find(

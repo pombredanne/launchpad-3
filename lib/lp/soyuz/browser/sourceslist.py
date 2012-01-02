@@ -15,10 +15,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
+from lp import _
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import LaunchpadView
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 
 

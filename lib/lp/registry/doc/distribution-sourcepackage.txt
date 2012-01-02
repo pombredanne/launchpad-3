@@ -15,7 +15,7 @@ A common way to fetch a distribution source package is to start with the
 distribution object:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> debian = getUtility(IDistributionSet).getByName("debian")
@@ -281,7 +281,7 @@ versions of a given source package have been published in.
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> transaction.commit()
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> cache_entry = KarmaTotalCache(person=ppa_beta_owner_id,

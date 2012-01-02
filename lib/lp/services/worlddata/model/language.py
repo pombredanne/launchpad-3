@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under
 # the GNU Affero General Public License version 3 (see the file
 # LICENSE).
 
@@ -28,21 +28,19 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.model.karma import (
     KarmaCache,
     KarmaCategory,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.helpers import ensure_unicode
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -52,10 +50,11 @@ from lp.services.worlddata.interfaces.language import (
     ILanguageSet,
     TextDirection,
     )
-
 # XXX: JonathanLange 2010-11-10 bug=673796: It turns out this module is
 # unusable without spokenin being imported first. So, import spokenin.
 from lp.services.worlddata.model.spokenin import SpokenIn
+
+
 SpokenIn
 
 

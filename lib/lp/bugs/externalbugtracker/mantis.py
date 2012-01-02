@@ -19,7 +19,6 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
@@ -37,6 +36,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.url import urlparse
 
 
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):

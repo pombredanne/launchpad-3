@@ -10,8 +10,8 @@ of the page. Any page can use these layout options by including
 in the root element of the page template. The base layout template uses the
 YUI grid classes for positioning.
 
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from z3c.ptcompat import ViewPageTemplateFile
 
     >>> user = factory.makePerson(name='waffles')
@@ -34,7 +34,7 @@ slots. The global search and the applications tabs are present. The
 main and side content are positioned using the "yui-t4", "yui-main",
 "yui-b", and "yui-b side" classes.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> view = MainSideView(user, request)
     >>> html = view.render()
@@ -175,34 +175,6 @@ Page Footers
     Careers http://www.canonical.com/about-canonical/careers
     System status http://identi.ca/launchpadstatus
     Get the code! https://dev.launchpad.net/
-
-
-Page registering
-----------------
-
-The 'registering' slot is presented on the right side of the 'heading'
-and can be filled with the context registering information (registrant
-and date_created, normally).
-
-    >>> class RegisteringView(LaunchpadView):
-    ...     """A simple view to test base-layout."""
-    ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
-    ...     page_title = 'Test base-layout: main_registering'
-
-    >>> view = RegisteringView(user, request)
-    >>> html = view.render()
-
-    >>> from canonical.launchpad.testing.pages import (
-    ...     first_tag_by_class)
-
-    >>> print first_tag_by_class(html, 'registering')
-    <div id="registration" class="registering">
-    <p>something nice about the context registering.</p>
-    </div>
-
-Note that the slot itself will be already 'styled' and it rarely has
-to be changed.
 
 
 Public and private presentation

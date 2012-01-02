@@ -6,18 +6,16 @@
 __metaclass__ = type
 
 
-from canonical.config import config
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
 from lp.app.enums import ServiceUsage
+from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model import pofilestatsjob

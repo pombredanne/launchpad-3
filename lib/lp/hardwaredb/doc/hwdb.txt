@@ -368,7 +368,7 @@ to the method, or if the passed parameter is neither the owner nor an admin.
 When an anonymous submitter later registers a Launchpad account, the field
 `owner` is updated.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     u'beeblebrox@example.com', u'Beeblebrox',

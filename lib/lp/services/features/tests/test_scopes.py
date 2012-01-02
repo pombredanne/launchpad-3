@@ -5,16 +5,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.testing import (
-    person_logged_in,
-    TestCase,
-    TestCaseWithFactory,
-    )
-from lp.services.features import (
-    getFeatureFlag,
-    )
+from lp.services.features import getFeatureFlag
 from lp.services.features.scopes import (
     BaseScope,
     MultiScopeHandler,
@@ -22,9 +13,13 @@ from lp.services.features.scopes import (
     ScriptScope,
     UserSliceScope,
     )
-from lp.services.features.testing import (
-    FeatureFixture,
+from lp.services.features.testing import FeatureFixture
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class FakeScope(BaseScope):

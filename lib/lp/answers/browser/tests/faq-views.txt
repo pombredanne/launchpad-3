@@ -15,7 +15,7 @@ Latest FAQs portlet
 The latest FAQs portlet allows an `IFAQTarget` to show the latest FAQs.
 It's view provided latest_faqs to get the FAQs to display.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> view = create_initialized_view(

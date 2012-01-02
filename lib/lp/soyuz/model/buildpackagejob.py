@@ -18,13 +18,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,

@@ -10,10 +10,10 @@ from datetime import datetime
 
 import pytz
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.services.features.model import FeatureFlagChangelogEntry
 from lp.services.features.changelog import ChangeLog
+from lp.services.features.model import FeatureFlagChangelogEntry
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 diff = (

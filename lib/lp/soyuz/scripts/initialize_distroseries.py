@@ -14,15 +14,15 @@ from operator import methodcaller
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.helpers import ensure_unicode
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,

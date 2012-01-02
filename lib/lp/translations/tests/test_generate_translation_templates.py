@@ -5,16 +5,16 @@ import os
 from StringIO import StringIO
 import tarfile
 
-from lp.testing.fakemethod import FakeMethod
-
 from lpbuildd import pottery
 from lpbuildd.pottery.generate_translation_templates import (
-    GenerateTranslationTemplates)
+    GenerateTranslationTemplates,
+    )
 
-from canonical.launchpad.ftests.script import run_script
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.script import run_script
 
 
 class TestGenerateTranslationTemplates(TestCaseWithFactory):

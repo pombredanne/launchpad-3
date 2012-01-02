@@ -143,7 +143,7 @@ Let's use the script to fetch the ddtp-tarball upload:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...    config.root, "scripts", "ftpmaster-tools", "queue")

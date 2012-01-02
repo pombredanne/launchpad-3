@@ -8,10 +8,16 @@ Restore a full database dump. This script should become unnecessary
 when we are running PostgreSQL 8 as it will correctly order its dumps.
 """
 
-import sys, os, tempfile
 from optparse import OptionParser
-from subprocess import Popen, PIPE
+import os
 from signal import SIGTERM
+from subprocess import (
+    PIPE,
+    Popen,
+    )
+import sys
+import tempfile
+
 
 class DumpFile(object):
     """File-like object wrapping a normal or compressed file on disk"""

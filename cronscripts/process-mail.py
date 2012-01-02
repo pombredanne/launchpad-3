@@ -10,11 +10,13 @@ import _pythonpath
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.config import config
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.services.config import config
 from lp.services.mail.incoming import handleMail
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessMail(LaunchpadCronScript):
