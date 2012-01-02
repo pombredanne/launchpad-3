@@ -4,9 +4,34 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  class="portlet" id="portlet-milestone-tag-search"
-  metal:use-macro="context/@@launchpad_form/form" />
+  <form
+    action="."
+    tal:attributes="action view/action_url"
+    name="launchpadform"
+    method="get"
+    accept-charset="UTF-8">
+
+    <p class="error message"
+      tal:condition="view/errors"
+      tal:content="view/error_count" />
+
+    <p class="error message"
+      tal:repeat="form_wide_error view/form_wide_errors"
+      tal:content="structure form_wide_error">
+      Schema validation errors.
+    </p>
+
+    <p>
+      <tal:tags replace="structure view/widgets/tags" />
+      <input tal:replace="structure view/search_by_tags/render" />
+    </p>
+
+    <div class="error" tal:condition="view/errors">
+      <div class="message">Invalid tag name.</div>
+    </div>
+
+    <p class="formHelp" tal:content="view/widgets/tags/hint">Some Help Text</p>
+
+  </form>
 
 </tal:root>
