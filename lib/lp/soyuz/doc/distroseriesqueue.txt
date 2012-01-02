@@ -51,7 +51,7 @@ Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -124,7 +124,7 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
@@ -882,7 +882,7 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
 
 

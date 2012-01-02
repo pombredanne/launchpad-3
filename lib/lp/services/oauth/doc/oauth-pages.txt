@@ -11,8 +11,8 @@ consumer's request to access Launchpad on his behalf.
     >>> from zope.component import getMultiAdapter
     >>> from lp.services.oauth.interfaces import (
     ...     IOAuthConsumerSet, OAuthPermission)
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.interfaces import ILaunchpadRoot
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('launchpad-library')
     >>> root = getUtility(ILaunchpadRoot)

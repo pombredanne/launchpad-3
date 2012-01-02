@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 class ICodeImportSchedulerApplication(ILaunchpadApplication):

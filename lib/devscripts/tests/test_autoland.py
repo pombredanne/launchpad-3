@@ -5,18 +5,27 @@
 
 __metaclass__ = type
 
-import unittest
 import re
+import unittest
 
-from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
-
-from lp.testing.fakemethod import FakeMethod
+from launchpadlib.launchpad import (
+    EDGE_SERVICE_ROOT,
+    STAGING_SERVICE_ROOT,
+    )
 
 from devscripts.autoland import (
-    get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle, get_qa_clause, get_testfix_clause,
-    MissingReviewError, MissingBugsError, MissingBugsIncrementalError,
-    MergeProposal)
+    get_bazaar_host,
+    get_bugs_clause,
+    get_qa_clause,
+    get_reviewer_clause,
+    get_reviewer_handle,
+    get_testfix_clause,
+    MergeProposal,
+    MissingBugsError,
+    MissingBugsIncrementalError,
+    MissingReviewError,
+    )
+from lp.testing.fakemethod import FakeMethod
 
 
 class FakeBugTask:

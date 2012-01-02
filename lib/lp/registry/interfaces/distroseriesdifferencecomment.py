@@ -23,11 +23,11 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IDistroSeriesDifferenceComment(Interface):

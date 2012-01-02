@@ -14,7 +14,7 @@ Kumquats are very simple things.  All they have is a key to identify
 them.
 
     >>> from storm.locals import Count, Int, Storm
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

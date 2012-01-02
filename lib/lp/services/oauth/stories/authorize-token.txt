@@ -14,7 +14,7 @@ and authorize or not the consumer to act on his behalf.
     # Create a new request token.
     >>> from zope.component import getUtility
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> logout()
@@ -67,7 +67,7 @@ except for 'Desktop Integration', which must be specifically requested.
     Read Anything
     Change Anything
 
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> len(actions) == len(OAuthPermission.items) - 1
     True
@@ -146,7 +146,7 @@ A client other than a web browser may request a JSON representation of
 the list of authentication levels.
 
     >>> import simplejson
-    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> from lp.testing.pages import setupBrowser
 
     >>> json_browser = setupBrowser()
     >>> json_browser.addHeader('Accept', 'application/json')

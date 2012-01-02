@@ -14,13 +14,13 @@ import os
 from pytz import utc
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,

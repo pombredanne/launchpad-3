@@ -51,24 +51,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import helpers
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -76,6 +58,23 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import get_email_template
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import RosettaImportStatus
@@ -1015,7 +1014,7 @@ class POTemplate(SQLBase, RosettaStats):
                             "Statistics update failed: %s" % unicode(error))
 
         if template_mail is not None:
-            template = helpers.get_email_template(
+            template = get_email_template(
                 template_mail, 'translations')
             message = template % replacements
             return (subject, message)
@@ -1338,7 +1337,7 @@ class POTemplateSet:
                 conditions, POTemplate.distroseries == distroseries)
 
         store = IStore(POTemplate)
-        matches = helpers.shortlist(store.find(POTemplate, conditions))
+        matches = shortlist(store.find(POTemplate, conditions))
 
         if len(matches) == 0:
             # Nope.  Sorry.

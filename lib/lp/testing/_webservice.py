@@ -27,12 +27,12 @@ from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from canonical.launchpad.webapp.adapter import get_request_statements
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.oauth.interfaces import IOAuthConsumerSet
+from lp.services.webapp.adapter import get_request_statements
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.testing._login import (
     login,
     logout,
@@ -171,7 +171,7 @@ class QueryCollector:
 
     :ivar count: The count of db queries the last web request made.
     :ivar queries: The list of queries made. See
-        canonical.launchpad.webapp.adapter.get_request_statements for more
+        lp.services.webapp.adapter.get_request_statements for more
         information.
     """
 

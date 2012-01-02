@@ -30,8 +30,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type,
@@ -47,6 +45,8 @@ from lp.archiveuploader.utils import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import filechunks
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
@@ -713,8 +713,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2, data.tar.lzma or data.tar.xz." %
                 (self.filename, data_tar))
 
-        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
-        XZ_REQUIRED_DPKG_VER = '1.15.6'
+        # xz-compressed debs must pre-depend on dpkg >= 1.15.6~.
+        XZ_REQUIRED_DPKG_VER = '1.15.6~'
         if data_tar == "data.tar.xz":
             parsed_deps = []
             try:

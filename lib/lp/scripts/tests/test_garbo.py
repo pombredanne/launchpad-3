@@ -34,32 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import sqlbase
-from canonical.database.constants import (
-    ONE_DAY_AGO,
-    SEVEN_DAYS_AGO,
-    THIRTY_DAYS_AGO,
-    UTC_NOW,
-    )
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -92,7 +66,19 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.config import config
+from lp.services.database import sqlbase
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
 from lp.services.oauth.model import (
@@ -100,15 +86,29 @@ from lp.services.oauth.model import (
     OAuthNonce,
     )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
+from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
+    )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (

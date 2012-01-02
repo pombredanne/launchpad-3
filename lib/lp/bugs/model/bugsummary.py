@@ -20,7 +20,6 @@ from storm.locals import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.enumcol import EnumCol
 from lp.bugs.interfaces.bugsummary import (
     IBugSummary,
     IBugSummaryDimension,
@@ -37,6 +36,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.enumcol import EnumCol
 
 
 class BugSummary(Storm):

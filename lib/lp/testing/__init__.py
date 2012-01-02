@@ -17,6 +17,7 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeAdapterMixin',
     'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
@@ -35,6 +36,7 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'reset_logging',
     'run_process',
     'run_script',
     'run_with_login',
@@ -70,7 +72,6 @@ from inspect import (
     )
 import logging
 import os
-from pprint import pformat
 import re
 from select import select
 import shutil
@@ -89,6 +90,7 @@ from bzrlib.transport import get_transport
 import fixtures
 from lazr.restful.testing.tales import test_tales
 from lazr.restful.testing.webservice import FakeRequest
+import lp_sitecustomize
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
@@ -97,41 +99,37 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import MatchesRegex
+from testtools.matchers import (
+    Equals,
+    MatchesRegex,
+    MatchesSetwise,
+    )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getSiteManager,
+    getUtility,
+    )
 import zope.event
+from zope.interface import Interface
 from zope.interface.verify import verifyClass
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.adapter import (
-    print_queries,
-    start_sql_logging,
-    stop_sql_logging,
-    )
-from canonical.launchpad.webapp.authorization import (
-    clear_cache as clear_permission_cache,
-    )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.servers import (
-    LaunchpadTestRequest,
-    StepsToGo,
-    WebServiceTestRequest,
-    )
+from lp.app.interfaces.security import IAuthorization
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.services import features
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
@@ -139,6 +137,21 @@ from lp.services.features.model import (
     )
 from lp.services.features.webapp import ScopesFromRequest
 from lp.services.osutils import override_environ
+from lp.services.webapp import canonical_url
+from lp.services.webapp.adapter import (
+    print_queries,
+    start_sql_logging,
+    stop_sql_logging,
+    )
+from lp.services.webapp.authorization import (
+    clear_cache as clear_permission_cache,
+    )
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.servers import (
+    LaunchpadTestRequest,
+    StepsToGo,
+    WebServiceTestRequest,
+    )
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -183,6 +196,44 @@ test_tales
 with_anonymous_login
 with_celebrity_logged_in
 with_person_logged_in
+
+
+def reset_logging():
+    """Reset the logging system back to defaults
+
+    Currently, defaults means 'the way the Z3 testrunner sets it up'
+    plus customizations made in lp_sitecustomize
+    """
+    # Remove all handlers from non-root loggers, and remove the loggers too.
+    loggerDict = logging.Logger.manager.loggerDict
+    for name, logger in list(loggerDict.items()):
+        if name == 'pagetests-access':
+            # Don't reset the hit logger used by the test infrastructure.
+            continue
+        if not isinstance(logger, logging.PlaceHolder):
+            for handler in list(logger.handlers):
+                logger.removeHandler(handler)
+        del loggerDict[name]
+
+    # Remove all handlers from the root logger
+    root = logging.getLogger('')
+    for handler in root.handlers:
+        root.removeHandler(handler)
+
+    # Set the root logger's log level back to the default level: WARNING.
+    root.setLevel(logging.WARNING)
+
+    # Clean out the guts of the logging module. We don't want handlers that
+    # have already been closed hanging around for the atexit handler to barf
+    # on, for example.
+    del logging._handlerList[:]
+    logging._handlers.clear()
+
+    # Reset the setup
+    from zope.testing.testrunner.runner import Runner
+    from zope.testing.testrunner.logsupport import Logging
+    Logging(Runner()).global_setup()
+    lp_sitecustomize.customize_logger()
 
 
 class FakeTime:
@@ -271,7 +322,7 @@ class StormStatementRecorder:
     of every SQL query, or a callable that takes the SQL query string and
     returns a boolean decision as to whether a traceback is desired.
     """
-    # Note that tests for this are in canonical.launchpad.webapp.tests.
+    # Note that tests for this are in lp.services.webapp.tests.
     # test_statementtracer, because this is really just a small wrapper of
     # the functionality found there.
 
@@ -511,10 +562,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
-        list1 = sorted(iter1)
-        list2 = sorted(iter2)
-        self.assertEqual(
-            list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
+        self.assertThat(iter1, MatchesSetwise(*(map(Equals, iter2))))
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -585,7 +633,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         super(TestCase, self).setUp()
         # Circular imports.
         from lp.testing.factory import ObjectFactory
-        from canonical.testing.layers import LibrarianLayer
+        from lp.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         # You can call self.oops_capture.sync() to collect oopses from
@@ -656,7 +704,7 @@ class TestCaseWithFactory(TestCase):
         self._use_bzr_branch_called = False
         # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
         # messing with global log state (see
-        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # lp.services.scripts.logger), trace._bzr_logger does not
         # necessarily equal logging.getLogger('bzr'), so we have to explicitly
         # make it so in order to avoid "No handlers for "bzr" logger'
         # messages.
@@ -670,7 +718,7 @@ class TestCaseWithFactory(TestCase):
             because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
-        from canonical.launchpad.testing.pages import setupBrowserForUser
+        from lp.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson(password=password)
@@ -799,7 +847,7 @@ class BrowserTestCase(TestCaseWithFactory):
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
-            from canonical.launchpad.testing.pages import setupBrowser
+            from lp.testing.pages import setupBrowser
             browser = setupBrowser()
             browser.open(url)
             return browser
@@ -809,7 +857,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainContent(self, context, view_name=None, rootsite=None,
                        no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
-        from canonical.launchpad.testing.pages import find_main_content
+        from lp.testing.pages import find_main_content
         browser = self.getViewBrowser(
             context, view_name, rootsite=rootsite, no_login=no_login,
             user=user)
@@ -818,7 +866,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def getMainText(self, context, view_name=None, rootsite=None,
                     no_login=False, user=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import extract_text
+        from lp.testing.pages import extract_text
         return extract_text(
             self.getMainContent(context, view_name, rootsite, no_login, user))
 
@@ -831,7 +879,7 @@ class WebServiceTestCase(TestCaseWithFactory):
         # XXX wgrant 2011-03-09 bug=505913:
         # TestTwistedJobRunner.test_timeout fails if this is at the
         # module level. There is probably some hidden circular import.
-        from canonical.testing.layers import AppServerLayer
+        from lp.testing.layers import AppServerLayer
         return AppServerLayer
 
     def setUp(self):
@@ -1429,3 +1477,47 @@ class FakeLaunchpadRequest(FakeRequest):
     def stepstogo(self):
         """See `IBasicLaunchpadRequest`."""
         return StepsToGo(self)
+
+
+class FakeAdapterMixin:
+    """A testcase mixin that helps register/unregister Zope adapters.
+
+    These helper methods simplify the task to registering Zope adapters
+    during the setup of a test and they will be unregistered when the
+    test completes.
+    """
+    def registerAdapter(self, adapter_class, for_interfaces,
+                        provided_interface, name=None):
+        """Register an adapter from the required interfacs to the provided.
+
+        eg. registerAdapter(
+                TestOtherThing, (IThing, ILayer), IOther, name='fnord')
+        """
+        getSiteManager().registerAdapter(
+            adapter_class, for_interfaces, provided_interface, name=name)
+        self.addCleanup(
+            getSiteManager().unregisterAdapter, adapter_class,
+            for_interfaces, provided_interface, name=name)
+
+    def registerAuthorizationAdapter(self, authorization_class,
+                                     for_interface, permission_name):
+        """Register a security checker to test authorisation.
+
+        eg. registerAuthorizationAdapter(
+                TestChecker, IPerson, 'launchpad.View')
+        """
+        self.registerAdapter(
+            authorization_class, (for_interface, ), IAuthorization,
+            name=permission_name)
+
+    def registerBrowserViewAdapter(self, view_class, for_interface, name):
+        """Register a security checker to test authorization.
+
+        eg registerBrowserViewAdapter(TestView, IPerson, '+test-view')
+        """
+        self.registerAdapter(
+            view_class, (for_interface, IBrowserRequest), Interface,
+            name=name)
+
+    def getAdapter(self, for_interfaces, provided_interface, name=None):
+        return getMultiAdapter(for_interfaces, provided_interface, name=name)

@@ -4,11 +4,11 @@
   define-macro="master"
   tal:define="
     revno modules/lp.app.versioninfo/revno | string:unknown;
-    devmode modules/canonical.config/config/devmode;
-    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    is_demo modules/canonical.config/config/launchpad/is_demo;
-    is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
-    site_message modules/canonical.config/config/launchpad/site_message;
+    devmode modules/lp.services.config/config/devmode;
+    rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+    is_demo modules/lp.services.config/config/launchpad/is_demo;
+    is_lpnet modules/lp.services.config/config/launchpad/is_lpnet;
+    site_message modules/lp.services.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     features request/features;
     feature_scopes request/features/scopes;
@@ -55,13 +55,17 @@
     </tal:comment>
     <noscript></noscript>
 
-    <meta name="description"
-      tal:condition="view/page_description | nothing"
-      tal:attributes="content view/page_description/fmt:strip-email/fmt:shorten/500" />
+    <tal:view condition="not: view/macro:is-page-contentless">
+      <meta name="description"
+        tal:condition="view/page_description | nothing"
+        tal:attributes="content view/page_description/fmt:strip-email/fmt:shorten/500" />
+    </tal:view>
 
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
-    <metal:block define-slot="head_epilogue"></metal:block>
+    <tal:view condition="not: view/macro:is-page-contentless">
+      <metal:block define-slot="head_epilogue"></metal:block>
+    </tal:view>
   </head>
 
   <body id="document"
@@ -117,7 +121,8 @@
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
-              <div id="registration" class="registering">
+              <div id="registration" class="registering"
+                tal:condition="not: view/macro:is-page-contentless">
                 <metal:registering define-slot="registering" />
               </div>
             </div>
@@ -132,14 +137,22 @@
                   use-macro="context/@@+base-layout-macros/notifications"/>
               </tal:notifications>
             </div>
-            <metal:main define-slot="main" />
+
+            <tal:view condition="not: view/macro:is-page-contentless">
+              <metal:main define-slot="main" />
+            </tal:view>
+            <tal:limitedview condition="view/macro:is-page-contentless">
+              The information in this page is not shared with you.
+            </tal:limitedview>
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <div id="side-portlets" class="yui-b side"
-          tal:condition="view/macro:pagehas/portlets">
-          <metal:portlets define-slot="side" />
-        </div><!-- yui-b side -->
+        <tal:view condition="not: view/macro:is-page-contentless">
+          <div id="side-portlets" class="yui-b side"
+            tal:condition="view/macro:pagehas/portlets">
+            <metal:portlets define-slot="side" />
+          </div><!-- yui-b side -->
+        </tal:view>
       </div><!-- yui-t4 -->
 
       <metal:footer
@@ -169,7 +182,7 @@
 
 <tal:template>
   <tal:comment
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests;"
+    define="log modules/lp.services.webapp.adapter/summarize_requests;"
     replace="structure string:&lt;!--
     Facet name: ${view/menu:selectedfacetname}
     Page type: ${view/macro:pagetype}
@@ -187,12 +200,12 @@
 </tal:template>
 
 
-<metal:debug-timeline 
+<metal:debug-timeline
   use-macro="context/@@+base-layout-macros/debug-timeline" />
 
 <tal:comment
     tal:condition="request/features/visible_render_time"
-    define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
+    define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
   start_ajax_logging();
   var render_time = "${render_time}";

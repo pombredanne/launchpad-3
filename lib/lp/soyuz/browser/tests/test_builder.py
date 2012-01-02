@@ -9,17 +9,17 @@ from testtools.matchers import LessThan
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.services.webapp import canonical_url
 from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
 from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.publication import test_traverse

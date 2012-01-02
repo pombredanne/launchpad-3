@@ -187,7 +187,7 @@ This widget is registered as an input widget:
 
   >>> from zope.app.form.interfaces import IInputWidget
   >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
   >>> class URIFieldTest(object):
   ...     implements(IURIFieldTest)

@@ -12,27 +12,27 @@ __all__ = [
     ]
 
 import logging
-from zope.component import getUtility
 
 from storm.locals import (
     And,
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.model.pofile import POFile
 

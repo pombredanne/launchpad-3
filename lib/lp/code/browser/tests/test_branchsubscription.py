@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):

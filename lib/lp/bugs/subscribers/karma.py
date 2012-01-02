@@ -3,10 +3,10 @@
 
 """Assign karma for bugs domain activity."""
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.subscribers.bug import get_bug_delta
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 
 
 @block_implicit_flushes

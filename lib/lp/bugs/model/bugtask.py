@@ -71,41 +71,10 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    block_implicit_flushes,
-    convert_storm_clause_to_string,
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    not_equals,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -162,9 +131,41 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.propertycache import get_property_cache
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    block_implicit_flushes,
+    convert_storm_clause_to_string,
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.blueprints.model.specification import Specification
 
 
 debbugsseveritymap = {
@@ -679,6 +680,17 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
+
+        # When a task is deleted, we also delete it's BugNomination entry
+        # if there is one. Sadly, getNominationFor() can return None or
+        # raise NotFoundError so we need to check for both.
+        try:
+            nomination = bug.getNominationFor(target)
+            if nomination is not None:
+                nomination.destroySelf()
+        except NotFoundError:
+            # We don't care if there isn't a nomination
+            pass
 
         # When a task is deleted the bug's heat needs to be recalculated.
         target.recalculateBugHeatCache()
@@ -1451,9 +1463,9 @@ def search_value_to_where_condition(search_value):
         return "IS NULL"
 
 
-def get_bug_privacy_filter(user):
+def get_bug_privacy_filter(user, private_only=False):
     """An SQL filter for search results that adds privacy-awareness."""
-    return get_bug_privacy_filter_with_decorator(user)[0]
+    return get_bug_privacy_filter_with_decorator(user, private_only)[0]
 
 
 def _nocache_bug_decorator(obj):
@@ -1477,17 +1489,26 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def get_bug_privacy_filter_with_decorator(user):
+def get_bug_privacy_filter_with_decorator(user, private_only=False):
     """Return a SQL filter to limit returned bug tasks.
 
+    :param user: The user whose visible bugs will be filtered.
+    :param private_only: If a user is specified, this parameter determines
+        whether only private bugs will be filtered. If True, the returned
+        filter omits the "Bug.private IS FALSE" clause.
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
     if user is None:
-        return "Bug.private = FALSE", _nocache_bug_decorator
+        return "Bug.private IS FALSE", _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
+
+    public_bug_filter = ''
+    if not private_only:
+        public_bug_filter = 'Bug.private IS FALSE OR'
+
     # A subselect is used here because joining through
     # TeamParticipation is only relevant to the "user-aware"
     # part of the WHERE condition (i.e. the bit below.) The
@@ -1499,28 +1520,28 @@ def get_bug_privacy_filter_with_decorator(user):
         if features.getFeatureFlag(
             'disclosure.private_bug_visibility_rules.enabled'):
             pillar_privacy_filters = """
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, Product
                 WHERE Product.owner IN (SELECT team FROM teams) AND
                     BugTask.product = Product.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, ProductSeries
                 WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
                     BugTask.productseries = ProductSeries.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, Distribution
                 WHERE Distribution.owner IN (SELECT team FROM teams) AND
                     BugTask.distribution = Distribution.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, DistroSeries, Distribution
                 WHERE Distribution.owner IN (SELECT team FROM teams) AND
@@ -1530,7 +1551,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     Bug.security_related IS False
             """
         query = """
-            (Bug.private = FALSE OR EXISTS (
+            (%(public_bug_filter)s EXISTS (
                 WITH teams AS (
                     SELECT team from TeamParticipation
                     WHERE person = %(personid)s
@@ -1539,7 +1560,7 @@ def get_bug_privacy_filter_with_decorator(user):
                 FROM BugSubscription
                 WHERE BugSubscription.person IN (SELECT team FROM teams) AND
                     BugSubscription.bug = Bug.id
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask
                 WHERE BugTask.assignee IN (SELECT team FROM teams) AND
@@ -1548,12 +1569,13 @@ def get_bug_privacy_filter_with_decorator(user):
                     ))
             """ % dict(
                     personid=quote(user.id),
+                    public_bug_filter=public_bug_filter,
                     extra_filters=pillar_privacy_filters)
     else:
         if features.getFeatureFlag(
             'disclosure.private_bug_visibility_rules.enabled'):
             pillar_privacy_filters = """
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, Product
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1561,7 +1583,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.product = Product.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, ProductSeries
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1569,7 +1591,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.productseries = ProductSeries.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, Distribution
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1577,7 +1599,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.distribution = Distribution.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, DistroSeries, Distribution
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1588,13 +1610,13 @@ def get_bug_privacy_filter_with_decorator(user):
                     Bug.security_related IS False
             """ % sqlvalues(personid=user.id)
         query = """
-            (Bug.private = FALSE OR EXISTS (
+            (%(public_bug_filter)s EXISTS (
                 SELECT BugSubscription.bug
                 FROM BugSubscription, TeamParticipation
                 WHERE TeamParticipation.person = %(personid)s AND
                     TeamParticipation.team = BugSubscription.person AND
                     BugSubscription.bug = Bug.id
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1604,6 +1626,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     ))
             """ % dict(
                     personid=quote(user.id),
+                    public_bug_filter=public_bug_filter,
                     extra_filters=pillar_privacy_filters)
     return query, _make_cache_user_can_view_bug(user)
 
@@ -2018,7 +2041,7 @@ class BugTaskSet:
         #
         # XXX: kiko 2006-03-16:
         # Is this a good candidate for becoming infrastructure in
-        # canonical.database.sqlbase?
+        # lp.services.database.sqlbase?
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
@@ -2920,7 +2943,7 @@ class BugTaskSet:
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
         if user is None:
-            bug_privacy_filter = 'AND Bug.private = FALSE'
+            bug_privacy_filter = 'AND Bug.private IS FALSE'
         else:
             # Since the count won't reveal sensitive information, and
             # since the get_bug_privacy_filter() check for non-admins is
@@ -3206,95 +3229,93 @@ class BugTaskSet:
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
 
-    def getOrderByColumnDBName(self, col_name):
-        """See `IBugTaskSet`."""
-        if BugTaskSet._ORDERBY_COLUMN is None:
-            # Avoid circular imports.
-            from lp.bugs.model.bug import (
-                Bug,
-                BugTag,
-                )
-            from lp.registry.model.milestone import Milestone
-            from lp.registry.model.person import Person
-            Assignee = ClassAlias(Person)
-            Reporter = ClassAlias(Person)
-            BugTaskSet._ORDERBY_COLUMN = {
-                "task": (BugTask.id, []),
-                "id": (BugTask.bugID, []),
-                "importance": (BugTask.importance, []),
-                # TODO: sort by their name?
-                "assignee": (
-                    Assignee.name,
-                    [
-                        (Assignee,
-                         LeftJoin(Assignee, BugTask.assignee == Assignee.id))
-                        ]),
-                "targetname": (BugTask.targetnamecache, []),
-                "status": (BugTask._status, []),
-                "title": (Bug.title, []),
-                "milestone": (BugTask.milestoneID, []),
-                "dateassigned": (BugTask.date_assigned, []),
-                "datecreated": (BugTask.datecreated, []),
-                "date_last_updated": (Bug.date_last_updated, []),
-                "date_closed": (BugTask.date_closed, []),
-                "number_of_duplicates": (Bug.number_of_duplicates, []),
-                "message_count": (Bug.message_count, []),
-                "users_affected_count": (Bug.users_affected_count, []),
-                "heat": (BugTask.heat, []),
-                "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
-                "milestone_name": (
-                    Milestone.name,
-                    [
-                        (Milestone,
-                         LeftJoin(Milestone,
-                                  BugTask.milestone == Milestone.id))
-                        ]),
-                "reporter": (
-                    Reporter.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Reporter, Join(Reporter, Bug.owner == Reporter.id))
-                        ]),
-                "tag": (
-                    BugTag.tag,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (BugTag,
-                         LeftJoin(
-                             BugTag,
-                             BugTag.bug == Bug.id and
-                             # We want at most one tag per bug. Select the
-                             # tag that comes first in alphabetic order.
-                             BugTag.id == SQL("""
-                                 SELECT id FROM BugTag AS bt
-                                 WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                "specification": (
-                    Specification.name,
-                    [
-                        (Bug, Join(Bug, BugTask.bug == Bug.id)),
-                        (Specification,
-                         LeftJoin(
-                             Specification,
-                             # We want at most one specification per bug.
-                             # Select the specification that comes first
-                             # in alphabetic order.
-                             Specification.id == SQL("""
-                                 SELECT Specification.id
-                                 FROM SpecificationBug
-                                 JOIN Specification
-                                     ON SpecificationBug.specification=
-                                         Specification.id
-                                 WHERE SpecificationBug.bug=Bug.id
-                                 ORDER BY Specification.name
-                                 LIMIT 1
-                                 """))),
-                        ]
-                    ),
-                }
-        return BugTaskSet._ORDERBY_COLUMN[col_name]
+    @cachedproperty
+    def orderby_expression(self):
+        # Avoid circular imports.
+        from lp.bugs.model.bug import (
+            Bug,
+            BugTag,
+            )
+        from lp.registry.model.milestone import Milestone
+        from lp.registry.model.person import Person
+        Assignee = ClassAlias(Person)
+        Reporter = ClassAlias(Person)
+        return {
+            "task": (BugTask.id, []),
+            "id": (BugTask.bugID, []),
+            "importance": (BugTask.importance, []),
+            # TODO: sort by their name?
+            "assignee": (
+                Assignee.name,
+                [
+                    (Assignee,
+                     LeftJoin(Assignee, BugTask.assignee == Assignee.id))
+                    ]),
+            "targetname": (BugTask.targetnamecache, []),
+            "status": (BugTask._status, []),
+            "title": (Bug.title, []),
+            "milestone": (BugTask.milestoneID, []),
+            "dateassigned": (BugTask.date_assigned, []),
+            "datecreated": (BugTask.datecreated, []),
+            "date_last_updated": (Bug.date_last_updated, []),
+            "date_closed": (BugTask.date_closed, []),
+            "number_of_duplicates": (Bug.number_of_duplicates, []),
+            "message_count": (Bug.message_count, []),
+            "users_affected_count": (Bug.users_affected_count, []),
+            "heat": (BugTask.heat, []),
+            "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+            "milestone_name": (
+                Milestone.name,
+                [
+                    (Milestone,
+                     LeftJoin(Milestone,
+                              BugTask.milestone == Milestone.id))
+                    ]),
+            "reporter": (
+                Reporter.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Reporter, Join(Reporter, Bug.owner == Reporter.id))
+                    ]),
+            "tag": (
+                BugTag.tag,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (BugTag,
+                     LeftJoin(
+                         BugTag,
+                         BugTag.bug == Bug.id and
+                         # We want at most one tag per bug. Select the
+                         # tag that comes first in alphabetic order.
+                         BugTag.id == SQL("""
+                             SELECT id FROM BugTag AS bt
+                             WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                             """))),
+                    ]
+                ),
+            "specification": (
+                Specification.name,
+                [
+                    (Bug, Join(Bug, BugTask.bug == Bug.id)),
+                    (Specification,
+                     LeftJoin(
+                         Specification,
+                         # We want at most one specification per bug.
+                         # Select the specification that comes first
+                         # in alphabetic order.
+                         Specification.id == SQL("""
+                             SELECT Specification.id
+                             FROM SpecificationBug
+                             JOIN Specification
+                                 ON SpecificationBug.specification=
+                                     Specification.id
+                             WHERE SpecificationBug.bug=Bug.id
+                             ORDER BY Specification.name
+                             LIMIT 1
+                             """))),
+                    ]
+                ),
+            }
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
@@ -3362,11 +3383,11 @@ class BugTaskSet:
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col[1:])
+                col, sort_joins = self.orderby_expression[orderby_col[1:]]
                 extra_joins.extend(sort_joins)
                 order_clause = Desc(col)
             else:
-                col, sort_joins = self.getOrderByColumnDBName(orderby_col)
+                col, sort_joins = self.orderby_expression[orderby_col]
                 extra_joins.extend(sort_joins)
                 order_clause = col
             if col in unambiguous_cols:

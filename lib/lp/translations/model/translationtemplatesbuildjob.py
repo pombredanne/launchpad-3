@@ -19,11 +19,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -40,7 +35,12 @@ from lp.code.model.branchjob import (
     BranchJobDerived,
     BranchJobType,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )

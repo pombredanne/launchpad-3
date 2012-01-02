@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = ['TranslatableMessageView']
 
-from canonical.launchpad.webapp import LaunchpadView
+from lp.services.webapp import LaunchpadView
 from lp.translations.browser.browser_helpers import text_to_html
 
 

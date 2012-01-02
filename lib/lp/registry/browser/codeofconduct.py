@@ -25,15 +25,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -45,6 +36,15 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConduct,
     ISignedCodeOfConductSet,
     )
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):

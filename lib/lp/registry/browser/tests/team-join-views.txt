@@ -9,7 +9,7 @@ Tests for the team '+join' page's raw view objects.
 
     # Set up a harness to make form submission testing easier.
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> def join_team(team):
     ...     form = {'field.actions.join': '1', 'field.mailinglist_subscribe': u'on'}
     ...     request = LaunchpadTestRequest(method='POST', form=form)

@@ -26,7 +26,10 @@
 import os
 import sys
 
-from bzrlib.commands import run_bzr, Command
+from bzrlib.commands import (
+    Command,
+    run_bzr,
+    )
 
 
 class CommandRegistry(object):

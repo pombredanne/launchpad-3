@@ -25,22 +25,18 @@ import tempfile
 import transaction
 from zope.component import getUtility
 
-# Until we completely kill canonical.launchpad.database.__init__.py and remove
-# all of the import *'s we need to import it first here.
-import canonical.launchpad.database
-
 from lp.code.enums import BranchType
 from lp.code.model.branch import Branch
 from lp.codehosting.tests.helpers import make_bazaar_branch_and_tree
-from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.config import config
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.scripts import execute_zcml_for_scripts
 
 
 def main(argv):
     os.environ['BZR_HOME'] = tempfile.mkdtemp()
-    if os.path.exists(config.codehosting.hosted_branches_root):
-        shutil.rmtree(config.codehosting.hosted_branches_root)
+    if os.path.exists(config.codehosting.mirrored_branches_root):
+        shutil.rmtree(config.codehosting.mirrored_branches_root)
     execute_zcml_for_scripts()
     try:
         branches = Branch.select(

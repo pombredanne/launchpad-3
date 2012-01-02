@@ -19,7 +19,10 @@
 __metatype__ = type
 
 import datetime
-from email import MIMEMultipart, MIMEText
+from email import (
+    MIMEMultipart,
+    MIMEText,
+    )
 from email.mime.application import MIMEApplication
 import errno
 import gzip

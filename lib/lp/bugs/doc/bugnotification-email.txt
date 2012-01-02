@@ -13,7 +13,7 @@ Launchpad development wiki:
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("test@canonical.com")
 
 To avoid having one gargantuan super function that formats any kind of
@@ -29,7 +29,7 @@ sent. We'll start by importing some things we'll need for the examples
 that follow:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from lp.bugs.adapters.bugdelta import BugDelta
     >>> from lp.bugs.interfaces.bug import (
@@ -315,7 +315,7 @@ representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtask import (
     ...        BugTaskStatus,
     ...        IBugTaskDelta,

@@ -3,9 +3,9 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.browser.browser_helpers import text_to_html
 from lp.translations.browser.translatablemessage import (
     TranslatableMessageView,

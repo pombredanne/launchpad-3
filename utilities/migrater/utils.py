@@ -13,8 +13,8 @@ __all__ = [
     ]
 
 
-import sys
 import subprocess
+import sys
 
 
 SPACE = ' '

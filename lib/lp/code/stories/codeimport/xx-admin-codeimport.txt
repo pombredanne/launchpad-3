@@ -12,7 +12,7 @@ to edit the details.
 
     >>> svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk')
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> svn_import_location = str(canonical_url(svn_import.branch))
     >>> svn_import_branch_unique_name = svn_import.branch.unique_name
 
@@ -247,7 +247,7 @@ says how long ago since it started.
 Now set the job as running.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     get_import_for_branch_name, make_running_import)
     >>> code_import = get_import_for_branch_name(
     ...     svn_import_branch_unique_name)
@@ -283,7 +283,7 @@ will be run -- which is, by default for Subversion, six hours after the
 last import completed, and so in this case in about three hours.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_finished_import)
     >>> date_finished = datetime(2007,9,10,12, tzinfo=pytz.UTC)
     >>> code_import = get_import_for_branch_name(

@@ -7,18 +7,17 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.delegates import delegates
+from storm.store import Store
 from zope.interface import implements
 
-from storm.store import Store
-
-from lazr.delegates import delegates
-
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BugUpdateHeat(TestCaseWithFactory):

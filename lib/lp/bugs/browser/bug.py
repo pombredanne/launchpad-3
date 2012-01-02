@@ -59,31 +59,7 @@ from zope.interface import (
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.searchbuilder import (
-    any,
-    greater_than,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -120,7 +96,31 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.services import features
 from lp.services.fields import DuplicateBug
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
+from lp.services.searchbuilder import (
+    any,
+    greater_than,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
 
 
 class BugNavigation(Navigation):
@@ -968,7 +968,9 @@ class BugTextView(LaunchpadView):
 
     def initialize(self):
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any assignees and subscribers.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = []
         for task in self.bugtasks:
             if task.assignee is not None:
