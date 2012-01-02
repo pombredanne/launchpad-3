@@ -60,7 +60,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache,
     )
 from lp.soyuz.browser.build import (
     BuildNavigationMixin,
@@ -153,17 +152,11 @@ class BuilderSetView(LaunchpadView):
     def builders(self):
         """All active builders"""
         def do_eager_load(builders):
-            # Populate builders' currentjob cachedproperty.
+            # Prefetch the jobs' data.
             queues = IStore(BuildQueue).find(
                 BuildQueue,
                 BuildQueue.builderID.is_in(
                     builder.id for builder in builders))
-            queue_builders = dict(
-                (queue.builderID, queue) for queue in queues)
-            for builder in builders:
-                cache = get_property_cache(builder)
-                cache.currentjob = queue_builders.get(builder.id, None)
-            # Prefetch the jobs' data.
             BuildQueue.preloadSpecificJobData(queues)
 
         return list(DecoratedResultSet(

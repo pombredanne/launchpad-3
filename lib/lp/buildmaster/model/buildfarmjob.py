@@ -100,6 +100,10 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
+    def getByJobs(self, job):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
         pass
