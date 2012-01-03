@@ -73,12 +73,10 @@ accessible for the owner.
     True
     >>> login('no-priv@canonical.com')
 
-An account has a displayname, and a preferred email address.
+An account has a displayname.
 
     >>> print account.displayname
     No Privileges Person
-    >>> print account.preferredemail.email
-    no-priv@canonical.com
 
 Account objects have a useful string representation.
 
@@ -166,8 +164,6 @@ rationale and displayname are required.
     Passwordless
     >>> print passwordless_account.password
     None
-    >>> print passwordless_account.preferredemail
-    None
 
 The new() method accepts the optional parameters of password and
 password_is_encrypted. If password_is_encrypted is False, the default,
@@ -189,39 +185,3 @@ encrypted, by setting password_is_encrypted to True.
     >>> Store.of(clear_account).flush()
     >>> print clear_account.password
     clear_password
-
-
-Valid Accounts
---------------
-
-Like person objects, an account is considered valid if it is in the
-active state and has a preferred email address.  So a newly created
-account with no email address is not valid.
-
-    >>> account = account_set.new(
-    ...     AccountCreationRationale.USER_CREATED,
-    ...     "Valid Account Test")
-    >>> account.status = AccountStatus.ACTIVE
-    >>> account.is_valid
-    False
-
-Let's add a new email address to the account.
-
-    >>> email = getUtility(IEmailAddressSet).new(
-    ...     "valid-account-test@example.com", account=account)
-    >>> account.is_valid
-    False
-
-The account is still not valid because it has no preferred email.
-Setting the email to preferred fixes this.
-
-    >>> from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-    >>> email.status = EmailAddressStatus.PREFERRED
-    >>> account.is_valid
-    True
-
-If the account is deactivated, it won't be considered valid any more:
-
-    >>> account.status = AccountStatus.DEACTIVATED
-    >>> account.is_valid
-    False

@@ -68,7 +68,7 @@ class PlacelessAuthUtility:
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None and principal.account.is_valid:
+            if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
                 if principal.validate(password):
                     # We send a LoggedInEvent here, when the
@@ -107,7 +107,7 @@ class PlacelessAuthUtility:
             # available in login source. This happens when account has
             # become invalid for some reason, such as being merged.
             return None
-        elif principal.account.is_valid:
+        elif principal.person.is_valid_person:
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
             notify(CookieAuthPrincipalIdentifiedEvent(

@@ -61,15 +61,6 @@ class Account(SQLBase):
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.status)
 
-    @property
-    def preferredemail(self):
-        """See `IAccount`."""
-        from lp.registry.interfaces.person import IPerson
-        person = IPerson(self, None)
-        if person is None:
-            return None
-        return person.preferredemail
-
     def reactivate(self, comment, password):
         """See `IAccountSpecialRestricted`."""
         self.status = AccountStatus.ACTIVE
@@ -111,13 +102,6 @@ class Account(SQLBase):
             assert False, "This should not be reachable."
 
     password = property(_get_password, _set_password)
-
-    @property
-    def is_valid(self):
-        """See `IAccount`."""
-        if self.status != AccountStatus.ACTIVE:
-            return False
-        return self.preferredemail is not None
 
 
 class AccountSet:
