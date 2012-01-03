@@ -65,7 +65,10 @@ class Account(SQLBase):
     def preferredemail(self):
         """See `IAccount`."""
         from lp.registry.interfaces.person import IPerson
-        return IPerson(self).preferredemail
+        person = IPerson(self, None)
+        if person is None:
+            return None
+        return person.preferredemail
 
     def reactivate(self, comment, password):
         """See `IAccountSpecialRestricted`."""
