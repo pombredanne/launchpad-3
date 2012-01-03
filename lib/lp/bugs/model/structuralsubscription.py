@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from operator import itemgetter
 
 import pytz
 from storm.base import Storm
@@ -84,7 +83,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import cachedproperty
@@ -644,17 +642,15 @@ def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     bug, bugtasks = resolve_bug_and_bugtasks(bug_or_bugtask)
-    # Pre-load bug subscription filters.
     subscriptions = query_structural_subscriptions(
-        (StructuralSubscription, BugSubscriptionFilter),
-        bug, bugtasks, level, exclude)
+        StructuralSubscription, bug, bugtasks, level, exclude)
     from lp.registry.model.person import Person  # Circular.
     # Return only the first subscription and filter per subscriber.
     subscriptions.config(distinct=(Person.id,))
     subscriptions.order_by(
         Person.id, StructuralSubscription.id,
         BugSubscriptionFilter.id)
-    return DecoratedResultSet(subscriptions, itemgetter(0))
+    return subscriptions
 
 
 def get_structural_subscribers(
