@@ -1369,7 +1369,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         # It is correctly linked to an account, emailaddress and
         # identifier.
         self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
 
