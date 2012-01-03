@@ -17,16 +17,14 @@ from Mailman import (
     Message,
     mm_cfg,
     )
-from Mailman.Queue import XMLRPCRunner
 from Mailman.Logging.Syslog import syslog
+from Mailman.Queue import XMLRPCRunner
 from Mailman.Queue.sbcache import get_switchboard
-
 from zope.security.proxy import removeSecurityProxy
-
-from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.tests.mailinglists_helper import MailingListXMLRPCTestProxy
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 def get_mailing_list_api_test_proxy():

@@ -22,22 +22,22 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.librarian.interfaces import (
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.translations.enums import LanguagePackType
 from lp.translations.interfaces.languagepack import ILanguagePackSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.vpoexport import IVPOExportSet
-from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 
 def iter_sourcepackage_translationdomain_mapping(series):

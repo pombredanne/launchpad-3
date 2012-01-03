@@ -24,6 +24,8 @@ __all__ = [
     ]
 
 import httplib
+
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -36,14 +38,12 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.restful.declarations import error_status
-
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import (
+from lp import _
+from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )
-from lp.registry.interfaces.person import IPerson
 
 # The challenge included in responses with a 401 status.
 OAUTH_REALM = 'https://api.launchpad.net'

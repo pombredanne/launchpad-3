@@ -12,7 +12,9 @@ __metaclass__ = type
 
 import sys
 import time
+
 import psycopg2
+
 
 def main():
     if len(sys.argv) != 3:

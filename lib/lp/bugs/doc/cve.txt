@@ -19,7 +19,7 @@ The ICveSet utility is used to create and get CVEs and BugCves.
 
 CVE references can be created with the ICveSet utility.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("test@canonical.com")
 
     >>> from zope.component import getUtility
@@ -119,7 +119,7 @@ ICveSet.getBugCvesForBugTasks:
 This method is used in the CVEReportView:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> cve_report = getMultiAdapter((ubuntu, request), name="+cve")
     >>> cve_report.initialize()

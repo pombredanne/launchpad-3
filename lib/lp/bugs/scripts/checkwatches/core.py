@@ -37,8 +37,6 @@ from twisted.internet.threads import deferToThreadPool
 from twisted.python.threadpool import ThreadPool
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.scripts.logger import log as default_log
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
@@ -64,7 +62,9 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.database.bulk import reload
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.logger import log as default_log
 
 # The login of the user to run as.
 LOGIN = 'bugwatch@bugs.launchpad.net'

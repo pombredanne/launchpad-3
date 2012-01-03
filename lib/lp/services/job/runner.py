@@ -52,12 +52,11 @@ from twisted.python import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
+from lp.services import scripts
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.launchpad import scripts
-from canonical.launchpad.webapp import errorlog
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
@@ -70,6 +69,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
+from lp.services.webapp import errorlog
 
 
 class BaseRunnableJobSource:
@@ -101,12 +101,20 @@ class BaseRunnableJob(BaseRunnableJobSource):
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
+        naked_job = removeSecurityProxy(job)
         return (
-            self.__class__ is removeSecurityProxy(job.__class__)
-            and self.job == job.job)
+            self.__class__ is naked_job.__class__ and
+            self.__dict__ == naked_job.__dict__)
 
     def __ne__(self, job):
         return not (self == job)
+
+    def __lt__(self, job):
+        naked_job = removeSecurityProxy(job)
+        if self.__class__ is naked_job.__class__:
+            return self.__dict__ < naked_job.__dict__
+        else:
+            return NotImplemented
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""

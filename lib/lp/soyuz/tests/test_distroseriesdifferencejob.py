@@ -12,12 +12,6 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -25,8 +19,10 @@ from lp.registry.enum import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.database import bulk
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -46,6 +42,10 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     may_require_job,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_dsd_for(dsp, package):

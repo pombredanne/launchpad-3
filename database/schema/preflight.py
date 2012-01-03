@@ -4,14 +4,13 @@
 
 """Confirm the database systems are ready to be patched as best we can."""
 
-import _pythonpath
-
 __all__ = [
     'DatabasePreflight',
     'KillConnectionsPreflight',
     'NoConnectionCheckPreflight',
     ]
 
+import _pythonpath
 
 from datetime import timedelta
 from optparse import OptionParser
@@ -20,19 +19,18 @@ import time
 
 import psycopg2
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
 import replication.helpers
 import upgrade
-
 
 # Ignore connections by these users.
 SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])

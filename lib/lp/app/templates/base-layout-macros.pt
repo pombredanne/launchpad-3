@@ -37,7 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode;
+      devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
@@ -91,8 +91,8 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;
+      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/lp.services.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
@@ -122,7 +122,7 @@
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
-	    Y.lp.app.links.check_valid_lp_links();
+            Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
             // LP.cache.longpoll is populated.
             // We use Y.later to work around a Safari/Chrome 'feature':
@@ -286,6 +286,32 @@
   </div>
 </metal:site-message>
 
+
+<metal:debug-timeline define-macro="debug-timeline">
+  <a name="debug_timeline"
+    id="debug_timeline"
+    class="hidden"
+    >
+    <table
+      tal:condition="request/features/visible_render_time"
+      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
+      class="debug-timeline listing"
+      >
+      <thead>
+	<th>Duration</th>
+	<th>Action</th>
+      </thead>
+      <tr tal:repeat="action timeline_actions">
+	<td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
+	<td style="font-family: monospace; text-align: left;">
+          <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
+	</td>
+      </tr>
+    </table>
+  </a>
+</metal:debug-timeline>
+
+
 <metal:plural-msg define-macro="plural-message">
   <tal:comment condition="nothing">
     Expected variables to be defined in a containing tag or global:
@@ -302,3 +328,4 @@
     condition="python: count != 1"
     replace="l_plural" /></metal:plural-msg>
 </macros>
+

@@ -10,21 +10,21 @@ import os
 
 import transaction
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
+from lp.registry.tests import mailinglists_helper
+from lp.services.testing import (
+    build_doctest_suite,
+    build_test_suite,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.registry.tests import mailinglists_helper
-from lp.services.testing import (
-    build_doctest_suite,
-    build_test_suite,
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

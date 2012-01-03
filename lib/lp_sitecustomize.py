@@ -19,12 +19,12 @@ from zope.interface import alsoProvides
 import zope.publisher.browser
 from zope.security import checker
 
-from canonical.launchpad.webapp.interfaces import IUnloggedException
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
+from lp.services.webapp.interfaces import IUnloggedException
 
 
 def add_custom_loglevels():

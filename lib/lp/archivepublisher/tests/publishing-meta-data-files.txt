@@ -9,7 +9,7 @@ to browse contents for potential later purchase.
 We can demonstrate this publishing behaviour by creating a
 PackageUploadCustom object for a meta-data upload:
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from cStringIO import StringIO
     >>> from lp.services.log.logger import FakeLogger

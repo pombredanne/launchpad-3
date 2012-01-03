@@ -31,17 +31,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -58,6 +48,16 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.launchpadform import ReturnToReferrerMixin
+from lp.services.webapp.menu import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -556,6 +556,8 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
+            # The security adaptor will do the job also but we don't want or
+            # need the expense of running several complex SQL queries.
             precache_permission_for_objects(
                         self.request, 'launchpad.LimitedView', [person])
             subscriber = {
@@ -583,7 +585,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
         others = list(bug.getIndirectSubscribers())
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any indirect subscribers.
         include_private = self.user is not None
         if include_private:
             precache_permission_for_objects(

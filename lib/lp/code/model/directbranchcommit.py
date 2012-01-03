@@ -19,13 +19,13 @@ from bzrlib.transform import (
     TransformPreview,
     )
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from lp.code.errors import StaleLastMirrored
 from lp.codehosting.bzrutils import (
     get_branch_info,
     get_stacked_on_url,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterObject
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.osutils import override_environ
 

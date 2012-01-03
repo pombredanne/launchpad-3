@@ -13,7 +13,7 @@ message, but again the reportStatus() call fails.  In both these cases,
 Mailman and Launchpad should eventually resynchronize their state
 automatically.
 
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('%s/people/+newteam' % root_url)
@@ -43,7 +43,7 @@ state.
     ...     IMailingListSet,
     ...     MailingListStatus,
     ...     )
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
@@ -71,7 +71,7 @@ does not actually exist in Mailman, then Mailman will create it.
     >>> sorted(list_names())
     ['itest-one', 'unused_mailman_site_list']
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> team_two = person_set.getByName('itest-two')

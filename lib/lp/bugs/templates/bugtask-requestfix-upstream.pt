@@ -44,7 +44,7 @@
         <label tal:content="product_widget/label">Label</label>
 
         <div>
-          <tal:link replace="structure product/fmt:link" />
+          <tal:link replace="structure product/fmt:link_with_displayname" />
           (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another project</a>)
           <input type="hidden" tal:replace="structure product_widget/hidden" />
         </div>

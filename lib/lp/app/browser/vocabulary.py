@@ -29,10 +29,6 @@ from zope.interface import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
@@ -50,6 +46,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.soyuz.interfaces.archive import IArchive
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476

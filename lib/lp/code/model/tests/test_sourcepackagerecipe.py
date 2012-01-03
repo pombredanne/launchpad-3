@@ -21,13 +21,6 @@ from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -59,11 +52,14 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
+from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -79,6 +75,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
     )
 from lp.testing.matchers import DoesNotSnapshot
 

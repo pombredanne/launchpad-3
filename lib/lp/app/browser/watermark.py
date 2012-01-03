@@ -19,13 +19,13 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 from lp.app.interfaces.headings import (
     IEditableContextTitle,
     IMajorHeadingView,
     IRootContext,
     )
+from lp.services.webapp.canonicalurl import nearest_provides_or_adapted
+from lp.services.webapp.publisher import canonical_url
 
 
 class WatermarkTalesAdapter:

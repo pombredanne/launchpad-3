@@ -7,12 +7,12 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from storm.store import EmptyResultSet
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -26,6 +26,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 

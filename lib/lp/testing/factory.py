@@ -64,38 +64,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    OAuthPermission,
-    )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -241,8 +209,29 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.config import config
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    IAccountSet,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -252,7 +241,18 @@ from lp.services.messages.model.message import (
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import AutoDecorate
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    OAuthPermission,
+    )
+from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -4266,7 +4266,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
-        from canonical.testing import BaseLayer
+        from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
             "test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)
@@ -4403,6 +4403,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             grantee, grantor, object)
         IStore(grant).flush()
         return grant
+
+    def makeFakeFileUpload(self, filename=None, content=None):
+        """Return a zope.publisher.browser.FileUpload like object.
+
+        This can be useful while testing multipart form submission.
+        """
+        if filename is None:
+            filename = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        fileupload = StringIO(content)
+        fileupload.filename = filename
+        fileupload.headers = {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%s"' % filename
+            }
+        return fileupload
 
 
 # Some factory methods return simple Python types. We don't add

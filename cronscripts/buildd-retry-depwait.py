@@ -26,6 +26,7 @@ import _pythonpath
 
 from lp.soyuz.scripts.buildd import RetryDepwait
 
+
 if __name__ == '__main__':
     script = RetryDepwait('retry-depwait', dbuser='retry_depwait')
     script.lock_or_quit()

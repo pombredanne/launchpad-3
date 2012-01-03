@@ -13,8 +13,8 @@ from Mailman import (
     )
 from Mailman.Handlers import LaunchpadMember
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLaunchpadMemberTestCase(MailmanTestCase):

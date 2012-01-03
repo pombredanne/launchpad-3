@@ -22,10 +22,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts import log
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
@@ -37,6 +33,9 @@ from lp.answers.interfaces.questionjob import (
     )
 from lp.answers.model.question import Question
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -48,6 +47,7 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 
 
 class QuestionJob(StormBase):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -10,22 +10,14 @@ from datetime import (
 
 import pytz
 from storm.store import Store
-from testtools.deferredruntest import AsynchronousDeferredRunTest
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import webservice_for_person
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
@@ -33,6 +25,8 @@ from lp.buildmaster.tests.test_packagebuild import (
     TestHandleStatusMixin,
     )
 from lp.services.job.model.job import Job
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -54,7 +48,11 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import webservice_for_person
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -524,9 +522,7 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.build = gedit_src_hist.createMissingBuilds()[0]
 
         self.builder = self.factory.makeBuilder()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave',
-            FakeMethod(WaitingSlave('BuildStatus.OK')))
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
         self.build.buildqueue_record.markAsBuilding(self.builder)
 
     def testDependencies(self):
@@ -572,11 +568,8 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 
 
 class TestHandleStatusForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""
-
-    layer = LaunchpadZopelessLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
 
 class TestBinaryPackageBuildWebservice(TestCaseWithFactory):

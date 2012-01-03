@@ -8,11 +8,11 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.testing import reset_logging
 from lp.codehosting.codeimport.tests.helpers import (
     instrument_method,
     InstrumentedMethodObserver,
     )
+from lp.testing import reset_logging
 
 
 class Hose_Logging(unittest.TestCase):

@@ -27,17 +27,12 @@ import gpgme
 from lazr.restful.utils import get_current_browser_request
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.lazr.timeout import (
-    TimeoutError,
-    urlfetch,
-    )
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     valid_fingerprint,
     )
+from lp.services.config import config
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
@@ -54,6 +49,11 @@ from lp.services.gpg.interfaces import (
     SecretGPGKeyImportDetected,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
+from lp.services.webapp import errorlog
 
 
 signing_only_param = """
@@ -209,7 +209,12 @@ class GPGHandler:
                 msg = e.strerror
             else:
                 msg = e.message
-            raise GPGVerificationError(msg)
+            error = GPGVerificationError(msg)
+            for attr in ("args", "code", "signatures", "source"):
+                if hasattr(e, attr):
+                    value = getattr(e, attr)
+                    setattr(error, attr, value)
+            raise error
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.

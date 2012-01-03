@@ -41,8 +41,6 @@ from storm.locals import (
     )
 from zope.component import getUtility
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.errors import (
     NoSuchBranch,
     PrivateBranchRecipe,
@@ -54,6 +52,8 @@ from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,

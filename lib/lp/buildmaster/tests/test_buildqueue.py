@@ -20,15 +20,6 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -43,6 +34,11 @@ from lp.buildmaster.model.buildqueue import (
     get_builder_data,
     )
 from lp.services.job.model.job import Job
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -52,6 +48,10 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_job(test, name, processor='386'):

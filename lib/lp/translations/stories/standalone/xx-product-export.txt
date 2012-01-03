@@ -74,7 +74,7 @@ Only logged-in users get the option to request downloads.
 
 We can't see its placeholder in non-development mode:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.devmode
     True
     >>> config.devmode = False

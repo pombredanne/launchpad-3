@@ -22,12 +22,12 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import (
+from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
