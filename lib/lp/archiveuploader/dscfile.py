@@ -382,7 +382,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field produced by a broken version "
                         "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
-                    apt_pkg.ParseSrcDepends(field)
+                    apt_pkg.parse_src_depends(field)
                 except (SystemExit, KeyboardInterrupt):
                     raise
                 except Exception, error:
