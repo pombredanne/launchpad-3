@@ -95,7 +95,7 @@ STAY_OF_EXECUTION = 1
 
 
 # Ugly, but works
-apt_pkg.InitSystem()
+apt_pkg.init_system()
 
 
 def join_spph_spn():
@@ -190,7 +190,7 @@ class GeneralizedPublication:
         If both publications are for the same version, their creation dates
         break the tie.
         """
-        version_comparison = apt_pkg.VersionCompare(
+        version_comparison = apt_pkg.version_compare(
             self.getPackageVersion(pub1), self.getPackageVersion(pub2))
 
         if version_comparison == 0:

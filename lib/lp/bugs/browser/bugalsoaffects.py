@@ -663,12 +663,13 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         if data.get('add_packaging', False):
             # Create a packaging link so that Launchpad will suggest the
             # upstream project to the user.
-            packaging_util = getUtility(IPackagingUtil)
-            packaging_util.createPackaging(
-                productseries=data['product'].development_focus,
-                sourcepackagename=self.context.target.sourcepackagename,
-                distroseries=self.context.target.distribution.currentseries,
-                packaging=PackagingType.PRIME, owner=self.user)
+            series = self.context.target.distribution.currentseries
+            if series:
+                getUtility(IPackagingUtil).createPackaging(
+                    productseries=data['product'].development_focus,
+                    sourcepackagename=self.context.target.sourcepackagename,
+                    distroseries=series, packaging=PackagingType.PRIME,
+                    owner=self.user)
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
     @property
