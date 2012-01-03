@@ -17,6 +17,9 @@
   <script type="text/javascript" src="../../../app/javascript/anim/anim.js"></script>
   <script type="text/javascript"
           src="../../../app/javascript/extras/extras.js"></script>
+  <script type="text/javascript"
+          src="../branchmergeproposal.reviewcomment.js"></script>
+
 
   <!-- expected variable -->
   <script type="text/javascript">
@@ -38,6 +41,15 @@
   </div>
 
   <script type="text/x-template" id="pending-mp">
+    <table id="proposal-summary">
+      <tr id="summary-row-9-target-branch">
+        <th>Merge into:</th>
+        <td>
+          <a href="/~me/project/branch"
+             class="sprite branch">lp://dev/~me/project/branch</a>
+        </td>
+      </tr>
+    </table>
     <div id="diff-area">
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
