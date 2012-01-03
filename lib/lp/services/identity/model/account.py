@@ -15,16 +15,13 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import ReferenceSet
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
-    IMasterObject,
     IMasterStore,
     IStore,
     )
@@ -37,7 +34,6 @@ from lp.services.identity.interfaces.account import (
     )
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
-    IEmailAddress,
     IEmailAddressSet,
     )
 from lp.services.identity.model.emailaddress import EmailAddress
@@ -82,74 +78,6 @@ class Account(SQLBase):
         """See `IAccount`."""
         from lp.registry.interfaces.person import IPerson
         return IPerson(self).preferredemail
-
-    @property
-    def validated_emails(self):
-        """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.VALIDATED)
-
-    @property
-    def guessed_emails(self):
-        """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.NEW)
-
-    def setPreferredEmail(self, email):
-        """See `IAccount`."""
-        if email is None:
-            # Mark preferred email address as validated, if it exists.
-            # XXX 2009-03-30 jamesh bug=349482: we should be able to
-            # use ResultSet.set() here :(
-            for address in self._getEmails(EmailAddressStatus.PREFERRED):
-                address.status = EmailAddressStatus.VALIDATED
-            return
-
-        if not IEmailAddress.providedBy(email):
-            raise TypeError("Any person's email address must provide the "
-                            "IEmailAddress Interface. %r doesn't." % email)
-
-        email = IMasterObject(removeSecurityProxy(email))
-        assert email.accountID == self.id
-
-        # If we have the preferred email address here, we're done.
-        if email.status == EmailAddressStatus.PREFERRED:
-            return
-
-        existing_preferred_email = self.preferredemail
-        if existing_preferred_email is not None:
-            assert Store.of(email) is Store.of(existing_preferred_email), (
-                "Store of %r is not the same as store of %r" %
-                (email, existing_preferred_email))
-            existing_preferred_email.status = EmailAddressStatus.VALIDATED
-            # Make sure the old preferred email gets flushed before
-            # setting the new preferred email.
-            Store.of(email).add_flush_order(existing_preferred_email, email)
-
-        email.status = EmailAddressStatus.PREFERRED
-
-    def validateAndEnsurePreferredEmail(self, email):
-        """See `IAccount`."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError(
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-
-        assert email.accountID == self.id, 'Wrong account! %r, %r' % (
-            email.accountID, self.id)
-
-        # This email is already validated and is this person's preferred
-        # email, so we have nothing to do.
-        if email.status == EmailAddressStatus.PREFERRED:
-            return
-
-        email = IMasterObject(email)
-
-        if self.preferredemail is None:
-            # This branch will be executed only in the first time a person
-            # uses Launchpad. Either when creating a new account or when
-            # resetting the password of an automatically created one.
-            self.setPreferredEmail(email)
-        else:
-            email.status = EmailAddressStatus.VALIDATED
 
     def reactivate(self, comment, password):
         """See `IAccountSpecialRestricted`."""
