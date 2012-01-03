@@ -61,8 +61,7 @@ from zope.schema import (
     )
 from zope.schema.interfaces import IObject
 
-from canonical.launchpad import _
-from lp.services.webservice.apihelpers import patch_reference_property
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.services.fields import (
@@ -70,6 +69,7 @@ from lp.services.fields import (
     StrippedTextLine,
     URIField,
     )
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'

@@ -73,7 +73,7 @@ output:
 
 Now, generate the RDF itself:
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> anon_browser.open("http://launchpad.dev/~testing-spanish-team/+rdf")
     >>> print backslashreplace(anon_browser.contents)
     <?xml version="1.0"...?>

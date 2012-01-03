@@ -10,15 +10,15 @@ import urlparse
 
 import pkg_resources
 
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     )
-from canonical.launchpad.webapp.servers import (
+from lp.services.webapp.servers import (
     WebServicePublication,
     WebServiceTestRequest,
     )
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.services.webapp.vhosts import allvhosts
 
 
 def _generate_web_service_root(version, mimetype):

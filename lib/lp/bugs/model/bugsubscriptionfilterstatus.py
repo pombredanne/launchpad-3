@@ -11,8 +11,8 @@ from storm.locals import (
     Reference,
     )
 
-from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 

@@ -8,12 +8,12 @@ __metaclass__ = type
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 
 

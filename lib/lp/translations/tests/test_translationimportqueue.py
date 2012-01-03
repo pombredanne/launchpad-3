@@ -10,17 +10,12 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.librarianserver.testing.fake import FakeLibrarian
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
@@ -29,6 +24,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,

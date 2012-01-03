@@ -28,19 +28,19 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.helpers import ensure_unicode
-from lp.services.database.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.model.karma import (
     KarmaCache,
     KarmaCategory,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.helpers import ensure_unicode
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

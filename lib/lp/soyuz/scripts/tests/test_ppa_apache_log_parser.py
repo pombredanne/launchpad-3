@@ -6,13 +6,12 @@ import subprocess
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
@@ -23,6 +22,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestPathParsing(TestCase):

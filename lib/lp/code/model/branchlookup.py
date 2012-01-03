@@ -22,17 +22,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.validators.name import valid_name
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -71,7 +60,18 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
 from lp.services.utils import iter_split
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 def adapt(provided, interface):

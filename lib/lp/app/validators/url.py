@@ -14,9 +14,9 @@ __all__ = [
 from textwrap import dedent
 import urllib
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.url import urlparse
+from lp import _
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.url import urlparse
 
 
 def valid_absolute_url(name):

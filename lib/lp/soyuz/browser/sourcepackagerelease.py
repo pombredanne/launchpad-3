@@ -13,11 +13,11 @@ __all__ = [
 import cgi
 import re
 
-from canonical.launchpad.webapp import LaunchpadView
 from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
     )
+from lp.services.webapp import LaunchpadView
 
 
 def obfuscate_email(user, text):

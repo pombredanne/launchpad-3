@@ -1,4 +1,5 @@
-= Finding Similar Bugs =
+Finding Similar Bugs
+====================
 
 The normal bug search requires all the specified keywords to be present
 in the found bugs. This works quite well in general, but not when you
@@ -76,7 +77,8 @@ As well as limiting it to a specific source package:
     0
 
 
-== Private bugs ==
+Private bugs
+------------
 
 Only bugs that the user has access to view will be searched. If we set
 the Firefox bug to private, and repeat the search as a user who isn't
@@ -96,7 +98,7 @@ We need a feature flag so that multi-pillar bugs can be made private.
     >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', firefox_svg_bug)
     False
@@ -116,7 +118,8 @@ Clean up the feature flag.
     >>> flags.cleanUp()
 
 
-== Ordering of search results ==
+Ordering of search results
+--------------------------
 
 Since the search uses OR to match bugs against the entered phrase, many
 bugs will be returned by a search. Since we usually want to display on
@@ -147,7 +150,9 @@ has been narrowed - see bug 612384.
     Thunderbird crashes
     >>> #another test bug
 
-== Not returning the same bug ==
+
+Not returning the same bug
+--------------------------
 
 findSimilarBugs() does not include the bug of the bugtask upon which
 it is invoked.

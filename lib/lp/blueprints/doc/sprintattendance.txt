@@ -21,7 +21,7 @@ and they must be UTC
 
 The SprintAttendance object implements ISprintAttendance.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.blueprints.interfaces.sprintattendance import (
     ...     ISprintAttendance)
     >>> verifyObject(ISprintAttendance, sprint_attendance)

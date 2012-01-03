@@ -12,9 +12,6 @@ from xmlrpclib import ProtocolError
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
@@ -43,11 +40,14 @@ from lp.bugs.tests.externalbugtracker import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
+    login,
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):

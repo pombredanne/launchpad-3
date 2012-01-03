@@ -9,7 +9,7 @@ import logging
 import os
 import unittest
 
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

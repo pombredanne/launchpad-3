@@ -1,8 +1,8 @@
 Registry vocabularies
 =====================
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -29,8 +29,8 @@ The active mailing lists vocabulary matches and returns only those
 mailing lists which are active.
 
     >>> list_vocabulary = get_naked_vocab(None, 'ActiveMailingList')
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
     True
 
@@ -112,7 +112,7 @@ The IHugeVocabulary interface also requires a search method that returns
 a CountableIterator.
 
     >>> iter = list_vocabulary.searchForTerms('player')
-    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> from lp.services.webapp.vocabulary import CountableIterator
     >>> isinstance(iter, CountableIterator)
     True
 
@@ -1340,7 +1340,7 @@ bzr's so we will get more interesting results.
     >>> bzr = product_set.getByName('bzr')
     >>> bzr.licenses = [License.OTHER_PROPRIETARY]
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('bac@canonical.com')
     >>> bac = person_set.getByEmail('bac@canonical.com')
     >>> check_permission('launchpad.Commercial', bac)

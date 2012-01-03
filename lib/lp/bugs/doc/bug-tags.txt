@@ -69,7 +69,7 @@ Widgets
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bug import BugTagsWidget
     >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
@@ -226,7 +226,7 @@ Searching
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.services.searchbuilder import all
     >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -238,7 +238,7 @@ We can search for bugs with some specific tag.
 
 We can also search for bugs with any of the tags in a supplied list.
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=any(u'crash', u'dataloss'), orderby='id', user=None))
     >>> for bugtask in crash_dataloss_tasks:
@@ -249,7 +249,7 @@ We can also search for bugs with any of the tags in a supplied list.
 
 And for bugs with all of the tags in a supplied list.
 
-    >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.services.searchbuilder import all
     >>> getUtility(IBugSet).get(10).tags = [u'crash', u'burn']
     >>> crash_burn_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=all(u'crash', u'burn'), orderby='id', user=None))
@@ -272,7 +272,7 @@ example, if we search for 'some-tag', we find nothing at the moment:
 
 If we now set bug one's tag to 'some-tag', it will be found.
 
-    XXX from canonical.database.sqlbase import flush_database_updates
+    XXX from lp.services.database.sqlbase import flush_database_updates
     XXX bug_one.tags = [u'some-tag']
     XXX flush_database_updates()
 
@@ -301,7 +301,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     ...     tag=all(u'layout-test'), user=None)):
     ...     bugtask.transitionToStatus(
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
     >>> firefox.getUsedBugTags()
@@ -359,7 +359,8 @@ in the specific package.
     >>> sorted(debian_woody.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
-    >>> sorted(debian_woody_firefox.getUsedBugTagsWithOpenCounts(None).items())
+    >>> sorted(
+    ...     debian_woody_firefox.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
 Only bugs that the supplied user has access to will be counted:

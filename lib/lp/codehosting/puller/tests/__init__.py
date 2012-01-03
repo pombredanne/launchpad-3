@@ -18,7 +18,6 @@ from bzrlib.tests.http_server import (
     TestingThreadingHTTPServer,
     )
 
-from canonical.config import config
 from lp.codehosting.puller.worker import (
     BranchMirrorer,
     BranchMirrorerPolicy,
@@ -28,6 +27,7 @@ from lp.codehosting.puller.worker import (
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.testing import TestCaseWithFactory
 
 

@@ -35,8 +35,8 @@ Store the id's so we can retrieve the records later.
 Lets close his account.
 
 >>> import os.path
->>> from canonical.config import config
->>> from canonical.launchpad.ftests.script import run_script
+>>> from lp.services.config import config
+>>> from lp.testing.script import run_script
 >>> script = os.path.join(config.root, 'scripts', 'close-account.py')
 >>> (result, out, err) = run_script(script, args=['mark@example.com'])
 >>> print result
@@ -48,7 +48,7 @@ INFO...Closing mark's account
 
 Now, start a new transaction so we can see the changes the script made.
 
->>> from canonical.testing.layers import LaunchpadZopelessLayer
+>>> from lp.testing.layers import LaunchpadZopelessLayer
 >>> LaunchpadZopelessLayer.abort()
 
 
@@ -77,7 +77,7 @@ Removed by request
 Flag the database as dirty since it has been modified without the test suite
 knowing.
 
->>> from canonical.testing.layers import DatabaseLayer
+>>> from lp.testing.layers import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()
 
 

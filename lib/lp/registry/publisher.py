@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp.publisher import LaunchpadContainer
+from lp.services.webapp.publisher import LaunchpadContainer
 
 
 class LaunchpadProductContainer(LaunchpadContainer):

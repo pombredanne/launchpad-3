@@ -35,7 +35,7 @@ def parse_tagfile_content(content, filename=None):
     with tempfile.TemporaryFile() as f:
         f.write(strip_pgp_signature(content))
         f.seek(0)
-        stanzas = list(apt_pkg.ParseTagFile(f))
+        stanzas = list(apt_pkg.TagFile(f))
     if len(stanzas) != 1:
         raise TagFileParseError(
             "%s: multiple stanzas where only one is expected" % filename)

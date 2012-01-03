@@ -29,19 +29,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -53,7 +41,22 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,
@@ -144,7 +147,16 @@ class BuilderSetView(LaunchpadView):
     @cachedproperty
     def builders(self):
         """All active builders"""
-        return list(self.context.getBuilders())
+        def do_eager_load(builders):
+            # Prefetch the jobs' data.
+            queues = IStore(BuildQueue).find(
+                BuildQueue,
+                BuildQueue.builderID.is_in(
+                    builder.id for builder in builders))
+            BuildQueue.preloadSpecificJobData(queues)
+
+        return list(DecoratedResultSet(
+            list(self.context.getBuilders()), pre_iter_hook=do_eager_load))
 
     @property
     def number_of_registered_builders(self):

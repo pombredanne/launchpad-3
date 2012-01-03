@@ -16,7 +16,7 @@ import signal
 import subprocess
 import sys
 
-import canonical
+import lp.services.config
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.monkeypatches import monkey_patch
 
@@ -27,14 +27,14 @@ def mailmanctl(command, quiet=False, config=None, *additional_arguments):
     :param command: the command to use.
     :param quiet: when this is true, no output will happen unless, an error
         happens.
-    :param config: The CanonicalConfig object to take configuration from.
+    :param config: The LaunchpadConfig object to take configuration from.
         Defaults to the global one.
     :param additional_arguments: additional command arguments to pass to the
         mailmanctl program.
     :raises RuntimeError: when quiet is True and the command failed.
     """
     if config is None:
-        config = canonical.config.config
+        config = lp.services.config.config
     mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin = os.path.join(mailman_path, 'bin')
     args = ['./mailmanctl']
@@ -67,7 +67,7 @@ def stop_mailman(quiet=False, config=None):
     # master watcher, and probably one of its queue runners, did not die.
     # Kill it hard and clean up after it.
     if config is None:
-        config = canonical.config.config
+        config = lp.services.config.config
     mailman_path = configure_prefix(config.mailman.build_prefix)
     master_pid_path = os.path.join(mailman_path, 'data', 'master-qrunner.pid')
     try:
@@ -108,12 +108,12 @@ def start_mailman(quiet=False, config=None):
 
     :param quiet: when this is true, no output will happen unless, an error
         happens.
-    :param config: The CanonicalConfig object to take configuration from.
+    :param config: The LaunchpadConfig object to take configuration from.
         Defaults to the global one.
     :raises RuntimeException: when Mailman fails to start successfully.
     """
     if config is None:
-        config = canonical.config.config
+        config = lp.services.config.config
     # We need the Mailman bin directory so we can run some of Mailman's
     # command line scripts.
     mailman_path = configure_prefix(config.mailman.build_prefix)

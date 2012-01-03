@@ -35,17 +35,19 @@ for an example.
 
 __metaclass__ = type
 
+from base64 import urlsafe_b64encode
 import csv
 import optparse
-import sys
-import urllib2
-
-from base64 import urlsafe_b64encode
 from os import mkdir
-from os.path import join, exists
+from os.path import (
+    exists,
+    join,
+    )
 from pprint import pprint
+import sys
 from time import sleep
 from urllib import urlencode
+import urllib2
 
 from BeautifulSoup import BeautifulSoup
 

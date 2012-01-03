@@ -33,18 +33,12 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import (
+from lp.services import scripts
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.database.postgresql import ConnectionString
-from lp.services import scripts
-from lp.services.scripts.logger import OopsHandler
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS,
-    setupInteractionByEmail,
-    )
+from lp.services.database.postgresql import ConnectionString
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -52,6 +46,12 @@ from lp.services.features import (
     )
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.logger import OopsHandler
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.interaction import (
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 
 
 LOCK_PATH = "/var/lock/"

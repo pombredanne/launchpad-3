@@ -18,10 +18,10 @@ from zope.publisher.interfaces.browser import (
     IDefaultBrowserLayer,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
-from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import LaunchpadContainer
-from canonical.launchpad.webapp.servers import (
+from lp.services.webapp.interfaces import ILaunchpadContainer
+from lp.services.webapp.publication import LaunchpadBrowserPublication
+from lp.services.webapp.publisher import LaunchpadContainer
+from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
     )

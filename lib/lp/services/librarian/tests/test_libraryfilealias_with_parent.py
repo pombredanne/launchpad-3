@@ -8,12 +8,12 @@ __all__ = []
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):

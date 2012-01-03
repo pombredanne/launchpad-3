@@ -289,7 +289,7 @@ for iceweasel before marking it as superseded.
     >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The default status filter is 'published', which means that, by

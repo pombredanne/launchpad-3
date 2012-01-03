@@ -5,7 +5,7 @@ file switch. When in read-only mode, queries can be made to the slave
 database but attempts to access the master database or make database
 changes fail, returning an error page to the user.
 
-    >>> from canonical.launchpad.tests.readonly import (
+    >>> from lp.services.database.tests.readonly import (
     ...     touch_read_only_file, remove_read_only_file)
     >>> touch_read_only_file()
 
@@ -109,9 +109,9 @@ exceptions are rendered using the same view ensuring that the observed
 behavior is the same.
 
     >>> from zope.app import zapi
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     ReadOnlyModeDisallowedStore, ReadOnlyModeViolation)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> view_name = zapi.queryDefaultViewName(
     ...     ReadOnlyModeDisallowedStore, request)

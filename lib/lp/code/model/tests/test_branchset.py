@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from testtools.matchers import LessThan
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
 from lp.testing import (
@@ -15,6 +14,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 

@@ -22,39 +22,37 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.app.errors import NotFoundError
+from lp.app.validators.email import valid_email
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IMasterObject
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.tokens import (
-    create_unique_token_for_table,
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.mail.helpers import get_email_template
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
-from canonical.launchpad.helpers import get_email_template
+from lp.services.tokens import create_unique_token_for_table
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
     )
-from lp.services.database.lpstorm import IMasterObject
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    )
-from lp.app.errors import NotFoundError
-from lp.app.validators.email import valid_email
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.gpg.interfaces import IGPGHandler
-from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
     )
 
 

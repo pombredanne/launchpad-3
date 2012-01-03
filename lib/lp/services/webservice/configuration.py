@@ -11,13 +11,13 @@ __all__ = [
 from lazr.restful.simple import BaseWebServiceConfiguration
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import (
+from lp.app import versioninfo
+from lp.services.config import config
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import (
     WebServiceClientRequest,
     WebServicePublication,
     )
-from lp.app import versioninfo
 
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):

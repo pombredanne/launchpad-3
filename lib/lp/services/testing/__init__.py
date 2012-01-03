@@ -21,8 +21,8 @@ import logging
 import os
 import unittest
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import PageTestSuite
+# This import registers the 'doctest' Unicode codec.
+import lp.services.testing.doctestcodec
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -31,10 +31,12 @@ from lp.testing.systemdocs import (
 
 
 def build_doctest_suite(base_dir, tests_path, special_tests={},
-                        layer=DatabaseFunctionalLayer,
-                        setUp=setUp, tearDown=tearDown,
+                        layer=None, setUp=setUp, tearDown=tearDown,
                         package=None):
     """Build the doc test suite."""
+    from lp.testing.layers import DatabaseFunctionalLayer
+    if layer is None:
+        layer = DatabaseFunctionalLayer
     suite = unittest.TestSuite()
     # Tests are run relative to the calling module, not this module.
     if package is None:
@@ -60,8 +62,7 @@ def build_doctest_suite(base_dir, tests_path, special_tests={},
 
 
 def build_test_suite(base_dir, special_tests={},
-                     layer=DatabaseFunctionalLayer,
-                     setUp=setUp, tearDown=tearDown):
+                     layer=None, setUp=setUp, tearDown=tearDown):
     """Build a test suite from a directory containing test files.
 
     The parent's 'stories' subdirectory will be checked for pagetests and
@@ -77,6 +78,11 @@ def build_test_suite(base_dir, special_tests={},
 
     :param layer: The layer in which to run the tests.
     """
+    from lp.testing.layers import DatabaseFunctionalLayer
+    from lp.testing.pages import PageTestSuite
+    if layer is None:
+        layer = DatabaseFunctionalLayer
+
     suite = unittest.TestSuite()
 
     # Tests are run relative to the calling module, not this module.

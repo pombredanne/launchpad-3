@@ -82,7 +82,7 @@
   <tal:has-branches condition="view/branch_count">
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
-         tal:define="config modules/canonical.config/config;
+         tal:define="config modules/lp.services.config/config;
                      dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
@@ -123,7 +123,7 @@
 
   <p tal:condition="view/latest_release_with_download_files">
     <img src="/@@/download"/> There are
-    <a tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+    <a tal:define="rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
       tal:attributes="href string:${rooturl}${context/name}/+download">download files</a>
     available for <tal:project-name replace="context/displayname"/>.
   </p>

@@ -30,7 +30,10 @@ import sys
 
 from bzrlib import workingtree
 from find import find_matches
-from utils import fail, log
+from utils import (
+    fail,
+    log,
+    )
 
 
 def file2module(module_file):

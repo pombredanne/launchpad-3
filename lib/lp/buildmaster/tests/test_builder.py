@@ -29,14 +29,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -71,8 +63,15 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -86,6 +85,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestBuilderBasics(TestCaseWithFactory):

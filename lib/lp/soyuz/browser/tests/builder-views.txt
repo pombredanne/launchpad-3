@@ -4,7 +4,7 @@
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
 
@@ -56,7 +56,7 @@ fields and actions are displayed:
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
@@ -164,7 +164,7 @@ Assign the build to the 'frog' builder:
     >>> private_job.builder = frog
     >>> private_job_id = private_job.id
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 At the content class level, all the information about the current job

@@ -270,7 +270,7 @@
         factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
@@ -412,15 +412,15 @@
     </class>
     <adapter
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
@@ -527,7 +527,7 @@
         permission="zope.Public"/>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
         factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
@@ -601,7 +601,7 @@
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
+            interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
     </securedutility>
 
     <!-- SourcePackageName -->
@@ -712,7 +712,7 @@
         </class>
 
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.poll.IPoll"
             factory="lp.registry.browser.poll.PollBreadcrumb"
             permission="zope.Public"/>
@@ -841,7 +841,7 @@
         <!-- Person -->
 
         <adapter
-            provides="canonical.lazr.interfaces.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
@@ -851,12 +851,12 @@
             factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamBreadcrumb"
             permission="zope.Public"/>
@@ -979,10 +979,10 @@
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
-                interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
+                interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
         </securedutility>
     <adapter
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        for="lp.services.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
         factory="lp.registry.adapters.person_from_principal"/>
 
@@ -1080,7 +1080,7 @@
             interface="lp.registry.interfaces.mailinglist.IMailingListSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.systemhomes.MailingListApplication"
+        class="lp.systemhomes.MailingListApplication"
         provides="lp.registry.interfaces.mailinglist.IMailingListApplication">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingListApplication"/>
@@ -1329,15 +1329,15 @@
     </class>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
         factory="lp.registry.publisher.LaunchpadProductContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProductSet"
         factory="lp.registry.browser.product.ProductSetBreadcrumb"
         permission="zope.Public"/>
@@ -1466,7 +1466,7 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
@@ -1597,15 +1597,15 @@
     </class>
     <adapter
         for="lp.registry.interfaces.distribution.IDistribution"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
@@ -1809,7 +1809,7 @@
     </class>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         factory="lp.registry.browser.distributionmirror.DistributionMirrorBreadcrumb"
         permission="zope.Public"/>
@@ -1904,7 +1904,7 @@
     <webservice:register module="lp.registry.interfaces.webservice" />
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         factory="lp.registry.browser.personproduct.PersonProductBreadcrumb"
         permission="zope.Public"/>

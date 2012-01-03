@@ -5,20 +5,21 @@
 
 # pylint: disable-msg=C0103,W0403
 
+import _pythonpath
+
 from optparse import OptionParser
 
-import _pythonpath
 from twisted.internet import (
     defer,
     reactor,
     )
 from twisted.python import log as tplog
 
-from canonical.config import config
 from lp.codehosting.puller import (
     mirror,
     scheduler,
     )
+from lp.services.config import config
 from lp.services.scripts import logger_options
 from lp.services.twistedsupport.loggingsupport import (
     LoggingProxy,

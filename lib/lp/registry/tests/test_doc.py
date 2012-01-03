@@ -10,16 +10,16 @@ import os
 
 import transaction
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    DatabaseLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.tests import mailinglists_helper
 from lp.services.testing import (
     build_doctest_suite,
     build_test_suite,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,

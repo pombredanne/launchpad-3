@@ -26,11 +26,10 @@ import transaction
 from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import reset_logging
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_credentials_for,
@@ -39,6 +38,7 @@ from lp.testing import (
     login_person,
     logout,
     oauth_access_token_for,
+    reset_logging,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.views import (

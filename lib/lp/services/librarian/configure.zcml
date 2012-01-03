@@ -8,6 +8,8 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
+  <include file="client.zcml" />
+
   <class class="lp.services.librarian.model.LibraryFileAlias">
     <allow interface="lp.services.librarian.interfaces.ILibraryFileAlias" />
   </class>

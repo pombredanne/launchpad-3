@@ -14,9 +14,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
@@ -25,10 +22,13 @@ from lp.registry.vocabularies import (
     ProductVocabulary,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class IThing(Interface):

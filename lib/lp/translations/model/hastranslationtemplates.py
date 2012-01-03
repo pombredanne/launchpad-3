@@ -14,7 +14,7 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from canonical.launchpad import helpers
+from lp.services import helpers
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )

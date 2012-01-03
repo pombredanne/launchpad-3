@@ -47,7 +47,7 @@ It also fails if there is no referrer.
 Note that we have to set up a monkeypatch to test this in order to work
 around Zope bug 98437 (https://bugs.launchpad.net/zope3/+bug/98437).
 
-  >>> from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+  >>> from lp.services.webapp.servers import LaunchpadBrowserRequest
   >>> original_init = LaunchpadBrowserRequest.__init__
   >>> def __init__(self, body_instream, environ, response=None):
   ...     if environ.get('HTTP_REFERER') == 'localhost':
@@ -127,7 +127,7 @@ managed by launchpad:
 
   # Go behind the curtains and change the hostname of one of our sites so that
   # we can test this.
-  >>> from canonical.launchpad.webapp.vhosts import allvhosts
+  >>> from lp.services.webapp.vhosts import allvhosts
   >>> allvhosts._hostnames.add('bzr.dev')
 
   >>> browser = setupBrowserWithReferrer('http://bzr.dev')

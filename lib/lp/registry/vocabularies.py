@@ -97,35 +97,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.database.sqlbase import (
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.launchpad.webapp.publisher import nearest
-from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator,
-    CountableIterator,
-    FilteredVocabularyBase,
-    IHugeVocabulary,
-    NamedSQLObjectHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    VocabularyFilter,
-    )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -193,11 +164,40 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.publisher import nearest
+from lp.services.webapp.vocabulary import (
+    BatchedCountableIterator,
+    CountableIterator,
+    FilteredVocabularyBase,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    VocabularyFilter,
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries

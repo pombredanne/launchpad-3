@@ -11,13 +11,13 @@ from datetime import timedelta
 
 from zope.component import getUtility
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.browser.tales import DurationFormatterAPI
-from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )

@@ -35,7 +35,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from canonical.database.constants import UTC_NOW
+from lp.services.database.constants import UTC_NOW
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.librarian.interfaces import ILibraryFileAliasSet

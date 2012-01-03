@@ -18,7 +18,6 @@ from Mailman.mm_cfg import (
 from Mailman.Utils import list_names
 import transaction
 
-from canonical.testing.layers import LayerProcessController
 import lp.services.mailman.doc
 from lp.services.mailman.testing import helpers
 from lp.services.mailman.testing.layers import MailmanLayer
@@ -28,6 +27,7 @@ from lp.testing.browser import (
     tearDown as tearDownBrowser,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LayerProcessController
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 
