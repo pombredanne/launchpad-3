@@ -632,8 +632,6 @@ class TestGarbo(TestCaseWithFactory):
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount(
-            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(rev1.revision_author.person, None)
         self.assertEqual(rev2.revision_author.person, None)
@@ -646,7 +644,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(rev1.revision_author.person, person1)
         self.assertEqual(rev2.revision_author.person, None)
-        self.assertEqual(rev3.revision_author.person, None)
 
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
@@ -655,14 +652,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(rev2.revision_author.person, person2)
-
-        # Creating a person for an existing account creates a linkage.
-        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
-        self.assertEqual(rev3.revision_author.person, None)
-
-        self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(rev3.revision_author.person, person3)
 
     def test_HWSubmissionEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -677,12 +666,9 @@ class TestGarbo(TestCaseWithFactory):
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount(
-            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(sub1.owner, None)
         self.assertEqual(sub2.owner, None)
-        self.assertEqual(sub3.owner, None)
 
         self.runDaily()
 
@@ -691,7 +677,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub1.owner, person1)
         self.assertEqual(sub2.owner, None)
-        self.assertEqual(sub3.owner, None)
 
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
@@ -700,14 +685,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub2.owner, person2)
-
-        # Creating a person for an existing account creates a linkage.
-        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
-        self.assertEqual(sub3.owner, None)
-
-        self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(sub3.owner, person3)
 
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
