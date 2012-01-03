@@ -52,7 +52,7 @@ main_action() method to process the form.
     ...     total_steps = 3
     ...     first_step = StepOne
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> view = CounterView(None, LaunchpadTestRequest())
     >>> view.initialize()

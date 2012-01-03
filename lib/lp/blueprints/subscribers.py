@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.blueprints.enums import SpecificationGoalStatus
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 
 
 @block_implicit_flushes

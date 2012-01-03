@@ -7,7 +7,8 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from lazr.restful.interfaces import IServiceRootResource
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [

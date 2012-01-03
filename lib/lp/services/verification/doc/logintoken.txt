@@ -22,7 +22,7 @@ follows:
     >>> from lp.registry.model.person import Person
     >>> from lp.services.verification.interfaces.logintoken import (
     ...     ILoginTokenSet)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.mail import stub
     >>> import transaction
     >>> foobar = Person.byName('name16')

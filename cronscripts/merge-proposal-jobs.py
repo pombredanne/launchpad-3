@@ -17,7 +17,10 @@ import _pythonpath
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
-from lp.services.job.runner import JobCronScript, TwistedJobRunner
+from lp.services.job.runner import (
+    JobCronScript,
+    TwistedJobRunner,
+    )
 
 
 class RunMergeProposalJobs(JobCronScript):

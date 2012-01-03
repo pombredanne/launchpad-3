@@ -664,7 +664,7 @@ same as that specified in launchpad.conf. We use a test version of
 ExternalBugTracker here that doesn't actually do anything besides
 fulfill the implementation requirements of IExternalBugTracker.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestExternalBugTracker)
     >>> tracker = TestExternalBugTracker('http://example.com/')
@@ -864,7 +864,7 @@ where to file the bug upstream.
 
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> external_bugtracker = TestExternalBugTracker(
     ...     'http://example.com')

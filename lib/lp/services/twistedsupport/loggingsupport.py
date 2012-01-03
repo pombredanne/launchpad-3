@@ -31,9 +31,9 @@ from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
 from zope.interface import implements
 
+from lp.services.librarian.utils import copy_and_close
 from lp.services.scripts import logger
-from canonical.launchpad.webapp import errorlog
-from canonical.librarian.utils import copy_and_close
+from lp.services.webapp import errorlog
 
 
 def set_up_logging_for_script(options, name, logfile):

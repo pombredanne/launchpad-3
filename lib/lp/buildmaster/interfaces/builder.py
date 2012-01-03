@@ -25,10 +25,10 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_entry,
-    operation_returns_collection_of,
     operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
     )
 from lazr.restful.fields import (
     Reference,
@@ -46,16 +46,16 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
     Title,
     )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):

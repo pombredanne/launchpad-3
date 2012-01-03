@@ -12,7 +12,7 @@ from timeline.timeline import (
     )
 from zope.publisher.browser import TestRequest
 
-from canonical.launchpad import webapp
+from lp.services import webapp
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,

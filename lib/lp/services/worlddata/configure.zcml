@@ -39,7 +39,7 @@
     </class>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.services.worlddata.interfaces.language.ILanguage"
         factory="lp.translations.browser.language.LanguageBreadcrumb"
         permission="zope.Public"/>
@@ -51,7 +51,7 @@
     </securedutility>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.services.worlddata.interfaces.language.ILanguageSet"
         factory="lp.translations.browser.language.LanguageSetBreadcrumb"
         permission="zope.Public"/>

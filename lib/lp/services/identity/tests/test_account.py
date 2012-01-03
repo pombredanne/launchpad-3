@@ -10,12 +10,6 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson,
     PersonCreationRationale,
@@ -25,7 +19,13 @@ from lp.services.identity.interfaces.account import (
     IAccountSet,
     )
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.authorization import check_permission
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestAccount(TestCaseWithFactory):

@@ -8,10 +8,16 @@ __all__ = [
     'EC2SessionName',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from devscripts.ec2test.utils import (
-    find_datetime_string, make_datetime_string, make_random_string)
+    find_datetime_string,
+    make_datetime_string,
+    make_random_string,
+    )
 
 
 DEFAULT_LIFETIME = timedelta(hours=6)

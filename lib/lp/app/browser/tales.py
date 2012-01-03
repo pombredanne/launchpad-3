@@ -46,49 +46,24 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad import _
+from lp import _
+from lp.app.browser.badge import IHasBadges
+from lp.app.browser.stringformatter import (
+    escape,
+    FormattersAPI,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.layers import LaunchpadLayer
-from canonical.launchpad.webapp import (
-    canonical_url,
-    urlappend,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu,
-    IContextMenu,
-    IFacetMenu,
-    ILaunchBag,
-    INavigationMenu,
-    IPrimaryContext,
-    NoCanonicalUrl,
-    )
-from canonical.launchpad.webapp.menu import (
-    get_current_view,
-    get_facet,
-    )
-from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request,
-    LaunchpadView,
-    nearest,
-    )
-from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr.canonicalurl import nearest_adapter
-from lp.app.browser.badge import IHasBadges
-from lp.app.browser.stringformatter import (
-    escape,
-    FormattersAPI,
-    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
+from lp.layers import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -97,6 +72,31 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.features import getFeatureFlag
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.interfaces import (
+    IApplicationMenu,
+    IContextMenu,
+    IFacetMenu,
+    ILaunchBag,
+    INavigationMenu,
+    IPrimaryContext,
+    NoCanonicalUrl,
+    )
+from lp.services.webapp.menu import (
+    get_current_view,
+    get_facet,
+    )
+from lp.services.webapp.publisher import (
+    get_current_browser_request,
+    LaunchpadView,
+    nearest,
+    )
+from lp.services.webapp.session import get_cookie_domain
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet

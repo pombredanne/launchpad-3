@@ -11,9 +11,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import LaunchpadView
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -22,7 +19,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.searchbuilder import any
+from lp.services.webapp import LaunchpadView
 
 
 class BugTaskCve:

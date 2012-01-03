@@ -13,14 +13,13 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema.interfaces import TooShort
 
-from lp.services.database.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
     OPEN_TEAM_POLICY,
     )
+from lp.services.database.lpstorm import IStore
 from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,
@@ -33,6 +32,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 def make_target():

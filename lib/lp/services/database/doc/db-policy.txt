@@ -62,7 +62,7 @@ replication was implemented to keep working.
 
 To alter this behavior, you can install a different database policy.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
+    >>> from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
     >>> with SlaveDatabasePolicy():
     ...     default_janitor = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -76,7 +76,7 @@ code we want to prove only accesses slave database resources, we can
 raise an exception if an attempt is made to access master database
 resources.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import (
+    >>> from lp.services.webapp.dbpolicy import (
     ...     SlaveOnlyDatabasePolicy)
     >>> with SlaveOnlyDatabasePolicy():
     ...     whoops = IMasterStore(Person).find(
@@ -90,7 +90,7 @@ if we need to guarantee a potentially long running call doesn't access
 the database at all starting a new and potentially long running
 database transaction.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import DatabaseBlockedPolicy
+    >>> from lp.services.webapp.dbpolicy import DatabaseBlockedPolicy
     >>> with DatabaseBlockedPolicy():
     ...     whoops = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -102,7 +102,7 @@ Database policies can also be installed and uninstalled using the
 IStoreSelector utility for cases where the 'with' syntax cannot
 be used.
 
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SlaveDatabasePolicy())
     >>> try:
     ...     default_janitor = IStore(Person).find(
@@ -131,8 +131,8 @@ During database outages, we run in read-only mode. In this mode, no
 matter what database policy is currently installed, explicit requests
 for a master store fail and the default store is always the slave.
 
-    >>> from canonical.launchpad.tests.readonly import read_only_mode
-    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.database.tests.readonly import read_only_mode
+    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
     >>> from contextlib import nested
 
     >>> with nested(read_only_mode(), MasterDatabasePolicy()):

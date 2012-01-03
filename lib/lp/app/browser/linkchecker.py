@@ -11,8 +11,6 @@ __all__ = [
 import simplejson
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import LaunchpadView
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -26,6 +24,8 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.interfaces.product import InvalidProductName
+from lp.services.searchbuilder import any
+from lp.services.webapp import LaunchpadView
 
 
 class LinkCheckerAPI(LaunchpadView):

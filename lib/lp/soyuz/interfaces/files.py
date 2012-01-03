@@ -21,7 +21,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 

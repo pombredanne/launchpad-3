@@ -12,7 +12,7 @@ __all__ = []
 
 import unittest
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

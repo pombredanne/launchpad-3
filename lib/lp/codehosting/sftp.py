@@ -40,11 +40,11 @@ from twisted.internet import defer
 from twisted.python import util
 from zope.interface import implements
 
-from canonical.config import config
 from lp.codehosting.vfs import (
     AsyncLaunchpadTransport,
     LaunchpadServer,
     )
+from lp.services.config import config
 from lp.services.sshserver.sftp import FileIsADirectory
 from lp.services.twistedsupport import gatherResults
 

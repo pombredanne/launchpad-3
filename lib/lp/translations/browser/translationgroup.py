@@ -18,13 +18,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    GetitemNavigation,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -32,6 +25,13 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup,
     ITranslationGroupSet,

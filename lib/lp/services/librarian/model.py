@@ -46,23 +46,17 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.config import config
-from canonical.database.constants import (
+from lp.services.config import config
+from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
     session_store,
     SQLBase,
     )
-from canonical.librarian.interfaces import (
-    DownloadFailed,
-    ILibrarianClient,
-    IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
-    )
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.stormbase import StormBase
 from lp.services.librarian.interfaces import (
     ILibraryFileAlias,
@@ -70,6 +64,12 @@ from lp.services.librarian.interfaces import (
     ILibraryFileAliasWithParent,
     ILibraryFileContent,
     ILibraryFileDownloadCount,
+    )
+from lp.services.librarian.interfaces.client import (
+    DownloadFailed,
+    ILibrarianClient,
+    IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
 
 

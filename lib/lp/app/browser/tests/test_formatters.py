@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import PillarFormatterAPI
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPillarFormatterAPI(TestCaseWithFactory):

@@ -18,18 +18,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from lp.services.database.lpstorm import IMasterObject
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
@@ -39,13 +27,23 @@ from lp.code.model.revision import (
     )
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.database.lpstorm import IMasterObject
+from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import (
+    login,
+    logout,
     TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):

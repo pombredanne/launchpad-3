@@ -18,20 +18,24 @@ from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
     EndRequestEvent,
     )
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    queryUtility,
+    )
+from zope.error.interfaces import IErrorReportingUtility
 
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.interfaces import StartRequestEvent
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import layers
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
+import lp.services.webapp.adapter as da
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.interfaces import StartRequestEvent
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    layers,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -360,10 +364,14 @@ class BaseRequestEndHandlerTest(BaseTest):
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
-        self.eru = ErrorReportingUtility()
-        sm = getSiteManager()
-        sm.registerUtility(self.eru)
-        self.addCleanup(sm.unregisterUtility, self.eru)
+        eru = queryUtility(IErrorReportingUtility)
+        if eru is None:
+            # Register an Error reporting utility for this layer.
+            # This will break tests when run with an ERU already registered.
+            self.eru = ErrorReportingUtility()
+            sm = getSiteManager()
+            sm.registerUtility(self.eru)
+            self.addCleanup(sm.unregisterUtility, self.eru)
 
     def endRequest(self, path='/', exception=None, pageid=None, work=None):
         start_event = self._get_start_event(path)

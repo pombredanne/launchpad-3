@@ -18,9 +18,9 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 from zope.interface import Attribute
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [
