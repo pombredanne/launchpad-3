@@ -77,6 +77,7 @@ class LucidUbuntuMaintenance(UbuntuMaintenance):
         "kubuntu",
         ]
 
+
 class PreciseUbuntuMaintenance(UbuntuMaintenance):
     """ The support timeframe for the 12.04 (precise) LTS release.
         This changes the timeframe for desktop packages from 3y to 5y
@@ -129,7 +130,6 @@ ARCHIVE_ROOT = os.environ.get(
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
-
 
 
 def get_binaries_for_source_pkg(srcname):
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
     for arch in ubuntu_maintenance.PRIMARY_ARCHES:
-        rootdir="./aptroot.%s" % distro
+        rootdir = "./aptroot.%s" % distro
         apt_pkg.config.set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
