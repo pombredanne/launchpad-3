@@ -14,13 +14,13 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.lpstorm import IStore
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
     )

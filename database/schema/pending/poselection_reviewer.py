@@ -6,7 +6,8 @@
 import _pythonpath
 
 from datetime import datetime
-from canonical.database.sqlbase import connect
+
+from lp.services.database.sqlbase import connect
 
 
 def main():

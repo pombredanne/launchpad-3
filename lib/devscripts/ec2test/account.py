@@ -18,8 +18,9 @@ import sys
 import urllib
 
 from boto.exception import EC2ResponseError
-from devscripts.ec2test.session import EC2SessionName
 import paramiko
+
+from devscripts.ec2test.session import EC2SessionName
 
 
 VALID_AMI_OWNERS = {

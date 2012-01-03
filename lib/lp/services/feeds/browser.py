@@ -28,8 +28,28 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IBugTaskSet,
+    )
+from lp.code.interfaces.branch import IBranch
 from lp.layers import FeedsLayer
+from lp.registry.interfaces.announcement import (
+    IAnnouncementSet,
+    IHasAnnouncements,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.config import config
+from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.webapp import (
     canonical_name,
     canonical_url,
@@ -43,26 +63,6 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.app.errors import NotFoundError
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtarget import IHasBugs
-from lp.bugs.interfaces.bugtask import (
-    IBugTask,
-    IBugTaskSet,
-    )
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.announcement import (
-    IAnnouncementSet,
-    IHasAnnouncements,
-    )
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    )
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.feeds.interfaces import IFeedsApplication
 
 
 class FeedsRootUrlData:

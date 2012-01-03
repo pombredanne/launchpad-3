@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.messages.interfaces.message import IIndexedMessage
+from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
 class QuestionMessageCanonicalUrlData:

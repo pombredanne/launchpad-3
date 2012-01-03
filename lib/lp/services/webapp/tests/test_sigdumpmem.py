@@ -8,14 +8,14 @@ __metaclass__ = type
 import os
 import time
 
-from canonical.config import config
+from lp.services.config import config
+from lp.services.pidfile import get_pid
 from lp.services.webapp.sigdumpmem import (
     DUMP_FILE,
     SIGDUMPMEM,
     )
-from canonical.lazr.pidfile import get_pid
-from canonical.testing.layers import AppServerLayer
 from lp.testing import TestCase
+from lp.testing.layers import AppServerLayer
 
 
 class SIGDUMPMEMTestCase(TestCase):

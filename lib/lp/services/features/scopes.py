@@ -25,8 +25,8 @@ __metaclass__ = type
 
 import re
 
-import canonical.config
 from lp.registry.interfaces.person import IPerson
+import lp.services.config
 from lp.services.propertycache import cachedproperty
 
 
@@ -192,7 +192,7 @@ class ServerScope(BaseScope):
         """Match the current server as a scope."""
         server_name = scope_name.split('.', 1)[1]
         try:
-            return canonical.config.config['launchpad']['is_' + server_name]
+            return lp.services.config.config['launchpad']['is_' + server_name]
         except KeyError:
             pass
         return False

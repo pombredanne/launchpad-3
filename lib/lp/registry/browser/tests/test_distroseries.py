@@ -34,25 +34,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_caches
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.interaction import get_current_principal
-from lp.services.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.url import urlappend
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
@@ -70,6 +51,9 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -77,6 +61,17 @@ from lp.services.features import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 from lp.soyuz.browser.archive import copy_asynchronously_message
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -112,6 +107,11 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import (
     DocTestMatches,
     EqualsIgnoringWhitespace,

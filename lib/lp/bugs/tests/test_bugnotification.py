@@ -19,14 +19,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
-from lp.testing import login
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.answers.tests.test_question_notifications import pop_questionemailjobs
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -39,13 +31,21 @@ from lp.bugs.model.bugnotification import (
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
+from lp.services.config import config
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
+    login,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import Contains
 
 

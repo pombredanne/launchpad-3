@@ -16,14 +16,6 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int
 
-from lp.services.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    )
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -35,6 +27,14 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    )
 
 
 UNEDITABLE_BUILD_STATES = (

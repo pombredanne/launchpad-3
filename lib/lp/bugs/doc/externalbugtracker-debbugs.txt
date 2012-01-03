@@ -8,7 +8,7 @@ to point it to our test debbugs db. Let's set up the db location for our
 test:
 
     >>> import os.path
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.bugs.tests import __file__
     >>> test_db_location = os.path.join(
     ...     os.path.dirname(__file__), 'data/debbugs_db')
@@ -17,7 +17,7 @@ You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
     ...     BATCH_SIZE_UNLIMITED, DebBugs)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
@@ -621,7 +621,7 @@ There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
@@ -630,8 +630,8 @@ tracker.
     >>> commit()
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

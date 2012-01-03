@@ -14,21 +14,21 @@ from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
 
+from lp.services.features.flags import flag_info
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import publisher
 from lp.services.webapp.publisher import (
     FakeRequest,
     LaunchpadView,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.services.features.flags import flag_info
-from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing import (
     login_as,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLaunchpadView(TestCaseWithFactory):

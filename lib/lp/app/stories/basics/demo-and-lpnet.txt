@@ -7,7 +7,7 @@ affect the launchpad.net database.
 
 This is controlled by a pair of config variables.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.is_demo
     False
     >>> config.launchpad.site_message

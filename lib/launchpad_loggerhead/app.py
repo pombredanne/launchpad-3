@@ -43,16 +43,16 @@ from paste.request import (
     path_info_pop,
     )
 
-from canonical.config import config
-from lp.services.webapp.errorlog import ErrorReportingUtility
-from lp.services.webapp.vhosts import allvhosts
-from lp.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
     )
 from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.vhosts import allvhosts
+from lp.xmlrpc import faults
 
 
 robots_txt = '''\

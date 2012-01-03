@@ -19,6 +19,9 @@ from testtools.matchers import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lp.registry.model.person import Person
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
@@ -28,14 +31,11 @@ from lp.services.webapp.batching import (
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.registry.model.person import Person
-from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.librarian.model import LibraryFileAlias
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestStormRangeFactory(TestCaseWithFactory):

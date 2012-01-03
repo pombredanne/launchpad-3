@@ -14,7 +14,6 @@ from httplib import (
     UNAUTHORIZED,
     )
 
-from canonical.testing.layers import FunctionalLayer
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
     DeleteSubscriptionError,
@@ -30,6 +29,7 @@ from lp.registry.errors import (
     UserCannotSubscribePerson,
     )
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 from lp.testing.views import create_webservice_error_view
 
 

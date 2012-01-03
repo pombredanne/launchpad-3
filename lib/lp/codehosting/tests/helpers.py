@@ -33,9 +33,9 @@ from twisted.internet import (
     )
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.config import config
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.testing import TestCase
 
 

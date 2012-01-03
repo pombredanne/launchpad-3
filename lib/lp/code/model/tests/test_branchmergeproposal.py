@@ -23,15 +23,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.services.webapp import canonical_url
-from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -74,7 +66,10 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.database.constants import UTC_NOW
 from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.webapp import canonical_url
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -90,6 +85,11 @@ from lp.testing.factory import (
     LaunchpadObjectFactory,
     )
 from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):
@@ -1775,7 +1775,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             "+from storm.locals import Int, Reference\n"
             " from sqlobject import ForeignKey, IntCol\n"
             "\n"
-            " from canonical.config import config\n")
+            " from lp.services.config import config\n")
         diff_stat = {'sample': (1, 1)}
         login_person(merge_proposal.registrant)
         merge_proposal.updatePreviewDiff(

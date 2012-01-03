@@ -27,11 +27,6 @@ from sqlobject import (
     )
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile
@@ -46,6 +41,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts import log
 from lp.soyuz.enums import (

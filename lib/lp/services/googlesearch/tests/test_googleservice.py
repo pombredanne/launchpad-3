@@ -12,8 +12,8 @@ import errno
 import os
 import unittest
 
-from canonical.lazr.pidfile import pidfile_path
 from lp.services.googlesearch import googletestservice
+from lp.services.pidfile import pidfile_path
 
 
 class TestServiceUtilities(unittest.TestCase):

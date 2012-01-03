@@ -4,18 +4,14 @@
 __metaclass__ = type
 
 import httplib
-import transaction
 
-from zope.component import getUtility
 from lazr.restfulclient.errors import (
     HTTPError,
     Unauthorized,
     )
+import transaction
+from zope.component import getUtility
 
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer, 
-    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
@@ -30,6 +26,10 @@ from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
     )
 
 

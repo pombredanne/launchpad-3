@@ -16,13 +16,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
@@ -40,6 +33,8 @@ from lp.registry.errors import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -49,6 +44,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import Provides
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,

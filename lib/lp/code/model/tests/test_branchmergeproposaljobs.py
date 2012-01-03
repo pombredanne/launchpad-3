@@ -21,9 +21,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
@@ -57,14 +54,17 @@ from lp.code.model.tests.test_diff import (
     DiffTestCase,
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

@@ -16,15 +16,15 @@ from urllib import quote
 
 from zope.component import getUtility
 
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
     )
 from lp.registry.interfaces.person import ITeam
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class HeldMessageView(LaunchpadView):

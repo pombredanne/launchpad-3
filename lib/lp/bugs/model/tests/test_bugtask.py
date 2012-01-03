@@ -17,19 +17,6 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from lp.services.searchbuilder import (
-    all,
-    any,
-    not_equals,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
@@ -51,10 +38,11 @@ from lp.bugs.model.bugtask import (
     BugTask,
     BugTaskSet,
     build_tag_search_clause,
+    get_bug_privacy_filter,
     IllegalTarget,
     validate_new_target,
     validate_target,
-    get_bug_privacy_filter)
+    )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -68,7 +56,15 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.features.testing import FeatureFixture
+from lp.services.searchbuilder import (
+    all,
+    any,
+    not_equals,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
@@ -88,6 +84,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 

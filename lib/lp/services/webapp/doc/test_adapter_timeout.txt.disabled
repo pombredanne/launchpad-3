@@ -27,7 +27,7 @@ exception, and a time machine.
     >>> import lp.services.webapp.adapter
     >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from storm.exceptions import TimeoutError
     >>> config.push('set_timeout', dedent('''
     ...     [database]

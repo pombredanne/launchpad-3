@@ -9,7 +9,7 @@ To test this policy, lets point the MAIN SLAVE store to a Launchpad
 database with a different name. This makes it easy to check if a
 request is querying the master or slave database.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> config_overlay = dedent("""
     ...     [database]
@@ -20,7 +20,7 @@ request is querying the master or slave database.
     >>> from zope.component import getUtility
     >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> dbname = DatabaseLayer._db_fixture.dbname
     >>> dbname == master.execute("SELECT current_database()").get_one()[0]

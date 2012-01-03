@@ -12,8 +12,8 @@ from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.session.http import CookieClientIdManager
 
-from canonical.config import config
-from canonical.database.sqlbase import session_store
+from lp.services.config import config
+from lp.services.database.sqlbase import session_store
 
 
 SECONDS = 1

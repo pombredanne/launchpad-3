@@ -13,7 +13,7 @@ Virtual host configurations
 The configuration defines a number of domains, one for the main
 Launchpad site and one for the sites of the various applications.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.vhost.mainsite.hostname
     'launchpad.dev'
     >>> config.vhost.blueprints.hostname

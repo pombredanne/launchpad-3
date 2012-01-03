@@ -14,17 +14,18 @@ from sqlobject import ForeignKey
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
+    )
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
     )
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -32,7 +33,6 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.registry.interfaces.person import validate_public_person
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequest,
     IPOExportRequestSet,

@@ -22,9 +22,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from lp.services.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
     BugNotFound,
@@ -44,9 +41,12 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.bugs.scripts import debbugs
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.database.sqlbase import commit
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp import urlsplit
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,

@@ -281,7 +281,7 @@ versions of a given source package have been published in.
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> transaction.commit()
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> cache_entry = KarmaTotalCache(person=ppa_beta_owner_id,

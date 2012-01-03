@@ -22,13 +22,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from lp.services.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -50,7 +43,9 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
     )
+from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -60,6 +55,11 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view

@@ -3,9 +3,9 @@
 
 """Assign karma for code domain activity."""
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.code.enums import BranchMergeProposalStatus
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 
 
 @block_implicit_flushes

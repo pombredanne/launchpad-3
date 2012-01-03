@@ -6,14 +6,14 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.authentication import IPlacelessLoginSource
+from lp.services.webapp.interfaces import AccessLevel
 from lp.testing import (
     ANONYMOUS,
     login,
     )
-from lp.services.webapp.authentication import IPlacelessLoginSource
-from lp.services.webapp.interfaces import AccessLevel
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class LaunchpadLoginSourceTest(unittest.TestCase):

@@ -14,11 +14,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     CodeImportResultStatus,
@@ -48,6 +43,11 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 

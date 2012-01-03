@@ -13,10 +13,8 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.webapp import errorlog
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
+from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
@@ -34,11 +32,13 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
+from lp.services.webapp import errorlog
 from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 

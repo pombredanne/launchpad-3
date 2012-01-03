@@ -8,10 +8,9 @@ import socket
 import sys
 import urllib2
 
-import lp.codehosting  # Needed to load bzr plugins.
-
-
-lp  # squelch lint.sh
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
 
 from bzrlib import (
     errors,
@@ -34,8 +33,6 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.config import config
-from lp.services.webapp import errorlog
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -50,6 +47,8 @@ from lp.codehosting.safe_open import (
     BranchReferenceForbidden,
     SafeBranchOpener,
     )
+from lp.services.config import config
+from lp.services.webapp import errorlog
 
 
 __all__ = [

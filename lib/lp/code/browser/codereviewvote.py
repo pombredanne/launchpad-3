@@ -9,7 +9,6 @@ __metaclass__ = type
 from zope.interface import Interface
 
 from lp import _
-from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -19,6 +18,7 @@ from lp.code.errors import (
     UserHasExistingReview,
     )
 from lp.services.fields import PublicPersonChoice
+from lp.services.webapp import canonical_url
 
 
 class ReassignSchema(Interface):

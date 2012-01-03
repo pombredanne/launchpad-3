@@ -15,7 +15,7 @@ Bug 11 has quite a few comments.
 Let's briefly override the configuration to push bug 11 over the
 threshold.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 5

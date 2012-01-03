@@ -18,6 +18,8 @@ from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,
@@ -27,8 +29,6 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.registry.model.product import Product
-from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (

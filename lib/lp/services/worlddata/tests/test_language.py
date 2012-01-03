@@ -7,13 +7,9 @@ from lazr.lifecycle.interfaces import IDoNotSnapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from lp.services.database.lpstorm import IStore
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.model.karma import KarmaCategory
+from lp.services.database.lpstorm import IStore
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
@@ -23,6 +19,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 

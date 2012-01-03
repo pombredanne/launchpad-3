@@ -37,11 +37,13 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.sqlbase import (
+from lp.services.config import config
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     sqlvalues,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import (
     IStoreSelector,
     ITableBatchNavigator,
@@ -50,8 +52,6 @@ from lp.services.webapp.interfaces import (
     StormRangeFactoryError,
     )
 from lp.services.webapp.publisher import LaunchpadView
-from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.propertycache import cachedproperty
 
 
 class FiniteSequenceAdapter:

@@ -10,19 +10,19 @@ import shutil
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    )
+from lp.services.config import config
 from lp.services.scripts.tests import run_script
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import ZopelessAppServerLayer
-from lp.code.model.branchjob import (
-    BranchJob,
-    BranchJobType,
-    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestReclaimBranchSpaceScript(TestCaseWithFactory):

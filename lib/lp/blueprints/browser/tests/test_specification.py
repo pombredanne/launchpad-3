@@ -13,9 +13,6 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp.interfaces import BrowserNotificationLevel
-from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
@@ -24,6 +21,8 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.interfaces import BrowserNotificationLevel
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     FakeLaunchpadRequest,
@@ -32,6 +31,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import DocTestMatches
 from lp.testing.pages import (
     extract_text,

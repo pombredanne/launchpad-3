@@ -12,9 +12,9 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
-from lp.services.webapp.vhosts import allvhosts
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
+from lp.services.webapp.vhosts import allvhosts
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 

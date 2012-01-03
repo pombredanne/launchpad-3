@@ -19,7 +19,12 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import quote
+from lp.blueprints.model.specification import (
+    recursive_blocked_query,
+    Specification,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.database.sqlbase import quote
 from lp.services.webapp import (
     canonical_url,
     urlparse,
@@ -30,11 +35,6 @@ from lp.services.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from lp.blueprints.model.specification import (
-    recursive_blocked_query,
-    Specification,
-    )
-from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):

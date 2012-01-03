@@ -1,7 +1,7 @@
 
-The canonical.database.adapter module provides a Storm store that can
+The lp.services.database.adapter module provides a Storm store that can
 prevent SQL statements from being executed if a request takes longer
-than a configured length of time to execute.  It uses canonical.config for
+than a configured length of time to execute.  It uses lp.services.config for
 configuration parameters.
 
 Imports and test setup:
@@ -13,12 +13,12 @@ Imports and test setup:
     >>> from storm.zope.interfaces import IZStorm
     >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> import lp.services.webapp.adapter
     >>> from lp.services.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
     ...     set_request_started)
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
 
 There are several possible database connections available via the
@@ -417,14 +417,14 @@ If no timeout has been set, then requests will not time out:
 Switching Database Users
 ========================
 
-The Launchpad store uses canonical.config to configure its
+The Launchpad store uses lp.services.config to configure its
 connection.  This can be adjusted by choosing a different database
 config section.  By default we connect as "launchpad"
 
     >>> print store.execute("select current_user").get_one()[0]
     launchpad_main
 
-    >>> from canonical.config import dbconfig
+    >>> from lp.services.config import dbconfig
     >>> dbconfig.override(dbuser='statistician')
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]

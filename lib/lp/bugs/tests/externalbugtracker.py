@@ -26,9 +26,6 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
     BugNotFound,
@@ -63,8 +60,11 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import celebrity_logged_in
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import ordered_dict_as_string
 
 

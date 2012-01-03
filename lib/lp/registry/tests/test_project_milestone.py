@@ -13,11 +13,6 @@ import pytz
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.testing import login
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationPriority,
@@ -35,7 +30,12 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.milestone import MultipleProductReleases
 from lp.testing import (
     launchpadlib_for,
+    login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

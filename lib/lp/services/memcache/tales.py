@@ -27,11 +27,11 @@ from zope.tales.expressions import (
     )
 from zope.tales.interfaces import ITALESExpression
 
-from canonical.config import config
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.app import versioninfo
+from lp.services.config import config
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.utils import compress_hash
+from lp.services.webapp.interfaces import ILaunchBag
 
 # Request annotation key.
 COUNTER_KEY = 'lp.services.memcache.tales.counter'

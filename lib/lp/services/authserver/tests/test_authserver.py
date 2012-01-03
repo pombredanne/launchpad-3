@@ -8,11 +8,11 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
-from lp.xmlrpc import faults
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.xmlrpc.interfaces import IPrivateApplication
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.xmlrpc import faults
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 class GetUserAndSSHKeysTests(TestCaseWithFactory):

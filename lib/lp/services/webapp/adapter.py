@@ -53,17 +53,29 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
+from lp.services import features
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.database.interfaces import IRequestExpired
-from canonical.database.postgresql import ConnectionString
+from lp.services.database.interfaces import IRequestExpired
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
+from lp.services.database.postgresql import ConnectionString
 from lp.services.database.readonly import is_read_only
+from lp.services.log.loglevels import DEBUG2
+from lp.services.stacktrace import (
+    extract_stack,
+    extract_tb,
+    print_list,
+    )
+from lp.services.timeline.requesttimeline import (
+    get_request_timeline,
+    set_request_timeline,
+    )
+from lp.services.timeout import set_default_timeout_function
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interaction import get_interaction_extras
 from lp.services.webapp.interfaces import (
@@ -76,18 +88,6 @@ from lp.services.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.services.webapp.opstats import OpStats
-from canonical.lazr.timeout import set_default_timeout_function
-from lp.services import features
-from lp.services.log.loglevels import DEBUG2
-from lp.services.stacktrace import (
-    extract_stack,
-    extract_tb,
-    print_list,
-    )
-from lp.services.timeline.requesttimeline import (
-    get_request_timeline,
-    set_request_timeline,
-    )
 
 
 __all__ = [

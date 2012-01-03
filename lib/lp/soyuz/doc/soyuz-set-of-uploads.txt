@@ -101,7 +101,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -125,11 +125,11 @@ We need a way to count the items in a queue directory
 And then we need a way to process the uploads from the queue
 
     >>> import logging
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.scripts.soyuz_process_upload import (
     ...     ProcessUpload)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
     ...     """Simulate process-upload.py script run.
     ...
@@ -198,7 +198,7 @@ given upload into the published state, so here's a very simplistic publisher
     ...     SourcePackagePublishingHistory as SPPH,
     ...     BinaryPackagePublishingHistory as BPPH)
     >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> def simple_publish(distro):
     ...     srcs_to_publish = SPPH.select("""
     ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
@@ -645,7 +645,7 @@ Upload the i386 binary:
 
 Should still just have one build, and it should now be FULLYBUILT.
 
-    >>> from canonical.database.sqlbase import clear_current_connection_cache
+    >>> from lp.services.database.sqlbase import clear_current_connection_cache
     >>> clear_current_connection_cache()
 
     >>> builds = list(BinaryPackageBuild.selectBy(

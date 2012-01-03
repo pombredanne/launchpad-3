@@ -13,11 +13,11 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def browser_languages(request):

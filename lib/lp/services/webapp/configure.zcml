@@ -227,7 +227,7 @@
         <implements interface="lp.services.database.lpstorm.IStore" />
         <allow attributes="get" />
     </class>
-    <class class="canonical.database.sqlbase.SQLBase">
+    <class class="lp.services.database.sqlbase.SQLBase">
         <implements interface="lp.services.database.lpstorm.IDBObject" />
     </class>
 
@@ -285,7 +285,7 @@
         />
     <browser:page
         name=""
-        for="lp.services.feeds.interfaces.IFeedsApplication"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

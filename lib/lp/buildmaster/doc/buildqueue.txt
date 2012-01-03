@@ -249,7 +249,7 @@ for testing if we will also be able to deal with more than one architecture.
 
 Materialize the changes in database:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Note that the results are ordered by descending BuildQueue.lastscore

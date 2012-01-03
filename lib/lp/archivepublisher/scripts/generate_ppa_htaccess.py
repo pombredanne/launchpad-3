@@ -16,10 +16,6 @@ import tempfile
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.mail.helpers import get_email_template
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
@@ -27,6 +23,9 @@ from lp.archivepublisher.htaccess import (
     write_htpasswd,
     )
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
@@ -34,6 +33,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,

@@ -33,13 +33,6 @@ from twisted.python import log
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.webapp import errorlog
-from lp.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -69,12 +62,14 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
+from lp.services.webapp import errorlog
 from lp.testing import (
     login,
     logout,
@@ -82,6 +77,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):

@@ -38,9 +38,17 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.config import config
 from lp import _
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.services.config import config
 from lp.services.database.readonly import is_read_only
+from lp.services.identity.interfaces.account import AccountSuspendedError
+from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
+from lp.services.propertycache import cachedproperty
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
@@ -54,14 +62,6 @@ from lp.services.webapp.metazcml import ILaunchpadPermission
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
-from lp.services.identity.interfaces.account import AccountSuspendedError
-from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
-from lp.services.propertycache import cachedproperty
-from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class UnauthorizedView(SystemErrorView):

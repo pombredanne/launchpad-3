@@ -34,7 +34,13 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
-from canonical.config import config
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.services.config import config
+from lp.services.identity.interfaces.account import IAccountSet
+from lp.services.oauth.interfaces import OAUTH_CHALLENGE
 from lp.services.webapp.interfaces import (
     AccessLevel,
     BasicAuthLoggedInEvent,
@@ -44,12 +50,6 @@ from lp.services.webapp.interfaces import (
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    )
-from lp.services.identity.interfaces.account import IAccountSet
-from lp.services.oauth.interfaces import OAUTH_CHALLENGE
 
 
 class PlacelessAuthUtility:

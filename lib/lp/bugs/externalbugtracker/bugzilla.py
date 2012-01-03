@@ -24,11 +24,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.webapp.url import (
-    urlappend,
-    urlparse,
-    )
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
@@ -53,8 +48,13 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.services import encoding
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.url import (
+    urlappend,
+    urlparse,
+    )
 
 
 class Bugzilla(ExternalBugTracker):

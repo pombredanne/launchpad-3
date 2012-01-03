@@ -26,16 +26,16 @@ from zope.schema import (
     Float,
     )
 
-from canonical.config import config
 from lp import _
+from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.app.validators import LaunchpadValidationError
+from lp.registry.interfaces.location import IObjectWithLocation
+from lp.services.config import config
+from lp.services.geoip.interfaces import IGeoIPRecord
 from lp.services.webapp.interfaces import (
     ILaunchBag,
     IMultiLineWidgetLayout,
     )
-from lp.app.browser.tales import ObjectImageDisplayAPI
-from lp.app.validators import LaunchpadValidationError
-from lp.registry.interfaces.location import IObjectWithLocation
-from lp.services.geoip.interfaces import IGeoIPRecord
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):

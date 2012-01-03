@@ -6,8 +6,8 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.utilities.translationsplitter import (
     TranslationSplitter,

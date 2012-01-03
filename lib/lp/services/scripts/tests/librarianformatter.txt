@@ -33,7 +33,7 @@ Because no Librarian is running, output from the two loggers should be
 identical. Note the overhead involved in attempting to contact the
 Librarian is not significant.
 
->>> from canonical.testing.layers import LibrarianLayer
+>>> from lp.testing.layers import LibrarianLayer
 >>> LibrarianLayer.hide()
 
 >>> from lp.services.utils import utc_now
@@ -87,7 +87,7 @@ As the librarian commits to the test database in a subprocess, we need
 to force the DatabaseLayer to fully tear down and restore the database
 after this test.
 
->>> from canonical.testing.layers import DatabaseLayer
+>>> from lp.testing.layers import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()
 
 We keep exceptions from expiring for about 3 months.

@@ -19,16 +19,6 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from lp.services.webapp.authorization import (
-    clear_cache,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
@@ -37,11 +27,21 @@ from lp.app.browser.tales import (
     )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.authorization import (
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

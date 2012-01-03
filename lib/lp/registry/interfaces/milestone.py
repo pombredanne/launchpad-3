@@ -46,9 +46,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.webservice.apihelpers import (
-    patch_plain_parameter_type,
-    )
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
@@ -65,6 +62,7 @@ from lp.services.fields import (
     NoneableDescription,
     NoneableTextLine,
     )
+from lp.services.webservice.apihelpers import patch_plain_parameter_type
 
 
 class MilestoneNameField(ContentNameField):

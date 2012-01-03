@@ -51,8 +51,9 @@ from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 from zope.security.zcml import IPermissionDirective
 
-from canonical.config import config
+from lp.app.interfaces.security import IAuthorization
 from lp.layers import FeedsLayer
+from lp.services.config import config
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     ICanonicalUrlData,
@@ -61,7 +62,6 @@ from lp.services.webapp.interfaces import (
     INavigationMenu,
     )
 from lp.services.webapp.publisher import RenamedView
-from lp.app.interfaces.security import IAuthorization
 
 
 class IAuthorizationsDirective(Interface):

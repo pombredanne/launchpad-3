@@ -72,22 +72,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.menu import (
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -123,7 +108,22 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class INewSpecification(Interface):

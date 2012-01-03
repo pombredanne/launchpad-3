@@ -107,8 +107,8 @@ configurations are provided to allow overriding the Expires
 and Cache-Control headers so that the feeds will be cached longer
 by browsers and the reverse-proxy in front of the feeds servers.
 
-    >>> from canonical.config import config
-    >>> from canonical.lazr.feed.feed import FeedBase
+    >>> from lp.services.config import config
+    >>> from lp.services.feeds.feed import FeedBase
     >>> from lp.bugs.feed.bug import BugsFeedBase
     >>> config.launchpad.max_feed_cache_minutes
     60
@@ -135,7 +135,7 @@ no content type is specified, then "text" is assumed.
 Since plain text and html are not valid xml, "<", ">", and "&" must
 be escaped using xml entities such as "&lt;".
 
-    >>> from canonical.lazr.feed.feed import FeedTypedData
+    >>> from lp.services.feeds.feed import FeedTypedData
     >>> text = FeedTypedData("<b> and &nbsp; and &amp;")
     >>> text.content
     '&lt;b&gt; and &amp;nbsp; and &amp;amp;'

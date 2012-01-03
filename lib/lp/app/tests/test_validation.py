@@ -12,7 +12,7 @@ from doctest import (
     )
 from unittest import TestSuite
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     setUp,
     tearDown,

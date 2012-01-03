@@ -17,13 +17,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.helpers import ensure_unicode
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
 from lp.registry.errors import (
@@ -34,6 +27,13 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import ensure_unicode
 
 
 class SourcePackageName(SQLBase):

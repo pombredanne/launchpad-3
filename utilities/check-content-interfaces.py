@@ -41,8 +41,11 @@ import _pythonpath
 
 from zope.interface import implementedBy
 from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation)
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    )
 from zope.interface.verify import verifyClass
+
 
 all_model_names = 'Some miracle process'
 

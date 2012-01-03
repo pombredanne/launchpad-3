@@ -52,12 +52,11 @@ from twisted.python import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
+from lp.services import scripts
+from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services import scripts
-from lp.services.webapp import errorlog
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
@@ -70,6 +69,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
+from lp.services.webapp import errorlog
 
 
 class BaseRunnableJobSource:

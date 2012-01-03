@@ -5,11 +5,11 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import get_feedback_messages
 
 

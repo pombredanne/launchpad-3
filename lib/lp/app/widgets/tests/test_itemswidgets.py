@@ -16,16 +16,16 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.webapp.menu import structured
-from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
+from lp.services.webapp.menu import structured
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class ItemWidgetTestCase(TestCaseWithFactory):

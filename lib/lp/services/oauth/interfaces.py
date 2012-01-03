@@ -39,11 +39,11 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )
-from lp.registry.interfaces.person import IPerson
 
 # The challenge included in responses with a 401 status.
 OAUTH_REALM = 'https://api.launchpad.net'

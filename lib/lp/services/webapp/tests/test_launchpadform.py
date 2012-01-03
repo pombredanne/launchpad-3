@@ -13,13 +13,13 @@ from zope.interface import (
     implements,
     )
 
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.services.webapp.interfaces import (
     ICheckBoxWidgetLayout,
     IMultiLineWidgetLayout,
     ISingleLineWidgetLayout,
     )
-from canonical.testing.layers import FunctionalLayer
-from lp.app.browser.launchpadform import LaunchpadFormView
+from lp.testing.layers import FunctionalLayer
 
 
 class LaunchpadFormTest(unittest.TestCase):

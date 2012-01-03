@@ -37,6 +37,14 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
+from lp.registry.interfaces.person import IPerson
+from lp.services.database.lpstorm import IStore
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import (
     ILaunchpadApplication,
@@ -47,19 +55,6 @@ from lp.services.webapp.login import (
     OpenIDLogin,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
-from lp.registry.interfaces.person import IPerson
-from lp.services.database.lpstorm import IStore
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
-from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     logout,
     TestCase,
@@ -71,6 +66,11 @@ from lp.testing.browser import (
     tearDown,
     )
 from lp.testing.fixture import ZopeViewReplacementFixture
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.testing.pages import (
     extract_text,
     find_main_content,

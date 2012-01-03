@@ -11,13 +11,13 @@ import unittest
 import transaction
 from zope.component import getUtility
 
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLibraryFileAlias(unittest.TestCase):

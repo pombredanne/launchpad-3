@@ -13,15 +13,15 @@ from BeautifulSoup import (
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,

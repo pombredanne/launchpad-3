@@ -46,8 +46,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.webapp import canonical_url
-from lp.services.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -77,6 +75,8 @@ from lp.services.fields import (
     Summary,
     Title,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 
 
 class SpecNameField(ContentNameField):

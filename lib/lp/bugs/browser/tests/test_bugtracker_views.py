@@ -7,14 +7,14 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view

@@ -45,12 +45,8 @@ from traceback import format_exception_only
 from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
-from canonical.config import config
-from lp.services.webapp.errorlog import (
-    globalErrorUtility,
-    ScriptRequest,
-    )
-from canonical.librarian.interfaces import (
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import (
     ILibrarianClient,
     UploadFailed,
     )
@@ -58,6 +54,10 @@ from lp.services.log import loglevels
 from lp.services.utils import (
     compress_hash,
     utc_now,
+    )
+from lp.services.webapp.errorlog import (
+    globalErrorUtility,
+    ScriptRequest,
     )
 
 # Reexport our custom loglevels for old callsites. These callsites
@@ -265,7 +265,7 @@ def logger_options(parser, default=logging.INFO):
     True
 
     Cleanup:
-    >>> from canonical.testing import reset_logging
+    >>> from lp.testing import reset_logging
     >>> reset_logging()
 
     As part of the options parsing, the 'log' global variable is updated.
@@ -346,7 +346,7 @@ def logger(options=None, name=None):
 
     Cleanup:
 
-    >>> from canonical.testing import reset_logging
+    >>> from lp.testing import reset_logging
     >>> reset_logging()
     """
     if options is None:

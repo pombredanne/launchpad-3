@@ -60,28 +60,6 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.services.searchbuilder import (
-    any,
-    greater_than,
-    )
-from lp.services.webapp import (
-    canonical_url,
-    ContextMenu,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    structured,
-    )
-from lp.services.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -121,6 +99,28 @@ from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
+from lp.services.searchbuilder import (
+    any,
+    greater_than,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
 
 
 class BugNavigation(Navigation):

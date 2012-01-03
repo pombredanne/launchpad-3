@@ -11,7 +11,6 @@ from urlparse import (
     urlparse as original_urlparse,
     urlsplit as original_urlsplit,
     )
-
 import urlparse as urlparse_module
 
 

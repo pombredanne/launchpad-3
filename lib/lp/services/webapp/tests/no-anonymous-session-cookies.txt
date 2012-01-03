@@ -5,7 +5,7 @@ set, not whether the server has sent a "set-cookie" header.
 
 When we go to launchpad as an anonymous user, the browser has no cookies.
 
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser.open(root_url)
     >>> len(browser.cookies)

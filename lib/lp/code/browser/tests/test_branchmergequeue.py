@@ -12,17 +12,17 @@ import re
 from mechanize import LinkNotFoundError
 import soupmatchers
 
-from lp.services.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchMergeQueue(BrowserTestCase):

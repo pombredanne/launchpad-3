@@ -12,18 +12,18 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from lp.services.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationpackagingjob import (

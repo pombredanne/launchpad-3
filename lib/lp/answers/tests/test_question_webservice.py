@@ -11,11 +11,6 @@ from simplejson import dumps
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.answers.errors import (
     AddAnswerContactError,
     FAQTargetError,
@@ -34,6 +29,11 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_webservice_error_view

@@ -20,16 +20,15 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from lp.services.webapp.interfaces import IPasswordEncryptor
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,
     )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -43,6 +42,7 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.webapp.interfaces import IPasswordEncryptor
 
 
 class Account(SQLBase):

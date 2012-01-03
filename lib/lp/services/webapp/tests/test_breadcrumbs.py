@@ -6,11 +6,11 @@ __metaclass__ = type
 from zope.i18nmessageid import Message
 from zope.interface import implements
 
+from lp.app.browser.launchpad import Hierarchy
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.app.browser.launchpad import Hierarchy
 from lp.testing import (
     login,
     TestCase,

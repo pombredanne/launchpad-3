@@ -12,10 +12,6 @@ from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.interfaces.launchpad import IPrivacy
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.app.security import AuthorizationBase
 from lp.testing import (
     FakeAdapterMixin,
@@ -23,6 +19,10 @@ from lp.testing import (
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.views import create_view
 

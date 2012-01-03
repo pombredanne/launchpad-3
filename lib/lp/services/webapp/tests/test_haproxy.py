@@ -10,15 +10,15 @@ from textwrap import dedent
 
 from zope.app.testing.functional import HTTPCaller
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.webapp import haproxy
 from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     LaunchpadDatabasePolicyFactory,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import FunctionalLayer
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class HAProxyIntegrationTest(TestCase):

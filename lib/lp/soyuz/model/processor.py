@@ -15,7 +15,7 @@ from storm.locals import Bool
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
+from lp.services.database.sqlbase import SQLBase
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

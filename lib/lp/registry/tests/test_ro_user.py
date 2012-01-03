@@ -9,8 +9,8 @@ import unittest
 
 import psycopg2
 
-from canonical.database.sqlbase import cursor
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.database.sqlbase import cursor
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class RoUserTestCase(unittest.TestCase):

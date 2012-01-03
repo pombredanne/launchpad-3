@@ -19,13 +19,13 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.mail.helpers import get_email_template
-from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.config import config
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,
     )
+from lp.services.mail.helpers import get_email_template
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import simple_sendmail
 from lp.translations.interfaces.pofile import IPOFileSet
 

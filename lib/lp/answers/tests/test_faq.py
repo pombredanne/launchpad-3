@@ -8,13 +8,13 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.services.webapp.authorization import check_permission
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestFAQPermissions(TestCaseWithFactory):

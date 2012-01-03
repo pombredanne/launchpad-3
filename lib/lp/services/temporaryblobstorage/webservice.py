@@ -15,14 +15,13 @@ __all__ = [
     'ITemporaryStorageManager',
     ]
 
-from lp.services.webservice.apihelpers import (
-    patch_operations_explicit_version,
-    )
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
-
+from lp.services.webservice.apihelpers import (
+    patch_operations_explicit_version,
+    )
 
 # ITemporaryBlobStorage
 patch_operations_explicit_version(

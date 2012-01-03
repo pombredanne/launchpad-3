@@ -20,15 +20,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.services.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.interaction import ANONYMOUS
-from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
@@ -38,6 +29,13 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
     login_celebrity,
@@ -45,6 +43,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPrivateTeamVisibility(TestCaseWithFactory):

@@ -35,8 +35,8 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -50,7 +50,7 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

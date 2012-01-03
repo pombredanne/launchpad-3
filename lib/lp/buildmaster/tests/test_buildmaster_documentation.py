@@ -10,13 +10,13 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
+from lp.services.config import config
 from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

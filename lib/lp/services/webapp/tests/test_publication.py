@@ -25,16 +25,17 @@ from zope.publisher.interfaces import (
     Retry,
     )
 
-from canonical.config import dbconfig
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    )
+from lp.services.config import dbconfig
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.readonly import is_read_only
 from lp.services.database.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
+    )
+from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.oauth.interfaces import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
     )
 import lp.services.webapp.adapter as dbadapter
 from lp.services.webapp.interfaces import (
@@ -57,18 +58,15 @@ from lp.services.webapp.servers import (
     WebServicePublication,
     )
 from lp.services.webapp.vhosts import allvhosts
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
-from lp.services.identity.model.emailaddress import EmailAddress
-from lp.services.oauth.interfaces import (
-    IOAuthConsumerSet,
-    IOAuthSignedRequest,
-    )
 from lp.testing import (
+    ANONYMOUS,
+    login,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 
 

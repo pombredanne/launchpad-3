@@ -67,7 +67,7 @@ adapted to IBreadcrumb, then it is added to the breadcrumbs list.
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from lp.testing.menu import make_fake_request
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/spam',
     ...     [root, cookbook, recipe])

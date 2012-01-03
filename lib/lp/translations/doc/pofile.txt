@@ -513,7 +513,7 @@ When it changes...
     # We change the plural form.
 
     >>> potmsgset.updatePluralForm(u'something else')
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> print potmsgset.plural_text
     something else

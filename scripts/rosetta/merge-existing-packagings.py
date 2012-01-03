@@ -7,8 +7,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.translations.translationmerger import (
-    MergeExistingPackagings)
+from lp.translations.translationmerger import MergeExistingPackagings
 
 
 if __name__ == '__main__':

@@ -19,14 +19,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from lp.services.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.enums import (
     CodeImportEventType,
     CodeImportJobState,
@@ -46,7 +38,11 @@ from lp.code.tests.codeimporthelpers import (
     make_finished_import,
     make_running_import,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import ILibrarianClient
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -55,6 +51,10 @@ from lp.testing import (
     TestCaseWithFactory,
     with_anonymous_login,
     with_celebrity_logged_in,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.pages import get_feedback_messages
 
@@ -448,7 +448,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # This causes problems for the "UTC_NOW - interval / 2"
         # expression below.
         interval = code_import.effective_update_interval
-        from canonical.database.sqlbase import get_transaction_timestamp
+        from lp.services.database.sqlbase import get_transaction_timestamp
         recent_result = CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
             date_job_started=get_transaction_timestamp() - interval / 2)

@@ -6,10 +6,10 @@
 __metaclass__ = type
 
 
-from lp.services.webapp.vocabulary import IHugeVocabulary
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):

@@ -24,16 +24,16 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IResult
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from lp.services.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.osutils import override_environ
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     ANONYMOUS,
     login,
     TestCase,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.publication import test_traverse
 from lp.testing.tests import test_yuixhr_fixture

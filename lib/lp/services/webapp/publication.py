@@ -55,9 +55,19 @@ from zope.publisher.publish import mapply
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 import lp.layers as layers
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    ITeam,
+    )
+from lp.services import features
+from lp.services.config import config
 from lp.services.database.readonly import is_read_only
+from lp.services.features.flags import NullFeatureController
+from lp.services.oauth.interfaces import IOAuthSignedRequest
+from lp.services.osutils import open_for_writing
 import lp.services.webapp.adapter as da
 from lp.services.webapp.dbpolicy import LaunchpadDatabasePolicy
 from lp.services.webapp.interfaces import (
@@ -77,16 +87,6 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.menu import structured
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.vhosts import allvhosts
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    ITeam,
-    )
-from lp.services import features
-from lp.services.features.flags import NullFeatureController
-from lp.services.oauth.interfaces import IOAuthSignedRequest
-from lp.services.osutils import open_for_writing
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)

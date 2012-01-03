@@ -20,6 +20,9 @@ from zope.security.management import (
     queryInteraction,
     )
 
+from lp.bugs.externalbugtracker import BugWatchUpdateWarning
+from lp.services.database.isolation import check_no_transaction
+from lp.services.limitedlist import LimitedList
 from lp.services.webapp.adapter import (
     clear_request_started,
     get_request_start_time,
@@ -31,9 +34,6 @@ from lp.services.webapp.errorlog import (
     )
 from lp.services.webapp.interaction import setupInteraction
 from lp.services.webapp.interfaces import IPlacelessAuthUtility
-from lp.bugs.externalbugtracker import BugWatchUpdateWarning
-from lp.services.database.isolation import check_no_transaction
-from lp.services.limitedlist import LimitedList
 
 # For OOPS reporting keep up to this number of SQL statements.
 MAX_SQL_STATEMENTS_LOGGED = 10000

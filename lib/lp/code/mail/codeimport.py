@@ -10,12 +10,6 @@ import textwrap
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
@@ -25,10 +19,16 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 def new_import(code_import, event):

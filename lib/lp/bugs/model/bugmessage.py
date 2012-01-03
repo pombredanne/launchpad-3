@@ -16,15 +16,15 @@ from sqlobject import (
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.bugs.interfaces.bugmessage import (
     IBugMessage,
     IBugMessageSet,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.messages.model.message import (
     Message,
     MessageChunk,

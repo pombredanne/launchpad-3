@@ -7,7 +7,6 @@ from textwrap import dedent
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.processaccepted import (
@@ -15,6 +14,7 @@ from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepublication,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestClosingBugs(TestCaseWithFactory):

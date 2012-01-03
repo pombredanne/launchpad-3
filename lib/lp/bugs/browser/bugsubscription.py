@@ -32,16 +32,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
 from lp import _
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from lp.services.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from lp.services.webapp.launchpadform import ReturnToReferrerMixin
-from lp.services.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -58,6 +48,16 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.launchpadform import ReturnToReferrerMixin
+from lp.services.webapp.menu import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):

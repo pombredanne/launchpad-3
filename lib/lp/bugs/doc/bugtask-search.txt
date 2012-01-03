@@ -159,7 +159,7 @@ will be returned by the search only if search_comments is True.
 
 When the search_comments config option is False, the bug is not found.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> search_comments = """
     ...     [malone]
     ...     search_comments: %s
@@ -1040,7 +1040,7 @@ None of these bugs have any duplicates.
     ...  if bugtask.bug.duplicateof is not None]
     []
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
 We mark bug #10 as a duplicate of bug #9.
 

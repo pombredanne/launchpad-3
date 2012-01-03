@@ -22,5 +22,3 @@ from lp.codehosting.vfs.branchfs import (
     LaunchpadServer,
     )
 from lp.codehosting.vfs.branchfsclient import BranchFileSystemClient
-
-

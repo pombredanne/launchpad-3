@@ -12,7 +12,6 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from lp.services.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -20,6 +19,7 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.services.webapp import canonical_url
 
 
 class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):

@@ -71,35 +71,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    block_implicit_flushes,
-    convert_storm_clause_to_string,
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.helpers import shortlist
-from lp.services.database.lpstorm import IStore
-from lp.services.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    not_equals,
-    NULL,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -160,10 +131,39 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    block_implicit_flushes,
+    convert_storm_clause_to_string,
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.soyuz.enums import PackagePublishingStatus
 
@@ -2041,7 +2041,7 @@ class BugTaskSet:
         #
         # XXX: kiko 2006-03-16:
         # Is this a good candidate for becoming infrastructure in
-        # canonical.database.sqlbase?
+        # lp.services.database.sqlbase?
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue

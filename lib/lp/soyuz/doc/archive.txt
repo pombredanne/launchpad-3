@@ -904,7 +904,7 @@ binary is also DELETED.
 Flush the database caches to invalidate old caches from the
 corresponding publishing Postgres views.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 

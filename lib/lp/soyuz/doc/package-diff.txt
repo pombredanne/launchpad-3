@@ -277,7 +277,7 @@ The auxiliary function below will facilitate the viewing of diff results.
     >>> import subprocess
     >>> import tempfile
 
-    >>> from canonical.librarian.utils import copy_and_close
+    >>> from lp.services.librarian.utils import copy_and_close
 
     >>> def get_diff_results(diff):
     ...     lfa = diff.diff_content
@@ -401,7 +401,7 @@ directly with PackageDiffs objects.
 
 Let's flush all the updates done.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Those methods are useful when the callsites are not interested only in
@@ -643,7 +643,7 @@ uploaded source.
     ...     '1.0-2', archive=foobar.archive)
     >>> transaction.commit()
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
     >>> fillLibrarianFile(dsc.libraryfile.id)
 

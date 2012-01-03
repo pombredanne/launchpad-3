@@ -12,16 +12,12 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
@@ -44,6 +40,10 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 

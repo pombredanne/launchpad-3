@@ -29,7 +29,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
@@ -65,6 +64,7 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,

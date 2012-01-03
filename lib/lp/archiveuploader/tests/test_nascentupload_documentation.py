@@ -10,11 +10,6 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.testing import (
-    login,
-    logout,
-    )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -26,7 +21,12 @@ from lp.services.librarian.model import LibraryFileAlias
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.component import ComponentSelection
+from lp.testing import (
+    login,
+    logout,
+    )
 from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,

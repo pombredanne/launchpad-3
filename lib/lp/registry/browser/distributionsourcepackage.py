@@ -33,25 +33,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.helpers import shortlist
-from lp.services.webapp import (
-    action,
-    canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadView,
-    Navigation,
-    redirection,
-    StandardLaunchpadFacets,
-    )
-from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import IBreadcrumb
-from lp.services.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
@@ -80,7 +61,26 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.soyuz.browser.sourcepackagerelease import linkify_changelog
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (

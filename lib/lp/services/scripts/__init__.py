@@ -26,8 +26,8 @@ from zope.security.management import setSecurityPolicy
 import zope.sendmail.delivery
 import zope.site.hooks
 
-from canonical.config import config
-from canonical.database.postgresql import ConnectionString
+from lp.services.config import config
+from lp.services.database.postgresql import ConnectionString
 # these are intentional re-exports, apparently, used by *many* files.
 from lp.services.scripts.logger import (
     dummy_logger_options,
@@ -58,8 +58,8 @@ def execute_zcml_for_scripts(use_web_security=False):
     # When in testing mode, prevent some cases of erroneous layer usage.
     # But we don't want to import that module in production usage, thus
     # the conditional block.
-    if 'canonical.testing.layers' in sys.modules:
-        from canonical.testing.layers import (
+    if 'lp.testing.layers' in sys.modules:
+        from lp.testing.layers import (
                 FunctionalLayer, BaseLayer, ZopelessLayer)
         assert not FunctionalLayer.isSetUp, \
                 'Setting up Zopeless CA when Zopefull CA is already running'

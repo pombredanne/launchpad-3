@@ -8,11 +8,11 @@
 __metaclass__ = type
 __all__ = []
 
-from optparse import OptionParser
-
 import _pythonpath
 
-from canonical.database.sqlbase import (
+from optparse import OptionParser
+
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )

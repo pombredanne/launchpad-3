@@ -25,8 +25,14 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.config import config
 from lp import _
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -38,12 +44,6 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import structured
-from lp.app.errors import (
-    NotFoundError,
-    UnexpectedFormData,
-    )
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (

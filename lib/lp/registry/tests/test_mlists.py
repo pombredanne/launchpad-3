@@ -18,16 +18,6 @@ import unittest
 
 import transaction
 
-from lp.testing import (
-    login,
-    login_person,
-    )
-from canonical.testing.layers import (
-    AppServerLayer,
-    BaseLayer,
-    DatabaseFunctionalLayer,
-    LayerProcessController,
-    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
@@ -35,7 +25,17 @@ from lp.registry.interfaces.person import (
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    login,
+    login_person,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    AppServerLayer,
+    BaseLayer,
+    DatabaseFunctionalLayer,
+    LayerProcessController,
+    )
 
 
 factory = LaunchpadObjectFactory()

@@ -34,25 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import sqlbase
-from canonical.database.constants import (
-    ONE_DAY_AGO,
-    SEVEN_DAYS_AGO,
-    THIRTY_DAYS_AGO,
-    UTC_NOW,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -85,6 +66,14 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.config import config
+from lp.services.database import sqlbase
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -104,11 +93,22 @@ from lp.services.session.model import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (

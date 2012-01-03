@@ -24,16 +24,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from lp import _
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -116,8 +107,12 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -133,6 +128,11 @@ from lp.testing import (
     ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )

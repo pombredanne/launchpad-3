@@ -41,17 +41,6 @@ from zope.interface import (
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -68,6 +57,17 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class BuildFarmJobOld:
@@ -97,6 +97,10 @@ class BuildFarmJobOld:
         raise NotImplementedError
 
     def getByJob(self, job):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getByJobs(self, job):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
@@ -160,11 +164,27 @@ class BuildFarmJobOldDerived:
         """
         raise NotImplementedError
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        """Preload the build farm jobs to which the given jobs will delegate.
+
+        """
+        pass
+
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJobOld`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_ids = [job.id for job in jobs]
+        return store.find(
+            cls, cls.job_id.is_in(job_ids))
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""

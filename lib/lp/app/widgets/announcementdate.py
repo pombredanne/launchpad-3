@@ -27,11 +27,11 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.date import DateTimeWidget
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.announcement import IAnnouncement
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class IAnnouncementDateWidget(ISimpleInputWidget):

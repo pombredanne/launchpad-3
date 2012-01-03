@@ -21,17 +21,17 @@ from storm.store import EmptyResultSet
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import (
+from lp.app.errors import NotFoundError
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
 from lp.services.helpers import ensure_unicode
-from lp.services.database.lpstorm import IStore
 from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
-from lp.app.errors import NotFoundError
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,

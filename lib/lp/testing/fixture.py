@@ -48,12 +48,12 @@ from zope.security.checker import (
     undefineChecker,
     )
 
-from canonical.config import config
 from lp.services import webapp
-from lp.services.webapp.errorlog import ErrorReportEvent
+from lp.services.config import config
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.errorlog import ErrorReportEvent
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -67,7 +67,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         super(PGBouncerFixture, self).__init__()
 
         # Known databases
-        from canonical.testing.layers import DatabaseLayer
+        from lp.testing.layers import DatabaseLayer
         dbnames = [
             DatabaseLayer._db_fixture.dbname,
             DatabaseLayer._db_template_fixture.dbname,
@@ -114,7 +114,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         as we are using a test layer that doesn't provide database
         connections.
         """
-        from canonical.testing.layers import (
+        from lp.testing.layers import (
             reconnect_stores,
             is_ca_available,
             )
@@ -233,7 +233,7 @@ class Urllib2Fixture(Fixture):
 
     def setUp(self):
         # Work around circular import.
-        from canonical.testing.layers import wsgi_application
+        from lp.testing.layers import wsgi_application
         super(Urllib2Fixture, self).setUp()
         add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)

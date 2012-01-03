@@ -6,18 +6,18 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.librarian import db
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.database import (
     read_transaction,
     write_transaction,
     )
 from lp.services.librarian.model import LibraryFileContent
+from lp.services.librarianserver import db
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestTransactionDecorators(unittest.TestCase):

@@ -12,15 +12,17 @@ from urllib2 import HTTPError
 
 import transaction
 
-from lp.testing import login
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     BugzillaRemoteComponentScraper,
     dictFromCSV,
     )
 from lp.services.log.logger import BufferLogger
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 

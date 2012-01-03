@@ -18,22 +18,21 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
-from canonical.lazr.timeout import (
-    get_default_timeout_function,
-    set_default_timeout_function,
-    )
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
-from lp.testing import TestCase
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    TestCase,
+    )
 from lp.testing.gpgkeys import (
     import_secret_test_key,
     iter_test_key_emails,
@@ -41,6 +40,7 @@ from lp.testing.gpgkeys import (
     test_pubkey_from_email,
     )
 from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestImportKeyRing(TestCase):

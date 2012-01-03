@@ -22,14 +22,14 @@ from bzrlib.transport import (
 from twisted.python.util import sibpath
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from lp.services.daemons.tachandler import TacTestSetup
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.services.config import config
+from lp.services.daemons.tachandler import TacTestSetup
+from lp.services.database.sqlbase import commit
 
 
 def set_up_test_user(test_user, test_team):

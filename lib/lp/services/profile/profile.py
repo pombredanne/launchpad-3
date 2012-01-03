@@ -35,16 +35,16 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
-from canonical.config import config
-import lp.services.webapp.adapter as da
-from lp.services.webapp.interfaces import (
-    DisallowedStore,
-    IStartRequestEvent,
-    )
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.profile.mem import (
     memory,
     resident,
+    )
+import lp.services.webapp.adapter as da
+from lp.services.webapp.interfaces import (
+    DisallowedStore,
+    IStartRequestEvent,
     )
 
 

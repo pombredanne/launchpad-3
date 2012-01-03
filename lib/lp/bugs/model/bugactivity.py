@@ -15,8 +15,6 @@ from sqlobject import (
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from lp.bugs.adapters.bugchange import (
     ATTACHMENT_ADDED,
     ATTACHMENT_REMOVED,
@@ -36,6 +34,8 @@ from lp.bugs.interfaces.bugactivity import (
     IBugActivitySet,
     )
 from lp.registry.interfaces.person import validate_person
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class BugActivity(SQLBase):

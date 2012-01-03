@@ -13,13 +13,6 @@ from zope import thread
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import block_implicit_flushes
-from lp.services.webapp.interaction import get_current_principal
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    ILoggedInEvent,
-    IOpenLaunchBag,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
@@ -30,7 +23,14 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.identity.interfaces.account import IAccount
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    ILoggedInEvent,
+    IOpenLaunchBag,
+    )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 

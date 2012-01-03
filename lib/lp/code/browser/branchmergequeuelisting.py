@@ -13,16 +13,16 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.feeds.browser import FeedsMixin
-from lp.services.webapp import (
-    LaunchpadView,
-    Link,
-    )
 from lp.code.interfaces.branchmergequeuecollection import (
     IAllBranchMergeQueues,
     )
 from lp.services.browser_helpers import get_plural_text
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    LaunchpadView,
+    Link,
+    )
 
 
 class HasMergeQueuesMenuMixin:

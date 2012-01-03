@@ -26,13 +26,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.webapp import (
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import custom_widget
 from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -53,6 +46,13 @@ from lp.services.comments.interfaces.conversation import (
     IConversation,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):
