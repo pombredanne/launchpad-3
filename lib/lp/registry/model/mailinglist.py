@@ -38,7 +38,6 @@ from sqlobject import (
 from storm.expr import (
     And,
     Join,
-    LeftJoin,
     )
 from storm.info import ClassAlias
 from storm.store import Store
@@ -687,21 +686,19 @@ class MailingListSet:
         Team = ClassAlias(Person)
         tables = (
             EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.personID
-                     == EmailAddress.personID),
-            # pylint: disable-msg=C0301
-            LeftJoin(
+            Join(Account, Account.id == EmailAddress.accountID),
+            Join(
+                MailingListSubscription,
+                MailingListSubscription.personID == EmailAddress.personID),
+            Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            LeftJoin(Person,
-                     Person.id == TeamParticipation.personID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(
+                TeamParticipation,
+                TeamParticipation.personID ==
+                    MailingListSubscription.personID),
+            Join(Person, Person.id == TeamParticipation.personID),
+            Join(Team, Team.id == MailingList.teamID),
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         # Find all the people who are subscribed with their preferred address.
@@ -723,21 +720,19 @@ class MailingListSet:
             by_team[team_name].add(value)
         tables = (
             EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.email_addressID
-                     == EmailAddress.id),
-            # pylint: disable-msg=C0301
-            LeftJoin(
+            Join(Account, Account.id == EmailAddress.accountID),
+            Join(
+                MailingListSubscription,
+                MailingListSubscription.email_addressID == EmailAddress.id),
+            Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            LeftJoin(Person,
-                     Person.id == TeamParticipation.personID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(
+                TeamParticipation,
+                TeamParticipation.personID ==
+                    MailingListSubscription.personID),
+            Join(Person, Person.id == TeamParticipation.personID),
+            Join(Team, Team.id == MailingList.teamID),
             )
         explicit = store.using(*tables).find(
             (EmailAddress.email, Person.displayname, Team.name),
