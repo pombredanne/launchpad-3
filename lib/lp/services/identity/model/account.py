@@ -32,10 +32,6 @@ from lp.services.identity.interfaces.account import (
     IAccount,
     IAccountSet,
     )
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.webapp.interfaces import IPasswordEncryptor
@@ -65,13 +61,6 @@ class Account(SQLBase):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.status)
-
-    def _getEmails(self, status):
-        """Get related `EmailAddress` objects with the given status."""
-        result = IStore(EmailAddress).find(
-            EmailAddress, accountID=self.id, status=status)
-        result.order_by(EmailAddress.email.lower())
-        return result
 
     @property
     def preferredemail(self):
@@ -188,21 +177,6 @@ class AccountSet:
         if account is None:
             raise LookupError(id)
         return account
-
-    def createAccountAndEmail(self, email, rationale, displayname, password,
-                              password_is_encrypted=False,
-                              openid_identifier=None):
-        """See `IAccountSet`."""
-        # Convert the PersonCreationRationale to an AccountCreationRationale.
-        account_rationale = getattr(AccountCreationRationale, rationale.name)
-        account = self.new(
-            account_rationale, displayname, password=password,
-            password_is_encrypted=password_is_encrypted,
-            openid_identifier=openid_identifier)
-        account.status = AccountStatus.ACTIVE
-        email = getUtility(IEmailAddressSet).new(
-            email, status=EmailAddressStatus.PREFERRED, account=account)
-        return account, email
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
