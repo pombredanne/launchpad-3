@@ -30,6 +30,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -41,6 +42,9 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+
+
+RESULT_SETS = ResultSet, EmptyResultSet, DecoratedResultSet
 
 
 class TestStructuralSubscription(TestCaseWithFactory):
@@ -649,7 +653,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
         # subscriptions will be returned by get_structural_subscriptions().
         product, bug = self.make_product_with_bug()
         subscriptions = get_structural_subscriptions(bug, None)
-        self.assertIsInstance(subscriptions, (ResultSet, EmptyResultSet))
+        self.assertIsInstance(subscriptions, RESULT_SETS)
         self.assertEqual([], list(subscriptions))
 
     def test_get_structural_subscriptions_single_target(self):
@@ -678,7 +682,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
         bug.addTask(actor, product2)
 
         subscriptions = get_structural_subscriptions(bug, None)
-        self.assertIsInstance(subscriptions, ResultSet)
+        self.assertIsInstance(subscriptions, RESULT_SETS)
         self.assertContentEqual(
             [subscription1, subscription2], subscriptions)
 
@@ -698,7 +702,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
         bug.addTask(actor, product2)
 
         subscriptions = get_structural_subscriptions(bug, None)
-        self.assertIsInstance(subscriptions, ResultSet)
+        self.assertIsInstance(subscriptions, RESULT_SETS)
         self.assertContentEqual([subscription1], subscriptions)
 
     def test_get_structural_subscriptions_level(self):
@@ -742,7 +746,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # subscribers will be returned by get_structural_subscribers().
         product, bug = self.make_product_with_bug()
         subscribers = get_structural_subscribers(bug, None, None, None)
-        self.assertIsInstance(subscribers, (ResultSet, EmptyResultSet))
+        self.assertIsInstance(subscribers, RESULT_SETS)
         self.assertEqual([], list(subscribers))
 
     def test_getStructuralSubscribers_single_target(self):
@@ -772,7 +776,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         bug.addTask(actor, product2)
 
         subscribers = get_structural_subscribers(bug, None, None, None)
-        self.assertIsInstance(subscribers, ResultSet)
+        self.assertIsInstance(subscribers, RESULT_SETS)
         self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
 
     def test_getStructuralSubscribers_recipients(self):
