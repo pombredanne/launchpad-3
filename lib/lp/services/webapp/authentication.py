@@ -276,13 +276,11 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        try:
-            account = getUtility(IAccountSet).getByEmail(login)
-        except LookupError:
+        person = getUtility(IPersonSet).getByEmail(login)
+        if person is None or person.account is None:
             return None
-        else:
-            return self._principalForAccount(
-                account, access_level, scope, want_password)
+        return self._principalForAccount(
+            person.account, access_level, scope, want_password)
 
     def _principalForAccount(self, account, access_level, scope,
                              want_password=True):

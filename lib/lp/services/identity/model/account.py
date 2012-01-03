@@ -32,7 +32,6 @@ from lp.services.identity.interfaces.account import (
     IAccount,
     IAccountSet,
     )
-from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.webapp.interfaces import IPasswordEncryptor
 
@@ -150,26 +149,6 @@ class AccountSet:
         account = IStore(Account).get(Account, id)
         if account is None:
             raise LookupError(id)
-        return account
-
-    def getByEmail(self, email):
-        """See `IAccountSet`."""
-        from lp.registry.model.person import Person
-        store = IStore(Account)
-        try:
-            email = email.decode('US-ASCII')
-        except (UnicodeDecodeError, UnicodeEncodeError):
-            # Non-ascii email addresses are not legal, so assume there are no
-            # matching addresses in Launchpad.
-            raise LookupError(repr(email))
-        account = store.find(
-            Account,
-            Person.account == Account.id,
-            EmailAddress.person == Person.id,
-            EmailAddress.email.lower()
-                == email.strip().lower()).one()
-        if account is None:
-            raise LookupError(email)
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
