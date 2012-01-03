@@ -54,7 +54,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -899,6 +899,14 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 
         :param start_date: The optional first date to return.
         :param end_date: The optional last date to return.
+        """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def binaryFileUrls():
+        """URLs for this binary publication's binary files.
+
+        :return: A collection of URLs for this binary.
         """
 
 

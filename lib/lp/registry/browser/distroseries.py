@@ -39,34 +39,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.webapp import (
-    action,
-    custom_widget,
-    GetitemNavigation,
-    StandardLaunchpadFacets,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    structured,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.url import urlappend
+from lp import _
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
@@ -104,8 +77,33 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.browser_helpers import get_plural_text
+from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    action,
+    custom_widget,
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    structured,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.url import urlappend
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
@@ -437,7 +435,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -1083,7 +1081,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The child doesn't have this package.  Treat that as the
             # parent being newer.
             return False
-        comparison = apt_pkg.VersionCompare(
+        comparison = apt_pkg.version_compare(
             dsd.parent_source_version, dsd.source_version)
         return comparison < 0
 

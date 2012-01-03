@@ -6,12 +6,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.team import TeamOverviewMenu
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
@@ -19,13 +13,19 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.menu import check_menu_links
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,

@@ -12,17 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -37,10 +26,21 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts.tests import run_script
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_initialized_view
 

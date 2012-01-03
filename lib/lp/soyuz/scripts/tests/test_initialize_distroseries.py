@@ -14,9 +14,6 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesdifference import (
@@ -24,6 +21,8 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -53,6 +52,7 @@ from lp.soyuz.scripts.initialize_distroseries import (
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):

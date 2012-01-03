@@ -6,7 +6,7 @@ If we set soft_request_timeout to some value, the page will take
 slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()

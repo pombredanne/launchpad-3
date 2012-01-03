@@ -8,13 +8,13 @@ import signal
 import tempfile
 import xmlrpclib
 
+from lpbuildd.slave import BuilderStatus
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-
 from twisted.internet.defer import (
     CancelledError,
     DeferredList,
@@ -22,29 +22,16 @@ from twisted.internet.defer import (
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
-
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
 
-from lpbuildd.slave import BuilderStatus
-
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
+    CannotResumeHost,
     IBuilder,
     IBuilderSet,
     )
@@ -52,7 +39,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.interfaces.builder import CannotResumeHost
 from lp.buildmaster.model.builder import (
     BuilderSlave,
     ProxyWithConnectionTimeout,
@@ -74,8 +60,15 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehavior,
     WaitingSlave,
     )
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -89,6 +82,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestBuilderBasics(TestCaseWithFactory):

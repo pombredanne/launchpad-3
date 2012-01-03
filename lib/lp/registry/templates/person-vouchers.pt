@@ -13,7 +13,7 @@
     <div metal:fill-slot="main"
          tal:define="
            commercial_projects view/has_commercial_projects;
-           config modules/canonical.config/config">
+           config modules/lp.services.config/config">
 
         <tal:not_commercial condition="not: commercial_projects">
           <tal:name replace="context/fmt:displayname"/>

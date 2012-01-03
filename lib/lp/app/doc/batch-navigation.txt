@@ -7,7 +7,7 @@ Most of the test for this behavior is in the lazr.batchnavigation package.
 This documents and tests the Launchpad-specific elements of its usage.
 
 Note that our use of the batching code relies on the registration of
-canonical.launchpad.webapp.batching.FiniteSequenceAdapter for
+lp.services.webapp.batching.FiniteSequenceAdapter for
 storm.zope.interfaces.IResultSet and
 storm.zope.interfaces.ISQLObjectResultSet.
 
@@ -24,27 +24,28 @@ It uses two arguments to control the batching:
 
 Imports:
 
-  >>> from canonical.launchpad.webapp.batching import BatchNavigator
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.batching import BatchNavigator
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
-  >>> def build_request(query_string_args=None, method='GET'):
-  ...   if query_string_args is None:
-  ...       query_string = ''
-  ...   else:
-  ...       query_string = "&".join(
-  ...           ["%s=%s" % (k,v) for k,v in query_string_args.items()])
-  ...   request = LaunchpadTestRequest(SERVER_URL='http://www.example.com/foo',
-  ...                                  method=method,
-  ...                                  environ={'QUERY_STRING': query_string})
-  ...   request.processInputs()
-  ...   return request
+    >>> def build_request(query_string_args=None, method='GET'):
+    ...   if query_string_args is None:
+    ...       query_string_args = {}
+    ...   query_string = "&".join(
+    ...       "%s=%s" % (k,v) for k,v in query_string_args.items())
+    ...   request = LaunchpadTestRequest(
+    ...       SERVER_URL='http://www.example.com/foo', method=method,
+    ...       environ={'QUERY_STRING': query_string})
+    ...   request.processInputs()
+    ...   return request
 
 A dummy request object:
 
 Some sample data.
 
-  >>> reindeer = ['Dasher', 'Dancer', 'Prancer', 'Vixen', 'Comet',
-  ...     'Cupid', 'Donner', 'Blitzen', 'Rudolph']
+    >>> reindeer = [
+    ...     'Dasher', 'Dancer', 'Prancer', 'Vixen', 'Comet',
+    ...     'Cupid', 'Donner', 'Blitzen', 'Rudolph',
+    ...     ]
 
 
 Multiple pages
@@ -58,7 +59,8 @@ The batch navigator tells us whether multiple pages will be used.
     >>> batch_nav.has_multiple_pages
     True
 
-    >>> one_page_nav = BatchNavigator(select_results, build_request(), size=200)
+    >>> one_page_nav = BatchNavigator(
+    ...     select_results, build_request(), size=200)
     >>> one_page_nav.has_multiple_pages
     False
 
@@ -71,7 +73,7 @@ potentially exhaust server resources, an upper limit is put on the batch
 size. If the requested batch parameter is higher than this, an
 InvalidBatchSizeError is raised.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> config.push('max-batch-size', dedent("""\
     ...     [launchpad]

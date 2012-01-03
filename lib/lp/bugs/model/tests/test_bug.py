@@ -14,8 +14,6 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enum import (
     BugNotificationLevel,
@@ -31,6 +29,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     feature_flags,
@@ -40,6 +39,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,

@@ -1,4 +1,5 @@
-= Updating Product.remote_product =
+Updating Product.remote_product
+===============================
 
 The remote_product attribute of a Product is used to present links for
 filing and searching bugs in the Product's bug tracker, in case it's not
@@ -6,7 +7,7 @@ using Launchpad to track its bugs. We don't expect users to set the
 remote_product themselves, so we have a script that tries to set this
 automatically.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> store.execute("UPDATE Product SET remote_product = 'not-None'")
@@ -20,7 +21,8 @@ automatically.
     >>> updater = RemoteProductUpdater(FakeTransaction(), BufferLogger())
 
 
-== Testing ==
+Testing
+-------
 
 To help testing, there is a method, _getExternalBugTracker(), that
 creates the ExternalBugTracker for the given BugTracker.
@@ -54,7 +56,8 @@ ExternalBugTracker that doesn't require network access.
     ...         return self.external_bugtracker_to_return()
 
 
-== update() ==
+update()
+--------
 
 The update method simply loops over all the bug tracker types that can
 track more than one product, and calls updateByBugTrackerType(). Any bug
@@ -84,7 +87,8 @@ it's skipped as well.
     set([])
 
 
-== updateByBugTrackerType() ==
+updateByBugTrackerType()
+------------------------
 
 The updateByBugTrackerType() method looks at the bug watches that are
 linked to the product, to decide what remote_product should be set to.
@@ -92,7 +96,8 @@ It accepts a single parameter, the type of the bug tracker that should
 be updated.
 
 
-=== No bug watches ===
+No bug watches
+..............
 
 If there are no bug watches, nothing will be done.
 
@@ -116,7 +121,8 @@ If there are no bug watches, nothing will be done.
     None
 
 
-=== Linked bug watches ===
+Linked bug watches
+..................
 
 If there are bug watches for a product having a None remote_product, an
 arbitrary bug watch will be retrieved, and queried for its remote
@@ -124,8 +130,8 @@ product. Products having a bug tracker of a different type than the
 given one are ignored.
 
     >>> import transaction
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> def switch_db_to_launchpad():
     ...     transaction.commit()
@@ -162,7 +168,8 @@ given one are ignored.
     None
 
 
-=== remote_product already set ===
+remote_product already set
+..........................
 
 If a product already has remote_product set, it will not be updated.
 
@@ -187,7 +194,8 @@ If a product already has remote_product set, it will not be updated.
     already-set
 
 
-=== Transaction handling ===
+Transaction handling
+....................
 
 To avoid long-running write transactions, the transaction is committed
 after each product's remote_product has been updated.
@@ -218,7 +226,8 @@ after each product's remote_product has been updated.
     COMMIT
 
 
-=== Error handling ===
+Error handling
+..............
 
 If the ExternalBugTracker raises any BugWatchUpdateErrors,
 updateByBugTrackerType() will simply log the error and then continue.

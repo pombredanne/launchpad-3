@@ -18,13 +18,6 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.security import AccessBranch
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (
@@ -33,10 +26,17 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet
+from lp.security import AccessBranch
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchVisibility(TestCaseWithFactory):
@@ -78,7 +78,7 @@ class TestBranchVisibility(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=owner, private=True)
         naked_branch = removeSecurityProxy(branch)
 
-        clear_cache() # clear authorization cache for check_permission
+        clear_cache()  # Clear authorization cache for check_permission.
         access = AccessBranch(naked_branch)
         self.assertFalse(access.checkUnauthenticated())
         self.assertTrue(

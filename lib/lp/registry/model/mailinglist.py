@@ -53,23 +53,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+from lp import _
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
     CannotSubscribe,
@@ -88,7 +72,22 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
@@ -97,6 +96,7 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.messages.model.message import Message
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
 
 

@@ -91,19 +91,16 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-from lp.answers.interfaces.questionsperson import IQuestionsPerson
-from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.validators.name import name_validator
@@ -140,6 +137,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
@@ -157,6 +155,8 @@ from lp.services.identity.interfaces.account import (
     IAccount,
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -691,6 +691,9 @@ class IPersonPublic(IPrivacy):
         title=_("Why are you deactivating your account?"), required=False,
         readonly=True)
 
+    def anyone_can_join():
+        """Quick check as to whether a team allows anyone to join."""
+
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
     """IPerson attributes that require launchpad.LimitedView permission."""
@@ -1040,9 +1043,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     administrated_teams = Attribute(
         u"the teams that this person/team is an administrator of.")
-
-    def anyone_can_join():
-        """Quick check as to whether a team allows anyone to join."""
 
     @invariant
     def personCannotHaveIcon(person):

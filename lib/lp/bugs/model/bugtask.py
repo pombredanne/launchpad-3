@@ -71,35 +71,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    block_implicit_flushes,
-    convert_storm_clause_to_string,
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    not_equals,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -160,10 +131,39 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    block_implicit_flushes,
+    convert_storm_clause_to_string,
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.soyuz.enums import PackagePublishingStatus
 
@@ -1463,9 +1463,9 @@ def search_value_to_where_condition(search_value):
         return "IS NULL"
 
 
-def get_bug_privacy_filter(user):
+def get_bug_privacy_filter(user, private_only=False):
     """An SQL filter for search results that adds privacy-awareness."""
-    return get_bug_privacy_filter_with_decorator(user)[0]
+    return get_bug_privacy_filter_with_decorator(user, private_only)[0]
 
 
 def _nocache_bug_decorator(obj):
@@ -1489,17 +1489,26 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def get_bug_privacy_filter_with_decorator(user):
+def get_bug_privacy_filter_with_decorator(user, private_only=False):
     """Return a SQL filter to limit returned bug tasks.
 
+    :param user: The user whose visible bugs will be filtered.
+    :param private_only: If a user is specified, this parameter determines
+        whether only private bugs will be filtered. If True, the returned
+        filter omits the "Bug.private IS FALSE" clause.
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
     if user is None:
-        return "Bug.private = FALSE", _nocache_bug_decorator
+        return "Bug.private IS FALSE", _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
+
+    public_bug_filter = ''
+    if not private_only:
+        public_bug_filter = 'Bug.private IS FALSE OR'
+
     # A subselect is used here because joining through
     # TeamParticipation is only relevant to the "user-aware"
     # part of the WHERE condition (i.e. the bit below.) The
@@ -1511,28 +1520,28 @@ def get_bug_privacy_filter_with_decorator(user):
         if features.getFeatureFlag(
             'disclosure.private_bug_visibility_rules.enabled'):
             pillar_privacy_filters = """
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, Product
                 WHERE Product.owner IN (SELECT team FROM teams) AND
                     BugTask.product = Product.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, ProductSeries
                 WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
                     BugTask.productseries = ProductSeries.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, Distribution
                 WHERE Distribution.owner IN (SELECT team FROM teams) AND
                     BugTask.distribution = Distribution.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, DistroSeries, Distribution
                 WHERE Distribution.owner IN (SELECT team FROM teams) AND
@@ -1542,7 +1551,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     Bug.security_related IS False
             """
         query = """
-            (Bug.private = FALSE OR EXISTS (
+            (%(public_bug_filter)s EXISTS (
                 WITH teams AS (
                     SELECT team from TeamParticipation
                     WHERE person = %(personid)s
@@ -1551,7 +1560,7 @@ def get_bug_privacy_filter_with_decorator(user):
                 FROM BugSubscription
                 WHERE BugSubscription.person IN (SELECT team FROM teams) AND
                     BugSubscription.bug = Bug.id
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask
                 WHERE BugTask.assignee IN (SELECT team FROM teams) AND
@@ -1560,12 +1569,13 @@ def get_bug_privacy_filter_with_decorator(user):
                     ))
             """ % dict(
                     personid=quote(user.id),
+                    public_bug_filter=public_bug_filter,
                     extra_filters=pillar_privacy_filters)
     else:
         if features.getFeatureFlag(
             'disclosure.private_bug_visibility_rules.enabled'):
             pillar_privacy_filters = """
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, Product
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1573,7 +1583,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.product = Product.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, ProductSeries
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1581,7 +1591,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.productseries = ProductSeries.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, Distribution
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1589,7 +1599,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     BugTask.distribution = Distribution.id AND
                     BugTask.bug = Bug.id AND
                     Bug.security_related IS False
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation, DistroSeries, Distribution
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1600,13 +1610,13 @@ def get_bug_privacy_filter_with_decorator(user):
                     Bug.security_related IS False
             """ % sqlvalues(personid=user.id)
         query = """
-            (Bug.private = FALSE OR EXISTS (
+            (%(public_bug_filter)s EXISTS (
                 SELECT BugSubscription.bug
                 FROM BugSubscription, TeamParticipation
                 WHERE TeamParticipation.person = %(personid)s AND
                     TeamParticipation.team = BugSubscription.person AND
                     BugSubscription.bug = Bug.id
-                UNION
+                UNION ALL
                 SELECT BugTask.bug
                 FROM BugTask, TeamParticipation
                 WHERE TeamParticipation.person = %(personid)s AND
@@ -1616,6 +1626,7 @@ def get_bug_privacy_filter_with_decorator(user):
                     ))
             """ % dict(
                     personid=quote(user.id),
+                    public_bug_filter=public_bug_filter,
                     extra_filters=pillar_privacy_filters)
     return query, _make_cache_user_can_view_bug(user)
 
@@ -2030,7 +2041,7 @@ class BugTaskSet:
         #
         # XXX: kiko 2006-03-16:
         # Is this a good candidate for becoming infrastructure in
-        # canonical.database.sqlbase?
+        # lp.services.database.sqlbase?
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
@@ -2932,7 +2943,7 @@ class BugTaskSet:
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
         if user is None:
-            bug_privacy_filter = 'AND Bug.private = FALSE'
+            bug_privacy_filter = 'AND Bug.private IS FALSE'
         else:
             # Since the count won't reveal sensitive information, and
             # since the get_bug_privacy_filter() check for non-admins is

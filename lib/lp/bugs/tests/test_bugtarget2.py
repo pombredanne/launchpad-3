@@ -7,12 +7,12 @@ __metaclass__ = type
 
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BugTargetBugFilingDuplicateSearchAlwaysOn:

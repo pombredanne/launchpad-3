@@ -294,7 +294,7 @@ the same permission on it.
 'foo - 666' sourcepackagerelease is only published in Celso's Private
 PPA. So, Only Celso and administrators can get 'launchpad.View' on it.
 
-    >>> from canonical.launchpad.webapp.authorization import (
+    >>> from lp.services.webapp.authorization import (
     ...     check_permission)
 
     >>> login('no-priv@canonical.com')

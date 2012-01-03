@@ -16,17 +16,17 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.config import config
-from canonical.launchpad.webapp.interaction import (
-    endInteraction,
-    setupInteraction,
-    )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.services.config import config
+from lp.services.webapp.interaction import (
+    endInteraction,
+    setupInteraction,
+    )
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 
 
 class BugJanitor:

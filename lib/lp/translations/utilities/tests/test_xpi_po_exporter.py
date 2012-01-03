@@ -12,11 +12,11 @@ from zope.component import (
     )
 from zope.interface.verify import verifyObject
 
-from canonical.database.sqlbase import commit
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.database.sqlbase import commit
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (

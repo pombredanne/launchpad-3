@@ -16,19 +16,19 @@ Don't run this on any production systems.
 __metaclass__ = type
 __all__ = []
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 from distutils.version import LooseVersion
 from optparse import OptionParser
 import sys
 import time
 
-# pylint: disable-msg=W0403
-import _pythonpath
-
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,

@@ -9,19 +9,19 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import logout
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
+from lp.testing import logout
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 

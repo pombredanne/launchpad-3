@@ -22,13 +22,6 @@ from sqlobject import (
 # Zope
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.app.validators.cve import valid_cve
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.cve import (
@@ -39,6 +32,13 @@ from lp.bugs.interfaces.cve import (
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')

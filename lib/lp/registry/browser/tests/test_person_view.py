@@ -17,25 +17,6 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from lp.services.verification.interfaces.authtoken import LoginTokenType
-from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
@@ -60,7 +41,13 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.person import Person
+from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -68,12 +55,23 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,

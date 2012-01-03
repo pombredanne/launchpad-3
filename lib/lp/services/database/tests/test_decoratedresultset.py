@@ -12,8 +12,8 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():

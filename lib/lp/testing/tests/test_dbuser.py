@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 # or TestCaseWithFactory
 from lp.testing import TestCase
 from lp.testing.dbuser import (
     dbuser,
     lp_dbuser,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestDbUser(TestCase):

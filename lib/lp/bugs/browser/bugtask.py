@@ -120,42 +120,7 @@ from zope.security.proxy import (
 from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from lp.services.feeds.browser import (
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.mailnotification import get_unified_diff
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
@@ -250,7 +215,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IHasExternalBugTracker,
+    )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -276,13 +244,45 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
 from lp.services.fields import PersonChoice
+from lp.services.helpers import shortlist
+from lp.services.mail.notification import get_unified_diff
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from lp.services.utils import obfuscate_structure
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 vocabulary_registry = getVocabularyRegistry()
@@ -420,7 +420,7 @@ def get_visible_comments(comments, user=None):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
     >>> get_sortorder_from_request(
@@ -2504,17 +2504,17 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
-    ('id', 'Bug number', 'desc'),
-    ('title', 'Bug title', 'asc'),
+    ('id', 'Number', 'desc'),
+    ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
     ('milestone_name', 'Milestone', 'asc'),
-    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('date_last_updated', 'Date last updated', 'desc'),
     ('assignee', 'Assignee', 'asc'),
     ('reporter', 'Reporter', 'asc'),
-    ('datecreated', 'Bug age', 'desc'),
-    ('tag', 'Bug Tags', 'asc'),
-    ('heat', 'Bug heat', 'desc'),
-    ('date_closed', 'Date bug closed', 'desc'),
+    ('datecreated', 'Age', 'desc'),
+    ('tag', 'Tags', 'asc'),
+    ('heat', 'Heat', 'desc'),
+    ('date_closed', 'Date closed', 'desc'),
     ('dateassigned', 'Date when the bug task was assigned', 'desc'),
     ('number_of_duplicates', 'Number of duplicates', 'desc'),
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
@@ -3071,7 +3071,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=12)
+        return shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3576,6 +3576,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any assignees.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [task.assignee for task in self.bugtasks
                              if task.assignee is not None]
         precache_permission_for_objects(

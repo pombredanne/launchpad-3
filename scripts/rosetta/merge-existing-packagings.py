@@ -7,12 +7,11 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.translations.translationmerger import (
-    MergeExistingPackagings)
+from lp.translations.translationmerger import MergeExistingPackagings
 
 
 if __name__ == '__main__':
     script = MergeExistingPackagings(
-        'canonical.launchpad.scripts.message-sharing-merge',
+        'lp.services.scripts.message-sharing-merge',
         dbuser='rosettaadmin')
     script.run()

@@ -16,7 +16,7 @@ from timeline import Timeline
 # Because of this bug, rather than using request.annotations we have
 # to work in with the webapp.adapter request model, which is 
 # different to that used by get_current_browser_request.
-from canonical.launchpad import webapp
+from lp.services import webapp
 
 
 def get_request_timeline(request):

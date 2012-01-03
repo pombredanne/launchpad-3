@@ -9,29 +9,29 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.code.tests.test_doc import branchscannerSetUp
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,
     uploadQueueSetUp,
+    )
+from lp.testing import (
+    login,
+    logout,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 

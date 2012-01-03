@@ -7,14 +7,14 @@ import random
 
 import testtools
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.components.tokens import (
+from lp.services.database.constants import UTC_NOW
+from lp.services.tokens import (
     create_token,
     create_unique_token_for_table,
     )
-from lp.services.verification.model.logintoken import LoginToken
 from lp.services.verification.interfaces.authtoken import LoginTokenType
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.verification.model.logintoken import LoginToken
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class Test_create_token(testtools.TestCase):

@@ -15,7 +15,7 @@ implements IExternalBugTracker.
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
     ...     Roundup('http://example.com'))
@@ -138,7 +138,7 @@ And have a Roundup instance process them:
 
     >>> transaction.commit()
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)

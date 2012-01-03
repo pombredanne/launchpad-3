@@ -1,19 +1,19 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XXX: Module docstring goes here."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 # or TestCaseWithFactory
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSomething(TestCase):
     # XXX: Sample test class.  Replace with your own test class(es).
 
-    # XXX: layer--see lib/canonical/testing/layers.py
+    # XXX: layer--see lib/lp/testing/layers.py
     # Get the simplest layer that your test will work on. For unit tests
     # requiring no resources, this is BaseLayer.
     layer = DatabaseFunctionalLayer

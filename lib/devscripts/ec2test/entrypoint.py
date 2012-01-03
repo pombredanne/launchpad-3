@@ -17,7 +17,9 @@ from bzrlib.errors import BzrCommandError
 
 from devscripts.ec2test import builtins
 from devscripts.ec2test.controller import (
-    CommandRegistry, CommandExecutionMixin)
+    CommandExecutionMixin,
+    CommandRegistry,
+    )
 
 # Shut up pyflakes.
 rlcompleter

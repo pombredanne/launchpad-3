@@ -10,8 +10,8 @@ of the page. Any page can use these layout options by including
 in the root element of the page template. The base layout template uses the
 YUI grid classes for positioning.
 
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from z3c.ptcompat import ViewPageTemplateFile
 
     >>> user = factory.makePerson(name='waffles')
@@ -34,7 +34,7 @@ slots. The global search and the applications tabs are present. The
 main and side content are positioned using the "yui-t4", "yui-main",
 "yui-b", and "yui-b side" classes.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> view = MainSideView(user, request)
     >>> html = view.render()

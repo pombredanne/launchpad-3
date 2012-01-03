@@ -6,7 +6,7 @@ Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.mailinglist import (
     ...     IMailingList,
     ...     IMailingListSet,
@@ -178,7 +178,7 @@ team's contact address.
     ACTIVE
     >>> print email_set.getByEmail(list_one.address).status.name
     VALIDATED
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
     >>> list_one.date_activated == transaction_timestamp
     True
@@ -281,7 +281,7 @@ permissions on the team.
 You cannot turn a team with a mailing list into a private team.
 
     >>> from zope.component import queryAdapter
-    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.services.privacy.interfaces import IObjectPrivacy
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> queryAdapter(team_one, IObjectPrivacy).is_private
     False
@@ -418,7 +418,7 @@ Activating the mailing list (changing it's status to 'available for
 subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> def print_event(object, event):

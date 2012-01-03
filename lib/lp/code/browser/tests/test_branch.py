@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -13,21 +13,6 @@ import pytz
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    setupBrowser,
-    setupBrowserForUser,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.headings import IRootContext
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -49,10 +34,14 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
     BranchVisibilityRule,
-    CodeReviewVote,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.helpers import truncate_text
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login,
@@ -61,9 +50,19 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     Contains,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    setupBrowser,
+    setupBrowserForUser,
     )
 from lp.testing.views import create_initialized_view
 

@@ -18,9 +18,16 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.answers.enums import QuestionStatus
+from lp.answers.model.question import Question
+from lp.app.enums import ServiceUsage
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
     cursor,
     SQLBase,
     sqlvalues,
@@ -29,13 +36,6 @@ from lp.services.statistics.interfaces.statistic import (
     ILaunchpadStatistic,
     ILaunchpadStatisticSet,
     )
-from lp.answers.enums import QuestionStatus
-from lp.answers.model.question import Question
-from lp.app.enums import ServiceUsage
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtask import BugTask
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.product import Product
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pomsgid import POMsgID
@@ -57,7 +57,7 @@ class LaunchpadStatistic(SQLBase):
 
 
 class LaunchpadStatisticSet:
-    """See canonical.launchpad.interfaces.ILaunchpadStatisticSet."""
+    """See`ILaunchpadStatisticSet`."""
 
     implements(ILaunchpadStatisticSet)
 

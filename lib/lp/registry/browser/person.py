@@ -126,41 +126,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from lp.services.feeds.browser import FeedsMixin
-from lp.services.verification.interfaces.authtoken import LoginTokenType
-from lp.services.mail.interfaces import (
-    INotificationRecipientSet,
-    UnknownRecipientError,
-    )
-from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IOpenLaunchBag,
-    )
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import get_current_view
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -252,12 +218,16 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     )
+from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -266,6 +236,10 @@ from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,
+    )
+from lp.services.mail.interfaces import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -285,6 +259,30 @@ from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
     )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
+from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
@@ -1287,7 +1285,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces.lpstorm import IMasterObject
+        from lp.services.database.lpstorm import IMasterObject
         self.context = IMasterObject(self.context.account)
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
@@ -1592,7 +1590,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
 
-        return helpers.shortlist([
+        return shortlist([
             dict(title=milestone.title, value=milestone.token, checked=False)
             for milestone in vocabulary],
             longest_expected=10)

@@ -37,7 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode;
+      devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
@@ -91,8 +91,8 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;
+      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/lp.services.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
@@ -247,7 +247,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2011
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
@@ -295,7 +295,7 @@
     >
     <table
       tal:condition="request/features/visible_render_time"
-      tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions"
+      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
       class="debug-timeline listing"
       >
       <thead>

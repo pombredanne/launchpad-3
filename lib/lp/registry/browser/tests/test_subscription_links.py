@@ -11,16 +11,14 @@ import unittest
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import first_tag_by_class
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.milestone import ProjectMilestone
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
@@ -28,6 +26,8 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import first_tag_by_class
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 

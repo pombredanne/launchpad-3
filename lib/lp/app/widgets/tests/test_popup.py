@@ -9,13 +9,13 @@ from zope.interface.interface import InterfaceClass
 from zope.schema import Choice
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
     )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMetaClass(InterfaceClass):

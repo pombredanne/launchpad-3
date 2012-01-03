@@ -15,8 +15,6 @@ from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
@@ -33,6 +31,8 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestArchiveWebservice(TestCaseWithFactory):

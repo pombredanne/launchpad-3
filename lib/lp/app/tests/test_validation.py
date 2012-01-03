@@ -12,11 +12,11 @@ from doctest import (
     )
 from unittest import TestSuite
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_suite():
@@ -39,4 +39,3 @@ if __name__ == '__main__':
     DEFAULT = test_suite()
     import unittest
     unittest.main('DEFAULT')
-

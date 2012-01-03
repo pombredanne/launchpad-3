@@ -64,25 +64,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -119,6 +101,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
@@ -126,6 +109,23 @@ from lp.services.fields import (
     )
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 
 
 def latest_proposals_for_each_branch(proposals):

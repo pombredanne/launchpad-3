@@ -9,14 +9,11 @@ import _pythonpath
 
 import sys
 
-from canonical.config import config
-from lp.services.scripts.base import LaunchpadScript
-from lp.services.mail.incoming import (
-    handle_one_mail)
-from lp.services.mail.helpers import (
-    save_mail_to_librarian,
-    )
+from lp.services.config import config
+from lp.services.mail.helpers import save_mail_to_librarian
+from lp.services.mail.incoming import handle_one_mail
 from lp.services.mail.signedmessage import signed_message_from_string
+from lp.services.scripts.base import LaunchpadScript
 
 
 class ProcessMail(LaunchpadScript):

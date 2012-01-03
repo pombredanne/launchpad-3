@@ -30,7 +30,7 @@ from zope.interface import implements, Interface, Attribute
 from BeautifulSoup import BeautifulStoneSoup as BSS
 from BeautifulSoup import SoupStrainer
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class IThing(Interface):

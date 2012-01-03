@@ -9,20 +9,20 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.systemhomes.FeedsApplication"
-        provides="canonical.launchpad.interfaces.launchpad.IFeedsApplication">
+        class="lp.systemhomes.FeedsApplication"
+        provides="lp.services.feeds.interfaces.application.IFeedsApplication">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.IFeedsApplication" />
+            interface="lp.services.feeds.interfaces.application.IFeedsApplication" />
     </securedutility>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
-        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        provides="lp.services.webapp.interfaces.ICanonicalUrlData"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         factory="lp.services.feeds.browser.FeedsRootUrlData"
         />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        for="lp.services.feeds.interfaces.application.IFeedsApplication"
         name="+index"
         />
 
@@ -33,10 +33,10 @@
 
     <!-- Macros -->
     <browser:page
-        for="canonical.lazr.interfaces.feed.IFeedEntry"
+        for="lp.services.feeds.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
-        template="../../../canonical/lazr/feed/templates/feed-entry-atom.pt"
+        template="templates/feed-entry-atom.pt"
         />
 
 
@@ -45,9 +45,9 @@
         for="zope.exceptions.IUnauthorized"
         name="index.html"
         permission="zope.Public"
-        class="canonical.launchpad.webapp.login.FeedsUnauthorizedView"
+        class="lp.services.webapp.login.FeedsUnauthorizedView"
         attribute="__call__"
-        layer="canonical.launchpad.layers.FeedsLayer"
+        layer="lp.layers.FeedsLayer"
         />
 
 </configure>

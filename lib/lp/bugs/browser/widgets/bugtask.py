@@ -48,9 +48,7 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.app.errors import (
     NotFoundError,
@@ -77,6 +75,8 @@ from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugTaskAssigneeWidget(Widget):

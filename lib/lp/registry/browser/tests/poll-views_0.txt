@@ -4,7 +4,7 @@ First import some stuff and setup some things we'll use in this test.
 
   >>> from zope.component import getUtility, getMultiAdapter
   >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.person import IPersonSet
   >>> from lp.registry.interfaces.poll import IPollSet
   >>> from datetime import datetime, timedelta

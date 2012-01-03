@@ -11,7 +11,7 @@
     <browser:url
        for="lp.code.interfaces.branch.IBranchSet"
        path_expression="string:branches"
-       parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+       parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
       />
     <browser:feeds
         module="lp.code.feed.branch"
@@ -40,13 +40,13 @@
       />
 
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="lp.code.browser.bazaar.BazaarProjectsRedirect"
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       name="+recently-registered-branches"
       class="lp.code.browser.branchlisting.RecentlyRegisteredBranchesView"
@@ -54,7 +54,7 @@
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       name="+recently-imported-branches"
       class="lp.code.browser.branchlisting.RecentlyImportedBranchesView"
@@ -62,7 +62,7 @@
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       name="+recently-changed-branches"
       class="lp.code.browser.branchlisting.RecentlyChangedBranchesView"
@@ -131,23 +131,23 @@
         module="lp.code.browser.branchref"
         classes="BranchRefNavigation"/>
     <browser:url
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         path_expression="string:+code"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         rootsite="code"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:page
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        for="lp.code.interfaces.codehosting.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
         name="+index"
         template="../templates/bazaar-index.pt" />
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
@@ -700,7 +700,7 @@
         <browser:url
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             path_expression="string:+code-imports"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"
@@ -1051,31 +1051,31 @@
 
     <adapter
         name="code"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.hasbranches.IHasBranches"
         factory="lp.code.browser.branchlisting.CodeVHostBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branch.IBranch"
-        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         factory="lp.code.browser.codeimportmachine.CodeImportMachineBreadcrumb"
         permission="zope.Public"/>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
         factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
         permission="zope.Public"/>
@@ -1227,9 +1227,9 @@
             permission="zope.Public"/>
 
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
-            factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
 
         <browser:page

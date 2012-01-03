@@ -4,7 +4,7 @@ FakePackager allows us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
+    >>> from lp.soyuz.tests.fakepackager import FakePackager
 
 
 == Setup and reset ==
@@ -128,8 +128,7 @@ The error was raised because no signing key was set.
     None
 
 A GPG key can only be set on initialization so we will have to create a
-new packager passing a filename available in our test_keys directory
-(see launchpad/ftests/keys_for_tests.py)
+new packager passing a filename available in our test_keys directory.
 
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
@@ -234,7 +233,7 @@ enable uploads for it.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.component import IComponentSet
 

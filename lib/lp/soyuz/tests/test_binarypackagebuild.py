@@ -14,13 +14,6 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import webservice_for_person
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -32,6 +25,8 @@ from lp.buildmaster.tests.test_packagebuild import (
     TestHandleStatusMixin,
     )
 from lp.services.job.model.job import Job
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -53,6 +48,11 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import webservice_for_person
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):

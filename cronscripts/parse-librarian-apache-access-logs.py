@@ -19,15 +19,16 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from storm.sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from storm.sqlobject import SQLObjectNotFound
-
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.apachelogparser.librarian_apache_log_parser import (
-    DBUSER, get_library_file_id)
 from lp.services.apachelogparser.script import ParseApacheLogs
+from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarianserver.apachelogparser import (
+    DBUSER,
+    get_library_file_id,
+    )
 
 
 class ParseLibrarianApacheLogs(ParseApacheLogs):

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the bugsubscription module."""
@@ -12,21 +12,21 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad import searchbuilder
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.services import searchbuilder
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
     anonymous_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugSubscriptionFilter(TestCaseWithFactory):
@@ -154,7 +154,7 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
             None,
             IStore(bug_subscription_filter).find(
                 BugSubscriptionFilter,
-                BugSubscriptionFilter.id==bug_subscription_filter.id).one())
+                BugSubscriptionFilter.id == bug_subscription_filter.id).one())
         # The structural subscription is gone too.
         self.assertIs(None, Store.of(self.subscription))
 

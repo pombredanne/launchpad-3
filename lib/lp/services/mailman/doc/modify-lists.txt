@@ -13,7 +13,7 @@ No Privileges Person creates the mailing list.
 Once the list is created, the team owner can change the welcome message
 through the web.
 
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
