@@ -46,7 +46,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner

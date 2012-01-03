@@ -22,15 +22,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
@@ -47,7 +38,11 @@ from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -58,7 +53,12 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     MatchesPickerText,
     MatchesTagText,

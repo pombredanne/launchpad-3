@@ -6,8 +6,6 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include package=".browser"/>
     <include package="lp.app.validators" />
@@ -24,13 +22,6 @@
     <class class="lazr.lifecycle.event.ObjectModifiedEvent">
       <allow interface="lazr.lifecycle.interfaces.IObjectModifiedEvent" />
     </class>
-
-    <xmlrpc:view
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      interface="canonical.launchpad.xmlrpc.application.ISelfTest"
-      class="canonical.launchpad.xmlrpc.application.SelfTest"
-      permission="zope.Public"
-      />
 
     <class class="zope.schema.vocabulary.SimpleVocabulary">
       <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
@@ -52,9 +43,9 @@
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter
-        provides="canonical.lazr.interfaces.IObjectPrivacy"
+        provides="lp.services.privacy.interfaces.IObjectPrivacy"
         for="zope.interface.Interface"
-        factory="canonical.lazr.privacy.ObjectPrivacy"
+        factory="lp.services.privacy.adapters.ObjectPrivacy"
         permission="zope.Public"
         />
 

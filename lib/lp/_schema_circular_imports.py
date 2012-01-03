@@ -18,18 +18,6 @@ __all__ = []
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.fields import Reference
 
-from lp.services.webservice.apihelpers import (
-    patch_choice_parameter_type,
-    patch_choice_vocabulary,
-    patch_collection_property,
-    patch_collection_return_type,
-    patch_entry_explicit_version,
-    patch_entry_return_type,
-    patch_list_parameter_type,
-    patch_operations_explicit_version,
-    patch_plain_parameter_type,
-    patch_reference_property,
-    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationtarget import (
@@ -168,6 +156,18 @@ from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
     IUserToUserEmail,
+    )
+from lp.services.webservice.apihelpers import (
+    patch_choice_parameter_type,
+    patch_choice_vocabulary,
+    patch_collection_property,
+    patch_collection_return_type,
+    patch_entry_explicit_version,
+    patch_entry_return_type,
+    patch_list_parameter_type,
+    patch_operations_explicit_version,
+    patch_plain_parameter_type,
+    patch_reference_property,
     )
 from lp.services.worlddata.interfaces.country import (
     ICountry,

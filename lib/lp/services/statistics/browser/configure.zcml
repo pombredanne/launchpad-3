@@ -7,7 +7,7 @@
     <browser:url
         for="lp.services.statistics.interfaces.statistic.ILaunchpadStatisticSet"
         path_expression="string:+statistics"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.services.statistics.interfaces.statistic.ILaunchpadStatisticSet"
         name="+index"/>

@@ -9,7 +9,7 @@ import logging
 import os
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

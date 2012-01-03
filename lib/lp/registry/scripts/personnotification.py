@@ -16,8 +16,8 @@ from datetime import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.services.config import config
 
 
 class PersonNotificationManager:

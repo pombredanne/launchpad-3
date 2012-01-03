@@ -23,7 +23,7 @@ For example, let's say No Privileges Person wants to contact Salgado...
 
 ...No Priv would start by going to Salgado's +contactuser page.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login_person(no_priv)
     >>> view = create_view(no_priv, salgado)
 
@@ -54,7 +54,7 @@ No Priv decides, what the heck, let's contact Salgado after all.
 
     # Capture the date of the last contact for later.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.messages.model.message import UserToUserEmail
     >>> from lazr.config import as_timedelta
     >>> from storm.locals import Store

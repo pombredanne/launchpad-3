@@ -20,7 +20,7 @@ Launchpad shows up to config.launchpad.default_batch_size results; if there
 are more results than that, the user sees an informational message that asks
 the user to refine his search.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.default_batch_size
     5
 

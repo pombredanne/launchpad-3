@@ -68,16 +68,14 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
-from lp.app.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )

@@ -5,12 +5,12 @@ __metaclass__ = type
 
 from zope.security.management import endInteraction
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestDistroArchSeriesWebservice(TestCaseWithFactory):

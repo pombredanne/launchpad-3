@@ -38,7 +38,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.validation import valid_cve_sequence
 
 

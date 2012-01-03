@@ -20,7 +20,7 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.testing import ANONYMOUS
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -368,7 +368,7 @@ Adding a product series
 Drivers, which include project driver and owners can access the
 +addseries view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login_person(firefox.owner)
     >>> view = create_view(firefox, name='+addseries')

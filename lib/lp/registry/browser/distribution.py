@@ -51,25 +51,6 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
-from lp.services.feeds.browser import FeedsMixin
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -120,11 +101,30 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
     )
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose

@@ -6,19 +6,21 @@
 import _pythonpath
 
 import base64
+from cookielib import (
+    Cookie,
+    CookieJar,
+    )
 import httplib
+from optparse import OptionParser
 import os
 import pwd
 import sys
 import urllib
-import webbrowser
-from optparse import OptionParser
 from urlparse import urljoin
-from cookielib import Cookie, CookieJar
+import webbrowser
+
 from mechanize import HTTPRobotRulesProcessor
-
 from zope.testbrowser.browser import Browser
-
 
 # Should we be able to override any of these?
 AUTH_FILE = '~/.lp_auth_cookie'

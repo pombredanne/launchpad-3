@@ -5,10 +5,6 @@
 
 from textwrap import dedent
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
@@ -16,6 +12,10 @@ from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

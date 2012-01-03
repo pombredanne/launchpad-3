@@ -24,22 +24,6 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    )
-from canonical.launchpad.searchbuilder import (
-    any,
-    not_equals,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator,
@@ -60,6 +44,22 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class HasBugsBase:

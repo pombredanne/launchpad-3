@@ -45,7 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.errors import NotFoundError
 from lp.services.job.interfaces.job import IJob
 from lp.services.librarian.interfaces import ILibraryFileAlias

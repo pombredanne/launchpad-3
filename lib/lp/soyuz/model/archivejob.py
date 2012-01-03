@@ -18,16 +18,16 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
     IArchiveJob,

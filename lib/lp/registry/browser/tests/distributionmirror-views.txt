@@ -211,7 +211,7 @@ changed.
 
 Only users with launchpad.Admin can access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Admin', view)
     True
@@ -346,7 +346,7 @@ Viewing a mirror
 
 The archive mirror page summarizes the current state of the mirror.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 

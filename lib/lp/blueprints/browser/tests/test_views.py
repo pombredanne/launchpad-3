@@ -12,14 +12,14 @@ import unittest
 from storm.store import Store
 from testtools.matchers import LessThan
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.webapp import canonical_url
 from lp.testing import (
     login,
     logout,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.systemdocs import (
@@ -63,7 +63,7 @@ class TestAssignments(TestCaseWithFactory):
         browser = self.getUserBrowser(user=viewer)
         url = canonical_url(target) + "/+assignments"
         # Seed the cookie cache and any other cross-request state we may gain
-        # in future.  See canonical.launchpad.webapp.serssion: _get_secret.
+        # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(url)
         self.invalidate_and_render(browser, target, url)
         # Set a baseline

@@ -23,10 +23,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.webapp.interfaces import (
-    IAlwaysSubmittedWidget,
-    IMultiLineWidgetLayout,
-    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -40,6 +36,10 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.interfaces import (
+    IAlwaysSubmittedWidget,
+    IMultiLineWidgetLayout,
+    )
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):

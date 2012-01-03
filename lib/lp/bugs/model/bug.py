@@ -86,22 +86,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -201,11 +185,20 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
+from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -224,6 +217,13 @@ from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
     )
 
 

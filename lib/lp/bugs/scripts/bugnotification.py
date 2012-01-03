@@ -20,9 +20,6 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import get_email_template
-from lp.services.scripts.logger import log
-from canonical.launchpad.webapp import canonical_url
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.mail.bugnotificationbuilder import (
@@ -31,7 +28,10 @@ from lp.bugs.mail.bugnotificationbuilder import (
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.model.person import get_recipients
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.scripts.logger import log
+from lp.services.webapp import canonical_url
 
 
 def get_activity_key(notification):

@@ -17,7 +17,7 @@
 
   <browser:page
     name="+storeblob"
-    for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+    for="lp.services.webapp.interfaces.ILaunchpadRoot"
     class="lp.services.temporaryblobstorage.browser.TemporaryBlobStorageAddView"
     permission="zope.Public"
     template="./templates/temporaryblobstorage-storeblob.pt"

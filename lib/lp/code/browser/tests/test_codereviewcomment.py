@@ -10,18 +10,18 @@ from soupmatchers import (
     Tag,
     )
 
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,
     ICodeReviewDisplayComment,
     )
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCodeReviewComments(TestCaseWithFactory):

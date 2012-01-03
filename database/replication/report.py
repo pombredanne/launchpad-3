@@ -16,20 +16,20 @@ by this report.
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from cgi import escape as html_escape
 from cStringIO import StringIO
 from optparse import OptionParser
 import sys
 
-import _pythonpath
-import replication.helpers
-
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     quote_identifier,
     sqlvalues,
     )
 from lp.services.scripts import db_options
+import replication.helpers
 
 
 class Table:

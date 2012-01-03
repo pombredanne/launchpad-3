@@ -31,24 +31,26 @@ production environments.
 
 import _pythonpath
 
-import os
 from optparse import OptionParser
+import os
 import re
 import subprocess
 import sys
-import transaction
 
 from storm.store import Store
-
+import transaction
 from zope.component import getUtility
 
-from lp.services.gpg.interfaces import IGPGHandler
-from lp.services.scripts import execute_zcml_for_scripts
-from canonical.lazr.timeout import set_default_timeout_function
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.timeout import set_default_timeout_function
 from lp.testing.factory import LaunchpadObjectFactory
 
 # Shut up, pyflakes.

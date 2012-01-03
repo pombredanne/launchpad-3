@@ -7,7 +7,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-    i18n_domain="canonical.launchpad">
+    i18n_domain="launchpad">
 
     <class class="lp.services.mail.notificationrecipientset.NotificationRecipientSet">
         <allow interface="lp.services.mail.interfaces.INotificationRecipientSet" />

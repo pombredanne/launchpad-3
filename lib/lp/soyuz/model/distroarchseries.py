@@ -25,23 +25,23 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import DEFAULT
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
     quote,
     quote_like,
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.helpers import shortlist
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName

@@ -6,7 +6,7 @@ by our logging handler.
     ...     import os
     ...     import sys
     ...     import subprocess
-    ...     from canonical.config import config
+    ...     from lp.services.config import config
     ...     if 'env' in kw:
     ...         # We want to make sure that the subprocess will have the
     ...         # benefit of all of the dependency paths inserted by the

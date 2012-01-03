@@ -35,18 +35,6 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -71,6 +59,18 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 
 
 class StructuralSubscriptionNavigation(Navigation):

@@ -33,24 +33,7 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    BatchNavigator,
-    StormRangeFactory,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -75,6 +58,23 @@ from lp.services.librarian.browser import (
     ProxiedLibraryFileAlias,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,

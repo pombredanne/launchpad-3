@@ -8,12 +8,14 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import sys
 
-import _pythonpath
-
-from canonical.database.sqlbase import (
+from lp.answers.enums import QuestionStatus
+from lp.registry.interfaces.person import PersonCreationRationale
+from lp.services.database.sqlbase import (
     connect,
     sqlvalues,
     )
@@ -22,8 +24,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-from lp.answers.enums import QuestionStatus
-from lp.registry.interfaces.person import PersonCreationRationale
 
 
 def close_account(con, log, username):

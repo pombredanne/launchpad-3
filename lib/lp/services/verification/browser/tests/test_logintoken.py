@@ -4,17 +4,17 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.verification.browser.logintoken import (
     ClaimTeamView,
     ValidateEmailView,
     ValidateGPGKeyView,
     )
-from canonical.launchpad.ftests import LaunchpadFormHarness
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
+from lp.testing.deprecated import LaunchpadFormHarness
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):

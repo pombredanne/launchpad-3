@@ -5,6 +5,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
 <securityPolicy
-component="canonical.launchpad.webapp.authorization.LaunchpadSecurityPolicy"
+component="lp.services.webapp.authorization.LaunchpadSecurityPolicy"
 />
 </configure>

@@ -163,7 +163,7 @@ Interface check
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IBug, firefox_crashes)
     True
 
@@ -176,8 +176,8 @@ Searching for Bugs
 
 To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user
@@ -215,7 +215,7 @@ Absolute URLs
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 

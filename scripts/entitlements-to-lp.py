@@ -9,9 +9,11 @@ import _pythonpath
 import logging
 import sys
 
-from lp.services.scripts.base import LaunchpadScript
 from lp.registry.scripts.entitlement import (
-    EntitlementExchange, EntitlementImporter)
+    EntitlementExchange,
+    EntitlementImporter,
+    )
+from lp.services.scripts.base import LaunchpadScript
 
 
 class ImportEntitlementsScript(LaunchpadScript):

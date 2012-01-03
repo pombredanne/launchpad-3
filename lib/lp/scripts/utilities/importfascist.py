@@ -40,8 +40,8 @@ permitted_database_imports = text_lines_to_set("""
     lp.services.worlddata.vocabularies
     lp.soyuz.vocabularies
     lp.translations.vocabularies
-    canonical.librarian.client
-    canonical.librarian.db
+    lp.services.librarian.client
+    lp.services.librarianserver.db
     doctest
     """)
 
@@ -51,7 +51,7 @@ warned_database_imports = text_lines_to_set("""
     lp.soyuz.scripts.gina.handlers
     lp.registry.browser.distroseries
     lp.translations.scripts.po_import
-    canonical.launchpad.systemhomes
+    lp.systemhomes
     """)
 
 

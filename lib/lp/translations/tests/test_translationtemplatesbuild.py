@@ -10,14 +10,14 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSource,
     )
+from lp.services.config import config
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,

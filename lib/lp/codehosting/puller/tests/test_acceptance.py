@@ -27,14 +27,14 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):

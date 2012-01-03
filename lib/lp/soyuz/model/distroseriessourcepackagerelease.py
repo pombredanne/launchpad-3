@@ -23,9 +23,9 @@ from storm.store import Store
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,

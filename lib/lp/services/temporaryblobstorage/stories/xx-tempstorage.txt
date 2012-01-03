@@ -30,7 +30,7 @@ header in the response: X-Launchpad-Blob-Token
 
 Retrieve the blob and make sure it got stored correctly.
 
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> from lp.services.temporaryblobstorage.model import (
     ...     TemporaryBlobStorage)

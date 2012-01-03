@@ -11,7 +11,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class RequestWidget(object):

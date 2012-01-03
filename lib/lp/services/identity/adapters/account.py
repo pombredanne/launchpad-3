@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from lp.services.webapp.interfaces import ILaunchpadPrincipal
 
 
 def accountFromPrincipal(principal):

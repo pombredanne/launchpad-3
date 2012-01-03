@@ -14,7 +14,7 @@ __all__ = [
 
 
 from lp.services.feeds.browser import FeedsMixin
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     Link,
