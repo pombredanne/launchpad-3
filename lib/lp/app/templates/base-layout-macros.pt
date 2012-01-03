@@ -120,7 +120,6 @@
         Y.on('load', function(e) {
             sortables_init();
             Y.lp.app.inlinehelp.init_help();
-            //initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
