@@ -189,7 +189,8 @@ class TestSlaveScannerScan(TestCaseWithFactory):
             login('foo.bar@canonical.com')
             ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
             hoary = ubuntu.getSeries('hoary')
-            pocket_chroot = hoary.getDistroArchSeries('i386').getPocketChroot()
+            pocket_chroot = (
+                hoary.getDistroArchSeries('i386').getPocketChroot())
             removeSecurityProxy(pocket_chroot).chroot = None
 
         login(ANONYMOUS)
@@ -594,7 +595,8 @@ class TestCancellationChecking(TestCaseWithFactory):
             self.builder.vm_host = "fake_vm_host"
             self.builder.setSlaveForTesting(slave)
             buildqueue = self.builder.currentjob
-            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+            build = getUtility(
+                IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
             build.status = BuildStatus.CANCELLING
 
         def check(result):

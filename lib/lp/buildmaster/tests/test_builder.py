@@ -195,7 +195,8 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset')
 
         with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+            builder = self.factory.makeBuilder(
+                virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
@@ -208,7 +209,8 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+            builder = self.factory.makeBuilder(
+                virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
@@ -219,7 +221,8 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+            builder = self.factory.makeBuilder(
+                virtualized=True, vm_host="pop")
             builder.builderok = True
         d = builder.handleTimeout(BufferLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
@@ -349,7 +352,8 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
+        builder = MockBuilder(
+            "mock_builder", waiting_slave, TrivialBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -363,7 +367,8 @@ class TestBuilder(TestCaseWithFactory):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
+        builder = MockBuilder(
+            "mock_builder", waiting_slave, CorruptBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -386,7 +391,8 @@ class TestBuilder(TestCaseWithFactory):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
-        builder = MockBuilder("mock_builder", building_slave, CorruptBehavior())
+        builder = MockBuilder(
+            "mock_builder", building_slave, CorruptBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
@@ -740,7 +746,8 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_with_disabled_archive(self):
         # Disabled archives should not be considered for dispatching
         # builds.
-        disabled_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
+        disabled_job = removeSecurityProxy(
+            self.builder4)._findBuildCandidate()
         with BuilddManagerTestFixture.extraSetUp():
             build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
                 disabled_job)
