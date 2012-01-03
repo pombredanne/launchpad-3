@@ -87,41 +87,6 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
             self.email_address, self.displayname, self.rationale)
         self.assertTrue(ensured_person.hide_email_addresses)
 
-    def test_ensurePerson_for_existing_account(self):
-        # IPerson.ensurePerson creates missing Person for existing
-        # Accounts.
-        test_account = self.factory.makeAccount(
-            self.displayname, email=self.email_address)
-        self.assertIs(None, test_account.preferredemail.person)
-
-        ensured_person = self.person_set.ensurePerson(
-            self.email_address, self.displayname, self.rationale)
-        self.assertEquals(test_account.id, ensured_person.account.id)
-        self.assertEquals(
-            test_account.preferredemail, ensured_person.preferredemail)
-        self.assertEquals(ensured_person, test_account.preferredemail.person)
-        self.assertTrue(ensured_person.hide_email_addresses)
-
-    def test_ensurePerson_for_existing_account_with_person(self):
-        # IPerson.ensurePerson return existing Person for existing
-        # Accounts and additionally bounds the account email to the
-        # Person in question.
-
-        # Create a testing `Account` and a testing `Person` directly,
-        # linked.
-        testing_account = self.factory.makeAccount(
-            self.displayname, email=self.email_address)
-        testing_person = removeSecurityProxy(
-            testing_account).createPerson(self.rationale)
-        self.assertEqual(
-            testing_person, testing_account.preferredemail.person)
-
-        # Since there's an existing Person for the given email address,
-        # IPersonSet.ensurePerson() will just return it.
-        ensured_person = self.person_set.ensurePerson(
-            self.email_address, self.displayname, self.rationale)
-        self.assertEqual(testing_person, ensured_person)
-
 
 class TestPersonSetMerge(TestCaseWithFactory):
 

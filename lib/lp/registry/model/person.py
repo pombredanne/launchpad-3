@@ -3279,55 +3279,14 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        # Start by checking if there is an `EmailAddress` for the given
-        # text address.  There are many cases where an email address can be
-        # created without an associated `Person`. For instance, we created
-        # an account linked to the address through an external system such
-        # SSO or ShipIt.
-        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        person = getUtility(IPersonSet).getByEmail(email)
 
-        # There is no `EmailAddress` for this text address, so we need to
-        # create both the `Person` and `EmailAddress` here and we are done.
-        if email_address is None:
+        if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
-            return person
 
-        # There is an `EmailAddress` for this text address, but no
-        # associated `Person`.
-        if email_address.person is None:
-            assert email_address.accountID is not None, (
-                '%s is not associated to a person or account'
-                % email_address.email)
-            account = IMasterStore(Account).get(
-                Account, email_address.accountID)
-            account_person = self.getByAccount(account)
-            if account_person is None:
-                # There is no associated `Person` to the email `Account`.
-                # This is probably because the account was created externally
-                # to Launchpad. Create just the `Person`, associate it with
-                # the `EmailAddress` and return it.
-                name = generate_nick(email)
-                account_person = self._newPerson(
-                    name, displayname, hide_email_addresses=True,
-                    rationale=rationale, comment=comment,
-                    registrant=registrant, account=email_address.account)
-            # There is (now) a `Person` linked to the `Account`, link the
-            # `EmailAddress` to this `Person` and return it.
-            master_email = IMasterStore(EmailAddress).get(
-                EmailAddress, email_address.id)
-            master_email.personID = account_person.id
-            # Populate the previously empty 'preferredemail' cached
-            # property, so the Person record is up-to-date.
-            if master_email.status == EmailAddressStatus.PREFERRED:
-                cache = get_property_cache(account_person)
-                cache.preferredemail = master_email
-            return account_person
-
-        # Easy, return the `Person` associated with the existing
-        # `EmailAddress`.
-        return IMasterStore(Person).get(Person, email_address.personID)
+        return person
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
