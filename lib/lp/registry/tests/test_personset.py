@@ -145,25 +145,6 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         self.assertEqual(person, result)
         self.assertFalse(db_updated)
 
-    def test_existing_account_no_person(self):
-        # A person is created with the correct rationale.
-        account = self.factory.makeAccount('purchaser')
-        openid_ident = removeSecurityProxy(
-            account).openid_identifiers.any().identifier
-
-        person, db_updated = self.callGetOrCreate(openid_ident)
-
-        self.assertEqual(account, person.account)
-        # The person is created with the correct rationale and creation
-        # comment.
-        self.assertEqual(
-            "when purchasing an application via Software Center.",
-            person.creation_comment)
-        self.assertEqual(
-            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
-            person.creation_rationale)
-        self.assertTrue(db_updated)
-
     def test_existing_deactivated_account(self):
         # An existing deactivated account will be reactivated.
         person = self.factory.makePerson(

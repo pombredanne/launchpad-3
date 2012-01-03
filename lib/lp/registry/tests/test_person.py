@@ -1372,28 +1372,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
 
-    def testNoPerson(self):
-        # If the account is not linked to a Person, create one. ShipIt
-        # users fall into this category the first time they log into
-        # Launchpad.
-        self.email.person = None
-        self.person.account = None
-
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email, 'New Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        # We have a new Person
-        self.assertIs(True, updated)
-        self.assertIsNot(self.person, found)
-
-        # It is correctly linked to an account, emailaddress and
-        # identifier.
-        self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
-        self.assertIn(self.identifier, list(found.account.openid_identifiers))
-
     def testNoAccount(self):
         # EmailAddress is linked to a Person, but there is no Account.
         # Convert this stub into something valid.
