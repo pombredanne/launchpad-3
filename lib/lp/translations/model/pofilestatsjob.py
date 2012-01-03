@@ -34,6 +34,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
