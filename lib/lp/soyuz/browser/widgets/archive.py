@@ -10,8 +10,8 @@ __all__ = [
 
 import urlparse
 
-from canonical.config import config
 from lp.app.widgets.textwidgets import URIComponentWidget
+from lp.services.config import config
 
 
 class PPANameWidget(URIComponentWidget):

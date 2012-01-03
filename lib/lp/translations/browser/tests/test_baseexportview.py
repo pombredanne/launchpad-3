@@ -9,9 +9,9 @@ import unittest
 import transaction
 
 from lp.services.database.lpstorm import IMasterStore
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView,
     )

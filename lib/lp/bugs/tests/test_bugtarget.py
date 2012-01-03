@@ -21,8 +21,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -37,11 +35,13 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.milestone import Milestone
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,

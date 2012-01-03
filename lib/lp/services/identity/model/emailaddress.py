@@ -21,13 +21,13 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.app.validators.email import valid_email
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
     )
-from lp.app.validators.email import valid_email
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,

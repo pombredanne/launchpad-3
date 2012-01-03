@@ -11,10 +11,11 @@ statistics about the test run.
 
 __metaclass__ = type
 
-import re
 import operator
 import os
+import re
 import sys
+
 
 LEN = 20
 

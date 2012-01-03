@@ -7,11 +7,11 @@ Run the doctests.
 
 import os
 
-from canonical.testing.layers import (
+from lp.services.testing import build_test_suite
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     GoogleLaunchpadFunctionalLayer,
     )
-from lp.services.testing import build_test_suite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

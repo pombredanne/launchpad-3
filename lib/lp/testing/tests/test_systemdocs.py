@@ -12,8 +12,8 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.config import config
-from canonical.testing import reset_logging
+from lp.services.config import config
+from lp.testing import reset_logging
 from lp.testing.systemdocs import (
     default_optionflags,
     LayeredDocFileSuite,

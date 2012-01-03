@@ -55,7 +55,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext

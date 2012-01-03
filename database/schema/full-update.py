@@ -16,7 +16,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-
 from preflight import (
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,

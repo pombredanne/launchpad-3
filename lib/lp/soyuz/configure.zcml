@@ -248,7 +248,7 @@
         </securedutility>
 
         <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
-          <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+          <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
         </class>
 
         <!-- BinaryPackagenameIterator -->
@@ -256,7 +256,7 @@
         <class
             class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
             <allow
-                interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+                interface="lp.services.webapp.vocabulary.ICountableIterator"/>
         </class>
 
         <!-- BinaryPackageNameSet -->
@@ -380,7 +380,7 @@
     </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         factory="lp.soyuz.browser.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageReleaseBreadcrumb"
         permission="zope.Public" />
 
@@ -428,9 +428,9 @@
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archive.IArchive"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ArchiveSet -->
@@ -505,7 +505,7 @@
 
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
@@ -534,8 +534,8 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
 
     <!-- ArchiveSubscriber -->
@@ -573,9 +573,9 @@
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
@@ -590,7 +590,7 @@
             interface="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
         factory="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseBreadcrumb"
         permission="zope.Public"/>
@@ -603,7 +603,7 @@
             interface="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumb"
         permission="zope.Public"/>
@@ -624,7 +624,7 @@
         </class>
         <adapter
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
 
@@ -853,7 +853,7 @@
     </class>
 
     <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
-        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+        <allow interface="lp.services.webapp.vocabulary.ICountableIterator" />
     </class>
 
     <securedutility
@@ -865,7 +865,7 @@
     </securedutility>
 
     <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
-      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+      <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
     </class>
 
     <!-- DistributionJob -->

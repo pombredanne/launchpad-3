@@ -19,14 +19,10 @@ from debian.deb822 import (
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    LibrarianLayer,
-    )
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
     generate_changes,
@@ -36,6 +32,10 @@ from lp.soyuz.scripts.ftpmaster import (
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
     )
 
 

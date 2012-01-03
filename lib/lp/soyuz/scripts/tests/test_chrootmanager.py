@@ -12,14 +12,14 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
 from lp.soyuz.scripts.ftpmaster import (
     ChrootManager,
     ChrootManagerError,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestChrootManager(TestCase):

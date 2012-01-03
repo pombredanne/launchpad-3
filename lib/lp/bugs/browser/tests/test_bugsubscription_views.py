@@ -13,10 +13,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
     BugSubscriptionAddView,
@@ -29,12 +25,16 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view

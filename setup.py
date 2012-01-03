@@ -169,7 +169,7 @@ setup(
             'run = lp.scripts.runlaunchpad:start_launchpad',
             'run-testapp = '
                 'lp.scripts.runlaunchpad:start_testapp',
-            'harness = canonical.database.harness:python',
+            'harness = lp.scripts.harness:python',
             'twistd = twisted.scripts.twistd:run',
             'start_librarian = '
                 'lp.scripts.runlaunchpad:start_librarian',

@@ -13,7 +13,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.FilteredDeltaLanguagePackVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -26,7 +26,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.FilteredFullLanguagePackVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -39,7 +39,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.FilteredLanguagePackVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -52,7 +52,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.TranslatableLanguageVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -65,7 +65,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.TranslationGroupVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -78,7 +78,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.TranslationMessageVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -91,7 +91,7 @@
   </securedutility>
 
   <class class="lp.translations.vocabularies.TranslationTemplateVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 </configure>

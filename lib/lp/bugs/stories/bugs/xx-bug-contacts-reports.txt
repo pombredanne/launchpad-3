@@ -18,8 +18,8 @@ If we add a bug for Foo Bar these numbers will be updated:
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

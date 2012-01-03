@@ -23,7 +23,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportmachine import ICodeImportMachine

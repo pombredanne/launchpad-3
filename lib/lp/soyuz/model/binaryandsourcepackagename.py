@@ -13,8 +13,8 @@ from sqlobject import StringCol
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.database.sqlbase import SQLBase
+from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )

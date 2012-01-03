@@ -87,9 +87,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc import faults
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
@@ -108,11 +105,14 @@ from lp.codehosting.vfs.transport import (
     get_readonly_transport,
     TranslationError,
     )
+from lp.services.config import config
 from lp.services.twistedsupport import no_traceback_failures
 from lp.services.twistedsupport.xmlrpc import (
     DeferredBlockingProxy,
     trap_fault,
     )
+from lp.services.webapp import errorlog
+from lp.xmlrpc import faults
 
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation. We support

@@ -9,14 +9,6 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -26,6 +18,14 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.tests.test_doc import (
     uploaderSetUp,
     uploadQueueSetUp,
+    )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import (

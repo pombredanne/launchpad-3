@@ -20,12 +20,12 @@ from urllib2 import urlopen
 from pytz import utc
 import transaction
 
-from canonical.launchpad.ftests import (
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 

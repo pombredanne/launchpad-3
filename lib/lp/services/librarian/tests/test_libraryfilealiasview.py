@@ -8,10 +8,10 @@ __metaclass__ = type
 from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.errors import GoneError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLibraryFileAliasView(TestCaseWithFactory):

@@ -147,7 +147,7 @@ to jump to the question.
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = '9'
     >>> browser.getControl('Find Answers').click()
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
     Question #9 : ...
 

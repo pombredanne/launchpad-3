@@ -56,7 +56,7 @@ XXX: This doctest needs a lot of cleanups!
     >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
     >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
     >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 
@@ -193,7 +193,7 @@ returns a tuple with False and the current status of the membership.
 
 As expected, the membership object implements ITeamMembership.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
@@ -888,7 +888,7 @@ is a direct administrator of the guadamen team):
     >>> [person.name for person in guadamen_team.getDirectAdministrators()]
     [u'name16', u'ubuntu-team']
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> cprov.inTeam(ubuntu_team)
     True

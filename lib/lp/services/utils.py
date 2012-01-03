@@ -32,6 +32,7 @@ __all__ = [
     ]
 
 import bz2
+import cPickle as pickle
 from datetime import datetime
 from itertools import tee
 import os
@@ -42,7 +43,6 @@ import sys
 from textwrap import dedent
 from types import FunctionType
 
-import cPickle as pickle
 from fixtures import (
     Fixture,
     MonkeyPatch,

@@ -46,8 +46,6 @@ from testtools.deferredruntest import (
     )
 from twisted.internet import defer
 
-from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
@@ -72,10 +70,12 @@ from lp.codehosting.vfs.branchfs import (
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
 from lp.services.job.runner import TimeoutError
+from lp.services.webapp import errorlog
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 def branch_to_path(branch, add_slash=True):

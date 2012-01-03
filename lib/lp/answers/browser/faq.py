@@ -12,8 +12,11 @@ __all__ = [
     'FAQView',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.services.webapp import (
     action,
     canonical_url,
     enabled_with_permission,
@@ -22,10 +25,7 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
 class FAQNavigationMenu(NavigationMenu):

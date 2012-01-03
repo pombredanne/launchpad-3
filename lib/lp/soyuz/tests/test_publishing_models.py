@@ -6,15 +6,11 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
@@ -22,6 +18,10 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):

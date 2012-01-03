@@ -7,7 +7,7 @@ type.
 
 Firstly we need an example table.
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database.sqlbase import cursor
     >>> cur = cursor()
     >>> cur.execute('''
     ...     CREATE TABLE FooTest (
@@ -32,9 +32,9 @@ result in an error.
     ...     ONE = Item("One")
     ...     TWO = Item("Two")
 
-    >>> from canonical.database.constants import DEFAULT
-    >>> from canonical.database.enumcol import EnumCol
-    >>> from canonical.database.sqlbase import SQLBase
+    >>> from lp.services.database.constants import DEFAULT
+    >>> from lp.services.database.enumcol import EnumCol
+    >>> from lp.services.database.sqlbase import SQLBase
     >>> class BadFooTest(SQLBase):
     ...     foo = EnumCol(enum=PlainFooType, default=DEFAULT)
     Traceback (most recent call last):

@@ -28,21 +28,6 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad.layers import FeedsLayer
-from canonical.launchpad.webapp import (
-    canonical_name,
-    canonical_url,
-    Navigation,
-    stepto,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchpadRoot,
-    )
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -51,6 +36,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.layers import FeedsLayer
 from lp.registry.interfaces.announcement import (
     IAnnouncementSet,
     IHasAnnouncements,
@@ -62,7 +48,21 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.feeds.interfaces import IFeedsApplication
+from lp.services.config import config
+from lp.services.feeds.interfaces.application import IFeedsApplication
+from lp.services.webapp import (
+    canonical_name,
+    canonical_url,
+    Navigation,
+    stepto,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 
 
 class FeedsRootUrlData:

@@ -156,7 +156,7 @@ This change also affects the way distroarchseries are listed in the
 distroseries page. We will use a small helper function to extract the
 current distroseries architecture list.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> def check_arch_list(distroseries='warty'):
     ...     MemcachedLayer.purge()

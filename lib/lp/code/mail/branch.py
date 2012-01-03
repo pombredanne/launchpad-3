@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -18,6 +17,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import format_address
+from lp.services.webapp import canonical_url
 
 
 def send_branch_modified_notifications(branch, event):

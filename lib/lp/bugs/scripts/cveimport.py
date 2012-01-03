@@ -7,25 +7,25 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-import xml.etree.cElementTree as cElementTree
 import gzip
 import StringIO
 import time
 import urllib2
+import xml.etree.cElementTree as cElementTree
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectModifiedEvent
 
-from canonical.config import config
-from lp.services.looptuner import (
-    ITunableLoop,
-    LoopTuner,
-    )
 from lp.bugs.interfaces.cve import (
     CveStatus,
     ICveSet,
+    )
+from lp.services.config import config
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,

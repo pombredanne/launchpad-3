@@ -23,7 +23,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,

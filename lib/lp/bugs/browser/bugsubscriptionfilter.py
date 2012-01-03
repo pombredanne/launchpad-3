@@ -11,11 +11,6 @@ __all__ = [
 
 from zope.app.form.browser import TextWidget
 
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -26,7 +21,12 @@ from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 def bug_notification_level_description_mapping(displayname):

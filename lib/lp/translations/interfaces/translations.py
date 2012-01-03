@@ -1,14 +1,14 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.interface import Attribute
-
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from zope.interface import Attribute
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.webapp.interfaces import ILaunchpadApplication
+
 
 __metaclass__ = type
 

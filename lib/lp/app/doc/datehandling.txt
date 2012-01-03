@@ -19,7 +19,7 @@ something happened. So, let's demonstrate how this functionality can be
 accessed in Launchpad, using the age of a bug task as an example. First, let's
 pretend we're logged in as Sample Person:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("testing@canonical.com")
 
 Then let's grab one of his bug tasks to work with:

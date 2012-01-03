@@ -27,8 +27,7 @@ Import the bunch of required database classes:
     ...     DistroArchSeries, PocketChroot)
 
 The Master side of Buildd requires access to Launchpad Database, the
-user designed for this kind of access is 'fiera', see
-test_system_documentation.py for more information.
+user designed for this kind of access is 'fiera'.
 
     >>> from lp.services.log.logger import DevNullLogger
     >>> logger = DevNullLogger()
@@ -131,10 +130,10 @@ exact circumstances we want to test below.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

@@ -30,7 +30,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.database.sqlbase import cursor
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -41,6 +40,7 @@ from lp.code.model.seriessourcepackagebranch import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import cursor
 from lp.testing import (
     run_with_login,
     time_counter,

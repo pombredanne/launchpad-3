@@ -12,8 +12,8 @@ __all__ = ['QuestionBug']
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.coop.answersbugs.interfaces import IQuestionBug
+from lp.services.database.sqlbase import SQLBase
 
 
 class QuestionBug(SQLBase):

@@ -18,7 +18,7 @@ variable.
 
 The pagetests profiler is created by the layer during its setUp.
 
-    >>> from canonical.testing.layers import PageTestLayer
+    >>> from lp.testing.layers import PageTestLayer
 
 (Save the existing configuration.)
 
@@ -114,7 +114,7 @@ The feature has two modes.
 ..  This ReST comment tests the assertion above that profiling_allowed is
     True by default for tests and development.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.profiling.profiling_allowed
     True
 
@@ -142,7 +142,7 @@ The feature has two modes.
 ..  This ReST comment tests the assertion above that profile_all_requests is
     False by default for tests and development.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.profiling.profile_all_requests
     False
 

@@ -739,7 +739,7 @@ mentoring process (Bug 498181).
 
     >>> from zope.component import getUtility
     >>> from lp.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')

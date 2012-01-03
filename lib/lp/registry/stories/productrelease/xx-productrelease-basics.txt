@@ -159,7 +159,7 @@ And if no-priv owns the series...
 
     >>> no_priv = Person.selectOneBy(name="no-priv")
     >>> tomcat.getSeries('trunk').owner = no_priv
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 ... he can edit existing releases as well, even if they are owned by
