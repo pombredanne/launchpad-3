@@ -6,17 +6,17 @@
 
 import transaction
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
+from lp.services.scripts.tests import run_script
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.translations.tests.test_translationpackagingjob import (
     count_translations,
     make_translation_merge_job,
     )
 from lp.translations.translationmerger import TranslationMerger
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
 
 
 class TestMergeExistingPackagings(TestCaseWithFactory):

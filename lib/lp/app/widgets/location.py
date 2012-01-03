@@ -26,16 +26,16 @@ from zope.schema import (
     Float,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IMultiLineWidgetLayout,
-    )
+from lp import _
 from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.location import IObjectWithLocation
+from lp.services.config import config
 from lp.services.geoip.interfaces import IGeoIPRecord
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IMultiLineWidgetLayout,
+    )
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):
@@ -62,10 +62,6 @@ class LocationWidget(BrowserWidget, InputWidget):
     __call__ = ViewPageTemplateFile("templates/location.pt")
 
     def __init__(self, context, request):
-        # This widget makes use of javascript for googlemaps and
-        # json-handling, so we flag that in the request so that our
-        # base-layout includes the necessary javascript files.
-        request.needs_json = True
         super(LocationWidget, self).__init__(context, request)
         fields = form.Fields(
             Float(__name__='latitude', title=_('Latitude'), required=False),

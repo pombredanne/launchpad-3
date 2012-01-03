@@ -17,11 +17,11 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob

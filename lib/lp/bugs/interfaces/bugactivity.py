@@ -12,6 +12,10 @@ __all__ = [
     'IBugActivitySet',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.interface import Interface
 from zope.schema import (
     Datetime,
@@ -19,17 +23,11 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.restful.declarations import (
-    export_as_webservice_entry,
-    exported,
-    )
-
+from lp import _
 from lp.services.fields import (
     BugField,
     PersonChoice,
     )
-
-from canonical.launchpad import _
 
 
 class IBugActivity(Interface):

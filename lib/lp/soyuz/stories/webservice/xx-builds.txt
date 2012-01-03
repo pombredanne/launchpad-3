@@ -142,8 +142,8 @@ Plain users have no permission to call retry:
 
 Set up some more webservice users:
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> admin_person = getUtility(IPersonSet).getByName('mark')
@@ -197,11 +197,11 @@ The user cprov is a buildd admin.
     >>> login('foo.bar@canonical.com')
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> logout()
 
     >>> cprov.inTeam(buildd_admins)
     True
 
+    >>> logout()
     >>> print cprov_webservice.named_post(
     ...     a_build['self_link'], 'rescore', score=1000)
     HTTP/1.1 200 Ok

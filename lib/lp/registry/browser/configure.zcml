@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,10 +8,34 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
-    <!-- RDF downloadable documents -->
+    <browser:url
+      for="lp.registry.interfaces.person.IPersonSet"
+      path_expression="string:people"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.distribution.IDistributionSet"
+      path_expression="string:distros"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"
+      path_expression="string:sourcepackagenames"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+      for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
+      path_expression="string:projectgroups"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:feeds
+        module="lp.registry.feed.announcement"
+        classes="LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
+        />
+
 <facet facet="overview">
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
         name="rdf"
         template="../templates/rdf-index.pt"
@@ -19,7 +43,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        for="lp.services.webapp.interfaces.ILaunchpadApplication"
         name="rdf-spec"
         class="lp.registry.browser.RDFFolder"
         attribute="__call__"
@@ -42,7 +66,7 @@
         rootsite="mainsite"
         attribute_to_parent="team"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.teammembership.ITeamMembership"
         factory="lp.registry.browser.teammembership.TeamMembershipBreadcrumb"
         permission="zope.Public"/>
@@ -228,7 +252,7 @@
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             path_expression="string:codeofconduct"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             parent_utility="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
@@ -401,7 +425,7 @@
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         path_expression="name"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         permission="zope.Public"
@@ -513,9 +537,9 @@
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        provides="lp.services.webapp.interfaces.INavigationMenu"
         for="lp.registry.browser.pillar.IInvolved"
         factory="lp.registry.browser.pillar.InvolvedMenu"
         name="overview"
@@ -547,7 +571,7 @@
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             name="+index"/>
@@ -706,7 +730,7 @@
     <browser:url
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         path_expression="string:+announcements"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         name="+announcements"/>
@@ -723,9 +747,9 @@
         template="../templates/announcement-macros.pt"
         class="lp.app.browser.launchpad.Macro"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.announcement.IAnnouncement"
-        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <browser:menus
         module="lp.registry.browser.announcement"
@@ -767,7 +791,7 @@
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
             name="+index"/>
@@ -803,7 +827,7 @@
             permission="launchpad.Edit"
             template="../templates/person-editlanguages.pt"/>
         <browser:page
-            for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+            for="lp.services.webapp.interfaces.ILaunchpadApplication"
             permission="launchpad.AnyPerson"
             class="lp.registry.browser.person.RedirectToEditLanguagesView"
             name="+editmylanguages"
@@ -1020,12 +1044,6 @@
             class="lp.registry.browser.person.PersonOAuthTokensView"
             permission="launchpad.Edit"
             template="../templates/person-oauth-tokens.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamHierarchyView"
-            name="+teamhierarchy"
-            template="../templates/person-teamhierarchy.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
@@ -1260,7 +1278,7 @@
             MilestoneSetNavigation
             MilestoneNavigation"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.milestone.IMilestone"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
         permission="zope.Public"/>
@@ -1368,7 +1386,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.product.IProduct"
@@ -1431,7 +1449,7 @@
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.webapp.LaunchpadView"
+        class="lp.services.webapp.LaunchpadView"
         name="+listing-detailed"
         template="../templates/product-listing-detailed.pt"/>
     <browser:renamed-page
@@ -1499,7 +1517,7 @@
     <browser:url
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         path_expression="string:+nameblacklist"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         />
     <browser:url
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
@@ -1550,7 +1568,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProductSet"
         permission="zope.Public"
@@ -1614,7 +1632,7 @@
         path_expression="name"
         attribute_to_parent="product"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        provides="lp.services.webapp.interfaces.INavigationMenu"
         for="lp.registry.browser.productseries.IProductSeriesInvolved"
         factory="lp.registry.browser.productseries.ProductSeriesInvolvedMenu"
         name="overview"
@@ -1634,7 +1652,7 @@
         template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.webapp.LaunchpadView"
+        class="lp.services.webapp.LaunchpadView"
         permission="zope.Public">
         <browser:page
             name="+timeline-graph"
@@ -1742,7 +1760,7 @@
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
         path_expression="string:series"
-        parent_utility="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
+        parent_utility="lp.code.interfaces.codehosting.IBazaarApplication"/>
     <browser:menus
         classes="
             ProductSeriesFacets
@@ -1928,7 +1946,7 @@
     <browser:url
         for="lp.registry.interfaces.distribution.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistributionSet"
         permission="zope.Public"
@@ -2015,7 +2033,7 @@
         classes="
             ProductReleaseNavigation"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productrelease.IProductRelease"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
         permission="zope.Public"/>

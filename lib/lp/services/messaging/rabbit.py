@@ -23,7 +23,7 @@ import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -189,7 +189,7 @@ class RabbitUnreliableSession(RabbitSession):
         except self.suppressed_errors:
             pass
         except Exception:
-            from canonical.launchpad.webapp import errorlog
+            from lp.services.webapp import errorlog
             errorlog.globalErrorUtility.raising(sys.exc_info())
 
 

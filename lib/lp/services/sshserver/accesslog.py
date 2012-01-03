@@ -19,7 +19,7 @@ from zope.component import (
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 
-from canonical.launchpad.scripts import WatchedFileHandler
+from lp.services.scripts import WatchedFileHandler
 from lp.services.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
 

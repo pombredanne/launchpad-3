@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd. This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd. This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,11 +19,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -39,6 +34,12 @@ from lp.code.model.branchjob import (
     BranchJob,
     BranchJobDerived,
     BranchJobType,
+    )
+from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
@@ -224,6 +225,31 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             return None
         else:
             return cls(branch_job)
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJob`.
+
+        Overridden here to search via a BranchJob, rather than a Job.
+        """
+        store = IStore(BranchJob)
+        job_ids = [job.id for job in jobs]
+        branch_jobs = store.find(
+            BranchJob, BranchJob.jobID.is_in(job_ids))
+        return [cls(branch_job) for branch_job in branch_jobs]
+
+    @classmethod
+    def preloadJobsData(cls, jobs):
+        # Circular imports.
+        from lp.code.model.branch import Branch
+        from lp.registry.model.product import Product
+        from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.services.job.model.job import Job
+        contexts = [job.context for job in jobs]
+        load_related(Job, contexts, ['jobID'])
+        branches = load_related(Branch, contexts, ['branchID'])
+        GenericBranchCollection.preloadDataForBranches(branches)
+        load_related(Product, branches, ['productID'])
 
     @classmethod
     def getByBranch(cls, branch):

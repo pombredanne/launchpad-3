@@ -70,7 +70,7 @@ test.
 The display name of all team participants will be escaped to prevent
 XSS attacks on any callsite of +mapdata.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> admin_browser.open('http://launchpad.dev/~kamion/+edit')
     >>> admin_browser.getControl('Display Name').value = (

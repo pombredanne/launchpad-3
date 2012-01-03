@@ -16,14 +16,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import (
     IPackaging,
@@ -31,6 +23,14 @@ from lp.registry.interfaces.packaging import (
     PackagingType,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class Packaging(SQLBase):

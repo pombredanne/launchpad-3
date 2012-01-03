@@ -17,12 +17,12 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
 from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 
 

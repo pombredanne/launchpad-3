@@ -19,17 +19,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import IFeedsApplication
-from canonical.launchpad.webapp import (
-    canonical_url,
-    urlappend,
-    )
-from canonical.lazr.feed import (
-    FeedBase,
-    FeedEntry,
-    FeedPerson,
-    FeedTypedData,
-    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.registry.interfaces.announcement import (
     IAnnouncementSet,
@@ -38,6 +27,17 @@ from lp.registry.interfaces.announcement import (
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.feeds.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    )
+from lp.services.feeds.interfaces.application import IFeedsApplication
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
 
 
 class AnnouncementsFeedBase(FeedBase):
@@ -113,11 +113,11 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
 
     # The `usedfor` property identifies the class associated with this feed
     # class.  It is used by the `IFeedsDirective` in
-    # launchpad/webapp/metazcml.py to provide a mapping from the supported
+    # webapp/metazcml.py to provide a mapping from the supported
     # feed types to this class.  It is a more maintainable method than simply
     # listing each mapping in the zcml.  The only zcml change is to add this
     # class to the list of classes in the `browser:feeds` stanza of
-    # launchpad/zcml/feeds.zcml.
+    # lp/services/feeds/configure.zcml.
     usedfor = IFeedsApplication
 
     def _getItemsWorker(self):

@@ -12,8 +12,6 @@ import apt_pkg
 from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
     ArchSpecificPublicationsCache,
     contains_arch_indep,
@@ -27,6 +25,7 @@ from lp.archivepublisher.domination import (
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
@@ -36,6 +35,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -473,19 +473,6 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             bpph.binarypackagerelease.version,
             GeneralizedPublication(is_source=False).getPackageVersion(bpph))
 
-    def test_load_releases_loads_sourcepackagerelease(self):
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        self.assertContentEqual(
-            [spph.sourcepackagerelease],
-            GeneralizedPublication(is_source=True).load_releases([spph]))
-
-    def test_load_releases_loads_binarypackagerelease(self):
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=self.factory.makeBinaryPackageRelease())
-        self.assertContentEqual(
-            [bpph.binarypackagerelease],
-            GeneralizedPublication(is_source=False).load_releases([bpph]))
-
     def test_compare_sorts_versions(self):
         versions = [
             '1.1v2',
@@ -506,7 +493,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             ]
         spphs = make_spphs_for_versions(self.factory, versions)
 
-        debian_sorted_versions = sorted(versions, cmp=apt_pkg.VersionCompare)
+        debian_sorted_versions = sorted(versions, cmp=apt_pkg.version_compare)
 
         # Assumption: in this case, Debian version ordering is not the
         # same as alphabetical version ordering.
@@ -515,7 +502,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         # The compare method produces the Debian ordering.
         sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
         self.assertEqual(
-            sorted(versions, cmp=apt_pkg.VersionCompare),
+            sorted(versions, cmp=apt_pkg.version_compare),
             list_source_versions(sorted_spphs))
 
     def test_compare_breaks_tie_with_creation_date(self):

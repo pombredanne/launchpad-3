@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UnexpectedFormData
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.browser import person
@@ -14,6 +13,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

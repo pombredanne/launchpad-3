@@ -22,7 +22,7 @@ ID:
     >>> retrieved_task
     <BugTask ...>
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject 
+    >>> from lp.services.webapp.testing import verifyObject 
     >>> verifyObject(IBugTask, retrieved_task)
     True
 

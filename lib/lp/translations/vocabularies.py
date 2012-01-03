@@ -15,21 +15,15 @@ __all__ = [
     'TranslationTemplateVocabulary',
     ]
 
-from sqlobject import (
-    AND,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    )
+from sqlobject import AND
+from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import (
-    sqlvalues,
-    )
-from canonical.launchpad.webapp.vocabulary import (
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.vocabularies import LanguageVocabulary
 from lp.translations.enums import LanguagePackType

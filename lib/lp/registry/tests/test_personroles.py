@@ -7,11 +7,11 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPersonRoles(TestCaseWithFactory):
@@ -39,7 +39,7 @@ class TestPersonRoles(TestCaseWithFactory):
     def _get_person_celebrities(self, is_team):
         for name in ILaunchpadCelebrities.names():
             attr = getattr(self.celebs, name)
-            if IPerson.providedBy(attr) and attr.isTeam() == is_team:
+            if IPerson.providedBy(attr) and attr.is_team == is_team:
                 yield (name, attr)
 
     def test_in_teams(self):

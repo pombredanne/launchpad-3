@@ -16,15 +16,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.archiveuploader.uploadprocessor import (
-    parse_build_upload_leaf_name,
-    )
+from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -37,9 +29,9 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login,
     login_person,
@@ -47,6 +39,10 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

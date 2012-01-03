@@ -16,14 +16,13 @@ from lazr.restful.declarations import (
     exported,
     )
 from lazr.restful.fields import Reference
-
 from zope.interface import Interface
 from zope.schema import (
     Datetime,
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PersonChoice
 
 

@@ -315,7 +315,7 @@ You can also specify an extra argument (a view's name), if you want the
 URL of a given page under that object. For that to work, though, we need
 to simulate a browser request -- that's why we login() here.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> login(ANONYMOUS, LaunchpadTestRequest())
     >>> print test_tales("bug/fmt:url/+text", bug=bug)
     http://bugs.launchpad.dev/bugs/1/+text
@@ -1075,7 +1075,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address is
 replaced with the message '<email address hidden>'.
 
-    >>> logout() # Pretend we're unauthenticated.
+    >>> login(ANONYMOUS)
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
 
@@ -1198,7 +1198,7 @@ Test the 'fmt:' namespace where the context is a dict.
 Test the 'fmt:url' namespace for canonical urls.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> from lp.services.webapp.interfaces import ICanonicalUrlData
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)
     ...     path = 'bonobo/saki'
@@ -1215,7 +1215,7 @@ request.
 Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
     >>> class MockBrowserRequest:
     ...     implements(ILaunchpadBrowserApplicationRequest,)
@@ -1445,8 +1445,8 @@ MenuLinks (ILink) can be formatted anchored text and icons.
 
     # Build a link like the MenuAPI does.
 
-    >>> from canonical.launchpad.webapp.menu import Link, MenuLink
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.menu import Link, MenuLink
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest()
     >>> login(ANONYMOUS, request)

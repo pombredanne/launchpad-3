@@ -12,7 +12,6 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     InvalidBugId,
@@ -43,6 +42,7 @@ from lp.bugs.scripts.checkwatches.utilities import (
     get_bugwatcherrortype_for_error,
     get_remote_system_oops_properties,
     )
+from lp.services.database.constants import UTC_NOW
 
 
 class RemoteBugUpdater(WorkingBase):

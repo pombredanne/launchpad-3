@@ -5,12 +5,10 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.enums import SpecificationDefinitionStatus
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications,
-    )
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import DoesNotSnapshot
 
 

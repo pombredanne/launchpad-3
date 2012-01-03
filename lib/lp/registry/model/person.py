@@ -105,75 +105,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import (
-    Account,
-    AccountPassword,
-    )
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress,
-    HasOwnerMixin,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthRequestToken,
-    )
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    AccountSuspendedError,
-    IAccount,
-    IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -285,6 +224,59 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import (
+    Account,
+    AccountPassword,
+    )
+from lp.services.identity.model.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
@@ -295,6 +287,12 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1029,10 +1027,6 @@ class Person(
         """See `IPerson`."""
         return self.teamownerID is not None
 
-    def isTeam(self):
-        """Deprecated. Use is_team instead."""
-        return self.is_team
-
     @property
     def mailing_list(self):
         """See `IPerson`."""
@@ -1320,7 +1314,7 @@ class Person(
     def is_valid_person_or_team(self):
         """See `IPerson`."""
         # Teams are always valid
-        if self.isTeam():
+        if self.is_team:
             return True
 
         return self.is_valid_person
@@ -1344,7 +1338,7 @@ class Person(
         Users without karma have not demostrated their intentions may not
         have the same privileges as users who have made contributions.
         """
-        return not self.isTeam() and self.karma == 0
+        return not self.is_team and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -1479,12 +1473,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):
@@ -4370,7 +4367,7 @@ class PersonSet:
             return
 
         # Inform the user of the merge changes.
-        if to_person.isTeam():
+        if to_person.is_team:
             mail_text = get_email_template(
                 'team-merged.txt', app='registry')
             subject = 'Launchpad teams merged'

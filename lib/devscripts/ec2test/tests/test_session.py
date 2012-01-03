@@ -5,10 +5,12 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import unittest
-
-from datetime import datetime, timedelta
 
 from devscripts.ec2test import session
 

@@ -22,7 +22,7 @@ product or distro, can edit Importance.
     >>> import transaction
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
@@ -34,13 +34,15 @@ product or distro, can edit Importance.
     >>> mark = personset.getByName("mark")
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> logout()
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def user_sees_importance_widget(user, url):
+    ...     naked_user = removeSecurityProxy(user)
+    ...     naked_email = removeSecurityProxy(user.preferredemail)
+    ...     transaction.commit()
+    ...     logout()
     ...     browser = setupBrowser(
-    ...         "Basic %s:test"
-    ...         % removeSecurityProxy(user.preferredemail).email)
+    ...         "Basic %s:test" % naked_email.email)
     ...     browser.open(url)
     ...     try:
     ...         browser.getControl("Importance")
@@ -53,9 +55,6 @@ For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugSupervisor(no_priv, no_priv)
-    >>> logout()
-    >>> transaction.commit()
-
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
@@ -66,12 +65,9 @@ For a product owner.
     >>> login(ANONYMOUS)
     >>> print firefox.owner.name
     name12
-    >>> logout()
 
     >>> login("foo.bar@canonical.com")
     >>> sample_person = personset.getByName("name12")
-    >>> logout()
-
     >>> user_sees_importance_widget(
     ...     user=sample_person,
     ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
@@ -82,9 +78,6 @@ he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugSupervisor(None, None)
-    >>> logout()
-    >>> transaction.commit()
-
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
@@ -94,9 +87,6 @@ For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugSupervisor(no_priv, no_priv)
-    >>> logout()
-    >>> transaction.commit()
-
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url='http://bugs.launchpad.dev/'
@@ -108,7 +98,6 @@ For a distribution owner.
     >>> login("foo.bar@canonical.com")
     >>> mark.inTeam(ubuntu.owner)
     True
-    >>> logout()
 
     >>> user_sees_importance_widget(
     ...     user=mark,
@@ -120,9 +109,6 @@ For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugSupervisor(None, None)
-    >>> logout()
-    >>> transaction.commit()
-
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url='http://bugs.launchpad.dev/'

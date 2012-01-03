@@ -6,12 +6,10 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
+from lp.services.database.lpstorm import IStore
 from lp.soyuz.interfaces.binarypackagereleasecontents import (
     IBinaryPackageReleaseContentsSet,
     )
@@ -19,6 +17,7 @@ from lp.soyuz.model.binarypackagereleasecontents import (
     BinaryPackageReleaseContents,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBinaryPackageReleaseContents(TestCaseWithFactory):

@@ -52,7 +52,7 @@ be used.
 When a IBugLink is created, one IObjectCreatedEvent for the created
 should be fired by the method.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectDeletedEvent)
     >>> created_events = []

@@ -25,10 +25,10 @@ uploaded into the system.
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import datadir, getPolicy
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
 # Login as an admin.

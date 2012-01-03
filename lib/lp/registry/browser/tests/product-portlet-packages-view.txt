@@ -8,7 +8,7 @@ the user to make the connection.
 Create a helper to update the distribution source package cache, which
 does not happen automatically.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text,
     ...     find_tag_by_id,
     ...     )
@@ -22,7 +22,7 @@ does not happen automatically.
     >>> import transaction
     >>> from lp.services.log.logger import BufferLogger
     >>> logger = BufferLogger()
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import dbuser
     >>> def updateCache():
     ...     # Switch to the statistician user who is the only user with

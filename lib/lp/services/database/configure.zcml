@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -11,4 +11,10 @@
     <class class="storm.references.BoundIndirectReferenceSet">
         <allow attributes="add remove clear" />
     </class>
+
+    <class class="lp.services.database.decoratedresultset.DecoratedResultSet">
+        <allow interface="storm.zope.interfaces.IResultSet" />
+        <allow attributes="__getslice__ get_plain_result_set" />
+    </class>
+
 </configure>

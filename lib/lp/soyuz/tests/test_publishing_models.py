@@ -6,20 +6,22 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.constants import UTC_NOW
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -136,3 +138,40 @@ class TestSourcePackagePublishingHistory(TestCaseWithFactory):
     def test_getFileByName_unhandled_name(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         self.assertRaises(NotFoundError, spph.getFileByName, 'not-changelog')
+
+
+class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        expected_urls = []
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def get_urls_for_binarypackagerelease(self, bpr, archive):
+        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+            for f in bpr.files]
+
+    def test_binaryFileUrls_one_binary(self):
+        archive = self.factory.makeArchive(private=False)
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_two_binaries(self):
+        archive = self.factory.makeArchive(private=False)
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())

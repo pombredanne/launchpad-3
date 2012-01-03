@@ -5,7 +5,7 @@ using BeautifulStoneSoup instead of BSS or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_entries, parse_links, validate_feed)
 
 Please note that when displaying the results of the feeds in a reader
@@ -404,7 +404,7 @@ The bug search feed is not enabled by default since it may represent a
 performance problem in production.
 
     >>> from zope.security.interfaces import Unauthorized
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.is_bug_search_feed_active
     True
     >>> bug_search_feed_data = """

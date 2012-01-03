@@ -19,12 +19,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
@@ -73,7 +67,13 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.database.constants import UTC_NOW
 from lp.services.utils import iter_split
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class _BaseNamespace:
@@ -152,7 +152,7 @@ class _BaseNamespace:
             return
         owner = self.owner
         if not registrant.inTeam(owner):
-            if owner.isTeam():
+            if owner.is_team:
                 raise BranchCreatorNotMemberOfOwnerTeam(
                     "%s is not a member of %s"
                     % (registrant.displayname, owner.displayname))
@@ -540,6 +540,7 @@ class BranchNamespaceSet:
     def traverse(self, segments):
         """See `IBranchNamespaceSet`."""
         traversed_segments = []
+
         def get_next_segment():
             try:
                 result = segments.next()
@@ -549,6 +550,7 @@ class BranchNamespaceSet:
                 raise AssertionError("None segment passed to traverse()")
             traversed_segments.append(result)
             return result
+
         person_name = get_next_segment()
         person = self._findPerson(person_name)
         pillar_name = get_next_segment()

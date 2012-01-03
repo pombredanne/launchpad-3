@@ -10,14 +10,16 @@
 __metaclass__ = type
 
 import _pythonpath
+
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
-    ICreateMergeProposalJobSource,)
+    ICreateMergeProposalJobSource,
+    )
+from lp.services.config import config
+from lp.services.job.runner import JobRunner
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RunCreateMergeProposalJobs(LaunchpadCronScript):

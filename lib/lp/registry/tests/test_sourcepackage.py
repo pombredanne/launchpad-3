@@ -16,7 +16,6 @@ from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
 from zope.security.management import checkPermission
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -39,6 +38,7 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -501,6 +501,32 @@ class TestSourcePackage(TestCaseWithFactory):
             distroseries=distroseries)
         self.assertNotEqual([], distroseries.drivers)
         self.assertEqual(sourcepackage.drivers, distroseries.drivers)
+
+    def test_personHasDriverRights_true(self):
+        # A distroseries driver has driver permissions on source packages.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        driver = distroseries.drivers[0]
+        self.assertTrue(sourcepackage.personHasDriverRights(driver))
+
+    def test_personHasDriverRights_false(self):
+        # A non-owner/driver/admin does not have driver rights.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        non_priv_user = self.factory.makePerson()
+        self.assertFalse(sourcepackage.personHasDriverRights(non_priv_user))
+
+    def test_owner_is_distroseries_owner(self):
+        # The source package owner differs to the ditroseries owner.
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        self.assertIsNot(None, sourcepackage.owner)
+        self.assertEqual(distroseries.owner, sourcepackage.owner)
+        self.assertTrue(
+            sourcepackage.personHasDriverRights(distroseries.owner))
 
 
 class TestSourcePackageWebService(WebServiceTestCase):

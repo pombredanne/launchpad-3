@@ -13,12 +13,6 @@ import transaction
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -36,9 +30,15 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 

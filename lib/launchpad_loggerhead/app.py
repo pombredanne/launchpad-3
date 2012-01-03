@@ -43,16 +43,16 @@ from paste.request import (
     path_info_pop,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
     )
 from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.vhosts import allvhosts
+from lp.xmlrpc import faults
 
 
 robots_txt = '''\
@@ -238,7 +238,7 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
-            base_api_url = config.appserver_root_url('api')
+            base_api_url = allvhosts.configs['api'].rooturl
             branch_api_url = '%s/%s/%s' % (
                 base_api_url,
                 'devel',
@@ -324,4 +324,4 @@ def oops_middleware(app):
     """
     error_utility = make_error_utility()
     return oops_wsgi.make_app(app, error_utility._oops_config,
-            template=_oops_html_template)
+            template=_oops_html_template, soft_start_timeout=7000)

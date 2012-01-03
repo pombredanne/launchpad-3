@@ -50,10 +50,10 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.version import sane_version
+from lp.services.config import config
 from lp.services.fields import (
     ContentNameField,
     PersonChoice,

@@ -11,14 +11,14 @@ from datetime import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts.expire_archive_files import ArchiveExpirer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class ArchiveExpiryTestBase(TestCaseWithFactory):

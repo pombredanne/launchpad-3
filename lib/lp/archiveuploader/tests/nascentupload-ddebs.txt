@@ -10,8 +10,8 @@ On a client system, DDEB installation is optional, it's only necessary
 for obtaining extra information about crashes in the corresponding
 feature.
 
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

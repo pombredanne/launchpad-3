@@ -3,14 +3,15 @@
 
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
 from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.services.webapp import canonical_url
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     SLEEP,
     )
+
 
 ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +
     '//button[contains(@class, "yui3-activator-act")]')

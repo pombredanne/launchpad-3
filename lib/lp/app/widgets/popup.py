@@ -8,9 +8,9 @@
 __metaclass__ = type
 
 import cgi
-import simplejson
 
 from lazr.restful.utils import safe_hasattr
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase,
@@ -18,11 +18,11 @@ from zope.app.form.browser.itemswidgets import (
     )
 from zope.schema.interfaces import IChoice
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.vocabulary import IHugeVocabulary
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
