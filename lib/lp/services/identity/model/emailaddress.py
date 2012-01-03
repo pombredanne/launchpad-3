@@ -56,9 +56,6 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             dbName='email', notNull=True, unique=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
-    account = ForeignKey(
-            dbName='account', foreignKey='Account', notNull=False,
-            default=None)
 
     def __repr__(self):
         return '<EmailAddress at 0x%x <%s> [%s]>' % (
@@ -116,8 +113,7 @@ class EmailAddressSet:
         return EmailAddress.selectOne(
             "lower(email) = %s" % quote(email.strip().lower()))
 
-    def new(self, email, person=None, status=EmailAddressStatus.NEW,
-            account=None):
+    def new(self, email, person=None, status=EmailAddressStatus.NEW):
         """See IEmailAddressSet."""
         email = email.strip()
 
@@ -129,11 +125,11 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
+        assert person
         return EmailAddress(
             email=email,
             status=status,
-            person=person,
-            account=account)
+            person=person)
 
 
 class UndeletableEmailAddress(Exception):
