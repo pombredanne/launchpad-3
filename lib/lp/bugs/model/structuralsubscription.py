@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from functools import itemgetter
+from operator import itemgetter
 
 import pytz
 from storm.base import Storm
@@ -47,9 +47,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -87,6 +84,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import cachedproperty
