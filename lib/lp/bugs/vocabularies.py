@@ -40,18 +40,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from lp.services.database.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -66,6 +54,18 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.vocabularies import DistributionVocabulary
+from lp.services.database.lpstorm import IStore
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
 
 
 class UsesBugsDistributionVocabulary(DistributionVocabulary):

@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = ['check_script']
 
-from canonical.database.sqlbase import sqlvalues
+from lp.services.database.sqlbase import sqlvalues
 
 
 def check_script(con, log, hostname, scriptname,

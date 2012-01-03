@@ -17,7 +17,7 @@ from zope.security.management import (
     queryInteraction,
     )
 
-from canonical.launchpad.webapp.interaction import (
+from lp.services.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )

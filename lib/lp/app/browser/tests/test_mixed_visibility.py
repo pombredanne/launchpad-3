@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
@@ -11,6 +10,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 MIXED_VISIBILITY_FLAG = {'disclosure.log_private_team_leaks.enabled': 'on'}

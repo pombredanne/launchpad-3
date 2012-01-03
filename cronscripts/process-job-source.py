@@ -7,12 +7,13 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
 
-import _pythonpath
 from twisted.python import log
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.job import runner
 from lp.services.job.runner import JobCronScript
 

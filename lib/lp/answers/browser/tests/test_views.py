@@ -11,11 +11,11 @@ __all__ = []
 
 import unittest
 
-from canonical.testing.layers import (
+from lp.testing import BrowserTestCase
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing import BrowserTestCase
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

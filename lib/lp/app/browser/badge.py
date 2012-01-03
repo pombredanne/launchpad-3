@@ -21,7 +21,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp.services.privacy.interfaces import IObjectPrivacy
 
 
 class Badge:

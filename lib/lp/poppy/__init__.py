@@ -5,7 +5,7 @@
 
 import os
 
-from canonical.config import config
+from lp.services.config import config
 
 
 def get_poppy_root():

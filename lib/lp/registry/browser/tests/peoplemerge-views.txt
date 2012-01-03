@@ -100,7 +100,7 @@ Delete team
 Users with launchpad.Moderate such as team admins and registry experts
 can delete teams.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> team_owner = factory.makePerson()
     >>> team_member = factory.makePerson()

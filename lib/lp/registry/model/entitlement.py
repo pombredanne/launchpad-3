@@ -18,10 +18,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.entitlement import (
     EntitlementInvalidError,
@@ -32,6 +28,10 @@ from lp.registry.interfaces.entitlement import (
     IEntitlement,
     IEntitlementSet,
     )
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class Entitlement(SQLBase):

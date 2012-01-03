@@ -70,7 +70,7 @@
     </securedutility>
 
     <adapter
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        for="lp.services.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.services.identity.interfaces.account.IAccount"
         factory="lp.services.identity.adapters.account.accountFromPrincipal"/>
 

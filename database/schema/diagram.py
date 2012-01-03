@@ -8,9 +8,21 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
-import psycopg, sys, os, re
-from security import DbSchema, CursorWrapper
-from ConfigParser import SafeConfigParser, NoOptionError
+from ConfigParser import (
+    NoOptionError,
+    SafeConfigParser,
+    )
+import os
+import re
+import sys
+
+import psycopg
+
+from security import (
+    CursorWrapper,
+    DbSchema,
+    )
+
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), os.pardir, os.pardir, 'lib'

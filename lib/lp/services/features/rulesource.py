@@ -20,11 +20,11 @@ import re
 
 from storm.locals import Desc
 
-from canonical.launchpad.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.webapp import adapter
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")

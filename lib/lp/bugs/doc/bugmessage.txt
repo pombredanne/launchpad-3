@@ -167,7 +167,7 @@ to compare this value for every bug in a large set.
     ...     subject="test message subject",
     ...     content="This is a test comment.")
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
     >>> bug_one.date_last_message == test_message.datecreated

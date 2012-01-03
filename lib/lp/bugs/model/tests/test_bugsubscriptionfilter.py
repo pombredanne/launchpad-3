@@ -12,14 +12,13 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad import searchbuilder
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.services import searchbuilder
 from lp.services.database.lpstorm import IStore
 from lp.testing import (
     anonymous_logged_in,
@@ -27,6 +26,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugSubscriptionFilter(TestCaseWithFactory):

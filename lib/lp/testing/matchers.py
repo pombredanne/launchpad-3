@@ -43,8 +43,8 @@ from zope.security.proxy import (
     Proxy,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.services.webapp import canonical_url
+from lp.services.webapp.batching import BatchNavigator
 from lp.testing import normalize_whitespace
 from lp.testing._login import person_logged_in
 from lp.testing._webservice import QueryCollector

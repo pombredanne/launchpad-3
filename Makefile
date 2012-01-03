@@ -92,7 +92,7 @@ doc:
 
 # Run by PQM.
 check_config: build
-	bin/test -m canonical.config.tests -vvt test_config
+	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)

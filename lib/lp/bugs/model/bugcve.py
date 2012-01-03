@@ -9,8 +9,8 @@ __all__ = ['BugCve']
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.bugs.interfaces.bugcve import IBugCve
+from lp.services.database.sqlbase import SQLBase
 
 
 class BugCve(SQLBase):

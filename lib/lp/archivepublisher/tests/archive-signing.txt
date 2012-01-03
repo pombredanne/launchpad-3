@@ -120,7 +120,7 @@ Generating a PPA signing key
 As mentioned above, generated signing_keys will be stored in a
 location defined by the system configuration.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> print config.personalpackagearchive.signing_keys_root
     /var/tmp/ppa-signing-keys
 

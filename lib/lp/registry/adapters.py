@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.poll import (
     IPollSet,
@@ -25,6 +24,7 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollStatus,
     )
+from lp.services.webapp.interfaces import ILaunchpadPrincipal
 
 
 def sourcepackage_to_distribution(source_package):

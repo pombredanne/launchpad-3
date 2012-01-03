@@ -12,12 +12,12 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.services.config import config
+from lp.services.database.sqlbase import cursor
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
@@ -254,7 +254,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         # test unless we commit.
         # XXX CarlosPerelloMarin 2007-01-22 bug=3989:
         # Unecessary flush_database_updates required.
-        from canonical.database.sqlbase import flush_database_updates
+        from lp.services.database.sqlbase import flush_database_updates
         flush_database_updates()
         import transaction
         transaction.commit()
@@ -277,7 +277,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
 
         # We flush the caches, so that the above defined objects gets
         # their content from the modified DB.
-        from canonical.database.sqlbase import flush_database_caches
+        from lp.services.database.sqlbase import flush_database_caches
         flush_database_caches()
 
         # The transaction changed, we need to refetch SQLObjects.

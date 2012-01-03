@@ -11,7 +11,7 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     ISpecificBuildFarmJobSource,

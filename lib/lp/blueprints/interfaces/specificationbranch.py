@@ -26,7 +26,7 @@ from lazr.restful.fields import (
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch

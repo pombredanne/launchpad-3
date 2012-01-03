@@ -14,22 +14,22 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from lp.services.database.lpstorm import ISlaveStore
-from lp.services.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.registry.model.productseries import ProductSeries
+from lp.services.config import config
+from lp.services.database.lpstorm import ISlaveStore
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.tests import run_script
 from lp.testing import (
     map_branch_contents,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch,
     )

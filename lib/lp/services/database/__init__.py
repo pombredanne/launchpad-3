@@ -17,7 +17,7 @@ from storm.exceptions import (
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.database.sqlbase import reset_store
+from lp.services.database.sqlbase import reset_store
 
 
 RETRY_ATTEMPTS = 3

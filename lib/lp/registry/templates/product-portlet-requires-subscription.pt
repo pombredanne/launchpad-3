@@ -48,7 +48,7 @@
     </ul>
 
     <p>
-      <a tal:define="config modules/canonical.config/config"
+      <a tal:define="config modules/lp.services.config/config"
         tal:attributes="href config/commercial/licensing_policy_url">
         View licensing policies
       </a>

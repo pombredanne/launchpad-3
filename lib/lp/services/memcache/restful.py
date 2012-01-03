@@ -8,7 +8,7 @@ import storm
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.memcache.interfaces import IMemcacheClient
 
 

@@ -51,7 +51,10 @@ from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper
 from lp.services.mailman.testing.layers import MailmanLayer
-from lp.testing import celebrity_logged_in
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    )
 from lp.testing.browser import Browser
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -264,11 +267,12 @@ def _membership_test(team_name, people, predicate):
         if isinstance(person, basestring):
             member_addresses.add(person)
         else:
-            for email in person.validatedemails:
-                member_addresses.add(removeSecurityProxy(email).email)
-            # Also add the preferred address.
-            preferred = removeSecurityProxy(person.preferredemail).email
-            member_addresses.add(preferred)
+            with person_logged_in(person):
+                for email in person.validatedemails:
+                    member_addresses.add(email.email)
+                # Also add the preferred address.
+                preferred = removeSecurityProxy(person.preferredemail).email
+                member_addresses.add(preferred)
     assert len(member_addresses) > 0, 'No valid addresses found'
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL

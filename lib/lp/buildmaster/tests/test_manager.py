@@ -25,17 +25,6 @@ from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import (
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -56,22 +45,30 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
 from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
+    ANONYMOUS,
+    login,
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.sampledata import (
     BOB_THE_BUILDER_NAME,
     FROG_THE_BUILDER_NAME,
     )
 
 
-class TestSlaveScannerScan(TestCaseWithFactory):
+class TestSlaveScannerScan(TestCase):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.

@@ -269,7 +269,7 @@ Passing a bad package name results in an error:
 Colin is a valid member of the team who owns the ubuntu primary archive.
 
     >>> from lp.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()

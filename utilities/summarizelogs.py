@@ -8,11 +8,12 @@
 #
 # Parses Launchpad error logs and returns a list of most frequent errors
 
-import re
+import datetime
 import pprint
+import re
 import sys
 import time
-import datetime
+
 
 COUNT = 10
 LAST_DAYS = 7

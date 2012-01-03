@@ -33,7 +33,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -62,6 +61,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import (
     IMasterStore,
@@ -287,6 +287,18 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             PackageBuild.build_farm_job_id == build_farm_job.id).one()
 
     @classmethod
+    def preloadBuildsData(cls, builds):
+        # Circular imports.
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        package_builds = load_related(
+            PackageBuild, builds, ['package_build_id'])
+        archives = load_related(Archive, package_builds, ['archive_id'])
+        load_related(Person, archives, ['ownerID'])
+        sprs = load_related(
+            SourcePackageRecipe, builds, ['recipe_id'])
+        SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
+
+    @classmethod
     def getByBuildFarmJobs(cls, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
@@ -294,20 +306,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         build_farm_job_ids = [
             build_farm_job.id for build_farm_job in build_farm_jobs]
 
-        def eager_load(rows):
-            # Circular imports.
-            from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-            package_builds = load_related(
-                PackageBuild, rows, ['package_build_id'])
-            archives = load_related(Archive, package_builds, ['archive_id'])
-            load_related(Person, archives, ['ownerID'])
-            sprs = load_related(
-                SourcePackageRecipe, rows, ['recipe_id'])
-            SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
         resultset = Store.of(build_farm_jobs[0]).find(cls,
             cls.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=cls.preloadBuildsData)
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
@@ -427,6 +430,24 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
         We override this to provide a delegate specific to package builds."""
         self.build_farm_job = BuildFarmBuildJob(self.build)
+
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        from lp.code.model.sourcepackagerecipebuild import (
+            SourcePackageRecipeBuild,
+            )
+        return list(IStore(SourcePackageRecipeBuildJob).find(
+            SourcePackageRecipeBuild,
+            [SourcePackageRecipeBuildJob.id.is_in([job.id for job in jobs]),
+             SourcePackageRecipeBuildJob.build_id ==
+                 SourcePackageRecipeBuild.id]))
+
+    @classmethod
+    def preloadJobsData(cls, jobs):
+        load_related(Job, jobs, ['job_id'])
+        builds = load_related(
+            SourcePackageRecipeBuild, jobs, ['build_id'])
+        SourcePackageRecipeBuild.preloadBuildsData(builds)
 
     @classmethod
     def new(cls, build, job):

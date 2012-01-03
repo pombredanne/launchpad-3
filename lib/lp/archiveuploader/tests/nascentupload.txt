@@ -638,9 +638,9 @@ we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> hoary.status = SeriesStatus.CURRENT
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
@@ -756,7 +756,7 @@ sigining key reference as an IGPGKey:
     >>> bar_ok.is_rejected
     False
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.gpg import IGPGKey
     >>> from lp.registry.interfaces.person import IPersonSet
 

@@ -12,12 +12,12 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,

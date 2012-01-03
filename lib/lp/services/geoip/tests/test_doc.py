@@ -8,8 +8,8 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import os
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.testing import build_test_suite
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))

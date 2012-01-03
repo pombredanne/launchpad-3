@@ -7,11 +7,11 @@ Run the doctests and pagetests.
 
 import os
 
-from canonical.testing import (
+from lp.services.testing import build_test_suite
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.services.testing import build_test_suite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

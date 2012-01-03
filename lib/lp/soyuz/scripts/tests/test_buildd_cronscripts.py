@@ -13,22 +13,18 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.scripts.buildd import (
@@ -36,6 +32,10 @@ from lp.soyuz.scripts.buildd import (
     RetryDepwait,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestCronscriptBase(TestCase):

@@ -5,8 +5,8 @@ This test makes sure that it is possible to subscribe to the question
 whatever the action used.
 
     >>> from lp.answers.browser.question import QuestionWorkflowView
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.testing.deprecated import LaunchpadFormHarness
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')

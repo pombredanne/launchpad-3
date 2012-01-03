@@ -16,10 +16,9 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
 
-
-from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.services.config import config
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import sendmail
 

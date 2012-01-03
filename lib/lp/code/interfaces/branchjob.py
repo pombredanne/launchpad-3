@@ -39,7 +39,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.interfaces.branch import IBranch
 from lp.services.job.interfaces.job import (
     IJob,

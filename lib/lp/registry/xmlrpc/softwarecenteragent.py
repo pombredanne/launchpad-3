@@ -12,8 +12,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (
     IPersonSet,
     ISoftwareCenterAgentAPI,
@@ -21,6 +19,8 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.identity.interfaces.account import AccountSuspendedError
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.xmlrpc import faults
 
 
 class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):

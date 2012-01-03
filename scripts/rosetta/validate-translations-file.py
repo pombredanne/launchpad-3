@@ -11,7 +11,8 @@ import _pythonpath
 import sys
 
 from lp.translations.scripts.validate_translations_file import (
-    ValidateTranslationsFile)
+    ValidateTranslationsFile,
+    )
 
 
 if __name__ == "__main__":

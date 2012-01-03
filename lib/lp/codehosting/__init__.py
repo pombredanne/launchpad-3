@@ -19,7 +19,7 @@ import os
 import bzrlib
 from bzrlib.plugin import load_plugins
 
-from canonical.config import config
+from lp.services.config import config
 
 
 def get_bzr_path():
