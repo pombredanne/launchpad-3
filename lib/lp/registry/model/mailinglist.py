@@ -449,17 +449,17 @@ class MailingList(SQLBase):
         # preferred address.
         tables = (
             EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.personID
-                     == EmailAddress.personID),
-            # pylint: disable-msg=C0301
-            LeftJoin(
+            Join(Account, Account.id == EmailAddress.accountID),
+            Join(
+                MailingListSubscription,
+                MailingListSubscription.personID == EmailAddress.personID),
+            Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
+            Join(
+                TeamParticipation,
+                TeamParticipation.personID ==
+                    MailingListSubscription.personID),
             )
         preferred = store.using(*tables).find(
             EmailAddress,
@@ -471,17 +471,18 @@ class MailingList(SQLBase):
                 Account.status == AccountStatus.ACTIVE))
         tables = (
             EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.email_addressID
-                     == EmailAddress.id),
-            # pylint: disable-msg=C0301
-            LeftJoin(
+            Join(Account, Account.id == EmailAddress.accountID),
+            Join(
+                MailingListSubscription,
+                MailingListSubscription.email_addressID ==
+                    EmailAddress.id),
+            Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
+            Join(
+                TeamParticipation,
+                TeamParticipation.personID ==
+                    MailingListSubscription.personID),
             )
         explicit = store.using(*tables).find(
             EmailAddress,
