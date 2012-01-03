@@ -23,21 +23,15 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.restful.fields import (
-    CollectionField,
-    Reference,
-    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
-    Bool,
     Choice,
     Datetime,
     Int,
     Text,
-    TextLine,
     )
 
 from lp import _
@@ -223,18 +217,6 @@ class IAccountPublic(Interface):
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
-    is_valid = Bool(
-        title=_("True if this account is active and has a valid email."),
-        required=True, readonly=True)
-
-    # We should use schema=IEmailAddress here, but we can't because that would
-    # cause circular dependencies.
-    preferredemail = Reference(
-        title=_("Preferred email address"),
-        description=_("The preferred email address for this person. "
-                      "The one we'll use to communicate with them."),
-        readonly=True, required=False, schema=Interface)
-
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -262,7 +244,7 @@ class IAccountSpecialRestricted(Interface):
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
-    def reactivate(comment, password, preferred_email):
+    def reactivate(comment, password):
         """Activate this account.
 
         Set the account status to ACTIVE, the account's password to the given
