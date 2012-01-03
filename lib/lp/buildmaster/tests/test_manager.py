@@ -46,6 +46,7 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
@@ -67,7 +68,7 @@ from lp.testing.sampledata import (
     )
 
 
-class TestSlaveScannerScan(TestCase):
+class TestSlaveScannerScan(TestCaseWithFactory):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
