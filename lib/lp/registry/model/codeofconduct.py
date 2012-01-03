@@ -23,15 +23,6 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    quote,
-    SQLBase,
-    )
-from canonical.launchpad.webapp import canonical_url
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct,
@@ -41,6 +32,14 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
@@ -49,6 +48,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class CodeOfConductConf:

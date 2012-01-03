@@ -29,10 +29,6 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.widgets.itemswidgets import (
@@ -52,6 +48,10 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.services.fields import StrippedTextLine
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
+from lp.services.webapp.vhosts import allvhosts
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):

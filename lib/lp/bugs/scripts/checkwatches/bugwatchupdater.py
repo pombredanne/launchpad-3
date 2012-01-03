@@ -14,8 +14,6 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError
@@ -29,7 +27,9 @@ from lp.bugs.scripts.checkwatches.utilities import (
     get_remote_system_oops_properties,
     )
 from lp.registry.interfaces.person import PersonCreationRationale
+from lp.services.mail.helpers import get_email_template
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.publisher import canonical_url
 
 
 class BugWatchUpdater(WorkingBase):

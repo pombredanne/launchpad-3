@@ -1,12 +1,11 @@
-= Private XML-RPC Authentication Server =
+Private XML-RPC Authentication Server
+=====================================
 
 The AuthServer interface is available on the authserver attribute
 of our private XMLRPC instance.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.app.interfaces.launchpad import (
-    ...     IPrivateApplication,
-    ...     )
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.services.authserver.interfaces import (
     ...     IAuthServerApplication,
     ...     )

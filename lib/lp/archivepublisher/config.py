@@ -10,8 +10,8 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.services.config import config
 from lp.soyuz.enums import (
     archive_suffixes,
     ArchivePurpose,

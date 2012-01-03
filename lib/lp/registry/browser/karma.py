@@ -13,14 +13,7 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action,
-    canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadView,
-    Navigation,
-    )
+from lp import _
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
     IKarmaAction,
@@ -29,6 +22,13 @@ from lp.registry.interfaces.karma import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Navigation,
+    )
 
 
 TOP_CONTRIBUTORS_LIMIT = 20

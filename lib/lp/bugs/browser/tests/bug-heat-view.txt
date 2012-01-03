@@ -5,7 +5,7 @@ coloured is dependent on the value of the heat field. The function
 bugtask_heat_html is used to render the flames.
 
     >>> MAX_HEAT = 5000.0
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from BeautifulSoup import BeautifulSoup
     >>> from lp.bugs.browser.bugtask import bugtask_heat_html

@@ -16,7 +16,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.datetimecol import UtcDateTimeCol
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.session.interfaces import IUseSessionStore
 
 

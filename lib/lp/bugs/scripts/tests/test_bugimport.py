@@ -12,13 +12,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -46,12 +39,17 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
+from lp.services.config import config
+from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.testing import (
+    login,
+    logout,
     run_process,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class UtilsTestCase(unittest.TestCase):

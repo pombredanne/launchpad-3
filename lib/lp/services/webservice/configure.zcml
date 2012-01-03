@@ -23,12 +23,12 @@
     </utility>
 
     <securedutility
-        class="canonical.launchpad.systemhomes.WebServiceApplication"
+        class="lp.systemhomes.WebServiceApplication"
         provides="lp.services.webservice.interfaces.IWebServiceApplication">
         <allow
             interface="lp.services.webservice.interfaces.IWebServiceApplication" />
         <allow interface='lazr.restful.interfaces.IServiceRootResource' />
-        <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
+        <allow interface='lp.services.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
     <!-- Registration for the class that manages an entry's byte
@@ -47,7 +47,7 @@
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
         for="lp.services.webservice.interfaces.IWebServiceApplication"
-        type="canonical.launchpad.layers.WebServiceLayer"
+        type="lp.layers.WebServiceLayer"
         factory="lp.app.browser.launchpad.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
@@ -64,21 +64,21 @@
    <adapter
        for="zope.schema.interfaces.IChoice
             zope.publisher.interfaces.http.IHTTPRequest
-            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+            lp.services.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"
-       factory="canonical.launchpad.webapp.marshallers.choiceMarshallerError"
+       factory="lp.services.webapp.marshallers.choiceMarshallerError"
        />
    <adapter
        for="lazr.restful.interfaces.IReferenceChoice
             zope.publisher.interfaces.http.IHTTPRequest
-            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+            lp.services.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"
        factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
        />
 
    <!-- The API documentation -->
     <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+apidoc"
       class="lp.app.browser.launchpad.LaunchpadAPIDocFolder"
       attribute="__call__"

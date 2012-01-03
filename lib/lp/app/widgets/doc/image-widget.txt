@@ -51,7 +51,7 @@ Since Salgado has no logo, the widget will display the default person-
 logo image and the 'Keep' radio button will be selected. The other radio
 button allows the user to upload a new image.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.image import ImageChangeWidget
     >>> add_style = ImageChangeWidget.ADD_STYLE
     >>> edit_style = ImageChangeWidget.EDIT_STYLE

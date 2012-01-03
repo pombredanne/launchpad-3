@@ -35,7 +35,7 @@ Some distributions have listings of major versions, for example Debian:
 If we add another milestone the list is well formatted using English grammar
 rules.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> admin_browser.open("http://launchpad.dev/debian/woody/+addmilestone")
     >>> admin_browser.getControl("Name:").value = "testmilestone"

@@ -13,13 +13,13 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.authserver.interfaces import (
     IAuthServer,
     IAuthServerApplication,
     )
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.xmlrpc import faults
 
 
 class AuthServerAPIView(LaunchpadXMLRPCView):

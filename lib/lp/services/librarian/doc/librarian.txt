@@ -31,7 +31,7 @@ clients.
 setUp
 -----
 
-    >>> from canonical.database.sqlbase import session_store
+    >>> from lp.services.database.sqlbase import session_store
     >>> from lp.services.librarian.model import TimeLimitedToken
 
 
@@ -92,7 +92,7 @@ sha1.
 
 We can get its URL too
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> import re
     >>> re.search(
     ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
@@ -134,7 +134,7 @@ However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
 header in the request to 'http', even when 'use_https' is True.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'http'})
@@ -216,7 +216,7 @@ Low Level
 We can also use the ILibrarianClient Utility directly to store and
 access files in the Librarian.
 
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.services.librarian.interfaces.client import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
     >>> aid = client.addFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
@@ -317,7 +317,7 @@ to the host. You use the IRestrictedLibrarianClient to access this
 librarian.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.librarian.interfaces import IRestrictedLibrarianClient
+    >>> from lp.services.librarian.interfaces.client import IRestrictedLibrarianClient
     >>> restricted_client = getUtility(IRestrictedLibrarianClient)
     >>> verifyObject(IRestrictedLibrarianClient, restricted_client)
     True
@@ -393,7 +393,7 @@ you'll get a DownloadFailed error.
 But using the restricted librarian will work:
 
     >>> restricted_client.getFileByAlias(private_file_id)
-    <canonical.librarian.client._File...>
+    <lp.services.librarian.client._File...>
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url
@@ -569,7 +569,7 @@ A librarian file has a default view that should redirect to the download
 URL.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(
     ...     'text2.txt', len(data), StringIO(data), 'text/plain',
@@ -602,7 +602,7 @@ We need some files to test different ways of accessing them.
     # record. Such records are considered as being deleted.
 
     >>> from lp.services.librarian.model import LibraryFileAlias
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -612,7 +612,7 @@ We need some files to test different ways of accessing them.
 
 Commit the just-created files.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
     >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]

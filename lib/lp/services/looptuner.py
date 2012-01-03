@@ -18,12 +18,12 @@ import time
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    Interface,
     implements,
+    Interface,
     )
 
 import lp.services.scripts
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

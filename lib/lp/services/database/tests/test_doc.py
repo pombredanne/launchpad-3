@@ -7,8 +7,8 @@ Run the doctests.
 
 import os
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.testing import build_test_suite
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))

@@ -5,8 +5,8 @@ collection. It provides the IHugeVocabulary interface.
 
     >>> from zope.component import getUtility
     >>> from zope.schema.vocabulary import getVocabularyRegistry
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.vocabulary import IHugeVocabulary
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> vocabulary_registry = getVocabularyRegistry()
@@ -74,7 +74,7 @@ The searchForTerms() method returns a CountableIterator of terms that
 are similar to the query:
 
     >>> from zope.security import proxy
-    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> from lp.services.webapp.vocabulary import CountableIterator
     >>> terms = vocabulary.searchForTerms('extensions')
     >>> proxy.isinstance(terms, CountableIterator)
     True

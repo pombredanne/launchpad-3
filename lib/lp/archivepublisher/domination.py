@@ -71,16 +71,16 @@ from storm.expr import (
     Select,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.orderingcheck import OrderingCheck
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.bulk import load_related
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
@@ -95,7 +95,7 @@ STAY_OF_EXECUTION = 1
 
 
 # Ugly, but works
-apt_pkg.InitSystem()
+apt_pkg.init_system()
 
 
 def join_spph_spn():
@@ -190,7 +190,7 @@ class GeneralizedPublication:
         If both publications are for the same version, their creation dates
         break the tie.
         """
-        version_comparison = apt_pkg.VersionCompare(
+        version_comparison = apt_pkg.version_compare(
             self.getPackageVersion(pub1), self.getPackageVersion(pub2))
 
         if version_comparison == 0:

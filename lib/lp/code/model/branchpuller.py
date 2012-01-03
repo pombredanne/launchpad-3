@@ -12,15 +12,15 @@ from datetime import timedelta
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.interfaces import (
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.code.model.branch import Branch
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.code.enums import BranchType
-from lp.code.interfaces.branchpuller import IBranchPuller
-from lp.code.model.branch import Branch
 
 
 class BranchPuller:

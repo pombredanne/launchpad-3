@@ -100,8 +100,7 @@ from zope.schema.interfaces import (
     )
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import (
     name_validator,
@@ -109,6 +108,7 @@ from lp.app.validators.name import (
     )
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.webapp.interfaces import ILaunchBag
 
 # Marker object to tell BaseImageUpload to keep the existing image.
 KEEP_SAME_IMAGE = object()

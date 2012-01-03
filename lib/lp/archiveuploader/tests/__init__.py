@@ -16,12 +16,12 @@ import os
 
 from zope.component import getGlobalSiteManager
 
-from canonical.librarian.testing.server import fillLibrarianFile
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
     findPolicyByName,
     IArchiveUploadPolicy,
     )
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.soyuz.model.queue import PackageUploadSet
 
 

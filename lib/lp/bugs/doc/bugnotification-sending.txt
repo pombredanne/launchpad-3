@@ -124,7 +124,7 @@ still None:
 
 Setting date_emailed to some date causes it not to be pending anymore:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
     >>> pending_notifications = getUtility(
@@ -351,9 +351,9 @@ Duplicates
 
 We will need some helper functions.
 
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.services.database.sqlbase import commit
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> def switch_db_to_launchpad():
     ...     commit()

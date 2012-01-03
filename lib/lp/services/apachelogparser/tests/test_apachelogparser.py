@@ -10,16 +10,6 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
     get_day,
@@ -30,9 +20,19 @@ from lp.services.apachelogparser.base import (
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
-from lp.services.librarian.apachelogparser import DBUSER
+from lp.services.config import config
+from lp.services.librarianserver.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import TestCase
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 here = os.path.dirname(__file__)

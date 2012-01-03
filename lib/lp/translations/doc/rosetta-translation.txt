@@ -54,7 +54,7 @@ Add a translation.
     True
     >>> message.is_current_upstream
     True
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 Check that this submission is now the active one for this msgset/pluralform

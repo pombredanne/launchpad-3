@@ -14,7 +14,7 @@ We can access them via XML-RPC:
 Create a function to report our stats for these tests.
 
     >>> def reset():
-    ...     from canonical.launchpad.webapp.opstats import OpStats
+    ...     from lp.services.webapp.opstats import OpStats
     ...     OpStats.resetStats()
     ...
     >>> def report():
@@ -151,7 +151,7 @@ Number of XML-RPC Faults
 Number of soft timeouts
 -----------------------
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> test_data = dedent("""
     ...     [database]
     ...     soft_request_timeout: 1

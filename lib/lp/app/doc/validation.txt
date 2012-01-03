@@ -8,7 +8,7 @@ an IWidgetInputErrorView:
 
     >>> from lp.app.validators import (
     ...     LaunchpadValidationError)
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from lp.services.webapp.servers import (
     ...     LaunchpadTestRequest)
     >>> from zope.app.form.browser.interfaces import (
     ...     IWidgetInputErrorView)

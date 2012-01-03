@@ -32,17 +32,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from lp.services.looptuner import (
-    ITunableLoop,
-    LoopTuner,
-    )
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
-from canonical.lazr.xml import RelaxNGValidator
-from canonical.librarian.interfaces import LibrarianServerError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -56,8 +45,19 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorNameSet,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import LibrarianServerError
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import disable_oops_handler
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.services.xml import RelaxNGValidator
 
 
 _relax_ng_files = {

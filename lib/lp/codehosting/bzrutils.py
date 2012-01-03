@@ -48,7 +48,7 @@ from bzrlib.transport import (
 from bzrlib.transport.local import LocalTransport
 from lazr.uri import URI
 
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )

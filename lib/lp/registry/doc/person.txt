@@ -8,7 +8,7 @@ not Launchpad users.
     >>> from zope.component import getUtility
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
     ...     IPerson,
@@ -66,7 +66,7 @@ The IPersonSet utility
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> verifyObject(IPersonSet, personset)
     True
@@ -108,7 +108,7 @@ caused the entry to be created.
 Since this person has chosen to hide his email addresses they won't be
 visible to other users which are not admins.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
@@ -278,7 +278,7 @@ IPerson objects associated to the accounts we adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
     None
@@ -441,7 +441,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -643,7 +643,7 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> from lp.services.mail.helpers import get_contact_email_addresses
     >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
@@ -1268,7 +1268,7 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")

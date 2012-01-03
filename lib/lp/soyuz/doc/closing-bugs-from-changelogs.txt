@@ -22,7 +22,7 @@ The package uploads are associated with specific releases of the
 package, but the bugs they reference may be filed on the generic
 distribution package.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('no-priv@canonical.com')
@@ -84,7 +84,7 @@ Now we can make a bug and a package upload for pmount.
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> commit()
 
 Right after the queue items have been processed by the publishing
@@ -322,7 +322,7 @@ queue items have been processed.
     >>> import os.path
     >>> import subprocess
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> process = subprocess.Popen(
     ...     [sys.executable, script, "ubuntu"],

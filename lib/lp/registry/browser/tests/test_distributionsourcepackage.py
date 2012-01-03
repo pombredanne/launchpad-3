@@ -7,10 +7,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -18,6 +14,10 @@ from lp.testing import (
     celebrity_logged_in,
     test_tales,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_view

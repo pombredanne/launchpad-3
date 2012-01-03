@@ -47,6 +47,7 @@ from bzrlib import log
 from bzrlib.branch import Branch
 from bzrlib.osutils import format_date
 
+
 try:
     from editmoin import editshortcut
 except:

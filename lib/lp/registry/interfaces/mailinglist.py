@@ -45,13 +45,13 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.messages.interfaces.message import IMessage
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 class IMailingListApplication(ILaunchpadApplication):

@@ -23,7 +23,7 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.bug import IBug
 from lp.services.job.interfaces.job import (
     IJob,

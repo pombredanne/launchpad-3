@@ -19,15 +19,15 @@ from rabbitfixture.server import RabbitServerResources
 from testtools.testresult.real import _details_to_str
 from zope.app.server.main import main
 
-from canonical.config import config
-from canonical.launchpad.daemons import tachandler
-from canonical.lazr.pidfile import (
-    make_pidfile,
-    pidfile_path,
-    )
+from lp.services.config import config
+from lp.services.daemons import tachandler
 from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
+from lp.services.pidfile import (
+    make_pidfile,
+    pidfile_path,
+    )
 from lp.services.rabbit.server import RabbitServer
 from lp.services.txlongpoll.server import TxLongPollServer
 
@@ -345,8 +345,8 @@ def process_config_arguments(args):
 
 
 def start_testapp(argv=list(sys.argv)):
-    from canonical.config.fixture import ConfigUseFixture
-    from canonical.testing.layers import (
+    from lp.services.config.fixture import ConfigUseFixture
+    from lp.testing.layers import (
         BaseLayer,
         DatabaseLayer,
         LayerProcessController,
