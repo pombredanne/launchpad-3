@@ -151,7 +151,9 @@ class GenerateExtraOverrides(LaunchpadScript):
         Even if DistroSeries.component_names starts including partner,
         we don't want it; this applies to the primary archive only.
         """
-        return [component for component in series.component_names]
+        return [component
+                for component in series.component_names
+                if component != "partner"]
 
     def makeSeedStructures(self, series_name, flavours, seed_bases=None):
         structures = {}
