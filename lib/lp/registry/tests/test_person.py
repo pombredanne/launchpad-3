@@ -55,10 +55,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -850,17 +847,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         with celebrity_logged_in('admin'):
             email = from_person.preferredemail
             email.status = EmailAddressStatus.NEW
-            store = IMasterStore(EmailAddress)
-            # EmailAddress.acount and .person need to be updated at the
-            # same time to prevent the constraints on the account field
-            # from kicking the change out.
-            store.execute("""
-                UPDATE EmailAddress SET
-                    person = %s,
-                    account = %s
-                WHERE id = %s
-                """ % sqlvalues(
-                to_person.id, to_person.accountID, email.id))
+            email.person = to_person
+            email.account = to_person.account
         transaction.commit()
 
     def _do_merge(self, from_person, to_person, reviewer=None):
