@@ -649,10 +649,11 @@ def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
         (StructuralSubscription, BugSubscriptionFilter),
         bug, bugtasks, level, exclude)
     from lp.registry.model.person import Person  # Circular.
-    # Only return the earliest matching subscription per subscriber.
-    # XXX: Return earliest matching filter too?
+    # Return only the first subscription and filter per subscriber.
     subscriptions.config(distinct=(Person.id,))
-    subscriptions.order_by(Person.id, StructuralSubscription.id)
+    subscriptions.order_by(
+        Person.id, StructuralSubscription.id,
+        BugSubscriptionFilter.id)
     return DecoratedResultSet(subscriptions, itemgetter(0))
 
 
