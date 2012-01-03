@@ -10,10 +10,6 @@ import os
 
 from testtools.matchers import StartsWith
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.scripts.generate_contents_files import (
     differ_in_content,
     execute,
@@ -26,6 +22,10 @@ from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def write_file(filename, content=""):
@@ -323,7 +323,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from canonical.launchpad.scripts.tests import run_script
+        from lp.services.scripts.tests import run_script
         self.layer.force_dirty_database()
         retval, out, err = run_script(
             'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])

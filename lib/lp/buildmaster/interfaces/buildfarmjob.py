@@ -32,10 +32,10 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -138,6 +138,13 @@ class IBuildFarmJobOld(Interface):
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
+        """
+
+    def getByJobs(jobs):
+        """Get the specific `IBuildFarmJob`s for the given `Job`s.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has entries associated with `job`s.
         """
 
     def generateSlaveBuildCookie():

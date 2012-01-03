@@ -500,11 +500,11 @@ scripts we have are specified using the setuptools-based spelling that the
 For the common case, in ``setup.py``, add a string in the ``console_scripts``
 list of the ``entry_points`` argument. Here's an example string::
 
-    'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad'
+    'run = lp.scripts.runlaunchpad:start_launchpad'
 
 This will create a script named ``run`` in the ``bin`` directory that calls the
 ``start_launchpad`` function in the
-``canonical.launchpad.scripts.runlaunchpad`` module.
+``lp.scripts.runlaunchpad`` module.
 
 See the `zc.recipe.egg documentation`_ for more information on how to add
 scripts using this method.

@@ -14,17 +14,12 @@ from optparse import OptionValueError
 import os
 import re
 
-from germinate.germinator import Germinator
 from germinate.archive import TagFile
+from germinate.germinator import Germinator
 from germinate.log import GerminateFormatter
 from germinate.seeds import SeedStructure
-
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.dbpolicy import (
-    DatabaseBlockedPolicy,
-    SlaveOnlyDatabasePolicy,
-    )
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -33,6 +28,10 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
+from lp.services.webapp.dbpolicy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 
 
 class AtomicFile:

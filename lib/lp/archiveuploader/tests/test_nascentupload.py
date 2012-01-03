@@ -8,10 +8,10 @@ __metaclass__ = type
 from testtools import TestCase
 from testtools.matchers import MatchesStructure
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import determine_file_class_and_name
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.services.log.logger import DevNullLogger
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class FakeChangesFile:

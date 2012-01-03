@@ -41,7 +41,7 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasLocation(Interface):

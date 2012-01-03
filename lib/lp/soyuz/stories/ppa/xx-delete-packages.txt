@@ -323,9 +323,9 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.testing import login, logout
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
@@ -511,7 +511,7 @@ Remove the just deleted publication from disk setting its
     >>> deleted_pub.dateremoved = deleted_pub.datecreated
     >>> logout()
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Now, not only the 'Removed from disk' notice is rendered inside the

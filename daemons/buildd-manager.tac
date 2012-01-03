@@ -8,9 +8,9 @@ from twisted.application import service
 from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
-from canonical.config import dbconfig
-from canonical.launchpad.daemons import readyservice
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.config import dbconfig
+from lp.services.daemons import readyservice
+from lp.services.scripts import execute_zcml_for_scripts
 from lp.buildmaster.manager import BuilddManager
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver

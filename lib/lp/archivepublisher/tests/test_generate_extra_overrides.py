@@ -15,13 +15,8 @@ from germinate import (
     germinator,
     seeds,
     )
-
 import transaction
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.scripts.generate_extra_overrides import (
     AtomicFile,
     GenerateExtraOverrides,
@@ -39,6 +34,10 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def file_contents(path):
@@ -557,7 +556,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from canonical.launchpad.scripts.tests import run_script
+        from lp.services.scripts.tests import run_script
         distro = self.makeDistro()
         self.factory.makeDistroSeries(distro)
         transaction.commit()

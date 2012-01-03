@@ -19,7 +19,7 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PublicPersonChoice
 from lp.services.job.interfaces.job import (
     IJob,

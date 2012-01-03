@@ -47,12 +47,9 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import quote
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -89,6 +86,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
 from lp.services.propertycache import cachedproperty
 
 

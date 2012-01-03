@@ -5,18 +5,19 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.browser.pofile import POExportView
 from lp.translations.browser.potemplate import POTemplateExportView
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.model.poexportrequest import POExportRequest
 
 

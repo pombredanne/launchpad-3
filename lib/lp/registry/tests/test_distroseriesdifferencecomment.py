@@ -7,19 +7,20 @@ __metaclass__ = type
 
 from datetime import timedelta
 from random import randint
+
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import Provides
 
 

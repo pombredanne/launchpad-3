@@ -4,11 +4,12 @@
 """Tests for BugNotificationBuilder email construction."""
 
 from datetime import datetime
+
 import pytz
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestBugNotificationBuilder(TestCaseWithFactory):

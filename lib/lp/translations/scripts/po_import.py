@@ -19,13 +19,13 @@ import sys
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.webapp import errorlog
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.config import config
+from lp.services.mail.helpers import get_contact_email_addresses
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -142,7 +142,7 @@ class TranslationsImport(LaunchpadCronScript):
                 # Email import state to Debian imports email.
                 to_email = None
             else:
-                to_email = helpers.get_contact_email_addresses(entry.importer)
+                to_email = get_contact_email_addresses(entry.importer)
 
             if to_email:
                 text = MailWrapper().format(mail_body)

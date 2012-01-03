@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import unittest
 
@@ -12,22 +15,12 @@ import pytz
 from storm.store import Store
 from testtools.matchers import Not
 from transaction import commit
-from zope.component import getUtility, getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.ftests import login
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -62,19 +55,33 @@ from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
     construct_email_notifications,
-    get_email_notifications,
     get_activity_key,
+    get_email_notifications,
     notification_batches,
     notification_comment_batches,
     process_deferred_notifications,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.testing import (
+    login,
     TestCase,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import lp_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Contains
 
 

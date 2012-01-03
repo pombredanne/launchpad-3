@@ -9,14 +9,14 @@ import logging
 import os
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    GoogleLaunchpadFunctionalLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    GoogleLaunchpadFunctionalLayer,
     )
 
 

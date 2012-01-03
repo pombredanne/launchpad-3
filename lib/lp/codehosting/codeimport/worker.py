@@ -23,6 +23,10 @@ __all__ = [
 import os
 import shutil
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.branch import (
     Branch,
     InterBranch,
@@ -58,14 +62,12 @@ from lazr.uri import (
     )
 import SCM
 
-from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
-import lp.codehosting # for bzr plugins
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
@@ -80,6 +82,7 @@ from lp.codehosting.safe_open import (
     BranchOpenPolicy,
     SafeBranchOpener,
     )
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 
 

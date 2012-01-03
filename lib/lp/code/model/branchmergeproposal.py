@@ -38,22 +38,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -98,7 +82,23 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
@@ -698,8 +698,7 @@ class BranchMergeProposal(SQLBase):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Until these are moved into the lp module, import here to avoid
-        # circular dependencies from canonical.launchpad.database.__init__.py
+        # Avoid circular dependencies.
         from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(

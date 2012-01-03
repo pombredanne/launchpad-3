@@ -6,7 +6,7 @@ contains enough functionality to file bug, the classes inheriting from
 it only adds some more functionality, like adding fields, searching for
 similar bug reports, etc.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bugtarget import FileBugViewBase
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -126,7 +126,7 @@ The first inline part will be appended to the bug description.
     ... --boundary--
     ... """
     >>> import transaction
-    >>> from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
+    >>> from lp.services.temporaryblobstorage.interfaces import ITemporaryStorageManager
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the

@@ -1,11 +1,14 @@
 """Land an approved merge proposal."""
 
+from bzrlib.errors import BzrCommandError
 from launchpadlib.launchpad import Launchpad
 from launchpadlib.uris import (
-    DEV_SERVICE_ROOT, EDGE_SERVICE_ROOT, LPNET_SERVICE_ROOT,
-    STAGING_SERVICE_ROOT)
+    DEV_SERVICE_ROOT,
+    EDGE_SERVICE_ROOT,
+    LPNET_SERVICE_ROOT,
+    STAGING_SERVICE_ROOT,
+    )
 from lazr.uri import URI
-from bzrlib.errors import BzrCommandError
 
 
 class MissingReviewError(Exception):

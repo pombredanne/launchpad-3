@@ -12,14 +12,17 @@ from datetime import (
 
 from pytz import utc
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.oopsreferences import referenced_oops
+from lp.services.database.lpstorm import IStore
 from lp.services.messages.model.message import (
     Message,
     MessageSet,
     )
-from lp.testing import TestCaseWithFactory, person_logged_in
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestOopsReferences(TestCaseWithFactory):

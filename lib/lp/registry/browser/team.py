@@ -42,8 +42,8 @@ from datetime import (
 import math
 from urllib import unquote
 
-import pytz
 from lazr.restful.utils import smartquote
+import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -55,7 +55,6 @@ from zope.interface import (
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.interfaces import Unauthorized
 from zope.schema import (
     Bool,
     Choice,
@@ -67,36 +66,10 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.validation import validate_new_team_email
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
-from canonical.launchpad.webapp.batching import (
-    ActiveBatchNavigator,
-    InactiveBatchNavigator,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp import _
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -105,6 +78,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.validation import validate_new_team_email
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
@@ -123,11 +97,11 @@ from lp.registry.browser.person import (
     PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
-from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -143,9 +117,9 @@ from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
-    ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
+    ITeamReassignment,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
@@ -161,8 +135,34 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.config import config
 from lp.services.fields import PublicPersonChoice
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
+from lp.services.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class TeamPrivacyAdapter:

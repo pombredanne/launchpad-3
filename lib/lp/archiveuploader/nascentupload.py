@@ -23,7 +23,6 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -42,6 +41,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -655,7 +655,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
+        if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 

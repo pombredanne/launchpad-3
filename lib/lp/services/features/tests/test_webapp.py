@@ -7,18 +7,17 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from canonical.config import config
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing import layers
-
+from lp.services.config import config
 from lp.services.features import (
-    webapp,
     getFeatureFlag,
+    webapp,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     CaptureOops,
+    layers,
     login_as,
     TestCase,
     TestCaseWithFactory,

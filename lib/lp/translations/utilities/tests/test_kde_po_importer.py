@@ -11,9 +11,9 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )

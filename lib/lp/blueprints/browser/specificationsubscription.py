@@ -10,20 +10,11 @@ __all__ = [
     'SpecificationSubscriptionEditView',
     ]
 
+from lazr.delegates import delegates
 from simplejson import dumps
 from zope.component import getUtility
 
-from lazr.delegates import delegates
-
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -33,6 +24,10 @@ from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import precache_permission_for_objects
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class SpecificationSubscriptionAddView(LaunchpadFormView):
@@ -161,6 +156,8 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
             else:
                 cannot_unsubscribe.append(subscription)
         # Cache permission so private subscribers can be viewed.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         precache_permission_for_objects(
                     self.request, 'launchpad.LimitedView', subscribers)
 

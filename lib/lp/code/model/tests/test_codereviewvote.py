@@ -3,8 +3,6 @@
 
 from zope.security.interfaces import Unauthorized
 
-from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import (
     ClaimReviewFailed,
@@ -13,10 +11,12 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.tests.helpers import make_merge_proposal_without_reviewers
+from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCodeReviewVote(TestCaseWithFactory):

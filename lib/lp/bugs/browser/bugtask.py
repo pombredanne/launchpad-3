@@ -55,7 +55,6 @@ from math import (
 from operator import attrgetter
 import os.path
 import re
-import transaction
 import urllib
 import urlparse
 
@@ -79,6 +78,7 @@ import pystache
 from pytz import utc
 from simplejson import dumps
 from simplejson.encoder import JSONEncoderForHTML
+import transaction
 from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
@@ -107,9 +107,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import Choice
-from zope.schema.interfaces import (
-    IContextSourceBinder,
-    )
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
@@ -122,42 +120,7 @@ from zope.security.proxy import (
 from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.mailnotification import get_unified_diff
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
@@ -252,7 +215,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IHasExternalBugTracker,
+    )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -278,13 +244,46 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
 from lp.services.fields import PersonChoice
+from lp.services.helpers import shortlist
+from lp.services.mail.notification import get_unified_diff
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from lp.services.utils import obfuscate_structure
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
+
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -421,7 +420,7 @@ def get_visible_comments(comments, user=None):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
     >>> get_sortorder_from_request(
@@ -559,8 +558,14 @@ class BugTargetTraversalMixin:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
-        # If we've come this far, there's no task for the requested
-        # context. Redirect to one that exists.
+        # If we've come this far, there's no task for the requested context.
+        # If we are attempting to navigate past the non-existent bugtask,
+        # we raise NotFound error. eg +delete or +edit etc.
+        # Otherwise we are simply navigating to a non-existent task and so we
+        # redirect to one that exists.
+        travseral_stack = self.request.getTraversalStack()
+        if len(travseral_stack) > 0:
+            raise NotFoundError
         return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
 
@@ -1784,7 +1789,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return super(BugTaskDeletionView, self).next_url
+            return self._next_url or self._return_url
         return None
 
     @action('Delete', name='delete_bugtask')
@@ -1795,6 +1800,9 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         success_message = ("This bug no longer affects %s."
                     % bugtask.bugtargetdisplayname)
         error_message = None
+        # We set the next_url here before the bugtask is deleted since later
+        # the bugtask will not be available if required to construct the url.
+        self._next_url = self._return_url
 
         try:
             bugtask.delete()
@@ -2231,10 +2239,7 @@ class BugTaskListingItem:
             self.bugtask.target,
             view_name="+bugs")
 
-        def build_tag_url(tag):
-            """Generate a url for the tag based on the current request ctx."""
-
-        return {
+        flattened = {
             'age': age,
             'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
@@ -2254,6 +2259,13 @@ class BugTaskListingItem:
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }
+
+        # This is a total hack, but pystache will run both truth/false values
+        # for an empty list for some reason, and it "works" if it's just a
+        # flag like this. We need this value for the mustache template to be
+        # able to tell that there are no tags without looking at the list.
+        flattened['has_tags'] = True if len(flattened['tags']) else False
+        return flattened
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2490,27 +2502,27 @@ class BugTaskSearchListingMenu(NavigationMenu):
 # All sort orders supported by BugTaskSet.search() and a title for
 # them.
 SORT_KEYS = [
-    ('importance', 'Importance'),
-    ('status', 'Status'),
-    ('id', 'Bug number'),
-    ('title', 'Bug title'),
-    ('targetname', 'Package/Project/Series name'),
-    ('milestone_name', 'Milestone'),
-    ('date_last_updated', 'Date bug last updated'),
-    ('assignee', 'Assignee'),
-    ('reporter', 'Reporter'),
-    ('datecreated', 'Bug age'),
-    ('tag', 'Bug Tags'),
-    ('heat', 'Bug heat'),
-    ('date_closed', 'Date bug closed'),
-    ('dateassigned', 'Date when the bug task was assigned'),
-    ('number_of_duplicates', 'Number of duplicates'),
-    ('latest_patch_uploaded', 'Date latest patch uploaded'),
-    ('message_count', 'Number of comments'),
-    ('milestone', 'Milestone ID'),
-    ('specification', 'Linked blueprint'),
-    ('task', 'Bug task ID'),
-    ('users_affected_count', 'Number of affected users'),
+    ('importance', 'Importance', 'desc'),
+    ('status', 'Status', 'asc'),
+    ('id', 'Number', 'desc'),
+    ('title', 'Title', 'asc'),
+    ('targetname', 'Package/Project/Series name', 'asc'),
+    ('milestone_name', 'Milestone', 'asc'),
+    ('date_last_updated', 'Date last updated', 'desc'),
+    ('assignee', 'Assignee', 'asc'),
+    ('reporter', 'Reporter', 'asc'),
+    ('datecreated', 'Age', 'desc'),
+    ('tag', 'Tags', 'asc'),
+    ('heat', 'Heat', 'desc'),
+    ('date_closed', 'Date closed', 'desc'),
+    ('dateassigned', 'Date when the bug task was assigned', 'desc'),
+    ('number_of_duplicates', 'Number of duplicates', 'desc'),
+    ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
+    ('message_count', 'Number of comments', 'desc'),
+    ('milestone', 'Milestone ID', 'desc'),
+    ('specification', 'Linked blueprint', 'asc'),
+    ('task', 'Bug task ID', 'desc'),
+    ('users_affected_count', 'Number of affected users', 'desc'),
     ]
 
 
@@ -2542,6 +2554,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('bug_commenter', PersonPickerWidget)
     custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
+
+    _batch_navigator = None
 
     @cachedproperty
     def bug_tracking_usage(self):
@@ -3007,9 +3021,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             the search criteria taken from the request. Params in
             `extra_params` take precedence over request params.
         """
-        unbatchedTasks = self.searchUnbatched(
-            searchtext, context, extra_params)
-        return self._getBatchNavigator(unbatchedTasks)
+        if self._batch_navigator is None:
+            unbatchedTasks = self.searchUnbatched(
+                searchtext, context, extra_params)
+            self._batch_navigator = self._getBatchNavigator(unbatchedTasks)
+        return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -3055,7 +3071,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=12)
+        return shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3560,6 +3576,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any assignees.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [task.assignee for task in self.bugtasks
                              if task.assignee is not None]
         precache_permission_for_objects(

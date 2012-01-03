@@ -16,15 +16,12 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -34,6 +31,7 @@ from lp.soyuz.scripts.ftpmaster import (
     SoyuzScriptError,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestRemovePackageScript(unittest.TestCase):

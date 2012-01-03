@@ -55,7 +55,7 @@ correctly like:
      </li>
   </ul>
 
-  >>> from canonical.launchpad.testing.pages import (
+  >>> from lp.testing.pages import (
   ...     parse_relationship_section)
 
   >>> parse_relationship_section(pkg_rel_view())

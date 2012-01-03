@@ -159,7 +159,7 @@ will be returned by the search only if search_comments is True.
 
 When the search_comments config option is False, the bug is not found.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> search_comments = """
     ...     [malone]
     ...     search_comments: %s
@@ -591,7 +591,7 @@ The second bug is tagged with only 'test-tag-1'.
 Searching for bugs with any of the tags returns both of them.
 
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.searchbuilder import all, any
+    >>> from lp.services.searchbuilder import all, any
 
     >>> def search_tasks_and_print_bugs(user=None, **args):
     ...     params = BugTaskSearchParams(user=user, **args)
@@ -705,7 +705,7 @@ closed after a certain date.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.searchbuilder import greater_than
+    >>> from lp.services.searchbuilder import greater_than
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
@@ -733,7 +733,7 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
@@ -1040,7 +1040,7 @@ None of these bugs have any duplicates.
     ...  if bugtask.bug.duplicateof is not None]
     []
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
 We mark bug #10 as a duplicate of bug #9.
 

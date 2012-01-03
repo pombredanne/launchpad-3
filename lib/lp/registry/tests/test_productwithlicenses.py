@@ -10,11 +10,6 @@ from operator import attrgetter
 from storm.store import Store
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -24,7 +19,12 @@ from lp.registry.model.product import (
     Product,
     ProductWithLicenses,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductWithLicenses(TestCaseWithFactory):
