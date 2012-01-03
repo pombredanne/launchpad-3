@@ -391,22 +391,22 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # The account was created by one of our scripts but was never
         # activated, so we just activate it.
         email = 'foo@example.com'
-        account = self.factory.makeAccount(
-            'Test account', email=email, status=AccountStatus.NOACCOUNT)
-        self.assertIs(None, IPerson(account, None))
+        person = self.factory.makePerson(
+            displayname='Test account', email=email,
+            account_status=AccountStatus.DEACTIVATED,
+            email_address_status=EmailAddressStatus.NEW)
         openid_identifier = IStore(OpenIdIdentifier).find(
             OpenIdIdentifier.identifier,
-            OpenIdIdentifier.account_id == account.id).order_by(
+            OpenIdIdentifier.account_id == person.account.id).order_by(
                 OpenIdIdentifier.account_id).order_by(
                     OpenIdIdentifier.account_id).first()
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
-            status=SUCCESS, email=email, full_name=account.displayname)
+            status=SUCCESS, email=email, full_name=person.displayname)
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createAndRenderView(openid_response)
-        self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
-        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(AccountStatus.ACTIVE, person.account.status)
         self.assertEquals(email, person.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
