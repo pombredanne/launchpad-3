@@ -1359,6 +1359,9 @@ class MultipleParams:
         self.assertEqual(expected, search_result)
 
     def test_two_param_objects_sorting_needs_extra_join(self):
+        # If result ordering needs an extra join, the join
+        # is added to the union of the result sets for the two
+        # BugTaskSearchParams instances.
         params1, params2 = self.setUpTwoSearchParams(orderby='reporter')
         search_result = self.runSearch(params1, params2)
 
