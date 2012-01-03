@@ -3116,15 +3116,14 @@ class PersonSet:
 
             if email is None:
                 if identifier is None:
-                    raise Exception("can't create new person")
                     # Neither the Email Address not the OpenId Identifier
                     # exist in the database. Create the email address,
                     # account, and associated info. OpenIdIdentifier is
                     # created later.
-                    account_set = getUtility(IAccountSet)
-                    account, email = account_set.createAccountAndEmail(
-                        email_address, creation_rationale, full_name,
-                        password=None)
+                    person_set = getUtility(IPersonSet)
+                    person, email = person_set.createPersonAndEmail(
+                        email_address, creation_rationale, comment=comment,
+                        displayname=full_name)
                     db_updated = True
                 else:
                     # The Email Address does not exist in the database,
