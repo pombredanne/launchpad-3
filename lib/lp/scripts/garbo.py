@@ -35,28 +35,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    cursor,
-    session_store,
-    sqlvalues,
-    )
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import OAuthNonce
-from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
@@ -76,8 +54,24 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
+    cursor,
+    session_store,
+    sqlvalues,
+    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
+from lp.services.looptuner import TunableLoop
+from lp.services.oauth.model import OAuthNonce
+from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -85,9 +79,11 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
@@ -965,60 +961,6 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
-    """Populate the new sourcepackagename column of SPPH."""
-
-    done = False
-    maximum_chunk_size = 5000
-
-    def findSPPHs(self):
-        return IMasterStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.sourcepackagename == None
-            ).order_by(SourcePackagePublishingHistory.id)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.done
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        spphs = self.findSPPHs()[:chunk_size]
-        for spph in spphs:
-            spph.sourcepackagename = (
-                spph.sourcepackagerelease.sourcepackagename)
-        transaction.commit()
-        self.done = self.findSPPHs().is_empty()
-
-
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
-    """Populate the new binarypackagename column of BPPH."""
-
-    done = False
-    maximum_chunk_size = 5000
-
-    def findBPPHs(self):
-        return IMasterStore(BinaryPackagePublishingHistory).find(
-            BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.binarypackagename == None
-            ).order_by(BinaryPackagePublishingHistory.id)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.done
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        bpphs = self.findBPPHs()[:chunk_size]
-        for bpph in bpphs:
-            bpph.binarypackagename = (
-                bpph.binarypackagerelease.binarypackagename)
-        transaction.commit()
-        self.done = self.findBPPHs().is_empty()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1268,8 +1210,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        SourcePackagePublishingHistorySPNPopulator,
-        BinaryPackagePublishingHistoryBPNPopulator,
         ]
     experimental_tunable_loops = []
 

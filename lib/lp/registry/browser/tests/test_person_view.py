@@ -10,29 +10,13 @@ from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
     DocTestMatches,
+    Equals,
     LessThan,
     Not,
     )
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.pages import extract_text
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
@@ -46,6 +30,7 @@ from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -56,6 +41,13 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -63,12 +55,23 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -97,13 +100,85 @@ class TestPersonIndexView(TestCaseWithFactory):
             "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
             | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
+    def test_person_view_page_description(self):
+        person_description = self.factory.getUniqueString()
+        person = self.factory.makePerson(
+            homepage_content=person_description)
+        view = create_initialized_view(person, '+index')
+        self.assertThat(view.page_description,
+            Equals(person_description))
+
+    def test_team_page_description(self):
+        description = self.factory.getUniqueString()
+        person = self.factory.makeTeam(
+            description=description)
+        view = create_initialized_view(person, '+index')
+        self.assertThat(
+            view.page_description,
+            Equals(description))
+
+
+class TestPersonIndexVisibilityView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def createTeams(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        private = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, name='private-team',
+            members=[team])
+        with person_logged_in(team.teamowner):
+            team.acceptInvitationToBeMemberOf(private, '')
+        return team
+
+    def test_private_superteams_anonymous(self):
+        # If the viewer is anonymous, the portlet is not shown.
+        team = self.createTeams()
+        viewer = self.factory.makePerson()
+        view = create_initialized_view(
+            team, '+index', server_url=canonical_url(team), path_info='')
+        html = view()
+        superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+        self.assertEqual([], view.super_teams)
+
+    def test_private_superteams_hidden(self):
+        # If the viewer has no permission to see any superteams, the portlet
+        # is not shown.
+        team = self.createTeams()
+        viewer = self.factory.makePerson()
+        with person_logged_in(viewer):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=viewer)
+            html = view()
+            self.assertEqual([], view.super_teams)
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+
+    def test_private_superteams_shown(self):
+        # When the viewer has permission, the portlet is shown.
+        team = self.createTeams()
+        with person_logged_in(team.teamowner):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=team.teamowner)
+            html = view()
+            self.assertEqual(view.super_teams, list(team.super_teams))
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertFalse('&lt;hidden&gt;' in superteams)
+        self.assertEqual(
+            '<a href="/~private-team" class="sprite team">Private Team</a>',
+            str(superteams.findNext('a')))
+
 
 class TestPersonViewKarma(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestPersonViewKarma, self).setUp()
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         transaction.commit()
@@ -456,9 +531,11 @@ class TestPersonParticipationView(TestCaseWithFactory):
 
     def test_active_participations_with_direct_private_team(self):
         # Users cannot see private teams that they are not members of.
-        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        login_person(team.teamowner)
-        team.addMember(self.user, team.teamowner)
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        login_person(owner)
+        team.addMember(self.user, owner)
         # The team is included in active_participations.
         login_person(self.user)
         view = create_view(
@@ -473,11 +550,13 @@ class TestPersonParticipationView(TestCaseWithFactory):
 
     def test_active_participations_with_indirect_private_team(self):
         # Users cannot see private teams that they are not members of.
-        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        direct_team = self.factory.makeTeam(owner=team.teamowner)
-        login_person(team.teamowner)
-        direct_team.addMember(self.user, team.teamowner)
-        team.addMember(direct_team, team.teamowner)
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=owner)
+        login_person(owner)
+        direct_team.addMember(self.user, owner)
+        team.addMember(direct_team, owner)
         # The team is included in active_participations.
         login_person(self.user)
         view = create_view(
@@ -891,6 +970,8 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+        self.assertEqual(
+            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):

@@ -32,9 +32,8 @@ lib -path 'lib/lp/*/javascript/*' \
 endef
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
-JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
@@ -79,7 +78,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
-	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
+	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
 	    --force "$(APIDOC_TMPDIR)"
@@ -93,7 +92,7 @@ doc:
 
 # Run by PQM.
 check_config: build
-	bin/test -m canonical.config.tests -vvt test_config
+	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
@@ -231,7 +230,6 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
 compile: $(PY) $(BZR_VERSION_INFO)
-	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -376,13 +374,13 @@ clean: clean_js clean_buildout clean_logs
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
-	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
-	$(RM) -rf $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
+	$(RM) -r $(LP_BUILT_JS_ROOT)/*
+	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -r $(APIDOC_DIR)
+	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -rf \
+	$(RM) -r \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
@@ -398,7 +396,7 @@ clean: clean_js clean_buildout clean_logs
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then \
-		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+		$(RM) -r /var/tmp/launchpad_mailqueue; \
 	fi
 
 
@@ -432,14 +430,11 @@ copy-apache-config:
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache \
-		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
-	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

@@ -8,7 +8,6 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
     IRealSubscriptionInfoCollection,
@@ -16,12 +15,14 @@ from lp.bugs.interfaces.personsubscriptioninfo import (
     IVirtualSubscriptionInfoCollection,
     )
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     HasQueryCount,
     Provides,
@@ -41,7 +42,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def makeDuplicates(self, count=1, subscriber=None):
         if subscriber is None:
             subscriber = self.subscriber
-        if subscriber.isTeam():
+        if subscriber.is_team:
             subscribed_by = subscriber.teamowner
         else:
             subscribed_by = subscriber
@@ -460,7 +461,9 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_owner_through_team(self):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
-        team = self.factory.makeTeam(members=[self.subscriber])
+        team = self.factory.makeTeam(
+            members=[self.subscriber],
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         removeSecurityProxy(target).owner = team
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
@@ -477,7 +480,8 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_owner_through_team_as_admin(self):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
-        team = self.factory.makeTeam()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.addMember(self.subscriber, team.teamowner,
                            status=TeamMembershipStatus.ADMIN)

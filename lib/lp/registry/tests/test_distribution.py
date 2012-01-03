@@ -22,28 +22,30 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    OpenTeamLinkageError,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    IPersonSet,
+    OPEN_TEAM_POLICY,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
     )
+from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -53,6 +55,11 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
@@ -67,6 +74,34 @@ class TestDistribution(TestCaseWithFactory):
         # The pillar category is correct.
         distro = self.factory.makeDistribution()
         self.assertEqual("Distribution", distro.pillar_category)
+
+    def test_owner_cannot_be_open_team(self):
+        """Distro owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeDistribution,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Distro owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeDistribution(owner=closed_team)
+
+    def test_security_contact_cannot_be_open_team(self):
+        """Distro security contacts cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeDistribution,
+                security_contact=open_team)
+
+    def test_security_contact_can_be_closed_team(self):
+        """Distro security contacts can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeDistribution(security_contact=closed_team)
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -553,7 +588,7 @@ class TestWebService(WebServiceTestCase):
         # check we can access context filtered references - e.g. on question.
         oopsid = "OOPS-abcdef1234"
         distro = self.factory.makeDistribution()
-        question = self.factory.makeQuestion(
+        self.factory.makeQuestion(
             title="Crash with %s" % oopsid, target=distro)
         transaction.commit()
         ws_distro = self.wsObject(distro, distro.owner)

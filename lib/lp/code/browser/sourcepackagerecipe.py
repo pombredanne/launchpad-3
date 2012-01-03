@@ -60,18 +60,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -113,6 +102,17 @@ from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import Archive
 
@@ -573,7 +573,7 @@ class ISourcePackageEditSchema(Interface):
         Text(
             title=u'Recipe text', required=True,
             description=u"""The text of the recipe.
-                <a href="/+help/recipe-syntax.html" target="help"
+                <a href="/+help-code/recipe-syntax.html" target="help"
                   >Syntax help&nbsp;
                   <span class="sprite maybe">
                     <span class="invisible-link">Help</span>

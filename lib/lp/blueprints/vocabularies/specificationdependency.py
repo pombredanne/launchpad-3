@@ -11,27 +11,30 @@ __all__ = [
 
 from operator import attrgetter
 
-from storm.locals import SQL, Store
+from storm.locals import (
+    SQL,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp import (
-    canonical_url,
-    urlparse,
-    )
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    )
 from lp.blueprints.model.specification import (
     recursive_blocked_query,
     Specification,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.database.sqlbase import quote
+from lp.services.webapp import (
+    canonical_url,
+    urlparse,
+    )
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
 
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):

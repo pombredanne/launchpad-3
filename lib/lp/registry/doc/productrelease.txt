@@ -24,7 +24,7 @@ The driver for the release's milestone target cannot change the release, but
 the driver of the milestone's series_target is a release manager and can
 make changes.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> driver = factory.makePerson(name='driver')
     >>> firefox_109.milestone.target.driver = driver

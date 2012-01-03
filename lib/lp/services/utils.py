@@ -32,6 +32,7 @@ __all__ = [
     ]
 
 import bz2
+import cPickle as pickle
 from datetime import datetime
 from itertools import tee
 import os
@@ -42,7 +43,6 @@ import sys
 from textwrap import dedent
 from types import FunctionType
 
-import cPickle as pickle
 from fixtures import (
     Fixture,
     MonkeyPatch,
@@ -323,18 +323,22 @@ re_email_address = re.compile(r"""
     """, re.VERBOSE)              # ' <- font-lock turd
 
 
-def obfuscate_email(text_to_obfuscate):
+def obfuscate_email(text_to_obfuscate, replacement=None):
     """Obfuscate an email address.
 
-    The email address is obfuscated as <email address hidden>.
+    The email address is obfuscated as <email address hidden> by default,
+    or with the given replacement.
 
     The pattern used to identify an email address is not 2822. It strives
     to match any possible email address embedded in the text. For example,
     mailto:person@domain.dom and http://person:password@domain.dom both
     match, though the http match is in fact not an email address.
     """
+    if replacement is None:
+        replacement = '<email address hidden>'
     text = re_email_address.sub(
-        r'<email address hidden>', text_to_obfuscate)
+        replacement, text_to_obfuscate)
+    # Avoid doubled angle brackets.
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text

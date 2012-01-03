@@ -17,12 +17,10 @@ import socket
 import xmlrpclib
 
 from twisted.internet import defer
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     CorruptBuildCookie,
@@ -33,6 +31,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.services import encoding
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces.client import ILibrarianClient
 
 
 class BuildFarmJobBehaviorBase:

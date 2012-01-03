@@ -26,21 +26,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
@@ -59,14 +44,27 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class PersonTransferJob(StormBase):
@@ -226,7 +224,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
     def run(self):
         """See `IMembershipNotificationJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         from_addr = format_address(
             self.team.displayname, config.canonical.noreply_from_address)
         admin_emails = self.team.getTeamAdminsEmailAddresses()
@@ -316,7 +314,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # self.members, and in this case we won't have a single email
         # address to send this notification to.
         if self.member_email and self.reviewer != self.member:
-            if self.member.isTeam():
+            if self.member.is_team:
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
@@ -418,7 +416,7 @@ class PersonMergeJob(PersonTransferJobDerived):
         from_person_name = self.from_person.name
         to_person_name = self.to_person.name
 
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         personset = getUtility(IPersonSet)
         if self.metadata.get('delete', False):
             log.debug(

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XML bug importer
@@ -35,10 +35,10 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.services.database.constants import UTC_NOW
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugactivity import IBugActivitySet

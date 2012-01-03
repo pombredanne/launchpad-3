@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=C0324
 
@@ -8,10 +8,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from storm.store import Store
-from storm.sqlobject import SQLObjectNotFound
 
 from pytz import utc
+from storm.sqlobject import SQLObjectNotFound
+from storm.store import Store
 from zope import component
 from zope.component import (
     getGlobalSiteManager,
@@ -20,15 +20,6 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -43,6 +34,11 @@ from lp.buildmaster.model.buildqueue import (
     get_builder_data,
     )
 from lp.services.job.model.job import Job
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -52,6 +48,10 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_job(test, name, processor='386'):
@@ -85,7 +85,7 @@ def nth_builder(test, bq, n):
     builder = None
     builders = test.builders.get(builder_key(bq), [])
     try:
-        for builder in builders[n-1:]:
+        for builder in builders[n - 1:]:
             if builder.builderok:
                 break
     except IndexError:

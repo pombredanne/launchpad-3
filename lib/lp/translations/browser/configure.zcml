@@ -8,12 +8,13 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+<facet facet="translations">
     <browser:url
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         path_expression="string:translations"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         name="+index"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:navigation
@@ -21,8 +22,7 @@
         classes="
             RosettaApplicationNavigation"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
-        facet="translations"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         permission="zope.Public"
         class="lp.translations.browser.translations.RosettaApplicationView"
         layer="lp.translations.publisher.TranslationsLayer">
@@ -40,8 +40,7 @@
             template="../templates/rosetta-portlet-groups.pt"/>
     </browser:pages>
     <browser:page
-      for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
-      facet="translations"
+      for="lp.translations.interfaces.translations.IRosettaApplication"
       permission="zope.Public"
       class="lp.translations.browser.translations.TranslatableProductsView"
       layer="lp.translations.publisher.TranslationsLayer"
@@ -51,12 +50,10 @@
         for="*"
         name="+rosetta-status-legend"
         template="../templates/rosetta-status-legend.pt"
-        facet="translations"
         permission="zope.Public"/>
     <browser:page
         for="lp.translations.interfaces.rosettastats.IRosettaStats"
         class="lp.translations.browser.translations.RosettaStatsView"
-        facet="translations"
         permission="zope.Public"
         name="+barchart"
         template="../templates/rosettastats-barchart.pt"
@@ -64,20 +61,16 @@
     <browser:page
         for="*"
         name="+translations-macros"
-        facet="translations"
         permission="zope.Public"
         template="../templates/translations-macros.pt"
         layer="lp.translations.publisher.TranslationsLayer"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.translations.interfaces.translationpolicy.ITranslationPolicy"
-        facet="translations"
         permission="zope.Public"
         name="+portlet-translation-groups-and-permission"
         template="../templates/hastranslationgroup-portlet-translation-groups-and-permission.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
-    <facet
-        facet="translations">
         <browser:defaultView
             for="lp.translations.interfaces.translator.ITranslator"
             name="+admin"
@@ -103,9 +96,6 @@
             class="lp.translations.browser.translator.TranslatorRemoveView"
             template="../../app/templates/generic-edit.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
-    </facet>
-    <facet
-        facet="translations">
         <browser:navigation
             module="lp.translations.browser.translationimportqueue"
             classes="
@@ -128,7 +118,6 @@
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueueEntry"
-            facet="translations"
             permission="zope.Public"
             layer="lp.translations.publisher.TranslationsLayer"
             name="+portlet-details"
@@ -137,7 +126,7 @@
         <browser:url
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             path_expression="string:+imports"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             name="+index"
@@ -146,11 +135,9 @@
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             name="+index"
             class="lp.translations.browser.translationimportqueue.TranslationImportQueueView"
-            facet="translations"
             permission="zope.Public"
             template="../templates/translationimportqueue-index.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
-    </facet>
     <browser:url
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         path_expression="string:+lang/${language/code}"
@@ -166,7 +153,6 @@
     <browser:pages
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         permission="zope.Public"
-        facet="translations"
         layer="lp.translations.publisher.TranslationsLayer">
         <browser:page
             name="+rosetta-status-legend"
@@ -178,10 +164,7 @@
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"
-        facet="translations"
         layer="lp.translations.publisher.TranslationsLayer"/>
-    <facet
-        facet="translations">
         <browser:navigation
             module="lp.translations.browser.pofile"
             classes="
@@ -236,7 +219,6 @@
         <browser:page
             name="+translate"
             for="lp.translations.interfaces.pofile.IPOFile"
-            facet="overview"
             class="lp.translations.browser.translations.TranslateRedirectView"
             permission="zope.Public"/>
         <browser:page
@@ -260,7 +242,6 @@
             template="../templates/pofile-filter.pt"
             class="lp.translations.browser.pofile.POFileFilteredView"
             layer="lp.translations.publisher.TranslationsLayer"/>
-    </facet>
     <browser:url
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         path_expression="string:+lang/${language/code}"
@@ -276,7 +257,6 @@
     <browser:pages
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         permission="zope.Public"
-        facet="translations"
         layer="lp.translations.publisher.TranslationsLayer">
         <browser:page
             name="+rosetta-status-legend"
@@ -288,10 +268,7 @@
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
-        facet="translations"
         layer="lp.translations.publisher.TranslationsLayer"/>
-    <facet
-        facet="translations">
         <browser:navigation
             module="lp.translations.browser.language"
             classes="
@@ -343,7 +320,7 @@
         <browser:url
             for="lp.services.worlddata.interfaces.language.ILanguageSet"
             path_expression="string:+languages"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations"/>
         <browser:page
             for="lp.services.worlddata.interfaces.language.ILanguageSet"
@@ -506,7 +483,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
@@ -727,7 +704,6 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations"
-            facet="translations"
             class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"
             template="../templates/person-translations.pt"
@@ -1030,8 +1006,7 @@
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
         template="../templates/customlanguagecode-add.pt"
         permission="launchpad.TranslationsAdmin"/>
-
-    </facet>
+</facet>
 
 <!-- TranslationTemplateBuild -->
     <browser:defaultView

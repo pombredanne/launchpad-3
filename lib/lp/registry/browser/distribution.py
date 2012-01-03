@@ -41,6 +41,7 @@ __all__ = [
 from collections import defaultdict
 import datetime
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import getUtility
 from zope.event import notify
@@ -50,28 +51,6 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -121,11 +100,31 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
     )
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
@@ -536,6 +535,10 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return non_exact_matches.config(distinct=True)
 
     @property
+    def page_title(self):
+        return smartquote("Search %s's packages" % self.context.displayname)
+
+    @property
     def search_by_binary_name(self):
         """Return whether the search is on binary names.
 
@@ -661,6 +664,10 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
 
 
 class DistributionArchivesView(LaunchpadView):
+
+    @property
+    def page_title(self):
+        return '%s Copy Archives' % self.context.title
 
     @property
     def batchnav(self):

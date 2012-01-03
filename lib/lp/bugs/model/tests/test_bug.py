@@ -14,13 +14,12 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
+from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import (
@@ -30,6 +29,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     feature_flags,
@@ -39,6 +39,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,
@@ -815,6 +816,31 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             self._check_notifications(
                 bug, expected_recipients, expected_body_text,
                 expected_reason_body, True, False, 'Security Contact')
+
+
+class TestBugPrivacy(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_multipillar_private_bugs_disallowed(self):
+        # A multi-pillar bug cannot be made private.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+        login_person(bug.owner)
+        self.assertRaises(
+            BugCannotBePrivate, bug.setPrivacyAndSecurityRelated, True, False,
+            bug.owner)
+        self.assertRaises(
+            BugCannotBePrivate, bug.setPrivate, True, bug.owner)
+
+        # Some teams though need multi-pillar private bugs.
+        feature_flag = {
+            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
+            }
+        with FeatureFixture(feature_flag):
+            bug.setPrivacyAndSecurityRelated(True, False, bug.owner)
+            self.assertTrue(bug.private)
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(

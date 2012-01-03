@@ -15,11 +15,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -27,6 +22,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import quote
 from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (

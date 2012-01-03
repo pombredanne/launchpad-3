@@ -15,14 +15,14 @@
     that causes the TimelineGraph to adjust the height of the iframe to
     show the full height of the graph as it is zoomed in and out.
   </tal:comment>
-  <div id="timeline-loading" style="display: none">
+  <div id="timeline-loading" class="hidden">
     <img src="/@@/spinner" /> Loading graph...
   </div>
 
   <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
   <iframe id="timeline-iframe" name='timeline-iframe'
-          class="timeline-iframe"
-          style="display: none; border: 0"
+          class="timeline-iframe hidden"
+          style="border: 0"
           scrolling="no"
           width="100%" height="216px"></iframe>
   <script>

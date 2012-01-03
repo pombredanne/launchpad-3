@@ -12,35 +12,39 @@ import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
     adapts,
+    ComponentLookupError,
+    getGlobalSiteManager,
     queryAdapter,
     )
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.sendmail.interfaces import IMailDelivery
 
-from canonical.config import (
+from lp.registry.model.person import Person
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.messaging import rabbit
+from lp.services.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,
     )
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseLayer,
-    LaunchpadZopelessLayer,
-    LaunchpadLayer,
-    )
-from lp.registry.model.person import Person
-from lp.services.messaging import rabbit
 from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureOops,
     PGBouncerFixture,
     ZopeAdapterFixture,
+    ZopeUtilityFixture,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseLayer,
+    LaunchpadLayer,
+    LaunchpadZopelessLayer,
     )
 
 
@@ -86,6 +90,27 @@ class TestZopeAdapterFixture(TestCase):
             self.assertIsInstance(adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
+
+
+class DummyMailer(object):
+
+    implements(IMailDelivery)
+
+
+class TestZopeUtilityFixture(TestCase):
+
+    layer = BaseLayer
+
+    def test_fixture(self):
+        def get_mailer():
+            return getGlobalSiteManager().getUtility(
+                IMailDelivery, 'Mail')
+        fake = DummyMailer()
+        # In BaseLayer there should be no mailer by default.
+        self.assertRaises(ComponentLookupError, get_mailer)
+        with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+            self.assertEquals(get_mailer(), fake)
+        self.assertRaises(ComponentLookupError, get_mailer)
 
 
 class TestPGBouncerFixtureWithCA(TestCase):

@@ -71,18 +71,16 @@ from storm.expr import (
     Select,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.utilities.orderingcheck import OrderingCheck
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.bulk import load_related
+from lp.services.orderingcheck import OrderingCheck
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
@@ -97,13 +95,18 @@ STAY_OF_EXECUTION = 1
 
 
 # Ugly, but works
-apt_pkg.InitSystem()
+apt_pkg.init_system()
 
 
-def join_spr_spn():
-    """Join condition: SourcePackageRelease/SourcePackageName."""
-    return (
-        SourcePackageName.id == SourcePackageRelease.sourcepackagenameID)
+def join_spph_spn():
+    """Join condition: SourcePackagePublishingHistory/SourcePackageName."""
+    # Avoid circular imports.
+    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+    SPPH = SourcePackagePublishingHistory
+    SPN = SourcePackageName
+
+    return SPN.id == SPPH.sourcepackagenameID
 
 
 def join_spph_spr():
@@ -112,9 +115,10 @@ def join_spph_spr():
     # Avoid circular imports.
     from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
-    return (
-        SourcePackageRelease.id ==
-            SourcePackagePublishingHistory.sourcepackagereleaseID)
+    SPPH = SourcePackagePublishingHistory
+    SPR = SourcePackageRelease
+
+    return SPR.id == SPPH.sourcepackagereleaseID
 
 
 class SourcePublicationTraits:
@@ -129,7 +133,7 @@ class SourcePublicationTraits:
     @staticmethod
     def getPackageName(spph):
         """Return the name of this publication's source package."""
-        return spph.sourcepackagerelease.sourcepackagename.name
+        return spph.sourcepackagename.name
 
     @staticmethod
     def getPackageRelease(spph):
@@ -149,7 +153,7 @@ class BinaryPublicationTraits:
     @staticmethod
     def getPackageName(bpph):
         """Return the name of this publication's binary package."""
-        return bpph.binarypackagerelease.binarypackagename.name
+        return bpph.binarypackagename.name
 
     @staticmethod
     def getPackageRelease(bpph):
@@ -180,19 +184,13 @@ class GeneralizedPublication:
         """Obtain the version string for a publication record."""
         return self.traits.getPackageRelease(pub).version
 
-    def load_releases(self, pubs):
-        """Load the releases associated with a series of publications."""
-        return load_related(
-            self.traits.release_class, pubs,
-            [self.traits.release_reference_name])
-
     def compare(self, pub1, pub2):
         """Compare publications by version.
 
         If both publications are for the same version, their creation dates
         break the tie.
         """
-        version_comparison = apt_pkg.VersionCompare(
+        version_comparison = apt_pkg.version_compare(
             self.getPackageVersion(pub1), self.getPackageVersion(pub2))
 
         if version_comparison == 0:
@@ -203,17 +201,7 @@ class GeneralizedPublication:
 
     def sortPublications(self, publications):
         """Sort publications from most to least current versions."""
-        # Listify; we want to iterate this twice, which won't do for a
-        # non-persistent sequence.
-        publications = list(publications)
-        # Batch-load associated package releases; we'll be needing them
-        # to compare versions.
-        self.load_releases(publications)
-        # Now sort.  This is that second iteration.  An in-place sort
-        # won't hurt the original, because we're working on a copy of
-        # the original iterable.
-        publications.sort(cmp=self.compare, reverse=True)
-        return publications
+        return sorted(publications, cmp=self.compare, reverse=True)
 
 
 def find_live_source_versions(sorted_pubs):
@@ -337,11 +325,19 @@ def find_live_binary_versions_pass_2(sorted_pubs, cache):
         has active arch-specific publications.
     :return: A list of live versions.
     """
+    # Avoid circular imports
+    from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+
     sorted_pubs = list(sorted_pubs)
     latest = sorted_pubs.pop(0)
     is_arch_specific = attrgetter('architecture_specific')
     arch_specific_pubs = list(ifilter(is_arch_specific, sorted_pubs))
     arch_indep_pubs = list(ifilterfalse(is_arch_specific, sorted_pubs))
+
+    bpbs = load_related(
+        BinaryPackageBuild,
+        [pub.binarypackagerelease for pub in arch_indep_pubs], ['buildID'])
+    load_related(SourcePackageRelease, bpbs, ['source_package_release_id'])
 
     reprieved_pubs = [
         pub
@@ -579,46 +575,33 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
+        BPPH = BinaryPackagePublishingHistory
+        BPR = BinaryPackageRelease
+
         bpph_location_clauses = [
-            BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                distroarchseries,
-            BinaryPackagePublishingHistory.archive == self.archive,
-            BinaryPackagePublishingHistory.pocket == pocket,
+            BPPH.status == PackagePublishingStatus.PUBLISHED,
+            BPPH.distroarchseries == distroarchseries,
+            BPPH.archive == self.archive,
+            BPPH.pocket == pocket,
             ]
         candidate_binary_names = Select(
-            BinaryPackageName.id,
-            And(
-                BinaryPackageRelease.binarypackagenameID ==
-                    BinaryPackageName.id,
-                BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                    BinaryPackageRelease.id,
-                bpph_location_clauses,
-            ),
-            group_by=BinaryPackageName.id,
-            having=Count(BinaryPackagePublishingHistory.id) > 1)
-        main_clauses = [
-            BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagereleaseID,
-            BinaryPackageRelease.binarypackagenameID.is_in(
-                candidate_binary_names),
-            BinaryPackageRelease.binpackageformat !=
-                BinaryPackageFormat.DDEB,
+            BPPH.binarypackagenameID, And(*bpph_location_clauses),
+            group_by=BPPH.binarypackagenameID, having=(Count() > 1))
+        main_clauses = bpph_location_clauses + [
+            BPR.id == BPPH.binarypackagereleaseID,
+            BPR.binarypackagenameID.is_in(candidate_binary_names),
+            BPR.binpackageformat != BinaryPackageFormat.DDEB,
             ]
-        main_clauses.extend(bpph_location_clauses)
-
-        store = IStore(BinaryPackagePublishingHistory)
 
         # We're going to access the BPRs as well.  Since we make the
         # database look them up anyway, and since there won't be many
         # duplications among them, load them alongside the publications.
         # We'll also want their BinaryPackageNames, but adding those to
         # the join would complicate the query.
-        query = store.find(
-            (BinaryPackagePublishingHistory, BinaryPackageRelease),
-            *main_clauses)
-        return DecoratedResultSet(query, itemgetter(0))
+        query = IStore(BPPH).find((BPPH, BPR), *main_clauses)
+        bpphs = list(DecoratedResultSet(query, itemgetter(0)))
+        load_related(BinaryPackageName, bpphs, ['binarypackagenameID'])
+        return bpphs
 
     def dominateBinaries(self, distroseries, pocket):
         """Perform domination on binary package publications.
@@ -686,12 +669,13 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
+        SPPH = SourcePackagePublishingHistory
+
         return And(
-            SourcePackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED,
-            SourcePackagePublishingHistory.distroseries == distroseries,
-            SourcePackagePublishingHistory.archive == self.archive,
-            SourcePackagePublishingHistory.pocket == pocket,
+            SPPH.status == PackagePublishingStatus.PUBLISHED,
+            SPPH.distroseries == distroseries,
+            SPPH.archive == self.archive,
+            SPPH.pocket == pocket,
             )
 
     def findSourcesForDomination(self, distroseries, pocket):
@@ -708,15 +692,16 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
+        SPPH = SourcePackagePublishingHistory
+        SPR = SourcePackageRelease
+
         spph_location_clauses = self._composeActiveSourcePubsCondition(
             distroseries, pocket)
-        having_multiple_active_publications = (
-            Count(SourcePackagePublishingHistory.id) > 1)
         candidate_source_names = Select(
-            SourcePackageName.id,
-            And(join_spph_spr(), join_spr_spn(), spph_location_clauses),
-            group_by=SourcePackageName.id,
-            having=having_multiple_active_publications)
+            SPPH.sourcepackagenameID,
+            And(join_spph_spr(), spph_location_clauses),
+            group_by=SPPH.sourcepackagenameID,
+            having=(Count() > 1))
 
         # We'll also access the SourcePackageReleases associated with
         # the publications we find.  Since they're in the join anyway,
@@ -724,13 +709,14 @@ class Dominator:
         # Actually we'll also want the SourcePackageNames, but adding
         # those to the (outer) query would complicate it, and
         # potentially slow it down.
-        query = IStore(SourcePackagePublishingHistory).find(
-            (SourcePackagePublishingHistory, SourcePackageRelease),
+        query = IStore(SPPH).find(
+            (SPPH, SPR),
             join_spph_spr(),
-            SourcePackageRelease.sourcepackagenameID.is_in(
-                candidate_source_names),
+            SPPH.sourcepackagenameID.is_in(candidate_source_names),
             spph_location_clauses)
-        return DecoratedResultSet(query, itemgetter(0))
+        spphs = DecoratedResultSet(query, itemgetter(0))
+        load_related(SourcePackageName, spphs, ['sourcepackagenameID'])
+        return spphs
 
     def dominateSources(self, distroseries, pocket):
         """Perform domination on source package publications.
@@ -773,7 +759,7 @@ class Dominator:
         result = IStore(SourcePackageName).find(
             looking_for,
             join_spph_spr(),
-            join_spr_spn(),
+            join_spph_spn(),
             self._composeActiveSourcePubsCondition(distroseries, pocket))
         return result.group_by(SourcePackageName.name)
 
@@ -782,18 +768,19 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
+        SPPH = SourcePackagePublishingHistory
+        SPR = SourcePackageRelease
+
         query = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
+            SPPH,
             join_spph_spr(),
-            join_spr_spn(),
+            join_spph_spn(),
             SourcePackageName.name == package_name,
             self._composeActiveSourcePubsCondition(distroseries, pocket))
         # Sort by descending version (SPR.version has type debversion in
         # the database, so this should be a real proper comparison) so
         # that _sortPackage will have slightly less work to do later.
-        return query.order_by(
-            Desc(SourcePackageRelease.version),
-            Desc(SourcePackagePublishingHistory.datecreated))
+        return query.order_by(Desc(SPR.version), Desc(SPPH.datecreated))
 
     def dominateSourceVersions(self, distroseries, pocket, package_name,
                                live_versions):

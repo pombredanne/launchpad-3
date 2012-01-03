@@ -8,13 +8,13 @@ from datetime import (
     timedelta,
     )
 from exceptions import AssertionError
+
 import pytz
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -33,6 +33,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -100,8 +101,8 @@ class TestBuild(TestCaseWithFactory):
         # Builds which were already processed also offer additional
         # information about its process such as the time it was started and
         # finished and its 'log' and 'upload_changesfile' as librarian files.
-        spn=self.factory.getUniqueString()
-        version="%s.1" % self.factory.getUniqueInteger()
+        spn = self.factory.getUniqueString()
+        version = "%s.1" % self.factory.getUniqueInteger()
         spph = self.publisher.getPubSource(
             sourcename=spn, version=version,
             distroseries=self.distroseries,
@@ -391,7 +392,7 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(
             timedelta(0, 72 * 60),
             new_build.buildqueue_record.estimated_duration)
-        
+
     def test_store_uploadlog_refuses_to_overwrite(self):
         # Storing an upload log for a build will fail if the build already
         # has an upload log.
@@ -403,4 +404,4 @@ class TestBuild(TestCaseWithFactory):
         with person_logged_in(self.admin):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.storeUploadLog('foo')
-        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')   
+        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')

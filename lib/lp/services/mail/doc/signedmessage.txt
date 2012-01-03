@@ -8,7 +8,7 @@ the attributes are correctly set.
 
     >>> from lp.services.mail.interfaces import ISignedMessage
     >>> from lp.services.mail.signedmessage import signed_message_from_string
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> msg = signed_message_from_string('To: someone\n\nHello.')
     >>> verifyObject(ISignedMessage, msg)
     True

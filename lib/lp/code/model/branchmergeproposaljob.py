@@ -1,4 +1,4 @@
-# Copyright 2009, 2010, 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -59,17 +59,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interaction import setupInteraction
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IPlacelessAuthUtility,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
 from lp.code.errors import (
@@ -105,6 +94,8 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -117,6 +108,15 @@ from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
+    )
+from lp.services.webapp import errorlog
+from lp.services.webapp.interaction import setupInteraction
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IPlacelessAuthUtility,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 
 
@@ -362,16 +362,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         if bmp.source_branch.pending_writes:
             raise BranchHasPendingWrites(
                 'The source branch has pending writes.')
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IUpdatePreviewDiffJobSource`."""
-        errorlog.globalErrorUtility.configure('update_preview_diffs')
-        server = get_ro_server()
-        server.start_server()
-        yield
-        server.stop_server()
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)

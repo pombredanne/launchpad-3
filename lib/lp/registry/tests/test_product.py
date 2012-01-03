@@ -11,32 +11,24 @@ from testtools.matchers import MatchesAll
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.testing.pages import (
-    find_main_content,
-    get_feedback_messages,
-    setupBrowser,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -56,9 +48,19 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import (
     DoesNotSnapshot,
     Provides,
+    )
+from lp.testing.pages import (
+    find_main_content,
+    get_feedback_messages,
+    setupBrowser,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
@@ -229,6 +231,34 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             [u'trunk', u'active-series'],
             [series.name for series in active_series])
+
+    def test_owner_cannot_be_open_team(self):
+        """Product owners cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Product owners can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(owner=closed_team)
+
+    def test_security_contact_cannot_be_open_team(self):
+        """Product security contacts cannot be open teams."""
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertRaises(
+                OpenTeamLinkageError, self.factory.makeProduct,
+                security_contact=open_team)
+
+    def test_security_contact_can_be_closed_team(self):
+        """Product security contacts can be closed teams."""
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.factory.makeProduct(security_contact=closed_team)
 
 
 class TestProductFiles(TestCase):

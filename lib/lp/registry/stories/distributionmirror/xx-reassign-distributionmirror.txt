@@ -1,5 +1,5 @@
 XXX: This test must be generalized and used like
-interfaces/ftests/questiontarget.txt, to test reassignment in all contexts that
+tests/questiontarget.txt, to test reassignment in all contexts that
 allow them. -- Guilherme Salgado, 2006-10-27
 
     These are the variables that will be defined in each setup hook once we

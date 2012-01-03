@@ -11,13 +11,13 @@
 
   <adapter
       name="blueprints"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="blueprints"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
       permission="zope.Public"/>
@@ -145,7 +145,7 @@
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         path_expression="string:sprints"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         name="+index"/>
@@ -242,9 +242,6 @@
             class="lp.blueprints.browser.specificationbranch.SpecificationBranchStatusView"
             permission="launchpad.AnyPerson"
             template="../templates/specificationbranch-status.pt"/>
-    </facet>
-    <facet
-        facet="specifications">
         <browser:menus
             module="lp.blueprints.browser.specification"
             classes="
@@ -265,9 +262,6 @@
         <browser:pages
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public">
-            <browser:page
-                name="+listing-column"
-                template="../templates/specification-listing-column.pt"/>
             <browser:page
                 name="+listing-simple"
                 template="../templates/specification-listing-simple.pt"/>
@@ -488,7 +482,7 @@
         <browser:url
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             path_expression="string:"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="blueprints"/>
         <browser:defaultView
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
@@ -496,14 +490,6 @@
         <browser:pages
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             permission="zope.Public">
-
-            <!-- browser:page
-
-
-    name="+portlet-details"
-
-
-    template="../templates/specifications-portlet-details.pt" / -->
 
             <browser:page
                 name="+portlet-latestcompleted"
@@ -530,9 +516,6 @@
             permission="launchpad.AnyPerson"
             template="../../app/templates/generic-edit.pt"
             class="lp.blueprints.browser.specification.NewSpecificationFromRootView"/>
-    </facet>
-    <facet
-        facet="specifications">
         <browser:pages
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
@@ -543,13 +526,9 @@
         <browser:page
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
             name="+setgoals"
-            facet="specifications"
             class="lp.blueprints.browser.specificationgoal.GoalDecideView"
             permission="launchpad.Driver"
             template="../templates/specificationgoal-setgoals.pt"/>
-    </facet>
-    <facet
-        facet="specifications">
         <browser:pages
             for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
             permission="zope.Public">
@@ -585,13 +564,11 @@
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationTarget"
             class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
             permission="zope.Public"/>
-    </facet>
 
     <browser:page
         name="+addspec"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.blueprints.browser.specification.NewSpecificationFromDistributionView"
-        facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
 
@@ -603,14 +580,12 @@
         name="+addspec"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.blueprints.browser.specification.NewSpecificationFromDistroSeriesView"
-        facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
 
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
-        facet="specifications"
         permission="zope.Public">
         <browser:page
             name="+specs"/>
@@ -622,7 +597,6 @@
         name="+assignments"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
-        facet="specifications"
         permission="zope.Public"
         template="../templates/specificationtarget-assignments.pt"/>
 
@@ -630,7 +604,6 @@
         name="+addspec"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
-        facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
 
@@ -638,7 +611,6 @@
         name="+addspec"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.blueprints.browser.specification.NewSpecificationFromProductView"
-        facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
 
@@ -646,9 +618,9 @@
         name="+addspec"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
-        facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
+    </facet>
 
   <adapter
       factory="lp.blueprints.browser.specification.starter_xhtml_representation"

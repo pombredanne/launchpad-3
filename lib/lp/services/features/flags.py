@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import logging
+
 from lp.services.features.rulesource import (
     NullFeatureRuleSource,
     StormFeatureRuleSource,
@@ -18,6 +20,8 @@ from lp.services.features.rulesource import (
 
 __metaclass__ = type
 
+
+logger = logging.getLogger('lp.services.features')
 
 value_domain_info = sorted([
     ('boolean',
@@ -47,6 +51,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('bugs.affected_count_includes_dupes.disabled',
+     'boolean',
+     ("Disable adding up affected users across all duplicate bugs."),
+     '',
+     '',
+     'https://bugs.launchpad.net/launchpad/+bug/678090'),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
@@ -58,7 +68,13 @@ flag_info = sorted([
      ('Enables the dynamic configuration of bug listings.'),
      '',
      'Dynamic bug listings',
-     'https://dev.launchpad.net/LEP/CustomBugListings'),
+     'http://blog.launchpad.net/?p=3005'),
+    ('bugs.dynamic_bug_listings.pre_fetch',
+     'boolean',
+     ('Enables pre-fetching bug listing results.'),
+     '',
+     'Listing pre-fetching',
+     'https://bugs.launchpad.net/launchpad/+bug/888756'),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -101,6 +117,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('markdown.enabled',
+     'boolean',
+     'Interpret selected user content as Markdown.',
+     'disabled',
+     'Markdown',
+     'https://launchpad.net/bugs/391780'),
     ('memcache',
      'boolean',
      'Enables use of memcached where it is supported.',
@@ -176,15 +198,22 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.delete_bugtask.enabled',
-     'boolean',
-     'Enables bugtasks to be deleted by authorised users.',
-     '',
-     '',
-     ''),
     ('disclosure.allow_multipillar_private_bugs.enabled',
      'boolean',
      'Allows private bugs to have more than one bug task.',
+     '',
+     '',
+     ''),
+    ('disclosure.users_hide_own_bug_comments.enabled',
+     'boolean',
+     'Allows users in project roles and comment owners to hide bug comments.',
+     '',
+     '',
+     ''),
+    ('disclosure.extra_private_team_LimitedView_security.enabled',
+     'boolean',
+     ('Enables additional checks to be done to determine whether a user has '
+      'launchpad.LimitedView permission on a private team.'),
      '',
      '',
      ''),
@@ -332,8 +361,19 @@ class FeatureController():
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
+                    self._debugMessage(
+                        'feature match flag=%r value=%r scope=%r' %
+                        (flag, value, scope))
                     return (value, scope)
+            else:
+                self._debugMessage('no rules matched for %r' % flag)
+        else:
+            self._debugMessage('no rules relevant to %r' % flag)
         return (None, None)
+
+    def _debugMessage(self, message):
+        logger.debug(message)
+        # The OOPS machinery can also grab it out of the request if needed.
 
     def currentScope(self, flag):
         """The name of the scope of the matching rule with the highest

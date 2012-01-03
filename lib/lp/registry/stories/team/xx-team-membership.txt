@@ -56,7 +56,7 @@ Give up on change, nothing should have changed with Colin:
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> teammembershipset = getUtility(ITeamMembershipSet)

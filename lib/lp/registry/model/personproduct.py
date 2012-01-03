@@ -13,9 +13,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.code.model.hasbranches import (
-    HasMergeProposalsMixin,
-    )
+from lp.code.model.hasbranches import HasMergeProposalsMixin
 from lp.registry.interfaces.personproduct import (
     IPersonProduct,
     IPersonProductFactory,

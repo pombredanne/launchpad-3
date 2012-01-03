@@ -9,10 +9,9 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.security.management import getInteraction
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
@@ -29,6 +28,7 @@ from lp.testing import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLoginHelpers(TestCaseWithFactory):
@@ -273,7 +273,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
@@ -284,7 +284,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         logged_in = f()
         self.assertEqual(person, logged_in)
 

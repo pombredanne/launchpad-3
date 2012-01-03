@@ -28,12 +28,6 @@ from twisted.internet import (
 from twisted.protocols.basic import NetstringParseError
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.testing import (
-    reset_logging,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -43,12 +37,18 @@ from lp.codehosting.puller import (
     )
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
+from lp.services.config import config
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     suppress_stderr,
     )
-from lp.testing import TestCase
+from lp.services.webapp import errorlog
+from lp.testing import (
+    reset_logging,
+    TestCase,
+    )
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class FakeCodehostingEndpointProxy:
@@ -639,7 +639,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
 
         return deferred
 
-    def test_mirror(self):
+    # XXX gary 2011-11-15 bug 890816: This is a fragile test.
+    def DISABLE_test_mirror(self):
         # Actually mirror a branch using a worker sub-process.
         #
         # This test actually launches a worker process and makes sure that it

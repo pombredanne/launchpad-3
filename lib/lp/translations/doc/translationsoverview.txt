@@ -21,7 +21,7 @@ test too much.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -187,7 +187,7 @@ karma.  Our algorithm takes the logarithm of its karma, but it's
 properly armoured against the occurrence of karmaless projects.
 
     >>> start_karma_update()
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database.sqlbase import cursor
     >>> cur = cursor()
     >>> cur.execute("""
     ...     UPDATE KarmaCache

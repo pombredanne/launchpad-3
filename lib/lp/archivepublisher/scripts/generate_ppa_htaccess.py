@@ -16,10 +16,6 @@ import tempfile
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
@@ -27,6 +23,9 @@ from lp.archivepublisher.htaccess import (
     write_htpasswd,
     )
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
@@ -34,6 +33,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -124,9 +124,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)
         subject = "PPA access cancelled for %s" % ppa_name
-        template = get_email_template("ppa-subscription-cancelled.txt")
+        template = get_email_template(
+            "ppa-subscription-cancelled.txt", app='soyuz')
 
-        assert not send_to_person.isTeam(), (
+        assert not send_to_person.is_team, (
             "Token.person is a team, it should always be individuals.")
 
         if send_to_person.preferredemail is None:

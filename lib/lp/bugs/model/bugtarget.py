@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -17,31 +17,13 @@ __all__ = [
 from storm.locals import (
     Int,
     Reference,
+    SQL,
     Storm,
     Unicode,
     )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    )
-from canonical.launchpad.searchbuilder import (
-    any,
-    not_equals,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator,
@@ -52,9 +34,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
-from lp.bugs.model.bugtask import (
-    BugTaskSet,
-    )
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -64,6 +44,22 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class HasBugsBase:
@@ -300,15 +296,12 @@ class HasBugHeatMixin:
         else:
             raise NotImplementedError
 
-        results = [0]
-        for query in sql:
-            cur = cursor()
-            cur.execute(query)
-            record = cur.fetchone()
-            if record is not None:
-                results.append(record[0])
-            cur.close()
-        self.setMaxBugHeat(max(results))
+        # Use Storm's lazy expression values
+        # <https://storm.canonical.com/Tutorial#Expression_values>
+        expr = SQL(
+            "(SELECT COALESCE(MAX(heat), 0) FROM (%s) AS geoff)" % (
+                " UNION ALL ".join("(%s)" % query for query in sql)))
+        self.setMaxBugHeat(expr)
 
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.

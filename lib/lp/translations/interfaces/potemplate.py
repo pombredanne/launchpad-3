@@ -30,14 +30,14 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PersonChoice
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,

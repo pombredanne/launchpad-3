@@ -31,14 +31,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -55,6 +48,16 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.launchpadform import ReturnToReferrerMixin
+from lp.services.webapp.menu import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -73,11 +76,12 @@ class BugSubscriptionAddView(LaunchpadFormView):
     def add_action(self, action, data):
         person = data['person']
         try:
-            self.context.bug.subscribe(person, self.user, suppress_notify=False)
+            self.context.bug.subscribe(
+                person, self.user, suppress_notify=False)
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
-            if person.isTeam():
+            if person.is_team:
                 message = '%s team has been subscribed to this bug.'
             else:
                 message = '%s has been subscribed to this bug.'
@@ -155,6 +159,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    page_title = 'Subscription options'
 
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.
@@ -542,11 +547,19 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(bug.getDirectSubscribersWithDetails())
         for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if person == self.user or (person.private and not can_edit):
-                # Skip the current user viewing the page,
-                # and private teams user is not a member of.
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
+            if self.user is None and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
 
+            # If we have made it to here then the logged in user can see the
+            # bug, hence they can see any subscribers.
+            # The security adaptor will do the job also but we don't want or
+            # need the expense of running several complex SQL queries.
+            precache_permission_for_objects(
+                        self.request, 'launchpad.LimitedView', [person])
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -571,9 +584,18 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any indirect subscribers.
+        include_private = self.user is not None
+        if include_private:
+            precache_permission_for_objects(
+                self.request, 'launchpad.LimitedView', others)
         for person in others:
             if person == self.user:
-                # Skip the current user viewing the page.
+                # Skip the current user viewing the page,
+                continue
+            if not include_private and person.private:
+                # Do not include private teams if there's no logged in user.
                 continue
             subscriber = {
                 'name': person.name,

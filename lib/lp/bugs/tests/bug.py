@@ -16,14 +16,6 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    print_table,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -38,6 +30,14 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    print_table,
+    )
 
 
 def print_direct_subscribers(bug_page):
@@ -334,5 +334,5 @@ def print_bug_tag_anchors(anchors):
     """The the bug tags in the iterable of anchors."""
     for anchor in anchors:
         href = anchor['href']
-        if href != '+edit' and '/+help/tag-help.html' not in href:
+        if href != '+edit' and '/+help-bugs/tag-help.html' not in href:
             print anchor['class'], anchor.contents[0]

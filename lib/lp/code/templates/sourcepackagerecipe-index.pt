@@ -13,7 +13,7 @@
       padding-left: 2em;
     }
     div#edit-recipe_text, div#edit-description {
-      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      font-family: "Ubuntu Mono",monospace;
       margin: 1em 0;
     }
     div#edit-recipe_text.yui3-editable_text-content,
@@ -83,7 +83,7 @@
         <div class="two-column-list">
           <dl id="build_daily">
             <dt>Build schedule:
-              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+              <a href="/+help-code/recipe-build-frequency.html" target="help" class="sprite maybe">
                 &nbsp;<span class="invisible-link">Tag help</span>
               </a>
             </dt>

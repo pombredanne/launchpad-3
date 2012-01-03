@@ -1,12 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.interface import implements
-from zope.app.form.interfaces import IWidgetInputError
-from zope.app.form.interfaces import WidgetInputError as _WidgetInputError
-from zope.app.form.browser.interfaces import IWidgetInputErrorView
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.interfaces import IWidgetInputErrorView
+from zope.app.form.interfaces import (
+    IWidgetInputError,
+    WidgetInputError as _WidgetInputError,
+    )
+from zope.interface import implements
+
 
 class WidgetInputError(_WidgetInputError):
     """A customized WidgetInputError to work around a bug in Z3
@@ -42,4 +44,3 @@ class WidgetInputErrorView(object):
         self.request = request
 
     snippet = ViewPageTemplateFile('templates/error.pt')
-

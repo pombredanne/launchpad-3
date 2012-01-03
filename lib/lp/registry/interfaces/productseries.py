@@ -44,8 +44,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.url import urlparse
+from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
@@ -78,6 +77,7 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
+from lp.services.webapp.url import urlparse
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -189,9 +189,9 @@ class IProductSeriesPublic(
     displayname = exported(
         TextLine(
             title=_('Display Name'),
-            description=_('Display name, in this case we have removed the '
-                          'underlying database field, and this attribute '
-                          'just returns the name.')),
+            description=_(
+                "Display name.  In this case we have removed the underlying "
+                "database field, and this attribute just returns the name.")),
         exported_as='display_name')
 
     releases = exported(

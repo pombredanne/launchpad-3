@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
@@ -16,17 +16,17 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
@@ -184,19 +184,29 @@ class PackageCloner:
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
-                datepublished, pocket)
-            SELECT bpph.binarypackagerelease, %s as distroarchseries,
-                   bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket
+                datepublished, pocket, binarypackagename)
+            SELECT
+                bpph.binarypackagerelease,
+                %s as distroarchseries,
+                bpph.status,
+                bpph.component,
+                bpph.section,
+                bpph.priority,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                bpph.binarypackagename
             """ % sqlvalues(
                 destination_das, destination.archive, UTC_NOW, UTC_NOW,
                 destination.pocket)
         query += clause_tables
         query += """
-            WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
-            AND
-                bpph.pocket = %s and bpph.archive = %s
+            WHERE
+                bpph.distroarchseries = %s AND
+                bpph.status in (%s, %s) AND
+                bpph.pocket = %s AND
+                bpph.archive = %s
             """ % sqlvalues(
                 origin_das,
                 PackagePublishingStatus.PENDING,
@@ -225,13 +235,15 @@ class PackageCloner:
         store.execute("""
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket)
+                section, archive, datecreated, datepublished, pocket,
+                sourcepackagename)
             SELECT
                 mcd.s_sourcepackagerelease AS sourcepackagerelease,
                 %s AS distroseries, mcd.s_status AS status,
                 mcd.s_component AS component, mcd.s_section AS section,
                 %s AS archive, %s AS datecreated, %s AS datepublished,
-                %s AS pocket
+                %s AS pocket,
+                sourcepackagename_id
             FROM tmp_merge_copy_data mcd
             WHERE mcd.obsoleted = True OR mcd.missing = True
             """ % sqlvalues(
@@ -284,8 +296,9 @@ class PackageCloner:
                 s_component = secsrc.component,
                 s_section = secsrc.section
             FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                SourcePackagePublishingHistory secsrc,
+                SourcePackageRelease spr,
+                SourcePackageName spn
             WHERE
                 secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
                 secsrc.distroseries = %s AND secsrc.pocket = %s AND
@@ -308,22 +321,29 @@ class PackageCloner:
         # the target archive.
         find_origin_only_packages = """
             INSERT INTO tmp_merge_copy_data (
-                s_sspph, s_sourcepackagerelease, sourcepackagename, s_version,
-                missing, s_status, s_component, s_section)
+                s_sspph, s_sourcepackagerelease, sourcepackagename,
+                sourcepackagename_id, s_version, missing, s_status,
+                s_component, s_section)
             SELECT
                 secsrc.id AS s_sspph,
                 secsrc.sourcepackagerelease AS s_sourcepackagerelease,
-                spn.name AS sourcepackagename, spr.version AS s_version,
-                True AS missing, secsrc.status AS s_status,
-                secsrc.component AS s_component, secsrc.section AS s_section
-            FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                spn.name AS sourcepackagename,
+                spn.id AS sourcepackagename_id,
+                spr.version AS s_version,
+                True AS missing,
+                secsrc.status AS s_status,
+                secsrc.component AS s_component,
+                secsrc.section AS s_section
+            FROM SourcePackagePublishingHistory secsrc
+            JOIN SourcePackageRelease AS spr ON
+                spr.id = secsrc.sourcepackagerelease
+            JOIN SourcePackageName AS spn ON
+                spn.id = spr.sourcepackagename
             WHERE
-                secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
-                secsrc.distroseries = %s AND secsrc.pocket = %s AND
-                secsrc.sourcepackagerelease = spr.id AND
-                spr.sourcepackagename = spn.id AND
+                secsrc.archive = %s AND
+                secsrc.status IN (%s, %s) AND
+                secsrc.distroseries = %s AND
+                secsrc.pocket = %s AND
                 spn.name NOT IN (
                     SELECT sourcepackagename FROM tmp_merge_copy_data)
         """ % sqlvalues(
@@ -373,7 +393,8 @@ class PackageCloner:
                 -- recent source package.
                 obsoleted boolean DEFAULT false NOT NULL,
                 missing boolean DEFAULT false NOT NULL,
-                sourcepackagename text NOT NULL
+                sourcepackagename text NOT NULL,
+                sourcepackagename_id integer NOT NULL
             );
             CREATE INDEX source_name_index
             ON tmp_merge_copy_data USING btree (sourcepackagename);
@@ -382,19 +403,24 @@ class PackageCloner:
         # archive considering the distroseries, pocket and component.
         pop_query = """
             INSERT INTO tmp_merge_copy_data (
-                t_sspph, t_sourcepackagerelease, sourcepackagename, t_version)
+                t_sspph, t_sourcepackagerelease, sourcepackagename,
+                sourcepackagename_id, t_version)
             SELECT
                 secsrc.id AS t_sspph,
                 secsrc.sourcepackagerelease AS t_sourcepackagerelease,
-                spn.name AS sourcepackagerelease, spr.version AS t_version
-            FROM
-                sourcepackagepublishinghistory secsrc,
-                sourcepackagerelease spr, sourcepackagename spn
+                spn.name AS sourcepackagerelease,
+                spn.id AS sourcepackagename_id,
+                spr.version AS t_version
+            FROM SourcePackagePublishingHistory secsrc
+            JOIN SourcePackageRelease AS spr ON
+                spr.id = secsrc.sourcepackagerelease
+            JOIN SourcePackageName AS spn ON
+                spn.id = spr.sourcepackagename
             WHERE
-                secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
-                secsrc.distroseries = %s AND secsrc.pocket = %s AND
-                secsrc.sourcepackagerelease = spr.id AND
-                spr.sourcepackagename = spn.id
+                secsrc.archive = %s AND
+                secsrc.status IN (%s, %s) AND
+                secsrc.distroseries = %s AND
+                secsrc.pocket = %s
         """ % sqlvalues(
                 destination.archive,
                 PackagePublishingStatus.PENDING,
@@ -424,14 +450,25 @@ class PackageCloner:
         query = '''
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket)
-            SELECT spph.sourcepackagerelease, %s as distroseries,
-                   spph.status, spph.component, spph.section, %s as archive,
-                   %s as datecreated, %s as datepublished,
-                   %s as pocket
+                section, archive, datecreated, datepublished, pocket,
+                sourcepackagename)
+            SELECT
+                spph.sourcepackagerelease,
+                %s as distroseries,
+                spph.status,
+                spph.component,
+                spph.section,
+                %s as archive,
+                %s as datecreated,
+                %s as datepublished,
+                %s as pocket,
+                spph.sourcepackagename
             FROM SourcePackagePublishingHistory AS spph
-            WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
-                  spph.pocket = %s and spph.archive = %s
+            WHERE
+                spph.distroseries = %s AND
+                spph.status in (%s, %s) AND
+                spph.pocket = %s AND
+                spph.archive = %s
             ''' % sqlvalues(
                 destination.distroseries, destination.archive, UTC_NOW,
                 UTC_NOW, destination.pocket, origin.distroseries,
@@ -440,24 +477,26 @@ class PackageCloner:
                 origin.pocket, origin.archive)
 
         if sourcepackagenames and len(sourcepackagenames) > 0:
-            query += '''AND spph.sourcepackagerelease IN (
-                            (SELECT spr.id
-                            FROM SourcePackageRelease AS spr,
-                            SourcePackageName AS spn
-                        WHERE spr.sourcepackagename = spn.id
-                        AND spn.name IN %s))''' % sqlvalues(
-                            sourcepackagenames)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM SourcePackageRelease AS spr
+                    JOIN SourcePackageName AS spn ON
+                        spn.id = spr.sourcepackagename
+                    WHERE spn.name IN %s
+                )''' % sqlvalues(sourcepackagenames)
 
         if origin.packagesets:
-            query += '''AND spph.sourcepackagerelease IN
-                            (SELECT spr.id
-                             FROM SourcePackageRelease AS spr,
-                                  packagesetsources AS pss,
-                                  flatpackagesetinclusion AS fpsi
-                             WHERE spr.sourcepackagename
-                                    = pss.sourcepackagename
-                             AND pss.packageset = fpsi.child
-                             AND fpsi.parent in %s)
+            query += '''
+                AND spph.sourcepackagerelease IN (
+                    SELECT spr.id
+                    FROM SourcePackageRelease AS spr
+                    JOIN PackagesetSources AS pss ON
+                        PSS.sourcepackagename = spr.sourcepackagename
+                    JOIN FlatPackagesetInclusion AS fpsi ON
+                        fpsi.child = pss.packageset
+                    WHERE fpsi.parent in %s
+                )
                      ''' % sqlvalues([p.id for p in origin.packagesets])
 
         if origin.component:
@@ -502,14 +541,16 @@ class PackageCloner:
         """
         fresher_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version, t_version
-            FROM tmp_merge_copy_data WHERE obsoleted = True;
+            FROM tmp_merge_copy_data
+            WHERE obsoleted = True;
         """))
         logger.info('Fresher packages: %d' % len(fresher_info))
         for info in fresher_info:
             logger.info('* %s (%s > %s)' % info)
         new_info = sorted(store.execute("""
             SELECT sourcepackagename, s_version
-            FROM tmp_merge_copy_data WHERE missing = True;
+            FROM tmp_merge_copy_data
+            WHERE missing = True;
         """))
         logger.info('New packages: %d' % len(new_info))
         for info in new_info:

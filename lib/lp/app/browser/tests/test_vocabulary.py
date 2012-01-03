@@ -20,26 +20,27 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    VocabularyFilter,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    VocabularyFilter,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_view
 
@@ -510,7 +511,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -559,7 +562,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_vocab_filter(self):
         # The vocab filter is used to filter results.
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

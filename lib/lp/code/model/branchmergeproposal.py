@@ -38,19 +38,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -88,10 +75,30 @@ from lp.code.model.diff import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
@@ -191,7 +198,7 @@ class BranchMergeProposal(SQLBase):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person, notNull=False,
         default=None)
 
     @property
@@ -691,8 +698,7 @@ class BranchMergeProposal(SQLBase):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Until these are moved into the lp module, import here to avoid
-        # circular dependencies from canonical.launchpad.database.__init__.py
+        # Avoid circular dependencies.
         from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
@@ -903,6 +909,61 @@ class BranchMergeProposal(SQLBase):
         ranges = self.getIncrementalDiffRanges()
         diffs = self.getIncrementalDiffs(ranges)
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
+
+    @staticmethod
+    def preloadDataForBMPs(branch_merge_proposals, user):
+        # Utility to load the data related to a list of bmps.
+        # Circular imports.
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.registry.model.product import Product
+        from lp.registry.model.distroseries import DistroSeries
+
+        source_branch_ids = set()
+        person_ids = set()
+        diff_ids = set()
+        for mp in branch_merge_proposals:
+            source_branch_ids.add(mp.source_branchID)
+            person_ids.add(mp.registrantID)
+            person_ids.add(mp.merge_reporterID)
+            diff_ids.add(mp.preview_diff_id)
+
+        branches = load_related(
+            Branch, branch_merge_proposals, (
+                "target_branchID", "prerequisite_branchID",
+                "source_branchID"))
+        # The stacked on branches are used to check branch visibility.
+        GenericBranchCollection.preloadVisibleStackedOnBranches(
+            branches, user)
+
+        if len(branches) == 0:
+            return
+
+        store = IStore(BranchMergeProposal)
+
+        # Pre-load PreviewDiffs and Diffs.
+        preview_diffs_and_diffs = list(store.find(
+            (PreviewDiff, Diff),
+            PreviewDiff.id.is_in(diff_ids),
+            Diff.id == PreviewDiff.diff_id))
+        PreviewDiff.preloadData(
+            [preview_diff_and_diff[0] for preview_diff_and_diff
+                in preview_diffs_and_diffs])
+
+        # Add source branch owners' to the list of pre-loaded persons.
+        person_ids.update(
+            branch.ownerID for branch in branches
+            if branch.id in source_branch_ids)
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
+        # Pre-load branches' data.
+        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, branches, ['distroseriesID'])
+        load_related(Product, branches, ['productID'])
+        GenericBranchCollection.preloadDataForBranches(branches)
 
 
 class BranchMergeProposalGetter:

@@ -1,26 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
 import gzip
+from operator import itemgetter
 import os
 from StringIO import StringIO
 import tempfile
-from operator import itemgetter
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
     get_day,
@@ -31,8 +20,19 @@ from lp.services.apachelogparser.base import (
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.config import config
+from lp.services.librarianserver.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import TestCase
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 here = os.path.dirname(__file__)

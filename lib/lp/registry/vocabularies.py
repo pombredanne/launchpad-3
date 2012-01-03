@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -97,40 +97,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.database.sqlbase import (
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.launchpad.webapp.publisher import nearest
-from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator,
-    CountableIterator,
-    FilteredVocabularyBase,
-    IHugeVocabulary,
-    NamedSQLObjectHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    VocabularyFilter,
-    )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -197,9 +163,41 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.publisher import nearest
+from lp.services.webapp.vocabulary import (
+    BatchedCountableIterator,
+    CountableIterator,
+    FilteredVocabularyBase,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    VocabularyFilter,
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -884,6 +882,23 @@ class TeamVocabularyMixin:
                 'Search for a restricted team, a moderated team, or a person')
         else:
             return 'Search'
+
+
+class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+                                ValidPersonOrTeamVocabulary):
+    """The set of people and closed teams in Launchpad.
+
+    A closed team is one for which the subscription policy is either
+    RESTRICTED or MODERATED.
+    """
+
+    @property
+    def is_closed_team(self):
+        return True
+
+    @property
+    def extra_clause(self):
+        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
@@ -2054,6 +2069,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     def __len__(self):
         pass
+
+    def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
+        self.distribution = distribution
 
     def getDistributionAndPackageName(self, text):
         "Return the distribution and package name from the parsed text."

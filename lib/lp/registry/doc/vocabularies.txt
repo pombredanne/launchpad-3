@@ -1,8 +1,8 @@
 Registry vocabularies
 =====================
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -29,8 +29,8 @@ The active mailing lists vocabulary matches and returns only those
 mailing lists which are active.
 
     >>> list_vocabulary = get_naked_vocab(None, 'ActiveMailingList')
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
     True
 
@@ -112,7 +112,7 @@ The IHugeVocabulary interface also requires a search method that returns
 a CountableIterator.
 
     >>> iter = list_vocabulary.searchForTerms('player')
-    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> from lp.services.webapp.vocabulary import CountableIterator
     >>> isinstance(iter, CountableIterator)
     True
 
@@ -673,7 +673,7 @@ Any person that's already merged is not part of this vocabulary:
 A person whose account_status is any of the statuses of
 INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     INACTIVE_ACCOUNT_STATUSES)
     >>> naked_cprov.merged = None
     >>> checked_count = 0
@@ -966,7 +966,7 @@ All valid persons and teams are also valid owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them. There's also the ircperson
+search for 'team' will give us some of them. There's also the ircperson
 created earlier with an icr nickname of 'team':
 
     >>> sorted(person.name for person in vocab.search('team'))
@@ -975,6 +975,28 @@ created earlier with an icr nickname of 'team':
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
+ValidPillarOwner
+..........
+
+Valid persons and closed teams are valid pillar owners.
+
+    >>> login(ANONYMOUS)
+    >>> vocab = get_naked_vocab(None, "ValidPillarOwner")
+    >>> vocab.step_title
+    'Search for a restricted team, a moderated team, or a person'
+
+    >>> list(vocab.search(None))
+    []
+
+Almost all teams have the word 'team' as part of their names, so a
+search for 'team' will give us some of them. Only restricted or moderated
+teams will be returned in the search results. There's also the ircperson
+created earlier with an icr nickname of 'team':
+
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'hwdb-team', u'ircperson', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam',
+     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
 
 ValidTeam
 .........
@@ -1318,7 +1340,7 @@ bzr's so we will get more interesting results.
     >>> bzr = product_set.getByName('bzr')
     >>> bzr.licenses = [License.OTHER_PROPRIETARY]
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('bac@canonical.com')
     >>> bac = person_set.getByEmail('bac@canonical.com')
     >>> check_permission('launchpad.Commercial', bac)
@@ -1344,7 +1366,6 @@ projects are returned.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
     >>> login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)

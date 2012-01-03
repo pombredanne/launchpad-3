@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Migrate modules from the old LP directory structure to the new using
@@ -8,15 +8,27 @@ a control file and the exising mover script that Francis wrote.
 """
 
 import errno
+from optparse import OptionParser
 import os
 import re
 
-from find import find_files, find_matches
-from optparse import OptionParser
+from find import (
+    find_files,
+    find_matches,
+    )
 from rename_module import (
-    bzr_add, bzr_move_file, bzr_remove_file, rename_module, update_references)
+    bzr_add,
+    bzr_move_file,
+    bzr_remove_file,
+    rename_module,
+    update_references,
+    )
 from rename_zcml import handle_zcml
-from utils import log, run, spew
+from utils import (
+    log,
+    run,
+    spew,
+    )
 
 
 MOVER = os.path.join(os.path.dirname(__file__), 'rename_module.py')
@@ -35,6 +47,11 @@ TLA_MAP = dict(
     tra='translations',
     pkg='registry',
     hdb='hardwaredb',
+    idy='services/identity',
+    ver='services/verification',
+    sta='services/statistics',
+    loo='services/looptuner',
+    fee='services/feeds',
     )
 
 RENAME_MAP = dict(
@@ -48,18 +65,13 @@ OLD_TOP = 'lib/canonical/launchpad'
 NEW_TOP = 'lib/lp'
 
 APP_DIRECTORIES = [
-    'adapters',
     'browser',
     'doc',
     'emailtemplates',
-    'event',
-    'feed',
     'interfaces',
     'model',
-    'notifications',
     'scripts',
     'stories',
-    'subscribers',
     'templates',
     'tests',
     'browser/tests',
@@ -296,8 +308,6 @@ def install_doctest_suite(file_name, dir_path, doctests=None):
         test_doc = test_doc_file.read()
     finally:
         test_doc_file.close()
-    if doctests is not None:
-        test_doc = test_doc.replace('special = {}', get_special(doctests))
     test_doc_path = os.path.join(dir_path, file_name)
     if os.path.isfile(test_doc_path):
         # This harness was made in a previous run.
@@ -309,73 +319,6 @@ def install_doctest_suite(file_name, dir_path, doctests=None):
     finally:
         test_doc_file.close()
     bzr_add([test_doc_path])
-
-
-def get_special(doctests):
-    """extract the special setups from test_system_documentation."""
-    system_doc_lines = []
-    special_lines = []
-    doctest_pattern = re.compile(r"^    '(%s)[^']*':" % '|'.join(doctests))
-    system_doc_path = os.path.join(
-        OLD_TOP, 'ftests', 'test_system_documentation.py')
-    system_doc = open(system_doc_path)
-    try:
-        in_special = False
-        for line in system_doc:
-            match = doctest_pattern.match(line)
-            if match is not None:
-                in_special = True
-                print '    * Extracting special test for %s' % match.group(1)
-            if in_special:
-                special_lines.append(line.replace('        ', '    '))
-            else:
-                system_doc_lines.append(line)
-            if in_special and '),' in line:
-                in_special = False
-    finally:
-        system_doc.close()
-    if len(special_lines) == 0:
-        # There was nothing to extract.
-        return 'special = {}'
-    # Get the setup and teardown functions.
-    special_lines.insert(0, 'special = {\n')
-    special_lines.append('    }')
-    code = ''.join(special_lines)
-    helper_pattern = re.compile(r'\b(setUp|tearDown)=(\w*)\b')
-    helpers = set(match.group(2) for match in helper_pattern.finditer(code))
-    if 'setUp' in helpers:
-        helpers.remove('setUp')
-    if 'tearDown' in helpers:
-        helpers.remove('tearDown')
-    # Extract the setup and teardown functions.
-    lines = list(system_doc_lines)
-    system_doc_lines = []
-    helper_lines = []
-    helper_pattern = re.compile(r'^def (%s)\b' % '|'.join(helpers))
-    in_helper = False
-    for line in lines:
-        if in_helper and len(line) > 1 and line[0] != ' ':
-            in_helper = False
-        match = helper_pattern.match(line)
-        if match is not None:
-            in_helper = True
-            print '    * Extracting special function for %s' % match.group(1)
-        if in_helper:
-            helper_lines.append(line)
-        else:
-            system_doc_lines.append(line)
-    if len(helper_lines) > 0:
-        code = ''.join(helper_lines) + code
-    # Write the smaller test_system_documentation.py.
-    system_doc = open(system_doc_path, 'w')
-    try:
-        system_doc.write(''.join(system_doc_lines))
-    finally:
-        system_doc.close()
-    # Return the local app's specials code.
-    special_lines.insert(0, 'special = {\n')
-    special_lines.append('    }')
-    return code
 
 
 def handle_py_file(old_path, new_path, subdir):
@@ -420,7 +363,7 @@ def one_true_import(app_name, all_members):
 def fix_file_true_import(file_path, all_interfaces):
     """Fix the interface imports in a file."""
     from textwrap import fill
-    bad_pattern = 'from canonical.launchpad.interfaces import'
+    bad_pattern = 'from package.path.that.is.globbed import'
     delimiters_pattern = re.compile(r'[,()]+')
     import_lines = []
     content = []

@@ -9,8 +9,8 @@ from uuid import uuid1
 
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
 from lp.code.windmill.testing import CodeWindmillLayer
+from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
     WindmillTestCase,
@@ -19,9 +19,7 @@ from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.testing.windmill.widgets import (
-    search_and_select_picker_widget,
-    )
+from lp.testing.windmill.widgets import search_and_select_picker_widget
 
 
 WAIT_PAGELOAD = u'30000'

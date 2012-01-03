@@ -1,28 +1,19 @@
-= Location widget =
+Location widget
+===============
 
 A widget used when setting the geographic location of a given person.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.location import LocationWidget
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.services.fields import LocationField
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> field = LocationField(__name__='location', title=u'Location')
 
-JavaScript and JSON are used by the location widget.  By setting the
-needs_json attributes of the request, the main template
-will include the necessary code to enable these features.
-
     >>> bound_field = field.bind(salgado)
     >>> request = LaunchpadTestRequest(
     ...     # Let's pretend requests are coming from Brazil.
     ...     environ={'REMOTE_ADDR': '201.13.165.145'})
-    >>> request.needs_json
-    False
-
-    >>> widget = LocationWidget(bound_field, request)
-    >>> request.needs_json
-    True
 
 When rendering salgado's location widget to himself, we'll center the
 map around the location where he seems to be, based on the IP address of
@@ -138,7 +129,8 @@ latitude/longitude have non-realistic values.
     longitude...
 
 
-== The widget's HTML ==
+The widget's HTML
+-----------------
 
 The widget's HTML will include <input> elements for the latitude,
 longitude and time zone fields.  The values of these elements will be
@@ -156,7 +148,8 @@ the map.
     <select...name="field.location.time_zone"...
 
 
-== The widget's script ==
+The widget's script
+-------------------
 
 The widget initializes the mapping.renderPersonMap() JavaScript methods
 with its map_javascript property. The widget uses the
@@ -164,7 +157,7 @@ mapping.setLocation() method to lookup the time zone for the location.
 The launchpad.geonames_identity config key provides the identity required to
 access ba-ws.geonames.net's service.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> config.push('geoname_data', """
     ...     [launchpad]
@@ -189,7 +182,8 @@ access ba-ws.geonames.net's service.
     >>> config_data = config.pop('geoname_data')
 
 
-== XSS ==
+XSS
+---
 
 The widget must escape and JS encode the person's displayname to prevent
 XSS attacks and to make sure the generated javascript can be parsed.

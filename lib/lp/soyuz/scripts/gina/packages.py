@@ -27,8 +27,6 @@ import rfc822
 import shutil
 import tempfile
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.scripts import log
 from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
@@ -38,6 +36,8 @@ from lp.archiveuploader.utils import (
     )
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.services import encoding
+from lp.services.database.constants import UTC_NOW
+from lp.services.scripts import log
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (
     call,

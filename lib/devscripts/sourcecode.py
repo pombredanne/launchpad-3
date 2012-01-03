@@ -17,12 +17,19 @@ import os
 import shutil
 import sys
 
+from bzrlib import ui
 from bzrlib.branch import Branch
-from bzrlib.errors import BzrError, NotBranchError, IncompatibleRepositories
+from bzrlib.errors import (
+    BzrError,
+    IncompatibleRepositories,
+    NotBranchError,
+    )
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
-from bzrlib.trace import enable_default_logging, report_exception
-from bzrlib import ui
+from bzrlib.trace import (
+    enable_default_logging,
+    report_exception,
+    )
 from bzrlib.upgrade import upgrade
 from bzrlib.workingtree import WorkingTree
 

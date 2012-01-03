@@ -5,25 +5,40 @@
 
 __metaclass__ = type
 
+from BeautifulSoup import BeautifulSoup
 import simplejson
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import (
+    Contains,
+    MatchesAll,
+    Not,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from BeautifulSoup import BeautifulSoup
-
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
-
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.pages import find_tag_by_id
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestPrivateBugLinks(BrowserTestCase):
@@ -94,25 +109,44 @@ class TestEmailObfuscated(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def getBrowserForBugWithEmail(self, email_address, no_login):
-        bug = self.factory.makeBug(
-            title="Title with %s contained" % email_address,
-            description="Description with %s contained." % email_address)
-        return self.getViewBrowser(bug, rootsite="bugs", no_login=no_login)
+    email_address = "mark@example.com"
+
+    def getBrowserForBugWithEmail(self, no_login):
+        self.bug = self.factory.makeBug(
+            title="Title with %s contained" % self.email_address,
+            description="Description with %s contained." % self.email_address)
+        return self.getViewBrowser(
+            self.bug, rootsite="bugs", no_login=no_login)
 
     def test_user_sees_email_address(self):
         """A logged-in user can see the email address on the page."""
-        email_address = "mark@example.com"
-        browser = self.getBrowserForBugWithEmail(
-            email_address, no_login=False)
-        self.assertEqual(7, browser.contents.count(email_address))
+        browser = self.getBrowserForBugWithEmail(no_login=False)
+        self.assertEqual(7, browser.contents.count(self.email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
-        email_address = "mark@example.com"
-        browser = self.getBrowserForBugWithEmail(
-            email_address, no_login=True)
-        self.assertEqual(0, browser.contents.count(email_address))
+        browser = self.getBrowserForBugWithEmail(no_login=True)
+        self.assertEqual(0, browser.contents.count(self.email_address))
+
+    def test_bug_description_in_meta_description_anonymous(self):
+        browser = self.getBrowserForBugWithEmail(no_login=True)
+        soup = BeautifulSoup(browser.contents)
+        meat = soup.find('meta', dict(name='description'))
+        self.assertThat(meat['content'], MatchesAll(
+            Contains('Description with'),
+            Not(Contains('@')),
+            Contains('...')))  # Ellipsis from hidden address.
+
+    def test_bug_description_in_meta_description_not_anonymous(self):
+        browser = self.getBrowserForBugWithEmail(no_login=False)
+        soup = BeautifulSoup(browser.contents)
+        meat = soup.find('meta', dict(name='description'))
+        # Even logged in users get email stripped from the metadata, in case
+        # they use a tool that copies it out.
+        self.assertThat(meat['content'], MatchesAll(
+            Contains('Description with'),
+            Not(Contains('@')),
+            Contains('...')))  # Ellipsis from hidden address.
 
 
 class TestBugPortletSubscribers(TestCaseWithFactory):
@@ -365,3 +399,127 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.createInitializedSecrecyView(bug=bug, security_related=True)
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
+
+    def test_hide_private_option_for_multipillar_bugs(self):
+        # A multi-pillar bug cannot be made private, so hide the form field.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=product)
+        view = create_initialized_view(bug.default_bugtask, '+secrecy')
+        self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
+
+        # Some teams though need multi-pillar private bugs.
+        feature_flag = {
+            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
+            }
+        with FeatureFixture(feature_flag):
+            view = create_initialized_view(bug.default_bugtask, '+secrecy')
+            self.assertIsNotNone(
+                find_tag_by_id(view.render(), 'field.private'))
+
+
+class TestBugTextViewPrivateTeams(TestCaseWithFactory):
+    """ Test for rendering BugTextView with private team artifacts.
+
+    If an authenticated user can see the bug, they can see a the name of
+    private teams which are assignees or subscribers.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def _makeBug(self):
+        owner = self.factory.makePerson()
+        private_assignee = self.factory.makeTeam(
+            name='bugassignee',
+            visibility=PersonVisibility.PRIVATE)
+        private_subscriber = self.factory.makeTeam(
+            name='bugsubscriber',
+            visibility=PersonVisibility.PRIVATE)
+
+        bug = self.factory.makeBug(owner=owner)
+        with person_logged_in(owner):
+            bug.default_bugtask.transitionToAssignee(private_assignee)
+            bug.subscribe(private_subscriber, owner)
+        return bug, private_assignee, private_subscriber
+
+    def test_unauthenticated_view(self):
+        # Unauthenticated users cannot see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        bug_view = create_initialized_view(bug, name='+text')
+        view_text = bug_view.render()
+        # We don't see the assignee.
+        self.assertIn(
+            "assignee: \n", view_text)
+        # Nor do we see the subscriber.
+        self.assertNotIn(
+            removeSecurityProxy(subscriber).unique_displayname, view_text)
+
+    def test_authenticated_view(self):
+        # Authenticated users can see private assignees or subscribers.
+        bug, assignee, subscriber = self._makeBug()
+        request = LaunchpadTestRequest()
+        bug_view = create_view(bug, name='+text', request=request)
+        any_person = self.factory.makePerson()
+        login_person(any_person, request)
+        bug_view.initialize()
+        view_text = bug_view.render()
+        naked_subscriber = removeSecurityProxy(subscriber)
+        self.assertIn(
+            "assignee: %s" % assignee.unique_displayname, view_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "subscribers:\n.*%s \(%s\)"
+            % (naked_subscriber.displayname, naked_subscriber.name),
+            view_text)
+
+
+class TestBugCanonicalUrl(BrowserTestCase):
+    """Bugs give a <link rel=canonical> to a standard url.
+
+    See https://bugs.launchpad.net/launchpad/+bug/808282
+    """
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_canonical_url(self):
+        bug = self.factory.makeBug()
+        browser = self.getViewBrowser(bug, rootsite="bugs")
+        # Hardcode this to be sure we've really got what we expected, with no
+        # confusion about lp's own url generation machinery.
+        expected_url = 'http://bugs.launchpad.dev/bugs/%d' % bug.id
+        self.assertThat(
+            browser.contents,
+            HTMLContains(Tag(
+                'link rel=canonical',
+                'link',
+                dict(rel='canonical', href=expected_url))))
+
+
+class TestBugMessageAddFormView(TestCaseWithFactory):
+    """Tests for the add message to bug view."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_whitespaces_message(self):
+        # Ensure that a message only containing whitespaces is not
+        # considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            }
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        expected_error = u'Either a comment or attachment must be provided.'
+        self.assertEquals(view.errors[0], expected_error)
+
+    def test_whitespaces_message_with_attached_file(self):
+        # If the message only contains whitespaces but a file
+        # is attached then the request has to be considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            'field.filecontent': self.factory.makeFakeFileUpload(),
+            'field.patch.used': u'',
+            }
+        login_person(self.factory.makePerson())
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        self.assertEqual(0, len(view.errors))

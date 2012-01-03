@@ -52,6 +52,7 @@ setup(
         # Required for launchpadlib
         'keyring',
         'manuel',
+        'Markdown',
         'mechanize',
         'meliae',
         'mercurial',
@@ -165,13 +166,13 @@ setup(
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
             'jsbuild = lp.scripts.utilities.js.jsbuild:main',
-            'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
+            'run = lp.scripts.runlaunchpad:start_launchpad',
             'run-testapp = '
-                'canonical.launchpad.scripts.runlaunchpad:start_testapp',
-            'harness = canonical.database.harness:python',
+                'lp.scripts.runlaunchpad:start_testapp',
+            'harness = lp.scripts.harness:python',
             'twistd = twisted.scripts.twistd:run',
             'start_librarian = '
-                'canonical.launchpad.scripts.runlaunchpad:start_librarian',
+                'lp.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),

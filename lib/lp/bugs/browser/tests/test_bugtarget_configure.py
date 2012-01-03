@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login_person,
-    logout,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -57,7 +57,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
 
     def test_bug_supervisor_view_attributes(self):
-        logout()
         login_person(self.bug_supervisor)
         view = create_initialized_view(
             self.product, name='+configure-bugtracker')
@@ -152,8 +151,12 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         # Verify that a member of an owning team who is not an admin of
         # the bug supervisor team or security_contact team can change bug
         # reporting guidelines.
-        owning_team = self.factory.makeTeam(owner=self.owner)
-        bug_team = self.factory.makeTeam(owner=self.owner)
+        owning_team = self.factory.makeTeam(
+            owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        bug_team = self.factory.makeTeam(
+            owner=self.owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         weak_owner = self.factory.makePerson()
         login_person(self.owner)
         owning_team.addMember(weak_owner, self.owner)
@@ -174,7 +177,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             'new guidelines', self.product.bug_reporting_guidelines)
 
     def test_bug_supervisor_can_edit(self):
-        logout()
         login_person(self.bug_supervisor)
         form = self._makeForm()
         # Only the bug_reporting_guidelines are different.

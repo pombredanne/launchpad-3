@@ -23,74 +23,47 @@ from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app import zapi
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    queryAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import (
     Attribute,
-    Interface,
     implements,
+    Interface,
     )
-from zope.component import (
-    adapts,
-    getUtility,
-    queryAdapter,
-    getMultiAdapter,
-    )
-from zope.app import zapi
 from zope.publisher.browser import BrowserView
-from zope.traversing.interfaces import (
-    ITraversable,
-    IPathAdapter,
-    TraversalError,
-    )
+from zope.schema import TextLine
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from zope.schema import TextLine
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    TraversalError,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.app.browser.badge import IHasBadges
+from lp.app.browser.stringformatter import (
+    escape,
+    FormattersAPI,
+    )
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    IPrivacy
+    IPrivacy,
     )
-from canonical.launchpad.layers import LaunchpadLayer
-import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url, urlappend
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
-from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu,
-    IContextMenu,
-    IFacetMenu,
-    ILaunchBag,
-    INavigationMenu,
-    IPrimaryContext,
-    NoCanonicalUrl
-    )
-from canonical.launchpad.webapp.menu import (
-    get_current_view,
-    get_facet,
-    )
-from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request,
-    LaunchpadView,
-    nearest
-    )
-from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr.canonicalurl import nearest_adapter
-from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.services.features import getFeatureFlag
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryAndSourcePackageName,
-    )
+from lp.layers import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -98,6 +71,36 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.interfaces import (
+    IApplicationMenu,
+    IContextMenu,
+    IFacetMenu,
+    ILaunchBag,
+    INavigationMenu,
+    IPrimaryContext,
+    NoCanonicalUrl,
+    )
+from lp.services.webapp.menu import (
+    get_current_view,
+    get_facet,
+    )
+from lp.services.webapp.publisher import (
+    get_current_browser_request,
+    LaunchpadView,
+    nearest,
+    )
+from lp.services.webapp.session import get_cookie_domain
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
 SEPARATOR = ' : '
@@ -666,14 +669,14 @@ class ObjectFormatterAPI:
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
-        If not available, then the view's .page_title attribute or entry in
-        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
-        then a view can still choose to override them by setting the attribute
-        .override_title_breadcrumbs to True.
+        If not available, then the view's .page_title attribut is used.
+        If breadcrumbs are available, then a view can still choose to
+        override them by setting the attribute .override_title_breadcrumbs
+        to True.
         """
+        ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
-        module = canonical.launchpad.pagetitles
         hierarchy_view = getMultiAdapter(
             (view.context, request), name='+hierarchy')
         override = getattr(view, 'override_title_breadcrumbs', False)
@@ -691,33 +694,7 @@ class ObjectFormatterAPI:
             if template is None:
                 template = getattr(view, 'index', None)
                 if template is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
-            # There is no .page_title attribute on the view, so fallback to
-            # looking for an an entry in pagetitles.py.  This is deprecated
-            # though, so issue a warning.
-            filename = os.path.basename(template.filename)
-            name, ext = os.path.splitext(filename)
-            title_name = name.replace('-', '_')
-            title_object = getattr(module, title_name, None)
-            # Page titles are mandatory.
-            assert title_object is not None, (
-                'No .page_title or pagetitles.py found for %s'
-                % template.filename)
-            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
-            ## force conversions from pagetitles.py; however tests will fail
-            ## because of this output.
-            ## warnings.warn('Old style pagetitles.py entry found for %s. '
-            ##               'Switch to using a .page_title attribute on the '
-            ##               'view instead.' % template.filename,
-            ##               DeprecationWarning)
-            if isinstance(title_object, basestring):
-                return title_object
-            else:
-                title = title_object(view.context, view)
-                if title is None:
-                    return module.DEFAULT_LAUNCHPAD_TITLE
-                else:
-                    return title
+                    return ROOT_TITLE
         # Use the reverse breadcrumbs.
         return SEPARATOR.join(
             breadcrumb.text for breadcrumb
@@ -744,7 +721,7 @@ class ObjectImageDisplayAPI:
         elif IProjectGroup.providedBy(context):
             return 'sprite project'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return 'sprite team'
             else:
                 if context.is_valid_person:
@@ -779,7 +756,7 @@ class ObjectImageDisplayAPI:
         if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return '/@@/team-logo'
             else:
                 if context.is_valid_person:
@@ -801,7 +778,7 @@ class ObjectImageDisplayAPI:
         if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
-            if context.isTeam():
+            if context.is_team:
                 return '/@@/team-mugshot'
             else:
                 if context.is_valid_person:
@@ -912,7 +889,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
+        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -1265,7 +1242,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         The default URL for a team is to the mainsite. None is returned
         when the user does not have permission to review the team.
         """
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.LimitedView', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1273,7 +1250,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        if not check_permission('launchpad.LimitedView', self._context):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return None
@@ -1286,17 +1263,25 @@ class TeamFormatterAPI(PersonFormatterAPI):
         when the user does not have permission to review the team.
         """
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return '<span class="sprite team">%s</span>' % cgi.escape(
                 self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
+    def icon(self, view_name):
+        team = self._context
+        if not check_permission('launchpad.LimitedView', team):
+            css_class = ObjectImageDisplayAPI(team).sprite_css()
+            return '<span class="' + css_class + '"></span>'
+        else:
+            return super(TeamFormatterAPI, self).icon(view_name)
+
     def displayname(self, view_name, rootsite=None):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden
@@ -1305,7 +1290,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def unique_displayname(self, view_name):
         """See `PersonFormatterAPI`."""
         person = self._context
-        if not check_permission('launchpad.View', person):
+        if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
             return self.hidden
@@ -1437,6 +1422,13 @@ class PillarFormatterAPI(CustomizableFormatter):
     _link_summary_template = '%(displayname)s'
     _link_permission = 'zope.Public'
 
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'url': 'url',
+        'link_with_displayname': 'link_with_displayname'
+        }
+
     def _link_summary_values(self):
         displayname = self._context.displayname
         return {'displayname': displayname}
@@ -1448,28 +1440,69 @@ class PillarFormatterAPI(CustomizableFormatter):
         """
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
+    def _getLinkHTML(self, view_name, rootsite,
+        template, custom_icon_template):
+        """Generates html, mapping a link context to given templates.
+
+        The html is generated using given `template` or `custom_icon_template`
+        based on the presence of a custom icon for Products/ProjectGroups.
+        Named string substitution is used to render the final html
+        (see below for a list of allowed keys).
+
+        The link context is a dict containing info about current
+        Products or ProjectGroups.
+        Keys are `url`, `name`, `displayname`, `custom_icon` (if present),
+        `css_class` (if a custom icon does not exist),
+        'summary' (see CustomizableFormatter._make_link_summary()).
+        """
+        context = self._context
+        mapping = {
+            'url': self.url(view_name, rootsite),
+            'name': cgi.escape(context.name),
+            'displayname': cgi.escape(context.displayname),
+            'summary': self._make_link_summary(),
+            }
+        custom_icon = ObjectImageDisplayAPI(context).custom_icon_url()
+        if custom_icon is None:
+            mapping['css_class'] = ObjectImageDisplayAPI(context).sprite_css()
+            return template % mapping
+        mapping['custom_icon'] = custom_icon
+        return custom_icon_template % mapping
+
     def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, ProjectGroup or distribution.
 
         In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
+        super(PillarFormatterAPI, self).link(view_name)
+        template = u'<a href="%(url)s" class="%(css_class)s">%(summary)s</a>'
+        custom_icon_template = (
+            u'<a href="%(url)s" class="bg-image" '
+            u'style="background-image: url(%(custom_icon)s)">%(summary)s</a>'
+            )
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
-        html = super(PillarFormatterAPI, self).link(view_name)
-        context = self._context
-        custom_icon = ObjectImageDisplayAPI(
-            context).custom_icon_url()
-        url = self.url(view_name, rootsite)
-        summary = self._make_link_summary()
-        if custom_icon is None:
-            css_class = ObjectImageDisplayAPI(context).sprite_css()
-            html = (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, summary)
-        else:
-            html = (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, summary)
-        return html
+    def link_with_displayname(self, view_name, rootsite='mainsite'):
+        """The html to show a link to a Product, ProjectGroup or
+        distribution, including displayname and name.
+
+        In the case of Products or ProjectGroups we display the custom
+        icon, if one exists. The default URL for a pillar is to the mainsite.
+        """
+        super(PillarFormatterAPI, self).link(view_name)
+        template = (
+            u'<a href="%(url)s" class="%(css_class)s">%(displayname)s</a>'
+            u'&nbsp;(<a href="%(url)s">%(name)s</a>)'
+            )
+        custom_icon_template = (
+            u'<a href="%(url)s" class="bg-image" '
+            u'style="background-image: url(%(custom_icon)s)">'
+            u'%(displayname)s</a>&nbsp;(<a href="%(url)s">%(name)s</a>)'
+            )
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
 
 class DistroSeriesFormatterAPI(CustomizableFormatter):
@@ -1695,7 +1728,7 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name, rootsite=None):
         build = self._context
         if not check_permission('launchpad.View', build):
-            return 'private source'
+            return 'private job'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
         title = cgi.escape(build.title)
@@ -2212,6 +2245,8 @@ class DurationFormatterAPI:
             return self.exactduration()
         elif name == 'approximateduration':
             return self.approximateduration()
+        elif name == 'millisecondduration':
+            return self.millisecondduration()
         else:
             raise TraversalError(name)
 
@@ -2357,6 +2392,12 @@ class DurationFormatterAPI:
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
         return "%d weeks" % weeks
 
+    def millisecondduration(self):
+        return str(
+            (self._duration.days * 24 * 3600
+             + self._duration.seconds * 1000
+             + self._duration.microseconds // 1000)) + 'ms'
+
 
 class LinkFormatterAPI(ObjectFormatterAPI):
     """Adapter from Link objects to a formatted anchor."""
@@ -2416,57 +2457,6 @@ def clean_path_segments(request):
     return clean_path_split
 
 
-class PageTemplateContextsAPI:
-    """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
-
-    This is registered to be used for the dict type.
-    """
-    # 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references
-    # to it, and all instances of CONTEXTS/fmt:pagetitle
-    implements(ITraversable)
-
-    def __init__(self, contextdict):
-        self.contextdict = contextdict
-
-    def traverse(self, name, furtherPath):
-        if name == 'pagetitle':
-            return self.pagetitle()
-        else:
-            raise TraversalError(name)
-
-    def pagetitle(self):
-        """Return the string title for the page template CONTEXTS dict.
-
-        Take the simple filename without extension from
-        self.contextdict['template'].filename, replace any hyphens with
-        underscores, and use this to look up a string, unicode or
-        function in the module canonical.launchpad.pagetitles.
-
-        If no suitable object is found in canonical.launchpad.pagetitles, emit
-        a warning that this page has no title, and return the default page
-        title.
-        """
-        template = self.contextdict['template']
-        filename = os.path.basename(template.filename)
-        name, ext = os.path.splitext(filename)
-        name = name.replace('-', '_')
-        titleobj = getattr(canonical.launchpad.pagetitles, name, None)
-        if titleobj is None:
-            raise AssertionError(
-                 "No page title in canonical.launchpad.pagetitles "
-                 "for %s" % name)
-        elif isinstance(titleobj, basestring):
-            return titleobj
-        else:
-            context = self.contextdict['context']
-            view = self.contextdict['view']
-            title = titleobj(context, view)
-            if title is None:
-                return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
-            else:
-                return title
-
-
 class PermissionRequiredQuery:
     """Check if the logged in user has a given permission on a given object.
 
@@ -2513,9 +2503,11 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
         view/macro:pagehas/portlets
+        view/macro:pagehas/main
 
         view/macro:pagetype
 
+        view/macro:is-page-contentless
     """
 
     implements(ITraversable)
@@ -2548,8 +2540,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'show_actions_menu':
-            return self.show_actions_menu()
+        elif name == 'is-page-contentless':
+            return self.isPageContentless()
         else:
             raise TraversalError(name)
 
@@ -2564,6 +2556,20 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def isPageContentless(self):
+        """Should the template avoid rendering detailed information.
+
+        Circumstances such as not possessing launchpad.View on a private
+        context require the template to not render detailed information. The
+        user may only know identifying information about the context.
+        """
+        view_context = self.context.context
+        privacy = IPrivacy(view_context, None)
+        if privacy is None or not privacy.private:
+            return False
+        can_view = check_permission('launchpad.View', view_context)
+        return not can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

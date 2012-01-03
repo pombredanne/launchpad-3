@@ -59,7 +59,7 @@
             <td>
               <span class="sprite arrowRight">&nbsp;</span>
               <span tal:replace="num_hidden">42</span> comments hidden
-              <span id="more-comments-spinner" style="display: none;">
+              <span id="more-comments-spinner" class="hidden">
                 Loading more comments
                 <img src="/@@/spinner" />
               </span>

@@ -1,15 +1,19 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import transaction
 from zope.component import getUtility
 
-import transaction
-
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.enum import DistroSeriesDifferenceStatus
-from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.services.features.model import FeatureFlag, getFeatureStore
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
     constants,

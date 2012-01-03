@@ -5,22 +5,36 @@
 
 __metaclass__ = type
 
+from os.path import (
+    dirname,
+    join,
+    )
+
 from lxml import html
+from testtools.content import text_content
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.interface import Interface
-from zope.schema import Text
+from zope.schema import (
+    Choice,
+    Text,
+    TextLine,
+    )
+from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.config import config
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.launchpadform import (
     has_structured_doc,
     LaunchpadFormView,
     )
+from lp.services.config import config
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 
 
@@ -42,7 +56,7 @@ class TestView(LaunchpadFormView):
 
 class TestHasStructuredDoc(TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def _widget_annotation(self, widget):
         return widget.context.queryTaggedValue('has_structured_doc')
@@ -59,7 +73,7 @@ class TestHasStructuredDoc(TestCase):
 
 class TestQueryTalesForHasStructuredDoc(TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_query_tales(self):
         # Test that query:has-structured-doc gets sets the field annotation.
@@ -133,3 +147,54 @@ class TestHelpLinks(TestCaseWithFactory):
         self.assertEqual(
             u"http://widget.example.com/displayname",
             displayname_help_link.get("href"))
+
+
+class TestWidgetDivInterface(Interface):
+    """Test interface for the view below."""
+
+    single_line = TextLine(title=u'single_line')
+    multi_line = Text(title=u'multi_line')
+    checkbox = Choice(
+        vocabulary=SimpleVocabulary.fromItems(
+            (('yes', True), ('no', False))))
+
+
+class TestWidgetDivView(LaunchpadFormView):
+    """A trivial view using `TestWidgetDivInterface`."""
+
+    schema = TestWidgetDivInterface
+    template = ViewPageTemplateFile(
+        join(dirname(__file__), "test-widget-div.pt"))
+
+
+class TestWidgetDiv(TestCase):
+    """Tests for the `widget_div` template macro."""
+
+    layer = FunctionalLayer
+
+    def test_all_widgets_present(self):
+        request = LaunchpadTestRequest()
+        view = TestWidgetDivView({}, request)
+        content = view()
+        self.addDetail("content", text_content(content))
+        root = html.fromstring(content)
+        # All the widgets appear in the page.
+        self.assertEqual(
+            ["field.single_line", "field.multi_line", "field.checkbox"],
+            root.xpath("//@id"))
+
+    def test_all_widgets_present_but_hidden(self):
+        request = LaunchpadTestRequest()
+        view = TestWidgetDivView({}, request)
+        view.initialize()
+        for widget in view.widgets:
+            widget.visible = False
+        content = view.render()
+        self.addDetail("content", text_content(content))
+        root = html.fromstring(content)
+        # All the widgets appear in the page as hidden inputs.
+        self.assertEqual(
+            ["field.single_line", "hidden",
+             "field.multi_line", "hidden",
+             "field.checkbox", "hidden"],
+            root.xpath("//input/@id | //input/@type"))

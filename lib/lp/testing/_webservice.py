@@ -27,12 +27,12 @@ from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.webapp.adapter import get_request_statements
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.oauth.interfaces import IOAuthConsumerSet
+from lp.services.webapp.adapter import get_request_statements
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.testing._login import (
     login,
     logout,
@@ -70,7 +70,7 @@ def oauth_access_token_for(consumer_name, person, permission, context=None):
     if isinstance(context, basestring):
         # Turn an OAuth context string into the corresponding object.
         # Avoid an import loop by importing from launchpad.browser here.
-        from canonical.launchpad.browser.oauth import lookup_oauth_context
+        from lp.services.oauth.browser import lookup_oauth_context
         context = lookup_oauth_context(context)
     if isinstance(permission, basestring):
         # Look up a permission by its token string.
@@ -171,7 +171,7 @@ class QueryCollector:
 
     :ivar count: The count of db queries the last web request made.
     :ivar queries: The list of queries made. See
-        canonical.launchpad.webapp.adapter.get_request_statements for more
+        lp.services.webapp.adapter.get_request_statements for more
         information.
     """
 

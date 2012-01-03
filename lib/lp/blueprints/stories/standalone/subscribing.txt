@@ -125,7 +125,8 @@ When we want other users to track a specification we can subscribe them.
 
     >>> browser.getControl('Subscriber').value = 'stub'
     >>> browser.getControl('Subscribe').click()
-    >>> 'Stuart Bishop has been subscribed to this blueprint.' in browser.contents
+    >>> msg = "Stuart Bishop has been subscribed to this blueprint."
+    >>> msg in browser.contents
     True
 
 When we subscribe someone else to a blueprint, they get notified by
@@ -209,7 +210,7 @@ The Launchpad Admins team has no contact address, so subscribing it to a
 spec will cause email notifications to be sent to each of its members.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> from lp.services.mail.helpers import get_contact_email_addresses
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> person_set = getUtility(IPersonSet)
@@ -233,12 +234,15 @@ We created a subscription for the Launchpad Admins, but because the team
 does not have a preferred email address, an email is sent to each active
 member who has a preferred email registered.
 
+    >>> login('admin@canonical.com')
     >>> print admins.preferredemail
     None
 
     >>> admins_contact_email_addresses == sorted(
     ...     [message['To'] for message in pop_notifications()])
     True
+
+    >>> logout()
 
     >>> browser.getLink('Subscribe someone else').click()
     >>> browser.getControl('Subscriber').value = 'admins'
@@ -248,6 +252,7 @@ member who has a preferred email registered.
 We modified the Launchpad Admins team's subscription and again, an email
 is sent to each active member.
 
+    >>> login('admin@canonical.com')
     >>> admins_contact_email_addresses == sorted(
     ...     [message['To'] for message in pop_notifications()])
     True
@@ -257,6 +262,7 @@ The Ubuntu Team does have a preferred email address.
     >>> print ubuntu_team.preferredemail
     <...EmailAddress...>
 
+    >>> logout()
     >>> browser.getLink('Subscribe someone else').click()
     >>> browser.getControl('Subscriber').value = 'ubuntu-team'
     >>> browser.getControl(name='field.essential').value = None
@@ -270,7 +276,10 @@ list, and now the unsubscribe confirmation page loads.
     >>> unsubit.click()
     >>> confirm = browser.getControl('Unsubscribe')
     >>> confirm.click()
-    >>> 'Launchpad Administrators has been unsubscribed from this blueprint.' in browser.contents
+    >>> msg = (
+    ...     "Launchpad Administrators has been unsubscribed from this "
+    ...     "blueprint.")
+    >>> msg in browser.contents
     True
 
 We subscribe the Ubuntu Team and an email is sent to the team's

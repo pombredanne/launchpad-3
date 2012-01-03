@@ -20,14 +20,15 @@ import _pythonpath
 
 import os
 
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.python import log
 from twisted.web import xmlrpc
 
-from canonical.config import config
-
-from lp.codehosting.codeimport.workermonitor import (
-    CodeImportWorkerMonitor)
+from lp.codehosting.codeimport.workermonitor import CodeImportWorkerMonitor
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
@@ -36,7 +37,11 @@ class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting(name, 'codeimportworker', mangle_stdout=True)
+        # The logfile changes its name according to the code in
+        # CodeImportDispatcher, so we pull it from the command line
+        # options.
+        set_up_oops_reporting(
+            self.name, 'codeimportworker', logfile=self.options.log_file)
 
     def add_my_options(self):
         """See `LaunchpadScript`."""

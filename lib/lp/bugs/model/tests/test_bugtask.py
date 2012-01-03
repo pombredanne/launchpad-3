@@ -4,35 +4,19 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
-from testtools.testcase import ExpectedException
 from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    not_equals,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
@@ -51,8 +35,10 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
+    BugTask,
     BugTaskSet,
     build_tag_search_clause,
+    get_bug_privacy_filter,
     IllegalTarget,
     validate_new_target,
     validate_target,
@@ -66,10 +52,19 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.features.testing import FeatureFixture
+from lp.services.searchbuilder import (
+    all,
+    any,
+    not_equals,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
@@ -89,6 +84,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -678,7 +678,8 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         super(TestBugTaskPermissionsToSetAssigneeMixin, self).setUp()
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
+            owner=self.target_owner_member,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         self.regular_user = self.factory.makePerson()
 
         login_person(self.target_owner_member)
@@ -969,6 +970,25 @@ class TestBugTaskSearch(TestCaseWithFactory):
     def makeBugTarget(self):
         """Make an arbitrary bug target with no tasks on it."""
         return IBugTarget(self.factory.makeProduct())
+
+    def test_bug_privacy_filter_private_only_param_with_no_user(self):
+        # The bug privacy filter expression always has the "private is false"
+        # clause if the specified user is None, regardless of the value of the
+        # private_only parameter.
+        filter = get_bug_privacy_filter(None)
+        self.assertIn('Bug.private IS FALSE', filter)
+        filter = get_bug_privacy_filter(None, private_only=True)
+        self.assertIn('Bug.private IS FALSE', filter)
+
+    def test_bug_privacy_filter_private_only_param_with_user(self):
+        # The bug privacy filter expression omits has the "private is false"
+        # clause if the private_only parameter is True, provided a user is
+        # specified.
+        any_user = self.factory.makePerson()
+        filter = get_bug_privacy_filter(any_user)
+        self.assertIn('Bug.private IS FALSE', filter)
+        filter = get_bug_privacy_filter(any_user, private_only=True)
+        self.assertNotIn('Bug.private IS FALSE', filter)
 
     def test_no_tasks(self):
         # A brand new bug target has no tasks.
@@ -1472,33 +1492,24 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-
     def test_cannot_delete_if_not_logged_in(self):
         # You cannot delete a bug task if not logged in.
         bug = self.factory.makeBug()
-        with FeatureFixture(self.flags):
-            self.assertFalse(
-                check_permission('launchpad.Delete', bug.default_bugtask))
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_unauthorised_cannot_delete(self):
         # Unauthorised users cannot delete a bug task.
         bug = self.factory.makeBug()
         unauthorised = self.factory.makePerson()
         login_person(unauthorised)
-        with FeatureFixture(self.flags):
-            self.assertFalse(
-                check_permission('launchpad.Delete', bug.default_bugtask))
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_admin_can_delete(self):
         # With the feature flag on, an admin can delete a bug task.
         bug = self.factory.makeBug()
         login_celebrity('admin')
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Admin', bug.default_bugtask))
-        # Admins can also the task even without the feature flag.
-        clear_cache()
         self.assertTrue(
             check_permission('launchpad.Admin', bug.default_bugtask))
 
@@ -1506,12 +1517,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         # With the feature flag on, the pillar owner can delete a bug task.
         bug = self.factory.makeBug()
         login_person(bug.default_bugtask.pillar.owner)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_bug_supervisor_can_delete(self):
@@ -1520,24 +1526,14 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         bug = self.factory.makeBug(product=product)
         login_person(bug_supervisor)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_task_reporter_can_delete(self):
         # With the feature flag on, the bug task reporter can delete bug task.
         bug = self.factory.makeBug()
         login_person(bug.default_bugtask.owner)
-        with FeatureFixture(self.flags):
-            self.assertTrue(
-                check_permission('launchpad.Delete', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
-        clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_cannot_delete_only_bugtask(self):
@@ -1545,18 +1541,22 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = self.factory.makeBug()
         bugtask = bug.default_bugtask
         login_person(bugtask.owner)
-        with FeatureFixture(self.flags):
-            self.assertRaises(CannotDeleteBugtask, bugtask.delete)
+        self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
     def test_delete_bugtask(self):
-        # A bugtask can be deleted.
-        bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(bug=bug)
-        bug = bugtask.bug
-        login_person(bugtask.owner)
-        with FeatureFixture(self.flags):
-            bugtask.delete()
+        # A bugtask can be deleted and after deletion, re-nominated.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=owner, bug_supervisor=owner)
+        bug = self.factory.makeBug(
+            product=product, owner=owner)
+        target = self.factory.makeProductSeries(product=product)
+        login_person(bug.owner)
+        nomination = bug.addNomination(bug.owner, target)
+        nomination.approve(bug.owner)
+        bugtask = bug.getBugTask(target)
+        bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
+        self.assertTrue(bug.canBeNominatedFor(target))
 
     def test_delete_default_bugtask(self):
         # The default bugtask can be deleted.
@@ -1564,8 +1564,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(bug=bug)
         bug = bugtask.bug
         login_person(bug.default_bugtask.owner)
-        with FeatureFixture(self.flags):
-            bug.default_bugtask.delete()
+        bug.default_bugtask.delete()
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
 
@@ -1577,8 +1576,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         login_person(distro.owner)
         dsp_task = bug.addTask(bug.owner, dsp)
         self.assertTrue(dsp.total_bug_heat > 0)
-        with FeatureFixture(self.flags):
-            dsp_task.delete()
+        dsp_task.delete()
         self.assertTrue(dsp.total_bug_heat == 0)
 
 
@@ -2185,6 +2183,22 @@ class TestTransitionToTarget(TestCaseWithFactory):
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
 
+    def test_access_policy_changed(self):
+        # If an access policy is set, changing the pillar also switches
+        # to the matching policy on the new pillar.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        new_policy = self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+            self.assertEqual(orig_policy, bug.access_policy)
+            bug.default_bugtask.transitionToTarget(new_product)
+            self.assertEqual(new_policy, bug.access_policy)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
@@ -2511,6 +2525,39 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
 
+    def test_present_access_policy_works(self):
+        # If an access policy is set, changing the pillar is permitted
+        # if the target has an access policy of the same type.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(
+            pillar=new_product, type=orig_policy.type)
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        # No exception is raised.
+        validate_target(bug, new_product)
+
+    def test_missing_access_policy_rejected(self):
+        # If the new pillar doesn't have a corresponding access policy,
+        # the transition is forbidden.
+        orig_product = self.factory.makeProduct()
+        orig_policy = self.factory.makeAccessPolicy(pillar=orig_product)
+        new_product = self.factory.makeProduct()
+
+        bug = self.factory.makeBug(product=orig_product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(orig_policy.type)
+        self.assertEqual(orig_policy, bug.access_policy)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s doesn't have a %s access policy."
+            % (new_product.displayname, bug.access_policy.type.title),
+            validate_target, bug, new_product)
+
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
 
@@ -2567,24 +2614,124 @@ class TestWebservice(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_delete_bugtask(self):
-        """Test that a bugtask can be deleted with the feature flag on."""
+        """Test that a bugtask can be deleted."""
         owner = self.factory.makePerson()
+        some_person = self.factory.makePerson()
         db_bug = self.factory.makeBug()
         db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
         transaction.commit()
         logout()
 
-        # It will fail without feature flag enabled.
-        launchpad = self.factory.makeLaunchpadService(owner)
+        # It will fail for an unauthorised user.
+        launchpad = self.factory.makeLaunchpadService(some_person)
         bugtask = ws_object(launchpad, db_bugtask)
         self.assertRaises(Unauthorized, bugtask.lp_delete)
 
-        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-        with FeatureFixture(flags):
-            launchpad = self.factory.makeLaunchpadService(owner)
-            bugtask = ws_object(launchpad, db_bugtask)
-            bugtask.lp_delete()
-            transaction.commit()
+        launchpad = self.factory.makeLaunchpadService(owner)
+        bugtask = ws_object(launchpad, db_bugtask)
+        bugtask.lp_delete()
+        transaction.commit()
         # Check the delete really worked.
         with person_logged_in(removeSecurityProxy(db_bug).owner):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
+
+
+class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskUserHasBugSupervisorPrivileges, self).setUp()
+        self.celebrities = getUtility(ILaunchpadCelebrities)
+
+    def test_admin_is_allowed(self):
+        # An admin always has privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(self.celebrities.admin))
+
+    def test_bug_celebrities_are_allowed(self):
+        # The three bug celebrities (bug watcher, bug importer and
+        # janitor always have privileges.
+        bugtask = self.factory.makeBugTask()
+        for celeb in (
+            self.celebrities.bug_watch_updater,
+            self.celebrities.bug_importer, self.celebrities.janitor):
+            self.assertTrue(bugtask.userHasBugSupervisorPrivileges(celeb))
+
+    def test_pillar_owner_is_allowed(self):
+        # The pillar owner has privileges.
+        pillar = self.factory.makeProduct()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(bugtask.userHasBugSupervisorPrivileges(pillar.owner))
+
+    def test_pillar_driver_is_allowed(self):
+        # The pillar driver has privileges.
+        pillar = self.factory.makeProduct()
+        removeSecurityProxy(pillar).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(pillar.driver))
+
+    def test_pillar_bug_supervisor(self):
+        # The pillar bug supervisor has privileges.
+        pillar = self.factory.makeProduct()
+        bugsupervisor = self.factory.makePerson()
+        removeSecurityProxy(pillar).setBugSupervisor(
+            bugsupervisor, self.celebrities.admin)
+        bugtask = self.factory.makeBugTask(target=pillar)
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(bugsupervisor))
+
+    def test_productseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        series = self.factory.makeProductSeries()
+        removeSecurityProxy(series).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=series)
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(series.driver))
+
+    def test_distroseries_driver_is_allowed(self):
+        # The series driver has privileges.
+        distroseries = self.factory.makeDistroSeries()
+        removeSecurityProxy(distroseries).driver = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(target=distroseries)
+        self.assertTrue(
+            bugtask.userHasBugSupervisorPrivileges(distroseries.driver))
+
+    def test_random_has_no_privileges(self):
+        # Joe Random has no privileges.
+        bugtask = self.factory.makeBugTask()
+        self.assertFalse(
+            bugtask.userHasBugSupervisorPrivileges(
+                self.factory.makePerson()))
+
+
+class TestBugTaskUserHasBugSupervisorPrivilegesContext(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assert_userHasBugSupervisorPrivilegesContext(self, obj):
+        self.assertFalse(
+            BugTask.userHasBugSupervisorPrivilegesContext(
+                obj, self.factory.makePerson()))
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.assert_userHasBugSupervisorPrivilegesContext(distribution)
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assert_userHasBugSupervisorPrivilegesContext(dsp)
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assert_userHasBugSupervisorPrivilegesContext(product)
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        self.assert_userHasBugSupervisorPrivilegesContext(productseries)
+
+    def test_sourcepackage(self):
+        source = self.factory.makeSourcePackage()
+        self.assert_userHasBugSupervisorPrivilegesContext(source)

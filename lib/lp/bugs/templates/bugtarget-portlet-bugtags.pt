@@ -3,40 +3,21 @@
      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
      class="portlet" id="portlet-tags">
   <div id="tags-portlet-spinner"
-       style="text-align: center; display: none">
+       class="hidden centered">
     <img src="/@@/spinner" />
   </div>
   <a id="tags-content-link"
      tal:attributes="href context/fmt:url/+bugtarget-portlet-tags-content"></a>
   <script type="text/javascript">
-    LPS.use('io-base', 'node', function(Y) {
+    LPS.use('lp.bugs.bugtask.taglist', function(Y) {
       Y.on('domready', function() {
-        Y.one('#tags-portlet-spinner').setStyle('display', 'block');
-
-        function hide_spinner() {
-          Y.one('#tags-portlet-spinner').setStyle('display', 'none');
-        }
-
-        function on_success(transactionid, response, arguments) {
-          hide_spinner();
-          var portlet = Y.one('#portlet-tags');
-          if (Y.Lang.trim(response.responseText).length == 0) {
-            portlet.setStyle('display', 'none')
-          }
-          else {
-            portlet.set('innerHTML',
-                        response.responseText + portlet.get('innerHTML'));
-          }
-        }
-
-        var config = {on: {success: on_success,
-                           failure: hide_spinner}};
-        var url = Y.one('#tags-content-link').getAttribute('href').replace('bugs.', '');
-        Y.io(url, config);
+        Y.lp.bugs.bugtask.taglist.setup_taglist();
       });
     });
   </script>
-  <ul>
+  <a href="" id="show-more-tags-link" class="js-action hidden">Show more tags&hellip;</a>
+  <a href="" id="show-less-tags-link" class="js-action hidden">Show less tags&hellip;</a>
+  <ul class="edit-official-tags">
     <li tal:condition="view/show_manage_tags_link">
       <a class="sprite edit"
          tal:attributes="href context/fmt:url/+manage-official-tags">

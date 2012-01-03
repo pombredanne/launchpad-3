@@ -11,6 +11,11 @@ __all__ = [
     'IQuestionMessage',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -18,18 +23,12 @@ from zope.schema import (
     Int,
     )
 
-from lazr.restful.declarations import (
-    export_as_webservice_entry,
-    exported,
-    )
-from lazr.restful.fields import Reference
-
-from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IQuestionMessage(IMessage):

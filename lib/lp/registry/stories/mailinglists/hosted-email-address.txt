@@ -8,18 +8,18 @@ the address is reserved for the team which owns the ML.
     >>> login('foo.bar@canonical.com')
     >>> team, mailing_list = factory.makeTeamAndMailingList(
     ...     'aardvarks', 'no-priv')
-    >>> logout()
     >>> transaction.commit()
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
+    >>> from lp.services.identity.model.emailaddress import EmailAddressSet
     >>> email_set = EmailAddressSet()
     >>> email_set.getByEmail(mailing_list.address)
     <EmailAddress at...
 
 The team owner sets the contact address to the hosted mailing list.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
+    >>> logout()
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
     >>> user_browser.getLink(url='+contactaddress').click()
     >>> user_browser.getControl('The Launchpad mailing list').selected = True
@@ -56,7 +56,7 @@ Launchpad sends that address a confirmation message.
 When the confirmation token url is followed, the external email address is
 confirmed.
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg)
     >>> user_browser.open(token_url)

@@ -26,23 +26,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    flush_database_updates,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import (
@@ -66,10 +49,27 @@ from lp.registry.interfaces.teammembership import (
     ITeamParticipation,
     TeamMembershipStatus,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_updates,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class TeamMembership(SQLBase):
@@ -165,7 +165,7 @@ class TeamMembership(SQLBase):
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s renewed automatically' % member.name
 
-        if member.isTeam():
+        if member.is_team:
             member_addrs = get_contact_email_addresses(member.teamowner)
             template_name = 'membership-auto-renewed-bulk.txt'
         else:
@@ -247,7 +247,7 @@ class TeamMembership(SQLBase):
             return
         member = self.person
         team = self.team
-        if member.isTeam():
+        if member.is_team:
             recipient = member.teamowner
             templatename = 'membership-expiration-warning-bulk.txt'
             subject = '%s will expire soon from %s' % (member.name, team.name)
@@ -619,7 +619,7 @@ def _fillTeamParticipation(member, accepting_team):
     of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
-    if member.isTeam():
+    if member.is_team:
         # The submembers will be all the members of the team that is
         # being added as a member. The superteams will be all the teams
         # that the accepting_team belongs to, so all the members will

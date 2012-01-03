@@ -11,7 +11,7 @@ __all__ = [
 
 import re
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )
@@ -24,9 +24,9 @@ def referenced_oops(start_date, end_date, context_clause, context_params):
      - any message, message chunk or bug.
      - any question that passes context_clause.
 
-    Privacy and access controls are ignored: the maximum disclosure is a single
-    word immediately after the word 'OOPS'. Future iterations may tighten the
-    returned references up.
+    Privacy and access controls are ignored: the maximum disclosure is a
+    single word immediately after the word 'OOPS'.  Future iterations may
+    tighten up the returned references.
 
     :param start_date: The earliest modification date to consider.
     :param end_date: The last modification date to consider.

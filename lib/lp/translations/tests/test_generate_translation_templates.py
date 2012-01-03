@@ -5,15 +5,16 @@ import os
 from StringIO import StringIO
 import tarfile
 
-from lp.testing.fakemethod import FakeMethod
+from lpbuildd import pottery
+from lpbuildd.pottery.generate_translation_templates import (
+    GenerateTranslationTemplates,
+    )
 
-from canonical.buildd.pottery.generate_translation_templates import (
-    GenerateTranslationTemplates)
-
-from canonical.launchpad.ftests.script import run_script
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.script import run_script
 
 
 class TestGenerateTranslationTemplates(TestCaseWithFactory):
@@ -110,6 +111,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         tempdir = self.makeTemporaryDirectory()
         workdir = self.makeTemporaryDirectory()
         (retval, out, err) = run_script(
-            'lib/canonical/buildd/pottery/generate_translation_templates.py',
+            os.path.join(
+                os.path.dirname(pottery.__file__),
+                'generate_translation_templates.py'),
             args=[tempdir, self.result_name, workdir])
         self.assertEqual(0, retval)

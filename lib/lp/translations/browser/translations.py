@@ -16,24 +16,24 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import IRosettaApplication
-from canonical.launchpad.webapp import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     Navigation,
     stepto,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.services.geoip.interfaces import IRequestPreferredLanguages
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.worlddata.helpers import preferred_or_request_languages
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.publisher import TranslationsLayer
 
 
@@ -44,7 +44,7 @@ class TranslationsMixin:
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILaunchpadCelebrities).english
-        languages = helpers.preferred_or_request_languages(self.request)
+        languages = preferred_or_request_languages(self.request)
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages
@@ -58,6 +58,8 @@ class TranslationsMixin:
 
 class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
+
+    page_title = 'Launchpad Translations'
 
     @property
     def ubuntu_translationseries(self):
@@ -102,6 +104,7 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
 class TranslatableProductsView(LaunchpadView):
     """List of translatable products."""
     label = "Projects with translations in Launchpad"
+    page_title = label
 
     @cachedproperty
     def batchnav(self):

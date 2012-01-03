@@ -17,7 +17,11 @@ from bzrlib.transport import get_transport
 
 from devscripts import get_launchpad_root
 from devscripts.sourcecode import (
-    find_branches, interpret_config, parse_config_file, plan_update)
+    find_branches,
+    interpret_config,
+    parse_config_file,
+    plan_update,
+    )
 
 
 class TestParseConfigFile(unittest.TestCase):

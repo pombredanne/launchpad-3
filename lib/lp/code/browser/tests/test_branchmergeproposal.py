@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
 
 """Unit tests for BranchMergeProposals."""
 
@@ -30,16 +29,6 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IPrimaryContext,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -55,6 +44,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff
@@ -62,7 +52,15 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.model.message import MessageSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -71,6 +69,10 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_initialized_view
 
@@ -200,6 +202,50 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # The vote table should not be shown, because there are no votes, and
         # the logged-in user cannot request reviews.
         self.assertFalse(view.show_table)
+
+    def _createPrivateVotes(self, is_branch_visible=True):
+        # Create a branch with a public and private reviewer.
+        owner = self.bmp.source_branch.owner
+        if not is_branch_visible:
+            branch = self.bmp.source_branch
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+            branch.setPrivate(True, owner)
+
+        # Set up some review requests.
+        public_person1 = self.factory.makePerson()
+        private_team1 = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        self._nominateReviewer(public_person1, owner)
+        self._nominateReviewer(private_team1, owner)
+
+        return private_team1, public_person1
+
+    def testPrivateVotesNotVisibleIfBranchNotVisible(self):
+        # User can't see votes for private teams if they can't see the branch.
+        private_team1, public_person1 = self._createPrivateVotes(False)
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(1, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1],
+            [review.reviewer for review in requested_reviews])
+
+    def testPrivateVotesVisibleIfBranchVisible(self):
+        # User can see votes for private teams if they can see the branch.
+        private_team1, public_person1 = self._createPrivateVotes()
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(2, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1, private_team1],
+            [review.reviewer for review in requested_reviews])
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
@@ -843,6 +889,22 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertIn("longpoll", cache.objects)
         self.assertIn("merge_proposal_event_key", cache.objects)
 
+    def test_description_is_meta_description(self):
+        description = (
+            "I'd like to make the bmp description appear as the meta "
+            "description: this does that "
+            + "abcdef " * 300)
+        bmp = self.factory.makeBranchMergeProposal(
+            description=description)
+        browser = self.getUserBrowser(
+            canonical_url(bmp, rootsite='code'))
+        expected_meta = Tag(
+            'meta description',
+            'meta', attrs=dict(
+                name='description',
+                content=description[:497] + '...'))
+        self.assertThat(browser.contents, HTMLContains(expected_meta))
+
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""
@@ -1037,6 +1099,20 @@ class TestBranchMergeProposal(BrowserTestCase):
         set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
+
+    def test_pending_diff_message_with_longpoll_enabled(self):
+        # If the longpoll feature flag is enabled then the message
+        # displayed for a pending diff indicates that it'll update
+        # automatically. See also
+        # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        bmp = self.factory.makeBranchMergeProposal()
+        browser = self.getViewBrowser(bmp)
+        self.assertIn(
+            "An updated diff is being calculated and will appear "
+                "automatically when ready.",
+            browser.contents)
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

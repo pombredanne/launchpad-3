@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bzrutils."""
@@ -12,12 +12,8 @@ from bzrlib import (
     errors,
     trace,
     )
-from bzrlib.branch import (
-    Branch,
-    )
-from bzrlib.bzrdir import (
-    format_registry,
-    )
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import format_registry
 from bzrlib.remote import RemoteBranch
 from bzrlib.tests import (
     multiply_tests,
@@ -165,8 +161,10 @@ class TestExceptionLoggingHooks(TestCase):
         # add_exception_logging_hook adds a hook function that's called
         # whenever Bazaar logs an exception.
         exceptions = []
+
         def hook():
             exceptions.append(sys.exc_info()[:2])
+
         add_exception_logging_hook(hook)
         self.addCleanup(remove_exception_logging_hook, hook)
         exception = RuntimeError('foo')
@@ -177,8 +175,10 @@ class TestExceptionLoggingHooks(TestCase):
         # remove_exception_logging_hook removes the hook function, ensuring
         # it's not called when Bazaar logs an exception.
         exceptions = []
+
         def hook():
             exceptions.append(sys.exc_info()[:2])
+
         add_exception_logging_hook(hook)
         remove_exception_logging_hook(hook)
         self.logException(RuntimeError('foo'))
@@ -217,7 +217,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
             get_vfs_format_classes(remote_branch))
 
 
-
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
@@ -225,7 +224,9 @@ def load_tests(basic_tests, module, loader):
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
     scenarios = [scenario for scenario in branch_scenarios()
-                 if scenario[0] != 'BranchReferenceFormat']
+                 if scenario[0] not in (
+                     'BranchReferenceFormat', 'GitBranchFormat',
+                     'HgBranchFormat', 'SvnBranchFormat')]
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))
