@@ -2540,7 +2540,8 @@ class Person(
     def reactivate(self, comment, password, preferred_email):
         """See `IPersonSpecialRestricted`."""
         account = IMasterObject(self.account)
-        account.reactivate(comment, password, preferred_email)
+        account.reactivate(comment, password)
+        self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
             # name, but we must ensure it does not conflict with a current
