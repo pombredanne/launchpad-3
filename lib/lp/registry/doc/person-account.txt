@@ -211,8 +211,7 @@ Bar are now owned/driven by the registry admins team.
 Reactivating user accounts
 --------------------------
 
-Accounts can be reactivated. A comment and a non-None preferred email address
-are required to reactivate() an account, though.
+Accounts can be reactivated.
 
     >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',
