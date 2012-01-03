@@ -59,11 +59,9 @@ def find_operable_series(distribution):
     We are allowed to modify DEVELOPMENT or FROZEN series, but should leave
     series with any other status alone.
     """
-    operable_series = []
-    for series in distribution.series:
-        if series.status in (SeriesStatus.DEVELOPMENT, SeriesStatus.FROZEN):
-            operable_series.append(series)
-    return operable_series
+    return [
+        series for series in distribution.series
+        if series.status in (SeriesStatus.DEVELOPMENT, SeriesStatus.FROZEN)]
 
 
 class GenerateExtraOverrides(LaunchpadScript):
