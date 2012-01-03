@@ -345,8 +345,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the identity URL that's associated with the existing email address.
         identifier = u'4w7kmzU'
         email = 'test@example.com'
-        account = self.factory.makeAccount(
-            'Test account', email=email, status=AccountStatus.DEACTIVATED)
+        person = self.factory.makePerson(
+            displayname='Test account', email=email,
+            account_status=AccountStatus.DEACTIVATED)
+        account = person.account
         account_set = getUtility(IAccountSet)
         self.assertRaises(
             LookupError, account_set.getByOpenIDIdentifier, identifier)
