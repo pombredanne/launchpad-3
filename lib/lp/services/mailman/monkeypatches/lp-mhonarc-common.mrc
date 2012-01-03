@@ -157,7 +157,7 @@ PAGE-BOTTOM
         </div>
     </div>
     <div class="colophon">
-      &copy; 2004-2011
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a href="https://launchpad.net/legal">Terms of use</a>
