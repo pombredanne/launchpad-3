@@ -448,17 +448,15 @@ class MailingList(SQLBase):
         # preferred address.
         tables = (
             EmailAddress,
-            Join(Account, Account.id == EmailAddress.accountID),
+            Join(Person, Person.id == EmailAddress.personID),
+            Join(Account, Account.id == Person.accountID),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
             Join(
                 MailingListSubscription,
-                MailingListSubscription.personID == EmailAddress.personID),
+                MailingListSubscription.personID == Person.id),
             Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            Join(
-                TeamParticipation,
-                TeamParticipation.personID ==
-                    MailingListSubscription.personID),
             )
         preferred = store.using(*tables).find(
             EmailAddress,
@@ -468,26 +466,12 @@ class MailingList(SQLBase):
                 MailingListSubscription.email_addressID == None,
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
                 Account.status == AccountStatus.ACTIVE))
-        tables = (
-            EmailAddress,
-            Join(Account, Account.id == EmailAddress.accountID),
-            Join(
-                MailingListSubscription,
-                MailingListSubscription.email_addressID ==
-                    EmailAddress.id),
-            Join(
-                MailingList,
-                MailingList.id == MailingListSubscription.mailing_listID),
-            Join(
-                TeamParticipation,
-                TeamParticipation.personID ==
-                    MailingListSubscription.personID),
-            )
         explicit = store.using(*tables).find(
             EmailAddress,
             And(MailingListSubscription.mailing_list == self,
                 TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
+                EmailAddress.id == MailingListSubscription.email_addressID,
                 Account.status == AccountStatus.ACTIVE))
         # Union the two queries together to give us the complete list of email
         # addresses allowed to post.  Note that while we're retrieving both
@@ -686,18 +670,15 @@ class MailingListSet:
         Team = ClassAlias(Person)
         tables = (
             EmailAddress,
-            Join(Account, Account.id == EmailAddress.accountID),
+            Join(Person, Person.id == EmailAddress.personID),
+            Join(Account, Account.id == Person.accountID),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
             Join(
                 MailingListSubscription,
-                MailingListSubscription.personID == EmailAddress.personID),
+                MailingListSubscription.personID == Person.id),
             Join(
                 MailingList,
                 MailingList.id == MailingListSubscription.mailing_listID),
-            Join(
-                TeamParticipation,
-                TeamParticipation.personID ==
-                    MailingListSubscription.personID),
-            Join(Person, Person.id == TeamParticipation.personID),
             Join(Team, Team.id == MailingList.teamID),
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
@@ -718,27 +699,12 @@ class MailingListSet:
                 'Unexpected team name in results: %s' % team_name)
             value = (display_name, email)
             by_team[team_name].add(value)
-        tables = (
-            EmailAddress,
-            Join(Account, Account.id == EmailAddress.accountID),
-            Join(
-                MailingListSubscription,
-                MailingListSubscription.email_addressID == EmailAddress.id),
-            Join(
-                MailingList,
-                MailingList.id == MailingListSubscription.mailing_listID),
-            Join(
-                TeamParticipation,
-                TeamParticipation.personID ==
-                    MailingListSubscription.personID),
-            Join(Person, Person.id == TeamParticipation.personID),
-            Join(Team, Team.id == MailingList.teamID),
-            )
         explicit = store.using(*tables).find(
             (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
+                EmailAddress.id == MailingListSubscription.email_addressID,
                 Account.status == AccountStatus.ACTIVE))
         for email, display_name, team_name in explicit:
             assert team_name in team_names, (
