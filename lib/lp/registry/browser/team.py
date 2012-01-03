@@ -1773,6 +1773,7 @@ class TeamJoinForm(Interface):
 
 class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     """A view class for joining a team."""
+
     schema = TeamJoinForm
 
     @property
