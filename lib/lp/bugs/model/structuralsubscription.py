@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from functools import itemgetter
 
 import pytz
 from storm.base import Storm
@@ -48,6 +49,9 @@ from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
@@ -642,13 +646,16 @@ def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     bug, bugtasks = resolve_bug_and_bugtasks(bug_or_bugtask)
+    # Pre-load bug subscription filters.
     subscriptions = query_structural_subscriptions(
-        StructuralSubscription, bug, bugtasks, level, exclude)
+        (StructuralSubscription, BugSubscriptionFilter),
+        bug, bugtasks, level, exclude)
     from lp.registry.model.person import Person  # Circular.
     # Only return the earliest matching subscription per subscriber.
+    # XXX: Return earliest matching filter too?
     subscriptions.config(distinct=(Person.id,))
     subscriptions.order_by(Person.id, StructuralSubscription.id)
-    return subscriptions
+    return DecoratedResultSet(subscriptions, itemgetter(0))
 
 
 def get_structural_subscribers(
