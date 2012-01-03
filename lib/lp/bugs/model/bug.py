@@ -2734,14 +2734,10 @@ class BugSubscriptionInfo:
         *Does not* exclude muted subscribers.
         """
         if self.bugtask is None:
-            assignees = Select(
-                BugTask.assigneeID, BugTask.bug == self.bug)
+            assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
+            return load_people(Person.id.is_in(assignees))
         else:
-            assignees = Select(
-                BugTask.assigneeID, And(
-                    BugTask.bug == self.bug,
-                    BugTask.id == self.bugtask.id))
-        return load_people(Person.id.is_in(assignees))
+            return load_people(Person.id == self.bugtask.assigneeID)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
