@@ -1345,12 +1345,10 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         # The old email address is still there and correctly linked.
         self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
         self.assertIs(self.email.person, self.person)
 
         # The new email address is there too and correctly linked.
         new_email = self.store.find(EmailAddress, email=new_email).one()
-        self.assertIs(new_email.account, self.account)
         self.assertIs(new_email.person, self.person)
         self.assertEqual(EmailAddressStatus.NEW, new_email.status)
 
@@ -1415,7 +1413,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
         self.assertIs(self.email.person, found)
-        self.assertIs(self.email.account, found.account)
         self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
 
     def testMovedEmailAddress(self):

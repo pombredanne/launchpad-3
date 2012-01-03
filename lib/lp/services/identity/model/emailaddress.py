@@ -129,23 +129,10 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
-        if person is None:
-            personID = None
-        else:
-            personID = person.id
-            accountID = account and account.id
-            assert person.accountID == accountID, (
-                "Email address '%s' must be linked to same account as "
-                "person '%s'.  Expected %r (%s), got %r (%s)" % (
-                    email, person.name, person.account, person.accountID,
-                    account, accountID))
-        # We use personID instead of just person, as in some cases the
-        # Person record will not yet be replicated from the main
-        # Store to the auth master Store.
         return EmailAddress(
             email=email,
             status=status,
-            personID=personID,
+            person=person,
             account=account)
 
 

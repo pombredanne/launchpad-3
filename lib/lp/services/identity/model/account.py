@@ -80,7 +80,8 @@ class Account(SQLBase):
     @property
     def preferredemail(self):
         """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.PREFERRED).one()
+        from lp.registry.interfaces.person import IPerson
+        return IPerson(self).preferredemail
 
     @property
     def validated_emails(self):
@@ -150,20 +151,11 @@ class Account(SQLBase):
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def activate(self, comment, password, preferred_email):
+    def reactivate(self, comment, password):
         """See `IAccountSpecialRestricted`."""
-        if preferred_email is None:
-            raise AssertionError(
-                "Account %s cannot be activated without a "
-                "preferred email address." % self.id)
         self.status = AccountStatus.ACTIVE
         self.status_comment = comment
         self.password = password
-        self.validateAndEnsurePreferredEmail(preferred_email)
-
-    def reactivate(self, comment, password, preferred_email):
-        """See `IAccountSpecialRestricted`."""
-        self.activate(comment, password, preferred_email)
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
@@ -286,6 +278,7 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
+        from lp.registry.model.person import Person
         store = IStore(Account)
         try:
             email = email.decode('US-ASCII')
@@ -295,7 +288,8 @@ class AccountSet:
             raise LookupError(repr(email))
         account = store.find(
             Account,
-            EmailAddress.account == Account.id,
+            Person.account == Account.id,
+            EmailAddress.person == Person.id,
             EmailAddress.email.lower()
                 == email.strip().lower()).one()
         if account is None:

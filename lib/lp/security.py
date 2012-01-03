@@ -2590,7 +2590,7 @@ class ViewEmailAddress(AuthorizationBase):
         # Anonymous users can never see email addresses.
         return False
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, person):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
@@ -2598,21 +2598,17 @@ class ViewEmailAddress(AuthorizationBase):
         admins can see them.
         """
         # Always allow users to see their own email addresses.
-        if self.obj.account == account:
+        if self.obj.person == person:
             return True
 
         if not (self.obj.person is None or
                 self.obj.person.hide_email_addresses):
             return True
 
-        user = IPersonRoles(IPerson(account, None), None)
-        if user is None:
-            return False
-
-        return (self.obj.person is not None and user.inTeam(self.obj.person)
-                or user.in_commercial_admin
-                or user.in_registry_experts
-                or user.in_admin)
+        return (self.obj.person is not None and person.inTeam(self.obj.person)
+                or person.in_commercial_admin
+                or person.in_registry_experts
+                or person.in_admin)
 
 
 class EditEmailAddress(EditByOwnersOrAdmins):

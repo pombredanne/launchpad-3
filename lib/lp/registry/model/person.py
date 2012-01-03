@@ -3108,97 +3108,82 @@ class PersonSet:
         # possible replication lag issues but this might actually be
         # unnecessary.
         with MasterDatabasePolicy():
-            store = IMasterStore(EmailAddress)
-            join = store.using(
-                EmailAddress,
-                LeftJoin(Account, EmailAddress.accountID == Account.id))
-            email, account = (
-                join.find(
-                    (EmailAddress, Account),
-                    EmailAddress.email.lower() ==
-                        ensure_unicode(email_address).lower()).one()
+            email, person = (
+                getUtility(IPersonSet).getByEmails([email_address]).one()
                 or (None, None))
-            identifier = store.find(
+            identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
 
-            if email is None and identifier is None:
-                # Neither the Email Address not the OpenId Identifier
-                # exist in the database. Create the email address,
-                # account, and associated info. OpenIdIdentifier is
-                # created later.
-                account_set = getUtility(IAccountSet)
-                account, email = account_set.createAccountAndEmail(
-                    email_address, creation_rationale, full_name,
-                    password=None)
-                db_updated = True
-
-            elif email is None:
-                # The Email Address does not exist in the database,
-                # but the OpenId Identifier does. Create the Email
-                # Address and link it to the account.
-                assert account is None, 'Retrieved an account but not email?'
-                account = identifier.account
-                emailaddress_set = getUtility(IEmailAddressSet)
-                email = emailaddress_set.new(
-                    email_address, account=account)
-                db_updated = True
-
-            elif account is None:
-                # Email address exists, but there is no Account linked
-                # to it. Create the Account and link it to the
-                # EmailAddress.
+            if email is None:
+                if identifier is None:
+                    raise Exception("can't create new person")
+                    # Neither the Email Address not the OpenId Identifier
+                    # exist in the database. Create the email address,
+                    # account, and associated info. OpenIdIdentifier is
+                    # created later.
+                    account_set = getUtility(IAccountSet)
+                    account, email = account_set.createAccountAndEmail(
+                        email_address, creation_rationale, full_name,
+                        password=None)
+                    db_updated = True
+                else:
+                    # The Email Address does not exist in the database,
+                    # but the OpenId Identifier does. Create the Email
+                    # Address and link it to the person.
+                    person = IPerson(identifier.account, None)
+                    assert person is not None, (
+                        'Received a personless account.')
+                    emailaddress_set = getUtility(IEmailAddressSet)
+                    email = emailaddress_set.new(email_address, person=person)
+                    db_updated = True
+            elif email.person.account is None:
+                # Email address and person exist, but there is no
+                # account. Create and link it.
                 account_set = getUtility(IAccountSet)
                 account = account_set.new(
                     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
                     full_name)
-                email.account = account
+                removeSecurityProxy(email.person).account = account
                 db_updated = True
+
+            person = email.person
+            assert person.account is not None
 
             if identifier is None:
                 # This is the first time we have seen that
                 # OpenIdIdentifier. Link it.
                 identifier = OpenIdIdentifier()
-                identifier.account = account
+                identifier.account = person.account
                 identifier.identifier = openid_identifier
-                store.add(identifier)
+                IStore(OpenIdIdentifier).add(identifier)
                 db_updated = True
-
-            elif identifier.account != account:
+            elif identifier.account != person.account:
                 # The ISD OpenId server may have linked this OpenId
                 # identifier to a new email address, or the user may
                 # have transfered their email address to a different
                 # Launchpad Account. If that happened, repair the
                 # link - we trust the ISD OpenId server.
-                identifier.account = account
+                identifier.account = person.account
                 db_updated = True
 
             # We now have an account, email address, and openid identifier.
 
-            if account.status == AccountStatus.SUSPENDED:
+            if person.account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
 
-            elif account.status in [AccountStatus.DEACTIVATED,
-                                    AccountStatus.NOACCOUNT]:
-                password = ''  # Needed just to please reactivate() below.
-                removeSecurityProxy(account).reactivate(
-                    comment, password, removeSecurityProxy(email))
+            elif person.account.status in [AccountStatus.DEACTIVATED,
+                                           AccountStatus.NOACCOUNT]:
+                password = ''
+                removeSecurityProxy(person.account).reactivate(
+                    comment, password)
+                removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
 
-            if IPerson(account, None) is None:
-                removeSecurityProxy(account).createPerson(
-                    creation_rationale, comment=comment)
-                db_updated = True
-
-            person = IPerson(account)
-            if email.personID != person.id:
-                removeSecurityProxy(email).person = person
-                db_updated = True
-
-            return person, db_updated
+            return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3251,12 +3236,8 @@ class PersonSet:
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
             comment=comment, registrant=registrant, account=account)
+        email = getUtility(IEmailAddressSet).new(email, person)
 
-        email = getUtility(IEmailAddressSet).new(
-                email, person, account=account)
-
-        assert email.accountID is not None, (
-            'Failed to link EmailAddress to Account')
         return person, email
 
     def createPersonWithoutEmail(
