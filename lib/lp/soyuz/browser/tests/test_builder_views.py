@@ -11,6 +11,7 @@ from testtools.matchers import (
     Equals,
     MatchesAll,
     )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -180,7 +181,6 @@ class BuildCreationMixin(object):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=self.factory.makeSourcePackageRecipe(
                 branches=[branch1, branch2]))
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         if private_branch:
             with celebrity_logged_in('admin'):
                 branch1.setPrivate(
@@ -193,7 +193,6 @@ class BuildCreationMixin(object):
     def addFakeBuildLog(self, build):
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
         removeSecurityProxy(build).log = lfa
-        import transaction
         transaction.commit()
 
     def createBinaryPackageBuild(self, in_ppa=False, builder=None):
