@@ -41,7 +41,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import (
     clear_property_cache,
-    get_property_cache,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchpadRoot
@@ -1662,7 +1661,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         naked_build.date_started = (
             naked_build.date_finished - timedelta(minutes=1))
         naked_build.buildqueue_record.destroySelf()
-        del get_property_cache(naked_build).buildqueue_record
         naked_build.log = self.factory.makeLibraryFileAlias(
             content='buildlog')
         naked_build.upload_log = self.factory.makeLibraryFileAlias(
