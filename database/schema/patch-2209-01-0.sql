@@ -8,7 +8,6 @@ CREATE OR REPLACE VIEW validpersoncache AS (
     WHERE
         emailaddress.person = person.id
         AND person.account = account.id
-        AND emailaddress.person IS NOT NULL
         AND emailaddress.status = 4
         AND account.status = 20
 );
@@ -20,11 +19,12 @@ CREATE OR REPLACE VIEW validpersonorteamcache AS (
         LEFT JOIN emailaddress ON person.id = emailaddress.person
         LEFT JOIN account ON person.account = account.id
     WHERE
-        person.teamowner IS NOT NULL
-        AND person.merged IS NULL
-        OR person.teamowner IS NULL
-        AND account.status = 20
-        AND emailaddress.status = 4
+        (person.teamowner IS NOT NULL
+         AND person.merged IS NULL)
+        OR
+        (person.teamowner IS NULL
+         AND account.status = 20
+         AND emailaddress.status = 4)
 );
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 01, 0);
