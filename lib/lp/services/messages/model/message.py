@@ -58,20 +58,20 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     validate_public_person,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 from lp.services.encoding import guess as ensure_unicode
 from lp.services.job.model.job import Job
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -138,6 +138,9 @@ class Message(SQLBase):
     def __iter__(self):
         """See IMessage.__iter__"""
         return iter(self.chunks)
+
+    def setVisible(self, visible):
+        self.visible = visible
 
     @property
     def followup_title(self):

@@ -18,13 +18,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.mailnotification import (
-    MailWrapper,
-    send_process_error_notification,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     CreatedBugWithNoBugTasksError,
@@ -35,8 +28,10 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.commands import BugEmailCommands
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
+    get_email_template,
     get_error_message,
     get_main_body,
     guess_bugtask,
@@ -52,8 +47,11 @@ from lp.services.mail.interfaces import (
     IBugTaskEmailCommand,
     IMailHandler,
     )
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
@@ -333,7 +331,7 @@ class MaloneHandler:
     def sendHelpEmail(self, to_address):
         """Send usage help to `to_address`."""
         # Get the help text (formatted as MoinMoin markup)
-        help_text = get_email_template('help.txt')
+        help_text = get_email_template('help.txt', app='bugs')
         help_text = reformat_wiki_text(help_text)
         # Wrap text
         mailwrapper = MailWrapper(width=72)

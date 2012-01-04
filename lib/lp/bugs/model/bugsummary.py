@@ -20,7 +20,6 @@ from storm.locals import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.enumcol import EnumCol
 from lp.bugs.interfaces.bugsummary import (
     IBugSummary,
     IBugSummaryDimension,
@@ -28,6 +27,7 @@ from lp.bugs.interfaces.bugsummary import (
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -36,6 +36,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.enumcol import EnumCol
 
 
 class BugSummary(Storm):
@@ -66,7 +67,9 @@ class BugSummary(Storm):
     milestone_id = Int(name='milestone')
     milestone = Reference(milestone_id, Milestone.id)
 
-    status = EnumCol(dbName='status', schema=BugTaskStatus)
+    status = EnumCol(
+        dbName='status', schema=(BugTaskStatus, BugTaskStatusSearch))
+
     importance = EnumCol(dbName='importance', schema=BugTaskImportance)
 
     tag = Unicode()
@@ -90,7 +93,8 @@ class CombineBugSummaryConstraint:
 
     def __init__(self, *dimensions):
         self.dimensions = map(
-            lambda x:removeSecurityProxy(x.getBugSummaryContextWhereClause()),
+            lambda x:
+            removeSecurityProxy(x.getBugSummaryContextWhereClause()),
             dimensions)
 
     def getBugSummaryContextWhereClause(self):

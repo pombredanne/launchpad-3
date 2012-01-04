@@ -45,9 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -77,6 +75,8 @@ from lp.services.fields import (
     Summary,
     Title,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 
 
 class SpecNameField(ContentNameField):
@@ -587,6 +587,26 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
+
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def linkBug(bug):
+        """Link a bug to this specification.
+
+        :param bug: IBug to link.
+        """
+
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unlinkBug(bug):
+        """Unlink a bug to this specification.
+
+        :param bug: IBug to unlink.
+        """
 
 
 class ISpecificationSet(IHasSpecifications):

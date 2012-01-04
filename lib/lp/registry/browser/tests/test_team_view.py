@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -10,25 +10,30 @@ __metaclass__ = type
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
+    TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
-    TeamMembershipRenewalPolicy)
+    )
+from lp.services.propertycache import get_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -159,17 +164,32 @@ class TestTeamEditView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_cannot_rename_team_with_ppa(self):
-        # A team with a ppa cannot be renamed.
+    def test_cannot_rename_team_with_active_ppa(self):
+        # A team with an active PPA that contains publications cannot be
+        # renamed.
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner=owner)
-        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(owner=team)
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        get_property_cache(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                'This team cannot be renamed because it has a PPA.',
-                view.widgets['name'].hint)
+                'This team has an active PPA with packages published and '
+                'may not be renamed.', view.widgets['name'].hint)
+
+    def test_can_rename_team_with_deleted_ppa(self):
+        # A team with a deleted PPA can be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        archive = self.factory.makeArchive()
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        removeSecurityProxy(archive).status = ArchiveStatus.DELETED
+        get_property_cache(team).archive = archive
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
         # Because renaming mailing lists is non-trivial in Mailman 2.1,
@@ -181,7 +201,7 @@ class TestTeamEditView(TestCaseWithFactory):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                'This team cannot be renamed because it has a mailing list.',
+                'This team has a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
 
     def test_can_rename_team_with_purged_mailinglist(self):
@@ -203,13 +223,15 @@ class TestTeamEditView(TestCaseWithFactory):
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
-        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(owner=team)
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        get_property_cache(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                ('This team cannot be renamed because it has a mailing list '
-                 'and has a PPA.'),
+                'This team has an active PPA with packages published and '
+                'a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
 
     def test_edit_team_view_permission(self):
@@ -242,9 +264,100 @@ class TestTeamEditView(TestCaseWithFactory):
                 TeamSubscriptionPolicy.MODERATED,
                 view.widgets['subscriptionpolicy']._data)
             self.assertEqual(
+                TeamSubscriptionPolicy,
+                view.widgets['subscriptionpolicy'].vocabulary)
+            self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
             self.assertIsNone(view.widgets['defaultrenewalperiod']._data)
+
+    def _test_edit_team_view_expected_subscription_vocab(self,
+                                                         fn_setup,
+                                                         expected_items):
+        # The edit view renders only the specified policy choices when
+        # the setup performed by fn_setup occurs.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        fn_setup(team)
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertContentEqual(
+                expected_items,
+                [term.value
+                 for term in view.widgets['subscriptionpolicy'].vocabulary])
+
+    def test_edit_team_view_pillar_owner(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is a pillar owner.
+
+        def setup_team(team):
+            self.factory.makeProduct(owner=team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_pillar_security_contact(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is a pillar security contact.
+
+        def setup_team(team):
+            self.factory.makeProduct(security_contact=team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_ppas(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team has any ppas.
+
+        def setup_team(team):
+            team.createPPA()
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_closed_super_team(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team has any closed super teams.
+
+        def setup_team(team):
+            super_team = self.factory.makeTeam(
+                owner=team.teamowner,
+                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            with person_logged_in(team.teamowner):
+                super_team.addMember(
+                    team, team.teamowner, force_team_add=True)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_subscribed_private_bug(self):
+        # The edit view renders only closed subscription policy choices when
+        # the team is subscribed to a private bug.
+
+        def setup_team(team):
+            bug = self.factory.makeBug(owner=team.teamowner, private=True)
+            with person_logged_in(team.teamowner):
+                bug.default_bugtask.transitionToAssignee(team)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, CLOSED_TEAM_POLICY)
+
+    def test_edit_team_view_has_open_member(self):
+        # The edit view renders open closed subscription policy choices when
+        # the team has any open sub teams.
+
+        def setup_team(team):
+            team_member = self.factory.makeTeam(
+                owner=team.teamowner,
+                subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+            with person_logged_in(team.teamowner):
+                team.addMember(
+                    team_member, team.teamowner, force_team_add=True)
+
+        self._test_edit_team_view_expected_subscription_vocab(
+            setup_team, OPEN_TEAM_POLICY)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it

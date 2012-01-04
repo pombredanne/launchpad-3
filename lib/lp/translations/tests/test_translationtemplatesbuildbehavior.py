@@ -3,20 +3,19 @@
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
 
+import datetime
 import logging
 import os
 
+import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import copy_and_close
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -25,8 +24,12 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -57,6 +60,7 @@ class FakeBuildQueue:
         """
         self.builder = behavior._builder
         self.specific_job = behavior.buildfarmjob
+        self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
 
@@ -161,6 +165,7 @@ class TestTranslationTemplatesBuildBehavior(
         path = behavior.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
         behavior._builder.slave.valid_file_hashes.append(path)
+
         def got_tarball(filename):
             tarball = open(filename, 'r')
             try:
@@ -201,6 +206,9 @@ class TestTranslationTemplatesBuildBehavior(
                 queue_item, slave_status, None, logging), slave_call_log
 
         def build_updated(ignored):
+            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
+            # Log file is stored.
+            self.assertIsNotNone(behavior.build.log)
             slave_call_log = behavior._builder.slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave_call_log)
@@ -240,6 +248,9 @@ class TestTranslationTemplatesBuildBehavior(
                 queue_item, status_dict, None, logging)
 
         def build_updated(ignored):
+            self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
+            # Log file is stored.
+            self.assertIsNotNone(behavior.build.log)
             self.assertEqual(1, queue_item.destroySelf.call_count)
             slave_call_log = behavior._builder.slave.call_log
             self.assertIn('clean', slave_call_log)
@@ -278,6 +289,7 @@ class TestTranslationTemplatesBuildBehavior(
                 queue_item, status_dict, None, logging)
 
         def build_updated(ignored):
+            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
             self.assertEqual(1, queue_item.destroySelf.call_count)
             slave_call_log = behavior._builder.slave.call_log
             self.assertIn('clean', slave_call_log)
@@ -321,6 +333,7 @@ class TestTranslationTemplatesBuildBehavior(
                 queue_item, slave_status, None, logging)
 
         def build_updated(ignored):
+            self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
             entries = getUtility(
                 ITranslationImportQueue).getAllEntries(target=productseries)
             expected_templates = [

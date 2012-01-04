@@ -5,15 +5,15 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.browser.productseries import ProductSeriesView
 from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
@@ -31,7 +31,6 @@ class TestProductSeriesView(TestCaseWithFactory):
         # Create a productseries that uses translations.
         super(TestProductSeriesView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
         self.product = self.productseries.product
 
     def _createView(self):
@@ -253,7 +252,6 @@ class TestProductSeriesLanguageView(TestCaseWithFactory):
         # Create a productseries that uses translations.
         super(TestProductSeriesLanguageView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
         self.language = self.factory.makeLanguage()
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)

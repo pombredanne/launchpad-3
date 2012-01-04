@@ -10,8 +10,6 @@ from datetime import datetime
 from pytz import utc
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -21,7 +19,9 @@ from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestBugSummary(TestCaseWithFactory):
@@ -189,7 +189,7 @@ class TestBugSummary(TestCaseWithFactory):
         for count in range(3):
             bug = self.factory.makeBug(product=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
-            bug_task.status = org_status
+            bug_task._status = org_status
 
             self.assertEqual(
                 self.getPublicCount(
@@ -199,8 +199,8 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in reversed(range(3)):
             bug_task = self.store.find(
-                BugTask, product=product, status=org_status).any()
-            bug_task.status = new_status
+                BugTask, product=product, _status=org_status).any()
+            bug_task._status = new_status
             self.assertEqual(
                 self.getPublicCount(
                     BugSummary.product == product,

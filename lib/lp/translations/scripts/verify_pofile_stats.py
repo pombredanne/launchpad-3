@@ -19,11 +19,13 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from lp.services.config import config
+from lp.services.looptuner import (
+    DBLoopTuner,
+    ITunableLoop,
+    )
+from lp.services.mail.helpers import get_email_template
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import simple_sendmail
 from lp.translations.interfaces.pofile import IPOFileSet
 
@@ -142,7 +144,7 @@ class VerifyPOFileStatsProcess:
         # from, thus the script failing to find the email template
         # if it was attempted after DBLoopTuner run is completed.
         # See bug #811447 for OOPS we used to get then.
-        template = helpers.get_email_template(
+        template = get_email_template(
             'pofile-stats.txt', 'translations')
 
         # Each iteration of our loop collects all statistics first, before
@@ -162,8 +164,8 @@ class VerifyPOFileStatsProcess:
                 'errors': loop.total_incorrect,
                 'total': loop.total_checked}
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
-                to_addrs=[config.rosetta.admin_email],
+                from_addr=config.canonical.noreply_from_address,
+                to_addrs=[config.launchpad.errors_address],
                 subject="POFile statistics errors",
                 body=MailWrapper().format(message))
             self.transaction.commit()
@@ -192,15 +194,15 @@ class VerifyRecentPOFileStatsProcess:
         if loop.total_incorrect > 0 or loop.total_exceptions > 0:
             # Not all statistics were correct, or there were failures while
             # checking them.  Email the admins.
-            template = helpers.get_email_template(
+            template = get_email_template(
                 'pofile-stats.txt', 'translations')
             message = template % {
                 'exceptions': loop.total_exceptions,
                 'errors': loop.total_incorrect,
                 'total': loop.total_checked}
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
-                to_addrs=[config.rosetta.admin_email],
+                from_addr=config.canonical.noreply_from_address,
+                to_addrs=[config.launchpad.errors_address],
                 subject="POFile statistics errors (daily)",
                 body=MailWrapper().format(message))
             self.transaction.commit()

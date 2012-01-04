@@ -30,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PublicPersonChoice
 from lp.soyuz.enums import ArchivePermissionType

@@ -42,7 +42,7 @@ count.  The first step has no search results.
     # Because of the way the multistep view works, we need to test the
     # steps individually.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> form['field.__visited_steps__'] = ProjectAddStepOne.step_name
     >>> request = LaunchpadTestRequest(form=form, method='POST')

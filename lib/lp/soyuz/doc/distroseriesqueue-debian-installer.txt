@@ -38,7 +38,7 @@ In order to keep the tests simple we will upload only the
 debian-installer tarball, despite the fact that it's very unlikely to
 happen in production:
 
-  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> from lp.testing.gpgkeys import import_public_test_keys
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 

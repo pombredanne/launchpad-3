@@ -120,7 +120,7 @@ Generating a PPA signing key
 As mentioned above, generated signing_keys will be stored in a
 location defined by the system configuration.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> print config.personalpackagearchive.signing_keys_root
     /var/tmp/ppa-signing-keys
 
@@ -195,7 +195,7 @@ using a method `IArchiveSigningKey` skips the key generation but uses
 exactly the same procedure for setting the signing_key information.
 
     >>> import os
-    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+    >>> from lp.testing.gpgkeys import gpgkeysdir
     >>> key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
     >>> archive_signing_key.setSigningKey(key_path)
 
@@ -226,7 +226,7 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 The generated key UID follows the "Launchpad PPA for %(person.displayname)s"
 format.
 
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
 
     >>> retrieved_key = gpghandler.retrieveKey(

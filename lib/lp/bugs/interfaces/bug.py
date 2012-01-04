@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -22,7 +22,6 @@ __all__ = [
     ]
 
 from lazr.enum import DBEnumeratedType
-
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     accessor_for,
@@ -64,12 +63,11 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.app.validators.name import bug_name_validator
-from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -92,6 +90,7 @@ from lp.services.fields import (
     Tag,
     Title,
     )
+from lp.services.messages.interfaces.message import IMessage
 
 
 class CreateBugParams:
@@ -248,6 +247,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
+    access_policy = Attribute("Access policy")
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(
@@ -374,13 +374,17 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True)))
     users_affected_count_with_dupes = exported(
-      Int(title=_('The number of users affected by this bug '
-                  '(including duplicates)'),
-          required=True, readonly=True))
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates)'),
+        required=True, readonly=True))
+    other_users_affected_count_with_dupes = exported(
+        Int(title=_('The number of users affected by this bug '
+            '(including duplicates), excluding the current user'),
+        required=True, readonly=True))
     users_affected_with_dupes = exported(doNotSnapshot(CollectionField(
-            title=_('Users affected (including duplicates)'),
-            value_type=Reference(schema=IPerson),
-            readonly=True)))
+        title=_('Users affected (including duplicates)'),
+        value_type=Reference(schema=IPerson),
+        readonly=True)))
 
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
@@ -587,8 +591,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         The INotificationRecipientSet instance will contain details of
         all recipients for bug notifications sent by this bug; this
         includes email addresses and textual and header-ready
-        rationales. See
-        canonical.launchpad.interfaces.BugNotificationRecipients for
+        rationales. See `BugNotificationRecipients` for
         details of this implementation.
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.
@@ -635,7 +638,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
     def addTask(owner, target):
-        """Create a new bug task on this bug."""
+        """Create a new bug task on this bug.
+
+        :raises IllegalTarget: if the bug task cannot be added to the bug.
+        """
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
@@ -881,6 +887,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Return (private_changed, security_related_changed) tuple.
         """
 
+    def setAccessPolicy(policy_type):
+        """Set the `IAccessPolicy` that controls access to this bug."""
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -936,6 +945,25 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
+
+    def userCanSetCommentVisibility(user):
+        """Return True if `user` can set bug comment visibility.
+
+        This method is called by security adapters for authenticated users.
+
+        Users who can set bug comment visibility are:
+        - Admins and registry admins
+        - users in project roles on any bugtask:
+          - maintainer
+          - driver
+          - bug supervisor
+          - security contact
+
+        Additionally, the comment owners can hide their own comments but that
+        is not checked here - this method is to see if arbitrary users can
+        hide comments they did not make themselves.
+
+        """
 
     @operation_parameters(
         submission=Reference(

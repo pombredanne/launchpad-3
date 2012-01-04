@@ -1,12 +1,6 @@
 Remote bug comments
 ===================
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 Comments imported into Launchpad from external bug trackers are
 formatted for display in a way that distinguishes them from comments
 entered within Launchpad itself.
@@ -82,7 +76,7 @@ When the comment is synchronized, it receives a remote comment id, and
 the 'awaiting synchronization' mark goes away.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> login('foo.bar@canonical.com')
@@ -96,7 +90,7 @@ the 'awaiting synchronization' mark goes away.
     >>> flush_database_updates()
     >>> logout()
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge()
     >>> user_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> last_bug_comment = find_tags_by_class(
@@ -122,7 +116,3 @@ hidden, since they can't be used anonymously anyway.
     ...     attrs={'class': 'boardCommentFooter'})
     >>> 'Reply' in extract_text(footer)
     False
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

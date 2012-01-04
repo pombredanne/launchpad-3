@@ -13,27 +13,34 @@ import logging
 import os
 import tempfile
 
-from twisted.application import service, strports
-from twisted.cred import checkers, credentials
-from twisted.cred.portal import IRealm, Portal
+from twisted.application import (
+    service,
+    strports,
+    )
+from twisted.cred import (
+    checkers,
+    credentials,
+    )
+from twisted.cred.portal import (
+    IRealm,
+    Portal,
+    )
 from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.python import filepath
-
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
-
-from canonical.config import config
 from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.config import config
 from lp.services.database import read_transaction
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 
 
 class PoppyAccessCheck:
@@ -167,6 +174,11 @@ class PoppyFileWriter(ftp._FileWriter):
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 file(signed_file, "rb").read())
         except GPGVerificationError, error:
+            log = logging.getLogger("poppy-sftp")
+            log.info("GPGVerificationError, extra debug output follows:")
+            for attr in ("args", "code", "signatures", "source"):
+                if hasattr(error, attr):
+                    log.info("%s: %s", attr, getattr(error, attr))
             return ("Changes file must be signed with a valid GPG "
                     "signature: %s" % error)
 

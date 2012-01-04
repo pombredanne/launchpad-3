@@ -11,17 +11,15 @@ __metaclass__ = type
 __all__ = [
     'get_bzr_path',
     'get_BZR_PLUGIN_PATH_for_subprocess',
-    'load_optional_plugin',
     ]
 
 
 import os
 
 import bzrlib
-from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
-from canonical.config import config
+from lp.services.config import config
 
 
 def get_bzr_path():
@@ -59,15 +57,6 @@ os.environ['BZR_PLUGIN_PATH'] = get_BZR_PLUGIN_PATH_for_subprocess()
 # We want to have full access to Launchpad's Bazaar plugins throughout the
 # codehosting package.
 load_plugins([_get_bzr_plugins_path()])
-
-
-def load_optional_plugin(plugin_name):
-    """Load the plugin named `plugin_name` from optionalbzrplugins/."""
-    from bzrlib import plugins
-    optional_plugin_dir = os.path.join(config.root, 'bzrplugins/optional')
-    if optional_plugin_dir not in plugins.__path__:
-        plugins.__path__.append(optional_plugin_dir)
-    __import__("bzrlib.plugins.%s" % plugin_name)
 
 
 def load_bundled_plugin(plugin_name):

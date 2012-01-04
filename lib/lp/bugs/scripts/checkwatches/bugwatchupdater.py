@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes and logic for the checkwatches BugWatchUpdater."""
@@ -14,8 +14,6 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError
@@ -29,7 +27,9 @@ from lp.bugs.scripts.checkwatches.utilities import (
     get_remote_system_oops_properties,
     )
 from lp.registry.interfaces.person import PersonCreationRationale
+from lp.services.mail.helpers import get_email_template
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.publisher import canonical_url
 
 
 class BugWatchUpdater(WorkingBase):
@@ -167,11 +167,11 @@ class BugWatchUpdater(WorkingBase):
                     getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 if is_initial_import:
                     notification_text = get_email_template(
-                        'bugwatch-initial-comment-import.txt') % dict(
+                        'bugwatch-initial-comment-import.txt', 'bugs') % dict(
                             num_of_comments=len(imported_comments),
                             bug_watch_url=self.bug_watch.url)
                     comment_text_template = get_email_template(
-                        'bugwatch-comment.txt')
+                        'bugwatch-comment.txt', 'bugs')
 
                     for bug_message in imported_comments:
                         comment = bug_message.message
@@ -203,7 +203,7 @@ class BugWatchUpdater(WorkingBase):
     def _formatRemoteComment(self, message):
         """Format a comment for a remote bugtracker and return it."""
         comment_template = get_email_template(
-            self.external_bugtracker.comment_template)
+            self.external_bugtracker.comment_template, 'bugs')
 
         return comment_template % {
             'launchpad_bug': self.bug_watch.bug.id,
@@ -306,4 +306,3 @@ class BugWatchUpdater(WorkingBase):
             if other_bug_watch is None:
                 self.external_bugtracker.setLaunchpadBugId(
                     remote_bug_id, local_bug_id, local_bug_url)
-

@@ -40,7 +40,8 @@ length, languages and the date of last update for this distribution series.
     >>> print extract_text(table)
     Priority    Source package Template name  Shared with  Length   Updated
     0           evolution      man            not shared   1        2006-08-14
-    100         evolution      evolution-2.2  not shared   22       2005-05-06 ...
+    100         evolution      evolution-2.2  evolution/trunk 22    2005-05-06
+    ...
 
 Logged-in users see a link to all the active translation templates
 on a distribution series translation page.

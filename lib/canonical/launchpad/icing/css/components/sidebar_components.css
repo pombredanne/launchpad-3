@@ -1,0 +1,130 @@
+/* =========================
+   Universal
+   Side portlets
+*/
+.side {
+    padding: 0.5em;
+    }
+.side .portlet {
+    width: 90%;
+    margin: 0 auto 1em;
+    border: 1px solid #dedede;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -khtml-border-radius: 5px;
+    border-radius: 5px;
+    padding: 0.5em;
+    background: #fbfbfb;
+    }
+.side h2 {
+    font-size: 16px;
+    line-height: 20px;
+    }
+.side h3 {
+    font-size: 14px;
+    line-height: 18px;
+    }
+.side ul {
+    background: #fbfbfb;
+    }
+#privacy.private {
+    background: url(/@@/private-bg) top left repeat-x; /* 8px high */
+    padding-top: 12px; /* = 8px + the usual 4px top padding */
+    }
+/* Override for when the feature flag is active */
+.feature-flag-bugs-private-notification-enabled #privacy.private {
+    background-image: none;
+    background-color: #FBFBFB;
+    padding-top: 0.5em;
+    }
+.downloads li {
+    margin: 0;
+    padding: 2px 0 0;
+    font-weight: bold;
+    }
+.downloads li a {
+    display: block;
+    margin: 0;
+    border: 1px solid #4f843c;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
+    border-radius: 3px;
+    background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
+    padding: 6%;
+    padding-right: 40px;
+    color: #fff;
+    }
+.downloads .version {
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
+    }
+.downloads .released {
+    margin: .3em 0 .5em 0;
+    -moz-border-radius: 0 0 5px 5px;
+    -webkit-border-radius: 0 0 5px 5px;
+    -khtml-border-radius: 0 0 5px 5px;
+    border-radius: 0 0 5px 5px;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
+    }
+.downloads .alternate {
+    padding: 0 0 0 1em;
+    }
+.involvement li {
+    border-top: 1px solid #d0d0d0;
+    padding: 0;
+    font-weight: bold;
+    }
+.involvement li.single {
+    border-top: 0;
+}
+.involvement a {
+    display: block;
+    padding: 0.3em;
+    }
+.involvement li.disabled {
+    color: #cccccc;
+    }
+.involvement-service-links li.disabled img {
+    margin-bottom: 0;
+    }
+.involvement-service-links li.disabled span {
+    margin-bottom: 0;
+    }
+.involvement-service-links li.disabled table {
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    }
+.involvement a.bugs, .involvement a.answers,
+.involvement a.translations, .involvement a.code, .involvement a.blueprints {
+    background: url(/@@/answers-arrow-right.png) right center no-repeat;
+    }
+.involvement a:hover {
+    text-decoration: none;
+    background-color: #eee;
+    }
+.announcements li {
+    margin-bottom: 0.5em;
+    /* Some announcements have long strings of characters as section headers
+     * and such.  Since they don't have whitespace they can't wrap, so they
+     * would break out of their container if we didn't clip them here. */
+    overflow: hidden;
+    }
+.announcements li strong,
+.announcements li a {
+    font-weight: bold;
+    }
+.latest-announcement {
+    padding: 0.5em;
+    background: #dfe5f6;
+    border-top: 1px solid #d0d0d0;
+    border-bottom: 1px solid #d0d0d0;
+    }
+.announcement .registered {
+    margin-top: -2px;
+    }

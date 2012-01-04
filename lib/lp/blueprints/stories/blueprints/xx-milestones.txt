@@ -46,7 +46,7 @@ milestone.
 Now, we should see the spec on the Mozilla Milestone 1.0 page after the
 cache has expired.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> MemcachedLayer.purge()
     >>> print admin_browser.getLink('1.0').url

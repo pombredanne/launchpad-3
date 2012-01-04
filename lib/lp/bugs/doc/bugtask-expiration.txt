@@ -396,6 +396,13 @@ indicates the anonymous user.
 
 If one of the bugs is set to private, anonymous users can no longer see
 it as being marked for expiration.
+We need a feature flag so that multi-pillar bugs can be made private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
 
     >>> private_bug = ubuntu_bugtask.bug
     >>> private_bug.title
@@ -450,6 +457,10 @@ even the private bugs are returned.
     True
     >>> reset_bug_modified_date(private_bug, 351)
 
+Clean up the feature flag.
+    >>> flags.cleanUp()
+
+
 The default expiration age
 --------------------------
 
@@ -459,7 +470,7 @@ defaults to 60 days. The period is measured from the date_incomplete
 field. We expire bugtasks that are Incomplete and unattended for 60
 days or more.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> old_age_days = config.malone.days_before_expiration
     >>> old_age_days
     60

@@ -5,10 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -19,6 +15,10 @@ from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 def list_custom_uploads(distroseries):

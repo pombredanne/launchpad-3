@@ -53,6 +53,7 @@ from storm.expr import (
     And,
     Desc,
     In,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -79,37 +80,12 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -129,7 +105,11 @@ from lp.bugs.adapters.bugchange import (
     UnsubscribedFromBug,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.errors import InvalidDuplicateValue
+from lp.bugs.errors import (
+    BugCannotBePrivate,
+    InvalidDuplicateValue,
+    SubscriptionPrivacyViolation,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
@@ -144,12 +124,14 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatus,
     NominationError,
     NominationSeriesObsoleteError,
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -157,6 +139,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
@@ -174,11 +157,15 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    UnsuitableAccessPolicyError,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -198,9 +185,25 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
+from lp.services.helpers import shortlist
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
@@ -214,6 +217,13 @@ from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
     )
 
 
@@ -350,6 +360,8 @@ class Bug(SQLBase):
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, 'AccessPolicy.id')
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -476,6 +488,15 @@ class Bug(SQLBase):
         return self.users_affected_with_dupes.count()
 
     @property
+    def other_users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        if not current_user:
+            return self.users_affected_count_with_dupes
+        return self.users_affected_with_dupes.find(
+            Person.id != current_user.id).count()
+
+    @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         # Note that this is a decorated result set, so will cache its
@@ -552,22 +573,26 @@ class Bug(SQLBase):
                 # permit use.
                 message_by_id[message.id] = result
             return result
-        # There is possibly some nicer way to do this in storm, but
-        # this is a lot easier to figure out.
         if include_parents:
-            ParentMessage = ClassAlias(Message, name="parent_message")
-            tables = SQL("""
-Message left outer join
-message as parent_message on (
-    message.parent=parent_message.id and
-    parent_message.id in (
-        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
-BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage, BugMessage
-            results = store.using(tables).find(
-                lookup,
+            ParentMessage = ClassAlias(Message)
+            ParentBugMessage = ClassAlias(BugMessage)
+            tables = [
+                Message,
+                Join(
+                    BugMessage,
+                    BugMessage.messageID == Message.id),
+                LeftJoin(
+                    Join(
+                        ParentMessage,
+                        ParentBugMessage,
+                        ParentMessage.id == ParentBugMessage.messageID),
+                    And(
+                        Message.parent == ParentMessage.id,
+                        ParentBugMessage.bugID == self.id)),
+                ]
+            results = store.using(*tables).find(
+                (Message, ParentMessage, BugMessage),
                 BugMessage.bugID == self.id,
-                BugMessage.messageID == Message.id,
                 )
         else:
             lookup = Message, BugMessage
@@ -785,7 +810,10 @@ BugMessage""" % sqlvalues(self.id))
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-
+        if person.is_team and self.private and person.anyone_can_join():
+            error_msg = ("Open and delegated teams cannot be subscribed "
+                "to private bugs.")
+            raise SubscriptionPrivacyViolation(error_msg)
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -1181,6 +1209,15 @@ BugMessage""" % sqlvalues(self.id))
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            for bugtask in self.bugtasks:
+                # Check the stored value so we don't write to unaltered tasks.
+                if (bugtask._status in (
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
+                    # This is not a semantic change, so we don't update date
+                    # records or send email.
+                    bugtask._status = (
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             # XXX 2008-05-27 jamesh:
             # Ensure that BugMessages get flushed in same order as
             # they are created.
@@ -1512,16 +1549,28 @@ BugMessage""" % sqlvalues(self.id))
             raise NominationError(
                 "Only bug supervisors or owners can nominate bugs.")
 
-        nomination = BugNomination(
-            owner=owner, bug=self, distroseries=distroseries,
-            productseries=productseries)
+        # There may be an existing DECLINED nomination. If so, we set the
+        # status back to PROPOSED. We do not alter the original date_created.
+        nomination = None
+        try:
+            nomination = self.getNominationFor(target)
+        except NotFoundError:
+            pass
+        if nomination:
+            nomination.status = BugNominationStatus.PROPOSED
+            nomination.decider = None
+            nomination.date_decided = None
+        else:
+            nomination = BugNomination(
+                owner=owner, bug=self, distroseries=distroseries,
+                productseries=productseries)
         self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(target)
+            nomination = self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination target.
@@ -1551,7 +1600,11 @@ BugMessage""" % sqlvalues(self.id))
             # No tasks match the candidate's pillar. We must refuse.
             return False
         else:
-            # The bug is already nominated for this nomination target.
+            # The bug may be already nominated for this nomination target.
+            # If the status is declined, the bug can be renominated, else
+            # return False
+            if nomination:
+                return nomination.status == BugNominationStatus.DECLINED
             return False
 
     def getNominationFor(self, target):
@@ -1670,6 +1723,15 @@ BugMessage""" % sqlvalues(self.id))
                 self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
+            # We do not allow multi-pillar private bugs except for those teams
+            # who want to shoot themselves in the foot.
+            if private:
+                allow_multi_pillar_private = bool(getFeatureFlag(
+                    'disclosure.allow_multipillar_private_bugs.enabled'))
+                if (not allow_multi_pillar_private
+                        and len(self.affected_pillars) > 1):
+                    raise BugCannotBePrivate(
+                        "Multi-pillar bugs cannot be private.")
             private_changed = True
             self.private = private
 
@@ -1696,8 +1758,23 @@ BugMessage""" % sqlvalues(self.id))
 
         if private_changed or security_related_changed:
             changed_fields = []
+
             if private_changed:
                 changed_fields.append('private')
+                if not f_flag and private:
+                    # If we didn't call reconcileSubscribers, we may have
+                    # bug supervisors who should be on this bug, but aren't.
+                    supervisors = set()
+                    for bugtask in self.bugtasks:
+                        supervisors.add(bugtask.pillar.bug_supervisor)
+                    if None in supervisors:
+                        supervisors.remove(None)
+                    for s in supervisors:
+                        subscriptions = get_structural_subscriptions_for_bug(
+                                            self, s)
+                        if subscriptions != []:
+                            self.subscribe(s, who)
+
             if security_related_changed:
                 changed_fields.append('security_related')
                 if not f_flag and security_related:
@@ -1708,6 +1785,7 @@ BugMessage""" % sqlvalues(self.id))
                     for pillar in self.affected_pillars:
                         if pillar.security_contact is not None:
                             self.subscribe(pillar.security_contact, who)
+
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 
@@ -1726,6 +1804,19 @@ BugMessage""" % sqlvalues(self.id))
         """Setter for the `security_related` property."""
         return self.setPrivacyAndSecurityRelated(
             self.private, security_related, who)[1]
+
+    def setAccessPolicy(self, type):
+        """See `IBug`."""
+        if type is None:
+            policy = None
+        else:
+            policy = getUtility(IAccessPolicySource).getByPillarAndType(
+                self.default_bugtask.pillar, type)
+            if policy is None:
+                raise UnsuitableAccessPolicyError(
+                    "%s doesn't have a %s access policy."
+                    % (self.default_bugtask.pillar.name, type.title))
+        self.access_policy = policy
 
     def getRequiredSubscribers(self, for_private, for_security_related, who):
         """Return the mandatory subscribers for a bug with given attributes.
@@ -1876,18 +1967,23 @@ BugMessage""" % sqlvalues(self.id))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
-        # In order to preserve the ordering of the tags, delete all tags
-        # and insert the new ones.
+        # Sets provide an easy way to get the difference between the old and
+        # new tags.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        # The cache will be stale after we add/remove tags, clear it.
         del get_property_cache(self)._cached_tags
-        added_tags = new_tags.difference(old_tags)
+        # Find the set of tags that are to be removed and remove them.
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
             tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
+        # Find the set of tags that are to be added and add them.
+        added_tags = new_tags.difference(old_tags)
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        # Write all pending changes to the DB, including any pending non-tag
+        # changes.
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
@@ -2031,7 +2127,16 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.message.visible = visible
+
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = bug_message.owner == user
+        if (not self.userCanSetCommentVisibility(user)
+            and not user_owns_comment):
+            raise Unauthorized(
+                "User %s cannot hide or show bug comments" % user.name)
+        bug_message.message.setVisible(visible)
 
     @cachedproperty
     def _known_viewers(self):
@@ -2054,6 +2159,10 @@ BugMessage""" % sqlvalues(self.id))
         authenticated users.  It is also called in other contexts where the
         user may be anonymous.
 
+        Most logic is delegated to the query provided by
+        get_bug_privacy_filter, but some short-circuits and caching are
+        reimplemented here.
+
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
@@ -2068,29 +2177,37 @@ BugMessage""" % sqlvalues(self.id))
         if user.id in self._known_viewers:
             return True
 
-        elif IPersonRoles(user).in_admin:
-            # Admins can view all bugs.
+        filter = get_bug_privacy_filter(user)
+        store = Store.of(self)
+        store.flush()
+        if (not filter or
+            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+            self._known_viewers.add(user.id)
             return True
-        else:
-            # At this point we know the bug is private and the user is
-            # unprivileged.
+        return False
 
-            # Assignees to bugtasks can see the private bug.
-            for bugtask in self.bugtasks:
-                if user.inTeam(bugtask.assignee):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Explicit subscribers may also view it.
-            for subscription in self.subscriptions:
-                if user.inTeam(subscription.person):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Pillar owners can view it. Note that this is contentious and
-            # possibly incorrect: see bug 702429.
-            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
-                if user.inTeam(pillar_owner):
-                    self._known_viewers.add(user.id)
-                    return True
+    def userCanSetCommentVisibility(self, user):
+        """See `IBug`"""
+
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_registry_experts:
+            return True
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
+
+    def userInProjectRole(self, user):
+        """ Return True if user has a project role for any affected pillar."""
+        roles = IPersonRoles(user)
+        if roles is None:
+            return False
+        for pillar in self.affected_pillars:
+            if (roles.isOwner(pillar)
+                or roles.isOneOfDrivers(pillar)
+                or roles.isBugSupervisor(pillar)
+                or roles.isSecurityContact(pillar)):
+                return True
         return False
 
     def linkHWSubmission(self, submission):

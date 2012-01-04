@@ -16,6 +16,7 @@ import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
+import oops_twisted
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -32,12 +33,6 @@ from twisted.python import log
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
-    )
 from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -47,7 +42,6 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
-from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
@@ -68,12 +62,14 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
+from lp.services.webapp import errorlog
 from lp.testing import (
     login,
     logout,
@@ -81,6 +77,11 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -534,7 +535,7 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
-    run_tests_with = AsynchronousDeferredRunTest
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
@@ -586,6 +587,12 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         # If the process deferred is fired with a failure, finishJob is called
         # with CodeImportResultStatus.FAILURE, but the call to run() still
         # succeeds.
+        # Need a twisted error reporting stack (normally set up by
+        # loggingsuppoer.set_up_oops_reporting).
+        errorlog.globalErrorUtility.configure(
+            config_factory=oops_twisted.Config,
+            publisher_adapter=oops_twisted.defer_publisher)
+        self.addCleanup(errorlog.globalErrorUtility.configure)
         worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         return worker_monitor.run().addCallback(
             self.assertFinishJobCalledWithStatus, worker_monitor,
@@ -608,6 +615,34 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
             raise ExitQuietly
         worker_monitor.finishJob = finishJob
         return worker_monitor.run()
+
+    def test_log_oops(self):
+        # Ensure an OOPS is logged if published.
+        errorlog.globalErrorUtility.configure(
+            config_factory=oops_twisted.Config,
+            publisher_adapter=oops_twisted.defer_publisher)
+        self.addCleanup(errorlog.globalErrorUtility.configure)
+        failure_msg = "test_log_oops expected failure"
+        worker_monitor = self.WorkerMonitor(
+            defer.fail(RuntimeError(failure_msg)))
+
+        def finishJob(reason):
+            from twisted.python import failure
+            return worker_monitor._logOopsFromFailure(
+                failure.Failure())
+
+        worker_monitor.finishJob = finishJob
+        d = worker_monitor.run()
+
+        def check_log_file(ignored):
+            worker_monitor._log_file.seek(0)
+            log_text = worker_monitor._log_file.read()
+            self.assertIn(
+                "Failure: exceptions.RuntimeError: " + failure_msg,
+                log_text)
+
+        d.addCallback(check_log_file)
+        return d
 
 
 def nuke_codeimport_sample_data():
@@ -706,7 +741,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
-        load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path, use_server=False)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
@@ -719,7 +753,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
-        load_optional_plugin('hg')
         self.hg_server = MercurialServer(self.repo_path, use_server=False)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)

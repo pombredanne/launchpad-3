@@ -38,8 +38,10 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp import (
+from lp.app.errors import UnexpectedFormData
+from lp.services.database.readonly import is_read_only
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -47,11 +49,9 @@ from canonical.launchpad.webapp import (
     Link,
     urlparse,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from lp.app.errors import UnexpectedFormData
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,
     convert_newlines_to_web_form,
@@ -70,6 +70,7 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model import pofilestatsjob
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
     )
@@ -892,10 +893,8 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
-        # XXX: kiko 2006-09-27:
-        # Isn't this a hell of a performance issue, hitting this
-        # same table for every submit?
-        self.pofile.updateStatistics()
+        # Schedule this POFile to have its statistics updated.
+        pofilestatsjob.schedule(self.pofile)
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the

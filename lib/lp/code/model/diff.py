@@ -40,9 +40,6 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
@@ -50,6 +47,14 @@ from lp.code.interfaces.diff import (
     IPreviewDiff,
     )
 from lp.codehosting.bzrutils import read_locked
+from lp.services.config import config
+from lp.services.database.bulk import load_referencing
+from lp.services.database.sqlbase import SQLBase
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class Diff(SQLBase):
@@ -342,9 +347,24 @@ class PreviewDiff(Storm):
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
 
-    branch_merge_proposal = Reference(
+    @staticmethod
+    def preloadData(preview_diffs):
+        # Circular imports.
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+        bmps = load_referencing(
+            BranchMergeProposal, preview_diffs, ['preview_diff_id'])
+        bmps_preview = dict((bmp.preview_diff_id, bmp) for bmp in bmps)
+        for preview_diff in preview_diffs:
+            cache = get_property_cache(preview_diff)
+            cache.branch_merge_proposal = bmps_preview[preview_diff.id]
+
+    _branch_merge_proposal = Reference(
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
+
+    @cachedproperty
+    def branch_merge_proposal(self):
+        return self._branch_merge_proposal
 
     @classmethod
     def fromBranchMergeProposal(cls, bmp):

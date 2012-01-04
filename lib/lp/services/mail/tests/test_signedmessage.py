@@ -17,13 +17,8 @@ from textwrap import dedent
 import gpgme
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    import_public_test_keys,
-    import_secret_test_key,
-    )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.mail.incoming import (
     authenticateEmail,
     canonicalise_line_endings,
@@ -32,6 +27,11 @@ from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
+from lp.testing.gpgkeys import (
+    import_public_test_keys,
+    import_secret_test_key,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSignedMessage(TestCaseWithFactory):

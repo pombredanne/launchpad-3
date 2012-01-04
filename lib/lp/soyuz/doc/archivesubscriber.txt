@@ -29,7 +29,6 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
-    >>> logout()
     >>> from lp.testing.mail_helpers import print_emails
 
 
@@ -382,7 +381,7 @@ or be an admin.
 
 Trying to set the properties as the subscribed person will fail:
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> new_sub.date_expires = UTC_NOW
     Traceback (most recent call last):
     ...

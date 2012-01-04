@@ -17,21 +17,27 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'CannotDeleteBugtask',
+    'DB_INCOMPLETE_BUGTASK_STATUSES',
+    'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'get_bugtask_status',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
+    'IBugTaskDelete',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'IPersonBugTaskSearch',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamProductBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
+    'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
@@ -54,6 +60,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_read_operation,
     export_write_operation,
     exported,
@@ -92,17 +99,8 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    IHasDateCreated,
-    )
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp import _
+from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
@@ -111,6 +109,7 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -119,6 +118,12 @@ from lp.services.fields import (
     StrippedTextLine,
     Summary,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
+from lp.services.webapp.interfaces import ITableBatchNavigator
 from lp.soyuz.interfaces.component import IComponent
 
 
@@ -196,6 +201,11 @@ class BugTaskStatus(DBEnumeratedType):
         this product or source package.
         """)
 
+    # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE are mapped to INCOMPLETE on read, and on
+    # write INCOMPLETE is mapped to INCOMPLETE_WITHOUT_RESPONSE. This permits
+    # An index on the INCOMPLETE_WITH*_RESPONSE queries that the webapp
+    # generates.
     INCOMPLETE = DBItem(15, """
         Incomplete
 
@@ -269,10 +279,6 @@ class BugTaskStatus(DBEnumeratedType):
         affected software.
         """)
 
-    # DBItem values 35 and 40 are used by
-    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
-    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-
     UNKNOWN = DBItem(999, """
         Unknown
 
@@ -287,24 +293,46 @@ class BugTaskStatusSearch(DBEnumeratedType):
     """
     use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
-    sort_order = (
-        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
-        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
-
-    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
+    INCOMPLETE_WITH_RESPONSE = DBItem(13, """
         Incomplete (with response)
 
         This bug has new information since it was last marked
         as requiring a response.
         """)
 
-    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(14, """
         Incomplete (without response)
 
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
+
+def get_bugtask_status(status_id):
+    """Get a member of `BugTaskStatus` or `BugTaskStatusSearch` by value.
+
+    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
+    subset of the other, so this searches first in `BugTaskStatus` then in
+    `BugTaskStatusSearch` for a member with the given ID.
+    """
+    try:
+        return BugTaskStatus.items[status_id]
+    except KeyError:
+        return BugTaskStatusSearch.items[status_id]
+
+
+def normalize_bugtask_status(status):
+    """Normalize `status`.
+
+    It might be a member of any of three related enums: `BugTaskStatus`,
+    `BugTaskStatusSearch`, or `BugTaskStatusSearchDisplay`. This tries to
+    normalize by value back to the first of those three enums in which the
+    status appears.
+    """
+    try:
+        return BugTaskStatus.items[status.value]
+    except KeyError:
+        return BugTaskStatusSearch.items[status.value]
 
 
 class BugTagsSearchCombinator(EnumeratedType):
@@ -371,6 +399,17 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
+# Actual values stored in the DB:
+DB_INCOMPLETE_BUGTASK_STATUSES = (
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+    )
+
+DB_UNRESOLVED_BUGTASK_STATUSES = (
+    UNRESOLVED_BUGTASK_STATUSES +
+    DB_INCOMPLETE_BUGTASK_STATUSES
+    )
+
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.OPINION,
@@ -395,6 +434,15 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
 DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     BugTaskStatusSearchDisplay.items.mapping[item.value]
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteBugtask(Exception):
+    """The bugtask cannot be deleted.
+
+    Raised when a user tries to delete a bugtask but the deletion cannot
+    proceed because of a model constraint or other business rule violation.
+    """
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -444,7 +492,23 @@ class IllegalRelatedBugTasksParams(Exception):
     in a search for related bug tasks"""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTaskDelete(Interface):
+    """An interface for operations allowed with the Delete permission."""
+    @export_destructor_operation()
+    @call_with(who=REQUEST_USER)
+    @operation_for_version('devel')
+    def delete(who):
+        """Delete this bugtask.
+
+        :param who: the user who is removing the bugtask.
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: Unauthorized if the user does not have permission
+            to delete the bugtask.
+        """
+
+
+class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -481,9 +545,13 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
+    # Note that status is a property because the model only exposes INCOMPLETE
+    # but the DB stores INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE for query efficiency.
     status = exported(
         Choice(title=_('Status'), vocabulary=BugTaskStatus,
                default=BugTaskStatus.NEW, readonly=True))
+    _status = Attribute('The actual status DB column used in queries.')
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED, readonly=True))
@@ -843,11 +911,18 @@ class IBugTask(IHasDateCreated, IHasBug):
         not a package task, returns None.
         """
 
-    def userCanEditMilestone(user):
-        """Can the user edit the Milestone field?"""
+    def userHasDriverPrivileges(user):
+        """Does the user have driver privledges on the current bugtask?
 
-    def userCanEditImportance(user):
-        """Can the user edit the Importance field?"""
+        :return: A boolean.
+        """
+
+    def userHasBugSupervisorPrivileges(user):
+        """Is the user a privledged one, allowed to changed details on a
+        bug?
+
+        :return: A boolean.
+        """
 
 
 # Set schemas that were impossible to specify during the definition of
@@ -946,10 +1021,11 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_supervisor = Choice(
-        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs in packages this person or team '
-                      'is subscribed to.'),
+    structural_subscriber = Choice(
+        title=_('Structural Subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_(
+            'Show only bugs in projects, series, distributions, and packages '
+            'that this person or team is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
@@ -1026,7 +1102,7 @@ class IUpstreamProductBugTaskSearch(IBugTaskSearch):
         required=False)
 
 
-class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+class IFrontPageBugTaskSearch(IBugTaskSearch):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
@@ -1405,6 +1481,8 @@ class BugTaskSearchParams:
 class IBugTaskSet(Interface):
     """A utility to retrieving BugTasks."""
     title = Attribute('Title')
+    orderby_expression = Attribute(
+        "The SQL expression for a sort key")
 
     def get(task_id):
         """Retrieve a BugTask with the given id.
@@ -1559,12 +1637,6 @@ class IBugTaskSet(Interface):
         The <user> parameter is necessary to make sure we don't return any
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
-        """
-
-    def getOrderByColumnDBName(col_name):
-        """Get the database name for col_name.
-
-        If the col_name is unrecognized, a KeyError is raised.
         """
 
     def getBugCountsForPackages(user, packages):

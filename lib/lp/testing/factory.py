@@ -40,11 +40,9 @@ from operator import (
     isSequenceType,
     )
 import os
-from random import randint
 from StringIO import StringIO
 import sys
 from textwrap import dedent
-from threading import local
 from types import InstanceType
 import warnings
 
@@ -66,40 +64,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    OAuthPermission,
-    )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -116,6 +80,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -175,7 +140,16 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.accesspolicy import (
+    AccessPolicyType,
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
@@ -219,6 +193,7 @@ from lp.registry.interfaces.poll import (
     PollSecrecy,
     )
 from lp.registry.interfaces.product import (
+    IProduct,
     IProductSet,
     License,
     )
@@ -234,16 +209,50 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.config import config
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    IAccountSet,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import AutoDecorate
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    OAuthPermission,
+    )
+from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -276,6 +285,9 @@ from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -295,6 +307,7 @@ from lp.testing import (
     time_counter,
     with_celebrity_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.enums import (
     LanguagePackType,
     RosettaImportStatus,
@@ -389,9 +402,9 @@ class ObjectFactory:
 
     __metaclass__ = AutoDecorate(default_master_store)
 
-    def __init__(self):
-        # Initialize the unique identifier.
-        self._local = local()
+    # This allocates process-wide unique integers.  We count on Python doing
+    # only cooperative threading to make this safe across threads.
+    _unique_int_counter = count(100000)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
@@ -402,11 +415,7 @@ class ObjectFactory:
         For each thread, this will be a series of increasing numbers, but the
         starting point will be unique per thread.
         """
-        counter = getattr(self._local, 'integer', None)
-        if counter is None:
-            counter = count(randint(0, 1000000))
-            self._local.integer = counter
-        return counter.next()
+        return ObjectFactory._unique_int_counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -472,7 +481,8 @@ class ObjectFactory:
         return epoch + timedelta(minutes=self.getUniqueInteger())
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
-                                    url=None, cvs_root=None, cvs_module=None):
+                                    url=None, cvs_root=None, cvs_module=None,
+                                    stacked_on_url=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -494,7 +504,8 @@ class ObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, url, cvs_root, cvs_module)
+            branch_id, rcstype, url, cvs_root, cvs_module,
+            stacked_on_url=stacked_on_url)
 
 
 class BareLaunchpadObjectFactory(ObjectFactory):
@@ -602,7 +613,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False, member_of=(),
+        homepage_content=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -639,6 +651,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
         naked_person._password_cleartext_cached = password
+        if homepage_content is not None:
+            naked_person.homepage_content = homepage_content
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -758,7 +772,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
-                 description=None,
+                 description=None, icon=None, logo=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -769,9 +783,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param description: Team team's description.
-        :type string:
+        :type description string:
         :param email: The email address to use as the team's contact address.
         :type email: string
+        :param icon: The team's icon.
+        :param logo: The team's logo.
         :param subscription_policy: The subscription policy of the team.
         :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
@@ -796,15 +812,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, teamdescription=description,
             subscriptionpolicy=subscription_policy)
+        naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
-            removeSecurityProxy(team).visibility = visibility
+            naked_team.visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
+        if icon is not None:
+            naked_team.icon = icon
+        if logo is not None:
+            naked_team.logo = logo
         if members is not None:
-            naked_team = removeSecurityProxy(team)
             for member in members:
                 naked_team.addMember(member, owner)
         return team
@@ -1074,6 +1094,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner=owner, name=name, title=title, time_zone=time_zone,
             time_starts=time_starts, time_ends=time_ends, summary=summary)
 
+    def makeStackedOnBranchChain(self, depth=5, **kwargs):
+        branch = None
+        for i in xrange(depth):
+            branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
+        return branch
+
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
@@ -1104,7 +1130,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if registrant is None:
             if owner.is_team:
-                registrant = owner.teamowner
+                registrant = removeSecurityProxy(owner).teamowner
             else:
                 registrant = owner
 
@@ -1517,11 +1543,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u''):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
         diff = self.makeDiff()
-        bmp = self.makeBranchMergeProposal()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff.branch_merge_proposal = bmp
+        preview_diff._branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
@@ -1693,10 +1720,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
-            bugtask.transitionToStatus(
-                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
+            with person_logged_in(owner):
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         if milestone is not None:
-            bugtask.transitionToMilestone(milestone, milestone.target.owner)
+            with person_logged_in(owner):
+                bugtask.transitionToMilestone(
+                    milestone, milestone.target.owner)
         if series is not None:
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
@@ -1704,27 +1734,45 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    private=False):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
         bug task is returned.
 
+        Private (and soon all) bugs cannot affect multiple projects
+        so we ensure that if a bug has not been specified and one is
+        created, it is for the same pillar as that of the specified target.
+
         :param bug: The `IBug` the bug tasks should be part of. If None,
             one will be created.
         :param target: The `IBugTarget`, to which the bug will be
             targeted to.
+        :param private: If a bug is not specified, the privacy state to use
+            when creating the bug for the bug task..
         """
-        if bug is None:
-            bug = self.makeBug()
-        if target is None:
-            target = self.makeProduct()
-        existing_bugtask = bug.getBugTask(target)
-        if existing_bugtask is not None:
-            return existing_bugtask
 
-        if owner is None:
-            owner = self.makePerson()
+        # Find and return the existing target if one exists.
+        if bug is not None and target is not None:
+            existing_bugtask = bug.getBugTask(target)
+            if existing_bugtask is not None:
+                return existing_bugtask
+
+        # If we are adding a task to an existing bug, and no target is
+        # is specified, we use the same pillar as already exists to ensure
+        # that we don't end up with a bug affecting multiple projects.
+        if target is None:
+            default_bugtask = bug and removeSecurityProxy(bug.default_bugtask)
+            if default_bugtask is not None:
+                existing_pillar = default_bugtask.pillar
+                if IProduct.providedBy(existing_pillar):
+                    target = self.makeProductSeries(product=existing_pillar)
+                elif IDistribution.providedBy(existing_pillar):
+                    target = self.makeDistroSeries(
+                        distribution=existing_pillar)
+            if target is None:
+                target = self.makeProduct()
 
         prerequisite_target = None
         if IProductSeries.providedBy(target):
@@ -1746,10 +1794,41 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distroseries=target.distribution.currentseries,
                     sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
-            prerequisite = bug.getBugTask(prerequisite_target)
+            prerequisite = bug and bug.getBugTask(prerequisite_target)
             if prerequisite is None:
-                self.makeBugTask(bug, prerequisite_target, publish=publish)
+                prerequisite = self.makeBugTask(
+                    bug, prerequisite_target, publish=publish)
+                bug = prerequisite.bug
 
+        # Private (and soon all) bugs cannot affect multiple projects
+        # so we ensure that if a bug has not been specified and one is
+        # created, it is for the same pillar as that of the specified target.
+        result_bug_task = None
+        if bug is None and private:
+            product = distribution = sourcepackagename = None
+            pillar = target.pillar
+            if IProduct.providedBy(pillar):
+                product = pillar
+            elif IDistribution.providedBy(pillar):
+                distribution = pillar
+            if (IDistributionSourcePackage.providedBy(target)
+                or ISourcePackage.providedBy(target)):
+                    sourcepackagename = target.sourcepackagename
+            bug = self.makeBug(
+                private=private, product=product, distribution=distribution,
+                sourcepackagename=sourcepackagename)
+            if not ISeriesBugTarget.providedBy(target):
+                result_bug_task = bug.default_bugtask
+        # We keep the existing behaviour for public bugs because
+        # test_bugtask_search breaks spectacularly otherwise. Almost all other
+        # tests pass.
+        if bug is None:
+            bug = self.makeBug()
+
+        if result_bug_task is not None:
+            return result_bug_task
+        if owner is None:
+            owner = self.makePerson()
         return removeSecurityProxy(bug).addTask(owner, target)
 
     def makeBugNomination(self, bug=None, target=None):
@@ -2647,7 +2726,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         Note: the builder returned will not be able to actually build -
         we currently have a build slave setup for 'bob' only in the
         test environment.
-        See lib/canonical/buildd/tests/buildd-slave-test.conf
         """
         if processor is None:
             processor_fam = ProcessorFamilySet().getByName('x86')
@@ -3765,6 +3843,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
+                                           datecreated=None,
                                            pocket=None, archive=None,
                                            source_package_release=None,
                                            sourcepackagename=None):
@@ -3806,6 +3885,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 section_name=section_name,
                 priority=priority)
 
+        if datecreated is None:
+            datecreated = self.getUniqueDate()
+
         bpph = getUtility(IPublishingSet).newBinaryPublication(
             archive, binarypackagerelease, distroarchseries,
             binarypackagerelease.component, binarypackagerelease.section,
@@ -3813,6 +3895,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_bpph = removeSecurityProxy(bpph)
         naked_bpph.status = status
         naked_bpph.dateremoved = dateremoved
+        naked_bpph.datecreated = datecreated
         naked_bpph.scheduleddeletiondate = scheduleddeletiondate
         naked_bpph.priority = priority
         if status == PackagePublishingStatus.PUBLISHED:
@@ -3976,6 +4059,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution, sourcepackagename, False)
         return package
 
+    def makeDSPCache(self, distro_name, package_name, make_distro=True,
+                     official=True, binary_names=None, archive=None):
+        if make_distro:
+            distribution = self.makeDistribution(name=distro_name)
+        else:
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        dsp = self.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename=package_name,
+            with_db=official)
+        if archive is None:
+            archive = dsp.distribution.main_archive
+        else:
+            archive = self.makeArchive(
+                distribution=distribution, purpose=archive)
+        if official:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distribution.currentseries,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive)
+        with dbuser('statistician'):
+            DistributionSourcePackageCache(
+                distribution=dsp.distribution,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive,
+                name=package_name,
+                binpkgnames=binary_names)
+        return distribution, dsp
+
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
         """Make an email message with possible attachments.
@@ -4109,7 +4220,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             system = self.getUniqueString('system-fingerprint')
         if submission_data is None:
             sample_data_path = os.path.join(
-                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
                 'tests', 'simple_valid_hwdb_submission.xml')
             submission_data = open(sample_data_path).read()
         filename = self.getUniqueString('submission-file')
@@ -4155,7 +4266,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
-        from canonical.testing import BaseLayer
+        from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
             "test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)
@@ -4265,6 +4376,50 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
+        if pillar is None:
+            pillar = self.makeProduct()
+        policy = getUtility(IAccessPolicySource).create(pillar, type)
+        IStore(policy).flush()
+        return policy
+
+    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
+        if concrete is None:
+            concrete = self.makeBranch()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        artifact.policy = policy
+        IStore(artifact).flush()
+        return artifact
+
+    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        if object is None:
+            object = self.makeAccessPolicy()
+        grant = getUtility(IAccessPolicyGrantSource).grant(
+            grantee, grantor, object)
+        IStore(grant).flush()
+        return grant
+
+    def makeFakeFileUpload(self, filename=None, content=None):
+        """Return a zope.publisher.browser.FileUpload like object.
+
+        This can be useful while testing multipart form submission.
+        """
+        if filename is None:
+            filename = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        fileupload = StringIO(content)
+        fileupload.filename = filename
+        fileupload.headers = {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%s"' % filename
+            }
+        return fileupload
 
 
 # Some factory methods return simple Python types. We don't add

@@ -18,7 +18,7 @@ from textwrap import dedent
 import time
 
 from bzrlib import bzrdir
-from bzrlib.errors import (NotBranchError)
+from bzrlib.errors import NotBranchError
 
 
 excluded_dir_re = re.compile(r'.*(not-used|lib/mailman)')

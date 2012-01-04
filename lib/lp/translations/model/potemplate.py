@@ -51,30 +51,30 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import helpers
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import get_email_template
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import RosettaImportStatus
@@ -1014,7 +1014,7 @@ class POTemplate(SQLBase, RosettaStats):
                             "Statistics update failed: %s" % unicode(error))
 
         if template_mail is not None:
-            template = helpers.get_email_template(
+            template = get_email_template(
                 template_mail, 'translations')
             message = template % replacements
             return (subject, message)
@@ -1337,7 +1337,7 @@ class POTemplateSet:
                 conditions, POTemplate.distroseries == distroseries)
 
         store = IStore(POTemplate)
-        matches = helpers.shortlist(store.find(POTemplate, conditions))
+        matches = shortlist(store.find(POTemplate, conditions))
 
         if len(matches) == 0:
             # Nope.  Sorry.
@@ -1385,9 +1385,6 @@ class POTemplateSet:
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
         return IMasterStore(POTemplate).execute("""
             INSERT INTO SuggestivePOTemplate (
                 SELECT POTemplate.id
@@ -1402,11 +1399,14 @@ class POTemplateSet:
                     Product.id = ProductSeries.product
                 WHERE
                     POTemplate.iscurrent AND (
-                        Distribution.official_rosetta OR
-                        Product.official_rosetta)
+                        Distribution.translations_usage IN %(usage)s OR
+                        Product.translations_usage IN %(usage)s)
                 ORDER BY POTemplate.id
             )
-            """).rowcount
+            """ % {
+                'usage': sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)}
+        ).rowcount
 
 
 class POTemplateSharingSubset(object):

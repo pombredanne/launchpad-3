@@ -9,4 +9,10 @@
   <utility
       provides=".interfaces.IMessageSession"
       component=".rabbit.unreliable_session" />
+  <subscriber
+      for="lp.services.webapp.interfaces.IFinishReadOnlyRequestEvent"
+      handler=".rabbit.session_finish_handler" />
+  <subscriber
+      for="lp.services.webapp.interfaces.IFinishReadOnlyRequestEvent"
+      handler=".rabbit.unreliable_session_finish_handler" />
 </configure>

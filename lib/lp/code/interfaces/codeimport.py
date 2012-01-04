@@ -38,7 +38,7 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     CodeImportReviewStatus,

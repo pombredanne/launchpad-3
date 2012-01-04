@@ -12,15 +12,6 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -38,12 +29,19 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
+from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):
@@ -150,6 +148,51 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = GenericBranchCollection(
             self.store, [Branch.product == branch.product])
         self.assertEqual(1, collection.count())
+
+    def test_preloadVisibleStackedOnBranches_visible_private_branches(self):
+        person = self.factory.makePerson()
+        branch_number = 2
+        depth = 3
+        # Create private branches person can see.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    owner=person, private=True, depth=depth))
+        with person_logged_in(person):
+            all_branches = (
+                GenericBranchCollection.preloadVisibleStackedOnBranches(
+                    branches, person))
+        self.assertEqual(len(all_branches), branch_number * depth)
+
+    def test_preloadVisibleStackedOnBranches_anon_public_branches(self):
+        branch_number = 2
+        depth = 3
+        # Create public branches.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    private=False, depth=depth))
+        all_branches = (
+            GenericBranchCollection.preloadVisibleStackedOnBranches(branches))
+        self.assertEqual(len(all_branches), branch_number * depth)
+
+    def test_preloadVisibleStackedOnBranches_non_anon_public_branches(self):
+        person = self.factory.makePerson()
+        branch_number = 2
+        depth = 3
+        # Create public branches.
+        branches = []
+        for i in range(branch_number):
+            branches.append(
+                self.factory.makeStackedOnBranchChain(
+                    owner=person, private=False, depth=depth))
+        with person_logged_in(person):
+            all_branches = (
+                GenericBranchCollection.preloadVisibleStackedOnBranches(
+                    branches, person))
+        self.assertEqual(len(all_branches), branch_number * depth)
 
 
 class TestBranchCollectionFilters(TestCaseWithFactory):
@@ -585,7 +628,9 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(
-            owner=team, private=True, name='team')
+            owner=team, stacked_on=self.private_stacked_on_branch,
+            name='team')
+        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),

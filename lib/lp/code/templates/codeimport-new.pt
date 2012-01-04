@@ -53,6 +53,20 @@
         <tr>
           <td>
             <label>
+              <input tal:replace="structure view/rcs_type_bzr" />
+              Bazaar
+            </label>
+            <table class="importdetails">
+              <tal:widget define="widget nocall:view/widgets/bzr_branch_url">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
               <input tal:replace="structure view/rcs_type_git" />
               Git
             </label>
@@ -134,6 +148,8 @@
           updateField(form['field.cvs_module'], rcs_type == 'CVS');
           // SVN
           updateField(form['field.svn_branch_url'], rcs_type == 'BZR_SVN');
+          // BZR
+          updateField(form['field.bzr_branch_url'], rcs_type == 'BZR');
         }
         registerLaunchpadFunction(updateWidgets);
         //]]>

@@ -11,8 +11,8 @@ __all__ = [
 from sqlobject import IntCol
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.featuredproject import IFeaturedProject
+from lp.services.database.sqlbase import SQLBase
 
 
 class FeaturedProject(SQLBase):

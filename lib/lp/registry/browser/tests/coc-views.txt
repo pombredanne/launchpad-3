@@ -30,7 +30,7 @@ key registered, directions are shown.
     >>> login_person(user)
     >>> from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> coc_set = getUtility(ICodeOfConductSet)
     >>> view = create_initialized_view(coc_set, '+index', principal=user)

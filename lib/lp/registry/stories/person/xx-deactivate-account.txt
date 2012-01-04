@@ -1,4 +1,5 @@
-= Deactivating user accounts =
+Deactivating user accounts
+==========================
 
 Users who don't want to use Launchpad anymore can easily deactivate their
 accounts so they stop receiving emails from Launchpad and make it impossible
@@ -54,12 +55,16 @@ The bugs that were assigned to Sample Person will no longer have an
 assignee.
 
     >>> browser.open('http://launchpad.dev/debian/+source/'
-    ...     'mozilla-firefox/+bug/3/+viewstatus')
+    ...     'mozilla-firefox/+bug/3')
     >>> print extract_text(find_main_content(browser.contents))
+    Bug Title Test
     Debian
-    ...
+    “mozilla-firefox” package
     Bug #3
-    ...Assigned to unknown...
+    ...
+    Assigned to
+    Milestone
+    ...
 
 Although teams have NOACCOUNT as their account_status, they are teams and so
 it makes no sense to say they don't use Launchpad.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,7 +16,9 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import groupby
 import logging
+from operator import attrgetter
 
 import pytz
 from sqlobject import (
@@ -33,22 +35,9 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -56,8 +45,19 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
+from lp.services.database.constants import DEFAULT
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 def normalize_virtualization(virtualized):
@@ -144,6 +144,21 @@ class BuildQueue(SQLBase):
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
+    @staticmethod
+    def preloadSpecificJobData(queues):
+        key = attrgetter('job_type')
+        for job_type, grouped_queues in groupby(queues, key=key):
+            specific_class = specific_job_classes()[job_type]
+            queue_subset = list(grouped_queues)
+            # We need to preload the build farm jobs early to avoid
+            # the call to _set_build_farm_job to look up BuildFarmBuildJobs
+            # one by one.
+            specific_class.preloadBuildFarmJobs(queue_subset)
+            specific_jobs = specific_class.getByJobs(queue_subset)
+            if len(list(specific_jobs)) == 0:
+                continue
+            specific_class.preloadJobsData(specific_jobs)
+
     @property
     def date_started(self):
         """See `IBuildQueue`."""
@@ -208,6 +223,11 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.logtail = None
         self.specific_job.jobReset()
+
+    def cancel(self):
+        """See `IBuildQueue`."""
+        self.specific_job.jobCancel()
+        self.destroySelf()
 
     def setDateStarted(self, timestamp):
         """See `IBuildQueue`."""
@@ -458,7 +478,7 @@ class BuildQueue(SQLBase):
             # the delays should be averaged/divided by the number of jobs.
             denominator = (jobs if jobs < builders else builders)
             if denominator > 1:
-                duration = int(duration/float(denominator))
+                duration = int(duration / float(denominator))
 
             sum_of_delays += duration
 

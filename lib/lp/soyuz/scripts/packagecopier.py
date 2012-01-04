@@ -24,14 +24,15 @@ import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
+    BinaryPackageFileType,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -489,6 +490,10 @@ class CopyChecker:
                 for binary_file in binary_pub.binarypackagerelease.files:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
+                    if (self.archive.is_main and
+                        binary_file.filetype == BinaryPackageFileType.DDEB):
+                        raise CannotCopy(
+                            "Cannot copy DDEBs to a primary archive")
 
         # Check if there is already a source with the same name and version
         # published in the destination archive.
@@ -499,8 +504,8 @@ class CopyChecker:
         if ancestry is not None:
             ancestry_version = ancestry.sourcepackagerelease.version
             copy_version = source.sourcepackagerelease.version
-            apt_pkg.InitSystem()
-            if apt_pkg.VersionCompare(copy_version, ancestry_version) < 0:
+            apt_pkg.init_system()
+            if apt_pkg.version_compare(copy_version, ancestry_version) < 0:
                 raise CannotCopy(
                     "version older than the %s published in %s" %
                     (ancestry.displayname, ancestry.distroseries.name))
@@ -527,14 +532,15 @@ class CopyChecker:
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
-            close_bugs=True, create_dsd_job=True, announce_from_person=None):
+            close_bugs=True, create_dsd_job=True,  announce_from_person=None,
+            sponsored=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
     raises `CannotCopy` if one or more copies could not be performed.
 
-    When `CannotCopy`is raised call sites are in charge to rollback the
-    transaction or performed copies will be commited.
+    When `CannotCopy` is raised, call sites are responsible for rolling
+    back the transaction.  Otherwise, performed copies will be commited.
 
     Wrapper for `do_direct_copy`.
 
@@ -569,6 +575,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         copied publications should be closed.
     :param create_dsd_job: A boolean indicating whether or not a dsd job
          should be created for the new source publication.
+    :param sponsored: An `IPerson` representing the person who is
+        being sponsored for this copy. May be None, but if present will
+        affect the "From:" address on notifications and the creator of the
+        publishing record will be set to this person.
 
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -611,8 +621,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             # In zopeless mode this email will be sent immediately.
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
-                series, pocket, summary_text=error_text,
-                action='rejected')
+                series, pocket, summary_text=error_text, action='rejected')
         raise CannotCopy(error_text)
 
     overrides_index = 0
@@ -640,16 +649,20 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 old_version = existing.sourcepackagerelease.version
             else:
                 old_version = None
+            if sponsored is not None:
+                announce_from_person = sponsored
+                creator = sponsored
+            else:
+                creator = person
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=person)
+                close_bugs_since_version=old_version, creator=creator)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
-                    destination_series, pocket, changes=None,
-                    action='accepted',
+                    destination_series, pocket, action='accepted',
                     announce_from_person=announce_from_person,
                     previous_version=old_version)
 

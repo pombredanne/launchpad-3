@@ -24,7 +24,7 @@
 
   <body>
     <tal:heading metal:fill-slot="heading">
-      <h1 tal:content="context/title">project title</h1>
+      <h1 itemprop="name" tal:content="context/title">project title</h1>
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
@@ -57,7 +57,7 @@
       </div>
 
       <div class="yui-g">
-        <div class="yui-u first">
+        <div itemprop="description" class="yui-u first">
            <tal:distro-information content="structure context/@@+details" />
         </div>
 

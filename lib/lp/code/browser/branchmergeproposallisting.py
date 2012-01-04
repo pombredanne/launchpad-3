@@ -29,10 +29,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
+from lp import _
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -53,7 +50,13 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalListingBatchNavigator,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.services.propertycache import cachedproperty
+from lp.services.config import config
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
 
 
 class BranchMergeProposalListingItem:
@@ -283,7 +286,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW, ])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ],
+            eager_load=True)
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -363,7 +367,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         # Sort each collection...
         for group in self.review_groups.values():
             group.sort(key=attrgetter('sort_key'))
-        self.proposal_count = len(proposals)
+        get_property_cache(self).proposal_count = len(proposals)
 
     @cachedproperty
     def headings(self):
@@ -444,7 +448,8 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW])
+             BranchMergeProposalStatus.NEEDS_REVIEW],
+            eager_load=True)
 
         return proposals
 

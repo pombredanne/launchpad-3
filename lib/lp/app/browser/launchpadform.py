@@ -44,15 +44,15 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
     IMultiLineWidgetLayout,
     INotificationResponse,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.menu import escape
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
@@ -147,11 +147,8 @@ class LaunchpadFormView(LaunchpadView):
         notifications = ([(notification.level, notification.message)
              for notification in request.response.notifications])
         if notifications:
-            json_notifications = simplejson.dumps(notifications)
-        else:
-            json_notifications = simplejson.dumps(None)
-        request.response.setHeader(
-            'X-Lazr-Notifications', json_notifications)
+            request.response.setHeader(
+                'X-Lazr-Notifications', simplejson.dumps(notifications))
 
     def render(self):
         """Return the body of the response.

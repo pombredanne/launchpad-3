@@ -31,32 +31,7 @@ from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
-    english_list,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    redirection,
-    stepthrough,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    ActiveBatchNavigator,
-    BatchNavigator,
-    InactiveBatchNavigator,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -75,7 +50,32 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     IRemoteBug,
     )
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.helpers import (
+    english_list,
+    shortlist,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    redirection,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import NavigationMenu
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.
@@ -572,6 +572,14 @@ class RemoteBug:
     def title(self):
         return 'Remote Bug #%s in %s' % (self.remotebug,
                                          self.bugtracker.title)
+
+
+class RemoteBugView(LaunchpadView):
+    """View a remove bug."""
+
+    @property
+    def page_title(self):
+        return self.context.title
 
 
 class BugTrackerNavigationMenu(NavigationMenu):

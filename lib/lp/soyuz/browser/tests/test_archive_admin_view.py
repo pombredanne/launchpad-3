@@ -3,12 +3,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.archive import ArchiveAdminView
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestArchivePrivacySwitchingView(TestCaseWithFactory):
@@ -102,14 +104,35 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
             'It is not possible to switch the privacy.',
             view.errors[0])
 
+    def test_can_leave_restricted_families_unchecked(self):
+        # We should be able to leave restricted families unchecked and
+        # still submit the form. (see bug 888083)
+        self.factory.makeProcessorFamily(restricted=True)
+        self.factory.makeProcessorFamily(restricted=True)
+        form = {
+            "field.enabled": "on",
+            'field.private': 'off',
+            "field.require_virtualized": "off",
+            'field.enabled_restricted_families': [],
+            'field.actions.save': 'Save',
+            }
+
+        view = ArchiveAdminView(
+            self.ppa, LaunchpadTestRequest(method="POST", form=form))
+        view.initialize()
+
+        self.assertEqual(
+           None, view.widget_errors.get('enabled_restricted_families'))
+
     def test_cannot_change_enabled_restricted_families(self):
         # If require_virtualized is False, enabled_restricted_families
         # cannot be changed.
+        pf1 = self.factory.makeProcessorFamily(restricted=True)
         method = 'POST'
         form = {
             'field.enabled': 'on',
             'field.require_virtualized': '',
-            'field.enabled_restricted_families': [],
+            'field.enabled_restricted_families': [pf1.name],
             'field.actions.save': 'Save',
             }
 

@@ -13,17 +13,13 @@ __all__ = [
     ]
 
 
-from canonical.launchpad import _
 from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import (
-    Bool,
-    Choice,
-    Datetime,
-    Int,
-    )
+from zope.schema import Bool
+
+from lp import _
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -58,12 +54,12 @@ class IRealSubscriptionInfo(IAbstractSubscriptionInfo):
 
     security_contact_tasks = Attribute(
         """A collection of targets of the info's bug for which the
-        principal is a security contact (which causes direct subscriptions for 
+        principal is a security contact (which causes direct subscriptions for
         security related bugs at this time).""")
 
     bug_supervisor_tasks = Attribute(
         """A collection of targets of the info's bug for which the
-        principal is a bug supervisor (which causes direct subscriptions for 
+        principal is a bug supervisor (which causes direct subscriptions for
         private bugs at this time).""")
 
 
@@ -156,7 +152,7 @@ class IPersonSubscriptions(Interface):
 
     def getDataForClient():
         """Get data for use in client-side code.
-        
+
         Returns two dicts, subscription info and references.  references is
         expected to be used as
         IJSONRequestCache(request).objects.extend(references).
@@ -165,7 +161,7 @@ class IPersonSubscriptions(Interface):
         structure, values are strings that are keys into the "references"
         map.  With expected usage, then, on the client side LP.cache[name]
         would return the desired value.
-        
+
         subscription info roughly mirrors the structure of the
         IPersonSubscriptions that sends it.
         """

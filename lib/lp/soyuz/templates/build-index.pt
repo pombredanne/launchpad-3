@@ -118,7 +118,7 @@
       </dl>
       <dl>
         <dt>Component:</dt>
-          <dd><span tal:replace="view/component/name">main</span></dd>
+          <dd><span tal:replace="view/component_name">main</span></dd>
       </dl>
     </div>
   </metal:macro>
@@ -142,6 +142,9 @@
               tal:attributes="href context/builder/fmt:url"/>
       </tal:built>
       <tal:retry define="link context/menu:context/retry"
+                 condition="link/enabled"
+                 replace="structure link/fmt:link" />
+      <tal:cancel define="link context/menu:context/cancel"
                  condition="link/enabled"
                  replace="structure link/fmt:link" />
     </p>

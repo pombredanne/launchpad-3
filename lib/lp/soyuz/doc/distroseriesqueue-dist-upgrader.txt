@@ -11,7 +11,7 @@ This test will check the upload of dist-upgrade tarballs
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Login as an admin.
@@ -60,6 +60,7 @@ It was not rejected.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
+    ...
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...
@@ -84,7 +85,7 @@ Let's check how queue tool handles dist_upgrader uploads:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...     config.root, "scripts", "ftpmaster-tools", "queue")
@@ -235,6 +236,7 @@ manual intervention.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
+    ...
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...

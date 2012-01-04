@@ -27,18 +27,16 @@ from fixtures import (
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.testing.layers import (
+from lp.poppy.hooks import Hooks
+from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.services.config import config
+from lp.services.daemons.tachandler import TacTestSetup
+from lp.testing import TestCaseWithFactory
+from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import (
     ZopelessAppServerLayer,
     ZopelessDatabaseLayer,
     )
-from lp.registry.interfaces.ssh import (
-    ISSHKeySet,
-    )
-from lp.poppy.hooks import Hooks
-from lp.testing import TestCaseWithFactory
-from lp.testing.keyserver import KeyServerTac
 
 
 class FTPServer(Fixture):
@@ -83,7 +81,7 @@ class SFTPServer(Fixture):
     def __init__(self, root_dir, factory):
         self.root_dir = root_dir
         self._factory = factory
-        self.port = 5022
+        self.port = int(config.poppy.port.partition(':')[2])
 
     def addSSHKey(self, person, public_key_path):
         f = open(public_key_path, 'r')
@@ -221,7 +219,7 @@ class TestPoppy(TestCaseWithFactory):
 
         if transport is None:
             transport = self.server.getTransport()
-        transport.stat('foo/bar') # .stat will implicity chdir for us
+        transport.stat('foo/bar')  # .stat will implicity chdir for us
 
         self.server.disconnect(transport)
         self.server.waitForClose()
@@ -400,7 +398,7 @@ class TestPoppy(TestCaseWithFactory):
         self.assertRaises(
             ftplib.error_perm,
             f.storbinary,
-            'STOR '+'foo_source.changes',
+            'STOR ' + 'foo_source.changes',
             fake_file)
 
 

@@ -9,12 +9,12 @@
       <div tal:replace="structure context/path/to/team/@@+teamlist" />
   </tal:block>
 
-  <p tal:condition="not: context/isTeam" class="error message">
+  <p tal:condition="not: context/is_team" class="error message">
     <span tal:replace="context/displayname" /> does not have members,
     because <span tal:replace="context/displayname" /> is not a team.
   </p>
 
-  <table class="listing" tal:condition="context/isTeam">
+  <table class="listing" tal:condition="context/is_team">
     <thead>
       <tr>
         <th>Member</th>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
@@ -18,20 +18,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from lp.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
@@ -40,12 +26,24 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.database.lpstorm import IMasterObject
+from lp.services.database.sqlbase import cursor
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import (
+    login,
+    logout,
     TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -309,7 +307,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
     def testAllowPrivateReturnsPrivateBranch(self):
         # If the allow_private flag is set, then private branches can be
         # returned if they are the best match.
-        b1 = self.makeBranchWithRevision(1)
+        self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
         removeSecurityProxy(b2).explicitly_private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
@@ -503,7 +501,7 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev1], self._getRevisions())
 
 
@@ -526,7 +524,7 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
         # The revision must be in a branch for the product.
         # returned.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev1], self._getRevisions())
 
     def testProjectRevisions(self):
@@ -534,7 +532,7 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
         another_product = self.factory.makeProduct(project=self.project)
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch(product=another_product)
-        rev3 = self._makeRevisionInBranch()
+        self._makeRevisionInBranch()
         self.assertEqual([rev2, rev1], self._getRevisions())
 
 
@@ -553,18 +551,17 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
     def testRevisionAuthorMatchesRevision(self):
         # The revision author returned with the revision is the same as the
         # author for the revision.
-        rev1 = self._makeRevisionInBranch(product=self.product)
+        self._makeRevisionInBranch(product=self.product)
         results = self._getRecentRevisions()
-        self.assertEqual(1, len(results))
-        revision, revision_author = results[0]
+        [(revision, revision_author)] = results
         self.assertEqual(revision.revision_author, revision_author)
 
     def testRevisionsMustBeInABranchOfProduct(self):
         # The revisions returned revision must be in a branch for the product.
         rev1 = self._makeRevisionInBranch(product=self.product)
-        rev2 = self._makeRevisionInBranch()
-        self.assertEqual([(rev1, rev1.revision_author)],
-                         self._getRecentRevisions())
+        self._makeRevisionInBranch()
+        self.assertEqual(
+            [(rev1, rev1.revision_author)], self._getRecentRevisions())
 
     def testRevisionsMustBeInActiveBranches(self):
         # The revisions returned revision must be in a branch for the product.
@@ -636,8 +633,7 @@ class TestTipRevisionsForBranches(TestCase):
         self._breakTransaction()
         self.assertEqual(1, len(revisions))
         revision = revisions[0]
-        self.assertEqual(self.branches[0].last_scanned_id,
-                         revision.revision_id)
+        self.assertEqual(last_scanned_id, revision.revision_id)
         # By accessing to the revision_author we can confirm that the
         # revision author has in fact been retrieved already.
         revision_author = revision.revision_author

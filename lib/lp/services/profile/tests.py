@@ -1,34 +1,47 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.profile.
 
-See lib/canonical/doc/profiling.txt for an end-user description of
-the functionality.
+See doc.txt for an end-user description of the functionality.
 """
 
 __metaclass__ = type
 
 import glob
+import logging
 import os
 import random
+import unittest
 
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
     EndRequestEvent,
     )
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    queryUtility,
+    )
+from zope.error.interfaces import IErrorReportingUtility
 
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.interfaces import StartRequestEvent
-from canonical.testing import layers
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
+import lp.services.webapp.adapter as da
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.interfaces import StartRequestEvent
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    layers,
     TestCase,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -134,7 +147,7 @@ class BaseTest(TestCase):
 
     def assertCleanProfilerState(self, message='something did not clean up'):
         """Check whether profiler thread local is clean."""
-        for name in ('profiler', 'actions', 'memory_profile_start'):
+        for name in ('profiler', 'actions'):
             self.assertIs(
                 getattr(profile._profilers, name, None), None,
                 'Profiler state (%s) is dirty; %s.' % (name, message))
@@ -159,7 +172,6 @@ class TestCleanupProfiler(BaseTest):
             profile._profilers.profiler.stop()
             profile._profilers.profiler = None
         profile._profilers.actions = None
-        profile._profilers.memory_profile_start = None
         profile._profilers.profiling = False
         super(TestCleanupProfiler, self).tearDown()
 
@@ -186,10 +198,10 @@ class TestRequestStartHandler(TestCleanupProfiler):
         # request.
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/'))
-        self.assertEqual(profile._profilers.actions, {})
+        self.assertFalse(profile._profilers.profiling)
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None), None)
+            getattr(profile._profilers, 'actions', None), None)
 
     def test_optional_profiling_with_show_request_starts_profiling(self):
         # If profiling is allowed and a request with the "show" marker
@@ -197,9 +209,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(set(profile._profilers.actions), set(('show', )))
 
     def test_optional_profiling_with_callgrind_request_starts_profiling(self):
@@ -208,9 +217,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++callgrind/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', )))
 
@@ -220,9 +226,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++log/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', )))
 
@@ -233,9 +236,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++callgrind&show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', 'show')))
 
@@ -249,9 +249,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++show&callgrind'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', 'show')))
 
@@ -263,9 +260,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
             self._get_start_event('/++profile++pstats/'))
         self.assertIsInstance(profile._profilers.profiler,
                               profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(set(profile._profilers.actions), set(('pstats',)))
 
     def test_optional_profiling_with_log_pstats(self):
@@ -276,9 +270,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++log&pstats/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', 'pstats',)))
 
@@ -291,9 +282,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
             self._get_start_event('/++profile++pstats&callgrind/'))
         self.assertIsInstance(profile._profilers.profiler,
                               profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('pstats', 'callgrind')))
 
@@ -303,9 +291,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='True', profile_all_requests='True')
         profile.start_request(self._get_start_event('/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('callgrind', )))
 
@@ -315,9 +300,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(set(profile._profilers.actions), set(('help', )))
 
     def test_forced_profiling_with_wrong_request_helps(self):
@@ -327,9 +309,6 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='True', profile_all_requests='True')
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIs(
-            getattr(profile._profilers, 'memory_profile_start', None),
-            None)
         self.assertEquals(
             set(profile._profilers.actions), set(('help', 'callgrind')))
 
@@ -338,18 +317,20 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='True', memory_profile_log='.')
         profile.start_request(self._get_start_event('/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
-        self.assertEqual(len(profile._profilers.memory_profile_start), 2)
-        self.assertEqual(profile._profilers.actions, {})
+        actions = profile._profilers.actions
+        self.assertEqual(set(actions), set(['memory_profile_start']))
+        self.assertIsInstance(actions['memory_profile_start'], tuple)
+        self.assertEqual(len(actions['memory_profile_start']), 2)
 
     def test_combo_memory_and_profile_start(self):
         self.pushProfilingConfig(
             profiling_allowed='True', memory_profile_log='.')
         profile.start_request(self._get_start_event('/++profile++show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
-        self.assertEqual(len(profile._profilers.memory_profile_start), 2)
-        self.assertEquals(set(profile._profilers.actions), set(('show', )))
+        actions = profile._profilers.actions
+        self.assertEqual(set(actions), set(['memory_profile_start', 'show']))
+        self.assertIsInstance(actions['memory_profile_start'], tuple)
+        self.assertEqual(len(actions['memory_profile_start']), 2)
 
     def test_sqltrace_start(self):
         self.pushProfilingConfig(profiling_allowed='True')
@@ -383,10 +364,14 @@ class BaseRequestEndHandlerTest(BaseTest):
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
-        self.eru = ErrorReportingUtility()
-        sm = getSiteManager()
-        sm.registerUtility(self.eru)
-        self.addCleanup(sm.unregisterUtility, self.eru)
+        eru = queryUtility(IErrorReportingUtility)
+        if eru is None:
+            # Register an Error reporting utility for this layer.
+            # This will break tests when run with an ERU already registered.
+            self.eru = ErrorReportingUtility()
+            sm = getSiteManager()
+            sm.registerUtility(self.eru)
+            self.addCleanup(sm.unregisterUtility, self.eru)
 
     def endRequest(self, path='/', exception=None, pageid=None, work=None):
         start_event = self._get_start_event(path)
@@ -712,7 +697,8 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
             self.assertIsInstance(
                 profile._profilers.profiler, profile.Profiler)
             self.assertEquals(
-                set(('show', 'callgrind')), set(profile._profilers.actions))
+                set(('show', 'callgrind', 'memory_profile_start')),
+                set(profile._profilers.actions))
 
 
 class TestInlineProfiling(BaseRequestEndHandlerTest):
@@ -804,3 +790,15 @@ class TestSqlLogging(TestCaseWithFactory, BaseRequestEndHandlerTest):
             response)
         # This file should be part of several of the tracebacks.
         self.assertIn(__file__.replace('.pyc', '.py'), response)
+
+
+def test_suite():
+    """Return the `IBugTarget` TestSuite."""
+    suite = unittest.TestSuite()
+
+    doctest = LayeredDocFileSuite(
+        './profiling.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer, stdout_logging_level=logging.WARNING)
+    suite.addTest(doctest)
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite

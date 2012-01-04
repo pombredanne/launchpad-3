@@ -13,6 +13,7 @@
 
   <authorizations module=".security" />
 
+  <include file="vocabularies.zcml"/>
   <include package=".browser"/>
 
   <publisher
@@ -23,8 +24,7 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="bugs" />
 
-    <lp:help-folder
-        folder="help" type="lp.bugs.publisher.BugsLayer" />
+    <lp:help-folder folder="help" name="+help-bugs" />
 
     <class
         class="lp.bugs.model.bugactivity.BugActivity">
@@ -37,19 +37,14 @@
         <allow
             interface="lp.bugs.interfaces.bugactivity.IBugActivitySet"/>
     </securedutility>
-    <facet
-        facet="bugs"/>
 
     <!-- Macros -->
 
-    <facet
-        facet="bugs">
         <class
             class="lp.bugs.browser.bugcomment.BugComment">
             <allow
                 interface="lp.bugs.interfaces.bugmessage.IBugComment"/>
         </class>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.cve.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.cve.cve_modified"/>
@@ -58,10 +53,10 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_created"/>
+        handler="lp.bugs.subscribers.karma.bug_created"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_modified"/>
+        handler="lp.bugs.subscribers.karma.bug_modified"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -88,19 +83,19 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.cve_added"/>
+        handler="lp.bugs.subscribers.karma.cve_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>
+        handler="lp.bugs.subscribers.karma.bug_comment_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugwatch_added"/>
+        handler="lp.bugs.subscribers.karma.bugwatch_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -117,7 +112,7 @@
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
     <securedutility
-        class="canonical.launchpad.systemhomes.MaloneApplication"
+        class="lp.systemhomes.MaloneApplication"
         provides="lp.bugs.interfaces.malone.IMaloneApplication">
         <allow
             interface="lp.bugs.interfaces.malone.IMaloneApplication"/>
@@ -156,8 +151,6 @@
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.cvereference.ICveReference"/>
     </class>
-    <facet
-        facet="bugs">
 
       <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
         <allow attributes="rank id task"/>
@@ -194,12 +187,13 @@
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userCanEditImportance
-                    userCanEditMilestone
+                    userHasDriverPrivileges
+                    userHasBugSupervisorPrivileges
                     userCanSetAnyAssignee
                     userCanUnassign"/>
             <require
@@ -213,6 +207,7 @@
                     distribution
                     distroseries
                     milestone
+                    _status
                     status
                     importance
                     assignee
@@ -234,6 +229,9 @@
                     getConjoinedMaster
                     findSimilarBugs
                     getContributorInfo"/>
+            <require
+                permission="launchpad.Delete"
+                interface="lp.bugs.interfaces.bugtask.IBugTaskDelete"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -272,13 +270,13 @@
                     "/>
         </class>
         <adapter
-            provides="canonical.lazr.interfaces.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            provides="canonical.launchpad.interfaces.launchpad.IPrivacy"
+            provides="lp.app.interfaces.launchpad.IPrivacy"
             factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -288,12 +286,12 @@
             factory="lp.bugs.browser.bugtask.bugtarget_renderer"
             name="target"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugmessage.IBugComment"
             factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
             permission="zope.Public"/>
@@ -335,7 +333,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskDelta"/>
         </class>
-    </facet>
     <class
         class="lp.bugs.model.bugattachment.BugAttachment">
         <require
@@ -359,8 +356,6 @@
         <allow
             interface="lp.bugs.interfaces.bugattachment.IBugAttachmentSet"/>
     </securedutility>
-    <facet
-        facet="bugs">
 
         <!-- BugTracker -->
 
@@ -424,9 +419,9 @@
                 set_attributes="active"/>
         </class>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
 
         <!-- BugTrackerSet -->
@@ -443,7 +438,7 @@
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
             permission="zope.Public"/>
@@ -524,7 +519,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IRemoteBug"/>
         </class>
-    </facet>
 
     <!-- IBugBranch -->
 
@@ -539,14 +533,14 @@
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        provides="lp.services.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
 
     <!-- hierarchy -->
 
     <subscriber
         for="lp.bugs.interfaces.bugbranch.IBugBranch                                                lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bug_branch_created"/>
+        handler="lp.bugs.subscribers.karma.bug_branch_created"/>
 
     <!-- BugBranchSet -->
 
@@ -569,8 +563,6 @@
         <allow
             interface="lp.bugs.interfaces.bugcve.IBugCve"/>
     </class>
-    <facet
-        facet="bugs">
 
         <!-- CVE -->
 
@@ -607,7 +599,6 @@
             <allow
                 interface="lp.bugs.interfaces.cve.ICveSet"/>
         </securedutility>
-    </facet>
 
     <!-- BugSubscription -->
 
@@ -708,9 +699,6 @@
               lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
     </class>
 
-    <facet
-        facet="bugs">
-
         <!-- Bug -->
 
         <class
@@ -721,6 +709,7 @@
                 attributes="
                     id
                     private
+                    access_policy
                     bugtasks
                     default_bugtask
                     affected_pillars
@@ -741,6 +730,7 @@
                     who_made_private
                     date_made_private
                     userCanView
+                    userCanSetCommentVisibility
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
@@ -813,6 +803,7 @@
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
+                    other_users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
@@ -843,9 +834,11 @@
                     mute
                     newMessage
                     removeWatch
+                    setCommentVisibility
                     setPrivate
                     setSecurityRelated
                     setPrivacyAndSecurityRelated
+                    setAccessPolicy
                     setStatus
                     subscribe
                     unlinkBranch
@@ -876,14 +869,13 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
-            provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-            factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"/>
+            provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+            factory="lp.bugs.publisher.LaunchpadBugContainer"/>
 
         <!-- BugSet -->
 
@@ -906,7 +898,6 @@
             <allow
                 interface="lp.bugs.interfaces.bug.IBugDelta"/>
         </class>
-    </facet>
 
     <!-- BugMessage -->
 
@@ -934,10 +925,8 @@
     </securedutility>
     <adapter
         for="lp.bugs.interfaces.bugnomination.IBugNomination"
-        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        provides="lp.services.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
-    <facet
-        facet="bugs">
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
             <require
@@ -963,6 +952,10 @@
                 attributes="
                     approve
                     decline"/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    destroySelf"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugnomination.BugNominationSet"
@@ -970,7 +963,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugnomination.IBugNominationSet"/>
         </securedutility>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
@@ -986,8 +978,6 @@
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_edited"/>
-    <facet
-        facet="bugs">
 
         <!-- BugWatch -->
 
@@ -1071,13 +1061,15 @@
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchActivity"/>
         </class>
-    </facet>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>
     <subscriber
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="lp.bugs.subscribers.bugactivity.notify_bugtask_deleted"/>
+    <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugtask_created"/>
+        handler="lp.bugs.subscribers.karma.bugtask_created"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -1086,7 +1078,7 @@
         handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
+        handler="lp.bugs.subscribers.karma.bugtask_modified"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -1109,11 +1101,11 @@
     <class
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+            interface="lp.services.mail.interfaces.INotificationRecipientSet"/>
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
-            attributes="subscription_filters addFilter"/>
+            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
@@ -1123,13 +1115,13 @@
     </securedutility>
     <adapter
         name="bugs"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
     <adapter
         name="bugs"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
@@ -1191,7 +1183,7 @@
 
   <securedutility
     name="UsesBugsDistribution"
-    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    component="lp.bugs.vocabularies.UsesBugsDistributionVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>

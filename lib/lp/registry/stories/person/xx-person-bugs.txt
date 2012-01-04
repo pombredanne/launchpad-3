@@ -1,4 +1,5 @@
-= Bugs a given user is involved with =
+Bugs a given user is involved with
+==================================
 
 When visiting the 'Bugs' facet of a person, the report that is displayed
 lists the bug assigned to that person.
@@ -7,11 +8,12 @@ lists the bug assigned to that person.
     >>> anon_browser.getLink('Bugs').click()
     >>> print anon_browser.title
     Related bugs
+
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12
 
-Note that we may see each bug more than once in case it's reported against
-more than one target (https://launchpad.net/bugs/1357).
+Note that we may see each bug more than once in case it's reported
+against more than one target (https://launchpad.net/bugs/1357).
 
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
@@ -50,17 +52,20 @@ virtual host:
     Related bugs
 
 
-== More specific listings ==
+More specific listings
+----------------------
 
-On a person bugs facet we get links to all listings of bugs we have for that
-person.
+On a person bugs facet we get links to all listings of bugs we have for
+that person.
 
 
-=== Assigned bugs ===
+Assigned bugs
+.............
 
     >>> anon_browser.getLink('Assigned bugs').click()
     >>> print anon_browser.title
     Assigned bugs : Sample Person
+
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+assignedbugs
 
@@ -73,18 +78,20 @@ person.
         Confirmed
 
 
-=== Commented bugs ===
+Commented bugs
+..............
 
     >>> anon_browser.getLink('Commented bugs').click()
     >>> print anon_browser.title
     Commented bugs : Sample Person
+
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+commentedbugs
 
-No Privileges Person has commented on two bugs, which will be returned by the
-commented bug search (the bugs will be listed several times over; it is enough
-for us to test for the first instances of each here. This is an instance of Bug
-1357).
+No Privileges Person has commented on two bugs, which will be returned
+by the commented bug search (the bugs will be listed several times over;
+it is enough for us to test for the first instances of each here. This
+is an instance of Bug 1357).
 
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
@@ -94,11 +101,13 @@ for us to test for the first instances of each here. This is an instance of Bug
     ...
 
 
-=== Reported bugs ===
+Reported bugs
+.............
 
     >>> anon_browser.getLink('Reported bugs').click()
     >>> print anon_browser.title
     Reported bugs : Sample Person
+
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+reportedbugs
 
@@ -123,11 +132,13 @@ for us to test for the first instances of each here. This is an instance of Bug
         Launchpad Undecided New
 
 
-=== Subscribed bugs ===
+Subscribed bugs
+...............
 
     >>> anon_browser.getLink('Subscribed bugs').click()
     >>> print anon_browser.title
     Subscribed bugs : Sample Person
+
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+subscribedbugs
 
@@ -145,24 +156,33 @@ for us to test for the first instances of each here. This is an instance of Bug
     13 Launchpad CSS and JS is not testible
         Launchpad Undecided New
 
-=== Person bugs menu ===
 
-The person bugs page can be accessed without being in the bugs
-site, yet all the menu links point to the bugs site.
+Person bugs menu
+................
+
+The person bugs page can be accessed without being in the bugs site, yet
+all the menu links point to the bugs site.
 
     >>> anon_browser.open('http://launchpad.dev/~name12/+assignedbugs')
     >>> print anon_browser.getLink('Commented bugs').url
     http://bugs.launchpad.dev/~name12/+commentedbugs
+
     >>> print anon_browser.getLink('Reported bugs').url
     http://bugs.launchpad.dev/~name12/+reportedbugs
+
     >>> print anon_browser.getLink('Subscribed bugs').url
     http://bugs.launchpad.dev/~name12/+subscribedbugs
+
     >>> print anon_browser.getLink('All related bugs').url
     http://bugs.launchpad.dev/~name12
+
     >>> print anon_browser.getLink('Subscribed packages').url
     http://bugs.launchpad.dev/~name12/+packagebugs
+
     >>> anon_browser.open('http://launchpad.dev/~name12/+commentedbugs')
     >>> print anon_browser.getLink('Assigned bugs').url
     http://bugs.launchpad.dev/~name12/+assignedbugs
+
     >>> print anon_browser.getLink('Affecting bugs').url
     http://bugs.launchpad.dev/~name12/+affectingbugs
+

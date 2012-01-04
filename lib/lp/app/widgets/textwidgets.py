@@ -273,7 +273,7 @@ class SummaryWidget(TextAreaWidget):
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     width = 44
-    height = 5
+    height = 15
 
 
 class NoneableDescriptionWidget(DescriptionWidget):

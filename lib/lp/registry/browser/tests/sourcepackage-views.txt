@@ -169,7 +169,7 @@ bonkers project, the portlet will display that information.
     ...     print product.name
     bonkers
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> content = find_tag_by_id(view.render(), 'upstreams')
     >>> for link in content.findAll('a'):

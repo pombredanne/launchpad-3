@@ -34,35 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import sqlbase
-from canonical.database.constants import (
-    ONE_DAY_AGO,
-    SEVEN_DAYS_AGO,
-    THIRTY_DAYS_AGO,
-    UTC_NOW,
-    )
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
-from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -91,21 +62,53 @@ from lp.scripts.garbo import (
     DuplicateSessionPruner,
     FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.config import config
+from lp.services.database import sqlbase
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthNonce,
+    )
+from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
+from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
+    )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
@@ -1023,19 +1026,42 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
 
-    def test_SPPH_and_BPPH_populator(self):
-        # If SPPHs (or BPPHs) do not have sourcepackagename (or
-        # binarypackagename) set, the populator will set it.
+
+class TestGarboTasks(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_LoginTokenPruner(self):
+        store = IMasterStore(LoginToken)
+        now = datetime.now(UTC)
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        spn = spph.sourcepackagename
-        removeSecurityProxy(spph).sourcepackagename = None
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        bpn = bpph.binarypackagename
-        removeSecurityProxy(bpph).binarypackagename = None
-        transaction.commit()
-        self.assertIs(None, spph.sourcepackagename)
-        self.assertIs(None, bpph.binarypackagename)
-        self.runHourly()
-        self.assertEqual(spn, spph.sourcepackagename)
-        self.assertEqual(bpn, bpph.binarypackagename)
+
+        # It is configured as a daily task.
+        self.assertTrue(
+            LoginTokenPruner in DailyDatabaseGarbageCollector.tunable_loops)
+
+        # Create a token that will be pruned.
+        old_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        old_token.date_created = now - timedelta(days=666)
+        old_token_id = old_token.id
+        store.add(old_token)
+
+        # Create a token that will not be pruned.
+        current_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        current_token_id = current_token.id
+        store.add(current_token)
+
+        # Run the pruner. Batching is tested by the BulkPruner tests so
+        # no need to repeat here.
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        pruner = LoginTokenPruner(logging.getLogger('garbo'))
+        while not pruner.isDone():
+            pruner(10)
+        pruner.cleanUp()
+
+        # Only the old LoginToken is gone.
+        self.assertEqual(
+            store.find(LoginToken, id=old_token_id).count(), 0)
+        self.assertEqual(
+            store.find(LoginToken, id=current_token_id).count(), 1)

@@ -4,11 +4,11 @@ TranslationMessage View
 On this section, we are going to test the view class for an
 ITranslationMessage object.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.publisher import TranslationsLayer
 
@@ -99,8 +99,8 @@ default values for the alternative language.
 We are at the beginning because this subview is being used for the first
 item.
 
-    >>> subview.context.potmsgset.sequence == 1
-    True
+    >>> subview.context.potmsgset.getSequence(pofile.potemplate)
+    1
 
 It does not have a plural message
 
@@ -530,8 +530,6 @@ message.
     >>> pofile = factory.makePOFile('sr')
     >>> potemplate = pofile.potemplate
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> potmsgset.sequence
-    1
     >>> potmsgset.getSequence(potemplate)
     1
     >>> translationmessage = factory.makeCurrentTranslationMessage(

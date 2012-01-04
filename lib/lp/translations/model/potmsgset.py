@@ -18,7 +18,6 @@ import re
 
 from sqlobject import (
     ForeignKey,
-    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -36,17 +35,17 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import DEFAULT
-from canonical.database.sqlbase import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.config import config
+from lp.services.database.constants import DEFAULT
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     cursor,
     quote,
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
@@ -139,7 +138,6 @@ class POTMsgSet(SQLBase):
         notNull=True)
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
-    sequence = IntCol(dbName='sequence')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -1217,7 +1215,6 @@ class POTMsgSet(SQLBase):
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
-        self.sequence = sequence
         translation_template_item = TranslationTemplateItem.selectOneBy(
             potmsgset=self, potemplate=potemplate)
         if translation_template_item is not None:

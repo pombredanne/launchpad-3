@@ -9,13 +9,13 @@ Some initialization tasks:
     >>> import datetime
     >>> import pytz
     >>> import transaction
-    >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from lp.testing import login
+    >>> from lp.services.helpers import string_to_tarfile
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.translations.scripts.language_pack import (
     ...    export_language_pack)
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.services.database.sqlbase import flush_database_caches
+    >>> from lp.services.librarian.interfaces.client import ILibrarianClient
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 

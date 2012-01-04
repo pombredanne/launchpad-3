@@ -14,7 +14,7 @@ __all__ = [
 from lazr.restful.declarations import exported
 from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PublicPersonChoice
 
 
@@ -24,8 +24,9 @@ class IHasSecurityContact(Interface):
     security_contact = exported(PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
-            "The Launchpad id of the person or team (preferred) who handles "
-            "security-related bug reports.  The security contact will be "
-            "subscribed to all bugs marked as a security vulnerability and "
-            "will receive email about all activity on all security bugs."),
-        required=False, vocabulary='ValidPersonOrTeam'))
+            "The Launchpad id of the person or restricted or moderated "
+            "team (preferred) who handles security-related bug reports. "
+            "The security contact will be subscribed to all bugs marked as "
+            "a security vulnerability and will receive email about all "
+            "activity on all security bugs."),
+        required=False, vocabulary='ValidPillarOwner'))

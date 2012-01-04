@@ -21,7 +21,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -112,6 +112,10 @@ class ITranslationMessage(Interface):
     browser_pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
+
+    sequence = Int(
+        title=_("Sequence of a message in the PO file browser_pofile."),
+        readonly=True, required=False)
 
     potemplate = Object(
         title=_("The template this translation is in"),

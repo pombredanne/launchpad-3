@@ -27,6 +27,7 @@ __all__ = [
     'BugTaskAdded',
     'BugTaskAssigneeChange',
     'BugTaskBugWatchChange',
+    'BugTaskDeleted',
     'BugTaskImportanceChange',
     'BugTaskMilestoneChange',
     'BugTaskStatusChange',
@@ -48,8 +49,6 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import (
@@ -58,6 +57,8 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.publisher import canonical_url
 
 # These are used lp.bugs.model.bugactivity.BugActivity.attribute to normalize
 # the output from these change objects into the attribute that actually
@@ -260,6 +261,27 @@ class BugTaskAdded(BugChangeBase):
             }
 
 
+class BugTaskDeleted(BugChangeBase):
+    """A bugtask was removed from the bug."""
+
+    def __init__(self, when, person, bugtask):
+        super(BugTaskDeleted, self).__init__(when, person)
+        self.targetname = bugtask.bugtargetname
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug task deleted',
+            oldvalue=self.targetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                "** No longer affects: %s" % self.targetname),
+            }
+
+
 class SeriesNominated(BugChangeBase):
     """A user nominated the bug to be fixed in a series."""
 
@@ -376,7 +398,7 @@ class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
-        from canonical.launchpad.mailnotification import get_unified_diff
+        from lp.services.mail.notification import get_unified_diff
         description_diff = get_unified_diff(
             self.old_value, self.new_value, 72)
         notification_text = (

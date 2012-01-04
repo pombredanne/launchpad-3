@@ -4,35 +4,30 @@
 """Tests for sync package jobs."""
 
 import operator
+from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
-from textwrap import dedent
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     JobStatus,
     SuspendJobException,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -66,6 +61,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Provides
 
@@ -95,6 +95,22 @@ class LocalTestHelper:
             dsd.source_package_name.name, source_archive, target_archive,
             target_distroseries, target_pocket, requester=requester,
             package_version=dsd.parent_source_version, **kwargs)
+
+    def makePPAJob(self, source_archive=None, target_archive=None, **kwargs):
+        if source_archive is None:
+            source_archive = self.factory.makeArchive(
+                purpose=ArchivePurpose.PPA)
+        if target_archive is None:
+            target_archive = self.factory.makeArchive(
+                purpose=ArchivePurpose.PPA)
+        source_name = self.factory.getUniqueString('src-name')
+        target_series = self.factory.makeDistroSeries()
+        target_pocket = self.factory.getAnyPocket()
+        requester = self.factory.makePerson()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            source_name, source_archive, target_archive,
+            target_series, target_pocket, requester=requester,
+            package_version="1.0", **kwargs)
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
@@ -136,6 +152,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         requester = self.factory.makePerson()
+        sponsored = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
@@ -143,7 +160,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            requester=requester)
+            requester=requester, sponsored=sponsored)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -156,6 +173,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEquals(False, job.include_binaries)
         self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
         self.assertEqual(requester, job.requester)
+        self.assertEqual(sponsored, job.sponsored)
 
     def test_createMultiple_creates_one_job_per_copy(self):
         mother = self.factory.makeDistroSeriesParent()
@@ -528,6 +546,35 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
 
+    def test_getIncompleteJobsForArchive_finds_jobs_in_right_archive(self):
+        # getIncompleteJobsForArchive should return all the jobs in an
+        # specified archive.
+        target1 = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        target2 = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        target1_jobs = [
+            self.makePPAJob(target_archive=target1)
+            for counter in xrange(2)]
+        self.makePPAJob(target2)
+
+        pending_jobs = list(job_source.getIncompleteJobsForArchive(target1))
+        self.assertContentEqual(pending_jobs, target1_jobs)
+
+    def test_getIncompleteJobsForArchive_finds_failed_and_running_jobs(self):
+        # getIncompleteJobsForArchive should return only waiting, failed
+        # and running jobs.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        for status in JobStatus.items:
+            job = self.makePPAJob(target_archive=ppa)
+            removeSecurityProxy(job).job._status = status
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        found_jobs = job_source.getIncompleteJobsForArchive(ppa)
+        found_statuses = [job.status for job in found_jobs]
+        self.assertContentEqual(
+            [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED],
+            found_statuses)
+
     def test_copying_to_main_archive_ancestry_overrides(self):
         # The job will complete right away for auto-approved copies to a
         # main archive and apply any ancestry overrides.
@@ -579,6 +626,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             name='libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
+
+        # There should also be a PackageDiff generated between the new
+        # publication and the ancestry.
+        [diff] = new_publication.sourcepackagerelease.package_diffs
+        self.assertIsNot(None, diff)
 
     def test_copying_to_ppa_archive(self):
         # Packages can be copied into PPA archives.

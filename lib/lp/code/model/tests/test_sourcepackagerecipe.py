@@ -12,6 +12,7 @@ from datetime import (
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
+from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
 import transaction
@@ -20,14 +21,6 @@ from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -40,6 +33,7 @@ from lp.code.errors import (
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
+    ISourcePackageRecipeView,
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -54,12 +48,18 @@ from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild,
     SourcePackageRecipeBuildJob,
     )
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.bulk import load_referencing
+from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -76,6 +76,11 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -91,6 +96,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
         recipe = self.factory.makeSourcePackageRecipe()
         verifyObject(ISourcePackageRecipe, recipe)
+
+    def test_avoids_problematic_snapshots(self):
+        problematic_properties = [
+            'builds',
+            'completed_builds',
+            'pending_builds',
+            ]
+        self.assertThat(
+            self.factory.makeSourcePackageRecipe(),
+            DoesNotSnapshot(problematic_properties, ISourcePackageRecipeView))
 
     def makeRecipeComponents(self, branches=()):
         """Return a dict of values that can be used to make a recipe.
@@ -191,16 +206,32 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
+    def createSourcePackageRecipe(self, number_of_branches=2):
+        branches = []
+        for i in range(number_of_branches):
+            branches.append(self.factory.makeAnyBranch())
+        sp_recipe = self.factory.makeSourcePackageRecipe(branches=branches)
+        transaction.commit()
+        return sp_recipe, branches
+
     def test_multiple_branch_links_created(self):
         # If a recipe links to more than one branch, getReferencedBranches()
         # returns all of them.
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        sp_recipe = self.factory.makeSourcePackageRecipe(
-            branches=[branch1, branch2])
-        transaction.commit()
+        sp_recipe, [branch1, branch2] = self.createSourcePackageRecipe()
         self.assertEquals(
             sorted([branch1, branch2]),
+            sorted(sp_recipe.getReferencedBranches()))
+
+    def test_preLoadReferencedBranches(self):
+        sp_recipe, unused = self.createSourcePackageRecipe()
+        recipe_data = load_referencing(
+            SourcePackageRecipeData,
+            [sp_recipe], ['sourcepackage_recipe_id'])[0]
+        referenced_branches = sp_recipe.getReferencedBranches()
+        clear_property_cache(recipe_data)
+        SourcePackageRecipeData.preLoadReferencedBranches([recipe_data])
+        self.assertEquals(
+            sorted(referenced_branches),
             sorted(sp_recipe.getReferencedBranches()))
 
     def test_random_user_cant_edit(self):
@@ -889,6 +920,21 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
+    def test_builds_recipe_without_debversion(self):
+        recipe_text = '''\
+        # bzr-builder format 0.4
+        %(base)s
+        nest bar %(nested)s baz
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1,
+            deb_version=None)
+        child_branch, location = base_branch.child_branches[0].as_tuple()
+        self.assertEqual("baz", location)
+        self.check_recipe_branch(
+            child_branch, "bar", self.nested_branch.bzr_identity)
 
 
 class RecipeDateLastModified(TestCaseWithFactory):

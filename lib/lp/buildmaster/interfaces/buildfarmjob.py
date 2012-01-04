@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,9 +16,7 @@ __all__ = [
     'ISpecificBuildFarmJobSource',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -34,10 +32,10 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -96,6 +94,9 @@ class IBuildFarmJobOld(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
+    def jobCancel():
+        """'Job cancel' life cycle event."""
+
     def addCandidateSelectionCriteria(processor, virtualized):
         """Provide a sub-query to refine the candidate job selection.
 
@@ -137,6 +138,13 @@ class IBuildFarmJobOld(Interface):
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
+        """
+
+    def getByJobs(jobs):
+        """Get the specific `IBuildFarmJob`s for the given `Job`s.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has entries associated with `job`s.
         """
 
     def generateSlaveBuildCookie():
@@ -286,6 +294,13 @@ class ISpecificBuildFarmJobSource(Interface):
         """Look up a concrete `IBuildFarmJob` by ID.
 
         :param id: An ID of the concrete job class to look up.
+        """
+
+    def getByBuildFarmJobs(build_farm_jobs):
+        """"Look up the concrete `IBuildFarmJob`s for a list of BuildFarmJobs.
+
+        :param build_farm_jobs: A list of BuildFarmJobs for which to get the
+            concrete jobs.
         """
 
     def getByBuildFarmJob(build_farm_job):

@@ -20,8 +20,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeries,
@@ -606,7 +606,7 @@ Supersede previous netapplet publication:
     >>> print last_published.status.name
     SUPERSEDED
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> last_published.datesuperseded == get_transaction_timestamp()
     True
 

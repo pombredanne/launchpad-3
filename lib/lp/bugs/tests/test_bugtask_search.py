@@ -15,15 +15,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
@@ -45,16 +36,27 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.services.features.testing import FeatureFixture
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
 
 PRIVATE_BUG_VISIBILITY_FLAG = {
     'disclosure.private_bug_visibility_rules.enabled': 'on'}
+PRIVATE_BUG_VISIBILITY_CTE_FLAG = {
+    'disclosure.private_bug_visibility_cte.enabled': 'on'}
 
 
 class SearchTestBase:
@@ -65,6 +67,12 @@ class SearchTestBase:
     def setUp(self):
         super(SearchTestBase, self).setUp()
         self.bugtask_set = getUtility(IBugTaskSet)
+        # We need a feature flag so that multipillar bugs can be made private.
+        feature_flag = {
+                'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
 
     def assertSearchFinds(self, params, expected_bugtasks):
         # Run a search for the given search parameters and check if
@@ -75,18 +83,19 @@ class SearchTestBase:
 
     def test_aggregate_by_target(self):
         # BugTaskSet.search supports returning the counts for each target (as
-        # long only one type of target was selected).
+        # long as only one type of target was selected).
         if self.group_on is None:
             # Not a useful/valid permutation.
             return
         self.getBugTaskSearchParams(user=None, multitarget=True)
         # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        user = self.factory.makePerson()
         expected = {(self.targetToGroup(self.searchtarget),): 3,
             (self.targetToGroup(self.searchtarget2),): 6}
-        user = self.factory.makePerson()
-        self.assertEqual(expected, self.bugtask_set.countBugs(user,
-            (self.searchtarget, self.searchtarget2),
-            group_on=self.group_on))
+        actual = self.bugtask_set.countBugs(
+            user, (self.searchtarget, self.searchtarget2),
+            group_on=self.group_on)
+        self.assertEqual(expected, actual)
 
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
@@ -153,6 +162,32 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=pillar_owner)
         # Check the results with the feature flag.
         with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
+
+    def test_private_bug_in_search_result_pillar_owners_cte(self):
+        # Like test_private_bug_in_search_result_pillar_owners, but with
+        # the new CTE-based visibility query.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        flags = dict()
+        flags.update(PRIVATE_BUG_VISIBILITY_FLAG)
+        flags.update(PRIVATE_BUG_VISIBILITY_CTE_FLAG)
+        with FeatureFixture(flags):
             self.assertSearchFinds(params, self.bugtasks)
         # Check the results without the feature flag.
         self.assertSearchFinds(params, self.bugtasks[:-1])
@@ -571,6 +606,76 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None, has_cve=True)
         self.assertSearchFinds(params, self.bugtasks[:1])
 
+    def test_sort_by_milestone_name(self):
+        expected = self.setUpMilestoneSorting()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='milestone_name')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-milestone_name')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_reporter(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='reporter')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.owner.name)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-reporter')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_assignee(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].transitionToAssignee(
+                self.factory.makePerson(name="assignee-1"))
+            self.bugtasks[1].transitionToAssignee(
+                self.factory.makePerson(name="assignee-2"))
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        params = self.getBugTaskSearchParams(user=None, orderby='assignee')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-assignee')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_title(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='title')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.title)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-title')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_tag(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.tags = ['tag-a', 'tag-d']
+            self.bugtasks[1].bug.tags = ['tag-b', 'tag-c']
+        params = self.getBugTaskSearchParams(user=None, orderby='tag')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-tag')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_linked_specification(self):
+        with person_logged_in(self.owner):
+            spec_1 = self.factory.makeSpecification(
+                name='spec-1', owner=self.owner)
+            spec_1.linkBug(self.bugtasks[2].bug)
+            spec_1_1 = self.factory.makeSpecification(
+                name='spec-1-1', owner=self.owner)
+            spec_1_1.linkBug(self.bugtasks[2].bug)
+            spec_2 = self.factory.makeSpecification(
+                name='spec-2', owner=self.owner)
+            spec_2.linkBug(self.bugtasks[1].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='specification')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-specification')
+        self.assertSearchFinds(params, expected)
+
 
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
@@ -762,6 +867,16 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.searchtarget)
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                product=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                product=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class ProductSeriesTarget(BugTargetTestBase):
     """Use a product series as the bug target."""
@@ -808,6 +923,16 @@ class ProductSeriesTarget(BugTargetTestBase):
         # main bug target.
         return self._findBugtaskForOtherProduct(
             bugtask, self.searchtarget.product)
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                productseries=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                productseries=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
 
 
 class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
@@ -918,6 +1043,16 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             # With a flag set, no bugs are found.
             self.assertSearchFinds(params, [])
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                product=self.bugtasks[1].target, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                product=self.bugtasks[2].target, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class MilestoneTarget(BugTargetTestBase):
     """Use a milestone as the bug target."""
@@ -963,6 +1098,15 @@ class MilestoneTarget(BugTargetTestBase):
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.product)
 
+    def setUpMilestoneSorting(self):
+        # Setup for a somewhat pointless test: All bugtasks are already
+        # assigned to same milestone. This means essentially that the
+        # search result should be ordered by the secondary sort order,
+        # BugTask.importance.
+        # Note that reversing the sort direction of milestone does not
+        # affect the sort direction of the bug ID.
+        return sorted(self.bugtasks, key=lambda bugtask: bugtask.importance)
+
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                          BugTargetWithBugSuperVisor,
@@ -1003,8 +1147,18 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                 subscriber, subscribed_by=subscriber)
         return subscriber
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
 
-class DistroseriesTarget(BugTargetTestBase):
+
+class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
     """Use a distro series as the bug target."""
 
     def setUp(self):
@@ -1025,6 +1179,53 @@ class DistroseriesTarget(BugTargetTestBase):
 
     def setBugParamsTarget(self, params, target):
         params.setDistroSeries(target)
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
+    def setUpStructuralSubscriptions(self, subscribe_search_target=True):
+        # See `ProjectGroupAndDistributionTests`.
+        # Users can search for series and package subscriptions. Users
+        # subscribe to packages at the distro level.
+        subscriber = self.factory.makePerson()
+        if subscribe_search_target:
+            self.subscribeToTarget(subscriber)
+        # Create a bug in a package in the series being searched.
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.searchtarget)
+        self.bugtasks.append(self.factory.makeBugTask(target=sourcepackage))
+        # Create a bug in another series for the same package.
+        other_series = self.factory.makeDistroSeries(
+            distribution=self.searchtarget.distribution)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=other_series,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        self.factory.makeBugTask(target=other_sourcepackage)
+        # Create a bug in the same distrubution package.
+        dsp = self.searchtarget.distribution.getSourcePackage(
+            sourcepackage.name)
+        self.factory.makeBugTask(target=dsp)
+        # Subscribe to the DSP to search both DSPs and SPs.
+        with person_logged_in(subscriber):
+            dsp.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
+
+    def test_subordinate_structural_subscribers(self):
+        # Searching for a subscriber who is subscribed to only subordinate
+        # objects will match those objects
+        subscriber = self.setUpStructuralSubscriptions(
+            subscribe_search_target=False)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, [self.bugtasks[-1]])
 
 
 class SourcePackageTarget(BugTargetTestBase):
@@ -1062,6 +1263,16 @@ class SourcePackageTarget(BugTargetTestBase):
     def targetToGroup(self, target):
         return target.sourcepackagename.id
 
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
+
 
 class DistributionSourcePackageTarget(BugTargetTestBase,
                                       BugTargetWithBugSuperVisor):
@@ -1096,6 +1307,16 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
 
     def targetToGroup(self, target):
         return target.sourcepackagename.id
+
+    def setUpMilestoneSorting(self):
+        with person_logged_in(self.owner):
+            milestone_1 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='1.0')
+            milestone_2 = self.factory.makeMilestone(
+                distribution=self.searchtarget.distribution, name='2.0')
+            self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
+            self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
+        return self.bugtasks[1:] + self.bugtasks[:1]
 
 
 bug_targets_mixins = (

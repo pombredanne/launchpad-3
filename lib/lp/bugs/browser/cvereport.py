@@ -1,7 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Views to generate CVE reports (as in distro and distroseries/+cve pages)."""
+"""Views to generate CVE reports (as in distro & distroseries/+cve pages)."""
 
 __metaclass__ = type
 
@@ -11,9 +11,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import LaunchpadView
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -22,7 +19,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.searchbuilder import any
+from lp.services.webapp import LaunchpadView
 
 
 class BugTaskCve:
@@ -41,18 +41,23 @@ class BugTaskCve:
 
 class CVEReportView(LaunchpadView):
     """View that builds data to be displayed in CVE reports."""
+
+    @property
+    def page_title(self):
+        return 'CVE reports for %s' % self.context.title
+
     @cachedproperty
     def open_cve_bugtasks(self):
-        """Return BugTaskCves for bugs with open bugtasks in the context."""
-        search_params = BugTaskSearchParams(self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        """Find BugTaskCves for bugs with open bugtasks in the context."""
+        search_params = BugTaskSearchParams(
+            self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         return self._buildBugTaskCves(search_params)
 
     @cachedproperty
     def resolved_cve_bugtasks(self):
-        """Return BugTaskCves for bugs with resolved bugtasks in the context."""
-        search_params = BugTaskSearchParams(self.user,
-            status=any(*RESOLVED_BUGTASK_STATUSES))
+        """Find BugTaskCves for bugs with resolved bugtasks in the context."""
+        search_params = BugTaskSearchParams(
+            self.user, status=any(*RESOLVED_BUGTASK_STATUSES))
         return self._buildBugTaskCves(search_params)
 
     def setContextForParams(self, params):
@@ -82,16 +87,15 @@ class CVEReportView(LaunchpadView):
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
                 has_patch=badges['has_patch'])
-            if not bugtaskcves.has_key(bugtask.bug.id):
+            if bugtask.bug.id not in bugtaskcves:
                 bugtaskcves[bugtask.bug.id] = BugTaskCve()
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
 
         bugcves = getUtility(ICveSet).getBugCvesForBugTasks(bugtasks)
         for bugcve in bugcves:
-            assert bugtaskcves.has_key(bugcve.bug.id)
+            assert bugcve.bug.id in bugtaskcves, "Bug missing in bugcves."
             bugtaskcves[bugcve.bug.id].cves.append(bugcve.cve)
 
         # Order the dictionary items by bug ID and then return only the
         # bugtaskcve objects.
         return [bugtaskcve for bug, bugtaskcve in sorted(bugtaskcves.items())]
-

@@ -33,7 +33,7 @@ containing the target PPA owner name, see bug #172377.
 
 We need to be logged into the security model in order to get any further
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
 
@@ -46,19 +46,19 @@ Helper functions to examine emails that were sent:
     ...     return cmp(a[1], b[1])
 
     >>> def print_addrlist(field):
-    ...    for entry in field.split(','):
-    ...        print entry.strip()
+    ...    for entry in sorted([addr.strip() for addr in field.split(',')]):
+    ...        print entry
 
 Import the test keys to use 'insecure' policy.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet,
     ...     )
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -299,7 +299,7 @@ original changesfile.
     IndexError: list index out of range
 
 See further tests upon PPA upload notifications on
-archiveuploader/ftests/test_ppauploadprocessor.
+archiveuploader/tests/test_ppauploadprocessor.
 
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
@@ -443,8 +443,8 @@ the upload is waiting for approval:
     'Launchpad actually'
 
     >>> print_addrlist(notification['To'])
-    Foo Bar <foo.bar@canonical.com>
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    Foo Bar <foo.bar@canonical.com>
 
     >>> notification['Subject']
     '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
@@ -479,8 +479,8 @@ saying they are waiting for approval:
     'Launchpad actually'
 
     >>> print_addrlist(notification['To'])
-    Foo Bar <foo.bar@canonical.com>
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    Foo Bar <foo.bar@canonical.com>
 
     >>> notification['Subject']
     '[ubuntu/hoary-backports] bar 1.0-3 (Waiting for approval)'

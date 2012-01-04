@@ -10,15 +10,17 @@ __all__ = [
 __metaclass__ = type
 
 from datetime import datetime
+import errno
 import hashlib
 import logging
 import os
 import shutil
 
-from debian.deb822 import Release
+from debian.deb822 import (
+    _multivalued,
+    Release,
+    )
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -37,6 +39,10 @@ from lp.archivepublisher.utils import (
     RepositoryIndexFile,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.librarian.client import LibrarianClient
+from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -138,6 +144,25 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     return Publisher(log, pubconf, disk_pool, archive, allowed_suites)
 
 
+class I18nIndex(_multivalued):
+    """Represents an i18n/Index file."""
+    _multivalued_fields = {
+        "sha1": ["sha1", "size", "name"],
+    }
+
+    @property
+    def _fixed_field_lengths(self):
+        fixed_field_lengths = {}
+        for key in self._multivalued_fields:
+            length = self._get_size_field_length(key)
+            fixed_field_lengths[key] = {"size": length}
+        return fixed_field_lengths
+
+    def _get_size_field_length(self, key):
+        lengths = [len(str(item['size'])) for item in self[key]]
+        return max(lengths)
+
+
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
     files in the pool of a Distribution. The publisher objects will be
@@ -212,19 +237,42 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.series:
+        if self.archive.purpose in (
+            ArchivePurpose.PRIMARY,
+            ArchivePurpose.PARTNER,
+            ):
+            # For PRIMARY and PARTNER archives, skip OBSOLETE and FUTURE
+            # series.  We will never want to publish anything in them, so it
+            # isn't worth thinking about whether they have pending
+            # publications.
+            consider_series = [
+                series
+                for series in self.distro.series
+                if series.status not in (
+                    SeriesStatus.OBSOLETE,
+                    SeriesStatus.FUTURE,
+                    )]
+        else:
+            # Other archives may have reasons to continue building at least
+            # for OBSOLETE series.  For example, a PPA may be continuing to
+            # provide custom builds for users who haven't upgraded yet.
+            consider_series = self.distro.series
+
+        for distroseries in consider_series:
             for pocket in self.archive.getPockets():
-                if (self.allowed_suites and not (distroseries.name, pocket) in
-                    self.allowed_suites):
+                allowed = (
+                    not self.allowed_suites or
+                    (distroseries.name, pocket) in self.allowed_suites)
+                if allowed:
+                    more_dirt = distroseries.publish(
+                        self._diskpool, self.log, self.archive, pocket,
+                        is_careful=force_publishing)
+
+                    self.dirty_pockets.update(more_dirt)
+
+                else:
                     self.log.debug(
-                        "* Skipping %s/%s" % (distroseries.name, pocket.name))
-                    continue
-
-                more_dirt = distroseries.publish(
-                    self._diskpool, self.log, self.archive, pocket,
-                    is_careful=force_publishing)
-
-                self.dirty_pockets.update(more_dirt)
+                        "* Skipping %s/%s", distroseries.name, pocket.name)
 
     def A2_markPocketsWithDeletionsDirty(self):
         """An intermediate step in publishing to detect deleted packages.
@@ -458,6 +506,20 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
+    def _writeReleaseFile(self, suite, release_data):
+        """Write a Release file to the archive.
+
+        :param suite: The name of the suite whose Release file is to be
+            written.
+        :param release_data: A `debian.deb822.Release` object to write
+            to the filesystem.
+        """
+        location = os.path.join(self._config.distsroot, suite)
+        if not file_exists(location):
+            os.makedirs(location)
+        with open(os.path.join(location, "Release"), "w") as release_file:
+            release_data.dump(release_file, "utf-8")
+
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -483,6 +545,8 @@ class Publisher(object):
             for architecture in all_architectures:
                 self._writeSuiteArch(
                     distroseries, pocket, component, architecture, all_files)
+            self._writeSuiteI18n(
+                distroseries, pocket, component, all_files)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -527,12 +591,7 @@ class Publisher(object):
                 "name": filename,
                 "size": len(entry)})
 
-        f = open(os.path.join(
-            self._config.distsroot, suite, "Release"), "w")
-        try:
-            release_file.dump(f, "utf-8")
-        finally:
-            f.close()
+        self._writeReleaseFile(suite, release_file)
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -598,6 +657,50 @@ class Publisher(object):
         self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Packages', arch_name, arch_path,
             all_series_files)
+
+    def _writeSuiteI18n(self, distroseries, pocket, component,
+                        all_series_files):
+        """Write out an Index file for translation files in a suite."""
+        suite = distroseries.getSuite(pocket)
+        self.log.debug("Writing Index file for %s/%s/i18n" % (
+            suite, component))
+
+        i18n_dir = os.path.join(self._config.distsroot, suite, component,
+                                "i18n")
+        i18n_files = []
+        try:
+            for i18n_file in os.listdir(i18n_dir):
+                if not i18n_file.startswith('Translation-'):
+                    continue
+                if not i18n_file.endswith('.bz2'):
+                    # Save bandwidth: mirrors should only need the .bz2
+                    # versions.
+                    continue
+                i18n_files.append(i18n_file)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        if not i18n_files:
+            # If the i18n directory doesn't exist or is empty, we don't need
+            # to index it.
+            return
+
+        i18n_index = I18nIndex()
+        for i18n_file in sorted(i18n_files):
+            entry = self._readIndexFileContents(
+                suite, os.path.join(component, "i18n", i18n_file))
+            if entry is None:
+                continue
+            i18n_index.setdefault("SHA1", []).append({
+                "sha1": hashlib.sha1(entry).hexdigest(),
+                "name": i18n_file,
+                "size": len(entry)})
+
+        with open(os.path.join(i18n_dir, "Index"), "w") as f:
+            i18n_index.dump(f, "utf-8")
+
+        # Schedule this for inclusion in the Release file.
+        all_series_files.add(os.path.join(component, "i18n", "Index"))
 
     def _readIndexFileContents(self, distroseries_name, file_name):
         """Read an index files' contents.

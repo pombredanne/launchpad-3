@@ -11,22 +11,22 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
-from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.testing import login
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 def bugtarget_filebug(bugtarget, summary):

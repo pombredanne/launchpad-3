@@ -2,6 +2,7 @@
 
 .yui3-skin-sam button.yui3-activator-act {
     background: url('edit.png') 0 0 no-repeat;
+    vertical-align: middle;
 }
 
 .yui3-skin-sam .yui3-activator-processing button.yui3-activator-act {

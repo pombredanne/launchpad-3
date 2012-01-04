@@ -17,13 +17,13 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translatablemessage import (
@@ -65,7 +65,6 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
             name='devel', distribution=self.foo)
         self.foo_stable = self.factory.makeDistroSeries(
             name='stable', distribution=self.foo)
-        self.foo.official_rosetta = True
         self.sourcepackagename = self.factory.makeSourcePackageName()
 
         # Two POTemplates share translations if they have the same name,
@@ -1353,32 +1352,6 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # Order is unchanged for the previous template.
         potmsgsets = list(
             self.devel_potemplate.getPOTMsgSets())
-        self.assertEquals(
-            [self.potmsgset1, self.potmsgset2], potmsgsets)
-
-    def test_findPOTMsgSetsContaining_ordering(self):
-        # As per bug 388473 findPOTMsgSetsContaining still used the old
-        # potmsgset.sequence for ordering. Check that this is fixed.
-        # This test will go away when potmsgset.sequence goes away.
-
-        # Give the method something to search for.
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset1,
-            translations=["Shared translation"])
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset2,
-            translations=["Another shared translation"])
-
-        # Mess with potmsgset.sequence.
-        removeSecurityProxy(self.potmsgset1).sequence = 2
-        removeSecurityProxy(self.potmsgset2).sequence = 1
-
-        potmsgsets = list(
-            self.devel_pofile.findPOTMsgSetsContaining("translation"))
-
-        # Order ignores potmsgset.sequence.
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 

@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.testing.pages import find_tag_by_id
+from lp.testing.pages import find_tag_by_id
 
 
 class TestMessageVisibilityMixin:
@@ -61,7 +61,7 @@ class TestHideMessageControlMixin:
 
     control_text = 'mark-spam-1'
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """To be overwridden by subclasses.
 
         This method must create and return a message bearing object

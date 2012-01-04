@@ -6,13 +6,13 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests import (
+from lp.services.geoip.helpers import request_country
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from lp.services.geoip.helpers import request_country
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class RequestCountryTestCase(unittest.TestCase):
