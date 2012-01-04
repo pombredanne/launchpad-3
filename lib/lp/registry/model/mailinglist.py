@@ -441,98 +441,17 @@ class MailingList(SQLBase):
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
-        store = Store.of(self)
-        # In order to handle the case where the preferred email address is
-        # used (i.e. where MailingListSubscription.email_address is NULL), we
-        # need to UNION, those using a specific address and those using the
-        # preferred address.
-        tables = (
-            EmailAddress,
-            Join(Person, Person.id == EmailAddress.personID),
-            Join(Account, Account.id == Person.accountID),
-            Join(TeamParticipation, TeamParticipation.personID == Person.id),
-            Join(
-                MailingListSubscription,
-                MailingListSubscription.personID == Person.id),
-            Join(
-                MailingList,
-                MailingList.id == MailingListSubscription.mailing_listID),
-            )
-        preferred = store.using(*tables).find(
-            EmailAddress,
-            And(MailingListSubscription.mailing_list == self,
-                TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                MailingListSubscription.email_addressID == None,
-                EmailAddress.status == EmailAddressStatus.PREFERRED,
-                Account.status == AccountStatus.ACTIVE))
-        explicit = store.using(*tables).find(
-            EmailAddress,
-            And(MailingListSubscription.mailing_list == self,
-                TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                EmailAddress.id == MailingListSubscription.email_addressID,
-                Account.status == AccountStatus.ACTIVE))
-        # Union the two queries together to give us the complete list of email
-        # addresses allowed to post.  Note that while we're retrieving both
-        # the EmailAddress and Person records, this method is defined as only
-        # returning EmailAddresses.  The reason why we include the Person in
-        # the query is because the consumer of this method will access
-        # email_address.person.displayname, so the prejoin to Person is
-        # critical to acceptable performance.  Indeed, without the prejoin, we
-        # were getting tons of timeout OOPSes.  See bug 259440.
-        for email_address in preferred.union(explicit):
-            yield email_address
+        return [
+            address for (name, address) in
+            getUtility(IMailingListSet).getSubscribedAddresses(
+                [self.team.name]).get(self.team.name, [])]
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
-        store = Store.of(self)
-        # First, we need to find all the members of the team this mailing list
-        # is associated with.  Find all of their validated and preferred email
-        # addresses of those team members.  Every one of those email addresses
-        # are allowed to post to the mailing list.
-        tables = (
-            Person,
-            Join(Account, Account.id == Person.accountID),
-            Join(EmailAddress, EmailAddress.personID == Person.id),
-            Join(TeamParticipation, TeamParticipation.personID == Person.id),
-            Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
-            )
-        team_members = store.using(*tables).find(
-            EmailAddress,
-            And(TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                Person.teamowner == None,
-                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
-                Account.status == AccountStatus.ACTIVE,
-                ))
-        # Second, find all of the email addresses for all of the people who
-        # have been explicitly approved for posting to this mailing list.
-        # This occurs as part of first post moderation, but since they've
-        # already been approved for this list, we don't need to wait for three
-        # global approvals.
-        tables = (
-            Person,
-            Join(Account, Account.id == Person.accountID),
-            Join(EmailAddress, EmailAddress.personID == Person.id),
-            Join(MessageApproval, MessageApproval.posted_byID == Person.id),
-            )
-        approved_posters = store.using(*tables).find(
-            EmailAddress,
-            And(MessageApproval.mailing_list == self,
-                MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
-                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
-                Account.status == AccountStatus.ACTIVE,
-                ))
-        # Union the two queries together to give us the complete list of email
-        # addresses allowed to post.  Note that while we're retrieving both
-        # the EmailAddress and Person records, this method is defined as only
-        # returning EmailAddresses.  The reason why we include the Person in
-        # the query is because the consumer of this method will access
-        # email_address.person.displayname, so the prejoin to Person is
-        # critical to acceptable performance.  Indeed, without the prejoin, we
-        # were getting tons of timeout OOPSes.  See bug 259440.
-        return team_members.union(approved_posters)
+        return [
+            address for (name, address) in
+            getUtility(IMailingListSet).getSenderAddresses(
+                [self.team.name]).get(self.team.name, [])]
 
     def holdMessage(self, message):
         """See `IMailingList`."""
