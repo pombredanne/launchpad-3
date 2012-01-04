@@ -399,10 +399,11 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def test_add_email_address_taken(self):
         email_address = self.factory.getUniqueEmailAddress()
-        self.factory.makeAccount(
+        self.factory.makePerson(
+            name='deadaccount',
             displayname='deadaccount',
             email=email_address,
-            status=AccountStatus.NOACCOUNT)
+            account_status=AccountStatus.NOACCOUNT)
         form = {
             'field.VALIDATED_SELECTED': self.valid_email_address,
             'field.VALIDATED_SELECTED-empty-marker': 1,
@@ -411,8 +412,13 @@ class TestPersonEditView(TestCaseWithFactory):
             }
         view = create_initialized_view(self.person, "+editemails", form=form)
         error_msg = view.errors[0]
-        expected_msg = ("The email address '%s' is already registered to an "
-                        "account, deadaccount." % email_address)
+        expected_msg = (
+            "The email address '%s' is already registered to "
+            "<a href=\"http://launchpad.dev/~deadaccount\">deadaccount</a>. "
+            "If you think that is a duplicated account, you can "
+            "<a href=\"http://launchpad.dev/people/+requestmerge?"
+            "field.dupe_person=deadaccount\">merge it</a> into your account."
+            % email_address)
         self.assertEqual(expected_msg, error_msg)
 
 
