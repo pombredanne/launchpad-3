@@ -1,11 +1,11 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the lp.soyuz.browser.builder module."""
 
 __metaclass__ = type
 
-from testtools.matchers import LessThan
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -85,9 +85,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, 2)
 
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_builders_recipe_build_query_count(self):
         def create_build():
@@ -98,9 +96,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, 2)
 
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 4 * 2 + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
@@ -117,6 +113,4 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, 2)
 
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

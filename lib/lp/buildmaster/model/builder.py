@@ -430,6 +430,7 @@ class Builder(SQLBase):
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
+        self._clean_currentjob_cache()
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
@@ -501,6 +502,9 @@ class Builder(SQLBase):
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def _clean_currentjob_cache(self):
+        del get_property_cache(self).currentjob
 
     def requestAbort(self):
         """See IBuilder."""

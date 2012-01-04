@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -309,11 +309,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.services.librarian.model import LibraryFileAlias
+        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         SourcePackageRecipeBuild.prefetchBuildqueueRecord(builds)
         package_builds = load_related(
             PackageBuild, builds, ['package_build_id'])
-        build_farm_jobs = [
-            build.build_farm_job for build in builds]
+        build_farm_jobs = load_related(
+            BuildFarmJob, [build.package_build for build in builds],
+            ['build_farm_job_id'])
         load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
         archives = load_related(Archive, package_builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
