@@ -88,10 +88,11 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
 
     def test_getOrCreateSoftwareCenterCustomer_xmlrpc_error(self):
         # A suspended account results in an appropriate xmlrpc fault.
-        suspended_account = self.factory.makeAccount(
-            'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
+        suspended_person = self.factory.makePerson(
+            displayname='Joe Blogs', email='a@b.com',
+            account_status=AccountStatus.SUSPENDED)
         openid_identifier = removeSecurityProxy(
-            suspended_account).openid_identifiers.any().identifier
+            suspended_person.account).openid_identifiers.any().identifier
 
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False

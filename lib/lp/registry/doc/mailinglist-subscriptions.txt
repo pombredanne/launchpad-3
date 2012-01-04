@@ -1336,10 +1336,8 @@ post to the mailing list, nor will she receive mailing list posts.
 Now Umma's account is suspended by a Launchpad administrator.
 
     >>> from lp.services.identity.interfaces.account import (
-    ...     AccountStatus, IAccountSet)
-    >>> umma_account = getUtility(IAccountSet).getByEmail(
-    ...     'umma.person@example.com')
-    >>> umma_account.status = AccountStatus.SUSPENDED
+    ...     AccountStatus)
+    >>> umma.account.status = AccountStatus.SUSPENDED
     >>> transaction.commit()
 
 Umma is no longer subscribed to the mailing list...

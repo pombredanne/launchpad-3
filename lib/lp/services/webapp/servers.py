@@ -1066,24 +1066,6 @@ class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
 
 
-class AccountPrincipalMixin:
-    """Mixin for publication that works with person-less accounts."""
-
-    def getPrincipal(self, request):
-        """Return the authenticated principal for this request.
-
-        This is only necessary because, unlike in LaunchpadBrowserPublication,
-        here we want principals representing personless accounts to be
-        returned, so that personless accounts can use our OpenID server.
-        """
-        auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
-        if principal is None:
-            principal = auth_utility.unauthenticatedPrincipal()
-            assert principal is not None, "Missing unauthenticated principal."
-        return principal
-
-
 # ---- feeds
 
 class FeedsPublication(LaunchpadBrowserPublication):
