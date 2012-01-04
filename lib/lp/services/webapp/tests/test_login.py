@@ -43,9 +43,7 @@ from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
     )
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    )
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
