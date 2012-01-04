@@ -627,7 +627,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         initial_subscribers = set((
             self.factory.makePerson(), bugtask_a.owner, bug_owner,
@@ -660,7 +660,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
             self.factory.makePerson(), bug_owner,
@@ -691,10 +691,10 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(),  bug_owner,
+            self.factory.makePerson(), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver,
             bugtask_a.pillar.bug_supervisor))
 
@@ -718,7 +718,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # When a bug is marked as private=false and security_related=false,
         # any existing subscriptions are left alone.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
             self.factory.makePerson(), bug_owner,
@@ -825,7 +825,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # The bug supervisors are unsubscribed if a bug is made public and an
         # email is sent telling them they have been unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
 
         with person_logged_in(bug_owner):
@@ -870,7 +870,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # set to false and an email is sent telling them they have been
         # unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
 
         with person_logged_in(bug_owner):

@@ -479,14 +479,14 @@ class StructuralSubscriptionTargetMixin:
     def getSubscriptions(self, subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
         from lp.registry.model.person import Person
-        clauses = [StructuralSubscription.subscriberID==Person.id]
+        clauses = [StructuralSubscription.subscriberID == Person.id]
         for key, value in self._target_args.iteritems():
             clauses.append(
-                getattr(StructuralSubscription, key)==value)
+                getattr(StructuralSubscription, key) == value)
 
         if subscriber is not None:
             clauses.append(
-                StructuralSubscription.subscriberID==subscriber.id)
+                StructuralSubscription.subscriberID == subscriber.id)
 
         store = Store.of(self.__helper.pillar)
         return store.find(
@@ -882,7 +882,7 @@ def _calculate_tag_query(conditions, tags):
             group_by=(BugSubscriptionFilter.id,),
             having=Count(
                 SQL('CASE WHEN BugSubscriptionFilterTag.include '
-                    'THEN BugSubscriptionFilterTag.tag END'))==0)
+                    'THEN BugSubscriptionFilterTag.tag END')) == 0)
     else:
         # The bug has some tags.  This will require a bit of fancy
         # footwork. First, though, we will simply want to leave out
