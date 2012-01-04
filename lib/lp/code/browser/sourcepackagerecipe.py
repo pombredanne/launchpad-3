@@ -388,11 +388,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         """
         initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
-        # If the build can't be viewed, the archive can't.
-        if not check_permission('launchpad.View', build):
-            build = None
         if build:
-            initial_values['archive'] = build.archive
+            # If the build can't be viewed, the archive can't.
+            if check_permission('launchpad.View', build):
+                initial_values['archive'] = build.archive
         return initial_values
 
     class schema(Interface):
