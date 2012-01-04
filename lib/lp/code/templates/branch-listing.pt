@@ -186,7 +186,7 @@ replace='structure string:&lt;script type="text/javascript"&gt;
       <tr tal:condition="not:context/batch/total">
         <td tal:attributes="colspan context/column_count">
           <div id="no-branch-message"
-               tal:content="structure context/view/no_branch_message" />
+               tal:content="context/view/no_branch_message" />
         </td>
       </tr>
     </tbody>
