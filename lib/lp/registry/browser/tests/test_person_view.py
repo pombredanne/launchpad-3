@@ -451,10 +451,11 @@ class TestTeamCreationView(TestCaseWithFactory):
 
     def test_validate_email_catches_taken_emails(self):
         email_address = self.factory.getUniqueEmailAddress()
-        self.factory.makeAccount(
+        self.factory.makePerson(
+            name='libertylandaccount',
             displayname='libertylandaccount',
             email=email_address,
-            status=AccountStatus.NOACCOUNT)
+            account_status=AccountStatus.NOACCOUNT)
         form = {
             'field.actions.create': 'Create Team',
             'field.contactemail': email_address,
@@ -467,9 +468,10 @@ class TestTeamCreationView(TestCaseWithFactory):
             }
         person_set = getUtility(IPersonSet)
         view = create_initialized_view(person_set, '+newteam', form=form)
-        expected_msg = ('%s is already registered in Launchpad and is '
-                        'associated with the libertylandaccount '
-                        'account.' % email_address)
+        expected_msg = (
+            '%s is already registered in Launchpad and is associated with '
+            '<a href="http://launchpad.dev/~libertylandaccount">'
+            'libertylandaccount</a>.' % email_address)
         error_msg = view.errors[0].errors[0]
         self.assertEqual(expected_msg, error_msg)
 

@@ -297,34 +297,6 @@ class GetPersonTestCase(TestCaseWithFactory):
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
-    def test_person_from_account(self):
-        # If an Account record exists for a user's email address, but
-        # no Person record is linked to it, the bug importer creates a
-        # Person and links the three piece of information together.
-        account = self.factory.makeAccount("Sam")
-        personnode = ET.fromstring(
-            '<person xmlns="https://launchpad.net/xmlns/2006/bugs" />')
-        personnode.set('name', generate_nick(account.preferredemail.email))
-        personnode.set('email', account.preferredemail.email)
-        personnode.text = account.displayname
-
-        product = getUtility(IProductSet).getByName('netapplet')
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        person = importer.getPerson(personnode)
-
-        # The person returned is associated with the account.
-        self.failUnlessEqual(account.id, person.accountID)
-        # The creation comment and rationale are set correctly.
-        self.failUnlessEqual(
-            'when importing bugs for %s' % product.displayname,
-            person.creation_comment)
-        self.failUnlessEqual(
-            PersonCreationRationale.BUGIMPORT,
-            person.creation_rationale)
-        # The person's email addresses are hidden by default.
-        self.failUnless(person.hide_email_addresses)
-
 
 class GetMilestoneTestCase(unittest.TestCase):
     """Tests for the BugImporter.getMilestone() method."""

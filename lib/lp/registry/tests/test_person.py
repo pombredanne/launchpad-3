@@ -848,7 +848,6 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             email = from_person.preferredemail
             email.status = EmailAddressStatus.NEW
             email.person = to_person
-            email.account = to_person.account
         transaction.commit()
 
     def _do_merge(self, from_person, to_person, reviewer=None):
