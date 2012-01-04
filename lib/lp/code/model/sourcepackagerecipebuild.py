@@ -152,6 +152,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
+    @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
         store = Store.of(self)
