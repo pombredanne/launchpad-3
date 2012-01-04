@@ -100,7 +100,7 @@ class MilestoneNameField(ContentNameField):
 
 
 class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
-                 IHasOfficialBugTags):
+                     IHasOfficialBugTags):
     """Interface containing the data for milestones.
 
     To be registered for views but not instantiated.
