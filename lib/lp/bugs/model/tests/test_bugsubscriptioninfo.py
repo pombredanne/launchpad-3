@@ -560,6 +560,13 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.assertThat(recorder, condition)
 
     def exercise_subscription_set(self, set_name, counts=(1, 1, 0)):
+        """Test the number of queries it takes to inspect a subscription set.
+
+        :param set_name: The name of the set, e.g. "direct_subscriptions".
+        :param counts: A triple of the expected query counts for each of three
+            operations: get the set, get the set's subscribers, get the set's
+            subscribers in order.
+        """
         # Looking up subscriptions takes a single query.
         with self.exactly_x_queries(counts[0]):
             getattr(self.info, set_name)
@@ -573,6 +580,17 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
 
     def exercise_subscription_set_sorted_first(
         self, set_name, counts=(1, 1, 0)):
+        """Test the number of queries it takes to inspect a subscription set.
+
+        This differs from `exercise_subscription_set` in its second step, when
+        it looks at the sorted subscription list instead of the subscriber
+        set.
+
+        :param set_name: The name of the set, e.g. "direct_subscriptions".
+        :param counts: A triple of the expected query counts for each of three
+            operations: get the set, get the set in order, get the set's
+            subscribers in order.
+        """
         # Looking up subscriptions takes a single query.
         with self.exactly_x_queries(counts[0]):
             getattr(self.info, set_name)
