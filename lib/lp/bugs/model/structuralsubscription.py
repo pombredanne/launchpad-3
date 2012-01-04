@@ -597,7 +597,8 @@ def query_structural_subscriptions(
         `StructuralSubscription`, `BugSubscriptionFilter`, or a combo.
     :param bug: An `IBug`
     :param bugtasks: An iterable of `IBugTask`.
-    :param level: A level from `BugNotificationLevel`.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     filter_id_query = (
@@ -638,7 +639,8 @@ def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
     """Return subscriptions for bug or bugtask at level.
 
     :param bug_or_bugtask: An `IBug` or `IBugTask`.
-    :param level: A level from `BugNotificationLevel`.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     bug, bugtasks = resolve_bug_and_bugtasks(bug_or_bugtask)
@@ -660,7 +662,8 @@ def get_structural_subscribers(
     :param bug_or_bugtask: An `IBug` or `IBugTask`.
     :param recipients: A `BugNotificationRecipients` object or
         `None`, which will be populated if provided.
-    :param level: A level from `BugNotificationLevel`.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
     from lp.registry.model.person import Person  # Circular.
