@@ -341,11 +341,12 @@ class LaunchpadBrowserPublication(
         # automated tests.
         if request.get('PATH_INFO') not in [u'/+opstats', u'/+haproxy']:
             principal = auth_utility.authenticate(request)
-        if principal is None:
+        if principal is not None:
+            assert principal.person is not None
+        else:
             # This is an unauthenticated user.
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
-        assert principal.person is not None
         return principal
 
     def maybeRestrictToTeam(self, request):
