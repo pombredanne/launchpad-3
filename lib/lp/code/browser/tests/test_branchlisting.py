@@ -677,12 +677,10 @@ class TestPersonBranchesPage(BrowserTestCase):
     def test_no_branch_message_escaped(self):
         # make sure we escape any information put into the no branch message
         badname = '<script>Test</script>'
-        escapedname = '\\u003cscript\\u003eTest\\u003c/script\\u003e'
         baduser = self.factory.makePerson(displayname=badname)
-        browser = self.getUserBrowser(canonical_url(baduser, rootsite='code'))
-
+        browser = self.getViewBrowser(baduser, rootsite='code')
+        # the content should not appear in tact because it's been escaped
         self.assertTrue(badname not in browser.contents)
-        self.assertTrue(escapedname in browser.contents)
 
 class TestProjectGroupBranches(TestCaseWithFactory,
                                AjaxBatchNavigationMixin):
