@@ -23,9 +23,7 @@ It performs a number of updates for the migration and when a file is moved.
     * Extract all browser zcml instructions to browser/configure.zcml
     * Merge all object zcml into <app>/configure.zcml
 
-test harnesses are installed to run the tests in doc/ and browser/test
-The test_doc.py module is constructed from functions and configuration in
-canonical/launchpad/ftests/test_system_documentation.py. 
+test harnesses are installed to run the tests in doc/ and browser/test.
 
 
 What is missing?

@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     DEFAULT_FLAVOR,

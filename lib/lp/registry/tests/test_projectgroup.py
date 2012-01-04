@@ -7,10 +7,6 @@ from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -22,6 +18,10 @@ from lp.testing import (
     login_celebrity,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

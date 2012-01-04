@@ -10,13 +10,12 @@ from textwrap import dedent
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -28,6 +27,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
@@ -273,7 +273,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         milestone_url = canonical_url(milestone)
         browser = self.getUserBrowser(user=viewer)
         # Seed the cookie cache and any other cross-request state we may gain
-        # in future.  See canonical.launchpad.webapp.serssion: _get_secret.
+        # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
         collector = QueryCollector()
         collector.register()

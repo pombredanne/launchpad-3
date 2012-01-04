@@ -6,7 +6,7 @@
   <p>Here are the steps to obtain a commercial subscription:</p>
   <ol>
     <li>Purchase a Launchpad subscription in the
-      <a tal:define="config modules/canonical.config/config"
+      <a tal:define="config modules/lp.services.config/config"
          tal:attributes="href config/commercial/purchase_subscription_url">
         Canonical Shop</a>.
     </li>

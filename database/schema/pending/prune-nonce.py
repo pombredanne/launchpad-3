@@ -8,16 +8,16 @@
 __metaclass__ = type
 __all__ = []
 
-from optparse import OptionParser
-
 import _pythonpath
 
-from canonical.database.sqlbase import (
+from optparse import OptionParser
+
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.scripts import db_options
-from canonical.launchpad.scripts.logger import (
+from lp.services.scripts import db_options
+from lp.services.scripts.logger import (
     log,
     logger_options,
     )

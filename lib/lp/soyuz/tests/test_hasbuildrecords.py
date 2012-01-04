@@ -7,19 +7,17 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -40,6 +38,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 

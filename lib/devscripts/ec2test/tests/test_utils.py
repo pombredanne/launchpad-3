@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 
-import unittest
-
 from datetime import datetime
+import unittest
 
 from devscripts.ec2test import utils
 

@@ -33,12 +33,12 @@
             interface="lp.buildmaster.interfaces.builder.IBuilderSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.buildmaster.interfaces.builder.IBuilder"
-        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>

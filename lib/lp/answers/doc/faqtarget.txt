@@ -31,8 +31,8 @@ That method is only available to a user who has 'launchpad.Append' on
 the target.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.authorization import check_permission
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> check_permission('launchpad.Append', target)
     False
 
@@ -48,7 +48,7 @@ or one of its answer contacts is authorized to create a new FAQ.
     >>> old_owner = target.owner
 
     >>> removeSecurityProxy(target).owner = no_priv
-    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> from lp.services.webapp.authorization import clear_cache
     >>> clear_cache() # Clear authorization cache for check_permission.
     >>> check_permission('launchpad.Append', target)
     True
@@ -128,7 +128,7 @@ requested target:
 
     # Create a FAQ on Ubuntu.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu != target

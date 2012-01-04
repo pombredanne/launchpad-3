@@ -21,8 +21,6 @@ from debian.deb822 import (
     Release,
     )
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -41,6 +39,9 @@ from lp.archivepublisher.utils import (
     RepositoryIndexFile,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -236,7 +237,28 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.series:
+        if self.archive.purpose in (
+            ArchivePurpose.PRIMARY,
+            ArchivePurpose.PARTNER,
+            ):
+            # For PRIMARY and PARTNER archives, skip OBSOLETE and FUTURE
+            # series.  We will never want to publish anything in them, so it
+            # isn't worth thinking about whether they have pending
+            # publications.
+            consider_series = [
+                series
+                for series in self.distro.series
+                if series.status not in (
+                    SeriesStatus.OBSOLETE,
+                    SeriesStatus.FUTURE,
+                    )]
+        else:
+            # Other archives may have reasons to continue building at least
+            # for OBSOLETE series.  For example, a PPA may be continuing to
+            # provide custom builds for users who haven't upgraded yet.
+            consider_series = self.distro.series
+
+        for distroseries in consider_series:
             for pocket in self.archive.getPockets():
                 allowed = (
                     not self.allowed_suites or

@@ -5,9 +5,9 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestProductAlias(TestCaseWithFactory):

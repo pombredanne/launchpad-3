@@ -6,10 +6,15 @@
 __metaclass__ = type
 __all__ = ['OpenIdIdentifier']
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 
 
 class OpenIdIdentifier(Storm):

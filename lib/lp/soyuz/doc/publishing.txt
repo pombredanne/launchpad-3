@@ -27,7 +27,7 @@ to make sure verifyObject will work.
 
 Verify if the object follows its interface contracts:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -384,7 +384,7 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
     >>> modified_spph = spph
@@ -1323,7 +1323,7 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> print iceweasel_diff.title
     diff from 0.1-1 (in Ubuntu) to 1.0
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The `PackageDiff` are availble via getPackageDiffsForSources() even if
@@ -1334,7 +1334,7 @@ they are not completed yet.
 
 Let's fulfill the file related with the 'pmount' diff.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
 
     >>> diff_file = getUtility(ILibraryFileAliasSet)[1]

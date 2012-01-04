@@ -11,8 +11,8 @@ Karma action set
 
 The karma action set +index view lists all the karma actions.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> user = getUtility(ILaunchBag).user
@@ -66,7 +66,7 @@ The admin can edit the karma action's fields.
 
 Only admins can access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Admin', view)
     True

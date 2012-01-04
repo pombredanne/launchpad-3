@@ -5,21 +5,12 @@
 
 __metaclass__ = type
 
-from datetime import (
-    timedelta,
-)
+from datetime import timedelta
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -40,9 +31,15 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

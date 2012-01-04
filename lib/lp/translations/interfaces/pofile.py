@@ -39,9 +39,9 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats

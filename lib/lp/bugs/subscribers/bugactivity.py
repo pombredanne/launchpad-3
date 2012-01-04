@@ -10,8 +10,6 @@ from zope.schema.interfaces import IField
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
     BugTaskAdded,
     BugTaskDeleted,
@@ -28,6 +26,8 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.productrelease import IProductRelease
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 

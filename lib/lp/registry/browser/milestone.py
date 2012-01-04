@@ -33,24 +33,7 @@ from zope.interface import (
     )
 from zope.schema import Choice, TextLine
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Navigation,
-    )
-from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    ContextMenu,
-    Link,
-    NavigationMenu,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -68,10 +51,10 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
+    add_subscribe_link,
     get_status_counts,
     RegistryDeleteViewMixin,
     )
-from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
@@ -86,6 +69,21 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Navigation,
+    )
+from lp.services.webapp.authorization import precache_permission_for_objects
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    ContextMenu,
+    Link,
+    NavigationMenu,
+    )
 
 
 class MilestoneSetNavigation(GetitemNavigation):

@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = ['QuestionSubscription']
 
 import pytz
-
 from sqlobject import ForeignKey
 from storm.locals import (
     DateTime,
@@ -18,11 +17,11 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase
 from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.role import IPersonRoles
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import SQLBase
 
 
 class QuestionSubscription(SQLBase):

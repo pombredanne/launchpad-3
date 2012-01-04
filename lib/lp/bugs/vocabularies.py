@@ -25,12 +25,10 @@ from sqlobject import (
     CONTAINSSTRING,
     OR,
     )
-
 from storm.expr import (
     And,
     Or,
     )
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
@@ -42,18 +40,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -68,6 +54,18 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.vocabularies import DistributionVocabulary
+from lp.services.database.lpstorm import IStore
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
 
 
 class UsesBugsDistributionVocabulary(DistributionVocabulary):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import cgi
+
 from lxml import html
 import transaction
 from zope.component import (
@@ -13,12 +14,8 @@ from zope.component import (
     queryMultiAdapter,
     )
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.archiveuploader.tests import datadir
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.queue import CompletePackageUpload
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -29,6 +26,10 @@ from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view

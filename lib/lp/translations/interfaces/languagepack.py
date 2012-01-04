@@ -23,8 +23,8 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.translations.enums import LanguagePackType
 
 

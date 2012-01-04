@@ -9,13 +9,12 @@ Apply all outstanding schema patches to an existing launchpad database
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
-import _pythonpath  # Sort PYTHONPATH
+import _pythonpath
 
 from cStringIO import StringIO
 import glob
-import os.path
 from optparse import OptionParser
+import os.path
 import re
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
@@ -23,13 +22,17 @@ from textwrap import dedent
 from bzrlib.branch import Branch
 from bzrlib.errors import NotBranchError
 
-from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.database.sqlbase import (
+from lp.services.database.postgresql import fqn
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
     )
-from canonical.database.postgresql import fqn
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 import replication.helpers
 
 

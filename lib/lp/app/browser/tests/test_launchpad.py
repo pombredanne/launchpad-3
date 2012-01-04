@@ -13,20 +13,6 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    BrowserNotificationLevel,
-    ILaunchpadRoot,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.app.browser.launchpad import (
     iter_view_registrations,
     LaunchpadRootNavigation,
@@ -38,12 +24,24 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.url import urlappend
 from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import create_view

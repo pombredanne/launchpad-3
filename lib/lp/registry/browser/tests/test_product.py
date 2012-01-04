@@ -11,26 +11,24 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (
-    License,
     IProductSet,
+    License,
     )
+from lp.services.config import config
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import (
-    DemoMode,
-    )
+from lp.testing.fixture import DemoMode
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.pages import find_tag_by_id
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
     create_initialized_view,
