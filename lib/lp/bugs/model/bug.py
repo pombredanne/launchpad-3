@@ -2406,7 +2406,7 @@ def get_also_notified_subscribers(
     # Subscribers to exclude.
     exclude_subscribers = frozenset().union(
         info.all_direct_subscribers, info.muted_subscribers)
-    # Get also notified subscribers at the given level for the given tasks.
+    # Get also-notified subscribers at the given level for the given tasks.
     also_notified_subscribers = info.also_notified_subscribers
 
     if recipients is not None:
@@ -2576,6 +2576,8 @@ class BugSubscriptionInfo:
         self.bugtask = None  # Implies all.
         assert level is not None
         self.level = level
+        # This cache holds related `BugSubscriptionInfo` instances relating to
+        # the same bug but with different levels and/or choice of bugtask.
         self.cache = {self.cache_key: self}
         # This is often used in event handlers, many of which block implicit
         # flushes. However, the data needs to be in the database for the
@@ -2584,6 +2586,12 @@ class BugSubscriptionInfo:
 
     @property
     def cache_key(self):
+        """A (bug ID, bugtask ID, level) tuple for use as a hash key.
+
+        This helps `forTask()` and `forLevel()` to be more efficient,
+        returning previously populated instances to avoid running the same
+        queries against the database again and again.
+        """
         bugtask_id = None if self.bugtask is None else self.bugtask.id
         return self.bug.id, bugtask_id, self.level
 
