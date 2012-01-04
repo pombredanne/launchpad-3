@@ -51,7 +51,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
 
-    def test_with_product(self):
+    def test_run_with_product(self):
         product = self.factory.makeProduct(
             translations_usage=ServiceUsage.LAUNCHPAD)
         productseries = self.factory.makeProductSeries(product=product)
