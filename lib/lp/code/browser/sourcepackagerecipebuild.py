@@ -28,7 +28,6 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache,
     )
 from lp.services.webapp import (
     canonical_url,
@@ -107,7 +106,6 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         This is the BuildQueue.estimated_duration plus the
         Job.date_started or BuildQueue.getEstimatedJobStartTime.
         """
-        del get_property_cache(self.context).buildqueue_record
         if self.context.buildqueue_record is None:
             return None
         queue_record = self.context.buildqueue_record
