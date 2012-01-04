@@ -18,11 +18,11 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.interfaces.distroseriespackagecache import (
     IDistroSeriesPackageCache,
     )

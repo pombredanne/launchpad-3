@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -34,24 +34,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -88,13 +70,26 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-
 
 
 def recursive_blocked_query(spec):

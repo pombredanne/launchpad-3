@@ -12,7 +12,7 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )

@@ -29,7 +29,6 @@ import os
 import re
 import sys
 from itertools import takewhile
-from pprint import pprint
 
 ${python-relative-path-setup}
 
@@ -50,6 +49,8 @@ def get_test_name(test):
     match = STORY_RE.match(test)
     if match:
         return match.group(1)
+    else:
+        return test
 
 
 def gen_test_lines(lines):
@@ -80,11 +81,12 @@ def extract_tests(lines):
 def run_tests(tests):
     """Given a set of tests, run them as one group."""
     print "Running tests:"
-    pprint(sorted(tests))
-    args = ['-vv']
+    for test in tests:
+        print "  %s" % test
+    args = ['-vvc'] if sys.stdout.isatty() else ['-vv']
     for test in tests:
         args.append('-t')
-        args.append(test)
+        args.append(re.escape(test))
     os.execl(TEST, TEST, *args)
 
 

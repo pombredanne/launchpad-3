@@ -9,7 +9,7 @@ Breadcrumbs
 Team membership breadcrumbs uses the member's displayname to create
 "<displayname>'s membership".
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from lp.testing.menu import make_fake_request
     >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
 
     >>> team_owner = factory.makePerson(name='team-owner')

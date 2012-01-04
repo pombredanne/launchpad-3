@@ -102,7 +102,7 @@ When the distroseries is FROZEN the uploads should wait in UNAPPROVED queue:
 
   >>> login('foo.bar@canonical.com')
   >>> hoary.status = SeriesStatus.FROZEN
-  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from lp.services.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
   >>> insecure_policy.autoApprove(FakeUpload())

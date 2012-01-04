@@ -126,55 +126,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccount,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError,
-    IGPGHandler,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet,
-    UnknownRecipientError,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IOpenLaunchBag,
-    )
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import get_current_view
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -266,12 +218,34 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
+from lp.services.helpers import shortlist
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    )
+from lp.services.mail.interfaces import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
+    )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
@@ -285,6 +259,30 @@ from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
     )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
+from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
@@ -1287,7 +1285,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces.lpstorm import IMasterObject
+        from lp.services.database.lpstorm import IMasterObject
         self.context = IMasterObject(self.context.account)
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
@@ -1369,8 +1367,6 @@ class PersonSpecWorkloadView(LaunchpadView):
         This batch does not test for whether the person has specifications or
         not.
         """
-        assert self.context.isTeam, (
-            "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
         batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
@@ -1417,6 +1413,146 @@ class PersonSpecFeedbackView(HasSpecificationsView):
         return self.context.specifications(filter=filter)
 
 
+def get_package_search_url(distributionsourcepackage, person_url,
+                           advanced=False, extra_params=None):
+    """Construct a default search URL for a distributionsourcepackage.
+
+    Optional filter parameters can be specified as a dict with the
+    extra_params argument.
+    """
+    params = {
+        "field.distribution": distributionsourcepackage.distribution.name,
+        "field.sourcepackagename": distributionsourcepackage.name,
+        "search": "Search"}
+    if advanced:
+        params['advanced'] = '1'
+
+    if extra_params is not None:
+        # We must UTF-8 encode searchtext to play nicely with
+        # urllib.urlencode, because it may contain non-ASCII characters.
+        if 'field.searchtext' in extra_params:
+            extra_params["field.searchtext"] = (
+                extra_params["field.searchtext"].encode("utf8"))
+
+        params.update(extra_params)
+
+    query_string = urllib.urlencode(sorted(params.items()), doseq=True)
+
+    return person_url + '/+packagebugs-search?%s' % query_string
+
+
+class BugSubscriberPackageBugsOverView(LaunchpadView):
+
+    page_title = 'Package bugs'
+
+    @cachedproperty
+    def total_bug_counts(self):
+        """Return the totals of each type of package bug count as a dict."""
+        totals = {
+            'open_bugs_count': 0,
+            'critical_bugs_count': 0,
+            'high_bugs_count': 0,
+            'unassigned_bugs_count': 0,
+            'inprogress_bugs_count': 0,
+            }
+
+        for package_counts in self.package_bug_counts:
+            for key in totals.keys():
+                totals[key] += int(package_counts[key])
+
+        return totals
+
+    @cachedproperty
+    def package_bug_counts(self):
+        """Return a list of dicts used for rendering package bug counts."""
+        L = []
+        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, self.context.getBugSubscriberPackages())
+        person_url = canonical_url(self.context)
+        for package_counts in package_counts:
+            package = package_counts['package']
+            L.append({
+                'package_name': package.displayname,
+                'package_search_url':
+                    get_package_search_url(package, person_url),
+                'open_bugs_count': package_counts['open'],
+                'open_bugs_url': self.getOpenBugsURL(package, person_url),
+                'critical_bugs_count': package_counts['open_critical'],
+                'critical_bugs_url': self.getCriticalBugsURL(
+                    package, person_url),
+                'high_bugs_count': package_counts['open_high'],
+                'high_bugs_url': self.getHighBugsURL(package, person_url),
+                'unassigned_bugs_count': package_counts['open_unassigned'],
+                'unassigned_bugs_url': self.getUnassignedBugsURL(
+                    package, person_url),
+                'inprogress_bugs_count': package_counts['open_inprogress'],
+                'inprogress_bugs_url': self.getInProgressBugsURL(
+                    package, person_url),
+            })
+
+        return sorted(L, key=itemgetter('package_name'))
+
+    def getOpenBugsURL(self, distributionsourcepackage, person_url):
+        """Return the URL for open bugs on distributionsourcepackage."""
+        status_params = {'field.status': []}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            status_params['field.status'].append(status.title)
+
+        return get_package_search_url(
+            distributionsourcepackage=distributionsourcepackage,
+            person_url=person_url,
+            extra_params=status_params)
+
+    def getCriticalBugsURL(self, distributionsourcepackage, person_url):
+        """Return the URL for critical bugs on distributionsourcepackage."""
+        critical_bugs_params = {
+            'field.status': [], 'field.importance': "Critical"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            critical_bugs_params["field.status"].append(status.title)
+
+        return get_package_search_url(
+            distributionsourcepackage=distributionsourcepackage,
+            person_url=person_url,
+            extra_params=critical_bugs_params)
+
+    def getHighBugsURL(self, distributionsourcepackage, person_url):
+        """Return URL for high bugs on distributionsourcepackage."""
+        high_bugs_params = {
+            'field.status': [], 'field.importance': "High"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            high_bugs_params["field.status"].append(status.title)
+
+        return get_package_search_url(
+            distributionsourcepackage=distributionsourcepackage,
+            person_url=person_url,
+            extra_params=high_bugs_params)
+
+    def getUnassignedBugsURL(self, distributionsourcepackage, person_url):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        unassigned_bugs_params = {
+            "field.status": [], "field.unassigned": "on"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            unassigned_bugs_params["field.status"].append(status.title)
+
+        return get_package_search_url(
+            distributionsourcepackage=distributionsourcepackage,
+            person_url=person_url,
+            extra_params=unassigned_bugs_params)
+
+    def getInProgressBugsURL(self, distributionsourcepackage, person_url):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        inprogress_bugs_params = {"field.status": "In Progress"}
+
+        return get_package_search_url(
+            distributionsourcepackage=distributionsourcepackage,
+            person_url=person_url,
+            extra_params=inprogress_bugs_params)
+
+
 class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug subscriber."""
 
@@ -1454,79 +1590,17 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
 
-        return helpers.shortlist([
+        return shortlist([
             dict(title=milestone.title, value=milestone.token, checked=False)
             for milestone in vocabulary],
             longest_expected=10)
-
-    @cachedproperty
-    def total_bug_counts(self):
-        """Return the totals of each type of package bug count as a dict."""
-        totals = {
-            'open_bugs_count': 0,
-            'critical_bugs_count': 0,
-            'high_bugs_count': 0,
-            'unassigned_bugs_count': 0,
-            'inprogress_bugs_count': 0,
-            }
-
-        for package_counts in self.package_bug_counts:
-            for key in totals.keys():
-                totals[key] += int(package_counts[key])
-
-        return totals
-
-    @cachedproperty
-    def package_bug_counts(self):
-        """Return a list of dicts used for rendering package bug counts."""
-        L = []
-        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, self.context.getBugSubscriberPackages())
-        for package_counts in package_counts:
-            package = package_counts['package']
-            L.append({
-                'package_name': package.displayname,
-                'package_search_url':
-                    self.getBugSubscriberPackageSearchURL(package),
-                'open_bugs_count': package_counts['open'],
-                'open_bugs_url': self.getOpenBugsURL(package),
-                'critical_bugs_count': package_counts['open_critical'],
-                'critical_bugs_url': self.getCriticalBugsURL(package),
-                'high_bugs_count': package_counts['open_high'],
-                'high_bugs_url': self.getHighBugsURL(package),
-                'unassigned_bugs_count': package_counts['open_unassigned'],
-                'unassigned_bugs_url': self.getUnassignedBugsURL(package),
-                'inprogress_bugs_count': package_counts['open_inprogress'],
-                'inprogress_bugs_url': self.getInProgressBugsURL(package),
-            })
-
-        return sorted(L, key=itemgetter('package_name'))
-
-    def getOtherBugSubscriberPackageLinks(self):
-        """Return a list of the other packages for a bug subscriber.
-
-        This excludes the current package.
-        """
-        current_package = self.current_package
-
-        other_packages = [
-            package for package in self.context.getBugSubscriberPackages()
-            if package != current_package]
-
-        package_links = []
-        for other_package in other_packages:
-            package_links.append({
-                'title': other_package.displayname,
-                'url': self.getBugSubscriberPackageSearchURL(other_package)})
-
-        return package_links
 
     @cachedproperty
     def person_url(self):
         return canonical_url(self.context)
 
     def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
-                                      advanced=False, extra_params=None):
+                                         advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
         Optional filter parameters can be specified as a dict with the
@@ -1534,88 +1608,14 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         """
         if distributionsourcepackage is None:
             distributionsourcepackage = self.current_package
-
-        params = {
-            "field.distribution": distributionsourcepackage.distribution.name,
-            "field.sourcepackagename": distributionsourcepackage.name,
-            "search": "Search"}
-
-        if extra_params is not None:
-            # We must UTF-8 encode searchtext to play nicely with
-            # urllib.urlencode, because it may contain non-ASCII characters.
-            if 'field.searchtext' in extra_params:
-                extra_params["field.searchtext"] = (
-                    extra_params["field.searchtext"].encode("utf8"))
-
-            params.update(extra_params)
-
-        query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-
-        if advanced:
-            return (self.person_url + '/+packagebugs-search?advanced=1&%s'
-                    % query_string)
-        else:
-            return self.person_url + '/+packagebugs-search?%s' % query_string
+        return get_package_search_url(
+            distributionsourcepackage, self.person_url, advanced,
+            extra_params)
 
     def getBugSubscriberPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
         """Build the advanced search URL for a distributionsourcepackage."""
         return self.getBugSubscriberPackageSearchURL(advanced=True)
-
-    def getOpenBugsURL(self, distributionsourcepackage):
-        """Return the URL for open bugs on distributionsourcepackage."""
-        status_params = {'field.status': []}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            status_params['field.status'].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=status_params)
-
-    def getCriticalBugsURL(self, distributionsourcepackage):
-        """Return the URL for critical bugs on distributionsourcepackage."""
-        critical_bugs_params = {
-            'field.status': [], 'field.importance': "Critical"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            critical_bugs_params["field.status"].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=critical_bugs_params)
-
-    def getHighBugsURL(self, distributionsourcepackage):
-        """Return URL for high bugs on distributionsourcepackage."""
-        high_bugs_params = {
-            'field.status': [], 'field.importance': "High"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            high_bugs_params["field.status"].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=high_bugs_params)
-
-    def getUnassignedBugsURL(self, distributionsourcepackage):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        unassigned_bugs_params = {
-            "field.status": [], "field.unassigned": "on"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            unassigned_bugs_params["field.status"].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=unassigned_bugs_params)
-
-    def getInProgressBugsURL(self, distributionsourcepackage):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        inprogress_bugs_params = {"field.status": "In Progress"}
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=inprogress_bugs_params)
 
     def shouldShowSearchWidgets(self):
         # XXX: Guilherme Salgado 2005-11-05:
@@ -1628,7 +1628,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return "Search bugs in %s" % self.current_package.displayname
 
     def getSimpleSearchURL(self):
-        return self.getBugSubscriberPackageSearchURL()
+        return get_package_search_url(self.current_package, self.person_url)
 
     @property
     def label(self):
@@ -2447,17 +2447,17 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def openpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getOpenPolls()
 
     @cachedproperty
     def closedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getClosedPolls()
 
     @cachedproperty
     def notyetopenedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
     @cachedproperty
@@ -2620,7 +2620,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
+        assert self.context.is_team
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
@@ -2671,7 +2671,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
             emails = [self.context.preferredemail.email]
-            if not self.context.isTeam():
+            if not self.context.is_team:
                 emails.extend(sorted(
                     email.email for email in self.context.validatedemails))
             return emails
@@ -3933,7 +3933,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
         # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
         # system set up for this that is almost identical in
-        # canonical.launchpad.interfaces.validation, called
+        # lp.app.validators.validation, called
         # _check_email_available or similar. It would be really nice if we
         # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)

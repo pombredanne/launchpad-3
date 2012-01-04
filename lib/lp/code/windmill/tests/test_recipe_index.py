@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from storm.store import Store
+import transaction
 
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.windmill.testing import CodeWindmillLayer

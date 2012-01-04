@@ -4,11 +4,7 @@ Appointing a ProjectGroup Driver
 Appoint Sample Person as the driver of the GNOME Project.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/gnome')
-    >>> browser.getLink('Appoint driver').click()
-
-    >>> print browser.url
-    http://launchpad.dev/gnome/+driver
+    >>> browser.open('http://launchpad.dev/gnome/+driver')
     >>> print browser.title
     Appoint the driver for...
 
@@ -28,5 +24,7 @@ message inform him of the driver change.
 Sample Person is listed as the driver of the project.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'driver'))
-    Driver: Sample Person
-    Appoint driver
+    Driver:
+    Sample Person
+    Edit
+    ...

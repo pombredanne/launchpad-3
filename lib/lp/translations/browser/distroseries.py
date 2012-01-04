@@ -16,23 +16,23 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import action
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
-from canonical.launchpad.webapp.menu import (
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import TranslationUnavailable
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import action
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.launchpadform import LaunchpadEditFormView
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
-from lp.app.errors import TranslationUnavailable
-from lp.app.enums import service_uses_launchpad
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.series import SeriesStatus
-from lp.services.propertycache import cachedproperty
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.interfaces.distroserieslanguage import (

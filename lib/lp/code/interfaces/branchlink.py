@@ -28,7 +28,7 @@ from lazr.restful.fields import (
     )
 from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 

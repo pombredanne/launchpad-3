@@ -87,9 +87,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp import _
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
@@ -952,7 +952,6 @@ class IArchiveView(IHasBuildRecords):
             required=False),
         component_name=TextLine(title=_("Component name"), required=False),
         )
-
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @call_with(eager_load=True)
@@ -1008,7 +1007,18 @@ class IArchiveView(IHasBuildRecords):
         exact_match=Bool(
             description=_("Whether or not to filter binary names by exact "
                           "matching."),
-            required=False))
+            required=False),
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
+                          "than or equal to this date."),
+            required=False),
+        ordered=Bool(
+            title=_("Ordered"),
+            description=_("Return ordered results by default, but specifying "
+                          "False will return results more quickly."),
+            required=False, readonly=True),
+        )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1016,17 +1026,25 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
-        :param: name: binary name filter (exact match or SQL LIKE controlled
+        :param name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
+        :param version: binary version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a list.
+        :param distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param pocket: `PackagePublishingPocket` filter.
+        :param exact_match: either or not filter source names by exact
                              matching.
+        :param created_since_date: Only return publications created on or
+            after this date.
+        :param ordered: Normally publications are ordered by binary package
+            name and then ID order (creation order).  If this parameter is
+            False then the results will be unordered.  This will make the
+            operation much quicker to return results if you don't care about
+            ordering.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """
@@ -1204,11 +1222,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
                           " this source"),
-            required=False))
+            required=False),
+        sponsored=Reference(
+            schema=IPerson,
+            title=_("Sponsored Person"),
+            description=_("The person who is being sponsored for this copy."))
+        )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
-                    person, to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False,
+                    sponsored=None):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1225,6 +1249,10 @@ class IArchiveView(IHasBuildRecords):
             the published binaries for each given source should also be
             copied along with the source.
         :param person: the `IPerson` who requests the sync.
+        :param sponsored: the `IPerson` who is being sponsored. Specifying
+            this will ensure that the person's email address is used as the
+            "From:" on the announcement email and will also be recorded as
+            the creator of the new source publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1245,11 +1273,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
                           " this source"),
-            required=False))
+            required=False),
+        sponsored=Reference(
+            schema=IPerson,
+            title=_("Sponsored Person"),
+            description=_("The person who is being sponsored for this copy."))
+        )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
-                     to_series=None, include_binaries=False):
+                     to_series=None, include_binaries=False,
+                     sponsored=None):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1268,6 +1302,10 @@ class IArchiveView(IHasBuildRecords):
             the published binaries for each given source should also be
             copied along with the source.
         :param person: the `IPerson` who requests the sync.
+        :param sponsored: the `IPerson` who is being sponsored. Specifying
+            this will ensure that the person's email address is used as the
+            "From:" on the announcement email and will also be recorded as
+            the creator of the new source publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

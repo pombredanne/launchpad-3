@@ -26,15 +26,6 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
     BugNotFound,
@@ -69,6 +60,12 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.testing import celebrity_logged_in
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.systemdocs import ordered_dict_as_string
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
@@ -100,10 +97,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
 
 
 def read_test_file(name):
-    """Return the contents of the test file named :name:
-
-    Test files are located in lib/canonical/launchpad/ftests/testfiles
-    """
+    """Return the contents of the test file named :name:"""
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
 
     test_file = open(file_path, 'r')
@@ -161,11 +155,10 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('foo.bar@canonical.com')
-    bug_watch.remotestatus = None
-    bug_watch.last_error_type = error_type
-    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
-    logout()
+    with celebrity_logged_in('admin'):
+        bug_watch.remotestatus = None
+        bug_watch.last_error_type = error_type
+        bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
 
 
 class TestExternalBugTracker(ExternalBugTracker):

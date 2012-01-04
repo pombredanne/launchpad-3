@@ -24,7 +24,7 @@ points that would otherwise be in the output.
 
     >>> from zope.security.proxy import removeSecurityProxy
 
-    >>> from canonical.database.sqlbase import quote
+    >>> from lp.services.database.sqlbase import quote
     >>> from lp.translations.scripts.gettext_check_messages import (
     ...     GettextCheckMessages)
     >>> from lp.services.log.logger import FakeLogger
@@ -45,7 +45,6 @@ points that would otherwise be in the output.
     ...         checker._commit_interval = commit_interval
     ...     checker.main()
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
 
     >>> pofile = factory.makePOFile()

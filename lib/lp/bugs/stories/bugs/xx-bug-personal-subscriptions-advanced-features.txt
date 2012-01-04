@@ -4,7 +4,7 @@ Advanced personal subscriptions
 When a user visits the +subscribe page of a bug they are given the option to
 subscribe to the bug at a given BugNotificationLevel.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.testing.sampledata import USER_EMAIL
     >>> login(USER_EMAIL)
     >>> bug = factory.makeBug()

@@ -14,9 +14,9 @@ from openid.yadis.constants import (
     YADIS_HEADER_NAME,
     )
 
-from canonical.launchpad.webapp import canonical_url
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
 
 
 class XRDSContentNegotiationMixin:

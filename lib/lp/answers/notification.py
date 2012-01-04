@@ -12,16 +12,16 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.answers.enums import (
     QuestionAction,
     QuestionRecipientSet,
     )
 from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import canonical_url
 
 
 def get_email_template(filename):

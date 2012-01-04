@@ -14,15 +14,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.log.logger import (
-    BufferLogger,
-    DevNullLogger,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.model.ftparchive import (
@@ -33,7 +24,16 @@ from lp.archivepublisher.model.ftparchive import (
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def sanitize_apt_ftparchive_Sources_output(text):
@@ -111,7 +111,12 @@ class TestFTPArchive(TestCaseWithFactory):
         # immediately obvious what the differences are.
         diff_lines = difflib.ndiff(
             sample_text.splitlines(), result_text.splitlines())
-        self.assertEqual(result_text, sample_text, '\n'.join(diff_lines))
+        self.assertEqual(sample_text, result_text, '\n'.join(diff_lines))
+
+    def _verifyEmpty(self, path):
+        """Assert that the given file is empty."""
+        with open(path) as result_file:
+            self.assertEqual("", result_file.read())
 
     def _addRepositoryFile(self, component, sourcename, leafname):
         """Create a repository file."""
@@ -307,6 +312,10 @@ class TestFTPArchive(TestCaseWithFactory):
         fa.runApt(apt_conf)
         self._verifyFile("Packages",
             os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
+        self._verifyEmpty(
+            os.path.join(
+                self._distsdir, "hoary-test", "main", "debian-installer",
+                "binary-i386", "Packages"))
         self._verifyFile("Sources",
             os.path.join(self._distsdir, "hoary-test", "main", "source"),
             sanitize_apt_ftparchive_Sources_output)
@@ -379,11 +388,17 @@ class TestFTPArchive(TestCaseWithFactory):
                          "binary-i386", "Packages")))
         self.assertTrue(os.path.exists(
             os.path.join(self._distsdir, "hoary-test-updates", "main",
+                         "debian-installer", "binary-i386", "Packages")))
+        self.assertTrue(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test-updates", "main",
                          "source", "Sources")))
 
         self.assertFalse(os.path.exists(
             os.path.join(self._distsdir, "hoary-test", "main",
                          "binary-i386", "Packages")))
+        self.assertFalse(os.path.exists(
+            os.path.join(self._distsdir, "hoary-test", "main",
+                         "debian-installer", "binary-i386", "Packages")))
         self.assertFalse(os.path.exists(
             os.path.join(self._distsdir, "hoary-test", "main",
                          "source", "Sources")))

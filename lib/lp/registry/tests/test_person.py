@@ -18,26 +18,6 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    )
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken,
-    EmailAddressStatus,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
@@ -70,6 +50,24 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import cursor
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (
@@ -89,7 +87,9 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_initialized_view
 
 
@@ -844,13 +844,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def _do_premerge(self, from_person, to_person):
         # Do the pre merge work performed by the LoginToken.
-        login('admin@canonical.com')
-        email = from_person.preferredemail
-        email.status = EmailAddressStatus.NEW
-        email.person = to_person
-        email.account = to_person.account
+        with celebrity_logged_in('admin'):
+            email = from_person.preferredemail
+            email.status = EmailAddressStatus.NEW
+            email.person = to_person
+            email.account = to_person.account
         transaction.commit()
-        logout()
 
     def _do_merge(self, from_person, to_person, reviewer=None):
         # Perform the merge as the db user that will be used by the jobs.

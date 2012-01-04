@@ -6,7 +6,7 @@ the code from one branch into another.
 
 In order to test notifications, we need a subscriber for the branch.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (

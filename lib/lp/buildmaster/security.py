@@ -9,9 +9,7 @@ __all__ = [
     ]
 
 from lp.app.security import AnonymousAuthorization
-from lp.buildmaster.interfaces.builder import (
-    IBuilder,
-    )
+from lp.buildmaster.interfaces.builder import IBuilder
 
 
 class ViewBuilder(AnonymousAuthorization):

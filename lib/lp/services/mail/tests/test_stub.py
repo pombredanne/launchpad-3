@@ -8,7 +8,7 @@ import re
 
 from zope.testing.renormalizing import RENormalizing
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_simple_sendmail():

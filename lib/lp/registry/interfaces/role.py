@@ -22,7 +22,8 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from canonical.launchpad import _
+
+from lp import _
 
 
 class IHasOwner(Interface):
@@ -119,7 +120,8 @@ class IPersonRoles(Interface):
     def inTeam(team):
         """Is this person a member or the owner of `team`?
 
-        Passed through to the same method in 'IPersonPublic'.
+        Passed through to the *unproxied* same method in
+        `IPersonViewRestricted`.
         """
 
     def isOwner(obj):

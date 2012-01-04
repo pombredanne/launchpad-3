@@ -5,31 +5,27 @@ __metaclass__ = type
 
 import doctest
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from testtools.matchers import DocTestMatches
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from testtools.matchers import DocTestMatches
-
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
-
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
-from lp.testing import (
-    TestCaseWithFactory,
-    )
+from lp.services.webapp.menu import structured
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class ItemWidgetTestCase(TestCaseWithFactory):

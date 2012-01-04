@@ -15,15 +15,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
@@ -45,10 +36,19 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.services.features.testing import FeatureFixture
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
@@ -1158,7 +1158,7 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         return self.bugtasks[1:] + self.bugtasks[:1]
 
 
-class DistroseriesTarget(BugTargetTestBase):
+class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
     """Use a distro series as the bug target."""
 
     def setUp(self):
@@ -1189,6 +1189,43 @@ class DistroseriesTarget(BugTargetTestBase):
             self.bugtasks[1].transitionToMilestone(milestone_1, self.owner)
             self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
         return self.bugtasks[1:] + self.bugtasks[:1]
+
+    def setUpStructuralSubscriptions(self, subscribe_search_target=True):
+        # See `ProjectGroupAndDistributionTests`.
+        # Users can search for series and package subscriptions. Users
+        # subscribe to packages at the distro level.
+        subscriber = self.factory.makePerson()
+        if subscribe_search_target:
+            self.subscribeToTarget(subscriber)
+        # Create a bug in a package in the series being searched.
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.searchtarget)
+        self.bugtasks.append(self.factory.makeBugTask(target=sourcepackage))
+        # Create a bug in another series for the same package.
+        other_series = self.factory.makeDistroSeries(
+            distribution=self.searchtarget.distribution)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=other_series,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        self.factory.makeBugTask(target=other_sourcepackage)
+        # Create a bug in the same distrubution package.
+        dsp = self.searchtarget.distribution.getSourcePackage(
+            sourcepackage.name)
+        self.factory.makeBugTask(target=dsp)
+        # Subscribe to the DSP to search both DSPs and SPs.
+        with person_logged_in(subscriber):
+            dsp.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
+
+    def test_subordinate_structural_subscribers(self):
+        # Searching for a subscriber who is subscribed to only subordinate
+        # objects will match those objects
+        subscriber = self.setUpStructuralSubscriptions(
+            subscribe_search_target=False)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, [self.bugtasks[-1]])
 
 
 class SourcePackageTarget(BugTargetTestBase):

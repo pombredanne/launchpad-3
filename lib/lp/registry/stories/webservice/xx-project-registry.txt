@@ -1250,7 +1250,7 @@ through the API.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('bac@canonical.com')
     >>> product_set = getUtility(IProductSet)
     >>> mmm = product_set.getByName('mega-money-maker')
@@ -1263,9 +1263,9 @@ through the API.
     >>> print mmm.commercial_subscription.product.name
     mega-money-maker
 
-    >>> logout()
-
     >>> ws_uncache(mmm)
+
+    >>> logout()
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker

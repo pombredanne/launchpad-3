@@ -43,39 +43,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.components.tokens import (
-    create_token,
-    create_unique_token_for_table,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
@@ -102,13 +69,44 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.tokens import (
+    create_token,
+    create_unique_token_for_table,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.url import urlappend
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -714,7 +712,8 @@ class Archive(SQLBase):
 
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
-        pocket=None, exact_match=False):
+        pocket=None, exact_match=False, created_since_date=None,
+        ordered=True):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -728,8 +727,14 @@ class Archive(SQLBase):
                 BinaryPackageName.id
         """ % sqlvalues(self)]
         clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
-        orderBy = ['BinaryPackageName.name',
-                   '-BinaryPackagePublishingHistory.id']
+        if ordered:
+            orderBy = ['BinaryPackageName.name',
+                       '-BinaryPackagePublishingHistory.id']
+        else:
+            # Strictly speaking, this is ordering, but it's an indexed
+            # ordering so it will be quick.  It's needed so that we can
+            # batch results on the webservice.
+            orderBy = ['-BinaryPackagePublishingHistory.id']
 
         if name is not None:
             if exact_match:
@@ -750,7 +755,7 @@ class Archive(SQLBase):
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
-        else:
+        elif ordered:
             order_const = "BinaryPackageRelease.version"
             desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
@@ -781,15 +786,22 @@ class Archive(SQLBase):
                 BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
+        if created_since_date is not None:
+            clauses.append(
+                "BinaryPackagePublishingHistory.datecreated >= %s"
+                % sqlvalues(created_since_date))
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
-            distroarchseries=distroarchseries, exact_match=exact_match)
+            distroarchseries=distroarchseries, exact_match=exact_match,
+            created_since_date=created_since_date, ordered=ordered)
 
         all_binaries = BinaryPackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables,
@@ -799,11 +811,13 @@ class Archive(SQLBase):
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
-                                   exact_match=False):
+                                   exact_match=False,
+                                   created_since_date=None):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
-            distroarchseries=distroarchseries, exact_match=exact_match)
+            distroarchseries=distroarchseries, exact_match=exact_match,
+            created_since_date=created_since_date)
 
         clauses.append("""
             BinaryPackagePublishingHistory.distroarchseries =
@@ -1556,7 +1570,8 @@ class Archive(SQLBase):
                 "Not enabled for copying to PPAs yet.")
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
-                    person, to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False,
+                    sponsored=None):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1576,10 +1591,12 @@ class Archive(SQLBase):
             target_archive=self, target_distroseries=series,
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
-            copy_policy=PackageCopyPolicy.INSECURE, requester=person)
+            copy_policy=PackageCopyPolicy.INSECURE, requester=person,
+            sponsored=sponsored)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
-                     person, to_series=None, include_binaries=None):
+                     person, to_series=None, include_binaries=None,
+                     sponsored=None):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1620,7 +1637,7 @@ class Archive(SQLBase):
         job_source.createMultiple(
             series, copy_tasks, person,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            include_binaries=include_binaries)
+            include_binaries=include_binaries, sponsored=sponsored)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1967,7 +1984,7 @@ class Archive(SQLBase):
             admin = getUtility(ILaunchpadCelebrities).admin
             if not person.inTeam(commercial) and not person.inTeam(admin):
                 return '%s is not allowed to make private PPAs' % person.name
-        if person.isTeam() and (
+        if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
@@ -1981,7 +1998,7 @@ class Archive(SQLBase):
             return None
         else:
             text = "You already have a PPA named '%s'." % proposed_name
-            if person.isTeam():
+            if person.is_team:
                 text = "%s already has a PPA named '%s'." % (
                     person.displayname, proposed_name)
             return text

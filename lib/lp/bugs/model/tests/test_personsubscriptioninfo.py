@@ -8,7 +8,6 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
     IRealSubscriptionInfoCollection,
@@ -23,6 +22,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     HasQueryCount,
     Provides,
@@ -42,7 +42,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def makeDuplicates(self, count=1, subscriber=None):
         if subscriber is None:
             subscriber = self.subscriber
-        if subscriber.isTeam():
+        if subscriber.is_team:
             subscribed_by = subscriber.teamowner
         else:
             subscribed_by = subscriber

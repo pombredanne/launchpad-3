@@ -10,7 +10,6 @@ __all__ = [
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
-    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
@@ -25,8 +24,8 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
-from operator import itemgetter
 import httplib
+from operator import itemgetter
 import urllib
 from urlparse import urljoin
 
@@ -54,25 +53,7 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
-    BugFeedLink,
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    urlappend,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -81,7 +62,6 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -90,7 +70,6 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
-    IServiceUsage,
     )
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.product import (
@@ -99,7 +78,6 @@ from lp.app.widgets.product import (
     ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
@@ -107,7 +85,6 @@ from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
     )
-from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -123,8 +100,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -150,8 +125,20 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
@@ -404,8 +391,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields:
-            include_extra_fields = BugTask.userHasPrivilegesContext(
-                context, self.user)
+            include_extra_fields = (
+                BugTask.userHasBugSupervisorPrivilegesContext(
+                    context, self.user))
 
         if include_extra_fields:
             field_names.extend(
@@ -629,7 +617,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             params.private = extra_data.private
 
         # Apply any extra options given by privileged users.
-        if BugTask.userHasPrivilegesContext(context, self.user):
+        if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
             if 'assignee' in data:
                 params.assignee = data['assignee']
             if 'status' in data:
@@ -1232,7 +1220,8 @@ class BugTargetBugListingView(LaunchpadView):
         elif IProduct(self.context, None):
             milestone_resultset = self.context.milestones
         else:
-            raise AssertionError("milestones_list called with illegal context")
+            raise AssertionError(
+                "milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1318,100 +1307,6 @@ class BugCountDataItem:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
 
-class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
-    """View for the Bugs front page."""
-
-    # We have a custom searchtext widget here so that we can set the
-    # width of the search box properly.
-    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
-
-    # Only include <link> tags for bug feeds when using this view.
-    feed_types = (
-        BugFeedLink,
-        BugTargetLatestBugsFeedLink,
-        )
-
-    # XXX: Bjorn Tillenius 2007-02-13:
-    #      These colors should be changed. It's the same colors that are used
-    #      to color statuses in buglistings using CSS, but there should be one
-    #      unique color for each status in the pie chart
-    status_color = {
-        BugTaskStatus.NEW: '#993300',
-        BugTaskStatus.INCOMPLETE: 'red',
-        BugTaskStatus.CONFIRMED: 'orange',
-        BugTaskStatus.TRIAGED: 'black',
-        BugTaskStatus.INPROGRESS: 'blue',
-        BugTaskStatus.FIXCOMMITTED: 'green',
-        BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.INVALID: 'yellow',
-        BugTaskStatus.UNKNOWN: 'purple',
-    }
-
-    override_title_breadcrumbs = True
-
-    @property
-    def label(self):
-        """The display label for the view."""
-        return 'Bugs in %s' % self.context.title
-
-    def initialize(self):
-        super(BugTargetBugsView, self).initialize()
-        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
-        if IDistroSeries.providedBy(self.context):
-            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        expose_structural_subscription_data_to_js(
-            self.context, self.request, self.user)
-
-    @property
-    def can_have_external_bugtracker(self):
-        return (IProduct.providedBy(self.context)
-                or IProductSeries.providedBy(self.context))
-
-    @property
-    def bug_tracking_usage(self):
-        """Whether the context tracks bugs in launchpad.
-
-        :returns: ServiceUsage enum value
-        """
-        service_usage = IServiceUsage(self.context)
-        return service_usage.bug_tracking_usage
-
-    @property
-    def bugtracker(self):
-        """Description of the context's bugtracker.
-
-        :returns: str which may contain HTML.
-        """
-        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-            return 'Launchpad'
-        elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
-        else:
-            return 'None specified'
-
-    @cachedproperty
-    def hot_bugs_info(self):
-        """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
-        has_more_bugs = False
-        params = BugTaskSearchParams(
-            orderby=['-heat', 'task'], omit_dupes=True,
-            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # Use 4x as many tasks as bugs that are needed to improve performance.
-        bugtasks = self.context.searchTasks(params)[:40]
-        hot_bugtasks = []
-        hot_bugs = []
-        for task in bugtasks:
-            # Use hot_bugs list to ensure a bug is only listed once.
-            if task.bug not in hot_bugs:
-                if len(hot_bugtasks) < 10:
-                    hot_bugtasks.append(task)
-                    hot_bugs.append(task.bug)
-                else:
-                    has_more_bugs = True
-                    break
-        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugtasks}
-
-
 class BugTargetBugTagsView(LaunchpadView):
     """Helper methods for rendering the bug tags portlet."""
 
@@ -1426,7 +1321,6 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = self.context.official_bug_tags
         tags = self.context.getUsedBugTagsWithOpenCounts(
             self.user, 10, official_tags)
-        max_count = float(max([1] + tags.values()))
 
         return sorted(
             [dict(

@@ -18,8 +18,6 @@ from lazr.uri import (
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import BranchFormatterAPI
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.popup import VocabularyPickerWidget
@@ -27,6 +25,8 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class AlreadyRegisteredError(Exception):
