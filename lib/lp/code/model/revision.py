@@ -270,6 +270,9 @@ class RevisionSet:
         author.linkToLaunchpadPerson()
         return author
 
+    def _extractRevisionData(self, revision):
+        """Extract and return correctly-formatted revision data."""
+
     def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
@@ -358,6 +361,102 @@ class RevisionSet:
             revision_author=author,
             parent_ids=bzr_revision.parent_ids,
             properties=bzr_revision.properties)
+
+    def newFromBazaarRevisionBatch(self, revision_batch):
+        """See `IRevisionSet`."""
+        if not revision_batch:
+            return
+        store = IMasterStore(Revision)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE NewRevisionProperties (
+                revision_id text,
+                name text,
+                value text
+            )
+            """)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE NewRevisionParents (
+                revision_id text,
+                sequence integer,
+                parent_id text
+            )
+            """)
+        data = []
+        for bzr_revision in revision_batch:
+            revision_id = bzr_revision.revision_id
+            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+            authors = bzr_revision.get_apparent_authors()
+            try:
+                author = authors[0]
+            except IndexError:
+                author = None
+            revision_author = self.acquireRevisionAuthor(author)
+
+            if bzr_revision.properties:
+                property_data = []
+                for name, value in bzr_revision.properties.iteritems():
+                    property_data.append(
+                        "(%s, %s, %s)" % sqlvalues(revision_id, name, value))
+                property_data = ', '.join(property_data)
+                store.execute("""
+                    INSERT INTO NewRevisionProperties (
+                        revision_id, name, value)
+                    VALUES %s
+                    """ % property_data)
+            if bzr_revision.parent_ids:
+                parent_data = []
+                parent_ids = bzr_revision.parent_ids
+                seen_parents = set()
+                for sequence, parent_id in enumerate(parent_ids):
+                    if parent_id in seen_parents:
+                        continue
+                    seen_parents.add(parent_id)
+                    parent_data.append(
+                        "(%s, %s, %s)" %
+                        sqlvalues(revision_id, sequence, parent_id))
+                parent_data = ', '.join(parent_data)
+                store.execute("""
+                    INSERT INTO NewRevisionParents (
+                        revision_id, sequence, parent_id)
+                    VALUES %s
+                    """ % parent_data)
+
+            data.append(
+                '(%s, %s, %s, %s)' %
+                sqlvalues(
+                    revision_id,
+                    bzr_revision.message,
+                    revision_date,
+                    revision_author))
+        data = ', '.join(data)
+        store.execute(
+            """
+            INSERT INTO Revision (
+                revision_id, log_body, revision_date, revision_author)
+            VALUES %s
+            """ % data)
+        store.execute(
+            """
+            INSERT INTO RevisionProperty (revision, name, value)
+            SELECT
+                Revision.id, NewRevisionProperties.name,
+                NewRevisionProperties.value
+            FROM NewRevisionProperties, Revision
+            WHERE Revision.revision_id = NewRevisionProperties.revision_id
+            """)
+        store.execute(
+            """
+            INSERT INTO RevisionParent (revision, sequence, parent_id)
+            SELECT
+                Revision.id, NewRevisionParents.sequence,
+                NewRevisionParents.parent_id
+            FROM NewRevisionParents, Revision
+            WHERE Revision.revision_id = NewRevisionParents.revision_id
+            """)
+        store.execute("DROP TABLE NewRevisionProperties")
+        store.execute("DROP TABLE NewRevisionParents")
 
     @staticmethod
     def onlyPresent(revids):
