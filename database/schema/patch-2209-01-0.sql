@@ -27,4 +27,4 @@ CREATE OR REPLACE VIEW validpersonorteamcache AS (
         AND emailaddress.status = 4
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 01, 0);
