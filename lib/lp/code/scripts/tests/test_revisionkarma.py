@@ -104,7 +104,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author, account=author.account))
+            EmailAddressSet().new(email, author))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()

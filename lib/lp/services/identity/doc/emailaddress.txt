@@ -35,14 +35,14 @@ exception.
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> emailset.new(email.email, foobar, account=foobar.account)
+    >>> emailset.new(email.email, foobar)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
 
 The email address verification is case insensitive as well:
 
-    >>> emailset.new(email.email.upper(), foobar, account=foobar.account)
+    >>> emailset.new(email.email.upper(), foobar)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
@@ -50,7 +50,7 @@ The email address verification is case insensitive as well:
 Registering a new email address works -- and preserves case -- though:
 
     >>> emailaddress = emailset.new(
-    ...     'oink@Canonical.com', foobar, account=foobar.account)
+    ...     'oink@Canonical.com', foobar)
     >>> emailaddress.email
     u'oink@Canonical.com'
 
