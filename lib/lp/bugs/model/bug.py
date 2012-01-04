@@ -1005,8 +1005,7 @@ class Bug(SQLBase):
         # the regular proxied object.
         return sorted(
             indirect_subscribers,
-            # XXX: GavinPanella 2011-12-12 bug=???: Should probably use
-            # person_sort_key.
+            # XXX: GavinPanella 2011-12-12 bug=911752: Use person_sort_key.
             key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
