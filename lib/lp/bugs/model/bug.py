@@ -951,8 +951,9 @@ class Bug(SQLBase):
 
     def getSubscriptionInfo(self, level=None):
         """See `IBug`."""
-        return BugSubscriptionInfo(
-            self, BugNotificationLevel.LIFECYCLE if level is None else level)
+        if level is None:
+            level = BugNotificationLevel.LIFECYCLE
+        return BugSubscriptionInfo(self, level)
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
