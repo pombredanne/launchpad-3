@@ -226,7 +226,8 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             sub1.bug_notification_level = BugNotificationLevel.LIFECYCLE
         info = self.getInfo(BugNotificationLevel.COMMENTS)
         self.assertContentEqual([sub2], info.direct_subscriptions)
-        self.assertContentEqual([sub1, sub2], info.all_direct_subscriptions)
+        self.assertContentEqual(
+            [sub1, sub2], info.direct_subscriptions_at_all_levels)
 
     def _create_duplicate_subscription(self):
         duplicate_bug = self.factory.makeBug(product=self.target)
@@ -610,9 +611,9 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.exercise_subscription_set_sorted_first(
             "direct_subscriptions")
 
-    def test_all_direct_subscriptions(self):
+    def test_direct_subscriptions_at_all_levels(self):
         self.exercise_subscription_set(
-            "all_direct_subscriptions")
+            "direct_subscriptions_at_all_levels")
 
     def make_duplicate_bug(self):
         duplicate_bug = self.factory.makeBug(product=self.target)

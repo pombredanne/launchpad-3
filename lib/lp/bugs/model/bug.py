@@ -2405,7 +2405,7 @@ def get_also_notified_subscribers(
 
     # Subscribers to exclude.
     exclude_subscribers = frozenset().union(
-        info.all_direct_subscribers, info.muted_subscribers)
+        info.direct_subscribers_at_all_levels, info.muted_subscribers)
     # Get also-notified subscribers at the given level for the given tasks.
     also_notified_subscribers = info.also_notified_subscribers
 
@@ -2640,7 +2640,7 @@ class BugSubscriptionInfo:
         return self.direct_subscriptions.subscribers
 
     @property
-    def all_direct_subscriptions(self):
+    def direct_subscriptions_at_all_levels(self):
         """The bug's direct subscriptions at all levels.
 
         Excludes muted subscriptions.
@@ -2649,13 +2649,15 @@ class BugSubscriptionInfo:
             BugNotificationLevel.LIFECYCLE).direct_subscriptions
 
     @property
-    def all_direct_subscribers(self):
+    def direct_subscribers_at_all_levels(self):
         """The bug's direct subscribers at all levels.
 
         Excludes muted subscribers.
         """
-        return self.all_direct_subscriptions.subscribers
+        return self.direct_subscriptions_at_all_levels.subscribers
 
+    # TODO: Nuke this; it looks efficient but is actually a potato hole
+    # (subscribers will not have anything preloaded).
     @cachedproperty
     def duplicate_subscriptions_and_subscribers(self):
         if self.bug.private:
@@ -2777,7 +2779,7 @@ class BugSubscriptionInfo:
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees)
             return subscribers.difference(
-                self.all_direct_subscribers,
+                self.direct_subscribers_at_all_levels,
                 self.muted_subscribers)
 
     @cachedproperty
