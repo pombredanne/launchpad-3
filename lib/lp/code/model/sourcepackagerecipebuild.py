@@ -69,10 +69,6 @@ from lp.services.database.lpstorm import (
     )
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -156,7 +152,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
-    @cachedproperty
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
         store = Store.of(self)
@@ -165,20 +160,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
             SourcePackageRecipeBuildJob.build == self.id)
         return results.one()
-
-    @staticmethod
-    def prefetchBuildqueueRecord(sourcepackagerecipebuilds):
-        ids = [sprb.id for sprb in sourcepackagerecipebuilds]
-        store = IStore(SourcePackageRecipeBuildJob)
-        results = store.find(
-            (SourcePackageRecipeBuildJob, BuildQueue),
-            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
-            SourcePackageRecipeBuildJob.build_id.is_in(ids))
-        sprb_dict = dict(
-            (result[0].build.id, result[1]) for result in results)
-        for sprb in sourcepackagerecipebuilds:
-            cache = get_property_cache(sprb)
-            cache.buildqueue_record = sprb_dict.get(sprb.id, None)
 
     @property
     def source_package_release(self):
@@ -308,7 +289,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        SourcePackageRecipeBuild.prefetchBuildqueueRecord(builds)
         package_builds = load_related(
             PackageBuild, builds, ['package_build_id'])
         archives = load_related(Archive, package_builds, ['archive_id'])
