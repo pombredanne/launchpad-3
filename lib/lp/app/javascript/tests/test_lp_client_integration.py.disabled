@@ -7,6 +7,9 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.traversing.browser import absoluteURL
+from lazr.restful.interfaces import IWebServiceClientRequest
+
 from lp.testing import person_logged_in
 from lp.testing.yuixhr import (
     login_as_person,
@@ -38,6 +41,12 @@ def create_product(request, data):
 def create_product_and_login(request, data):
     login_as_person(data['user'])
 
+@create_product_and_login.extend
+def create_product_with_milestone_and_login(request, data):
+    data['milestone'] = factory.makeMilestone(
+        product=data['product'])
+    api_request = IWebServiceClientRequest(request)
+    data['milestone_self_link'] = absoluteURL(data['milestone'], api_request)
 
 @create_product_and_login.extend
 def create_bug_and_login(request, data):
