@@ -230,7 +230,10 @@
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
-                {srcNode: Y.one('#diff-area')});
+                {
+                 srcNode: Y.one('#diff-area'),
+                 summary_node: Y.one('#proposal-summary')
+                });
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
                 if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
                     updater.update();

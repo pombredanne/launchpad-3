@@ -539,7 +539,8 @@ the new expiry date is not in the past.
     AssertionError: ...
     >>> foobar_on_buildd.setExpirationDate(tomorrow, foobar)
 
-Team owners can also renew any memberships of the team they own.
+Team owners and admins can also renew any memberships of the team they
+own or administer.
 
     >>> landscape = getUtility(IPersonSet).getByName(
     ...     'landscape-developers')
@@ -553,26 +554,15 @@ Team owners can also renew any memberships of the team they own.
     True
     >>> sampleperson_on_landscape.setExpirationDate(tomorrow, sampleperson)
 
-In the case of a mere team admin, though, he can only change the expiry
-date of other's memberships, not his own.
-
     >>> cprov_on_buildd = membershipset.getByPersonAndTeam(
     ...     cprov, buildd_admins)
     >>> buildd_admins.teamowner.name
     u'name16'
     >>> print cprov_on_buildd.status.title
     Administrator
-
     >>> foobar_on_buildd.canChangeExpirationDate(cprov)
     True
     >>> foobar_on_buildd.setExpirationDate(tomorrow, cprov)
-
-    >>> cprov_on_buildd.canChangeExpirationDate(cprov)
-    False
-    >>> cprov_on_buildd.setExpirationDate(tomorrow, cprov)
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
 
 
 Flagging expired memberships

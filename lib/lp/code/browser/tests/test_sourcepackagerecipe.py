@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401,E1002
 
@@ -1169,6 +1169,20 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
               Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
+
+    def test_index_success_with_sprb_into_private_ppa(self):
+        # The index page hides builds into archives the user can't view.
+        recipe = self.makeRecipe()
+        archive = self.factory.makeArchive(private=True)
+        sprb = removeSecurityProxy(
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, distroseries=self.squirrel, archive=archive))
+        sprb.status = BuildStatus.FULLYBUILT
+        sprb.date_started = datetime(2010, 04, 16, tzinfo=UTC)
+        sprb.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
+        sprb.log = self.factory.makeLibraryFileAlias()
+        self.assertIn(
+            "This recipe has not been built yet.", self.getMainText(recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
