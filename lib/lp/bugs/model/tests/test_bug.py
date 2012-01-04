@@ -490,7 +490,8 @@ class TestBug(TestCaseWithFactory):
 
         def get_subscribers():
             recipients = BugNotificationRecipients()
-            bug.getDirectSubscribers(recipients=recipients)
+            subs = bug.getDirectSubscribers(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
@@ -513,7 +514,8 @@ class TestBug(TestCaseWithFactory):
 
         def get_subscribers():
             recipients = BugNotificationRecipients()
-            bug.getSubscribersFromDuplicates(recipients=recipients)
+            subs = bug.getSubscribersFromDuplicates(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
@@ -540,7 +542,8 @@ class TestBug(TestCaseWithFactory):
 
         def get_subscribers():
             recipients = BugNotificationRecipients()
-            bug.getAlsoNotifiedSubscribers(recipients=recipients)
+            subs = bug.getAlsoNotifiedSubscribers(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_stuff, 3)
