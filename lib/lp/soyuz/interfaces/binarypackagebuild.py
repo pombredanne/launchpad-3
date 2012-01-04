@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -42,7 +42,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -424,6 +424,11 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         'archseries' argument should be a list of DistroArchSeries and it is
         asserted to not be None/empty.
+        """
+
+    def preloadBuildsData(builds):
+        """Prefetch the data related to the builds.
+
         """
 
 

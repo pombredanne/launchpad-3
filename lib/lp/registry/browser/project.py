@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
@@ -42,23 +42,7 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp import _
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,
@@ -76,6 +60,11 @@ from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -92,22 +81,33 @@ from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSeries,
     IProjectGroupSet,
     )
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import NavigationMenu
 
 
 class ProjectNavigation(Navigation,

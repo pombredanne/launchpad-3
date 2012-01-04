@@ -102,6 +102,15 @@
         </div>
       </div>
 
+      <metal:bottom fill-slot="extra_bottom">
+        <tal:sponsored-person
+            define="widget nocall:view/widgets/sponsored_person;
+                    sync view/actions/byname/field.actions.sync|nothing"
+            condition="python:sync and sync.available()">
+          <metal:widget-div use-macro="widget/@@launchpad_form/widget_div" />
+        </tal:sponsored-person>
+      </metal:bottom>
+
       <div metal:fill-slot="widgets">
         <tal:navigation_top
           replace="structure differences/@@+navigation-links-upper" />

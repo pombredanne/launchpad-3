@@ -189,7 +189,7 @@ this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
 Catalan questions, so no Catalan checkbox is displayed.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Builder features."""
@@ -15,7 +15,6 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-import transaction
 from twisted.internet.defer import (
     CancelledError,
     DeferredList,
@@ -29,17 +28,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -72,10 +60,15 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehavior,
     WaitingSlave,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -89,6 +82,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestBuilderBasics(TestCaseWithFactory):
@@ -155,7 +152,7 @@ class TestBuilder(TestCaseWithFactory):
         d = lostbuilding_builder.updateStatus(BufferLogger())
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
-            # 'Fault' comes from the LostBuildingBrokenSlave.  This is
+            # 'Fault' comes from the LostBuildingBrokenSlave, this is
             # just testing that the value is passed through.
             self.assertIsInstance(failure.value, xmlrpclib.Fault)
         return d.addBoth(check_slave_status)
@@ -533,26 +530,6 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # And the old_candidate is superseded:
         self.assertEqual(BuildStatus.SUPERSEDED, build.status)
-
-    def test_findBuildCandidate_postprocesses_in_read_write_policy(self):
-        # _findBuildCandidate invokes BuildFarmJob.postprocessCandidate,
-        # which may modify the database.  This happens in a read-write
-        # transaction even if _findBuildCandidate itself runs in a
-        # read-only transaction policy.
-
-        # PackageBuildJob.postprocessCandidate will attempt to delete
-        # security builds.
-        pub = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.factory.makeArchive(),
-            pocket=PackagePublishingPocket.SECURITY)
-        pub.createMissingBuilds()
-        transaction.commit()
-        with DatabaseTransactionPolicy(read_only=True):
-            removeSecurityProxy(self.frog_builder)._findBuildCandidate()
-            # The test is that this passes without a "transaction is
-            # read-only" error.
-            transaction.commit()
 
     def test_acquireBuildCandidate_marks_building(self):
         # acquireBuildCandidate() should call _findBuildCandidate and

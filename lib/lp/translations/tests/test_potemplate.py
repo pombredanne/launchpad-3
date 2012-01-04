@@ -8,10 +8,6 @@ from operator import methodcaller
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -20,13 +16,13 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.side import (
-    TranslationSide,
-    )
-from lp.translations.model.potemplate import (
-    get_pofiles_for,
-    )
+from lp.translations.interfaces.side import TranslationSide
+from lp.translations.model.potemplate import get_pofiles_for
 
 
 class TestPOTemplate(TestCaseWithFactory):

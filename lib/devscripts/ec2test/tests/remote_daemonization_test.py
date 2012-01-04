@@ -10,8 +10,12 @@ import os
 import sys
 import traceback
 
-from devscripts.ec2test.remote import EC2Runner, WebTestLogger
+from devscripts.ec2test.remote import (
+    EC2Runner,
+    WebTestLogger,
+    )
 from devscripts.ec2test.tests.test_remote import TestRequest
+
 
 PID_FILENAME = os.path.abspath(sys.argv[1])
 DIRECTORY = os.path.abspath(sys.argv[2])

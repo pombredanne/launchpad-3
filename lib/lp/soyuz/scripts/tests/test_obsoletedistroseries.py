@@ -9,11 +9,10 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
@@ -28,6 +27,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestObsoleteDistroseriesScript(TestCase):

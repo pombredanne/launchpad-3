@@ -3,18 +3,18 @@
 
 __metaclass__ = type
 
+from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lazr.restfulclient.errors import HTTPError
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.testing import (
-    TestCaseWithFactory,
     launchpadlib_for,
+    TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestTeamMembershipTransitions(TestCaseWithFactory):

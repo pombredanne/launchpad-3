@@ -10,11 +10,10 @@
 """Find in files and replace strings in many files."""
 
 import mimetypes
+from optparse import OptionParser
 import os
 import re
 import sys
-
-from optparse import OptionParser
 
 
 mimetypes.init()

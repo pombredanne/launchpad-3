@@ -10,15 +10,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -28,7 +19,14 @@ from lp.registry.interfaces.milestone import (
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     person_logged_in,
+    ANONYMOUS,
+    login,
+    logout,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import DoesNotSnapshot
 

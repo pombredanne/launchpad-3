@@ -7,11 +7,10 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translator import ITranslatorSet
-
 
 # A user can be translating either a translation that's not covered by a
 # translation team ("untended"), or one that is ("tended"), or one whose

@@ -154,7 +154,7 @@ The google search service is configured by the google section in
 lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.googlesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()
@@ -596,7 +596,7 @@ cases a TimeoutError is issued.
 
     >>> from socket import socket
     >>> from textwrap import dedent
-    >>> from canonical.lazr.timeout import (
+    >>> from lp.services.timeout import (
     ...     get_default_timeout_function, set_default_timeout_function)
 
     >>> server = socket()

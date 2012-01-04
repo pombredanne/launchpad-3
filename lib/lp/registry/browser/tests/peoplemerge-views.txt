@@ -100,7 +100,7 @@ Delete team
 Users with launchpad.Moderate such as team admins and registry experts
 can delete teams.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> team_owner = factory.makePerson()
     >>> team_member = factory.makePerson()
@@ -136,7 +136,7 @@ The view uses the similar form fields as the team merge view, but it does not
 render them because their values are preset. Only the action is rendered,
 and it is only rendered if canDelete() returns True.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> view = create_initialized_view(
     ...     deletable_team, '+delete', principal=team_owner)
@@ -162,7 +162,7 @@ and it is only rendered if canDelete() returns True.
 The page explains how many users will be removed from the team before it is
 deleted.
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
 
     >>> print extract_text(content)
     Delete Deletable

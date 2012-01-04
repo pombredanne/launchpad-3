@@ -17,20 +17,20 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
-from canonical.launchpad.components.apihelpers import (
-    patch_collection_return_type,
-    patch_entry_return_type,
-    patch_reference_property,
-    )
 from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.answers.interfaces.questioncollection import (
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
-from lp.answers.interfaces.questionmessage import  IQuestionMessage
-from lp.answers.interfaces.questionsperson import  IQuestionsPerson
+from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.services.webservice.apihelpers import (
+    patch_collection_return_type,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
 
 
 IQuestionSet.queryTaggedValue(

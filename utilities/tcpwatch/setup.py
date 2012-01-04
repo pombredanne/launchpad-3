@@ -2,6 +2,7 @@
 
 from distutils.core import setup
 
+
 setup(name="tcpwatch",
       version="1.2.1",
       description="TCP monitoring and logging tool with support for HTTP 1.1",

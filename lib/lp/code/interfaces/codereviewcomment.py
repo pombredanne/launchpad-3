@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211
@@ -25,11 +25,11 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessage
+from lp import _
 from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.registry.interfaces.person import IPerson
+from lp.services.messages.interfaces.message import IMessage
 
 
 class ICodeReviewComment(Interface):
@@ -88,7 +88,6 @@ class ICodeReviewComment(Interface):
         TextLine(
             title=_('The message as quoted in email.'),
             readonly=True))
-
 
 
 class ICodeReviewCommentDeletion(Interface):

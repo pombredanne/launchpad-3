@@ -7,12 +7,12 @@ import re
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import LaunchpadScriptLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.mail import stub
+from lp.services.webapp import errorlog
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue,

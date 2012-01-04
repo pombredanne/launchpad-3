@@ -10,7 +10,7 @@ When displaying the comments on the main bug page they are truncated if
 they are too long. In order to show that, let's set the limit to a
 small value.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_comment_data = """
     ...     [malone]
     ...     max_comment_size: 45

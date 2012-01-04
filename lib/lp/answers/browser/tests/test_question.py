@@ -7,15 +7,15 @@ __metaclass__ = type
 
 __all__ = []
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.browser.question import QuestionTargetWidget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.publisher import AnswersLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

@@ -9,7 +9,7 @@ This widget is created to allow many options to be displayed in a single
 page.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.product import (
     ...     IProduct,
     ...     IProductSet,

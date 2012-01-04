@@ -11,7 +11,7 @@ __all__ = [
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )

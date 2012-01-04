@@ -22,24 +22,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    flush_database_caches,
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.testing.systemdocs import (
-    default_optionflags,
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -63,6 +45,14 @@ from lp.registry.scripts.teamparticipation import (
     fetch_team_participation_info,
     fix_teamparticipation_consistency,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_caches,
+    flush_database_updates,
+    sqlvalues,
+    )
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
@@ -74,8 +64,18 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
+from lp.testing.systemdocs import (
+    default_optionflags,
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class TestTeamMembershipSetScripts(TestCaseWithFactory):

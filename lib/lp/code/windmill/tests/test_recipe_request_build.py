@@ -10,15 +10,18 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.windmill.constants import (
-    FOR_ELEMENT,
-    SLEEP,
-    )
 from lp.app.browser.tales import PPAFormatterAPI
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import WindmillTestCase, quote_jquery_expression
+from lp.testing import (
+    quote_jquery_expression,
+    WindmillTestCase,
+    )
+from lp.testing.windmill.constants import (
+    FOR_ELEMENT,
+    SLEEP,
+    )
 
 
 class TestRecipeBuild(WindmillTestCase):

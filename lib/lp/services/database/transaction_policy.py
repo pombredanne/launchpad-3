@@ -12,13 +12,13 @@ from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.isolation import TransactionInProgress
+from lp.services.database.sqlbase import quote
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.services.database.isolation import TransactionInProgress
 
 
 class DatabaseTransactionPolicy:
@@ -133,11 +133,8 @@ class DatabaseTransactionPolicy:
     def _isInTransaction(self):
         """Is our store currently in a transaction?"""
         pg_connection = self.store._connection._raw_connection
-        if pg_connection is None:
-            return False
-        else:
-            status = pg_connection.get_transaction_status()
-            return status != TRANSACTION_STATUS_IDLE
+        status = pg_connection.get_transaction_status()
+        return status != TRANSACTION_STATUS_IDLE
 
     def _checkNoTransaction(self, error_msg):
         """Verify that no transaction is ongoing.

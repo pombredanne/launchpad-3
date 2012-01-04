@@ -106,7 +106,7 @@ Now run the pending job to send the email.
 
 The CodeReviewComment must implement the ICodeReviewComment interface.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.code.interfaces.codereviewcomment import ICodeReviewComment
     >>> verifyObject(ICodeReviewComment, comment)
     True

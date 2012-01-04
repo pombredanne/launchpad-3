@@ -12,13 +12,13 @@ from httplib import (
     EXPECTATION_FAILED,
     )
 
-from canonical.testing.layers import FunctionalLayer
 from lp.bugs.errors import (
     InvalidBugTargetType,
     InvalidDuplicateValue,
     SubscriptionPrivacyViolation,
     )
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 from lp.testing.views import create_webservice_error_view
 
 

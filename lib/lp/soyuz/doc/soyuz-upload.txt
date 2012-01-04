@@ -38,7 +38,7 @@ uploaded files in.
 Now let's copy the files into separate upload directories, as if they'd
 been uploaded over FTP.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.archiveuploader.tagfiles import parse_tagfile
     >>> import glob
     >>> test_files_dir = os.path.join(config.root,
@@ -170,7 +170,7 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from lp.registry.interfaces.gpg import (
     ...     GPGKeyAlgorithm,
@@ -392,7 +392,7 @@ Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')

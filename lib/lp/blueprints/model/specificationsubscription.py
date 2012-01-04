@@ -13,11 +13,11 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
 from lp.registry.interfaces.person import validate_person
+from lp.services.database.sqlbase import SQLBase
 
 
 class SpecificationSubscription(SQLBase):

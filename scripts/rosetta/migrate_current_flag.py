@@ -9,7 +9,8 @@ import _pythonpath
 
 from lp.services.scripts.base import LaunchpadScript
 from lp.translations.scripts.migrate_current_flag import (
-    MigrateCurrentFlagProcess)
+    MigrateCurrentFlagProcess,
+    )
 
 
 class MigrateTranslationFlags(LaunchpadScript):

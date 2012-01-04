@@ -54,8 +54,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.services.fields import (
@@ -64,6 +63,7 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
+from lp.services.webapp.menu import structured
 from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
@@ -266,7 +266,7 @@ class DistroMirrorURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
-        from canonical.launchpad.webapp import canonical_url
+        from lp.services.webapp import canonical_url
         from lazr.uri import URI
 
         super(DistroMirrorURIField, self)._validate(value)
