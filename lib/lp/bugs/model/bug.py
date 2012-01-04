@@ -2656,25 +2656,6 @@ class BugSubscriptionInfo:
         """
         return self.direct_subscriptions_at_all_levels.subscribers
 
-    # TODO: Nuke this; it looks efficient but is actually a potato hole
-    # (subscribers will not have anything preloaded).
-    @cachedproperty
-    def duplicate_subscriptions_and_subscribers(self):
-        if self.bug.private:
-            return ((), ())
-        else:
-            res = IStore(BugSubscription).find(
-                (BugSubscription, Person),
-                BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.person_id == Person.id,
-                Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
-
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
@@ -2682,16 +2663,24 @@ class BugSubscriptionInfo:
 
         Excludes muted subscriptions.
         """
-        return self.duplicate_subscriptions_and_subscribers[0]
+        if self.bug.private:
+            return ()
+        else:
+            return IStore(BugSubscription).find(
+                BugSubscription,
+                BugSubscription.bug_notification_level >= self.level,
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
 
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+    @property
     def duplicate_subscribers(self):
         """Subscribers to duplicates of the bug.
 
         Excludes muted subscribers.
         """
-        return self.duplicate_subscriptions_and_subscribers[1]
+        return self.duplicate_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
