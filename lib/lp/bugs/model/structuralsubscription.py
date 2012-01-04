@@ -601,12 +601,12 @@ def query_structural_subscriptions(
         level will be excluded.
     :param exclude: `Person`s to exclude (e.g. direct subscribers).
     """
+    from lp.registry.model.person import Person  # Circular.
     filter_id_query = (
         _get_structural_subscription_filter_id_query(
             bug, bugtasks, level, exclude))
     if not filter_id_query:
         return EmptyResultSet()
-    from lp.registry.model.person import Person  # Circular.
     source = IStore(StructuralSubscription).using(
         StructuralSubscription,
         Join(BugSubscriptionFilter,
