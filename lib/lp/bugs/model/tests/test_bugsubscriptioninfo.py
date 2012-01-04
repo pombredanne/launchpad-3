@@ -171,7 +171,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
     def test_forLevel(self):
         # `forLevel` returns a new `BugSubscriptionInfo` narrowed to the given
         # subscription level.
-        info = self.getInfo()
+        info = self.getInfo(BugNotificationLevel.LIFECYCLE)
         # If called with the current level the same `BugSubscriptionInfo`
         # instance is returned.
         self.assertIs(info, info.forLevel(info.level))
@@ -200,7 +200,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         sub1, sub2 = subscribers
         with person_logged_in(sub1):
             self.bug.mute(sub1, sub1)
-        self.assertEqual(set([sub1]), self.getInfo().muted_subscribers)
+        self.assertContentEqual([sub1], self.getInfo().muted_subscribers)
 
     def test_direct(self):
         # The set of direct subscribers.
