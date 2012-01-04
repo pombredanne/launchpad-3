@@ -132,6 +132,8 @@ class EmailAddressSet:
         if person is None:
             personID = None
         else:
+            if account is None:
+                account = person.account
             personID = person.id
             accountID = account and account.id
             assert person.accountID == accountID, (

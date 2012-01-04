@@ -135,7 +135,8 @@ class IEmailAddressSet(Interface):
         """Create a new EmailAddress with the given email.
 
         The newly created EmailAddress will point to the person
-        and/or account.
+        and/or account. If account is omitted and the person has a linked
+        account, that account will be used.
 
         The given status must be an item of EmailAddressStatus.
 

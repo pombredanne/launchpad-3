@@ -1243,8 +1243,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
         self.person = self.makePerson(self.account)
         self.email = self.makeEmailAddress(
-            email='whatever@example.com',
-            account=self.account, person=self.person)
+            email='whatever@example.com', person=self.person)
 
     def makeAccount(self):
         return self.store.add(Account(
