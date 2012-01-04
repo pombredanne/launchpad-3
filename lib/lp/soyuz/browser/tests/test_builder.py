@@ -100,7 +100,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+            HasQueryCount(LessThan(recorder1.count + 4 * 2 + 1)))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():

@@ -11,6 +11,7 @@ from testtools.matchers import (
     Equals,
     MatchesAll,
     )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -168,7 +169,6 @@ class BuildCreationMixin(object):
         naked_build.date_started = self.factory.getUniqueDate()
         naked_build.date_finished = self.factory.getUniqueDate()
         naked_build.status = BuildStatus.FULLYBUILT
-        import transaction
         transaction.commit()
 
     def createTranslationTemplateBuildWithBuilder(self, builder=None):
@@ -193,7 +193,6 @@ class BuildCreationMixin(object):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=self.factory.makeSourcePackageRecipe(
                 branches=[branch1, branch2]))
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         if private_branch:
             with celebrity_logged_in('admin'):
                 branch1.setPrivate(
