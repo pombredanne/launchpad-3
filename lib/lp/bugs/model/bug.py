@@ -2768,10 +2768,7 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     def also_notified_subscribers(self):
-        """All subscribers except direct and dupe subscribers.
-
-        Excludes muted subscribers.
-        """
+        """All subscribers except direct, dupe, and muted subscribers."""
         if self.bug.private:
             return BugSubscriberSet()
         else:
