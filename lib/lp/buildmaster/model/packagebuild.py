@@ -53,6 +53,7 @@ from lp.services.database.lpstorm import IMasterStore
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -299,7 +300,10 @@ class PackageBuildDerived:
                             % (status, self.buildqueue_record.builder.url))
             return
         d = method(librarian, slave_status, logger, send_notification)
-        return d
+
+        def cleanup(*args):
+            del get_property_cache(self).buildqueue_record
+        return d.addCallback(cleanup)
 
     def _release_builder_and_remove_queue_item(self):
         # Release the builder for another job.
