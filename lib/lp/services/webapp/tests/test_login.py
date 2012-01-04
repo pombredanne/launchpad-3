@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2012 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0105
 """Test harness for running the new-login.txt tests."""
 
