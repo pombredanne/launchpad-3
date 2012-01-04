@@ -478,7 +478,7 @@ class TestBug(TestCaseWithFactory):
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
 
-    def test_get_direct_subscribers_with_recipients_query_count(self):
+    def test_getDirectSubscribers_with_recipients_query_count(self):
         # getDirectSubscribers() uses a constant number of queries when given
         # a recipients argument regardless of the number of subscribers.
         bug = self.factory.makeBug()
@@ -497,7 +497,7 @@ class TestBug(TestCaseWithFactory):
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
 
-    def test_get_subscribers_from_dupes_with_recipients_query_count(self):
+    def test_getSubscribersFromDuplicates_with_recipients_query_count(self):
         # getSubscribersFromDuplicates() uses a constant number of queries
         # when given a recipients argument regardless of the number of
         # subscribers.
@@ -520,7 +520,7 @@ class TestBug(TestCaseWithFactory):
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
 
-    def test_get_also_notified_subscribers_with_recipients_query_count(self):
+    def test_getAlsoNotifiedSubscribers_with_recipients_query_count(self):
         # getAlsoNotifiedSubscribers() uses a constant number of queries when
         # given a recipients argument regardless of the number of subscribers.
         bug = self.factory.makeBug()
