@@ -16,7 +16,7 @@
       <tal:enabled condition="view/show_derivation_form">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
-        <a href="/+help/init-series-title-help.html"
+        <a href="/+help-registry/init-series-title-help.html"
            target="help" class="sprite maybe">&nbsp;
           <span class="invisible-link">Initialization help</span></a>
       </div>
@@ -71,6 +71,14 @@
         This series is already being initialized.
       </p>
       </tal:already-initializing>
+
+      <tal:no-publisher
+          condition="view/show_no_publisher_message">
+      <p class="error message">
+        The series' distribution has no publisher configuration.
+        Please ask an administrator to set this up.
+      </p>
+      </tal:no-publisher>
 
     </div>
   </body>

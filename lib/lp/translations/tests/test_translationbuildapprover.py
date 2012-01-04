@@ -8,9 +8,9 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,

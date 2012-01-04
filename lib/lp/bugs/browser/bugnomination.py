@@ -18,16 +18,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.publisher.interfaces import implements
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IPrimaryContext,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -40,6 +31,15 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNominationForm,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IPrimaryContext,
+    )
 
 
 class BugNominationPrimaryContext:
@@ -90,15 +90,13 @@ class BugNominationView(LaunchpadFormView):
 
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return check_permission(
-            "launchpad.Driver", current_bugtask.target)
+            "launchpad.Driver", self.current_bugtask.target)
 
     def userIsBugSupervisor(self):
         """Is the current user the bug supervisor?"""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return check_permission(
-            "launchpad.BugSupervisor", current_bugtask.target)
+            "launchpad.BugSupervisor", self.current_bugtask.target)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""
@@ -225,6 +223,7 @@ class BugNominationEditView(LaunchpadFormView):
         return 'Approve or decline nomination for bug #%d in %s' % (
             self.context.bug.id, self.context.target.bugtargetdisplayname)
     label = title
+    page_title = title
 
     def initialize(self):
         self.current_bugtask = getUtility(ILaunchBag).bugtask

@@ -14,8 +14,8 @@ software. It can be part of a ProjectGroup or it can be standalone.
     ...     )
     >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
-    >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.testing import login
+    >>> from lp.services.webapp.testing import verifyObject
 
 Let's log in as Foo Bar to ensure we have the privileges to do what we're
 going to demonstrate.
@@ -158,8 +158,8 @@ default the latest five are returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
+    Bazaar
     Derby
-    Launchpad Translations
     Mega Money Maker
     Obsolete Junk
     Redfish
@@ -171,7 +171,7 @@ returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
-    Launchpad Translations
+    Derby
     Mega Money Maker
     Obsolete Junk
 

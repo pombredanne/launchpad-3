@@ -115,13 +115,13 @@ Expiration time
 Objects will automatically be purged from the cache after a
 configurable time. The default is 4 hours (14400 seconds)
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> print config.vhost.api.representation_cache_expiration_time
     14400
 
 Let's change that.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('short expiration time', """\
     ... [vhost.api]
     ... representation_cache_expiration_time: 1

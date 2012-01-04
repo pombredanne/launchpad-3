@@ -118,7 +118,7 @@ ul ul {
     margin-left: .5em;
     }
 </style>
-<link rel="stylesheet" href="https://launchpad.net/+icing/style-3-0.css" />
+<link rel="stylesheet" href="https://launchpad.net/+icing/import.css" />
 <link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" />
 </head>
 <body>
@@ -157,7 +157,7 @@ PAGE-BOTTOM
         </div>
     </div>
     <div class="colophon">
-      &copy; 2004-2011
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a href="https://launchpad.net/legal">Terms of use</a>

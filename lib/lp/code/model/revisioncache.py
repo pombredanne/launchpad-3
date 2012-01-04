@@ -22,11 +22,6 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.code.interfaces.revisioncache import IRevisionCollection
 from lp.code.model.revision import (
     Revision,
@@ -36,6 +31,11 @@ from lp.code.model.revision import (
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class GenericRevisionCollection:

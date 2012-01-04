@@ -1,4 +1,5 @@
-= Publisher Configuration Provider =
+Publisher Configuration Provider
+================================
 
 The config module has a function to provide a modified publisher configuration
 that provides the right paths for its publication according to the given
@@ -14,6 +15,7 @@ We will use a helper function for dumping publisher configurations.
     ...     'overrideroot',
     ...     'cacheroot',
     ...     'miscroot',
+    ...     'germinateroot',
     ...     'temproot',
     ... ]
 
@@ -22,7 +24,8 @@ We will use a helper function for dumping publisher configurations.
     ...         print '%s: %s' % (attr_name, getattr(config, attr_name))
 
 
-== Primary ==
+Primary
+-------
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -38,10 +41,12 @@ We will use a helper function for dumping publisher configurations.
     overrideroot:    /var/tmp/archive/ubuntutest-overrides
     cacheroot:       /var/tmp/archive/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-misc
+    germinateroot:   /var/tmp/archive/ubuntutest-germinate
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
-== PPAs ==
+PPAs
+----
 
 Adjust Celso's PPA to point to a configured distribution and built its
 publisher configuration.
@@ -61,7 +66,7 @@ publisher configuration.
 The base Archive publication location is set in the current Launchpad
 configuration file:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> ppa_config.distroroot == config.personalpackagearchive.root
     True
 
@@ -80,6 +85,7 @@ None, so they won't get created:
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 There is a separate location for private PPAs that is used if the
@@ -108,10 +114,12 @@ archive is marked as private:
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
-== Partner ==
+Partner
+-------
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
@@ -131,10 +139,12 @@ archive.
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
-== DEBUG ==
+DEBUG
+-----
 
 The publisher configuration for DEBUG archives points to directories
 besides PRIMARY repository ones, but the distribution part is
@@ -155,10 +165,12 @@ modified to be clearly different than the PRIMARY one.
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
+    germinateroot:   None
     temproot:        /var/tmp/archive/ubuntutest-temp
 
 
-== COPY ==
+COPY
+----
 
 In the case of copy archives (used for rebuild testing) the archiveroot
 is of the form distroroot/distroname-archivename/distroname
@@ -170,11 +182,14 @@ is of the form distroroot/distroname-archivename/distroname
     >>> copy_config = getPubConfig(copy_archive)
 
     >>> dump_config(copy_config)
-    distroroot:      /var/tmp/archive
-    archiveroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest
-    poolroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/pool
-    distsroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/dists
-    overrideroot:    /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-overrides
-    cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
-    miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
-    temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp
+    distroroot:    /var/tmp/archive
+    archiveroot:   /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest
+    poolroot:      /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/pool
+    distsroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/dists
+    overrideroot:
+        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-overrides
+    cacheroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
+    miscroot:      /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
+    germinateroot:
+        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-germinate
+    temproot:      /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp

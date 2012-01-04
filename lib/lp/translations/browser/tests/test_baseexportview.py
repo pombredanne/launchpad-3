@@ -8,10 +8,10 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView,
     )
@@ -56,7 +56,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
 
     def test_uses_translations_current_templates(self):
         # If there is a current template, it is marked as using translations.
-        template = self.createTranslationTemplate("current")
+        self.createTranslationTemplate("current")
         self.assertTrue(self.view.uses_translations)
 
     def test_getDefaultFormat(self):
@@ -148,7 +148,6 @@ class TestProductSeries(BaseExportViewMixin):
     def setUp(self):
         super(TestProductSeries, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -166,7 +165,6 @@ class TestSourcePackage(BaseExportViewMixin):
     def setUp(self):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
         self.view = SourcePackageTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -178,7 +176,6 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
     def setUp(self):
         super(TestPOExportQueueStatusDescriptions, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 

@@ -171,7 +171,7 @@ In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
     >>> def on_created_event(object, event):
@@ -590,7 +590,6 @@ URLs for a Product's upstream bug tracker using its
 
 We'll link a product to an upstream bug tracker to demonstrate this.
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> bugtracker = factory.makeBugTracker('http://example.com')
     >>> product = factory.makeProduct(name='frobnitz')

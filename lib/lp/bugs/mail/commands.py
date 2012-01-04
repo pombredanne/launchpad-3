@@ -28,8 +28,6 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -45,6 +43,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     IBugTask,
+    IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -76,6 +75,8 @@ from lp.services.mail.interfaces import (
     IBugTaskEmailCommand,
     )
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
@@ -618,7 +619,16 @@ class AffectsEmailCommand(EmailCommand):
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         if bugtask is None:
-            bugtask = self._create_bug_task(bug, bug_target)
+            try:
+                bugtask = self._create_bug_task(bug, bug_target)
+            except IllegalTarget as e:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'cannot-add-task.txt',
+                        error_templates=error_templates,
+                        bug_id=bug.id,
+                        target_name=bug_target.name, reason=e[0]),
+                    stop_processing=True)
             event = ObjectCreatedEvent(bugtask)
 
         return bugtask, event, bug_event

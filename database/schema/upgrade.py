@@ -9,20 +9,30 @@ Apply all outstanding schema patches to an existing launchpad database
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
-import _pythonpath  # Sort PYTHONPATH
+import _pythonpath
 
 from cStringIO import StringIO
 import glob
-import os.path
 from optparse import OptionParser
+import os.path
 import re
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
-from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.database.postgresql import fqn
+from bzrlib.branch import Branch
+from bzrlib.errors import NotBranchError
+
+from lp.services.database.postgresql import fqn
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    sqlvalues,
+    )
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 import replication.helpers
 
 
@@ -90,11 +100,25 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
         AND LaunchpadDatabaseRevision.start_time <> prev_end_time;
 
     UPDATE LaunchpadDatabaseRevision
-    SET start_time=_start_time.start_time
+    SET
+        start_time=_start_time.start_time,
+        branch_nick = %s,
+        revno = %s,
+        revid = %s
     FROM _start_time
     WHERE
         LaunchpadDatabaseRevision.start_time
             = transaction_timestamp() AT TIME ZONE 'UTC';
+    """)
+START_UPDATE_LOG_SQL = dedent("""\
+    INSERT INTO LaunchpadDatabaseUpdateLog (
+        start_time, end_time, branch_nick, revno, revid)
+    VALUES (transaction_timestamp() AT TIME ZONE 'UTC', NULL, %s, %s, %s);
+    """)
+FINISH_UPDATE_LOG_SQL = dedent("""\
+    UPDATE LaunchpadDatabaseUpdateLog
+    SET end_time = statement_timestamp() AT TIME ZONE 'UTC'
+    WHERE start_time = transaction_timestamp() AT TIME ZONE 'UTC';
     """)
 
 
@@ -148,12 +172,31 @@ def report_patch_times(con, todays_patches):
 
 def apply_patches_normal(con):
     """Update a non replicated database."""
+    # On dev environments, until we create a fresh database baseline the
+    # LaunchpadDatabaseUpdateLog tables does not exist at this point (it
+    # will be created later via database patch). Don't try to update
+    # LaunchpadDatabaseUpdateLog if it does not exist.
+    cur = con.cursor()
+    cur.execute("""
+        SELECT EXISTS (
+            SELECT TRUE FROM information_schema.tables
+            WHERE
+                table_schema='public'
+                AND table_name='launchpaddatabaseupdatelog')
+            """)
+    updatelog_exists = cur.fetchone()[0]
+
+    # Add a record to LaunchpadDatabaseUpdateLog that we are starting
+    # an update.
+    if updatelog_exists:
+        cur.execute(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
+
     # trusted.sql contains all our stored procedures, which may
     # be required for patches to apply correctly so must be run first.
     apply_other(con, 'trusted.sql')
 
     # Prepare to repair patch timestamps if necessary.
-    con.cursor().execute(FIX_PATCH_TIMES_PRE_SQL)
+    cur.execute(FIX_PATCH_TIMES_PRE_SQL)
 
     # Apply the patches
     patches = get_patchlist(con)
@@ -161,10 +204,16 @@ def apply_patches_normal(con):
         apply_patch(con, major, minor, patch, patch_file)
 
     # Repair patch timestamps if necessary.
-    con.cursor().execute(FIX_PATCH_TIMES_POST_SQL)
+    cur.execute(
+        FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
 
     # Update comments.
     apply_comments(con)
+
+    # Update the LaunchpadDatabaseUpdateLog record, stating the
+    # completion time.
+    if updatelog_exists:
+        cur.execute(FINISH_UPDATE_LOG_SQL)
 
 
 def apply_patches_replicated():
@@ -181,73 +230,54 @@ def apply_patches_replicated():
     log.info("Waiting for cluster to sync, pre-update.")
     replication.helpers.sync(timeout=600)
 
+    # Slonik script we are generating.
     outf = StringIO()
 
     # Start a transaction block.
     print >> outf, "try {"
 
-    sql_to_run = []
+    # All the SQL we need to run, combined into one file. This minimizes
+    # Slony-I syncs and downtime.
+    combined_sql = NamedTemporaryFile(prefix='dbupdate', suffix='.sql')
 
-    def run_sql(script):
-        if os.path.isabs(script):
-            full_path = script
-        else:
-            full_path = os.path.abspath(os.path.join(SCHEMA_DIR, script))
-        assert os.path.exists(full_path), "%s doesn't exist." % full_path
-        sql_to_run.append(full_path)
+    def add_sql(sql):
+        sql = sql.strip()
+        if sql != '':
+            assert sql.endswith(';'), "SQL not terminated with ';': %s" % sql
+            print >> combined_sql, sql
+            # Flush or we might lose statements from buffering.
+            combined_sql.flush()
 
-    # We are going to generate some temporary files using
-    # NamedTempoararyFile. Store them here so we can control when
-    # they get closed and cleaned up.
-    temporary_files = []
+    # Add a LaunchpadDatabaseUpdateLog record that we are starting patch
+    # application.
+    add_sql(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
 
     # Apply trusted.sql
-    run_sql('trusted.sql')
-
-    # We are going to generate some temporary files using
-    # NamedTempoararyFile. Store them here so we can control when
-    # they get closed and cleaned up.
-    temporary_files = []
-
-    # Apply DB patches as one big hunk.
-    combined_script = NamedTemporaryFile(prefix='patch', suffix='.sql')
-    temporary_files.append(combined_script)
+    add_sql(open(os.path.join(SCHEMA_DIR, 'trusted.sql'), 'r').read())
 
     # Prepare to repair the start timestamps in
     # LaunchpadDatabaseRevision.
-    print >> combined_script, FIX_PATCH_TIMES_PRE_SQL
+    add_sql(FIX_PATCH_TIMES_PRE_SQL)
 
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
-        print >> combined_script, open(patch_file, 'r').read()
+        add_sql(open(patch_file, 'r').read())
 
         # Trigger a failure if the patch neglected to update
         # LaunchpadDatabaseRevision.
-        print >> combined_script, (
+        add_sql(
             "SELECT assert_patch_applied(%d, %d, %d);"
             % (major, minor, patch))
 
     # Fix the start timestamps in LaunchpadDatabaseRevision.
-    print >> combined_script, FIX_PATCH_TIMES_POST_SQL
-
-    combined_script.flush()
-    run_sql(combined_script.name)
-
-    # Now combine all the written SQL (probably trusted.sql and
-    # patch*.sql) into one big file, which we execute with a single
-    # slonik execute_script statement to avoid multiple syncs.
-    single = NamedTemporaryFile(prefix='single', suffix='.sql')
-    for path in sql_to_run:
-        print >> single, open(path, 'r').read()
-        print >> single, ""
-    single.flush()
+    add_sql(FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
 
     print >> outf, dedent("""\
         execute script (
             set id = @lpmain_set, event node = @master_node,
             filename='%s'
             );
-        """ % single.name)
+        """ % combined_sql.name)
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
@@ -264,11 +294,6 @@ def apply_patches_replicated():
         log.fatal("Aborting.")
         raise SystemExit(4)
     log.info("slonik(1) schema upgrade script completed.")
-
-    # Cleanup our temporary files - they applied successfully.
-    for temporary_file in temporary_files:
-        temporary_file.close()
-    del temporary_files
 
     # Wait for replication to sync.
     log.info("Waiting for patches to apply to slaves and cluster to sync.")
@@ -397,6 +422,43 @@ def apply_patches_replicated():
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
     # we rename them into the ToDrop namespace.
+    #
+    # First, remove all todrop.* sequences from replication.
+    cur.execute("""
+        SELECT seq_nspname, seq_relname, seq_id from %s
+        WHERE seq_nspname='todrop'
+        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
+    seqs_to_unreplicate = set(
+        (fqn(nspname, relname), tab_id)
+        for nspname, relname, tab_id in cur.fetchall())
+    if seqs_to_unreplicate:
+        log.info("Unreplicating sequences: %s" % ', '.join(
+            name for name, id in seqs_to_unreplicate))
+        # Generate a slonik script to remove sequences from the
+        # replication set.
+        sk = StringIO()
+        print >> sk, "try {"
+        for seq_name, seq_id in seqs_to_unreplicate:
+            if seq_id is not None:
+                print >> sk, dedent("""\
+                    echo 'Removing %s from replication';
+                    set drop sequence (origin=@master_node, id=%d);
+                    """ % (seq_name, seq_id))
+        print >> sk, dedent("""\
+            }
+            on error {
+                echo 'Failed to unreplicate sequences. Aborting.';
+                exit 1;
+                }
+            """)
+        log.info(
+            "Generated slonik(1) script to unreplicate sequences. Invoking.")
+        if not replication.helpers.execute_slonik(sk.getvalue()):
+            log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+
+    # Generate a slonik script to remove tables from the replication set,
+    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     cur.execute("""
         SELECT nspname, relname, tab_id
         FROM pg_class
@@ -407,9 +469,6 @@ def apply_patches_replicated():
     tabs_to_drop = set(
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
-
-    # Generate a slonik script to remove tables from the replication set,
-    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(
             name for name, id in tabs_to_drop))
@@ -441,8 +500,8 @@ def apply_patches_replicated():
         log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
-    # Now drop sequences. We don't do this at the same time as the tables,
-    # as most sequences will be dropped implicitly with the table drop.
+    # Now drop any remaining sequences. Most sequences will be dropped
+    # implicitly with the table drop.
     cur.execute("""
         SELECT nspname, relname, seq_id
         FROM pg_class
@@ -562,6 +621,28 @@ def apply_other(con, script, no_commit=False):
 
 def apply_comments(con):
     apply_other(con, 'comments.sql')
+
+
+_bzr_details_cache = None
+
+
+def get_bzr_details():
+    """Return (branch_nick, revno, revision_id) of this Bazaar branch.
+
+    Returns (None, None, None) if the tree this code is running from
+    is not a Bazaar branch.
+    """
+    global _bzr_details_cache
+    if _bzr_details_cache is None:
+        try:
+            branch = Branch.open_containing(SCHEMA_DIR)[0]
+            revno, revision_id = branch.last_revision_info()
+            branch_nick = branch.get_config().get_nickname()
+        except NotBranchError:
+            log.warning("Not a Bazaar branch - branch details unavailable")
+            revision_id, revno, branch_nick = None, None, None
+        _bzr_details_cache = (branch_nick, revno, revision_id)
+    return _bzr_details_cache
 
 
 if __name__ == '__main__':

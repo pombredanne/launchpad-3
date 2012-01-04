@@ -6,8 +6,8 @@ can't test it properly, since we don't yet have a mock HTTP server we
 can use for testing, so let's just make sure that it doesn't try to
 contact any external servers.
 
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.sqlbase import cursor, sqlvalues
+    >>> from lp.services.database.constants import UTC_NOW
     >>> cur = cursor()
     >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))
@@ -61,10 +61,9 @@ require no action from the Launchpad end.
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     CheckWatchesErrorUtility)
-    >>> error_utility = CheckWatchesErrorUtility()
-    >>> last_oops_id = error_utility.getLastOopsReport().id
+    >>> from lp.testing.fixture import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> def do_not_urlopen(url=None, data=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
@@ -74,8 +73,9 @@ require no action from the Launchpad end.
     ...         bug_tracker_names=[example_bug_tracker_name])
     ... finally:
     ...     urllib2.urlopen = urlopen
-    >>> last_oops_id == error_utility.getLastOopsReport().id
-    True
+    >>> capture.oopses
+    []
+    >>> capture.cleanUp()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just

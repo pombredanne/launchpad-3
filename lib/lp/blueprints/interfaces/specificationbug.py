@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.schema import Object
 
-from canonical.launchpad import _
+from lp import _
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.buglink import IBugLink
 
@@ -23,5 +23,3 @@ class ISpecificationBug(IBugLink):
 
     specification = Object(title=_('The specification linked to the bug.'),
         required=True, readonly=True, schema=ISpecification)
-
-

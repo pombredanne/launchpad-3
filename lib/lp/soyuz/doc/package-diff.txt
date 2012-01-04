@@ -33,7 +33,7 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
 
     >>> verifyObject(IPackageDiff, package_diff)
@@ -116,7 +116,7 @@ chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -136,14 +136,14 @@ chroot in hoary in order to be able to accept the NEW packages.
 of a new source series for us. We can use this to avoid messing with
 sampledata to create valid packages.
 
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
+    >>> from lp.soyuz.tests.fakepackager import FakePackager
     >>> login('foo.bar@canonical.com')
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
 
 And setup the test_keys in order to build and upload signed packages.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 When the first version of 'biscuit' is uploaded, since there is no
@@ -277,7 +277,7 @@ The auxiliary function below will facilitate the viewing of diff results.
     >>> import subprocess
     >>> import tempfile
 
-    >>> from canonical.librarian.utils import copy_and_close
+    >>> from lp.services.librarian.utils import copy_and_close
 
     >>> def get_diff_results(diff):
     ...     lfa = diff.diff_content
@@ -377,7 +377,7 @@ and 'text/plain' content-type. This combination instructs the browser
 to decompress the file and display it inline, which makes it easier
 for users to view it.
 
-    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> from lp.services.webapp.url import urlparse
     >>> parsed_url = urlparse(diff.diff_content.http_url)
     >>> netloc, path = parsed_url[1:3]
 
@@ -401,7 +401,7 @@ directly with PackageDiffs objects.
 
 Let's flush all the updates done.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Those methods are useful when the callsites are not interested only in
@@ -643,7 +643,7 @@ uploaded source.
     ...     '1.0-2', archive=foobar.archive)
     >>> transaction.commit()
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
     >>> fillLibrarianFile(dsc.libraryfile.id)
 

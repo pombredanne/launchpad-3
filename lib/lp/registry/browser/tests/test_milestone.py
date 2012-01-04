@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test milestone views."""
@@ -7,17 +7,14 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from testtools.matchers import (
-    LessThan,
-    Matcher,
-    )
+from testtools.matchers import LessThan
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -29,6 +26,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
@@ -264,7 +262,8 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # We look at the page as someone who is a member of a team and the
         # team is subscribed to the bugs, so that we don't get trivial
         # shortcuts avoiding queries : test the worst case.
-        subscribed_team = self.factory.makeTeam()
+        subscribed_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         viewer = self.factory.makePerson(password="test")
         with person_logged_in(subscribed_team.teamowner):
             subscribed_team.addMember(viewer, subscribed_team.teamowner)
@@ -273,7 +272,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         milestone_url = canonical_url(milestone)
         browser = self.getUserBrowser(user=viewer)
         # Seed the cookie cache and any other cross-request state we may gain
-        # in future.  See canonical.launchpad.webapp.serssion: _get_secret.
+        # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
         collector = QueryCollector()
         collector.register()

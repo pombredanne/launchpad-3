@@ -30,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -45,13 +45,14 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                                  IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IQuestionTarget):
+                                 IQuestionTarget, IHasDrivers):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -82,8 +83,14 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    is_official = Attribute(
+        'Is this source package officially in the distribution?')
+
     summary = Attribute(
         'The summary of binary packages built from this package')
+
+    binary_names = Attribute(
+        'A list of binary package names built from this package.')
 
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
@@ -115,6 +122,8 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     po_message_count = Attribute(
         "Number of translations matching the distribution and "
         "sourcepackagename of the IDistributionSourcePackage.")
+
+    drivers = Attribute("The drivers for the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this

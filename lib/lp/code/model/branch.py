@@ -47,27 +47,12 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp import urlappend
+from lp import _
 from lp.app.errors import UserCannotUnsubscribePerson
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPrivacy,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -141,15 +126,31 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import urlappend
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -179,6 +180,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):
@@ -218,7 +221,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
+        storm_validator=validate_person, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -941,7 +944,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            if subscription.person.isTeam():
+            if subscription.person.is_team:
                 rationale = 'Subscriber @%s' % subscription.person.name
             else:
                 rationale = 'Subscriber'
@@ -1125,6 +1128,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
+        getUtility(IAccessPolicyArtifactSource).delete(self)
 
         # Now destroy the branch.
         branch_id = self.id

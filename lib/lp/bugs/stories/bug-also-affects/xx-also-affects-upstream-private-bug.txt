@@ -1,20 +1,35 @@
-= Notification of Confidentiality on Upstream Bugfix Requests =
+Notification of Confidentiality on Upstream Bugfix Requests
+===========================================================
 
 When a user files an upstream bugfix request against a bug that is
 confidential but not a security vulnerability, the user will be told that the
 upstream bug supervisor won't be notified. They will also be given a link to
 the Subscribe someone else page.
 
+We are moving away from allowing private bugs to affect multiple projects.
+This is required still for some teams until they update their tools and
+processes. So we need to use a feature flag to perform the next tests.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on',
+    ...     }
+    >>> privacy_flags = FeatureFixture(feature_flag)
+    >>> privacy_flags.setUp()
+
     >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = 'name16'
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
     >>> admin_browser.getControl(
     ...     'This bug report should be private').selected = True
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12/'
+    ...     '+choose-affected-product')
     >>> admin_browser.getControl('Project:').value = 'firefox'
     >>> admin_browser.getControl('Continue').click()
 
@@ -26,3 +41,4 @@ the Subscribe someone else page.
     >>> 'Page not found' not in admin_browser.contents
     True
 
+    >>> privacy_flags.cleanUp()

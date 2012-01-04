@@ -6,7 +6,9 @@ start = lpbugs
 
 boolean = "True" | "False"
 lpname = xsd:string { pattern = "[a-z0-9][a-z0-9\+\.\-]*" }
+lpbugname = xsd:string { pattern = "[a-z][a-z0-9\+\.\-]*" }
 cvename = xsd:string { pattern = "(19|20)[0-9][0-9]-[0-9][0-9][0-9][0-9]" }
+non_empty_text = xsd:string { minLength = "1" }
 
 # XXX: jamesh 2006-04-11 bug=105401:
 # These status and importance values need to be kept in sync with the
@@ -35,10 +37,15 @@ importance = (
 # Content model for a person element.  The element content is the
 # person's name.  For successful bug import, an email address must be
 # provided.
-person = (
+person_nobody = (
+  attribute name { string "nobody" })
+person_normal = (
   attribute name { lpname }?,
-  attribute email { text }?,
+  attribute email { non_empty_text },
   text)
+person = (
+  person_nobody |
+  person_normal)
 
 lpbugs = element launchpad-bugs { bug* }
 
@@ -48,7 +55,7 @@ bug = element bug {
   element security_related { boolean }? &
   element duplicateof { xsd:integer }? &
   element datecreated { xsd:dateTime } &
-  element nickname { lpname }? &
+  element nickname { lpbugname }? &
   # The following will likely be renamed summary in a future version.
   element title { text } &
   element description { text } &
@@ -89,9 +96,9 @@ comment = element comment {
 attachment = element attachment {
   attribute href { xsd:anyURI }? &
   element type { "PATCH" | "UNSPECIFIED" }? &
-  element filename { text }? &
+  element filename { non_empty_text }? &
   # The following will likely be renamed summary in a future version.
   element title { text }? &
   element mimetype { text }? &
-  element contents { xsd:base64Binary }
+  element contents { xsd:base64Binary { minLength = "1" } }
 }

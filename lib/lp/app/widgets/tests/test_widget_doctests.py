@@ -6,7 +6,7 @@ __metaclass__ = type
 import doctest
 import unittest
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 def test_suite():

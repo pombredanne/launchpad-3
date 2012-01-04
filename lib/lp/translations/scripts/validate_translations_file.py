@@ -13,7 +13,7 @@ import logging
 from optparse import OptionParser
 import os.path
 
-from canonical.launchpad import scripts
+from lp.services import scripts
 from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.mozilla_dtd_parser import DtdFile
 from lp.translations.utilities.mozilla_xpi_importer import (

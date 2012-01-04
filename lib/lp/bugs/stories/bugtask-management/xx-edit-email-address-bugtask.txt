@@ -1,16 +1,19 @@
 = Editing Email Address bugtasks =
 
+    >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def widget_visibility(user, url):
+    ...     naked_user = removeSecurityProxy(user)
+    ...     naked_email = removeSecurityProxy(user.preferredemail)
     ...     browser = setupBrowser(
-    ...         "Basic %s:test"
-    ...         % removeSecurityProxy(user.preferredemail).email)
+    ...         "Basic %s:test" % naked_email.email)
+    ...     transaction.commit()
+    ...     logout()
     ...     browser.open(url)
     ...     try:
     ...         browser.getControl("Status")
@@ -58,13 +61,10 @@ The product owner cannot see the Status or Importance widgets:
 
     >>> login("foo.bar@canonical.com")
     >>> gnome_terminal = getUtility(IProductSet).getByName("gnome-terminal")
-    >>> logout()
 
     >>> login(ANONYMOUS)
     >>> gnome_terminal.owner.name
     u'name12'
-    >>> logout()
-
     >>> print_widget_visibility(
     ...     user=gnome_terminal.owner,
     ...     url=('http://bugs.launchpad.dev/'
@@ -76,8 +76,6 @@ Nor can an ordinary user:
 
     >>> login("foo.bar@canonical.com")
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
-    >>> logout()
-
     >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'
@@ -89,9 +87,6 @@ And the bug supervisor can't see the widgets either.
 
     >>> login("foo.bar@canonical.com")
     >>> gnome_terminal.setBugSupervisor(no_priv, no_priv)
-    >>> flush_database_updates()
-    >>> logout()
-
     >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'
@@ -125,12 +120,10 @@ The owner can see the Status and Importance widgets.
 
     >>> login("foo.bar@canonical.com")
     >>> alsa_utils = getUtility(IProductSet).getByName("alsa-utils")
-    >>> logout()
 
     >>> login(ANONYMOUS)
     >>> alsa_utils.owner.name
     u'mark'
-    >>> logout()
 
     >>> print_widget_visibility(
     ...     user=alsa_utils.owner,
@@ -145,7 +138,6 @@ the importance of a bugtask in Alsa Utils.
 
     >>> login("foo.bar@canonical.com")
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
-    >>> logout()
 
     >>> print_widget_visibility(
     ...     user=no_priv,
@@ -158,9 +150,6 @@ A bug supervisor can see both.
 
     >>> login("foo.bar@canonical.com")
     >>> alsa_utils.setBugSupervisor(no_priv, no_priv)
-    >>> flush_database_updates()
-    >>> logout()
-
     >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'

@@ -10,9 +10,6 @@ from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.flags import (
     documented_flags,
@@ -25,11 +22,14 @@ from lp.services.features.scopes import (
     HANDLERS,
     undocumented_scopes,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     TestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 
 
@@ -44,7 +44,6 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
-        url = self.getFeatureInfoUrl()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
@@ -64,7 +63,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())
         for record in flag_info:
-            for item in record:
+            for item in record[:4]:
                 self.assertThat(browser.contents, Contains(item))
 
     def test_value_domain_documentation_displayed(self):

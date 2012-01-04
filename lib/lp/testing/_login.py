@@ -14,7 +14,6 @@ __all__ = [
     'login_person',
     'login_team',
     'logout',
-    'is_logged_in',
     'person_logged_in',
     'run_with_login',
     'with_anonymous_login',
@@ -31,32 +30,21 @@ from zope.security.management import (
     thread_local as zope_security_thread_local,
     )
 
-from canonical.launchpad.webapp.interaction import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.utils import decorate_with
+from lp.services.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.utils import decorate_with
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing.sampledata import ADMIN_EMAIL
-
-
-_logged_in = False
-
-
-def is_logged_in():
-    global _logged_in
-    return _logged_in
 
 
 def _test_login_impl(participation):
     # Common implementation of the test login wrappers.
-    # It sets the global _logged_in flag and create a default
-    # participation if None was specified.
-    global _logged_in
-    _logged_in = True
+    # It creates a default participation if None was specified.
 
     if participation is None:
         # we use the main site as the host name.  This is a guess, to make
@@ -71,7 +59,7 @@ def _test_login_impl(participation):
 def login(email, participation=None):
     """Simulates a login, using the specified email.
 
-    If the canonical.launchpad.ftests.ANONYMOUS constant is supplied
+    If the lp.testing.ANONYMOUS constant is supplied
     as the email, you'll be logged in as the anonymous user.
 
     You can optionally pass in a participation to be used.  If no
@@ -141,11 +129,9 @@ def logout():
     """Tear down after login(...), ending the current interaction.
 
     Note that this is done automatically in
-    canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
+    LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
-    global _logged_in
-    _logged_in = False
     endInteraction()
 
 

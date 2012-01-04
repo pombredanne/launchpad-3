@@ -20,7 +20,7 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.testing import ANONYMOUS
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -211,7 +211,7 @@ also reactivate the project at the same time.
 He encounters an error, though, as the project does not have a bug
 supervisor set, which is required for turning on private bugs.
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> for error in view.errors:
     ...     print extract_text(error)
     Set a bug supervisor for this project first.
@@ -368,7 +368,7 @@ Adding a product series
 Drivers, which include project driver and owners can access the
 +addseries view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login_person(firefox.owner)
     >>> view = create_view(firefox, name='+addseries')
@@ -447,7 +447,7 @@ Product index view
 The index page of a product only shows the application portlets that it
 officially supports.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner

@@ -35,18 +35,6 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -64,15 +52,25 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
     )
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 
 
 class StructuralSubscriptionNavigation(Navigation):
@@ -498,7 +496,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
             info[target] = record
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
-            is_team = subscriber.isTeam()
+            is_team = subscriber.is_team
             user_is_team_admin = (
                 is_team and subscriber in administered_teams)
             team_has_contact_address = (

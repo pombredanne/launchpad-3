@@ -7,16 +7,16 @@ Run the doctests.
 
 import os
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.testing import build_test_suite
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    GoogleLaunchpadFunctionalLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    GoogleLaunchpadFunctionalLayer,
-    )
-from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -27,6 +27,11 @@ special = {
         '../doc/google-searchservice.txt',
         setUp=setUp, tearDown=tearDown,
         layer=GoogleLaunchpadFunctionalLayer,),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #     '../doc/google-service-stub.txt',
+    #     layer=GoogleServiceLayer,),
     }
 
 

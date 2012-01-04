@@ -20,24 +20,6 @@ from zope.component import (
 from zope.contenttype import guess_content_type
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    custom_widget,
-    GetitemNavigation,
-    Navigation,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -50,6 +32,22 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachmentIsPatchConfirmationForm,
     IBugAttachmentSet,
     )
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
+from lp.services.webapp import (
+    canonical_url,
+    custom_widget,
+    GetitemNavigation,
+    Navigation,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from lp.services.webapp.menu import structured
 
 
 class BugAttachmentContentCheck:
@@ -183,10 +181,9 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
 
     @property
     def label(self):
-        return smartquote('Bug #%d - Edit attachment "%s"') % (
-            self.context.bug.id, self.context.title)
+        return smartquote('Edit attachment "%s"') % self.context.title
 
-    page_title = label
+    page_title = 'Edit attachment'
 
 
 class BugAttachmentPatchConfirmationView(LaunchpadFormView):
@@ -213,10 +210,10 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
 
     @property
     def label(self):
-        return smartquote('Bug #%d - Confirm attachment type of "%s"') % (
-            self.context.bug.id, self.context.title)
+        return smartquote('Confirm attachment type of "%s"') % (
+            self.context.title)
 
-    page_title = label
+    page_title = 'Confirm attachment type'
 
     @action('Change', name='change')
     def change_action(self, action, data):

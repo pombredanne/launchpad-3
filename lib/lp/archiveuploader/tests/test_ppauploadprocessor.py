@@ -17,10 +17,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
@@ -28,6 +24,9 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -42,6 +41,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
@@ -1029,16 +1029,16 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # errors.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different '
-            'contents. See more information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different contents. See more '
-            'information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'Files specified in DSC are broken or missing, skipping package '
-            'unpack verification.')
+            u'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different '
+            u'contents. See more information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different contents. See more '
+            u'information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'Files specified in DSC are broken or missing, skipping package '
+            u'unpack verification.')
 
         # Also, the email generated should be sane.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()

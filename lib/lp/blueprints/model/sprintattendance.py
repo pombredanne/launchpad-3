@@ -15,9 +15,9 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.datetimecol import UtcDateTimeCol
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.stormbase import StormBase
 
 

@@ -18,18 +18,15 @@ import sys
 import urllib
 
 from boto.exception import EC2ResponseError
-from devscripts.ec2test.session import EC2SessionName
 import paramiko
+
+from devscripts.ec2test.session import EC2SessionName
 
 
 VALID_AMI_OWNERS = {
     # Amazon account number: name/nickname (only for logging).
     '255383312499': 'gary',
     '559320013529': 'flacoste',
-    '200337130613': 'mwhudson',
-    '889698597288': 'henninge',
-    '366009196755': 'salgado',
-    '036590675370': 'jml',
     '038531743404': 'jelmer',
     '444667466231': 'allenap',
     '441991801793': 'gmb',
@@ -39,6 +36,8 @@ VALID_AMI_OWNERS = {
     '424228475252': 'wallyworld',
     '292290876294': 'stevenk',
     '259696152397': 'bac',
+    '873925794399': 'wgrant',
+    '957911449157': 'mbp',
     # ...anyone else want in on the fun?
     }
 

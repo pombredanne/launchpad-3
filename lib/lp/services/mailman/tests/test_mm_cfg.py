@@ -12,11 +12,11 @@ from Mailman import (
     Utils,
     )
 
-from canonical.config import config
-from canonical.testing.layers import FunctionalLayer
+from lp.services.config import config
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.monkeypatches import monkey_patch
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class TestMMCfgDefaultsTestCase(TestCase):
@@ -84,6 +84,15 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         host, port = config.mailman.smtp.split(':')
         self.assertEqual(host, mm_cfg.SMTPHOST)
         self.assertEqual(int(port), mm_cfg.SMTPPORT)
+
+    def test_smtp_max_config(self):
+        # Mailman SMTP max limits are configured from the LP config.
+        self.assertEqual(
+            config.mailman.smtp_max_rcpts,
+            mm_cfg.SMTP_MAX_RCPTS)
+        self.assertEqual(
+            config.mailman.smtp_max_sesions_per_connection,
+            mm_cfg.SMTP_MAX_SESSIONS_PER_CONNECTION)
 
     def test_xmlrpc_server(self):
         # Launchpad's smtp config values.

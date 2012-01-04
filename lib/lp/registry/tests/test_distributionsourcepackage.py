@@ -5,24 +5,31 @@
 
 __metaclass__ = type
 
+from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     DistributionSourcePackageInDatabase,
     )
 from lp.registry.model.karma import KarmaTotalCache
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDistributionSourcePackage(TestCaseWithFactory):
@@ -41,6 +48,19 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.factory.makeSourcePackage(distroseries=distribution)
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
+
+    def test_binary_names_built(self):
+        # The list contains the names of the built binaries.
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distribution = bpph.distroarchseries.distroseries.distribution
+        spn = bpph.binarypackagerelease.build.source_package_release.name
+        dsp = distribution.getSourcePackage(spn)
+        self.assertEqual([bpph.binarypackagerelease.name], dsp.binary_names)
+
+    def test_binary_names_unbuilt(self):
+        # The list is empty where there are no built binaries.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual([], dsp.binary_names)
 
     def test_ensure_spph_creates_a_dsp_in_db(self):
         # The DSP.ensure() class method creates a persistent instance
@@ -114,6 +134,32 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         transaction.commit()
         dsp = sp.distribution_sourcepackage
         self.assertTrue(dsp.delete())
+
+    def test_is_official_with_db_true(self):
+        # A DSP is official when it is represented in the database.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertTrue(dsp.is_official)
+
+    def test_is_official_without_db_false(self):
+        # A DSP is not official if it is virtual.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=False)
+        self.assertFalse(dsp.is_official)
+
+    def test_drivers_are_distributions(self):
+        # DSP.drivers returns the drivers for the distribution.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        self.assertNotEqual([], distribution.drivers)
+        self.assertEqual(dsp.drivers, distribution.drivers)
+
+    def test_personHasDriverRights(self):
+        # A distribution driver has driver permissions on a DSP.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        driver = distribution.drivers[0]
+        self.assertTrue(dsp.personHasDriverRights(driver))
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
@@ -239,3 +285,185 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             archive.name for archive in related_archives]
 
         self.assertEqual(related_archive_names, ['gedit-beta'])
+
+
+class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_mapping_cache_cleared_on_abort(self):
+        # DistributionSourcePackageInDatabase._cache is cleared when a
+        # transaction is aborted.
+        DistributionSourcePackageInDatabase._cache["Frank"] = "Sinatra"
+        transaction.abort()
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_mapping_cache_cleared_on_commit(self):
+        # DistributionSourcePackageInDatabase._cache is cleared when a
+        # transaction is committed.
+        DistributionSourcePackageInDatabase._cache["Frank"] = "Sinatra"
+        transaction.commit()
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_new(self):
+        # DistributionSourcePackageInDatabase.new() creates a new DSP, adds it
+        # to the store, and updates the mapping cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        self.assertIs(Store.of(distribution), Store.of(dsp))
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
+
+    def test_getDirect_not_found(self):
+        # DistributionSourcePackageInDatabase.getDirect() returns None if a
+        # DSP does not exist in the database. It does not modify the mapping
+        # cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp = DistributionSourcePackageInDatabase.getDirect(
+                distribution, sourcepackagename)
+            self.assertIs(None, dsp)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_getDirect_found(self):
+        # DistributionSourcePackageInDatabase.getDirect() returns the
+        # DSPInDatabase if one already exists in the database. It also adds
+        # the new mapping to the mapping cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp_found = DistributionSourcePackageInDatabase.getDirect(
+                dsp.distribution, dsp.sourcepackagename)
+            self.assertIs(dsp, dsp_found)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_not_cached_and_not_found(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # not exist in the database and no mapping cache entry exists for
+        # it. It does not modify the mapping cache.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(None, dsp)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_cached_and_not_found(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # not exist in the database for a stale mapping cache entry.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        # Enter a stale entry in the mapping cache.
+        stale_dsp_cache_key = distribution.id, sourcepackagename.id
+        DistributionSourcePackageInDatabase._cache[stale_dsp_cache_key] = -123
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(None, dsp)
+        # A stale mapping means that we have to issue two queries: the first
+        # queries for the stale DSP from the database, the second gets the
+        # correct DSP (or None).
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+    def test_get_cached_and_not_found_with_bogus_dsp(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # exist in the database for a mapping cache entry, but the DSP
+        # discovered does not match the mapping cache key.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        # Put a bogus entry into the mapping cache.
+        bogus_dsp = DistributionSourcePackageInDatabase.new(
+            distribution, self.factory.makeSourcePackageName())
+        bogus_dsp_cache_key = distribution.id, sourcepackagename.id
+        DistributionSourcePackageInDatabase._cache[
+            bogus_dsp_cache_key] = bogus_dsp.id
+        # Invalidate the bogus DSP from Storm's cache.
+        Store.of(bogus_dsp).invalidate(bogus_dsp)
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(None, dsp)
+        # A stale mapping means that we have to issue two queries: the first
+        # gets the bogus DSP from the database, the second gets the correct
+        # DSP (or None).
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+    def test_get_cached_and_not_found_with_bogus_dsp_in_storm_cache(self):
+        # DistributionSourcePackageInDatabase.get() returns None if a DSP does
+        # exist in the database for a mapping cache entry, but the DSP
+        # discovered does not match the mapping cache key.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        # Put a bogus entry into the mapping cache.
+        bogus_dsp = DistributionSourcePackageInDatabase.new(
+            distribution, self.factory.makeSourcePackageName())
+        bogus_dsp_cache_key = distribution.id, sourcepackagename.id
+        DistributionSourcePackageInDatabase._cache[
+            bogus_dsp_cache_key] = bogus_dsp.id
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(None, dsp)
+        # A stale mapping means that we ordinarily have to issue two queries:
+        # the first gets the bogus DSP from the database, the second gets the
+        # correct DSP (or None). However, the bogus DSP is already in Storm's
+        # cache, so we issue only one query.
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_get_not_cached_and_found(self):
+        # DistributionSourcePackageInDatabase.get() returns the DSP if it's
+        # found in the database even if no mapping cache entry exists for
+        # it. It updates the mapping cache with this discovered information.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        # new() updates the mapping cache so we must clear it.
+        DistributionSourcePackageInDatabase._cache.clear()
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp_found = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(dsp, dsp_found)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(
+            {(distribution.id, sourcepackagename.id): dsp.id},
+            DistributionSourcePackageInDatabase._cache.items())
+
+    def test_get_cached_and_found(self):
+        # DistributionSourcePackageInDatabase.get() returns the DSP if it's
+        # found in the database from a good mapping cache entry.
+        distribution = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        dsp = DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename)
+        flush_database_updates()
+        with StormStatementRecorder() as recorder:
+            dsp_found = DistributionSourcePackageInDatabase.get(
+                distribution, sourcepackagename)
+            self.assertIs(dsp, dsp_found)
+        # Hurrah! This is what we're aiming for: a DSP that is in the mapping
+        # cache *and* in Storm's cache.
+        self.assertThat(recorder, HasQueryCount(Equals(0)))

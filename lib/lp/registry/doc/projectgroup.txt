@@ -6,7 +6,7 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import (
     ...     IProjectGroup,
     ...     IProjectGroupSet,
@@ -21,7 +21,6 @@ common external bug tracker.
     >>> login('admin@canonical.com')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> logout()
     >>> login('test@canonical.com')
     >>> transaction.commit()
 
@@ -88,7 +87,7 @@ way of hiding bogus projects, without actually deleting them from the
 db, since the __getitem__ method of IProjectGroupSet is used to traverse to
 the project.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login("foo.bar@canonical.com")
     >>> gnome.active = False
     >>> flush_database_updates()
@@ -449,4 +448,4 @@ ProjectGroup.getMilestone(name) returns the project milestone with the name
     >>> print milestone
     None
 
-For details see doc/milestone.txt and ftests/test_project_milestone.py.
+For details see doc/milestone.txt and tests/test_project_milestone.py.

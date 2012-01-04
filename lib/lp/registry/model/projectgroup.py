@@ -28,21 +28,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -55,6 +40,11 @@ from lp.answers.model.faq import (
 from lp.answers.model.question import QuestionTargetSearch
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -68,9 +58,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bug import (
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
@@ -84,7 +72,10 @@ from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
     )
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_or_closed_team,
+    validate_public_person,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import (
@@ -103,6 +94,16 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
@@ -127,7 +128,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_or_closed_team, notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -201,14 +202,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         return store.using(*origin).find(
             Product,
             Product.project == self.id,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 
     def has_translatable(self):

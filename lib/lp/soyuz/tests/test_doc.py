@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -9,19 +9,19 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import logout
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.config import config
+from lp.services.database.sqlbase import commit
+from lp.testing import logout
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 
@@ -42,8 +42,8 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database.emailaddress import EmailAddress
-    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    from lp.services.identity.model.emailaddress import EmailAddress
+    from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW

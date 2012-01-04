@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
@@ -18,6 +17,7 @@ from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestQuestionMessageVisibility(
@@ -50,7 +50,7 @@ class TestHideQuestionMessageControls(
 
     control_text = 'mark-spam-0'
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()

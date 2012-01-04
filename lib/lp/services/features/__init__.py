@@ -183,6 +183,8 @@ import threading
 
 
 __all__ = [
+    'currentScope',
+    'defaultFlagValue',
     'get_relevant_feature_controller',
     'getFeatureFlag',
     'install_feature_controller',
@@ -220,6 +222,23 @@ def getFeatureFlag(flag):
     if features is None:
         return None
     return features.getFlag(flag)
+
+
+def currentScope(flag):
+    """Get the current scope of the flag for this thread's scopes."""
+    # Workaround for bug 631884 - features have two homes, threads and
+    # requests.
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.currentScope(flag)
+
+
+def defaultFlagValue(flag):
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.defaultFlagValue(flag)
 
 
 def make_script_feature_controller(script_name):

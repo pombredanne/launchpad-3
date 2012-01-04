@@ -8,11 +8,12 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.database.sqlbase import cursor
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.database.sqlbase import cursor
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BranchPrivacyTriggersTestCase(unittest.TestCase):
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -24,11 +25,14 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
         # 3 is private
         # 4 stacked on 3 at insert time
         # 2 stacked on 5
+        # 6 stacked on 1 at insert time
         cur = cursor()
-        for x in range(6):
+        for x in range(7):
             is_private = 'True' if x == 3 else 'False'
             if x == 4:
                 stacked_on = self.branch_ids[3]
+            elif x == 6:
+                stacked_on = self.branch_ids[1]
             else:
                 stacked_on = 'NULL'
             cur.execute("""
@@ -88,6 +92,7 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
         self.check_branch_privacy(1, False, False)
         self.check_branch_privacy(3, True, True)
         self.check_branch_privacy(4, False, True)
+        self.check_branch_privacy(6, False, False)
 
     def testSetStackedOn(self):
         # Stack 1 on 3 which is private.

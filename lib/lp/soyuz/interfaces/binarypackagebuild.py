@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -27,6 +27,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     )
 from lazr.restful.fields import Reference
@@ -41,7 +42,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -118,6 +119,12 @@ class IBinaryPackageBuildView(IPackageBuild):
             title=_("Can Be Retried"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be retried.")))
+
+    can_be_cancelled = exported(
+        Bool(
+            title=_("Can Be Cancelled"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be cancelled.")))
 
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
@@ -221,6 +228,22 @@ class IBinaryPackageBuildEdit(Interface):
 
         Build record loses its history, is moved to NEEDSBUILD and a new
         non-scored BuildQueue entry is created for it.
+        """
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def cancel():
+        """Cancel the build if it is either pending or in progress.
+
+        Call the can_be_cancelled() method prior to this one to find out if
+        cancelling the build is possible.
+
+        If the build is in progress, it is marked as CANCELLING until the
+        buildd manager terminates the build and marks it CANCELLED. If the
+        build is not in progress, it is marked CANCELLED immediately and is
+        removed from the build queue.
+
+        If the build is not in a cancellable state, this method is a no-op.
         """
 
 
@@ -401,6 +424,11 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         'archseries' argument should be a list of DistroArchSeries and it is
         asserted to not be None/empty.
+        """
+
+    def preloadBuildsData(builds):
+        """Prefetch the data related to the builds.
+
         """
 
 

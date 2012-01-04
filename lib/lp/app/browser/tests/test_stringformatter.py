@@ -9,17 +9,22 @@ from doctest import DocTestSuite
 from textwrap import dedent
 import unittest
 
+from testtools.matchers import (
+    Equals,
+    Matcher,
+    )
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import find_tags_by_class
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
     )
+from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tags_by_class
 
 
 def test_split_paragraphs():
@@ -399,6 +404,51 @@ class TestOOPSFormatter(TestCase):
             expected_string, formatted_string,
             "Formatted string should be '%s', was '%s'" % (
                 expected_string, formatted_string))
+
+
+class MarksDownAs(Matcher):
+
+    def __init__(self, expected_html):
+        self.expected_html = expected_html
+
+    def match(self, input_string):
+        return Equals(self.expected_html).match(
+            FormattersAPI(input_string).markdown())
+
+
+class TestMarkdownDisabled(TestCase):
+    """Feature flag can turn Markdown stuff off.
+    """
+
+    layer = DatabaseFunctionalLayer  # Fixtures need the database for now
+
+    def setUp(self):
+        super(TestMarkdownDisabled, self).setUp()
+        self.useFixture(FeatureFixture({'markdown.enabled': None}))
+
+    def test_plain_text(self):
+        self.assertThat(
+            'hello **simple** world',
+            MarksDownAs('<p>hello **simple** world</p>'))
+
+
+class TestMarkdown(TestCase):
+    """Test for Markdown integration within Launchpad.
+
+    Not an exhaustive test, more of a check for our integration and
+    configuration.
+    """
+
+    layer = DatabaseFunctionalLayer  # Fixtures need the database for now
+
+    def setUp(self):
+        super(TestMarkdown, self).setUp()
+        self.useFixture(FeatureFixture({'markdown.enabled': 'on'}))
+
+    def test_plain_text(self):
+        self.assertThat(
+            'hello world',
+            MarksDownAs('<p>hello world</p>'))
 
 
 def test_suite():

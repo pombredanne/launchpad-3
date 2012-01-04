@@ -87,7 +87,7 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -186,7 +186,7 @@ warning about this.
 Evolution's package in Hoary has two current templates, both with PO as
 their native file format.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)

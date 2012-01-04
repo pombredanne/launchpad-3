@@ -8,19 +8,10 @@ __metaclass__ = type
 from datetime import datetime
 import unittest
 
+from lazr.restfulclient.errors import ClientError
+import pytz
 from storm.store import Store
 from zope.component import getUtility
-import pytz
-
-from canonical.launchpad.ftests import (
-    login,
-    )
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    DatabaseFunctionalLayer,
-    )
-from lazr.restfulclient.errors import ClientError
 
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
@@ -39,7 +30,12 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.milestone import MultipleProductReleases
 from lp.testing import (
     launchpadlib_for,
+    login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -342,7 +338,6 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when an exception
         # is raised when trying to create a product release when a milestone
         # already has one.
-        last_oops = globalErrorUtility.getLastOopsReport()
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
 
         project = launchpad.projects['evolution']
@@ -353,16 +348,7 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
             ClientError, milestone.createProductRelease, date_released=now)
 
         # no OOPS was generated as a result of the exception
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'A milestone can only have one ProductRelease.', e.content)
-
-
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main()

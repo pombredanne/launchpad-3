@@ -74,31 +74,7 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    searchbuilder,
-    )
-from canonical.launchpad.browser.feeds import (
-    BranchFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -106,9 +82,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import (
-    EnumChoiceWidget,
-    )
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -154,7 +128,32 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services import searchbuilder
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.feeds.browser import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
+from lp.services.helpers import truncate_text
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.menu import structured
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -442,6 +441,13 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def initialize(self):
         self.branch = self.context
         self.notices = []
+        # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = [self.branch.owner]
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", authorised_people)
         # Replace our context with a decorated branch, if it is not already
         # decorated.
         if not isinstance(self.context, DecoratedBranch):
@@ -641,9 +647,10 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
-    def svn_url_is_web(self):
-        """True if an imported branch's SVN URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN code import
+    def url_is_web(self):
+        """True if an imported branch's URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN, BZR, GIT or HG code
+        # import
         assert self.context.code_import
         url = self.context.code_import.url
         assert url
@@ -1146,15 +1153,12 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     class schema(Interface):
         use_template(
-            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
-        branch_type = copy_field(
-            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+            IBranch, include=['owner', 'name', 'lifecycle_status'])
 
     for_input = True
-    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
+    field_names = ['owner', 'name', 'lifecycle_status']
 
     branch = None
-    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     initial_focus_widget = 'name'
@@ -1183,27 +1187,17 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """
         return IPerson(self.context, self.user)
 
-    def showOptionalMarker(self, field_name):
-        """Don't show the optional marker for url."""
-        if field_name == 'url':
-            return False
-        else:
-            return LaunchpadFormView.showOptionalMarker(self, field_name)
-
     @action('Register Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
-            ui_branch_type = data['branch_type']
             namespace = self.target.getNamespace(data['owner'])
             self.branch = namespace.createBranch(
-                branch_type=BranchType.items[ui_branch_type.name],
+                branch_type=BranchType.HOSTED,
                 name=data['name'],
                 registrant=self.user,
-                url=data.get('url'),
+                url=None,
                 lifecycle_status=data['lifecycle_status'])
-            if self.branch.branch_type == BranchType.MIRRORED:
-                self.branch.requestMirror()
         except BranchCreationForbidden:
             self.addError(
                 "You are not allowed to create branches in %s." %
@@ -1220,36 +1214,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.setFieldError(
                 'owner',
                 'You are not a member of %s' % owner.displayname)
-
-        branch_type = data.get('branch_type')
-        # If branch_type failed to validate, then the rest of the method
-        # doesn't make any sense.
-        if branch_type is None:
-            return
-
-        # If the branch is a MIRRORED branch, then the url
-        # must be supplied, and if HOSTED the url must *not*
-        # be supplied.
-        url = data.get('url')
-        if branch_type == UICreatableBranchType.MIRRORED:
-            if url is None:
-                # If the url is not set due to url validation errors,
-                # there will be an error set for it.
-                error = self.getFieldError('url')
-                if not error:
-                    self.setFieldError(
-                        'url',
-                        'Branch URLs are required for Mirrored branches.')
-        elif branch_type == UICreatableBranchType.HOSTED:
-            if url is not None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs cannot be set for Hosted branches.')
-        elif branch_type == UICreatableBranchType.REMOTE:
-            # A remote location can, but doesn't have to be set.
-            pass
-        else:
-            raise AssertionError('Unknown branch type')
 
     @property
     def cancel_url(self):

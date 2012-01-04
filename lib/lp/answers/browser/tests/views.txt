@@ -4,7 +4,7 @@ Answer Tracker Pages
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -80,7 +80,7 @@ the form.
     # Setup a harness to easily test the view.
 
     >>> from lp.answers.browser.question import QuestionWorkflowView
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from lp.testing.deprecated import LaunchpadFormHarness
     >>> workflow_harness = LaunchpadFormHarness(
     ...     firefox_question, QuestionWorkflowView)
 
@@ -500,7 +500,7 @@ Launchpad--it is not restricted to the user's preferred languages.
 
     >>> view = create_initialized_view(question_three, name='+edit')
     >>> view.widgets['language'].vocabulary
-    <canonical.launchpad.vocabularies.dbobjects.LanguageVocabulary ...>
+    <lp.services.worlddata.vocabularies.LanguageVocabulary ...>
 
 In a similar manner, the sourcepackagename field can only be updated on
 a distribution question:
@@ -635,7 +635,7 @@ interested.
 
     >>> from lp.answers.browser.questiontarget import (
     ...     UserSupportLanguagesMixin)
-    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from lp.services.webapp import LaunchpadView
 
     >>> class UserSupportLanguagesView(UserSupportLanguagesMixin,
     ...                                LaunchpadView):
@@ -708,9 +708,6 @@ keeping those searchable.
     ...     def getDefaultFilter(self):
     ...         return dict(**self.default_filter)
 
-    # Set up a harness for easier testing.
-
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> search_view_harness = LaunchpadFormHarness(
     ...     ubuntu, MyCustomSearchQuestionsView)
 
@@ -736,7 +733,7 @@ searchResults() method. The returned results are batched.
 
     >>> questions = search_view.searchResults()
     >>> questions
-    <canonical.launchpad.webapp.batching.BatchNavigator ...>
+    <lp.services.webapp.batching.BatchNavigator ...>
 
     >>> for question in questions.batch:
     ...     print question.title.encode('us-ascii', 'backslashreplace')
@@ -858,7 +855,7 @@ the question listing table. Products display the default columns of
 Summary, Created, Submitter, Assignee, and Status.
 
     >>> from lp.answers.publisher import AnswersLayer
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> view = create_initialized_view(

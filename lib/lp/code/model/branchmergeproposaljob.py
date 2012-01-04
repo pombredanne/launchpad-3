@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -59,19 +59,12 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interaction import setupInteraction
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IPlacelessAuthUtility,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchHasPendingWrites,
+    UpdatePreviewDiffNotReady,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
@@ -101,6 +94,8 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -113,6 +108,15 @@ from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
+    )
+from lp.services.webapp import errorlog
+from lp.services.webapp.interaction import setupInteraction
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IPlacelessAuthUtility,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 
 
@@ -328,10 +332,6 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.target_branch.bzr_identity))
 
 
-class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
-
-
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
@@ -346,6 +346,10 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
+    retry_error_types = (BranchHasPendingWrites, )
+
+    max_retries = 20
+
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
@@ -356,18 +360,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             raise UpdatePreviewDiffNotReady(
                 'The target branch has no revisions.')
         if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
+            raise BranchHasPendingWrites(
                 'The source branch has pending writes.')
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IUpdatePreviewDiffJobSource`."""
-        errorlog.globalErrorUtility.configure('update_preview_diffs')
-        server = get_ro_server()
-        server.start_server()
-        yield
-        server.stop_server()
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
@@ -814,7 +808,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             if IUpdatePreviewDiffJob.providedBy(derived_job):
                 try:
                     derived_job.checkReady()
-                except UpdatePreviewDiffNotReady:
+                except (UpdatePreviewDiffNotReady, BranchHasPendingWrites):
                     # If the job was created under 15 minutes ago wait a bit.
                     minutes = (
                         config.codehosting.update_preview_diff_ready_timeout)

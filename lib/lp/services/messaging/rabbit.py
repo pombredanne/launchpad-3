@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    "connect",
+    "is_configured",
     "session",
     "unreliable_session",
     ]
@@ -12,6 +14,7 @@ __all__ = [
 from collections import deque
 from functools import partial
 import json
+import sys
 import threading
 import time
 
@@ -20,14 +23,14 @@ import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.messaging.interfaces import (
-    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
-    MessagingException,
     MessagingUnavailable,
+    QueueEmpty,
+    QueueNotFound,
     )
 
 
@@ -54,6 +57,28 @@ class RabbitSessionTransactionSync:
             self.session.reset()
 
 
+def is_configured():
+    """Return True if rabbit looks to be configured."""
+    return not (
+        config.rabbitmq.host is None or
+        config.rabbitmq.userid is None or
+        config.rabbitmq.password is None or
+        config.rabbitmq.virtual_host is None)
+
+
+def connect():
+    """Connect to AMQP if possible.
+
+    :raises MessagingUnavailable: If the configuration is incomplete.
+    """
+    if not is_configured():
+        raise MessagingUnavailable("Incomplete configuration")
+    return amqp.Connection(
+        host=config.rabbitmq.host, userid=config.rabbitmq.userid,
+        password=config.rabbitmq.password,
+        virtual_host=config.rabbitmq.virtual_host, insist=False)
+
+
 class RabbitSession(threading.local):
 
     implements(IMessageSession)
@@ -71,17 +96,11 @@ class RabbitSession(threading.local):
         transaction.manager.registerSynch(self._sync)
 
     @property
-    def connection(self):
-        """See `IMessageSession`.
-
-        Don't return closed connection.
-        """
-        if self._connection is None:
-            return None
-        elif self._connection.transport is None:
-            return None
-        else:
-            return self._connection
+    def is_connected(self):
+        """See `IMessageSession`."""
+        return (
+            self._connection is not None and
+            self._connection.transport is not None)
 
     def connect(self):
         """See `IMessageSession`.
@@ -90,15 +109,7 @@ class RabbitSession(threading.local):
         shared between threads.
         """
         if self._connection is None or self._connection.transport is None:
-            if (config.rabbitmq.host is None or
-                config.rabbitmq.userid is None or
-                config.rabbitmq.password is None or
-                config.rabbitmq.virtual_host is None):
-                raise MessagingUnavailable("Incomplete configuration")
-            self._connection = amqp.Connection(
-                host=config.rabbitmq.host, userid=config.rabbitmq.userid,
-                password=config.rabbitmq.password,
-                virtual_host=config.rabbitmq.virtual_host, insist=False)
+            self._connection = connect()
         return self._connection
 
     def disconnect(self):
@@ -142,36 +153,50 @@ class RabbitSession(threading.local):
 
 # Per-thread sessions.
 session = RabbitSession()
+session_finish_handler = (
+    lambda event: session.finish())
 
 
 class RabbitUnreliableSession(RabbitSession):
     """An "unreliable" `RabbitSession`.
 
     Unreliable in this case means that certain errors in deferred tasks are
-    silently suppressed, `AMQPException` in particular. This means that
-    services can continue to function even in the absence of a running and
-    fully functional message queue.
+    silently suppressed. This means that services can continue to function
+    even in the absence of a running and fully functional message queue.
+
+    Other types of errors are also caught because we don't want this
+    subsystem to destabilise other parts of Launchpad but we nonetheless
+    record OOPses for these.
+
+    XXX: We only suppress MessagingUnavailable for now because we want to
+    monitor this closely before we add more exceptions to the
+    suppressed_errors list. Potential candidates are `MessagingException`,
+    `IOError` or `amqp.AMQPException`.
     """
 
-    ignored_errors = (
-        IOError,
-        MessagingException,
-        amqp.AMQPException,
+    suppressed_errors = (
+        MessagingUnavailable,
         )
 
     def finish(self):
         """See `IMessageSession`.
 
-        Suppresses errors listed in `ignored_errors`.
+        Suppresses errors listed in `suppressed_errors`. Also suppresses
+        other errors but files an oops report for these.
         """
         try:
             super(RabbitUnreliableSession, self).finish()
-        except self.ignored_errors:
+        except self.suppressed_errors:
             pass
+        except Exception:
+            from lp.services.webapp import errorlog
+            errorlog.globalErrorUtility.raising(sys.exc_info())
 
 
 # Per-thread "unreliable" sessions.
 unreliable_session = RabbitUnreliableSession()
+unreliable_session_finish_handler = (
+    lambda event: unreliable_session.finish())
 
 
 class RabbitMessageBase:
@@ -207,6 +232,11 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def associateConsumerNow(self, consumer):
         """Only receive messages for requested routing key."""
+        # The queue will be auto-deleted 5 minutes after its last use.
+        # http://www.rabbitmq.com/extensions.html#queue-leases
+        self.channel.queue_declare(
+            consumer.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
         self.channel.queue_bind(
             queue=consumer.name, exchange=self.session.exchange,
             routing_key=self.key, nowait=False)
@@ -232,39 +262,27 @@ class RabbitQueue(RabbitMessageBase):
     def __init__(self, session, name):
         super(RabbitQueue, self).__init__(session)
         self.name = name
-        # The queue will be auto-deleted 5 minutes after the last
-        # use of the queue.
-        # http://www.rabbitmq.com/extensions.html#queue-leases
-        self.channel.queue_declare(
-            self.name, nowait=False, auto_delete=False,
-            arguments={"x-expires": 300000})  # 5 minutes.
 
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
 
         :param timeout: Wait a maximum of `timeout` seconds before giving up,
             trying at least once.
-        :raises EmptyQueue: if the timeout passes.
+        :raises QueueEmpty: if the timeout passes.
         """
-        starttime = time.time()
+        endtime = time.time() + timeout
         while True:
-            message = self.channel.basic_get(self.name)
-            if message is None:
-                if time.time() > (starttime + timeout):
-                    raise EmptyQueue()
-                time.sleep(0.1)
-            else:
-                data = json.loads(message.body)
-                self.channel.basic_ack(message.delivery_tag)
-                return data
-
-        # XXX The code below will be useful when we can implement this
-        # properly.
-        result = []
-
-        def callback(msg):
-            result.append(json.loads(msg.body))
-
-        self.channel.basic_consume(self.name, callback=callback)
-        self.channel.wait()
-        return result[0]
+            try:
+                message = self.channel.basic_get(self.name)
+                if message is None:
+                    if time.time() > endtime:
+                        raise QueueEmpty()
+                    time.sleep(0.1)
+                else:
+                    self.channel.basic_ack(message.delivery_tag)
+                    return json.loads(message.body)
+            except amqp.AMQPChannelException, error:
+                if error.amqp_reply_code == 404:
+                    raise QueueNotFound()
+                else:
+                    raise

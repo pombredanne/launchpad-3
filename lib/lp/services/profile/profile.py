@@ -35,17 +35,17 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
-from canonical.config import config
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import (
-    DisallowedStore,
-    IStartRequestEvent,
-    )
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.profile.mem import (
     memory,
     resident,
     )
-from lp.services.features import getFeatureFlag
+import lp.services.webapp.adapter as da
+from lp.services.webapp.interfaces import (
+    DisallowedStore,
+    IStartRequestEvent,
+    )
 
 
 class ProfilingOops(Exception):
@@ -209,10 +209,10 @@ def _maybe_profile(event):
     # still running.
     assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
-    _profilers.actions = actions
-    _profilers.profiling = True
     if config.profiling.profile_all_requests:
         actions['callgrind'] = ''
+    if config.profiling.memory_profile_log:
+        actions['memory_profile_start'] = (memory(), resident())
     if actions:
         if 'sql' in actions:
             condition = actions['sql']
@@ -222,8 +222,8 @@ def _maybe_profile(event):
         if 'show' in actions or available_profilers.intersection(actions):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
-    if config.profiling.memory_profile_log:
-        _profilers.memory_profile_start = (memory(), resident())
+        _profilers.profiling = True
+        _profilers.actions = actions
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
@@ -352,16 +352,29 @@ def end_request(event):
         template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
+    # Dump memory profiling info.
+    if 'memory_profile_start' in actions:
+        log = file(config.profiling.memory_profile_log, 'a')
+        vss_start, rss_start = actions.pop('memory_profile_start')
+        vss_end, rss_end = memory(), resident()
+        if oopsid is None:
+            oopsid = '-'
+        log.write('%s %s %s %f %d %d %d %d\n' % (
+            timestamp, pageid, oopsid, da.get_request_duration(),
+            vss_start, rss_start, vss_end, rss_end))
+        log.close()
     trace = None
     if 'sql' in actions:
         trace = da.stop_sql_logging() or ()
         # The trace is a list of dicts, each with the keys "sql" and "stack".
         # "sql" is a tuple of start time, stop time, database name (with a
-        # "SQL-" prefix), and sql statement.  "stack" is None or a tuple of
-        # filename, line number, function name, text, module name, optional
-        # supplement dict, and optional info string.  The supplement dict has
-        # keys 'source_url', 'line', 'column', 'expression', 'warnings' (an
-        # iterable), and 'extra', any of which may be None.
+        # "SQL-" prefix), sql statement and possibly a backtrace (backtraces
+        # are included when the timeline storm trace is installed).  "stack" is
+        # None or a tuple of filename, line number, function name, text, module
+        # name, optional supplement dict, and optional info string.  The
+        # supplement dict has keys 'source_url', 'line', 'column',
+        # 'expression', 'warnings' (an iterable), and 'extra', any of which may
+        # be None.
         top_sql = []
         top_python = []
         triggers = {}
@@ -372,7 +385,12 @@ def end_request(event):
             # Set up an identifier for each trace step.
             step['id'] = ix
             step['sql'] = dict(zip(
-                ('start', 'stop', 'name', 'statement'), step['sql']))
+                ('start', 'stop', 'name', 'statement', 'backtrace'),
+                step['sql']))
+            # NB: step['sql']['backtrace'] is a string backtrace, not a live
+            # stack: less flexible than what the profiler gathers, but cheaper
+            # to keep alive as it holds no references. For now, its not usable
+            # here.
             if step['stack'] is not None:
                 # Divide up the stack into the more unique (app) and less
                 # unique (db) bits.
@@ -483,18 +501,6 @@ def end_request(event):
         new_html = ''.join(
             (e_start, added_html, e_close_body, e_end))
         request.response.setResult(new_html)
-    # Dump memory profiling info.
-    if _profilers.memory_profile_start is not None:
-        log = file(config.profiling.memory_profile_log, 'a')
-        vss_start, rss_start = _profilers.memory_profile_start
-        _profilers.memory_profile_start = None
-        vss_end, rss_end = memory(), resident()
-        if oopsid is None:
-            oopsid = '-'
-        log.write('%s %s %s %f %d %d %d %d\n' % (
-            timestamp, pageid, oopsid, da.get_request_duration(),
-            vss_start, rss_start, vss_end, rss_end))
-        log.close()
 
 
 def get_desired_profile_actions(request):

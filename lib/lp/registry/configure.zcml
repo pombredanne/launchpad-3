@@ -69,7 +69,7 @@
             set_attributes="reviewed_by reviewer_comment"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamInvitationView">
+        class="lp.registry.browser.team.TeamInvitationView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -77,7 +77,7 @@
                 __call__"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamMembershipSelfRenewalView">
+        class="lp.registry.browser.team.TeamMembershipSelfRenewalView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -270,13 +270,10 @@
         factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
-
-    <facet
-        facet="overview">
 
         <!-- CodeofConduct -->
 
@@ -334,7 +331,6 @@
 
         <!-- string:${id} because id is an int -->
 
-    </facet>
     <class
         class="lp.registry.model.person.IrcID">
         <allow
@@ -416,21 +412,18 @@
     </class>
     <adapter
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
-
-    <facet
-        facet="answers"/>
 
     <!-- ProjectGroupSet-->
 
@@ -471,6 +464,7 @@
                 __getitem__
                 __ne__
                 _getOfficialTagClause
+                binary_names
                 bug_count
                 bugtasks
                 current_publishing_records
@@ -480,6 +474,7 @@
                 displayname
                 distribution
                 distro
+                drivers
                 findRelatedArchivePublications
                 findRelatedArchives
                 getMergeProposals
@@ -488,9 +483,11 @@
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
+                is_official
                 latest_overall_publication
                 name
                 official_bug_tags
+                personHasDriverRights
                 publishing_history
                 releases
                 sourcepackagename
@@ -530,8 +527,8 @@
         permission="zope.Public"/>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -599,12 +596,12 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.pillarset.PillarSetLink"
-        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
+        class="lp.services.webservice.pillarset.PillarSetLink"
+        provides="lp.services.webservice.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
+            interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
     </securedutility>
 
     <!-- SourcePackageName -->
@@ -628,8 +625,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <facet
-        facet="overview">
 
         <!-- Karma -->
 
@@ -704,9 +699,6 @@
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
         </securedutility>
-    </facet>
-    <facet
-        facet="overview">
 
         <!-- Poll -->
 
@@ -720,7 +712,7 @@
         </class>
 
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.poll.IPoll"
             factory="lp.registry.browser.poll.PollBreadcrumb"
             permission="zope.Public"/>
@@ -807,7 +799,6 @@
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCastSet"/>
         </securedutility>
-    </facet>
 
     <!-- Announcement -->
 
@@ -846,30 +837,28 @@
         <allow
             interface="lp.registry.interfaces.announcement.IAnnouncementSet"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- Person -->
 
         <adapter
-            provides="canonical.lazr.interfaces.IObjectPrivacy"
+            provides="lp.services.privacy.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.badge.IHasBadges"
+            provides="lp.app.browser.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+            factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
-            factory="lp.registry.browser.person.TeamBreadcrumb"
+            factory="lp.registry.browser.team.TeamBreadcrumb"
             permission="zope.Public"/>
 
         <adapter
@@ -923,14 +912,18 @@
             <allow
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
-                interface="lp.registry.interfaces.person.ITeamPublic"/>
-            <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
+                permission="launchpad.LimitedView"
+                interface="lp.registry.interfaces.person.IPersonLimitedView"/>
+            <require
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
+            <require
+                permission="launchpad.View"
+                interface="lp.registry.interfaces.person.ITeamPublic"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
@@ -939,9 +932,10 @@
                 interface="lp.registry.interfaces.person.IPersonEditRestricted"/>
             <require
                 permission="launchpad.Edit"
-                set_schema="lp.registry.interfaces.person.IPersonPublic
+                set_schema="lp.registry.interfaces.person.IPersonViewRestricted
+                            lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname"/>
+                set_attributes="displayname icon logo"/>
             <require
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
@@ -980,16 +974,15 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.MeLink"
-            provides="canonical.launchpad.rest.IMeLink">
+            class="lp.services.webservice.me.MeLink"
+            provides="lp.services.webservice.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
-                interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
+                interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
         </securedutility>
-    </facet>
     <adapter
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        for="lp.services.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
         factory="lp.registry.adapters.person_from_principal"/>
 
@@ -1087,7 +1080,7 @@
             interface="lp.registry.interfaces.mailinglist.IMailingListSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.systemhomes.MailingListApplication"
+        class="lp.systemhomes.MailingListApplication"
         provides="lp.registry.interfaces.mailinglist.IMailingListApplication">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingListApplication"/>
@@ -1195,7 +1188,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Edit"
             set_attributes="
@@ -1258,10 +1252,10 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
-                official_rosetta
                 translation_focus
                 translationgroup
-                translationpermission"/>
+                translationpermission
+                translations_usage"/>
         <require
             permission="zope.Public"
             attributes="
@@ -1335,15 +1329,15 @@
     </class>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.registry.publisher.LaunchpadProductContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProductSet"
         factory="lp.registry.browser.product.ProductSetBreadcrumb"
         permission="zope.Public"/>
@@ -1457,7 +1451,7 @@
 
     </class>
     <adapter
-        provides="canonical.launchpad.interfaces.launchpad.IHasExternalBugTracker"
+        provides="lp.bugs.interfaces.bugtracker.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1472,7 +1466,7 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
@@ -1513,7 +1507,8 @@
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
@@ -1548,10 +1543,11 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
-                official_rosetta
                 translationgroup
                 translationpermission
-                translation_focus"/>
+                translation_focus
+                translations_usage
+                "/>
 
         <!-- IHasAliases -->
 
@@ -1601,15 +1597,15 @@
     </class>
     <adapter
         for="lp.registry.interfaces.distribution.IDistribution"
-        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
-        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
+        provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
@@ -1751,8 +1747,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
+    <lp:help-folder folder="help" name="+help-registry" />
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
@@ -1814,7 +1809,7 @@
     </class>
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         factory="lp.registry.browser.distributionmirror.DistributionMirrorBreadcrumb"
         permission="zope.Public"/>
@@ -1909,7 +1904,7 @@
     <webservice:register module="lp.registry.interfaces.webservice" />
 
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         factory="lp.registry.browser.personproduct.PersonProductBreadcrumb"
         permission="zope.Public"/>
@@ -1930,4 +1925,41 @@
         for="lp.registry.interfaces.person.IPerson"
         provides="lp.registry.interfaces.role.IPersonRoles"
         factory="lp.registry.model.personroles.PersonRoles" />
+
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicy">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicy"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicySource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+        <require
+            permission="zope.Public"
+            set_attributes="policy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
 </configure>

@@ -49,12 +49,3 @@ database ID for the milestone, so we find the ID:
     ...     name='ubuntu_mozilla-firefox.milestone')
     >>> milestone_control.value = [str(milestone.id)]
     >>> name12_browser.getControl('Save Changes').click()
-
-Verify that the bug now has the milestone set on the view page:
-
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/'
-    ...     '+viewstatus')
-    >>> milestone_tag = find_tag_by_id(anon_browser.contents, 'milestone')
-    >>> print str(extract_text(milestone_tag))
-    sounder01

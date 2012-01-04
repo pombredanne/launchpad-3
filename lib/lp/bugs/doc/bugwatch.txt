@@ -267,7 +267,7 @@ we can confirm that an event is indeed fired off.
     ...     if bugtask.importance != old_bugtask.importance:
     ...         print "%s => %s" % (old_bugtask.importance.title,
     ...             bugtask.importance.title)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> event_listener = TestEventListener(
@@ -417,7 +417,7 @@ BugWatch's status or importance are updated. We can demonstrate this by
 creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.bugs.interfaces.bugtracker import (

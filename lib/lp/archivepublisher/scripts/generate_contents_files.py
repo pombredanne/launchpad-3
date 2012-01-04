@@ -13,11 +13,6 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.dbpolicy import (
-    DatabaseBlockedPolicy,
-    SlaveOnlyDatabasePolicy,
-    )
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -26,11 +21,16 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
+from lp.services.webapp.dbpolicy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 
 
@@ -87,7 +87,7 @@ def execute(logger, command, args=None):
     # and friends to provide "live" log output.  Simpler ways of running
     # commands tend to save it all up and then dump it at the end, or
     # have trouble logging it as neat lines.
-    stderr_logger = OutputLineHandler(logger.warn)
+    stderr_logger = OutputLineHandler(logger.info)
     stdout_logger = OutputLineHandler(logger.debug)
     receiver = ReturnCodeReceiver()
     spawner = CommandSpawner()

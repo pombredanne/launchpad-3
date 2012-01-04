@@ -22,7 +22,6 @@ branches that have been created in error.
     >>> browser = setupBrowser(auth="Basic alice@example.com:test")
     >>> browser.open('http://code.launchpad.dev/earthlynx')
     >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
@@ -60,7 +59,6 @@ the deleted branch's owner.
 
     >>> browser.open('http://code.launchpad.dev/~alice')
     >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> browser.getLink('Delete branch').click()

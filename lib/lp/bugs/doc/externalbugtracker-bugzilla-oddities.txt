@@ -14,7 +14,7 @@ Mozilla's Bugzilla is an Issuezilla instance here:
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
     >>> txn = LaunchpadZopelessLayer.txn

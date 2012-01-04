@@ -17,7 +17,6 @@ branch.
     >>> browser.open('http://code.launchpad.dev/~eric')
     >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'personal-junk'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly created
@@ -31,8 +30,8 @@ branches.
     Nearby
     Other branches owned by Eric
 
-Junk branches do not support merge proposals, so the "Branch Merges" section of
-the page should not be shown.
+Junk branches do not support merge proposals, so the "Branch Merges" section
+of the page should not be shown.
 
     >>> print find_tag_by_id(browser.contents, 'branch-merges')
     None
@@ -46,7 +45,6 @@ Junk branches can also be associated with a team.
     >>> browser.open('http://code.launchpad.dev/~vikings')
     >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'team-junk'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
 
     >>> print browser.url

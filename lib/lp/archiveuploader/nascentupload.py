@@ -23,7 +23,6 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -33,6 +32,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DdebBinaryUploadFile,
     DebBinaryUploadFile,
     SourceUploadFile,
+    UdebBinaryUploadFile,
     UploadError,
     UploadWarning,
     )
@@ -41,6 +41,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -178,6 +179,7 @@ class NascentUpload:
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
+            self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -347,9 +349,11 @@ class NascentUpload:
                     unmatched_ddebs[ddeb_key] = uploaded_file
 
         for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+            is_deb = isinstance(uploaded_file, DebBinaryUploadFile)
+            is_udeb = isinstance(uploaded_file, UdebBinaryUploadFile)
+            is_ddeb = isinstance(uploaded_file, DdebBinaryUploadFile)
+            # We need exactly a DEB or UDEB, not a DDEB.
+            if (is_deb or is_udeb) and not is_ddeb:
                 try:
                     matching_ddeb = unmatched_ddebs.pop(
                         (uploaded_file.package + '-dbgsym',
@@ -365,9 +369,23 @@ class NascentUpload:
                 "Orphaned debug packages: %s" % ', '.join(
                     '%s %s (%s)' % d for d in unmatched_ddebs))
 
+    def _overrideDDEBSs(self):
+        """Make sure that any DDEBs in the upload have the same overrides
+        as their counterpart DEBs.  This method needs to be called *after*
+        _matchDDEBS.
+
+        This is required so that domination can supersede both files in
+        lockstep.
+        """
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                if uploaded_file.deb_file is not None:
+                    self._overrideBinaryFile(uploaded_file,
+                                             uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #
+
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -376,9 +394,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject("".join(error.args).encode("utf8"))
+            self.reject("".join(error.args))
         except UploadWarning, error:
-            self.warn("".join(error.args).encode("utf8"))
+            self.warn("".join(error.args))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -398,9 +416,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject("".join(error.args).encode("utf8"))
+                self.reject("".join(error.args))
             elif isinstance(error, UploadWarning):
-                self.warn("".join(error.args).encode("utf8"))
+                self.warn("".join(error.args))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -637,7 +655,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
+        if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -697,7 +715,9 @@ class NascentUpload:
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,
             override.pocket.name))
+        self._overrideBinaryFile(uploaded_file, override)
 
+    def _overrideBinaryFile(self, uploaded_file, override):
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to

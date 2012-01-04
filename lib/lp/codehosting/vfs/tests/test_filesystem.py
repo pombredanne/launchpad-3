@@ -29,7 +29,7 @@ class TestFilesystem(TestCaseWithTransport):
     # and remove the ones that aren't needed.
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestFilesystem, self).setUp()
         self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()

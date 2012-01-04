@@ -39,6 +39,7 @@ At the top level we provide a collection of bugs.
     messages_collection_link: u'http://.../bugs/11/messages'
     name: None
     number_of_duplicates: 0
+    other_users_affected_count_with_dupes: 0
     owner_link: u'http://.../~name16'
     private: False
     resource_type_link: u'http://.../#bug'
@@ -119,7 +120,7 @@ bugs.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
     >>> login(ANONYMOUS)
@@ -623,8 +624,8 @@ Initially there are no nominations.
     >>> fooix.bug_supervisor = john
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
 
     >>> john_webservice = webservice_for_person(
     ...     john, permission=OAuthPermission.WRITE_PRIVATE)
@@ -2055,8 +2056,8 @@ For every branch we can also look at the bugs linked to it.
 Bug expiration
 --------------
 
-In addition to can_expire bugs have an isExpirable method to which a custom time
-period, days_old, can be passed.  This is then used with
+In addition to can_expire bugs have an isExpirable method to which a custom
+time period, days_old, can be passed.  This is then used with
 findExpirableBugTasks.  This allows projects to create their own janitor using
 a different period for bug expiration.
 

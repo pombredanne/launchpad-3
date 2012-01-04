@@ -10,8 +10,8 @@ from Mailman.Handlers import (
     LaunchpadHeaders,
     )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLaunchpadHeadersTestCase(MailmanTestCase):
