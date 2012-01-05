@@ -2418,6 +2418,27 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
     def test_removeCopyNotification_raises_for_not_failed(self):
         distroseries, archive1, archive2, requester, job = self.makeJob()
         
+        self.assertNotEqual(JobStatus.FAILED, job.status)
         with person_logged_in(archive2.owner):
             self.assertRaises(
                 AssertionError, archive2.removeCopyNotification, job.id)
+
+    def test_removeCopyNotification_raises_for_wrong_archive(self):
+        # If the job ID supplied is not for the context archive, an
+        # error should be raised.
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        job.start()
+        job.fail()
+
+        # Set up a second job in the other archive.
+        source = getUtility(IPlainPackageCopyJobSource)
+        job2 = source.create(
+            package_name="foo", source_archive=archive2,
+            target_archive=archive1, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job2.id)
