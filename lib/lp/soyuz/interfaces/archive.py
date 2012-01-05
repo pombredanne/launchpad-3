@@ -1435,6 +1435,21 @@ class IArchiveAppend(Interface):
         :return: The `IArchiveSubscriber` that was created.
         """
 
+    @operation_parameters(job_id=Int())
+    @export_write_operation()
+    def removeCopyNotification(job_id):
+        """Remove a copy notification that's displayed on the +packages page.
+
+        Copy notifications are shown on the +packages page when a
+        `PlainPackageCopyJob` is in progress or failed.  Calling this
+        method will delete failed jobs so they no longer appear on the
+        page.
+
+        You need to have upload privileges on the PPA to use this.
+
+        :param job_id: The ID of the `PlainPackageCopyJob` to be removed.
+        """
+
 
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
