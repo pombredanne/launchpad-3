@@ -2053,12 +2053,17 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
-        if (params.exclude_conjoined_tasks and
-            not (params.milestone or params.milestone_tag)):
-            raise ValueError(
-                "BugTaskSearchParam.exclude_conjoined cannot be True if "
-                "BugTaskSearchParam.milestone or "
-                "BugTaskSearchParam.milestone_tag is not set")
+        if params.exclude_conjoined_tasks:
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            if params.milestone_tag:
+                raise NotImplementedError(
+                    'Excluding conjoined tasks is not currently supported '
+                    'for milestone tags')
+            if not params.milestone:
+                raise ValueError(
+                    "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                    "BugTaskSearchParam.milestone is not set")
 
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
@@ -2095,8 +2100,8 @@ class BugTaskSet:
                             len(params.milestone_tag.tags))
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
-            # XXX frankban 2011-12-16 further investigation needed
-            # to make sure we can skip the _buildExcludeConjoinedClause call
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
             # if params.exclude_conjoined_tasks:
             #     tables, clauses = self._buildExcludeConjoinedClause(
             #         params.milestone_tag)
@@ -2902,12 +2907,19 @@ class BugTaskSet:
         kwargs = {
             'orderby': ['status', '-importance', 'id'],
             'omit_dupes': True,
-            'exclude_conjoined_tasks': True,
             }
         if IProjectGroupMilestoneTag.providedBy(milestone_data):
-            kwargs['milestone_tag'] = milestone_data
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            kwargs.update({
+                'exclude_conjoined_tasks': False,
+                'milestone_tag': milestone_data,
+                })
         else:
-            kwargs['milestone'] = milestone_data
+            kwargs.update({
+                'exclude_conjoined_tasks': True,
+                'milestone': milestone_data,
+                })
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
