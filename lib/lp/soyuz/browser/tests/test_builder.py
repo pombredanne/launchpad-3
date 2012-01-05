@@ -67,10 +67,10 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
     layer = LaunchpadFunctionalLayer
 
-    # XXX rvb: the 2 queries per build are the result of the calls to
+    # XXX rvb: the query issued per build is the result of the call to
     # build.buildqueue_record.  It was decided not to make it a cachedproperty
-    # because the code relies on the fact that the property always returns the
-    # current record.
+    # because the code relies on the fact that this property always returns
+    # the current record.
 
     def test_builders_binary_package_build_query_count(self):
         def create_build():
