@@ -799,6 +799,24 @@ class TestPersonSet(TestCaseWithFactory):
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
+    def test_latest_teams_public(self):
+        # Anyone can see the latest 5 teams if they are public.
+        teams = []
+        for num in xrange(1, 7):
+            teams.append(self.factory.makeTeam(name='team-%s' % num))
+        teams.reverse()
+        result = self.person_set.latest_teams()
+        self.assertEqual(teams[0:5], list(result))
+
+    def test_latest_teams_limit(self):
+        # The limit controls the number of latest teams returned.
+        teams = []
+        for num in xrange(1, 7):
+            teams.append(self.factory.makeTeam(name='team-%s' % num))
+        teams.reverse()
+        result = self.person_set.latest_teams(limit=3)
+        self.assertEqual(teams[0:3], list(result))
+
 
 class KarmaTestMixin:
     """Helper methods for setting karma."""
