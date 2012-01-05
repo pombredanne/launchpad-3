@@ -26,7 +26,6 @@ __all__ = [
     'NavigationMenu',
     'nearest',
     'redirection',
-    'safe_action',
     'sorted_dotted_numbers',
     'sorted_version_numbers',
     'StandardLaunchpadFacets',
@@ -42,7 +41,6 @@ __all__ = [
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
-    safe_action,
     )
 from lp.services.webapp.menu import (
     ApplicationMenu,

@@ -528,7 +528,7 @@ via POST requests.  There are a number of reasons for this:
 However, there are cases where a form action is safe (e.g. a "search"
 action).  Those actions can be marked as such:
 
-  >>> from lp.services.webapp import safe_action
+  >>> from lp.app.browser.launchpadform import safe_action
   >>> class UnsafeActionTestView(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['name']
