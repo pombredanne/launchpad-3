@@ -137,7 +137,7 @@ class TestSyncNotification(TestCaseWithFactory):
         builds that the original Debian maintainers are not responsible for.
 
         In a situation like that, we should not bother the maintainer with
-        the failure.
+        the failure.  We notify the person who requested the sync instead.
 
         This test guards against bug 876594.
         """
