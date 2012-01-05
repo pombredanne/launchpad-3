@@ -17,7 +17,6 @@ __all__ = [
     'expand_numbers',
     'FacetMenu',
     'GetitemNavigation',
-    'LaunchpadFormView',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'Link',
@@ -37,10 +36,6 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
-from lp.app.browser.launchpadform import (
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from lp.services.webapp.menu import (
     ApplicationMenu,
     ContextMenu,
