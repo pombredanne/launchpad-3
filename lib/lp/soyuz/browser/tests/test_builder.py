@@ -84,7 +84,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 2 * nb_objects + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
 
     def test_builders_recipe_build_query_count(self):
         def create_build():
@@ -98,7 +98,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 2 * nb_objects + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
@@ -118,4 +118,4 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 2 * nb_objects + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
