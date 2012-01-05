@@ -1263,10 +1263,10 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             displayname='Displayname',
             creation_rationale=PersonCreationRationale.UNKNOWN))
 
-    def makeEmailAddress(self, email, account, person):
+    def makeEmailAddress(self, email, person):
             return self.store.add(EmailAddress(
                 email=email,
-                account=account,
+                account=person.account,
                 person=person,
                 status=EmailAddressStatus.PREFERRED))
 
