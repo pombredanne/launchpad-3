@@ -2383,3 +2383,27 @@ class TestRemovingPermissions(TestCaseWithFactory):
         # not generate an error if the permission is None.
         ap_set = ArchivePermissionSet()
         ap_set._remove_permission(None)
+
+
+class TestRemovingCopyNotifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_removeCopyNotification(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        job.fail() 
+
+        archive2.removeCopyNotification(job.id)
+
+        found_jobs = source.getIncompleteJobsForArchive(archive2)
+        self.assertEqual(None, found_jobs.any())
