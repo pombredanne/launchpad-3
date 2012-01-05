@@ -150,7 +150,10 @@ from lp.registry.interfaces.role import (
     IPersonRoles,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.teammembership import ITeamMembership
+from lp.registry.interfaces.teammembership import (
+    ITeamMembership,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
 from lp.services.config import config
@@ -832,9 +835,12 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
         """By default, we simply perform a View permission check.
 
         We also grant limited viewability to users who can see PPAs and
-        branches owned by the team. In other scenarios, the context in which
-        the permission is required is responsible for pre-caching the
-        launchpad.LimitedView permission on each team which requires it.
+        branches owned by the team, and members of parent teams so they can
+        see the member-listings.
+
+        In other scenarios, the context in which the permission is required is
+        responsible for pre-caching the launchpad.LimitedView permission on
+        each team which requires it.
         """
         if self.forwardCheckAuthenticated(
             user, self.obj, 'launchpad.View'):
@@ -871,6 +877,43 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             visible_branches = branches.visibleByUser(user.person)
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
             if mp.count() > 0:
+                return True
+
+            # Grant visibility to users in a team that has the private team as
+            # a member, so that they can see the team properly in member
+            # listings.
+
+            # The easiest check is just to see if the user is in a team that
+            # is a super team for the private team.
+            user_teams = [team for team in user.person.teams_participated_in]
+            super_teams = [team for team in self.obj.super_teams]
+
+            intersection_teams = [t for t in user_teams if t in super_teams]
+                    
+            if len(intersection_teams) > 0:
+                return True
+
+            # If it's not, the private team may still be a pending membership,
+            # which still needs to be visible to team members.
+
+            BAD_STATES = (
+                TeamMembershipStatus.DEACTIVATED.value,
+                TeamMembershipStatus.EXPIRED.value,
+                TeamMembershipStatus.DECLINED.value,
+                TeamMembershipStatus.INVITATION_DECLINED.value,
+                )
+            team_memberships_query = """
+                SELECT team from TeamMembership WHERE person = %s AND
+                status NOT IN %s
+                """ % (self.obj.id, BAD_STATES)
+            store = IStore(Person)
+            future_super_teams = [team[0] for team in
+                    store.execute(team_memberships_query)]
+
+            membership_intersection = [team for team in user_teams
+                                        if team.id in future_super_teams]
+
+            if len(membership_intersection) > 0:
                 return True
 
             # There are a number of other conditions under which a private
