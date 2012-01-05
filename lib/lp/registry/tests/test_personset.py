@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -201,12 +201,13 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
 
     def test_existing_deactivated_account(self):
         # An existing deactivated account will be reactivated.
-        account = self.factory.makeAccount('purchaser',
-            status=AccountStatus.DEACTIVATED)
+        person = self.factory.makePerson(
+            account_status=AccountStatus.DEACTIVATED)
         openid_ident = removeSecurityProxy(
-            account).openid_identifiers.any().identifier
+            person.account).openid_identifiers.any().identifier
 
-        person, db_updated = self.callGetOrCreate(openid_ident)
+        found_person, db_updated = self.callGetOrCreate(openid_ident)
+        self.assertEqual(person, found_person)
         self.assertEqual(AccountStatus.ACTIVE, person.account.status)
         self.assertTrue(db_updated)
         self.assertEqual(
@@ -215,10 +216,10 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
 
     def test_existing_suspended_account(self):
         # An existing suspended account will raise an exception.
-        account = self.factory.makeAccount('purchaser',
-            status=AccountStatus.SUSPENDED)
+        person = self.factory.makePerson(
+            account_status=AccountStatus.SUSPENDED)
         openid_ident = removeSecurityProxy(
-            account).openid_identifiers.any().identifier
+            person.account).openid_identifiers.any().identifier
 
         self.assertRaises(
             AccountSuspendedError, self.callGetOrCreate, openid_ident)
@@ -236,12 +237,12 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
     def test_no_matching_account_existing_email(self):
         # The openid_identity of the account matching the email will
         # updated.
-        other_account = self.factory.makeAccount('test', email='a@b.com')
+        other_person = self.factory.makePerson('a@b.com')
 
         person, db_updated = self.callGetOrCreate(
             u'other-openid-identifier', 'a@b.com')
 
-        self.assertEqual(other_account, person.account)
+        self.assertEqual(other_person, person)
         self.assert_(
             u'other-openid-identifier' in [
                 identifier.identifier for identifier in removeSecurityProxy(

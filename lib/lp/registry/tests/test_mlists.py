@@ -90,9 +90,7 @@ class BaseMailingListImportTest(unittest.TestCase):
 
     def assertAddresses(self, *addresses):
         """Assert that `addresses` are subscribed to the mailing list."""
-        subscribers = set(
-            email.email
-            for email in self.mailing_list.getSubscribedAddresses())
+        subscribers = set(self.mailing_list.getSubscribedAddresses())
         expected = set(addresses)
         self.assertEqual(subscribers, expected)
 

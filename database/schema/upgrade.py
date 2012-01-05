@@ -110,16 +110,6 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
         LaunchpadDatabaseRevision.start_time
             = transaction_timestamp() AT TIME ZONE 'UTC';
     """)
-START_UPDATE_LOG_SQL = dedent("""\
-    INSERT INTO LaunchpadDatabaseUpdateLog (
-        start_time, end_time, branch_nick, revno, revid)
-    VALUES (transaction_timestamp() AT TIME ZONE 'UTC', NULL, %s, %s, %s);
-    """)
-FINISH_UPDATE_LOG_SQL = dedent("""\
-    UPDATE LaunchpadDatabaseUpdateLog
-    SET end_time = statement_timestamp() AT TIME ZONE 'UTC'
-    WHERE start_time = transaction_timestamp() AT TIME ZONE 'UTC';
-    """)
 
 
 def to_seconds(td):
@@ -172,30 +162,12 @@ def report_patch_times(con, todays_patches):
 
 def apply_patches_normal(con):
     """Update a non replicated database."""
-    # On dev environments, until we create a fresh database baseline the
-    # LaunchpadDatabaseUpdateLog tables does not exist at this point (it
-    # will be created later via database patch). Don't try to update
-    # LaunchpadDatabaseUpdateLog if it does not exist.
-    cur = con.cursor()
-    cur.execute("""
-        SELECT EXISTS (
-            SELECT TRUE FROM information_schema.tables
-            WHERE
-                table_schema='public'
-                AND table_name='launchpaddatabaseupdatelog')
-            """)
-    updatelog_exists = cur.fetchone()[0]
-
-    # Add a record to LaunchpadDatabaseUpdateLog that we are starting
-    # an update.
-    if updatelog_exists:
-        cur.execute(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
-
     # trusted.sql contains all our stored procedures, which may
     # be required for patches to apply correctly so must be run first.
     apply_other(con, 'trusted.sql')
 
     # Prepare to repair patch timestamps if necessary.
+    cur = con.cursor()
     cur.execute(FIX_PATCH_TIMES_PRE_SQL)
 
     # Apply the patches
@@ -209,11 +181,6 @@ def apply_patches_normal(con):
 
     # Update comments.
     apply_comments(con)
-
-    # Update the LaunchpadDatabaseUpdateLog record, stating the
-    # completion time.
-    if updatelog_exists:
-        cur.execute(FINISH_UPDATE_LOG_SQL)
 
 
 def apply_patches_replicated():
@@ -247,10 +214,6 @@ def apply_patches_replicated():
             print >> combined_sql, sql
             # Flush or we might lose statements from buffering.
             combined_sql.flush()
-
-    # Add a LaunchpadDatabaseUpdateLog record that we are starting patch
-    # application.
-    add_sql(START_UPDATE_LOG_SQL % sqlvalues(*get_bzr_details()))
 
     # Apply trusted.sql
     add_sql(open(os.path.join(SCHEMA_DIR, 'trusted.sql'), 'r').read())
