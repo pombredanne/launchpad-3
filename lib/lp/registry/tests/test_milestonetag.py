@@ -15,6 +15,7 @@ from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     ws_object,
     )
 
@@ -168,20 +169,18 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
         self.assertContentEqual(specs, milestonetag.specifications)
 
 
-class MilestoneTagWebserviceTest(TestCaseWithFactory):
+class MilestoneTagWebServiceTest(WebServiceTestCase):
     """Test the getter and setter for milestonetags."""
 
     layer = AppServerLayer
 
     def setUp(self):
-        super(MilestoneTagWebserviceTest, self).setUp()
+        super(MilestoneTagWebServiceTest, self).setUp()
         self.owner = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.owner)
         self.milestone = self.factory.makeMilestone(product=self.product)
         transaction.commit()
-        self.service = self.factory.makeLaunchpadService(self.owner)
-        self.ws_milestone = ws_object(
-            self.service, self.milestone)
+        self.ws_milestone = self.wsObject(self.milestone, self.owner)
 
     def test_get_tags_none(self):
         self.assertEqual([], self.ws_milestone.getTags())
