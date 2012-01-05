@@ -58,7 +58,7 @@ class MilestoneTest(unittest.TestCase):
     def testMilestoneSetGetIDs(self):
         """Test of MilestoneSet.getByIds()"""
         milestone_set = getUtility(IMilestoneSet)
-        milestones = milestone_set.getByIds([1,3])
+        milestones = milestone_set.getByIds([1, 3])
         ids = sorted(map(attrgetter('id'), milestones))
         self.assertEqual([1, 3], ids)
 
@@ -131,62 +131,47 @@ class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
         self.check_skipped(projectgroup)
 
 
-class MilestoneBugTaskTest(TestCaseWithFactory):
-    """Test cases for retrieving bugtasks for a milestone."""
+class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
+    """Test cases for retrieving bugtasks and specifications for a milestone.
+    """
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(MilestoneBugTaskTest, self).setUp()
+        super(MilestoneBugTaskSpecificationTest, self).setUp()
         self.owner = self.factory.makePerson()
         self.product = self.factory.makeProduct(name="product1")
         self.milestone = self.factory.makeMilestone(product=self.product)
 
-    def _create_bugtasks(self, num, milestone=None):
-        bugtasks = []
+    def _make_bug(self, **kwargs):
+        milestone = kwargs.pop('milestone', None)
+        bugtask = self.factory.makeBugTask(**kwargs)
+        bugtask.milestone = milestone
+        return bugtask
+
+    def _create_items(self, num, factory, **kwargs):
+        items = []
         with person_logged_in(self.owner):
             for n in xrange(num):
-                bugtask = self.factory.makeBugTask(
-                    target=self.product,
-                    owner=self.owner)
-                if milestone:
-                    bugtask.milestone = milestone
-                bugtasks.append(bugtask)
-        return bugtasks
+                items.append(factory(**kwargs))
+        return items
 
     def test_bugtask_retrieval(self):
         # Ensure that all bugtasks on a milestone can be retrieved.
-        bugtasks = self._create_bugtasks(5, self.milestone)
-        self.assertContentEqual(
-            bugtasks,
-            self.milestone.bugtasks(self.owner))
-
-
-class MilestoneSpecificationTest(TestCaseWithFactory):
-    """Test cases for retrieving specifications for a milestone."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(MilestoneSpecificationTest, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.product = self.factory.makeProduct(name="product1")
-        self.milestone = self.factory.makeMilestone(product=self.product)
-
-    def _create_specifications(self, num, milestone=None):
-        specifications = []
-        with person_logged_in(self.owner):
-            for n in xrange(num):
-                specification = self.factory.makeSpecification(
-                    product=self.product,
-                    owner=self.owner,
-                    milestone=milestone)
-                specifications.append(specification)
-        return specifications
+        bugtasks = self._create_items(
+            5, self._make_bug,
+            milestone=self.milestone,
+            owner=self.owner,
+            target=self.product,
+            )
+        self.assertContentEqual(bugtasks, self.milestone.bugtasks(self.owner))
 
     def test_specification_retrieval(self):
         # Ensure that all specifications on a milestone can be retrieved.
-        specifications = self._create_specifications(5, self.milestone)
-        self.assertContentEqual(
-            specifications,
-            self.milestone.specifications)
+        specifications = self._create_items(
+            5, self.factory.makeSpecification,
+            milestone=self.milestone,
+            owner=self.owner,
+            product=self.product,
+            )
+        self.assertContentEqual(specifications, self.milestone.specifications)
