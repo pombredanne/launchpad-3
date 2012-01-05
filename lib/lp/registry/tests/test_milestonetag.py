@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import datetime
+
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     )
@@ -65,7 +67,7 @@ class MilestoneTagTest(TestCaseWithFactory):
             )
         created_by_id, date_created = values.next()
         self.assertEqual(self.person.id, created_by_id)
-        self.assertIsNotNone(date_created)
+        self.assertIsInstance(date_created, datetime.datetime)
 
     def test_user_metadata_override(self):
         # Ensure the user metadata is correct when tags are saved
@@ -80,7 +82,7 @@ class MilestoneTagTest(TestCaseWithFactory):
             MilestoneTag.created_by_id,
             )
         tag_person_map = dict(values)
-        # Old tags are yet created by self.person.
+        # Old tags are still created by self.person.
         for tag in set(self.tags).intersection(new_tags):
             self.assertEqual(self.person.id, tag_person_map[tag])
         # Only new tags are created by new_person.
