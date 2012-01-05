@@ -201,11 +201,7 @@ class SignableTagFile:
         person = getUtility(IPersonSet).getByEmail(email)
         if person and person.private:
             # Private teams can not be maintainers.
-            error = "Invalid Maintainer."
-            if self.changes.changed_by and self.changes.changed_by['person']:
-                if self.changes.changed_by['person'].inTeam(person):
-                    error = "Maintainer can not be set to a private team."
-            raise UploadError(error)
+            raise UploadError("Invalid Maintainer.")
 
         if person is None and self.policy.create_people:
             package = self._dict['Source']

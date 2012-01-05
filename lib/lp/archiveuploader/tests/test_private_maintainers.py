@@ -19,30 +19,12 @@ class TestPrivateMaintainers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_private_team_non_member(self):
-        # Maintainers can not be private teams. If the uploader isn't set,
-        # or isn't a member, the rejection message is delibrately vague.
+    def test_private_team_maintainer(self):
+        # Maintainers can not be private teams.
         with celebrity_logged_in('admin'):
             team = self.factory.makeTeam(
                 email="foo@bar.com", visibility=PersonVisibility.PRIVATE)
         sigfile = SignableTagFile()
-        sigfile.changes = SignableTagFile()
-        sigfile.changes.changed_by = {}
         self.assertRaisesWithContent(
             UploadError, 'Invalid Maintainer.', sigfile.parseAddress,
             "foo@bar.com")
-
-    def test_private_team_member(self):
-        # Maintainers can not be private teams. If the uploader is a member
-        # of the team, the rejection message can be clear.
-        uploader = self.factory.makePerson()
-        with celebrity_logged_in('admin'):
-            team = self.factory.makeTeam(
-                email="foo@bar.com", visibility=PersonVisibility.PRIVATE,
-                members=[uploader])
-        sigfile = SignableTagFile()
-        sigfile.changes = SignableTagFile()
-        sigfile.changes.changed_by = {'person': uploader}
-        self.assertRaisesWithContent(
-            UploadError, 'Maintainer can not be set to a private team.',
-            sigfile.parseAddress, "foo@bar.com")
