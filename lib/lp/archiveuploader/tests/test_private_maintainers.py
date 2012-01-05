@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from zope.security.proxy import removeSecurityProxy
-
 from lp.archiveuploader.dscfile import SignableTagFile
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.registry.interfaces.person import PersonVisibility
@@ -22,7 +20,7 @@ class TestPrivateMaintainers(TestCaseWithFactory):
     def test_private_team_maintainer(self):
         # Maintainers can not be private teams.
         with celebrity_logged_in('admin'):
-            team = self.factory.makeTeam(
+            self.factory.makeTeam(
                 email="foo@bar.com", visibility=PersonVisibility.PRIVATE)
         sigfile = SignableTagFile()
         self.assertRaisesWithContent(
