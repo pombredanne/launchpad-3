@@ -41,6 +41,8 @@ from zope.schema.vocabulary import (
 
 from lp import _
 from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -81,8 +83,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
-    action,
-    custom_widget,
     GetitemNavigation,
     StandardLaunchpadFacets,
     )

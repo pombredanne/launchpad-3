@@ -21,9 +21,11 @@ from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import action
 from lp.services.webapp.authorization import check_permission
-from lp.app.browser.launchpadform import LaunchpadEditFormView
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
 from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,

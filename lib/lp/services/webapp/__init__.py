@@ -9,7 +9,6 @@ This module also has an API for use by the application.
 __metaclass__ = type
 
 __all__ = [
-    'action',
     'ApplicationMenu',
     'canonical_name',
     'canonical_url',
@@ -35,7 +34,6 @@ __all__ = [
     'stepthrough',
     'stepto',
     'structured',
-    'UnsafeFormGetSubmissionError',
     'urlappend',
     'urlparse',
     'urlsplit',
@@ -43,7 +41,6 @@ __all__ = [
     ]
 
 from lp.app.browser.launchpadform import (
-    action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,

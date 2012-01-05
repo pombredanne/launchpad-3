@@ -10,12 +10,12 @@ __all__ = [
     ]
 
 from lp.app.widgets.image import ImageChangeWidget
-from lp.services.webapp import (
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
     custom_widget,
     LaunchpadEditFormView,
     )
+from lp.services.webapp import canonical_url
 
 
 class BrandingChangeView(LaunchpadEditFormView):

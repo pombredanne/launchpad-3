@@ -20,6 +20,7 @@ from zope.component import (
 from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
+    action,
     custom_widget,
     LaunchpadFormView,
     )
@@ -28,7 +29,6 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
-from lp.services.webapp import action
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import IBreadcrumb
 from lp.services.webapp.menu import (

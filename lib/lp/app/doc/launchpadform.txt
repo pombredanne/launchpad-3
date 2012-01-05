@@ -175,7 +175,7 @@ In order for a form to accept submissions, it will need one or more
 submit actions.  These are added to the view class using the "action"
 decorator:
 
-  >>> from lp.services.webapp import action
+  >>> from lp.app.browser.launchpadform import action
   >>> class FormTestView4(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']

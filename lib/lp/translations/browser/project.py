@@ -11,17 +11,18 @@ __all__ = [
     'ProjectView',
     ]
 
+from lp.app.browser.launchpadform import (
+    action,
+    )
 from lp.registry.browser.project import ProjectEditView
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
-    action,
     canonical_url,
     enabled_with_permission,
-    LaunchpadView,
     Link,
     )
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.translations import TranslationsMixin
 
 
