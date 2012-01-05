@@ -344,7 +344,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build._buildqueue_record)
+            self.assertIdentical(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
