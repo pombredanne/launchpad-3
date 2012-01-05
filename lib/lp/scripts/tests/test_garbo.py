@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -51,10 +51,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -626,7 +623,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
         rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
-        rev3 = self.factory.makeRevision('Author 3 <author-3@Example.Org>')
 
         person1 = self.factory.makePerson(email='Author-1@example.org')
         person2 = self.factory.makePerson(
@@ -635,7 +631,6 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(rev1.revision_author.person, None)
         self.assertEqual(rev2.revision_author.person, None)
-        self.assertEqual(rev3.revision_author.person, None)
 
         self.runDaily()
 
@@ -659,8 +654,6 @@ class TestGarbo(TestCaseWithFactory):
             emailaddress='author-1@Example.Org')
         sub2 = self.factory.makeHWSubmission(
             emailaddress='author-2@Example.Org')
-        sub3 = self.factory.makeHWSubmission(
-            emailaddress='author-3@Example.Org')
 
         person1 = self.factory.makePerson(email='Author-1@example.org')
         person2 = self.factory.makePerson(

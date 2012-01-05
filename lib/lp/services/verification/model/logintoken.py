@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -30,7 +30,6 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterObject
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -250,8 +249,7 @@ class LoginToken(SQLBase):
     def activateGPGKey(self, key, can_encrypt):
         """See `ILoginToken`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        requester = self.requester
-        lpkey, new = gpgkeyset.activate(requester, key, can_encrypt)
+        lpkey, new = gpgkeyset.activate(self.requester, key, can_encrypt)
 
         self.consume()
 

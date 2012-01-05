@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1242,8 +1242,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
         self.person = self.makePerson(self.account)
         self.email = self.makeEmailAddress(
-            email='whatever@example.com',
-            account=self.account, person=self.person)
+            email='whatever@example.com', person=self.person)
 
     def makeAccount(self):
         return self.store.add(Account(
