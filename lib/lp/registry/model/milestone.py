@@ -303,15 +303,20 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
                 MilestoneTag, MilestoneTag.milestone_id == self.id).remove()
         store.commit()
 
-    def getTags(self):
-        """See IMilestone."""
-        # Circular reference prevention.
+    def getTagsData(self):
+        """Return MiletsoneTag instances associated with this milestone."""
+        # Prevent circular references.
         from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
         return store.find(
             MilestoneTag, MilestoneTag.milestone_id == self.id
-            ).order_by(MilestoneTag.tag
-            ).values(MilestoneTag.tag)
+            ).order_by(MilestoneTag.tag)
+
+    def getTags(self):
+        """See IMilestone."""
+        # Prevent circular references.
+        from lp.registry.model.milestonetag import MilestoneTag
+        return self.getTagsData().values(MilestoneTag.tag)
 
 
 class MilestoneSet:

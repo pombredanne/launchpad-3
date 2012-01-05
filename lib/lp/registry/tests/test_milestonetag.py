@@ -8,7 +8,10 @@ __metaclass__ = type
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     )
-from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.registry.model.milestonetag import (
+    MilestoneTag,
+    ProjectGroupMilestoneTag,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -50,6 +53,39 @@ class MilestoneTagTest(TestCaseWithFactory):
             self.milestone.setTags(self.tags, self.person)
             self.milestone.setTags([], self.person)
         self.assertEquals([], list(self.milestone.getTags()))
+
+    def test_user_metadata(self):
+        # Ensure the correct user metadata is created when tags are added.
+        tag = u'tag1'
+        with person_logged_in(self.person):
+            self.milestone.setTags([tag], self.person)
+        values = self.milestone.getTagsData().values(
+            MilestoneTag.created_by_id,
+            MilestoneTag.date_created,
+            )
+        created_by_id, date_created = values.next()
+        self.assertEqual(self.person.id, created_by_id)
+        self.assertIsNotNone(date_created)
+
+    def test_user_metadata_override(self):
+        # Ensure the user metadata is correct when tags are saved
+        # multiple times by different users.
+        new_person = self.factory.makePerson()
+        with person_logged_in(self.person):
+            self.milestone.setTags(self.tags, self.person)
+            new_tags = [u'tag2', u'tag4', u'tag3']
+            self.milestone.setTags(new_tags, new_person)
+        values = self.milestone.getTagsData().values(
+            MilestoneTag.tag,
+            MilestoneTag.created_by_id,
+            )
+        tag_person_map = dict(values)
+        # Old tags are yet created by self.person.
+        for tag in set(self.tags).intersection(new_tags):
+            self.assertEqual(self.person.id, tag_person_map[tag])
+        # Only new tags are created by new_person.
+        for tag in set(new_tags).difference(self.tags):
+            self.assertEqual(new_person.id, tag_person_map[tag])
 
 
 class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
