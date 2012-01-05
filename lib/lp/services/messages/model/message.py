@@ -129,7 +129,12 @@ class Message(SQLBase):
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
-    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+    _bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+
+    @cachedproperty
+    def bugattachments(self):
+        return list(self._bugattachments)
+
     visible = BoolCol(notNull=True, default=True)
 
     def __repr__(self):

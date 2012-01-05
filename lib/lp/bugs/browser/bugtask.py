@@ -359,6 +359,10 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
+        cache = get_property_cache(attachment.message)
+        if getattr(cache, 'bugattachments', None) is None:
+            cache.bugattachments = []
+        cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
