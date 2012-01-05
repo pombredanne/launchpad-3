@@ -94,15 +94,8 @@ class IMessage(Interface):
                      'unicode string.')),
         exported_as='content')
 
-    followup_title = TextLine(
-        title=_('Candidate title for a followup message.'),
-        readonly=True)
     title = TextLine(
         title=_('The message title, usually just the subject.'),
-        readonly=True)
-    has_new_title = Bool(
-        title=_("Whether or not the title of this message "
-                "is different to that of its parent."),
         readonly=True)
     visible = Bool(title=u"This message is visible or not.", required=False,
         default=True)

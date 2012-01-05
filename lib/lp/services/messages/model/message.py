@@ -143,24 +143,9 @@ class Message(SQLBase):
         self.visible = visible
 
     @property
-    def followup_title(self):
-        """See IMessage."""
-        if self.title.lower().startswith('re: '):
-            return self.title
-        return 'Re: ' + self.title
-
-    @property
     def title(self):
         """See IMessage."""
         return self.subject
-
-    @property
-    def has_new_title(self):
-        """See IMessage."""
-        if self.parent is None:
-            return True
-        return self.title.lower().lstrip('re:').strip() != \
-        self.parent.title.lower().lstrip('re:').strip()
 
     @property
     def sender(self):
