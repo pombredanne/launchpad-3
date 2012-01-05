@@ -76,24 +76,22 @@ class TestSyncNotification(TestCaseWithFactory):
             distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE,
             dsc_maintainer_rfc822=maintainer_address)
 
-    def makeUploader(self, archive, component):
-        """Create a person with upload privileges for archive/component."""
-        uploader = self.factory.makePerson()
+    def makeUploader(self, person, archive, component):
+        """Grant a person upload privileges for archive/component."""
         ArchivePermission(
-            person=uploader, archive=archive, component=component,
+            person=person, archive=archive, component=component,
             permission=ArchivePermissionType.UPLOAD)
-        return uploader
 
-    def syncSource(self, spph, target_distroseries):
+    def syncSource(self, spph, target_distroseries, requester):
         """Sync `spph` into `target_distroseries`."""
         getUtility(ISourcePackageFormatSelectionSet).add(
             target_distroseries, SourcePackageFormat.FORMAT_1_0)
         target_archive = target_distroseries.main_archive
+        self.makeUploader(requester, target_archive, spph.component)
         [synced_spph] = do_copy(
             [spph], target_archive, target_distroseries,
-            pocket=spph.pocket,
-            person=self.makeUploader(target_archive, spph.component),
-            allow_delayed_copies=False, close_bugs=False)
+            pocket=spph.pocket, person=requester, allow_delayed_copies=False,
+            close_bugs=False)
         return synced_spph
 
     def makeChangesFile(self, spph, maintainer, maintainer_address):
@@ -107,9 +105,18 @@ class TestSyncNotification(TestCaseWithFactory):
 
     def makeNascentUpload(self, spph, maintainer, maintainer_address):
         """Create a `NascentUpload` for `spph`."""
-        return NascentUpload(
+        upload = NascentUpload(
             self.makeChangesFile(spph, maintainer, maintainer_address),
             FakeUploadPolicy(spph), DevNullLogger())
+        upload.queue_root = upload._createQueueEntry()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=spph.distroseries)
+        bpb = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            archive=spph.archive, distroarchseries=das, pocket=spph.pocket,
+            sourcepackagename=spph.sourcepackagename)
+        upload.queue_root.addBuild(bpb)
+        return upload
 
     def processAndRejectUpload(self, nascent_upload):
         nascent_upload.process()
@@ -137,11 +144,15 @@ class TestSyncNotification(TestCaseWithFactory):
         maintainer, maintainer_address = self.makePersonWithEmail()
         dsp = self.factory.makeDistroSeriesParent()
         original_spph = self.makeSPPH(dsp.parent_series, maintainer_address)
-        synced_spph = self.syncSource(original_spph, dsp.derived_series)
+        sync_requester, syncer_address = self.makePersonWithEmail()
+        synced_spph = self.syncSource(
+            original_spph, dsp.derived_series, sync_requester)
         nascent_upload = self.makeNascentUpload(
             synced_spph, maintainer, maintainer_address)
         pop_notifications()
         self.processAndRejectUpload(nascent_upload)
 
-        self.assertNotIn(
-            maintainer_address, '\n'.join(self.getNotifiedAddresses()))
+        notified_addresses = '\n'.join(self.getNotifiedAddresses())
+
+        self.assertNotIn(maintainer_address, notified_addresses)
+        self.assertIn(syncer_address, notified_addresses)
