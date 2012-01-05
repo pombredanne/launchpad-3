@@ -2022,6 +2022,17 @@ class Archive(SQLBase):
             return UbuntuOverridePolicy()
         return None
 
+    def removeCopyNotification(self, job_id):
+        """See `IArchive`."""
+        # Circular imports R us.
+        from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+        pcj = PlainPackageCopyJob.get(job_id)
+        job = pcj.job
+        if job.status != JobStatus.FAILED:
+            raise Exception("Job is not failed")
+        Store.of(pcj.context).remove(pcj.context)
+        job.destroySelf()
+
 
 class ArchiveSet:
     implements(IArchiveSet)
