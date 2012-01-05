@@ -31,7 +31,10 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema import Choice, TextLine
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from lp import _
 from lp.app.browser.launchpadform import (
