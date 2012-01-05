@@ -1030,33 +1030,23 @@ class TestGarbo(TestCaseWithFactory):
         # SourcePackageReleaseDscBinariesUpdater fixes incorrectly-separated
         # dsc_binaries values.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        three = [
-            self.factory.getUniqueString(),
-            self.factory.getUniqueString(),
-            self.factory.getUniqueString(),
-            ]
-        spr_three = self.factory.makeSourcePackageRelease(
-            dsc_binaries=" ".join(three))
+        spr = self.factory.makeSourcePackageRelease(
+            dsc_binaries="one two three")
         transaction.commit()
         self.runDaily()
-        self.assertEqual(", ".join(three), spr_three.dsc_binaries)
+        self.assertEqual("one, two, three", spr.dsc_binaries)
 
     def test_SourcePackageReleaseDscBinariesUpdater_skips_correct(self):
         # SourcePackageReleaseDscBinariesUpdater leaves correct dsc_binaries
         # values alone.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        one = self.factory.getUniqueString()
-        spr_one = self.factory.makeSourcePackageRelease(dsc_binaries=one)
-        three = ", ".join([
-            self.factory.getUniqueString(),
-            self.factory.getUniqueString(),
-            self.factory.getUniqueString(),
-            ])
-        spr_three = self.factory.makeSourcePackageRelease(dsc_binaries=three)
+        spr_one = self.factory.makeSourcePackageRelease(dsc_binaries="one")
+        spr_three = self.factory.makeSourcePackageRelease(
+            dsc_binaries="one, two, three")
         transaction.commit()
         self.runDaily()
-        self.assertEqual(one, spr_one.dsc_binaries)
-        self.assertEqual(three, spr_three.dsc_binaries)
+        self.assertEqual("one", spr_one.dsc_binaries)
+        self.assertEqual("one, two, three", spr_three.dsc_binaries)
 
     def test_SourcePackageReleaseDscBinariesUpdater_skips_broken(self):
         # There have been a few instances of Binary fields in PPA packages
@@ -1066,13 +1056,11 @@ class TestGarbo(TestCaseWithFactory):
         # SourcePackageReleaseDscBinariesUpdater leaves such fields well
         # alone.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        broken = "%s (>= 1), %s" % (
-            self.factory.getUniqueString(), self.factory.getUniqueString())
-        spr_broken = self.factory.makeSourcePackageRelease(
-            dsc_binaries=broken)
+        spr = self.factory.makeSourcePackageRelease(
+            dsc_binaries="one (>= 1), two")
         transaction.commit()
         self.runDaily()
-        self.assertEqual(broken, spr_broken.dsc_binaries)
+        self.assertEqual("one (>= 1), two", spr.dsc_binaries)
 
 
 class TestGarboTasks(TestCaseWithFactory):
