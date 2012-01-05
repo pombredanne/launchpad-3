@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -154,8 +154,6 @@ class IAuthToken(Interface):
     requester = Int(
         title=_('The Person that made this request.'), required=True,
         )
-    requester_account = Int(
-        title=_('The account that made this request.'), required=True)
     requesteremail = Text(
         title=_('The email address that was used to login when making this '
                 'request.'),

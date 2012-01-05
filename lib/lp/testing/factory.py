@@ -768,8 +768,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
-        if account is None:
-            account = person.account
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, account)
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -441,7 +441,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         validated = (
             EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
         requester = self.context.requester
-        account = self.context.requester_account
+        account = requester.account
 
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
@@ -518,13 +518,12 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         if email is None:
             email = emailset.new(
                 email=self.context.email,
-                person=self.context.requester,
-                account=self.context.requester_account)
+                person=self.context.requester)
         return email
 
     def markEmailAsValid(self, email):
         """Mark the given email address as valid."""
-        self.context.requester_account.validateAndEnsurePreferredEmail(email)
+        self.context.requester.account.validateAndEnsurePreferredEmail(email)
 
 
 class ValidateTeamEmailView(ValidateEmailView):
