@@ -7,7 +7,7 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import person_logged_in
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.yuixhr import (
