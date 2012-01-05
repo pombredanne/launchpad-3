@@ -56,8 +56,7 @@ informative message regarding the delayed subscription.
     Your request to join moderated-team-with-list is awaiting approval.
     Your mailing list subscription is awaiting approval.
 
-    >>> sorted(email.email for email in
-    ...     moderated_list.getSubscribedAddresses())
+    >>> sorted(moderated_list.getSubscribedAddresses())
     []
 
     # The subscription object is in the database, waiting for the
@@ -76,6 +75,5 @@ team's list.
     You have successfully joined open-team-with-list.
     You have been subscribed to this team&#x2019;s mailing list.
 
-    >>> sorted(email.email for email in
-    ...     open_list.getSubscribedAddresses())
+    >>> sorted(open_list.getSubscribedAddresses())
     [u'test@canonical.com']

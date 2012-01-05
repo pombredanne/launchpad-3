@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -135,7 +135,8 @@ class IEmailAddressSet(Interface):
         """Create a new EmailAddress with the given email.
 
         The newly created EmailAddress will point to the person
-        and/or account.
+        and/or account. If account is omitted and the person has a linked
+        account, that account will be used.
 
         The given status must be an item of EmailAddressStatus.
 
