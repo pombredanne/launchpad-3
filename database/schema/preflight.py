@@ -56,6 +56,9 @@ FRAGILE_USERS = frozenset([
 BAD_USERS = frozenset([
     'karma',  # Bug #863109
     'rosettaadmin',  # Bug #863122
+    'update-pkg-cache',  # Bug #912144
+    'process_death_row',  # Bug #912146
+    'langpack',  # Bug #912147
     ])
 
 # How lagged the cluster can be before failing the preflight check.
