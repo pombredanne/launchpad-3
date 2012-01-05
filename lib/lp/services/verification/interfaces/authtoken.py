@@ -154,8 +154,6 @@ class IAuthToken(Interface):
     requester = Int(
         title=_('The Person that made this request.'), required=True,
         )
-    requester_account = Int(
-        title=_('The account that made this request.'), required=True)
     requesteremail = Text(
         title=_('The email address that was used to login when making this '
                 'request.'),

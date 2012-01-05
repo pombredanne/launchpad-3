@@ -441,7 +441,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         validated = (
             EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
         requester = self.context.requester
-        account = self.context.requester_account
+        account = requester.account
 
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
@@ -518,13 +518,12 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         if email is None:
             email = emailset.new(
                 email=self.context.email,
-                person=self.context.requester,
-                account=self.context.requester_account)
+                person=self.context.requester)
         return email
 
     def markEmailAsValid(self, email):
         """Mark the given email address as valid."""
-        self.context.requester_account.validateAndEnsurePreferredEmail(email)
+        self.context.requester.account.validateAndEnsurePreferredEmail(email)
 
 
 class ValidateTeamEmailView(ValidateEmailView):

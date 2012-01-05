@@ -78,13 +78,6 @@ class LoginToken(SQLBase):
 
     title = 'Launchpad Email Verification'
 
-    @property
-    def requester_account(self):
-        """See `ILoginToken`."""
-        if self.requester is None or self.requester.account is None:
-            return None
-        return IMasterObject(self.requester.account)
-
     def consume(self):
         """See ILoginToken."""
         self.date_consumed = UTC_NOW
@@ -280,7 +273,7 @@ class LoginToken(SQLBase):
         """
         emailset = getUtility(IEmailAddressSet)
         requester = self.requester
-        account = self.requester_account
+        account = requester.account
         emails = chain(requester.validatedemails, [requester.preferredemail])
         # Must remove the security proxy because the user may not be logged in
         # and thus won't be allowed to view the requester's email addresses.
