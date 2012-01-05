@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -282,7 +282,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         transaction.commit()
         self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
-            'foo@preferred.com', person, account=person.account)
+            'foo@preferred.com', person)
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')

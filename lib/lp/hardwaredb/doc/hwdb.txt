@@ -408,7 +408,7 @@ When he adds this email address to his list of addresses in Launchpad,
 the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
-    ...     u'beeblebrox@beeblebrox.net', user, account=user.account)
+    ...     u'beeblebrox@beeblebrox.net', user)
     >>> transaction.commit()
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)

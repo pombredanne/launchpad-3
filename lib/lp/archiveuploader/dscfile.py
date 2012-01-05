@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -199,6 +199,10 @@ class SignableTagFile:
             raise UploadError(str(error))
 
         person = getUtility(IPersonSet).getByEmail(email)
+        if person and person.private:
+            # Private teams can not be maintainers.
+            raise UploadError("Invalid Maintainer.")
+
         if person is None and self.policy.create_people:
             package = self._dict['Source']
             version = self._dict['Version']

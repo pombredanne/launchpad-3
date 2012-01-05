@@ -1,5 +1,5 @@
 #!/usr/bin/python2.6 -S
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Confirm the database systems are ready to be patched as best we can."""
@@ -56,6 +56,9 @@ FRAGILE_USERS = frozenset([
 BAD_USERS = frozenset([
     'karma',  # Bug #863109
     'rosettaadmin',  # Bug #863122
+    'update-pkg-cache',  # Bug #912144
+    'process_death_row',  # Bug #912146
+    'langpack',  # Bug #912147
     ])
 
 # How lagged the cluster can be before failing the preflight check.
