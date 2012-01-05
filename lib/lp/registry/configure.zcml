@@ -1015,8 +1015,8 @@
                 createProductRelease
                 closeBugsAndBlueprints
                 destroySelf
-		        setTags
-		        "/>
+                setTags
+                "/>
         <require
             permission="zope.Public"
             attributes="
