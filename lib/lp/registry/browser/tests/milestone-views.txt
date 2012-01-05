@@ -508,12 +508,12 @@ The AddMilestoneView is used to create a new milestone.
 
     >>> owner = firefox.owner
     >>> login_person(owner)
-    >>> view = create_view(firefox_1_0, '+addmilestone')
+    >>> view = create_initialized_view(firefox_1_0, '+addmilestone')
     >>> print view.label
     Register a new milestone
 
     >>> view.field_names
-    ['name', 'code_name', 'dateexpected', 'summary']
+    ['name', 'code_name', 'dateexpected', 'tags', 'summary']
 
 The view provides an action_url and cancel_url properties that form
 submitting the form or aborting the action.

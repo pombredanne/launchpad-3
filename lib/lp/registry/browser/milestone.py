@@ -428,14 +428,34 @@ class MilestoneAddView(LaunchpadFormView):
 
     custom_widget('dateexpected', DateWidget)
 
+    def extendFields(self):
+        """See `LaunchpadFormView`.
+
+        Add a text-entry widget for milestone tags since there is not property
+        on the interface.
+        """
+        tag_entry = TextLine(
+            __name__='tags',
+            title=u'Tags',
+            required=False)
+        self.form_fields += form.Fields(
+            tag_entry, render_context=self.render_context)
+        # Make an instance attribute to avoid mutating the class attribute.
+        self.field_names = self.field_names[:]
+        # Insert the tags field before the summary.
+        self.field_names[3:3] = [tag_entry.__name__]
+
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
-        self.context.newMilestone(
+        milestone = self.context.newMilestone(
             name=data.get('name'),
             code_name=data.get('code_name'),
             dateexpected=data.get('dateexpected'),
             summary=data.get('summary'))
+        tags = data.get('tags')
+        if tags:
+            milestone.setTags(tags.split(), self.user)
         self.next_url = canonical_url(self.context)
 
     @property

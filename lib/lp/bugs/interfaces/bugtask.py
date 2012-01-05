@@ -918,8 +918,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasBugSupervisorPrivileges(user):
-        """Is the user a privledged one, allowed to changed details on a
-        bug?
+        """Is the user privileged and allowed to change details on a bug?
 
         :return: A boolean.
         """

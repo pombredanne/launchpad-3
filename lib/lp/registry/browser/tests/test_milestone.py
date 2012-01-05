@@ -65,7 +65,7 @@ class TestMilestoneViews(TestCaseWithFactory):
             }
         view = create_initialized_view(
             self.series, '+addmilestone', form=form)
-        # It's important to make sure no errors occured, but
+        # It's important to make sure no errors occured,
         # but also confirm that the milestone was created.
         self.assertEqual([], view.errors)
         self.assertEqual('1.1', self.product.milestones[0].name)
@@ -83,6 +83,19 @@ class TestMilestoneViews(TestCaseWithFactory):
             "Date could not be formatted. Provide a date formatted "
             "like YYYY-MM-DD format. The year must be after 1900.")
         self.assertEqual(expected_msg, error_msg)
+
+    def test_add_milestone_with_tags(self):
+        tags = u'zed alpha'
+        form = {
+            'field.name': '1.1',
+            'field.tags': tags,
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual([], view.errors)
+        expected = sorted(tags.split())
+        self.assertEqual(expected, list(self.product.milestones[0].getTags()))
 
 
 class TestMilestoneMemcache(MemcacheTestCase):

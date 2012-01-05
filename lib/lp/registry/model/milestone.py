@@ -306,7 +306,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def getTags(self):
         """See IMilestone."""
         # Circular reference prevention.
-        from lp.registry.model.milestonetag import MilestoneTag
+        from lp.Registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
         return list(store.find(
             MilestoneTag, MilestoneTag.milestone_id == self.id

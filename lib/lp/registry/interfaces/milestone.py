@@ -236,7 +236,6 @@ class IMilestone(IAbstractMilestone):
             description=_("Space-separated keywords for classifying "
                           "this milestone."),
             value_type=TextLine()))
-
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     @operation_for_version('devel')
