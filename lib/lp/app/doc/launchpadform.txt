@@ -588,7 +588,7 @@ following ways:
 
 In other respects, it is used the same way as LaunchpadFormView:
 
-  >>> from lp.services.webapp import LaunchpadEditFormView
+  >>> from lp.app.browser.launchpadform import LaunchpadEditFormView
   >>> class FormTestView8(LaunchpadEditFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']

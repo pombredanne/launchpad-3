@@ -17,7 +17,6 @@ __all__ = [
     'expand_numbers',
     'FacetMenu',
     'GetitemNavigation',
-    'LaunchpadEditFormView',
     'LaunchpadFormView',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
