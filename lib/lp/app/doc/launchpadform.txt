@@ -131,7 +131,7 @@ field.  These can be installed easily with the "custom_widgets"
 attribute:
 
   >>> from zope.app.form.browser import TextWidget
-  >>> from lp.services.webapp import custom_widget
+  >>> from lp.app.browser.launchpadform import custom_widget
   >>> from lp.app.widgets.password import PasswordChangeWidget
 
   >>> class FormTestView3(LaunchpadFormView):

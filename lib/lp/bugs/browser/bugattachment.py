@@ -22,6 +22,7 @@ from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
@@ -39,7 +40,6 @@ from lp.services.librarian.browser import (
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.services.webapp import (
     canonical_url,
-    custom_widget,
     GetitemNavigation,
     Navigation,
     )

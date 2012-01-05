@@ -13,7 +13,6 @@ __all__ = [
     'canonical_name',
     'canonical_url',
     'ContextMenu',
-    'custom_widget',
     'enabled_with_permission',
     'expand_numbers',
     'FacetMenu',
@@ -41,7 +40,6 @@ __all__ = [
     ]
 
 from lp.app.browser.launchpadform import (
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     safe_action,
