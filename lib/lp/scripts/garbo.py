@@ -884,48 +884,30 @@ class SourcePackageReleaseDscBinariesUpdater(TunableLoop):
     def __init__(self, log, abort_time=None):
         super(SourcePackageReleaseDscBinariesUpdater, self).__init__(
             log, abort_time)
-        self.offset = 0
         self.store = IMasterStore(SourcePackageRelease)
-        self.store.execute("DROP TABLE IF EXISTS MatchedSourcePackageRelease")
-        self.store.execute("""
-            CREATE TEMPORARY TABLE MatchedSourcePackageRelease AS
-            SELECT id AS spr
-            FROM SourcePackageRelease
-            -- Get all SPR IDs which have an incorrectly-separated
-            -- dsc_binaries value (space rather than comma-space).
-            WHERE dsc_binaries ~ '[a-z0-9+.-] '
-            -- Skip rows with dsc_binaries in dependency relationship
-            -- format.  This is a different bug.
-                AND dsc_binaries NOT LIKE '%(%'
-            """, noresult=True)
-        self.store.execute("""
-            CREATE INDEX matchedsourcepackagerelease__spr__idx
-            ON MatchedSourcePackageRelease(spr)
-            """, noresult=True)
-        self.matched_spr_count = self.store.execute("""
-            SELECT COUNT(*) FROM MatchedSourcePackageRelease
-            """).get_one()[0]
+        self.ids = list(
+            self.store.find(
+                SourcePackageRelease.id,
+                # Get all SPR IDs which have an incorrectly-separated
+                # dsc_binaries value (space rather than comma-space).
+                SQL("dsc_binaries ~ '[a-z0-9+.-] '"),
+                # Skip rows with dsc_binaries in dependency relationship
+                # format.  This is a different bug.
+                SQL("dsc_binaries NOT LIKE '%(%'")))
 
     def isDone(self):
         """See `TunableLoop`."""
-        return self.offset >= self.matched_spr_count
+        return len(self.ids) == 0
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
+        chunk_ids = self.ids[:chunk_size]
+        del self.ids[:chunk_size]
         self.store.execute("""
             UPDATE SourcePackageRelease
             SET dsc_binaries = regexp_replace(
                 dsc_binaries, '([a-z0-9+.-]) ', E'\\\\1, ', 'g')
-            FROM (
-                SELECT spr
-                FROM MatchedSourcePackageRelease
-                ORDER BY spr
-                OFFSET %d
-                LIMIT %d
-                ) AS MatchedSourcePackageRelease
-            WHERE SourcePackageRelease.id = MatchedSourcePackageRelease.spr
-            """ % (self.offset, chunk_size), noresult=True)
-        self.offset += chunk_size
+            WHERE id IN %s""" % sqlvalues(chunk_ids), noresult=True)
         transaction.commit()
 
 
