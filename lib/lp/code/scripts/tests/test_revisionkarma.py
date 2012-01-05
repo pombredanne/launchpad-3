@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
@@ -104,7 +104,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author, account=author.account))
+            EmailAddressSet().new(email, author))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
