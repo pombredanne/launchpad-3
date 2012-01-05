@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -1025,6 +1025,54 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_SourcePackageReleaseDscBinariesUpdater_updates_incorrect(self):
+        # SourcePackageReleaseDscBinariesUpdater fixes incorrectly-separated
+        # dsc_binaries values.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        three = [
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            ]
+        spr_three = self.factory.makeSourcePackageRelease(
+            dsc_binaries=" ".join(three))
+        transaction.commit()
+        self.runDaily()
+        self.assertEqual(", ".join(three), spr_three.dsc_binaries)
+
+    def test_SourcePackageReleaseDscBinariesUpdater_skips_correct(self):
+        # SourcePackageReleaseDscBinariesUpdater leaves correct dsc_binaries
+        # values alone.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        one = self.factory.getUniqueString()
+        spr_one = self.factory.makeSourcePackageRelease(dsc_binaries=one)
+        three = ", ".join([
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            ])
+        spr_three = self.factory.makeSourcePackageRelease(dsc_binaries=three)
+        transaction.commit()
+        self.runDaily()
+        self.assertEqual(one, spr_one.dsc_binaries)
+        self.assertEqual(three, spr_three.dsc_binaries)
+
+    def test_SourcePackageReleaseDscBinariesUpdater_skips_broken(self):
+        # There have been a few instances of Binary fields in PPA packages
+        # that are formatted like a dependency relationship field, complete
+        # with (>= ...).  This is completely invalid (and failed to build),
+        # but does exist historically, so we have to deal with it.
+        # SourcePackageReleaseDscBinariesUpdater leaves such fields well
+        # alone.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        broken = "%s (>= 1), %s" % (
+            self.factory.getUniqueString(), self.factory.getUniqueString())
+        spr_broken = self.factory.makeSourcePackageRelease(
+            dsc_binaries=broken)
+        transaction.commit()
+        self.runDaily()
+        self.assertEqual(broken, spr_broken.dsc_binaries)
 
 
 class TestGarboTasks(TestCaseWithFactory):

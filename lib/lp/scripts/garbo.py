@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -85,6 +85,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -875,6 +876,59 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
+class SourcePackageReleaseDscBinariesUpdater(TunableLoop):
+    """Fix incorrect values for SourcePackageRelease.dsc_binaries."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SourcePackageReleaseDscBinariesUpdater, self).__init__(
+            log, abort_time)
+        self.offset = 0
+        self.store = IMasterStore(SourcePackageRelease)
+        self.store.execute("DROP TABLE IF EXISTS MatchedSourcePackageRelease")
+        self.store.execute("""
+            CREATE TEMPORARY TABLE MatchedSourcePackageRelease AS
+            SELECT id AS spr
+            FROM SourcePackageRelease
+            -- Get all SPR IDs which have an incorrectly-separated
+            -- dsc_binaries value (space rather than comma-space).
+            WHERE dsc_binaries ~ '[a-z0-9+.-] '
+            -- Skip rows with dsc_binaries in dependency relationship
+            -- format.  This is a different bug.
+                AND dsc_binaries NOT LIKE '%(%'
+            """, noresult=True)
+        self.store.execute("""
+            CREATE INDEX matchedsourcepackagerelease__spr__idx
+            ON MatchedSourcePackageRelease(spr)
+            """, noresult=True)
+        self.matched_spr_count = self.store.execute("""
+            SELECT COUNT(*) FROM MatchedSourcePackageRelease
+            """).get_one()[0]
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.offset >= self.matched_spr_count
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        self.store.execute("""
+            UPDATE SourcePackageRelease
+            SET dsc_binaries = regexp_replace(
+                dsc_binaries, '([a-z0-9+.-]) ', E'\\\\1, ', 'g')
+            FROM (
+                SELECT spr
+                FROM MatchedSourcePackageRelease
+                ORDER BY spr
+                OFFSET %d
+                LIMIT %d
+                ) AS MatchedSourcePackageRelease
+            WHERE SourcePackageRelease.id = MatchedSourcePackageRelease.spr
+            """ % (self.offset, chunk_size), noresult=True)
+        self.offset += chunk_size
+        transaction.commit()
+
+
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -1239,6 +1293,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        SourcePackageReleaseDscBinariesUpdater,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
