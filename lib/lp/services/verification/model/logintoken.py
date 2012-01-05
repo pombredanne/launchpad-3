@@ -30,7 +30,6 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterObject
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -250,8 +249,7 @@ class LoginToken(SQLBase):
     def activateGPGKey(self, key, can_encrypt):
         """See `ILoginToken`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        requester = self.requester
-        lpkey, new = gpgkeyset.activate(requester, key, can_encrypt)
+        lpkey, new = gpgkeyset.activate(self.requester, key, can_encrypt)
 
         self.consume()
 
@@ -273,7 +271,6 @@ class LoginToken(SQLBase):
         """
         emailset = getUtility(IEmailAddressSet)
         requester = self.requester
-        account = requester.account
         emails = chain(requester.validatedemails, [requester.preferredemail])
         # Must remove the security proxy because the user may not be logged in
         # and thus won't be allowed to view the requester's email addresses.
@@ -297,7 +294,7 @@ class LoginToken(SQLBase):
                 else:
                     # The email is not yet registered, so we register it for
                     # our user.
-                    email = emailset.new(uid, requester, account=account)
+                    email = emailset.new(uid, requester)
                     created.append(uid)
 
         return created, existing_and_owned_by_others
