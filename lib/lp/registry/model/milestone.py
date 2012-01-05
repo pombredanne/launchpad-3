@@ -304,7 +304,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         store.commit()
 
     def getTagsData(self):
-        """Return MiletsoneTag instances associated with this milestone."""
+        """See IMilestone."""
         # Prevent circular references.
         from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)

@@ -239,6 +239,13 @@ class IMilestone(IAbstractMilestone):
         using thread locals to get the current request in models.
         """
 
+    def getTagsData():
+        """Return MiletsoneTag instances associated with milestone.
+
+        See above the IMilestone.setTags docstring for an explanation of
+        why this is not a property.
+        """
+
     def getTags():
         """Return the milestone tags in alphabetical order.
 
