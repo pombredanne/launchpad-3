@@ -2401,9 +2401,11 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=True,
             requester=requester)
+        job.start()
         job.fail() 
 
-        archive2.removeCopyNotification(job.id)
+        with person_logged_in(archive2.owner):
+            archive2.removeCopyNotification(job.id)
 
         found_jobs = source.getIncompleteJobsForArchive(archive2)
         self.assertEqual(None, found_jobs.any())
