@@ -2029,7 +2029,7 @@ class Archive(SQLBase):
         pcj = PlainPackageCopyJob.get(job_id)
         job = pcj.job
         if job.status != JobStatus.FAILED:
-            raise Exception("Job is not failed")
+            raise AssertionError("Job is not failed")
         Store.of(pcj.context).remove(pcj.context)
         job.destroySelf()
 

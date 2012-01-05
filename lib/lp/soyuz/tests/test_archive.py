@@ -2389,7 +2389,7 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_removeCopyNotification(self):
+    def makeJob(self):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
@@ -2401,11 +2401,23 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=True,
             requester=requester)
+        return (distroseries, archive1, archive2, requester, job)
+
+    def test_removeCopyNotification(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
         job.start()
-        job.fail() 
+        job.fail()
 
         with person_logged_in(archive2.owner):
             archive2.removeCopyNotification(job.id)
 
+        source = getUtility(IPlainPackageCopyJobSource)
         found_jobs = source.getIncompleteJobsForArchive(archive2)
         self.assertEqual(None, found_jobs.any())
+
+    def test_removeCopyNotification_raises_for_not_failed(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job.id)
