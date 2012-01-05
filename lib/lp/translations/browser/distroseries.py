@@ -23,7 +23,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import action
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import LaunchpadEditFormView
+from lp.app.browser.launchpadform import LaunchpadEditFormView
 from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,

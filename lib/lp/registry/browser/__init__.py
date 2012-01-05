@@ -31,7 +31,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.webapp.launchpadform import (
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )

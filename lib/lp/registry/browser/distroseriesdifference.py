@@ -52,7 +52,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import custom_widget
+from lp.app.browser.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):

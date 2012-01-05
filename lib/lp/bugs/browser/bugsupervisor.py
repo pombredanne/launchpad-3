@@ -14,7 +14,7 @@ from zope.interface import Interface
 
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.services.webapp.launchpadform import (
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )

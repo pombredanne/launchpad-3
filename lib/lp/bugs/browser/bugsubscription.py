@@ -56,7 +56,7 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from lp.services.webapp.launchpadform import ReturnToReferrerMixin
+from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.services.webapp.menu import structured
 
 

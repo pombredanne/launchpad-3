@@ -42,7 +42,7 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
-from lp.services.webapp.launchpadform import (
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
