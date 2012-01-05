@@ -561,12 +561,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname=None, email=None, password=None,
+    def makeAccount(self, displayname=None, password=None,
                     status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
-        if email is not None:
-            raise Exception("Accounts don't have email addresses nowadays")
         if displayname is None:
             displayname = self.getUniqueString('displayname')
         account = getUtility(IAccountSet).new(
