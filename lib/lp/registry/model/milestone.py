@@ -308,10 +308,10 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         # Circular reference prevention.
         from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
-        return store.find(
+        return list(store.find(
             MilestoneTag, MilestoneTag.milestone_id == self.id
             ).order_by(MilestoneTag.tag
-            ).values(MilestoneTag.tag)
+            ).values(MilestoneTag.tag))
 
 
 class MilestoneSet:

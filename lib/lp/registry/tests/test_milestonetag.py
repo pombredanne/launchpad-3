@@ -1,17 +1,21 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
 
 __metaclass__ = type
 
+import transaction
+
 from lp.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     )
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    ws_object,
     )
 
 
@@ -28,13 +32,13 @@ class MilestoneTagTest(TestCaseWithFactory):
 
     def test_no_tags(self):
         # Ensure a newly created milestone does not have associated tags.
-        self.assertEquals([], list(self.milestone.getTags()))
+        self.assertEquals([], self.milestone.getTags())
 
     def test_tags_setting_and_retrieval(self):
         # Ensure tags are correctly saved and retrieved from the db.
         with person_logged_in(self.person):
             self.milestone.setTags(self.tags, self.person)
-        self.assertEqual(sorted(self.tags), list(self.milestone.getTags()))
+        self.assertEqual(sorted(self.tags), self.milestone.getTags())
 
     def test_tags_override(self):
         # Ensure you can override tags already associated with the milestone.
@@ -42,14 +46,14 @@ class MilestoneTagTest(TestCaseWithFactory):
             self.milestone.setTags(self.tags, self.person)
             new_tags = [u'tag2', u'tag4', u'tag3']
             self.milestone.setTags(new_tags, self.person)
-        self.assertEqual(sorted(new_tags), list(self.milestone.getTags()))
+        self.assertEqual(sorted(new_tags), self.milestone.getTags())
 
     def test_tags_deletion(self):
         # Ensure passing an empty sequence of tags deletes them all.
         with person_logged_in(self.person):
             self.milestone.setTags(self.tags, self.person)
             self.milestone.setTags([], self.person)
-        self.assertEquals([], list(self.milestone.getTags()))
+        self.assertEquals([], self.milestone.getTags())
 
 
 class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
@@ -162,3 +166,43 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
         specs, milestonetag = self._create_items_for_multiple_tags(
             self._create_specifications)
         self.assertContentEqual(specs, milestonetag.specifications)
+
+
+class MilestoneTagWebserviceTest(TestCaseWithFactory):
+    """Test the getter and setter for milestonetags."""
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(MilestoneTagWebserviceTest, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.owner)
+        self.milestone = self.factory.makeMilestone(product=self.product)
+        transaction.commit()
+        self.service = self.factory.makeLaunchpadService(self.owner)
+        self.ws_milestone = ws_object(
+            self.service, self.milestone)
+
+    def test_get_tags_none(self):
+        self.assertEqual([], self.ws_milestone.getTags())
+
+    def test_get_tags(self):
+        tags = [u'zeta', u'alpha', u'beta']
+        self.milestone.setTags(tags, self.owner)
+        self.assertEqual(sorted(tags), self.ws_milestone.getTags())
+
+    def test_set_tags_initial(self):
+        tags = [u'zeta', u'alpha', u'beta']
+        self.ws_milestone.setTags(tags=tags)
+        self.ws_milestone.lp_save()
+        transaction.begin()
+        self.assertEqual(sorted(tags), self.milestone.getTags())
+
+    def test_set_tags_replace(self):
+        tags1 = [u'zeta', u'alpha', u'beta']
+        self.milestone.setTags(tags1, self.owner)
+        tags2 = [u'delta', u'alpha', u'gamma']
+        self.ws_milestone.setTags(tags=tags2)
+        self.ws_milestone.lp_save()
+        transaction.begin()
+        self.assertEqual(sorted(tags2), self.milestone.getTags())

@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_factory_operation,
     export_operation_as,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
@@ -44,6 +45,7 @@ from zope.schema import (
     Bool,
     Choice,
     Int,
+    List,
     TextLine,
     )
 
@@ -228,6 +230,16 @@ class IMilestone(IAbstractMilestone):
 
     export_as_webservice_entry()
 
+    @operation_parameters(
+        tags=List(
+            title=_("Tags for this milestone"),
+            description=_("Space-separated keywords for classifying "
+                          "this milestone."),
+            value_type=TextLine()))
+
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
     def setTags(tags, user):
         """Set the milestone tags.
 
@@ -235,6 +247,8 @@ class IMilestone(IAbstractMilestone):
         :param: user The user who is updating tags for this milestone.
         """
 
+    @export_read_operation()
+    @operation_for_version('devel')
     def getTags():
         """Return the milestone tags in alphabetical order."""
 
