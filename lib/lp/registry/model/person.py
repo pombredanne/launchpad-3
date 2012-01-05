@@ -3587,8 +3587,12 @@ class PersonSet:
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
-        return Person.select("Person.teamowner IS NOT NULL",
-            orderBy=['-datecreated'], limit=limit)
+        orderby = (Desc(Person.datecreated), Desc(Person.id))
+        result = IStore(Person).find(
+            Person,
+            Person.teamowner != None,
+            Person.merged == None)
+        return result.order_by(orderby)[:limit]
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
