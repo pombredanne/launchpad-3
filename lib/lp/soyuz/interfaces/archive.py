@@ -1437,6 +1437,7 @@ class IArchiveAppend(Interface):
 
     @operation_parameters(job_id=Int())
     @export_write_operation()
+    @operation_for_version("devel")
     def removeCopyNotification(job_id):
         """Remove a copy notification that's displayed on the +packages page.
 
