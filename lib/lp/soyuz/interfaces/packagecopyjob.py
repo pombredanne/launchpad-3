@@ -199,6 +199,9 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
 
+    error_message = Int(
+        title=_("Error message"), required=True, readonly=True)
+
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
