@@ -130,42 +130,41 @@ tr#package-counters p{
         </p>
 
         <div tal:condition="view/has_pending_copy_jobs">
-        <div class="copy-job-message">
-          You have in progress or failed package copies.
-      <tal:jobs tal:repeat="job view/package_copy_jobs">
-      <div class="pending-job" job_id="job/id">
-        <a href="" class="job-summary js-action">
-          Copying <span
-            tal:attributes="class python: 'failed' if job.status.title=='Failed' else 'non-failed'"
-            tal:content="job/status/title/lower">in progress</span> of <span
-          tal:content="job/package_name" /> (<span
-          tal:content="job/package_version" />)
-        </a>&nbsp;
-  TODO: lp.Append add perm check.
-        <span>
-          <a href="#" class="js-action remove-notification"
-             tal:condition="python: job.status.title=='Failed'">
-            Remove notification
-            <img src="/@@/remove" alt="Remove notification" /></a>
-        </span>
-        <div class="job-details">
-          Copied from: <a
-            tal:content="job/source_archive/displayname"
-            tal:attributes="href job/source_archive/fmt:url">PPA for Fred
-            </a>.
-          <tal:copied-by tal:condition="context/owner/is_team">
-            Copied from: <a
-               tal:content="job/job/requester/displayname"
-               tal:attributes="href job/job/requester/fmt:url">Jimmy Neutron
-            </a>
-          </tal:copied-by>
-          Target series: <tal:target
-            tal:replace="job/target_distroseries/displayname">Oneiric
-            </tal:target>
-        </div>
-TODO: Add error display.
-      </div>
-      </tal:jobs>
+          <div class="copy-job-message">
+            You have in progress or failed package copies.
+            <tal:jobs tal:repeat="job view/package_copy_jobs">
+            <div class="pending-job" tal:attributes="job_id job/id">
+              <a href="" class="job-summary js-action">
+                Copying <span class="job-status"
+                  tal:attributes="class python: 'failed' if job.status.title=='Failed' else 'non-failed'"
+                  tal:content="job/status/title/lower">in progress</span> of <span
+                tal:content="job/package_name" /> (<span
+                tal:content="job/package_version" />)
+              </a>&nbsp;
+              <span tal:condition="view/has_append_perm">
+                <a href="#" class="js-action remove-notification"
+                   tal:condition="python: job.status.title=='Failed'">
+                  Remove notification
+                  <img src="/@@/remove" alt="Remove notification" /></a>
+              </span>
+              <div class="job-details">
+                Copied from: <a class="copied-from"
+                  tal:content="job/source_archive/displayname"
+                  tal:attributes="href job/source_archive/fmt:url">PPA for Fred
+                  </a>.
+                <tal:copied-by tal:condition="context/owner/is_team">
+                  Copied by: <a class="copied-by"
+                     tal:content="job/job/requester/displayname"
+                     tal:attributes="href job/job/requester/fmt:url">Jimmy Neutron
+                  </a>
+                </tal:copied-by>
+                Target series: <tal:target
+                  tal:replace="job/target_distroseries/displayname">Oneiric
+                  </tal:target>
+              </div>
+            TODO: Add error display.
+            </div>
+          </tal:jobs>
         </div>
       </div>
 

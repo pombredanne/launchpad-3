@@ -81,7 +81,6 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.model.person import Person
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -89,6 +88,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.person import Person
 from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
@@ -1055,7 +1055,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 
     @cachedproperty
     def has_append_perm(self):
-        check_permission('launchpad.Append', self.context)
+        return check_permission('launchpad.Append', self.context)
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
