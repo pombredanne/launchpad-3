@@ -28,7 +28,7 @@ from lp.testing.layers import (
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.role import IPersonRoles
 from lp.security import PublicOrPrivateTeamsExistence
-from lp.services.webapp.servers import LaunchpadTestRequest
+
 
 def registerFakeSecurityAdapter(interface, permission, adapter=None):
     """Register an instance of FakeSecurityAdapter.
@@ -183,9 +183,10 @@ class TestDelegatedAuthorization(TestCase):
             [(delegated_obj, "dedicatemyselfto.Evil")],
             list(authorization.checkUnauthenticated()))
 
+
 class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
     """Tests for the PublicOrPrivateTeamsExistence security adapter."""
-   
+
     layer = DatabaseFunctionalLayer
 
     def test_members_of_parent_teams_get_limited_view(self):
@@ -198,10 +199,7 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
         with person_logged_in(team_owner):
             public_team.addMember(team_user, team_owner)
             public_team.addMember(private_team, team_owner)
-        req = LaunchpadTestRequest()
         checker = PublicOrPrivateTeamsExistence(
             removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
         self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
-        
-        

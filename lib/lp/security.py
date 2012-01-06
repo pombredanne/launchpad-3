@@ -889,7 +889,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             super_teams = [team for team in self.obj.super_teams]
 
             intersection_teams = [t for t in user_teams if t in super_teams]
-                    
+
             if len(intersection_teams) > 0:
                 return True
 
