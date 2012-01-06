@@ -193,6 +193,9 @@
             name="++diff"
             template="../templates/branchmergeproposal-diff.pt"/>
         <browser:page
+            name="++diff-stats"
+            template="../templates/branchmergeproposal-diff-stats.pt"/>
+        <browser:page
             name="+pagelet-summary"
             template="../templates/branchmergeproposal-pagelet-summary.pt"/>
     </browser:pages>

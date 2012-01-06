@@ -433,13 +433,18 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 "It is expected to be a tuple containing only another "
                 "tuple with 3 elements  (name, version, relation)."
                 % (token, self.title, self.id, self.dependencies))
+        # Map relations to the canonical form used in control files.
+        if relation == '<':
+            relation = '<<'
+        elif relation == '>':
+            relation = '>>'
         return (name, version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
         # functions which returns boolean according the results of
-        # apt_pkg.VersionCompare function (see the order above).
+        # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
@@ -447,11 +452,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         version_relation_map = {
             # any version is acceptable if no relationship is given
             '': lambda x: True,
-            # stricly later
+            # strictly later
             '>>': lambda x: x == 1,
             # later or equal
             '>=': lambda x: x >= 0,
-            # stricly equal
+            # strictly equal
             '=': lambda x: x == 0,
             # earlier or equal
             '<=': lambda x: x <= 0,
@@ -463,7 +468,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # it behaves similar to cmp, i.e. returns negative
         # if first < second, zero if first == second and
         # positive if first > second.
-        dep_result = apt_pkg.VersionCompare(available, required)
+        dep_result = apt_pkg.version_compare(available, required)
 
         return version_relation_map[relation](dep_result)
 
@@ -500,12 +505,13 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def updateDependencies(self):
         """See `IBuild`."""
 
-        # apt_pkg requires InitSystem to get VersionCompare working properly.
-        apt_pkg.InitSystem()
+        # apt_pkg requires init_system to get version_compare working
+        # properly.
+        apt_pkg.init_system()
 
         # Check package build dependencies using apt_pkg
         try:
-            parsed_deps = apt_pkg.ParseDepends(self.dependencies)
+            parsed_deps = apt_pkg.parse_depends(self.dependencies)
         except (ValueError, TypeError):
             raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"

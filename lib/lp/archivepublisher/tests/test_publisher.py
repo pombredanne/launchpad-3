@@ -56,6 +56,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import ZopelessDatabaseLayer
@@ -430,6 +431,45 @@ class TestPublisher(TestPublisherBase):
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
+
+    def testPublishingSkipsObsoleteFuturePrimarySeries(self):
+        """Publisher skips OBSOLETE/FUTURE series in PRIMARY archives."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(0, naked_breezy_autotest.publish.call_count)
+
+    def testPublishingConsidersObsoleteFuturePPASeries(self):
+        """Publisher does not skip OBSOLETE/FUTURE series in PPA archives."""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, test_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(1, naked_breezy_autotest.publish.call_count)
 
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.

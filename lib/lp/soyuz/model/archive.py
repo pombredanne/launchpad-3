@@ -1288,18 +1288,14 @@ class Archive(SQLBase):
             #   - the given source package directly
             #   - a package set in the correct distro series that includes the
             #     given source package
-            source_allowed = self.checkArchivePermission(person,
-                                                         sourcepackagename)
+            source_allowed = self.checkArchivePermission(
+                person, sourcepackagename)
             set_allowed = self.isSourceUploadAllowed(
                 sourcepackagename, person, distroseries)
             if source_allowed or set_allowed:
                 return None
 
         if not self.getComponentsForUploader(person):
-            # XXX: JamesWestby 2010-08-01 bug=612351: We have to use
-            # is_empty() as we don't get an SQLObjectResultSet back, and
-            # so __nonzero__ isn't defined on it, and a straight bool
-            # check wouldn't do the right thing.
             if self.getPackagesetsForUploader(person).is_empty():
                 return NoRightsForArchive()
             else:

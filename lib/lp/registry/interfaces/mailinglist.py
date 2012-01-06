@@ -405,10 +405,8 @@ class IMailingList(Interface):
     def getSubscribedAddresses():
         """Return the set of subscribed email addresses for members.
 
-        :return: an iterator over the subscribed IEmailAddresses for all
-            subscribed members of the mailing list, in no particular order.
-            This represents all the addresses which will receive messages
-            posted to the mailing list.
+        :return: a list of email addresses (as strings) for all
+            subscribed members of the mailing list.
         """
 
     def getSubscribers():
@@ -421,9 +419,9 @@ class IMailingList(Interface):
     def getSenderAddresses():
         """Return the set of all email addresses for members.
 
-        :return: an iterator over the all the registered and validated
-            IEmailAddresses for all members of the mailing list's team, in
-            no particular order.  These represent all the addresses which are
+        :return: a list of the registered and validated email addresses
+            (as strings) for all members of the mailing list's team, in no
+            particular order.  These represent all the addresses which are
             allowed to post to the mailing list.
         """
 
