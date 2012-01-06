@@ -145,8 +145,11 @@ tr#package-counters p{
                 Target series: <tal:target
                   tal:replace="job/target_distroseries/displayname">Oneiric
                   </tal:target>
+                <span class="job-failed-error-msg"
+                  tal:condition="python: 'job_failed_message' in job.metadata"
+                  tal:content="job/metadata/job_failed_message">
+                </span>
               </div>
-            TODO: Add error display.
             </div>
           </tal:jobs>
         </div>

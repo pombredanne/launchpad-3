@@ -305,6 +305,9 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
 
     def test_job_notifications_display_failed(self):
         job = self.makeJob('package_1', failed=True)
+        # Manually poke an error message.
+        removeSecurityProxy(job).extendMetadata(
+            {'job_failed_message': 'Job failed!'})
         with person_logged_in(self.archive.owner):
             view = create_initialized_view(
                 self.archive, "+packages", principal=self.archive.owner)
@@ -322,6 +325,10 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 'no remove notification link', 'a',
                 text=re.compile('\s*Remove notification\s*'),
                 attrs={'class': re.compile('remove-notification')}),
+            soupmatchers.Tag(
+                'job error msg', 'span',
+                text='Job failed!',
+                attrs={'class': re.compile('job-failed-error-msg')}),
             )
         self.assertThat(html, packages_matches)
 
