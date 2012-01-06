@@ -1040,10 +1040,10 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         ppcjs = job_source.getIncompleteJobsForArchive(self.context)
 
+        # Convert PPCJ into PCJ.
         # removeSecurityProxy is only used to fetch pcjs objects and preload
         # related objects.
-        # Convert PPCJ into PCJ.
-        pcjs = map(lambda x: removeSecurityProxy(x).context, list(ppcjs))
+        pcjs = [removeSecurityProxy(ppcj).context for ppcj in ppcjs]
         # Pre-load related Jobs.
         jobs = load_related(Job, pcjs, ['job_id'])
         # Pre-load related requesters.
