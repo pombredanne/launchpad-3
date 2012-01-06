@@ -126,7 +126,12 @@ class Message(SQLBase):
     rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+    _chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+
+    @cachedproperty
+    def chunks(self):
+        return list(self._chunks)
+
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
     _bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')

@@ -43,7 +43,10 @@ from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -68,6 +71,10 @@ def build_comments_from_chunks(
     # This would be better as part of indexed_messages eager loading.
     comments = {}
     for bugmessage, message, chunk in chunks:
+        cache = get_property_cache(message)
+        if getattr(cache, 'chunks', None) is None:
+            cache.chunks = []
+        cache.chunks.append(chunk)
         bug_comment = comments.get(message.id)
         if bug_comment is None:
             if bugmessage.index == 0 and hide_first:

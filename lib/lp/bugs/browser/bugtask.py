@@ -350,6 +350,9 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         user=user, hide_first=for_display)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
+    for comment in comments.values():
+        get_property_cache(comment._message).bugattachments = []
+
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
@@ -360,8 +363,6 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         cache = get_property_cache(attachment.message)
-        if getattr(cache, 'bugattachments', None) is None:
-            cache.bugattachments = []
         cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
