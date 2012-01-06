@@ -841,12 +841,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userCanUnassign(user):
-        """Check if the current user can set assignee to None.
-
-        Project owner, project drivers, series drivers, bug supervisors
-        and Launchpad admins can do this always; other users can do this
-        only if they or their reams are the assignee.
-        """
+        """Check if the current user can set assignee to None."""
 
     @mutator_for(assignee)
     @operation_parameters(
