@@ -202,6 +202,6 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
         checker = PublicOrPrivateTeamsExistence(
             removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
-    
+        self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
         
         
