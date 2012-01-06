@@ -85,7 +85,7 @@ class IMessage(Interface):
                     schema=ILibraryFileAlias, required=False, readonly=True)
     bugs = CollectionField(
         title=_('Bug List'),
-        value_type=Reference(schema=Interface)) # Redefined in bug.py
+        value_type=Reference(schema=Interface))  # Redefined in bug.py
 
     chunks = Attribute(_('Message pieces'))
 
