@@ -1408,7 +1408,7 @@ class Person(
             # Initialize cache
             self._inTeam_cache = {}
         else:
-            # Retun from cache or fall through.
+            # Return from cache or fall through.
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:

@@ -20,7 +20,7 @@ directory we call 'sandbox'. It's where the packages will get created.
     >>> os.path.exists(packager.sandbox_path)
     True
 
-Source 'name' and 'version' and 'gpg_key_id' are set according the
+Source 'name' and 'version' and 'gpg_key_id' are set according to the
 give arguments passed in the initialization.
 
     >>> print packager.name

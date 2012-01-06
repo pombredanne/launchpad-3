@@ -717,7 +717,7 @@ class Archive(SQLBase):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
-        a list of clauseTables required according the given arguments.
+        a list of clauseTables required according to the given arguments.
         """
         clauses = ["""
             BinaryPackagePublishingHistory.archive = %s AND

@@ -342,7 +342,7 @@ class SeriesStatusMixin:
     def createStatusField(self):
         """Create the 'status' field.
 
-        Create the status vocabulary according the current distroseries
+        Create the status vocabulary according to the current distroseries
         status:
          * stable   -> CURRENT, SUPPORTED, OBSOLETE
          * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
