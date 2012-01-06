@@ -413,6 +413,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             metadata_changes['section_override'] = override.section.name
         self.context.extendMetadata(metadata_changes)
 
+    def setErrorMessage(self, message):
+        """See `IPackageCopyJob`."""
+        self.metadata["error_message"] = message
+
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
         name = self.package_name
@@ -603,7 +607,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             for dsd in dsds:
                 comment_source.new(dsd, reporting_persona, message)
         else:
-            self.metadata['error_message'] = message
+            self.setErrorMessage(message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""
