@@ -133,10 +133,6 @@
             Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
         }, window);
 
-        // Hook up the function that dismisses the help window if we click
-        // anywhere outside of it.
-        Y.on('click', handleClickOnPage, window);
-
         Y.on('lp:context:web_link:changed', function(e) {
             window.location = e.new_value;
         });
