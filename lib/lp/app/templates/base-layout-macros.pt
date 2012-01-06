@@ -115,10 +115,11 @@
     </script>
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll',
+        'lp.app.inlinehelp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
-            initInlineHelp();
+            Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
@@ -131,10 +132,6 @@
             // right *after* the page has loaded.
             Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
         }, window);
-
-        // Hook up the function that dismisses the help window if we click
-        // anywhere outside of it.
-        Y.on('click', handleClickOnPage, window);
 
         Y.on('lp:context:web_link:changed', function(e) {
             window.location = e.new_value;
