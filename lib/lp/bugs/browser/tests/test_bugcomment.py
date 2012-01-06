@@ -326,6 +326,7 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_bug_comment_implements_interface(self):
+        """Ensure BugComment implements IBugComment"""
         bug_message = self.factory.makeBugComment()
         bugtask = bug_message.bugs[0].bugtasks[0]
         bug_comment = BugComment(1, bug_message, bugtask)

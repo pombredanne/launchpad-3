@@ -188,9 +188,8 @@ class BugComment:
     (task-specific) location.
     """
     implements(IBugComment)
-    delegates(IMessage, '_message')
 
-    extra_css_class = None
+    delegates(IMessage, '_message')
 
     def __init__(
             self, index, message, bugtask, activity=None,
