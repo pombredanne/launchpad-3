@@ -329,6 +329,26 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
+    def test_target_ppa_message(self):
+        # When copying to a PPA archive the error message is stored in the
+        # job's metadatas.
+        distroseries = self.factory.makeDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        ppa = self.factory.makeArchive(distroseries.distribution)
+        job = getUtility(IPlainPackageCopyJobSource).create(
+            package_name=package.name, source_archive=archive1,
+            target_archive=ppa, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            include_binaries=False, package_version='1.0',
+            requester=self.factory.makePerson())
+        transaction.commit()
+        job.run()
+
+        self.assertEqual(
+            "Destination pocket must be 'release' for a PPA.",
+            job.metadata['job_failed_message'])
+
     def test_run(self):
         # A proper test run synchronizes packages.
 
