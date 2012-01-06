@@ -927,6 +927,7 @@ class SourcePackageReleaseDscBinariesUpdater(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
+        chunk_size = int(chunk_size + 0.5)
         chunk_ids = self.ids[:chunk_size]
         del self.ids[:chunk_size]
         self.store.execute("""
