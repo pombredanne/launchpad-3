@@ -3593,7 +3593,7 @@ class PersonSet:
             And(
                 self._teamPrivacyQuery(),
                 TeamParticipation.team == Person.id,
-                Not(Person.teamowner == None),
+                Person.teamowner != None,
                 Person.merged == None))
         return result.order_by(orderby).config(distinct=True)[:limit]
 
