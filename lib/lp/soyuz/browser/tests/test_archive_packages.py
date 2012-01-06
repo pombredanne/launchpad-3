@@ -307,7 +307,7 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
         job = self.makeJob('package_1', failed=True)
         # Manually poke an error message.
         removeSecurityProxy(job).extendMetadata(
-            {'job_failed_message': 'Job failed!'})
+            {'error_message': 'Job failed!'})
         with person_logged_in(self.archive.owner):
             view = create_initialized_view(
                 self.archive, "+packages", principal=self.archive.owner)
