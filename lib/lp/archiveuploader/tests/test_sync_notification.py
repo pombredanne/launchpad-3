@@ -45,14 +45,14 @@ class FakeUploadPolicy:
 
 
 class FakeChangesFile:
-    def __init__(self, spph, file_path, maintainer_key):
+    def __init__(self, spph, file_path):
         self.files = []
         self.filepath = file_path
         self.filename = os.path.basename(file_path)
         self.architectures = ['i386']
         self.suite_name = '-'.join([spph.distroseries.name, spph.pocket.name])
         self.raw_content = open(file_path).read()
-        self.signingkey = maintainer_key
+        self.signingkey = None
 
     checkFileName = FakeMethod([])
     processAddresses = FakeMethod([])
@@ -96,7 +96,6 @@ class TestSyncNotification(TestCaseWithFactory):
 
     def makeChangesFile(self, spph, maintainer, maintainer_address,
                         changer, changer_address):
-        maintainer_key = self.factory.makeGPGKey(maintainer)
         temp_dir = self.makeTemporaryDirectory()
         changes_file = os.path.join(
             temp_dir, "%s.changes" % spph.source_package_name)
@@ -110,7 +109,7 @@ class TestSyncNotification(TestCaseWithFactory):
                     changer.name,
                     changer_address,
                     ))
-        return FakeChangesFile(spph, changes_file, maintainer_key)
+        return FakeChangesFile(spph, changes_file)
 
     def makeNascentUpload(self, spph, maintainer, maintainer_address,
                           changer, changer_address):
@@ -139,16 +138,23 @@ class TestSyncNotification(TestCaseWithFactory):
         """Get email addresses that were notified."""
         return [message['to'] for message in pop_notifications()]
 
-    def test_maintainer_not_notified_about_build_failure_elsewhere(self):
-        """No mail to maintainers about builds they're not responsible for.
+    def test_failed_copy_builds_do_not_spam_upstream(self):
+        """Failed builds do not spam people who are not responsible for them.
 
         We import Debian source packages, then sync them into Ubuntu (and
         from there, into Ubuntu-derived distros).  Those syncs then trigger
-        builds that the original Debian maintainers are not responsible for.
+        builds that the original Debian maintainers and last-change authors
+        are not responsible for.
 
-        In a situation like that, we should not bother the maintainer or
-        the author of the last change with the failure.  We notify the
-        person who requested the sync instead.
+        In a situation like that, we should not bother those people with the
+        failure.  We notify the person who requested the sync instead.
+
+        (The logic in lp.soyuz.adapters.notification may still notify the
+        author of the last change, if that person is also an uploader for the
+        archive that the failure happened in.  For this particular situation
+        we consider that not so much an intended behaviour, as an emergent one
+        that does not seem inappropriate.  It'd be hard to change if we wanted
+        to.)
 
         This test guards against bug 876594.
         """
