@@ -58,7 +58,7 @@ currently processing this job:
     u'bob'
 
 'logtail' is a text field which stores up to 1 Kbyte of the last
-logged actions during the build process, it is updated according the
+logged actions during the build process, it is updated according to the
 frequency set in buildd-slavescanner, normally 10 seconds, see
 buildd-slavescanner.txt for further information:
 

@@ -167,7 +167,7 @@ Not found as empty list:
 See distroseries-publishing-lookups.txt for more information.
 
 canUploadToPocket method helps us to decide if an upload is allowed or
-not, according the distroseries status and the upload target pocket.
+not, according to the distroseries status and the upload target pocket.
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -332,8 +332,8 @@ again" type set of assertions.
 
 Check if the attributes of an DRSPR instance for the just initialized
 distroseries are sane. A DRSPR instance should filter attributes of
-a SPR according the distroseries in question (practically according
-what is published in this distrorelelase)
+a SPR according to the distroseries in question (practically according
+what is published in this distrorelease)
 
 Since the initialize-from-parent procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting

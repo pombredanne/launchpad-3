@@ -365,7 +365,7 @@ def urlbase(value):
 
 
 def commalist(value):
-    """ZConfig validator for a comma seperated list"""
+    """ZConfig validator for a comma separated list"""
     return [v.strip() for v in value.split(',')]
 
 
@@ -450,7 +450,7 @@ class DatabaseConfig:
         """
         for attr, value in kwargs.iteritems():
             assert attr in self._db_config_attrs, (
-                "%s cannot be overriden" % attr)
+                "%s cannot be overridden" % attr)
             if value is None:
                 if hasattr(self.overrides, attr):
                     delattr(self.overrides, attr)

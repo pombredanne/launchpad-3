@@ -356,10 +356,10 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
             self, archive, distroseries, pocket, binaries)
         existing = set(
             (
-                overide.binary_package_name,
-                overide.distro_arch_series.architecturetag,
+                override.binary_package_name,
+                override.distro_arch_series.architecturetag,
             )
-            for overide in overrides)
+            for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(

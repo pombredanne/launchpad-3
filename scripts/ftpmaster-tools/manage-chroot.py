@@ -14,6 +14,6 @@ from lp.soyuz.scripts.ftpmaster import ManageChrootScript
 
 
 if __name__ == '__main__':
-    script = ManageChrootScript('mangage-chroot', dbuser="fiera")
+    script = ManageChrootScript('manage-chroot', dbuser="fiera")
     script.lock_and_run()
 

@@ -881,7 +881,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         branches registered by a particular user for the counts that
         appear at the top of a branch listing page.
 
-        This should be overriden in subclasses to restrict to, for
+        This should be overridden in subclasses to restrict to, for
         example, the set of branches of a particular product.
         """
         return getUtility(IAllBranches).visibleByUser(self.user)

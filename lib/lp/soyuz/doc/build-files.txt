@@ -21,7 +21,7 @@ Create a test build.
     >>> [build] = test_source.getBuilds()
 
 
-IBuild provide a getFileByName() method, which retuns one of the
+IBuild provide a getFileByName() method, which returns one of the
 following file type in its context.
 
  * Binary changesfile: '.changes';
