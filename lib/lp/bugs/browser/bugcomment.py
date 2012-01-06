@@ -37,6 +37,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugmessage import IBugComment
@@ -74,7 +75,7 @@ def build_comments_from_chunks(
         cache = get_property_cache(message)
         if getattr(cache, 'chunks', None) is None:
             cache.chunks = []
-        cache.chunks.append(chunk)
+        cache.chunks.append(removeSecurityProxy(chunk))
         bug_comment = comments.get(message.id)
         if bug_comment is None:
             if bugmessage.index == 0 and hide_first:
