@@ -97,6 +97,7 @@ class TestMilestoneViews(TestCaseWithFactory):
         expected = sorted(tags.split())
         self.assertEqual(expected, list(self.product.milestones[0].getTags()))
 
+
 class TestMilestoneEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
