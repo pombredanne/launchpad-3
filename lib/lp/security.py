@@ -885,17 +885,18 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             # The easiest check is just to see if the user is in a team that
             # is a super team for the private team.
-            user_teams = [team for team in user.person.teams_participated_in]
-            super_teams = [team for team in self.obj.super_teams]
 
-            intersection_teams = [t for t in user_teams if t in super_teams]
+            # Do comparison by ids because they may be needed for comparison
+            # to membership.team.ids later.
+            user_teams = [team.id for team in user.person.teams_participated_in]
+            super_teams = [team.id for team in self.obj.super_teams]
+            intersection_teams = set(user_teams) & set(super_teams)
 
             if len(intersection_teams) > 0:
                 return True
 
             # If it's not, the private team may still be a pending membership,
             # which still needs to be visible to team members.
-
             BAD_STATES = (
                 TeamMembershipStatus.DEACTIVATED.value,
                 TeamMembershipStatus.EXPIRED.value,
@@ -909,11 +910,9 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             store = IStore(Person)
             future_super_teams = [team[0] for team in
                     store.execute(team_memberships_query)]
+            intersection_teams = set(user_teams) & set(future_super_teams)
 
-            membership_intersection = [team for team in user_teams
-                                        if team.id in future_super_teams]
-
-            if len(membership_intersection) > 0:
+            if len(intersection_teams) > 0:
                 return True
 
             # There are a number of other conditions under which a private
