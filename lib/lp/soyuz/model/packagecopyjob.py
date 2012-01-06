@@ -59,7 +59,10 @@ from lp.soyuz.adapters.overrides import (
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageCopyPolicy,
+    )
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
@@ -581,18 +584,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
         message = unicode(cannotcopy_exception)
-        dsds = self.findMatchingDSDs()
-        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        if self.target_archive.purpose != ArchivePurpose.PPA:
+            dsds = self.findMatchingDSDs()
+            comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
 
-        # Register the error comment in the name of the Janitor.  Not a
-        # great choice, but we have no user identity to represent
-        # Launchpad; it's far too costly to create one; and
-        # impersonating the requester can be misleading and would also
-        # involve extra bookkeeping.
-        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+            # Register the error comment in the name of the Janitor.  Not a
+            # great choice, but we have no user identity to represent
+            # Launchpad; it's far too costly to create one; and
+            # impersonating the requester can be misleading and would also
+            # involve extra bookkeeping.
+            reporting_persona = getUtility(ILaunchpadCelebrities).janitor
 
-        for dsd in dsds:
-            comment_source.new(dsd, reporting_persona, message)
+            for dsd in dsds:
+                comment_source.new(dsd, reporting_persona, message)
+        else:
+            self.metadata['job_failed_message'] = message
 
     def __repr__(self):
         """Returns an informative representation of the job."""
