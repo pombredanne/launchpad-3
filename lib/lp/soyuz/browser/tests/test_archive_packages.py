@@ -313,18 +313,22 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 self.archive, "+packages", principal=self.archive.owner)
             html = view.render()
         packages_matches = soupmatchers.HTMLContains(
+            # Check the main title.
             soupmatchers.Tag(
                 'job summary', 'a',
                 text=re.compile('Copying.*'),
                 attrs={'class': re.compile('job-summary')}),
+            # Check the link to the source archive.
             soupmatchers.Tag(
                 'copied from', 'a',
                 text=job.source_archive.displayname,
                 attrs={'class': re.compile('copied-from')}),
+            # Check the presence of the link remove the notification.
             soupmatchers.Tag(
                 'no remove notification link', 'a',
                 text=re.compile('\s*Remove notification\s*'),
                 attrs={'class': re.compile('remove-notification')}),
+            # Check the presence of the error message.
             soupmatchers.Tag(
                 'job error msg', 'span',
                 text='Job failed!',
@@ -340,8 +344,9 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 self.archive, "+packages", principal=other_person)
             html = view.render()
         packages_not_matches = soupmatchers.HTMLContains(
+            # Check the absence of the link remove the notification.
             soupmatchers.Tag(
-                'remove notification link', 'a',
+                'no remove notification link', 'a',
                 text=re.compile('\s*Remove notification\s*'),
                 attrs={'class': re.compile('remove-notification')}),
             )
@@ -364,6 +369,7 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 attrs={'class': re.compile('copied-from')}),
             )
         packages_not_matches = soupmatchers.HTMLContains(
+            # Check the absence of the link remove the notification.
             soupmatchers.Tag(
                 'remove notification link', 'a',
                 text=re.compile('\s*Remove notification\s*'),
