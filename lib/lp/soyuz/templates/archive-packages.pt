@@ -146,8 +146,8 @@ tr#package-counters p{
                   tal:replace="job/target_distroseries/displayname">Oneiric
                   </tal:target>
                 <span class="job-failed-error-msg"
-                  tal:condition="python: 'job_failed_message' in job.metadata"
-                  tal:content="job/metadata/job_failed_message">
+                  tal:condition="job/error_message"
+                  tal:content="job/error_message">
                 </span>
               </div>
             </div>
