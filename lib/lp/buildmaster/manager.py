@@ -67,6 +67,7 @@ def assessFailureCounts(builder, fail_notes):
         # we can do is try them both again, and hope that the job
         # runs against a different builder.
         current_job.reset()
+        del get_property_cache(builder).currentjob
         return
 
     if builder.failure_count > job_failure_count:

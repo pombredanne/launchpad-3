@@ -480,10 +480,12 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
+        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+        self._clean_currentjob_cache()
 
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
