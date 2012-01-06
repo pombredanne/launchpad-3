@@ -58,6 +58,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.badge import HasBadgeBase
@@ -1037,17 +1038,20 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def package_copy_jobs(self):
         """Return incomplete PCJs targeted at this archive."""
         job_source = getUtility(IPlainPackageCopyJobSource)
-        pcjs = job_source.getIncompleteJobsForArchive(self.context)
-        return pcjs
-        # TODO: Convert PPCJ into PCJ so this works.
+        ppcjs = job_source.getIncompleteJobsForArchive(self.context)
+
+        # removeSecurityProxy is only used to fetch pcjs objects and preload
+        # related objects.
+        # Convert PPCJ into PCJ.
+        pcjs = map(lambda x: removeSecurityProxy(x).context, list(ppcjs))
         # Pre-load related Jobs.
         jobs = load_related(Job, pcjs, ['job_id'])
         # Pre-load related requesters.
         load_related(Person, jobs, ['requester_id'])
         # Pre-load related source archives.
-        load_related(Archive, pcjs, ['source_archive'])
+        load_related(Archive, pcjs, ['source_archive_id'])
 
-        return pcjs
+        return ppcjs
 
     @cachedproperty
     def has_pending_copy_jobs(self):
