@@ -446,7 +446,8 @@ class MilestoneAddView(LaunchpadFormView):
         # Make an instance attribute to avoid mutating the class attribute.
         self.field_names = self.field_names[:]
         # Insert the tags field before the summary.
-        self.field_names[3:3] = [tag_entry.__name__]
+        summary_index = self.field_names.index('summary')
+        self.field_names[summary_index:summary_index] = [tag_entry.__name__]
 
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
@@ -458,7 +459,7 @@ class MilestoneAddView(LaunchpadFormView):
             summary=data.get('summary'))
         tags = data.get('tags')
         if tags:
-            milestone.setTags(tags.split(), self.user)
+            milestone.setTags(tags.lower().split(), self.user)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -491,7 +492,7 @@ class MilestoneEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @property
-    def field_names(self):
+    def _field_names(self):
         """See `LaunchpadFormView`.
 
         There are two series fields, one for for product milestones and the
@@ -506,6 +507,31 @@ class MilestoneEditView(LaunchpadEditFormView):
         else:
             names.append('productseries')
         return names
+
+    @property
+    def initial_values(self):
+        tags = self.context.getTags()
+        tagstring = ' '.join(tags)
+        return dict(tags=tagstring)
+
+    def extendFields(self):
+        """See `LaunchpadFormView`.
+
+        Add a text-entry widget for milestone tags since there is not property
+        on the interface.
+        """
+        tag_entry = TextLine(
+            __name__='tags',
+            title=u'Tags',
+            required=False)
+        self.form_fields += form.Fields(
+            tag_entry, render_context=self.render_context)
+
+        # Make an instance attribute to avoid mutating the class attribute.
+        self.field_names = self._field_names[:]
+        # Insert the tags field before the summary.
+        summary_index = self.field_names.index('summary')
+        self.field_names[summary_index:summary_index] = [tag_entry.__name__]
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -531,7 +557,9 @@ class MilestoneEditView(LaunchpadEditFormView):
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the milestone."""
+        tags = data.pop('tags') or u''
         self.updateContextFromData(data)
+        self.context.setTags(tags.lower().split(), self.user)
         self.next_url = canonical_url(self.context)
 
 

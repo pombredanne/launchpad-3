@@ -45,8 +45,8 @@ class TestMilestoneViews(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
         self.series = (
             self.factory.makeProductSeries(product=self.product))
-        owner = self.product.owner
-        login_person(owner)
+        self.owner = self.product.owner
+        login_person(self.owner)
 
     def test_add_milestone(self):
         form = {
@@ -96,6 +96,49 @@ class TestMilestoneViews(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         expected = sorted(tags.split())
         self.assertEqual(expected, list(self.product.milestones[0].getTags()))
+
+class TestMilestoneEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(
+            name='orig-name', product=self.product)
+        self.owner = self.product.owner
+        login_person(self.owner)
+
+    def test_edit_milestone_with_tags(self):
+        orig_tags = u'b a c'
+        self.milestone.setTags(orig_tags.split(), self.owner)
+        new_tags = u'z a B'
+        form = {
+            'field.name': 'new-name',
+            'field.tags': new_tags,
+            'field.actions.update': 'Update',
+            }
+        view = create_initialized_view(
+            self.milestone, '+edit', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual('new-name', self.milestone.name)
+        expected = sorted(new_tags.lower().split())
+        self.assertEqual(expected, list(self.milestone.getTags()))
+
+    def test_edit_milestone_clear_tags(self):
+        orig_tags = u'b a c'
+        self.milestone.setTags(orig_tags.split(), self.owner)
+        form = {
+            'field.name': 'new-name',
+            'field.tags': '',
+            'field.actions.update': 'Update',
+            }
+        view = create_initialized_view(
+            self.milestone, '+edit', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual('new-name', self.milestone.name)
+        expected = []
+        self.assertEqual(expected, list(self.milestone.getTags()))
 
 
 class TestMilestoneMemcache(MemcacheTestCase):
@@ -475,7 +518,7 @@ class TestMilestoneTagView(TestQueryCountBase):
     def _make_form(self, tags):
         return {
             u'field.actions.search': u'Search',
-            u'field.tags': u' '.join(tags)
+            u'field.tags': u' '.join(tags),
             }
 
     def _url_tail(self, url, separator='/'):
@@ -508,7 +551,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         self.assertEqual(1, len(view.errors))
         self.assertEqual('tags', view.errors[0].field_name)
 
-    def test_buktask_query_count(self):
+    def test_bugtask_query_count(self):
         # Ensure that a correct number of queries is executed for
         # bugtasks retrieval.
         bugtask_count = 10
