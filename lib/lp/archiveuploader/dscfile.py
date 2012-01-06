@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -199,6 +199,10 @@ class SignableTagFile:
             raise UploadError(str(error))
 
         person = getUtility(IPersonSet).getByEmail(email)
+        if person and person.private:
+            # Private teams can not be maintainers.
+            raise UploadError("Invalid Maintainer.")
+
         if person is None and self.policy.create_people:
             package = self._dict['Source']
             version = self._dict['Version']
@@ -382,7 +386,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field produced by a broken version "
                         "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
-                    apt_pkg.ParseSrcDepends(field)
+                    apt_pkg.parse_src_depends(field)
                 except (SystemExit, KeyboardInterrupt):
                     raise
                 except Exception, error:

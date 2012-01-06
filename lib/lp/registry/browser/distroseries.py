@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -41,6 +41,8 @@ from zope.schema.vocabulary import (
 
 from lp import _
 from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -81,8 +83,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
-    action,
-    custom_widget,
     GetitemNavigation,
     StandardLaunchpadFacets,
     )
@@ -1081,7 +1081,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The child doesn't have this package.  Treat that as the
             # parent being newer.
             return False
-        comparison = apt_pkg.VersionCompare(
+        comparison = apt_pkg.version_compare(
             dsd.parent_source_version, dsd.source_version)
         return comparison < 0
 

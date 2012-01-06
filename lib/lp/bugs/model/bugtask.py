@@ -2368,9 +2368,6 @@ class BugTaskSet:
                 "BugTask.datecreated > %s" % (
                     sqlvalues(params.created_since,)))
 
-        orderby_arg, extra_joins = self._processOrderBy(params)
-        join_tables.extend(extra_joins)
-
         query = " AND ".join(extra_clauses)
 
         if not decorators:
@@ -2386,7 +2383,7 @@ class BugTaskSet:
         else:
             with_clause = None
         return (
-            query, clauseTables, orderby_arg, decorator, join_tables,
+            query, clauseTables, decorator, join_tables,
             has_duplicate_results, with_clause)
 
     def buildUpstreamClause(self, params):
@@ -2644,7 +2641,8 @@ class BugTaskSet:
                     SpecificationBug.specification %s)
                 """ % search_value_to_where_condition(linked_blueprints)
 
-    def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
+    def buildOrigin(self, join_tables, prejoin_tables, clauseTables,
+                    start_with=BugTask):
         """Build the parameter list for Store.using().
 
         :param join_tables: A sequence of tables that should be joined
@@ -2663,7 +2661,7 @@ class BugTaskSet:
         and in clauseTables. This method ensures that each table
         appears exactly once in the returned sequence.
         """
-        origin = [BugTask]
+        origin = [start_with]
         already_joined = set(origin)
         for table, join in join_tables:
             if table is None or table not in already_joined:
@@ -2691,26 +2689,29 @@ class BugTaskSet:
         :param args: optional additional BugTaskSearchParams instances,
         """
         orig_store = store = IStore(BugTask)
-        [query, clauseTables, orderby, bugtask_decorator, join_tables,
+        [query, clauseTables, bugtask_decorator, join_tables,
         has_duplicate_results, with_clause] = self.buildQuery(params)
         if with_clause:
             store = store.with_(with_clause)
+        orderby_expression, orderby_joins = self._processOrderBy(params)
         if len(args) == 0:
             if has_duplicate_results:
                 origin = self.buildOrigin(join_tables, [], clauseTables)
-                outer_origin = self.buildOrigin([], prejoins, [])
+                outer_origin = self.buildOrigin(
+                     orderby_joins, prejoins, [])
                 subquery = Select(BugTask.id, where=SQL(query), tables=origin)
                 resultset = store.using(*outer_origin).find(
                     resultrow, In(BugTask.id, subquery))
             else:
-                origin = self.buildOrigin(join_tables, prejoins, clauseTables)
+                origin = self.buildOrigin(
+                    join_tables + orderby_joins, prejoins, clauseTables)
                 resultset = store.using(*origin).find(resultrow, query)
             if prejoins:
                 decorator = lambda row: bugtask_decorator(row[0])
             else:
                 decorator = bugtask_decorator
 
-            resultset.order_by(orderby)
+            resultset.order_by(orderby_expression)
             return DecoratedResultSet(resultset, result_decorator=decorator,
                 pre_iter_hook=pre_iter_hook)
 
@@ -2720,7 +2721,7 @@ class BugTaskSet:
 
         decorators = [bugtask_decorator]
         for arg in args:
-            [query, clauseTables, ignore, decorator, join_tables,
+            [query, clauseTables, decorator, join_tables,
              has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
             localstore = store
@@ -2745,15 +2746,16 @@ class BugTaskSet:
                 bugtask = decorator(bugtask)
             return bugtask
 
-        origin = [Alias(resultset._get_select(), "BugTask")]
+        origin = self.buildOrigin(
+            orderby_joins, prejoins, [],
+            start_with=Alias(resultset._get_select(), "BugTask"))
         if prejoins:
-            origin += [join for table, join in prejoins]
             decorator = prejoin_decorator
         else:
             decorator = simple_decorator
 
         result = store.using(*origin).find(resultrow)
-        result.order_by(orderby)
+        result.order_by(orderby_expression)
         return DecoratedResultSet(result, result_decorator=decorator,
             pre_iter_hook=pre_iter_hook)
 

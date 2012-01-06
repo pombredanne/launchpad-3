@@ -772,7 +772,7 @@ class DistroSeriesDifference(StormBase):
         new_source_version = new_parent_source_version = None
         if self.source_pub:
             new_source_version = self.source_pub.source_package_version
-            if self.source_version is None or apt_pkg.VersionCompare(
+            if self.source_version is None or apt_pkg.version_compare(
                     self.source_version, new_source_version) != 0:
                 self.source_version = new_source_version
                 updated = True
@@ -784,7 +784,7 @@ class DistroSeriesDifference(StormBase):
         if self.parent_source_pub:
             new_parent_source_version = (
                 self.parent_source_pub.source_package_version)
-            if self.parent_source_version is None or apt_pkg.VersionCompare(
+            if self.parent_source_version is None or apt_pkg.version_compare(
                     self.parent_source_version,
                     new_parent_source_version) != 0:
                 self.parent_source_version = new_parent_source_version
@@ -798,13 +798,13 @@ class DistroSeriesDifference(StormBase):
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                 self.source_version, self.parent_source_version) < 0:
                 # Higher parent version.
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # The child was updated with a higher version so it's
@@ -818,12 +818,12 @@ class DistroSeriesDifference(StormBase):
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) == 0:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # If the derived version is lower than the parent's, we

@@ -122,7 +122,7 @@ def parse_changelog(changelog_filename, previous_version):
             is_debian_changelog = 1
             if previous_version is None:
                 previous_version = "9999:9999"
-            elif apt_pkg.VersionCompare(
+            elif apt_pkg.version_compare(
                 match.group('version'), previous_version) > 0:
                 urgency = max(
                     urgency_to_numeric(match.group('urgency')), urgency)
@@ -193,13 +193,13 @@ def parse_control(control_filename):
         raise LaunchpadScriptFailure(
             "debian/control not found in extracted source.")
     control_filehandle = open(control_filename)
-    Control = apt_pkg.ParseTagFile(control_filehandle)
-    while Control.Step():
-        source = Control.Section.Find("Source")
-        package = Control.Section.Find("Package")
-        section = Control.Section.Find("Section")
-        priority = Control.Section.Find("Priority")
-        description = Control.Section.Find("Description")
+    control = apt_pkg.TagFile(control_filehandle)
+    for control_section in control:
+        source = control_section.find("Source")
+        package = control_section.find("Package")
+        section = control_section.find("Section")
+        priority = control_section.find("Priority")
+        description = control_section.find("Description")
         if source is not None:
             if section is not None:
                 source_section = section
@@ -399,7 +399,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
         if pkg not in S:
             S[pkg] = [version, component]
         else:
-            if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
+            if apt_pkg.version_compare(S[pkg][0], version) < 0:
                 Log.warning(
                     "%s: skipping because %s is < %s" % (
                     pkg, version, S[pkg][0]))
@@ -435,7 +435,7 @@ def read_current_binaries(distro_series):
     #             if pkg not in B:
     #                 B[pkg] = [version, component]
     #             else:
-    #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
+    #                 if apt_pkg.version_compare(B[pkg][0], version) < 0:
     #                     B[pkg] = [version, component]
 
     # XXX James Troup 2006-02-22: so... let's fall back on raw SQL
@@ -463,7 +463,7 @@ def read_current_binaries(distro_series):
         if pkg not in B:
             B[pkg] = [version, component]
         else:
-            if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
+            if apt_pkg.version_compare(B[pkg][0], version) < 0:
                 B[pkg] = [version, component]
     return B
 
@@ -480,21 +480,21 @@ def read_Sources(filename, origin):
 
     filename = "%s%s%s_%s" % (origin["name"], suite, component, filename)
     sources_filehandle = open(filename)
-    Sources = apt_pkg.ParseTagFile(sources_filehandle)
-    while Sources.Step():
-        pkg = Sources.Section.Find("Package")
-        version = Sources.Section.Find("Version")
+    sources = apt_pkg.TagFile(sources_filehandle)
+    for sources_section in sources:
+        pkg = sources_section.find("Package")
+        version = sources_section.find("Version")
 
-        if pkg in S and apt_pkg.VersionCompare(
+        if pkg in S and apt_pkg.version_compare(
             S[pkg]["version"], version) > 0:
             continue
 
         S[pkg] = {}
         S[pkg]["version"] = version
 
-        directory = Sources.Section.Find("Directory", "")
+        directory = sources_section.find("Directory", "")
         files = {}
-        for line in Sources.Section.Find("Files").split('\n'):
+        for line in sources_section.find("Files").split('\n'):
             (md5sum, size, filename) = line.strip().split()
             files[filename] = {}
             files[filename]["md5sum"] = md5sum
@@ -578,7 +578,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
 
         source_version = Sources[pkg]["version"]
         if (dest_version is None
-                or apt_pkg.VersionCompare(dest_version, source_version) < 0):
+                or apt_pkg.version_compare(dest_version, source_version) < 0):
             if (dest_version is not None
                     and (not Options.force
                         and dest_version.find("ubuntu") != -1)):

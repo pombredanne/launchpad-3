@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -52,7 +52,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import custom_widget
+from lp.app.browser.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):

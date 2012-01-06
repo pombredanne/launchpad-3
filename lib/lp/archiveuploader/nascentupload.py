@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -655,7 +655,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
+        if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -909,10 +909,10 @@ class NascentUpload:
             # state.
             pass
 
-        changes_file_object = open(self.changes.filepath, "r")
-        self.queue_root.notify(summary_text=self.rejection_message,
-            changes_file_object=changes_file_object, logger=self.logger)
-        changes_file_object.close()
+        with open(self.changes.filepath, "r") as changes_file_object:
+            self.queue_root.notify(
+                summary_text=self.rejection_message,
+                changes_file_object=changes_file_object, logger=self.logger)
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
