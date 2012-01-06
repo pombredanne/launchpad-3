@@ -165,6 +165,7 @@ from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
+from lp.services.webapp.authorization import check_permission
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
@@ -232,6 +233,28 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
+
+
+class LimitedViewByLoggedInUser(AuthorizationBase):
+    """The default ruleset for the launchpad.LimitedView permission.
+
+    By default, the check is deferred to the 'launchpad.View' checker
+    because LimitedView is an exception to View that few interfaces will
+    want to define.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = Interface
+
+    def checkUnauthenticated(self):
+        """Defer to the Anonymous checker for the object."""
+        # The forward adapter approach is not reliable because the object
+        # might not define a permission checker for launchpad.View.
+        return check_permission('launchpad.View', self.obj)
+
+    def checkAuthenticated(self, user):
+        """Defer to launchpad.View checker."""
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
