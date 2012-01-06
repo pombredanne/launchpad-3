@@ -2,8 +2,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -27,6 +29,10 @@ from lp.testing.layers import (
     )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.security import PublicOrPrivateTeamsExistence
 
 
@@ -199,6 +205,25 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
         with person_logged_in(team_owner):
             public_team.addMember(team_user, team_owner)
             public_team.addMember(private_team, team_owner)
+        checker = PublicOrPrivateTeamsExistence(
+            removeSecurityProxy(private_team))
+        self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
+        self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
+
+    def test_members_of_pending_parent_teams_get_limited_view(self):
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=team_owner)
+        team_user = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            public_team.addMember(team_user, team_owner)
+            getUtility(ITeamMembershipSet).new(
+               private_team,
+               public_team,
+               TeamMembershipStatus.INVITED,
+               team_owner)
         checker = PublicOrPrivateTeamsExistence(
             removeSecurityProxy(private_team))
         self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
