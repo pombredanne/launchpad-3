@@ -8,6 +8,23 @@
   >
 <body>
     <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .failed {color: red; font-weight: bold;}
+        .non-failed {color: green; font-weight: bold;}
+        .copy-job-message {
+          -moz-border-radius: 4px 4px 4px 4px;
+          -webkit-border-radius: 4px 4px 4px 4px;
+          -o-border-radius: 4px 4px 4px 4px;
+          border-radius: 4px 4px 4px 4px;
+          background: url("/+icing/blue-fade-to-grey") repeat scroll 0 0 #D4E8FF;
+          border-color: #666666;
+          border-style: solid;
+          border-width: 1px 2px 2px 1px;
+          padding: 5px;
+          width: 60em;
+        }
+      </style>
+
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
 LPS.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
