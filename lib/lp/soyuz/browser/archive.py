@@ -81,6 +81,7 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.model.person import Person
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -92,9 +93,13 @@ from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
+from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -1027,6 +1032,30 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # This property enables menu items to be shared between
         # context and view menues.
         return self.context.is_copy
+
+    @cachedproperty
+    def package_copy_jobs(self):
+        """Return incomplete PCJs targeted at this archive."""
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        pcjs = job_source.getIncompleteJobsForArchive(self.context)
+        return pcjs
+        # TODO: Convert PPCJ into PCJ so this works.
+        # Pre-load related Jobs.
+        jobs = load_related(Job, pcjs, ['job_id'])
+        # Pre-load related requesters.
+        load_related(Person, jobs, ['requester_id'])
+        # Pre-load related source archives.
+        load_related(Archive, pcjs, ['source_archive'])
+
+        return pcjs
+
+    @cachedproperty
+    def has_pending_copy_jobs(self):
+        return self.package_copy_jobs.any()
+
+    @cachedproperty
+    def has_append_perm(self):
+        check_permission('launchpad.Append', self.context)
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
