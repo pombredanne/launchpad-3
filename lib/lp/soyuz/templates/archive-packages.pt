@@ -28,7 +28,9 @@
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
 LPS.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
-          'lp.soyuz.update_archive_build_statuses', function(Y) {
+          'lp.soyuz.update_archive_build_statuses',
+          'lp.soyuz.archive_packages',
+          'lp.app.widgets.expander.Expander', function(Y) {
 
 
 /*
@@ -88,6 +90,20 @@ function dispatchUpdate () {
 }
 
 Y.on("domready", dispatchUpdate);
+
+Y.on('domready', function() {
+    Y.all('.pending-job').each(function(node) {
+        var widget = new Y.lp.soyuz.archive_packages.PendingCopyJobWidget(
+            {srcNode: node, archive_uri: LP.cache['context'].self_link });
+        widget.render();
+
+        var expander = new Y.lp.app.widgets.expander.Expander(
+            node.one('.job-summary'), node.one('.job-details'));
+        expander.setUp();
+
+    });
+});
+
 });
       </script>
       <style type="text/css" media="screen, print">
