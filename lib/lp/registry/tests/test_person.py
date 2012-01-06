@@ -808,6 +808,25 @@ class TestPersonSet(TestCaseWithFactory):
         result = self.person_set.latest_teams()
         self.assertEqual(teams[0:5], list(result))
 
+    def test_latest_teams_private(self):
+        # Private teams are only included in the latest teams if the
+        # user can view the team.
+        teams = []
+        for num in xrange(1, 7):
+            teams.append(self.factory.makeTeam(name='team-%s' % num))
+        owner = self.factory.makePerson()
+        teams.append(
+            self.factory.makeTeam(
+                name='private-team', owner=owner,
+                visibility=PersonVisibility.PRIVATE))
+        teams.reverse()
+        login_person(owner)
+        result = self.person_set.latest_teams()
+        self.assertEqual(teams[0:5], list(result))
+        login_person(self.factory.makePerson())
+        result = self.person_set.latest_teams()
+        self.assertEqual(teams[1:6], list(result))
+
     def test_latest_teams_limit(self):
         # The limit controls the number of latest teams returned.
         teams = []
