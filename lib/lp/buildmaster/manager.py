@@ -35,6 +35,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.model.builder import Builder
 from lp.services.propertycache import get_property_cache
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
@@ -115,13 +116,17 @@ class SlaveScanner:
     # algorithm for polling.
     SCAN_INTERVAL = 15
 
-    def __init__(self, builder_name, logger):
+    def __init__(self, builder_name, logger, clock=None):
         self.builder_name = builder_name
         self.logger = logger
+        if clock is None:
+            clock = reactor
+        self._clock = clock
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
         self.loop = LoopingCall(self.singleCycle)
+        self.loop.clock = self._clock
         self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
         return self.stopping_deferred
 
@@ -142,51 +147,58 @@ class SlaveScanner:
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
         """
-        # Make sure that pending database updates are removed as it
-        # could leave the database in an inconsistent state (e.g. The
-        # job says it's running but the buildqueue has no builder set).
+        # Since this is a failure path, we could be in a broken
+        # transaction.  Get us a fresh one.
         transaction.abort()
 
         # If we don't recognise the exception include a stack trace with
         # the error.
         error_message = failure.getErrorMessage()
-        if failure.check(
+        familiar_error = failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
-            CannotResumeHost, BuildDaemonError, CannotFetchFile):
-            self.logger.info("Scanning %s failed with: %s" % (
-                self.builder_name, error_message))
+            CannotResumeHost, BuildDaemonError, CannotFetchFile)
+        if familiar_error:
+            self.logger.info(
+                "Scanning %s failed with: %s",
+                self.builder_name, error_message)
         else:
-            self.logger.info("Scanning %s failed with: %s\n%s" % (
+            self.logger.info(
+                "Scanning %s failed with: %s\n%s",
                 self.builder_name, failure.getErrorMessage(),
-                failure.getTraceback()))
+                failure.getTraceback())
 
         # Decide if we need to terminate the job or fail the
         # builder.
         try:
             builder = get_builder(self.builder_name)
-            builder.gotFailure()
-            if builder.currentjob is not None:
-                build_farm_job = builder.getCurrentBuildFarmJob()
-                build_farm_job.gotFailure()
-                self.logger.info(
-                    "builder %s failure count: %s, "
-                    "job '%s' failure count: %s" % (
+            transaction.commit()
+
+            with DatabaseTransactionPolicy(read_only=False):
+                builder.gotFailure()
+
+                if builder.currentjob is None:
+                    self.logger.info(
+                        "Builder %s failed a probe, count: %s",
+                        self.builder_name, builder.failure_count)
+                else:
+                    build_farm_job = builder.getCurrentBuildFarmJob()
+                    build_farm_job.gotFailure()
+                    self.logger.info(
+                        "builder %s failure count: %s, "
+                        "job '%s' failure count: %s",
                         self.builder_name,
                         builder.failure_count,
                         build_farm_job.title,
-                        build_farm_job.failure_count))
-            else:
-                self.logger.info(
-                    "Builder %s failed a probe, count: %s" % (
-                        self.builder_name, builder.failure_count))
-            assessFailureCounts(builder, failure.getErrorMessage())
-            transaction.commit()
+                        build_farm_job.failure_count)
+
+                assessFailureCounts(builder, failure.getErrorMessage())
+                transaction.commit()
         except:
             # Catastrophic code failure! Not much we can do.
+            transaction.abort()
             self.logger.error(
                 "Miserable failure when trying to examine failure counts:\n",
                 exc_info=True)
-            transaction.abort()
 
     def checkCancellation(self, builder):
         """See if there is a pending cancellation request.
@@ -209,8 +221,9 @@ class SlaveScanner:
             return defer.succeed(True)
 
         self.logger.info("Cancelling build '%s'" % build.title)
-        buildqueue.cancel()
-        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            buildqueue.cancel()
+            transaction.commit()
         d = builder.resumeSlaveHost()
         d.addCallback(resume_done)
         return d
@@ -240,14 +253,9 @@ class SlaveScanner:
         """
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
-
         self.builder = get_builder(self.builder_name)
 
         def status_updated(ignored):
-            # Commit the changes done while possibly rescuing jobs, to
-            # avoid holding table locks.
-            transaction.commit()
-
             # See if we think there's an active build on the builder.
             buildqueue = self.builder.getBuildQueue()
 
@@ -257,14 +265,10 @@ class SlaveScanner:
                 return self.builder.updateBuild(buildqueue)
 
         def build_updated(ignored):
-            # Commit changes done while updating the build, to avoid
-            # holding table locks.
-            transaction.commit()
-
             # If the builder is in manual mode, don't dispatch anything.
             if self.builder.manual:
                 self.logger.debug(
-                    '%s is in manual mode, not dispatching.' %
+                    '%s is in manual mode, not dispatching.',
                     self.builder.name)
                 return
 
@@ -282,22 +286,33 @@ class SlaveScanner:
                 job = self.builder.currentjob
                 if job is not None and not self.builder.builderok:
                     self.logger.info(
-                        "%s was made unavailable, resetting attached "
-                        "job" % self.builder.name)
-                    job.reset()
+                        "%s was made unavailable; resetting attached job.",
+                        self.builder.name)
                     transaction.commit()
+                    with DatabaseTransactionPolicy(read_only=False):
+                        job.reset()
+                        transaction.commit()
                 return
 
             # See if there is a job we can dispatch to the builder slave.
 
+            # XXX JeroenVermeulen 2011-10-11, bug=872112: The job's
+            # failure count will be reset once the job has started
+            # successfully.  Because of intervening commits, you may see
+            # a build with a nonzero failure count that's actually going
+            # to succeed later (and have a failure count of zero).  Or
+            # it may fail yet end up with a lower failure count than you
+            # saw earlier.
             d = self.builder.findAndStartJob()
 
             def job_started(candidate):
                 if self.builder.currentjob is not None:
                     # After a successful dispatch we can reset the
                     # failure_count.
-                    self.builder.resetFailureCount()
                     transaction.commit()
+                    with DatabaseTransactionPolicy(read_only=False):
+                        self.builder.resetFailureCount()
+                        transaction.commit()
                     return self.builder.slave
                 else:
                     return None
@@ -376,6 +391,7 @@ class BuilddManager(service.Service):
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
+        self.transaction_policy = DatabaseTransactionPolicy(read_only=True)
 
     def _setupLogger(self):
         """Set up a 'slave-scanner' logger that redirects to twisted.
@@ -394,16 +410,28 @@ class BuilddManager(service.Service):
         logger.setLevel(level)
         return logger
 
+    def enterReadOnlyDatabasePolicy(self):
+        """Set the database transaction policy to read-only.
+
+        Any previously pending changes are committed first.
+        """
+        transaction.commit()
+        self.transaction_policy.__enter__()
+
+    def exitReadOnlyDatabasePolicy(self, *args):
+        """Reset database transaction policy to the default read-write."""
+        self.transaction_policy.__exit__(None, None, None)
+
     def startService(self):
         """Service entry point, called when the application starts."""
-
-        # Get a list of builders and set up scanners on each one.
-
         # Avoiding circular imports.
         from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder_set = getUtility(IBuilderSet)
-        builders = [builder.name for builder in builder_set]
-        self.addScanForBuilders(builders)
+
+        self.enterReadOnlyDatabasePolicy()
+
+        # Get a list of builders and set up scanners on each one.
+        self.addScanForBuilders(
+            [builder.name for builder in getUtility(IBuilderSet)])
         self.new_builders_scanner.scheduleScan()
 
         # Events will now fire in the SlaveScanner objects to scan each
@@ -424,6 +452,7 @@ class BuilddManager(service.Service):
         # stopped, so we can wait on them all at once here before
         # exiting.
         d = defer.DeferredList(deferreds, consumeErrors=True)
+        d.addCallback(self.exitReadOnlyDatabasePolicy)
         return d
 
     def addScanForBuilders(self, builders):

@@ -22,9 +22,9 @@ import string
 import urllib
 
 from apt_pkg import (
-    ParseSrcDepends,
+    parse_src_depends,
     upstream_version,
-    VersionCompare,
+    version_compare,
     )
 from lazr.enum import (
     EnumeratedType,
@@ -510,11 +510,11 @@ class SourcePackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for SourcePackages.
 
-        Define apt_pkg.ParseSrcDep as a relationship 'parser' and
+        Define apt_pkg.parse_src_depends as a relationship 'parser' and
         IDistroSeries.getBinaryPackage as 'getter'.
         """
         getter = self.context.distroseries.getBinaryPackage
-        parser = ParseSrcDepends
+        parser = parse_src_depends
         return relationship_builder(content, parser=parser, getter=getter)
 
     @property
@@ -678,7 +678,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         # Compare the base version contained in the full debian version
         # to upstream release's version.
         base_version = upstream_version(current_release.version)
-        age = VersionCompare(upstream_release.version, base_version)
+        age = version_compare(upstream_release.version, base_version)
         if age > 0:
             return PackageUpstreamTracking.NEWER
         elif age < 0:

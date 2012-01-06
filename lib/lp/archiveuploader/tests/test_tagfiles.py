@@ -82,8 +82,8 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         tagfile_path = datadir("test436182_0.1_source.changes")
         tagfile = open(tagfile_path)
-        self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
-        self.apt_pkg_parsed_version.Step()
+        self.apt_pkg_parsed_version = apt_pkg.TagFile(tagfile)
+        self.apt_pkg_parsed_version.step()
 
         self.parse_tagfile_version = parse_tagfile(tagfile_path)
 
@@ -104,7 +104,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.apt_pkg_parsed_version.Section['Binary'])
+            self.apt_pkg_parsed_version.section['Binary'])
 
         self.assertEqual(
             expected_text,
@@ -114,8 +114,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         """parse_tagfile should not leave leading or tailing '\n' when
         parsing newline delimited fields.
 
-        Newline-delimited fields should be parsed to match
-        apt_pkg.ParseTageFile.
+        Newline-delimited fields should be parsed to match apt_pkg.TagFile.
 
         Note: in the past, our parse_tagfile function left the leading
         '\n' in the parsed value, whereas it should not have.
@@ -133,7 +132,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.apt_pkg_parsed_version.Section['Files'])
+            self.apt_pkg_parsed_version.section['Files'])
 
         self.assertEqual(
             expected_text,
@@ -158,7 +157,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.apt_pkg_parsed_version.Section['Description'])
+            self.apt_pkg_parsed_version.section['Description'])
 
         # In the past our parse_tagfile function replaced blank-line
         # indicators in the description (' .\n') with new lines ('\n'),
