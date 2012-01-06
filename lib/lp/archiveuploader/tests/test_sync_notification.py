@@ -94,20 +94,31 @@ class TestSyncNotification(TestCaseWithFactory):
             close_bugs=False)
         return synced_spph
 
-    def makeChangesFile(self, spph, maintainer, maintainer_address):
+    def makeChangesFile(self, spph, maintainer, maintainer_address,
+                        changer, changer_address):
         maintainer_key = self.factory.makeGPGKey(maintainer)
         temp_dir = self.makeTemporaryDirectory()
         changes_file = os.path.join(
             temp_dir, "%s.changes" % spph.source_package_name)
-        open(changes_file, 'w').write(
-            "Maintainer: %s <%s>\n" % (maintainer.name, maintainer_address))
+        with open(changes_file, 'w') as changes:
+            changes.write(
+                "Maintainer: %s <%s>\n"
+                "Changed-By: %s <%s>\n"
+                % (
+                    maintainer.name,
+                    maintainer_address,
+                    changer.name,
+                    changer_address,
+                    ))
         return FakeChangesFile(spph, changes_file, maintainer_key)
 
-    def makeNascentUpload(self, spph, maintainer, maintainer_address):
+    def makeNascentUpload(self, spph, maintainer, maintainer_address,
+                          changer, changer_address):
         """Create a `NascentUpload` for `spph`."""
+        changes = self.makeChangesFile(
+            spph, maintainer, maintainer_address, changer, changer_address)
         upload = NascentUpload(
-            self.makeChangesFile(spph, maintainer, maintainer_address),
-            FakeUploadPolicy(spph), DevNullLogger())
+            changes, FakeUploadPolicy(spph), DevNullLogger())
         upload.queue_root = upload._createQueueEntry()
         das = self.factory.makeDistroArchSeries(
             distroseries=spph.distroseries)
@@ -131,28 +142,31 @@ class TestSyncNotification(TestCaseWithFactory):
     def test_maintainer_not_notified_about_build_failure_elsewhere(self):
         """No mail to maintainers about builds they're not responsible for.
 
-
         We import Debian source packages, then sync them into Ubuntu (and
         from there, into Ubuntu-derived distros).  Those syncs then trigger
         builds that the original Debian maintainers are not responsible for.
 
-        In a situation like that, we should not bother the maintainer with
-        the failure.  We notify the person who requested the sync instead.
+        In a situation like that, we should not bother the maintainer or
+        the author of the last change with the failure.  We notify the
+        person who requested the sync instead.
 
         This test guards against bug 876594.
         """
         maintainer, maintainer_address = self.makePersonWithEmail()
+        changer, changer_address = self.makePersonWithEmail()
         dsp = self.factory.makeDistroSeriesParent()
         original_spph = self.makeSPPH(dsp.parent_series, maintainer_address)
         sync_requester, syncer_address = self.makePersonWithEmail()
         synced_spph = self.syncSource(
             original_spph, dsp.derived_series, sync_requester)
         nascent_upload = self.makeNascentUpload(
-            synced_spph, maintainer, maintainer_address)
+            synced_spph, maintainer, maintainer_address,
+            changer, changer_address)
         pop_notifications()
         self.processAndRejectUpload(nascent_upload)
 
         notified_addresses = '\n'.join(self.getNotifiedAddresses())
 
         self.assertNotIn(maintainer_address, notified_addresses)
+        self.assertNotIn(changer_address, notified_addresses)
         self.assertIn(syncer_address, notified_addresses)
