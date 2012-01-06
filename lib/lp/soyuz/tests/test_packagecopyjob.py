@@ -347,7 +347,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(
             "Destination pocket must be 'release' for a PPA.",
-            job.metadata['job_failed_message'])
+            job.error_message)
 
     def test_run(self):
         # A proper test run synchronizes packages.

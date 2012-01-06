@@ -386,6 +386,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return self.metadata['include_binaries']
 
     @property
+    def error_message(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("error_message")
+
+    @property
     def sponsored(self):
         name = self.metadata['sponsored']
         if name is None:
@@ -598,7 +603,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             for dsd in dsds:
                 comment_source.new(dsd, reporting_persona, message)
         else:
-            self.metadata['job_failed_message'] = message
+            self.metadata['error_message'] = message
 
     def __repr__(self):
         """Returns an informative representation of the job."""
