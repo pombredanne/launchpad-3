@@ -431,6 +431,7 @@ class Builder(SQLBase):
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
+        self._clean_currentjob_cache()
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
@@ -479,10 +480,12 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
+        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+        self._clean_currentjob_cache()
 
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
@@ -498,10 +501,13 @@ class Builder(SQLBase):
 
     # XXX 2010-08-24 Julian bug=623281
     # This should not be a property!  It's masking a complicated query.
-    @property
+    @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def _clean_currentjob_cache(self):
+        del get_property_cache(self).currentjob
 
     def requestAbort(self):
         """See IBuilder."""
