@@ -769,24 +769,16 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.assertTrue(
                 self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
 
-    def test_userCanUnassign_regular_user(self):
-        # Ordinary users can unassign themselves...
-        login_person(self.regular_user)
-        self.assertEqual(self.target_bugtask.assignee, self.regular_user)
-        self.assertEqual(self.series_bugtask.assignee, self.regular_user)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.regular_user))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.regular_user))
-        # ...but not other assignees.
+    def test_userCanUnassign_logged_in_user(self):
+        # Ordinary users can unassign any user or team.
         login_person(self.target_owner_member)
         other_user = self.factory.makePerson()
         self.series_bugtask.transitionToAssignee(other_user)
         self.target_bugtask.transitionToAssignee(other_user)
         login_person(self.regular_user)
-        self.assertFalse(
+        self.assertTrue(
             self.target_bugtask.userCanUnassign(self.regular_user))
-        self.assertFalse(
+        self.assertTrue(
             self.series_bugtask.userCanUnassign(self.regular_user))
 
     def test_userCanSetAnyAssignee_target_owner(self):
@@ -796,14 +788,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(self.target.owner))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(self.target.owner))
-
-    def test_userCanUnassign_target_owner(self):
-        # The target owner can unassign anybody.
-        login_person(self.target_owner_member)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.target_owner_member))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.target_owner_member))
 
     def test_userCanSetAnyAssignee_bug_supervisor(self):
         # A bug supervisor can assign anybody.
@@ -816,15 +800,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
                 self.series_bugtask.userCanSetAnyAssignee(
                     self.supervisor_member))
 
-    def test_userCanUnassign_bug_supervisor(self):
-        # A bug supervisor can unassign anybody.
-        if self.supervisor_member is not None:
-            login_person(self.supervisor_member)
-            self.assertTrue(
-                self.target_bugtask.userCanUnassign(self.supervisor_member))
-            self.assertTrue(
-                self.series_bugtask.userCanUnassign(self.supervisor_member))
-
     def test_userCanSetAnyAssignee_driver(self):
         # A project driver can assign anybody.
         login_person(self.driver_member)
@@ -832,14 +807,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(self.driver_member))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(self.driver_member))
-
-    def test_userCanUnassign_driver(self):
-        # A project driver can unassign anybody.
-        login_person(self.driver_member)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.driver_member))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.driver_member))
 
     def test_userCanSetAnyAssignee_series_driver(self):
         # A series driver can assign anybody to series bug tasks.
@@ -858,15 +825,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
                 self.target_bugtask.userCanSetAnyAssignee(
                     self.series_driver_member))
 
-    def test_userCanUnassign_series_driver(self):
-        # The target owner can unassign anybody from series bug tasks...
-        login_person(self.series_driver_member)
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.series_driver_member))
-        # ...but not from tasks of the main product/distribution.
-        self.assertFalse(
-            self.target_bugtask.userCanUnassign(self.series_driver_member))
-
     def test_userCanSetAnyAssignee_launchpad_admins(self):
         # Launchpad admins can assign anybody.
         login_person(self.target_owner_member)
@@ -874,14 +832,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         login_person(foo_bar)
         self.assertTrue(self.target_bugtask.userCanSetAnyAssignee(foo_bar))
         self.assertTrue(self.series_bugtask.userCanSetAnyAssignee(foo_bar))
-
-    def test_userCanUnassign_launchpad_admins(self):
-        # Launchpad admins can unassign anybody.
-        login_person(self.target_owner_member)
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        login_person(foo_bar)
-        self.assertTrue(self.target_bugtask.userCanUnassign(foo_bar))
-        self.assertTrue(self.series_bugtask.userCanUnassign(foo_bar))
 
     def test_userCanSetAnyAssignee_bug_importer(self):
         # The bug importer celebrity can assign anybody.
@@ -892,14 +842,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(bug_importer))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(bug_importer))
-
-    def test_userCanUnassign_launchpad_bug_importer(self):
-        # The bug importer celebrity can unassign anybody.
-        login_person(self.target_owner_member)
-        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        login_person(bug_importer)
-        self.assertTrue(self.target_bugtask.userCanUnassign(bug_importer))
-        self.assertTrue(self.series_bugtask.userCanUnassign(bug_importer))
 
 
 class TestProductBugTaskPermissionsToSetAssignee(

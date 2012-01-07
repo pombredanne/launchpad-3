@@ -1093,15 +1093,8 @@ class BugTask(SQLBase):
             return self.userHasBugSupervisorPrivileges(user)
 
     def userCanUnassign(self, user):
-        """True if user can set the assignee to None.
-
-        This option not shown for regular users unless they or their teams
-        are the assignees. Project owners, drivers, bug supervisors and
-        Launchpad admins can always unassign.
-        """
-        return user is not None and (
-            user.inTeam(self.assignee) or
-            self.userHasBugSupervisorPrivileges(user))
+        """See `IBugTask`."""
+        return user is not None
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
