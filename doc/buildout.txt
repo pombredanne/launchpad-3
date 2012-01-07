@@ -1,16 +1,16 @@
 Launchpad Buildout
 ******************
 
-Launchpad is moving to using the buildout_ (or "zc.buildout") build system.  It
-will gradually replace the sourcecode directory, and hopefully also the
-Launchpad Makefile.
+Launchpad uses the buildout_ (or "zc.buildout") build system.
+Buildout's biggest strength is managing Python packages.  That is also
+our focus for it.
 
-Buildout's biggest strength is managing Python packages.  That will also be our
-primary focus for it.  Meanwhile, apt will continue to manage our Python
-language installation, as well some or all of our non-Python dependencies, such
-as PostgreSQL.  While Bazaar will continue to be an essential part of our
-toolchain, we will move away from using it to incorporate source code trees of
-our dependencies.
+We have at least two other ways of managing dependencies.  Apt
+manages our Python language installation, as well as many of our
+non-Python system-level dependencies, such as PostgreSQL.  The
+sourcecode directory is our other way of managing dependencies.  It is
+supposed to only contain dependencies that are not standard Python
+packages.  bzr plugins and Javascript libraries are existing examples.
 
 If you are not interested in our `Motivations`_  or in an `Introduction to
 zc.buildout`_, all developers will at least want to read the very brief
@@ -36,16 +36,18 @@ parties, in and out of Canonical, create and release.
 * We want more careful specification of our dependencies across branches.
   [INTERNAL] [EXTERNAL]
 
-  This is a real concern pertinent both for our "trunks" (devel, stable,
-  db-devel, db-stable) and for our development boxes. For instance, now, in our
-  trunks, when we want to update a dependency, we need to make sure that *all*
-  the current Launchpad trunks work with the dependency initially; then submit
-  a new Launchpad branch that uses the change dependency.  A mistake can
-  even potentially break one or both of the db-* trunks, since PQM only tests
-  against one branch (usually devel), and sourcecode changes affect all
-  branches at once.  For simplicity, speed, and safety, we want to be able to
-  submit a single branch that incorporates the source dependencies and the
-  associated changes at once.
+  This is a real concern pertinent both for our "trunks" (devel,
+  stable, db-devel, db-stable) and for our development boxes. For
+  instance, before incorporating buildout, in our trunks, when we want
+  to update a dependency, we needed to make sure that *all* the
+  current Launchpad trunks work with the dependency initially; then
+  submit a new Launchpad branch that uses the change dependency.  A
+  mistake can even potentially break one or both of the db-* trunks,
+  since PQM only tests against one branch (usually devel), and
+  sourcecode changes affect all branches at once.  For simplicity,
+  speed, and safety, we want to be able to submit a single branch that
+  incorporates the source dependencies and the associated changes at
+  once.
 
   This is also true, if less critical and easier to work around, on developer
   boxes.  Without care, changes to sourcecode when working on dependencies will
@@ -58,17 +60,18 @@ parties, in and out of Canonical, create and release.
   A significant number of projects do not always have a pristine trunk, and
   many also spend extra effort on polish, bug fixes, and compatibility before a
   release.  If we do not desperately need a new feature on trunk, using a
-  release is generally regarded as a safer, better practice. Our current usage
+  release is generally regarded as a safer, better practice. Our earlier usage
   of bzr branches of the development trunks does not encourage this practice.
 
 * We want to be encouraged to make the effort to interact with upstream
   projects to have our patches integrated. [EXTERNAL]
 
-  Interacting and negotiating with upstream is undeniably more time-consuming
-  than our current practice of maintaining local bzr branches with our patches,
-  especially short-term.  But our current practice is not good open-source
-  community behavior--an ironic characteristic for a project like Launchpad. It
-  also can cause problems down the road, for instance, if the patch becomes
+  Interacting and negotiating with upstream is undeniably more
+  time-consuming than our previous practice of maintaining local bzr
+  branches with our patches, especially short-term.  But our previous
+  use of bzr branches is not good open-source community behavior--an
+  ironic characteristic for a project like Launchpad. It also can
+  cause problems down the road, for instance, if the patch becomes
   stale and we want to migrate to new releases.
 
 * We want to be protected from changes and differences in our operating system.
@@ -76,13 +79,14 @@ parties, in and out of Canonical, create and release.
 
   This is a concern both over time and across different Launchpad environments.
 
-  First, our operating system, Ubuntu, is driven by many needs and goals.
-  Launchpad is among them, but generally Launchpad serves Ubuntu, not the
-  reverse.  For instance, recently Jaunty dropped Launchpad's Python version.
-  The Ubuntu developers had good reason--Python 2.4 has not been supported by
-  the Python developers for some time--but it caused a significant
-  inconvenience to the Launchpad team. Managing our dependencies, particularly
-  the Python library dependencies, can help alleviate these problems.
+  First, our operating system, Ubuntu, is driven by many needs and
+  goals.  Launchpad is among them, but generally Launchpad serves
+  Ubuntu, not the reverse.  For instance, Jaunty dropped Launchpad's
+  Python version.  The Ubuntu developers had good reason--Python 2.4
+  has not been supported by the Python developers for some time--but
+  it caused a significant inconvenience to the Launchpad
+  team. Managing our dependencies, particularly the Python library
+  dependencies, can help alleviate these problems.
 
   Second, Launchpad developers run a significantly different version of the
   operating system than that run in production. Maintaining our Python library
@@ -420,55 +424,72 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
 
         ./bin/buildout -v buildout:install-from-cache=false | tee out.txt | grep 'Picked'
 
-    The first part (``./bin/buildout -v buildout:install-from-cache=false``)
-    will run buildout, allowing it to download source packages from the
-    Internet to ``download-cache/dist``. The second part (``tee out.txt``) will
-    dump the full output to the ``out.txt`` file in case you need to debug a
-    problem. The last part (``grep 'Picked'``) will filter the output so that
-    only additional packages--dependencies of your dependency--will be listed.
-    Look at the output. You need to see if it means that you have dependencies,
-    some of which may be indirect dependencies. Here's an imaginary example
-    output::
+    The first part (``./bin/buildout -v
+    buildout:install-from-cache=false``) will run buildout, allowing
+    it to download source packages from the Internet to
+    ``download-cache/dist``. The second part (``tee out.txt``) will
+    dump the full output to the ``out.txt`` file in case you need to
+    debug a problem. The last part (``grep 'Picked'``) will filter the
+    output so that only additional packages--dependencies of your
+    dependency--will be listed.  You need to see if it means that you
+    have dependencies, some of which may be indirect
+    dependencies. We'll see how to do this with an example.  Here's an
+    imaginary output::
 
         Picked: ipython = 0.9.1
         Picked: lazr.foom = 1.4
         Picked: zope.bar = 3.6.1
         Picked: z3c.shazam = 2.0.1
 
-    At this time, note that the output will include at least one, and possibly
-    more, spurious "Picked:" listings.  ipython, in particular, shows up
-    repeatedly.
+    In our example, this means that these packages have been added to
+    your ``download-cache/dist`` directory. You now need to add those
+    versions to the ``versions.cfg`` file::
 
-    In our example, other than the spurious ``ipython`` listing, this means
-    that these packages have also been added to your ``download-cache/dist``
-    directory. You also need to add those versions to the ``versions.cfg``
-    file::
-
+        ipython = 0.9.1
         lazr.foom = 1.4
         zope.bar = 3.6.1
         z3c.shazam = 2.0.1
 
+    Note that the output might include at least one, and possibly
+    more, spurious "Picked:" listings.  ipython, in particular, has
+    shown up in the past incorrectly--that is, when you try to add the
+    file to the download-cache/dist directory, you'll discover that it
+    is already there; and you'll see that versions.cfg already
+    specifies the version.  As long as the test passes (see step 5,
+    below), you can ignore this.
+
 5.  Test.
 
-    [TODO] Note that you can tell ec2test to include all uncommitted
-    distributions from the local download-cache in its tests.  If you do this,
-    you cannot use the ec2test feature to submit on test success.  Also, if you
-    have uncommitted distributions and you do *not* explicitly tell ec2test to
-    include or ignore the uncommitted distributions, it will refuse to start
-    an instance.
+    Note that you can tell ``ec2 test`` to include all uncommitted
+    distributions from the local download-cache in its tests with the
+    ``--include-download-cache-changes`` flag (or ``-c``).  If you do
+    this, you cannot use the ec2 test feature to submit on test
+    success.  Also, if you have uncommitted distributions and you do
+    *not* explicitly tell ec2 test to include or ignore the
+    uncommitted distributions, it will refuse to start an instance.
 
-6. Check old versions in the download-cache.  If you are sure that they are
-   not in use any more, *anywhere*, then remove them to save checkout space.
-   More explicitly, check with the LOSAs to see if they are in use in
-   production and send an email to launchpad-dev@lists.launchpad.net before
-   deleting anything if you are unsure.
+6.  Check old versions in the download-cache.  If you are sure that
+    they are not in use any more, *anywhere*, then remove them to save
+    checkout space.  More explicitly, check with the LOSAs to see if
+    they are in use in production and send an email to
+    launchpad-dev@lists.launchpad.net before deleting anything if you
+    are unsure.  A rule of thumb is that it's worth starting this
+    investigation if the replacement has already been in use by the
+    Launchpad tree for more than a month.  You can approximate this
+    information by using ``bzr log`` on the newer (replacement)
+    download-cache/dist file for the particular package.
 
-7.  Commit the changes (``cd download-cache``, ``bzr up``,
-    ``bzr commit -m 'Add lazr.foom 1.1.2 and depdendencies to the download
-    cache'``) to the shared download cache when you are sure it is what you
-    want.
+7.  Now you need to share your package changes with the rest of the
+    team.  You must do this before submitting your Launchpad branch to
+    PQM or else your branch will not build properly anywhere else,
+    including buildbot.  Commit the changes (``cd download-cache``,
+    bzr add the needed files, ``bzr up``, ``bzr commit -m 'Add
+    lazr.foom 1.1.2 and depdendencies to the download cache'``) to the
+    shared download cache when you are sure it is what you want.
 
-*Never* modify a package in the download-cache.
+*Never* modify a package in the download-cache.  A change in code must mean a
+change in version number, or else very bad inconsistencies and
+confusion across build environments will happen.
 
 
 Upgrade a Package

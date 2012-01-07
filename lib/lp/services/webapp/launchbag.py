@@ -172,7 +172,7 @@ def set_login_in_launchbag_when_principal_identified(event):
     """
     launchbag = getUtility(IOpenLaunchBag)
     # Basic auths principal identified event is also an ILoggedInEvent.
-    # Cookie auth seperates these two events.
+    # Cookie auth separates these two events.
     loggedinevent = ILoggedInEvent(event, None)
     if loggedinevent is None:
         # We must be using session auth.

@@ -1182,7 +1182,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1190,7 +1190,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the

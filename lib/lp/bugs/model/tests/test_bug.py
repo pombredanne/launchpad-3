@@ -398,7 +398,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(bug)
             # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
+            # the results returned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
         for level in BugNotificationLevel.items:
@@ -422,7 +422,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(bug)
             # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
+            # the results returned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
         subscriber = self.factory.makePerson()

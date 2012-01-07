@@ -4233,6 +4233,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
 
+    def search_macro_title(self):
+        return u'Search all bugs'
+
     @property
     def label(self):
         return self.getSearchPageHeading()

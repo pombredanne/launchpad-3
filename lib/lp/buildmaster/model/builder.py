@@ -315,8 +315,8 @@ class BuilderSlave(object):
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
-    # token in the sentence received from status(), according the
-    # two status we care about. See lp:launchpad-buildd
+    # token in the sentence received from status(), according to the
+    # two statuses we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,

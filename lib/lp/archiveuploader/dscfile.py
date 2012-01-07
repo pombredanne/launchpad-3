@@ -511,9 +511,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             else:
                 # try to check dsc-mentioned file against its copy already
                 # in librarian, if it's new (aka not found in librarian)
-                # dismiss. It prevent us to have scary duplicated filenames
-                # in Librarian and missapplied files in archive, fixes
-                # bug # 38636 and friends.
+                # dismiss. It prevents us from having scary duplicated
+                # filenames in Librarian and misapplied files in archive,
+                # fixes bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "

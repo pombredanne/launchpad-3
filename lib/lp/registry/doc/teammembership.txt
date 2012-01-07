@@ -675,7 +675,7 @@ on the expiration day.
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
-Bug 3989 -- StuarBishop 20060713
+Bug 3989 -- StuartBishop 20060713
 
     >>> flush_database_updates()
     >>> transaction.commit()

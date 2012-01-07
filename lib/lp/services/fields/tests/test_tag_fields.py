@@ -58,7 +58,7 @@ class TestTag(TestCase):
             self.field.validate, u'-fred')
 
     def test_wildcard(self):
-        # Tag rejects a solitary asterisk, or an asterisk preceeded by
+        # Tag rejects a solitary asterisk, or an asterisk preceded by
         # a minus. This is not surprising seeing as asterisks are
         # forbidden anyway, as are leading minuses. However, this form
         # is special because it is reserved to mean "any tag" or "not
@@ -82,7 +82,7 @@ class TestSearchTag(TestTag):
 
     def test_wildcard(self):
         # SearchTag allows a solitary asterisk, or an asterisk
-        # preceeded by a minus. This means "any tag" or "not any
+        # preceded by a minus. This means "any tag" or "not any
         # tag".
         self.assertIs(None, self.field.validate(u'*'))
         self.assertIs(None, self.field.validate(u'-*'))

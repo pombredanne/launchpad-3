@@ -20,7 +20,7 @@ a LaunchpadFormView based view class:
    support submission.
 
  * if form wide validation is needed, the validate() method should be
-   overriden. Errors are reported using the addError() and
+   overridden. Errors are reported using the addError() and
    setFieldError() methods.
 
  * if a form contains multiple actions, the validate_widgets method
