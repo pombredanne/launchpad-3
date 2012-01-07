@@ -235,26 +235,32 @@ class ViewByLoggedInUser(AuthorizationBase):
         return True
 
 
-class LimitedViewByLoggedInUser(AuthorizationBase):
+class LimitedViewDeferredToView(AuthorizationBase):
     """The default ruleset for the launchpad.LimitedView permission.
 
-    By default, the check is deferred to the 'launchpad.View' checker
-    because LimitedView is an exception to View that few interfaces will
-    want to define.
+    Few objects define LimitedView permission because it is only needed
+    in cases where a user may know something about a private object. The
+    default behaviour is to check if the user has launchpad.View permission;
+    private objects must define their own launchpad.LimitedView checker to
+    trully check the permission.
     """
     permission = 'launchpad.LimitedView'
     usedfor = Interface
 
     def checkUnauthenticated(self):
-        """Defer to the Anonymous checker for the object."""
         # The forward adapter approach is not reliable because the object
         # might not define a permission checker for launchpad.View.
+        # eg. IHasMilestones are implicitly public to anonymous users,
+        #     there is no nearest adapter to call checkUnauthenticated.
         return check_permission('launchpad.View', self.obj)
 
     def checkAuthenticated(self, user):
-        """Defer to launchpad.View checker."""
-        return self.forwardCheckAuthenticated(
-            user, self.obj, 'launchpad.View')
+        # The forward adapter approach is not reliable because the object
+        # might use checkAccountAuthenticated.
+        # eg. confirmed_email_addresses is not visible on a public user
+        #     to an admin. See registry/stories/webservice/xx-person.txt.
+        return check_permission('launchpad.View', self.obj)
+        #self.forwardCheckAuthenticated(user, permission='launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
