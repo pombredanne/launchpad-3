@@ -13,6 +13,7 @@ As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
     >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.propertycache import get_property_cache
     >>> from lp.buildmaster.interfaces.buildqueue import (
     ...     IBuildQueue, IBuildQueueSet)
 
@@ -135,6 +136,7 @@ to another build. The score value of the job is preserved.
 
     >>> job.reset()
 
+    >>> del get_property_cache(bob).currentjob
     >>> print bob.currentjob
     None
 
@@ -154,6 +156,7 @@ the specified builder.
 
     >>> job.markAsBuilding(bob)
 
+    >>> del get_property_cache(bob).currentjob
     >>> bob.currentjob == job
     True
 
