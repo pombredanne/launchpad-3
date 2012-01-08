@@ -816,7 +816,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True, creator=None):
+               create_dsd_job=True, creator=None, sponsor=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -834,7 +834,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket,
             ancestor=self,
             create_dsd_job=create_dsd_job,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1511,7 +1512,7 @@ class PublishingSet:
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,
-                             creator=None):
+                             creator=None, sponsor=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
@@ -1528,7 +1529,8 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             ancestor=ancestor,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:

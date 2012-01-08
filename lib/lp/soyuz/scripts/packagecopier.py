@@ -652,13 +652,16 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if sponsored is not None:
                 announce_from_person = sponsored
                 creator = sponsored
+                sponsor = person
             else:
                 creator = person
+                sponsor = None
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=creator)
+                close_bugs_since_version=old_version, creator=creator,
+                sponsor=sponsor)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -674,7 +677,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
-                    close_bugs_since_version=None, creator=None):
+                    close_bugs_since_version=None, creator=None,
+                    sponsor=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -701,6 +705,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         then this parameter says which changelog entries to parse looking
         for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
     :param creator: the requester `IPerson`.
+    :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -731,7 +736,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             override = overrides[0]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
-            creator=creator)
+            creator=creator, sponsor=sponsor)
         if close_bugs:
             close_bugs_for_sourcepublication(
                 source_copy, close_bugs_since_version)

@@ -1526,6 +1526,30 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             'Sponsored <sponsored@example.com>', announcement['From'])
         self.assertEqual(sponsored_person, copied_source.creator)
 
+    def test_sponsored_copy_sponsor_field(self):
+        # If it's a sponsored copy then the SPPH's sponsored field is set to
+        # the user who sponsored the copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby.changeslist = 'nobby-changes@example.com'
+        sponsored_person = self.factory.makePerson(
+            displayname="Sponsored", email="sponsored@example.com")
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+                    person=source.sourcepackagerelease.creator,
+                    check_permissions=False, send_email=True,
+                    sponsored=sponsored_person)
+        self.assertEqual(source.sourcepackagerelease.creator,
+            copied_source.sponsor)
+
     def test_copy_notification_contains_aggregate_change_log(self):
         # When copying a package that generates a notification,
         # the changelog should contain all of the changelog_entry texts for
@@ -1663,6 +1687,25 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             target_archive.owner,
             copied_source.creator)
 
+    def test_unsponsored_copy_does_not_set_sponsor(self):
+        # If the copy is not sponsored, SPPH.sponsor is none
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+
+        self.assertEqual(
+            copied_source.sponsor,
+            None)
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
