@@ -95,7 +95,7 @@ def doctest_custom_widget_with_setUpFields_override():
 
         >>> from zope.app.form.interfaces import IDisplayWidget, IInputWidget
         >>> from zope.interface import directlyProvides, implements
-        >>> from lp.services.webapp import (
+        >>> from lp.app.browser.launchpadform import (
         ...     LaunchpadFormView, custom_widget)
         >>> from zope.schema import Bool
         >>> from zope.publisher.browser import TestRequest

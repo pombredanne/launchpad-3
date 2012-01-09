@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
@@ -20,6 +20,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
@@ -73,26 +74,29 @@ class MakeBehaviorMixin(object):
         Anything that might communicate with build slaves and such
         (which we can't really do here) is mocked up.
         """
-        specific_job = self.factory.makeTranslationTemplatesBuildJob(
-            branch=branch)
-        behavior = IBuildFarmJobBehavior(specific_job)
-        slave = WaitingSlave()
-        behavior._builder = removeSecurityProxy(self.factory.makeBuilder())
-        behavior._builder.setSlaveForTesting(slave)
-        if use_fake_chroot:
-            lf = self.factory.makeLibraryFileAlias()
-            self.layer.txn.commit()
-            behavior._getChroot = lambda: lf
-        return behavior
+        with BuilddManagerTestFixture.extraSetUp():
+            specific_job = self.factory.makeTranslationTemplatesBuildJob(
+                branch=branch)
+            behavior = IBuildFarmJobBehavior(specific_job)
+            slave = WaitingSlave()
+            behavior._builder = removeSecurityProxy(
+                self.factory.makeBuilder())
+            behavior._builder.setSlaveForTesting(slave)
+            if use_fake_chroot:
+                lf = self.factory.makeLibraryFileAlias()
+                self.layer.txn.commit()
+                behavior._getChroot = lambda: lf
+            return behavior
 
     def makeProductSeriesWithBranchForTranslation(self):
-        productseries = self.factory.makeProductSeries()
-        branch = self.factory.makeProductBranch(
-            productseries.product)
-        productseries.branch = branch
-        productseries.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        return productseries
+        with BuilddManagerTestFixture.extraSetUp():
+            productseries = self.factory.makeProductSeries()
+            branch = self.factory.makeProductBranch(
+                productseries.product)
+            productseries.branch = branch
+            productseries.translations_autoimport_mode = (
+                TranslationsBranchImportMode.IMPORT_TEMPLATES)
+            return productseries
 
 
 class TestTranslationTemplatesBuildBehavior(
@@ -105,6 +109,7 @@ class TestTranslationTemplatesBuildBehavior(
     def setUp(self):
         super(TestTranslationTemplatesBuildBehavior, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
+        self.useFixture(BuilddManagerTestFixture())
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""
@@ -145,13 +150,13 @@ class TestTranslationTemplatesBuildBehavior(
         # _getChroot produces the current chroot for the current Ubuntu
         # release, on the nominated architecture for
         # architecture-independent builds.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        current_ubuntu = ubuntu.currentseries
-        distroarchseries = current_ubuntu.nominatedarchindep
-
-        # Set an arbitrary chroot file.
-        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
-        distroarchseries.addOrUpdateChroot(fake_chroot_file)
+        with BuilddManagerTestFixture.extraSetUp():
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            current_ubuntu = ubuntu.currentseries
+            distroarchseries = current_ubuntu.nominatedarchindep
+            # Set an arbitrary chroot file.
+            fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
+            distroarchseries.addOrUpdateChroot(fake_chroot_file)
 
         behavior = self.makeBehavior(use_fake_chroot=False)
         chroot = behavior._getChroot()
@@ -180,10 +185,11 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_updateBuild_WAITING_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        builder = behavior._builder
+        with BuilddManagerTestFixture.extraSetUp():
+            behavior = self.makeBehavior()
+            behavior._uploadTarball = FakeMethod()
+            queue_item = FakeBuildQueue(behavior)
+            builder = behavior._builder
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
@@ -221,10 +227,12 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_updateBuild_WAITING_failed(self):
         # Builds may also fail (and produce no tarball).
-        behavior = self.makeBehavior()
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        builder = behavior._builder
+        with BuilddManagerTestFixture.extraSetUp():
+            behavior = self.makeBehavior()
+            behavior._uploadTarball = FakeMethod()
+            queue_item = FakeBuildQueue(behavior)
+            builder = behavior._builder
+
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
@@ -264,10 +272,12 @@ class TestTranslationTemplatesBuildBehavior(
     def test_updateBuild_WAITING_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
         # not faze the Behavior class.
-        behavior = self.makeBehavior()
-        behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior)
-        builder = behavior._builder
+        with BuilddManagerTestFixture.extraSetUp():
+            behavior = self.makeBehavior()
+            behavior._uploadTarball = FakeMethod()
+            queue_item = FakeBuildQueue(behavior)
+            builder = behavior._builder
+
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
@@ -301,11 +311,12 @@ class TestTranslationTemplatesBuildBehavior(
         return d
 
     def test_updateBuild_WAITING_uploads(self):
-        productseries = self.makeProductSeriesWithBranchForTranslation()
-        branch = productseries.branch
-        behavior = self.makeBehavior(branch=branch)
-        queue_item = FakeBuildQueue(behavior)
-        builder = behavior._builder
+        with BuilddManagerTestFixture.extraSetUp():
+            productseries = self.makeProductSeriesWithBranchForTranslation()
+            branch = productseries.branch
+            behavior = self.makeBehavior(branch=branch)
+            queue_item = FakeBuildQueue(behavior)
+            builder = behavior._builder
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 

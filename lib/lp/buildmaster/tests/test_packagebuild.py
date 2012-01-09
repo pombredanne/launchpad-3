@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
@@ -12,6 +12,7 @@ import shutil
 import tempfile
 
 from storm.store import Store
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -26,8 +27,10 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
@@ -281,12 +284,10 @@ class TestGetUploadMethodsMixin:
 
 
 class TestHandleStatusMixin:
-    """Tests for `IPackageBuild`s handleStatus method.
-
-    This should be run with a Trial TestCase.
-    """
+    """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def makeBuild(self):
         """Allow classes to override the build with which the test runs."""
@@ -303,7 +304,7 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        builder.setSlaveForTesting(self.slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -320,6 +321,8 @@ class TestHandleStatusMixin:
         # verifySuccessfulUpload().
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
+
+        self.useFixture(BuilddManagerTestFixture())
 
     def assertResultCount(self, count, result):
         self.assertEquals(
@@ -344,7 +347,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
+            self.assertIs(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
@@ -365,7 +368,8 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        removeSecurityProxy(self.build).log = None
+        with BuilddManagerTestFixture.extraSetUp():
+            removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -386,14 +390,10 @@ class TestHandleStatusMixin:
 
         def got_status(ignored):
             if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
+                self.assertNotEqual(
+                    0, len(pop_notifications()), "No notifications received.")
             else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
-
+                self.assertContentEqual([], pop_notifications())
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
 
@@ -408,7 +408,9 @@ class TestHandleStatusMixin:
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        removeSecurityProxy(self.build).date_finished = None
+        with BuilddManagerTestFixture.extraSetUp():
+            removeSecurityProxy(self.build).date_finished = None
+
         self.assertEqual(None, self.build.date_finished)
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},

@@ -279,7 +279,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         # Make sure that the default filter is displayed
-        # correctly in the widgets when not overriden by the user
+        # correctly in the widgets when not overridden by the user
         for name, value in self.getDefaultFilter().items():
             widget = self.widgets.get(name)
             if widget and not widget.hasValidInput():
