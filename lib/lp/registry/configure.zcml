@@ -1064,8 +1064,7 @@
     <class
         class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
         <allow
-            interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
-            attributes="tags"/>
+            interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
