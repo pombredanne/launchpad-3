@@ -2639,11 +2639,11 @@ class EditEmailAddress(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IEmailAddress
 
-    def checkAuthenticated(self, person):
+    def checkAuthenticated(self, user):
         # Always allow users to see their own email addresses.
-        if self.obj.person == person:
+        if self.obj.person == user:
             return True
-        return super(EditEmailAddress, self).checkAuthenticated(person)
+        return super(EditEmailAddress, self).checkAuthenticated(user)
 
 
 class ViewGPGKey(AnonymousAuthorization):
