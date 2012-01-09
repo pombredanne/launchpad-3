@@ -7,8 +7,6 @@
 
   <head>
   <div metal:fill-slot="head_epilogue">
-    <metal:translations-js
-      use-macro="context/@@+translations-macros/translations-js" />
     <metal:languages-table-js
       use-macro="context/@@+translations-macros/languages-table-js" />
     <tal:robots
