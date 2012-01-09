@@ -1707,6 +1707,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             copied_source.sponsor,
             None)
 
+
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     layer = LaunchpadZopelessLayer

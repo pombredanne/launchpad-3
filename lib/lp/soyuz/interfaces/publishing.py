@@ -499,9 +499,11 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         Reference(
             IPerson,
             title=_('Publication sponsor'),
-            description=_('The IPerson who sponsored the creation of this publication.'),
+            description=_('The IPerson who sponsored the creation of'
+                'this publication.'),
             required=False, readonly=True
         ))
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -1016,7 +1018,8 @@ class IPublishingSet(Interface):
              should be created for the new source publication.
         :param creator: An optional `IPerson`. If this is None, the
             sourcepackagerelease's creator will be used.
-        :param sponsor: An optional `IPerson` indicating the sponsor of this publication.
+        :param sponsor: An optional `IPerson` indicating the sponsor of this
+            publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
