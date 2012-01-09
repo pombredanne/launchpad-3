@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -338,13 +338,14 @@ class TestCopyPackage(WebServiceTestCase):
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(uploader_dude, "universe")
         transaction.commit()
-        return (source_archive, source_name, target_archive, to_pocket,
-                to_series, uploader_dude, sponsored_dude, version)
+        return (source, source_archive, source_name, target_archive,
+                to_pocket, to_series, uploader_dude, sponsored_dude, version)
 
     def test_copyPackage(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, sponsored_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
@@ -363,8 +364,9 @@ class TestCopyPackage(WebServiceTestCase):
 
     def test_copyPackages(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, sponsored_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
@@ -373,7 +375,8 @@ class TestCopyPackage(WebServiceTestCase):
         ws_target_archive.copyPackages(
             source_names=[source_name], from_archive=ws_source_archive,
             to_pocket=to_pocket.name, to_series=to_series.name,
-            include_binaries=False, sponsored=ws_sponsored_dude)
+            from_series=source.distroseries.name, include_binaries=False,
+            sponsored=ws_sponsored_dude)
         transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
