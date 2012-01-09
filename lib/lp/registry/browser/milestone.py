@@ -593,14 +593,9 @@ class MilestoneTagView(
         self.release = None
 
     @property
-    def tags(self):
-        """Return a list of tag names associated with current milestonetag."""
-        return self.context.name.split(u',')
-
-    @property
     def initial_values(self):
         """Set the initial value of the search tags field."""
-        return {'tags': u' '.join(self.tags)}
+        return {'tags': u' '.join(self.context.tags)}
 
     @safe_action
     @action(u'Search Milestone Tags', name='search')
