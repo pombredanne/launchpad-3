@@ -15,12 +15,16 @@
     </style>
 
     <script type="text/javascript">
-      registerLaunchpadFunction(insertAllExpansionButtons);
-
-      LPS.use('lp.translations.pofile', function(Y) {
-        Y.on('domready', Y.lp.translations.pofile.initializePOFile);
-      });
-
+        registerLaunchpadFunction(insertAllExpansionButtons);
+        LPS.use('node',
+                'lp.translations.pofile',
+                'lp.translations.messages',
+            function(Y) {
+                Y.on('domready', function () {
+                    Y.lp.translations.pofile.initializePOFile();
+                    Y.lp.translations.messages.addListeners();
+                });
+            });
     </script>
     </div>
     <div metal:fill-slot="main">

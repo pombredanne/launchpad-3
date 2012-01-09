@@ -17,25 +17,21 @@
           condition="user_is_official_translator">
         <input
           type="radio"
+          class="handle-click"
           tal:attributes="
             name string:${submission/translation_html_id}_radiobutton;
             id string:${submission/suggestion_html_id}_radiobutton;
             value string:${submission/suggestion_html_id};
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new')
+            data-from-id string:${submission/suggestion_html_id};
+            data-to-id string:${submission/translation_html_id}_new;
             " />
         </tal:user-is-official-translator>
         <tal:user-is-not-official-translator condition="not:user_is_official_translator">
         <a href=""
+          class="handle-click"
           tal:attributes="
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new');;
-              selectWidget('${submission/translation_html_id}_new_select', event);;
-            return false;;
+            data-from-id string: ${submission/suggestion_html_id};
+            data-to-id string: ${submission/translation_html_id}_new;
           "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
         </tal:user-is-not-official-translator>
         </tal:form-writeable>
