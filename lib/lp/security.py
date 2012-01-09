@@ -249,15 +249,11 @@ class LimitedViewDeferredToView(AuthorizationBase):
     def checkUnauthenticated(self):
         # The forward adapter approach is not reliable because the object
         # might not define a permission checker for launchpad.View.
-        # eg. IHasMilestones are implicitly public to anonymous users,
+        # eg. IHasMilestones is implicitly public to anonymous users,
         #     there is no nearest adapter to call checkUnauthenticated.
         return check_permission('launchpad.View', self.obj)
 
     def checkAuthenticated(self, user):
-        # The forward adapter approach is not reliable because the object
-        # might use checkAccountAuthenticated.
-        # eg. confirmed_email_addresses is not visible on a public user
-        #     to an admin. See registry/stories/webservice/xx-person.txt.
         return self.forwardCheckAuthenticated(
             user, self.obj, 'launchpad.View')
 
