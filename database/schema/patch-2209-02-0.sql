@@ -14,6 +14,6 @@ ALTER TABLE SourcePackagePublishingHistory
 -- - the index creation needs to be quick (spph has ~1.6M rows atm).
 CREATE INDEX sourcepackagepublishinghistory__sponsor__idx
     ON SourcePackagePublishingHistory(sponsor)
-        WHERE sponsor is not Null;
+        WHERE sponsor IS NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 02, 0);
