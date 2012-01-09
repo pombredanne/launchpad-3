@@ -7,7 +7,7 @@
 
 This report spits out whatever we consider useful for checking up on and
 diagnosing replication. This report will grow over time, and maybe some
-bits of this will move to seperate monitoring systems or reports.
+bits of this will move to separate monitoring systems or reports.
 
 See the Slony-I documentation for more discussion on the data presented
 by this report.

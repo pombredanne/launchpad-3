@@ -881,7 +881,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         branches registered by a particular user for the counts that
         appear at the top of a branch listing page.
 
-        This should be overriden in subclasses to restrict to, for
+        This should be overridden in subclasses to restrict to, for
         example, the set of branches of a particular product.
         """
         return getUtility(IAllBranches).visibleByUser(self.user)
@@ -1240,7 +1240,7 @@ class ProductBranchListingView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project.')
@@ -1474,7 +1474,7 @@ class ProjectBranchesView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project group.')

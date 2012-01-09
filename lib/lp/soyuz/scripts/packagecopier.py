@@ -93,7 +93,7 @@ def re_upload_file(libraryfile, restricted=False):
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing destination
+    """Update file privacy according to the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -1080,7 +1080,7 @@ class UnembargoSecurityPackage(PackageCopier):
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
 
-        # Fix copies by overriding them according the current ancestry
+        # Fix copies by overriding them according to the current ancestry
         # and re-upload files with privacy mismatch.
         for pub_record in copies:
             pub_record.overrideFromAncestry()

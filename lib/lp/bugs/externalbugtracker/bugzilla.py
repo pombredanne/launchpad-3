@@ -318,7 +318,7 @@ class Bugzilla(ExternalBugTracker):
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
 
-        This method is overriden so that Bugzilla version issues can be
+        This method is overridden so that Bugzilla version issues can be
         accounted for.
         """
         if self.version is None:
