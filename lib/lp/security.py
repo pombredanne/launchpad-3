@@ -147,7 +147,6 @@ from lp.registry.interfaces.projectgroup import (
 from lp.registry.interfaces.role import (
     IHasDrivers,
     IHasOwner,
-    IPersonRoles,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
