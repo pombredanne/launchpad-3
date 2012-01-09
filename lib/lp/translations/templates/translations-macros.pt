@@ -156,15 +156,6 @@
 </metal:pofile-js-footer>
 
 
-<metal:translations-js define-macro="translations-js">
-      <script
-        type="text/javascript"
-        tal:condition="devmode"
-        tal:attributes="src string:${icingroot}/build/translations/translations.js">
-      </script>
-</metal:translations-js>
-
-
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
       LPS.use('lp.translations.languages', 'event', function(Y) {
