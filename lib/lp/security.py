@@ -259,8 +259,8 @@ class LimitedViewDeferredToView(AuthorizationBase):
         # might use checkAccountAuthenticated.
         # eg. confirmed_email_addresses is not visible on a public user
         #     to an admin. See registry/stories/webservice/xx-person.txt.
-        return check_permission('launchpad.View', self.obj)
-        #self.forwardCheckAuthenticated(user, permission='launchpad.View')
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -2619,7 +2619,7 @@ class ViewEmailAddress(AuthorizationBase):
         # Anonymous users can never see email addresses.
         return False
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
@@ -2627,16 +2627,12 @@ class ViewEmailAddress(AuthorizationBase):
         admins can see them.
         """
         # Always allow users to see their own email addresses.
-        if self.obj.account == account:
+        if self.obj.person == user:
             return True
 
         if not (self.obj.person is None or
                 self.obj.person.hide_email_addresses):
             return True
-
-        user = IPersonRoles(IPerson(account, None), None)
-        if user is None:
-            return False
 
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.in_commercial_admin
