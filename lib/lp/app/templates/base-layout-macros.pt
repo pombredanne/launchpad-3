@@ -115,13 +115,14 @@
     </script>
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll',
-        'lp.app.inlinehelp', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.foldable', 'lp.app.links',
+        'lp.app.longpoll', 'lp.app.inlinehelp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
-            activateFoldables();
+            Y.lp.app.foldable.init();
+
             activateConstrainBugExpiration();
             Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
