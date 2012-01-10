@@ -158,7 +158,7 @@ to the person, and it updates the email address's status.
 
     >>> emailset = getUtility(IEmailAddressSet)
     >>> validated_email = emailset.new(
-    ...     'validated@canonical.com', p, account=p.account)
+    ...     'validated@canonical.com', p)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
 
@@ -171,7 +171,7 @@ The user can add a new address and set it as the preferred address. The
 setPreferredEmail() method updated the address's status.
 
     >>> preferred_email = emailset.new(
-    ...     'preferred@canonical.com', p, account=p.account)
+    ...     'preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
 

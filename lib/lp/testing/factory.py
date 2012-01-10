@@ -614,7 +614,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
         selfgenerated_bugnotifications=False, member_of=(),
-        homepage_content=None):
+        homepage_content=None, account_status=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -679,6 +679,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        if account_status:
+            removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
         for team in member_of:
@@ -766,8 +768,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
-        if account is None:
-            account = person.account
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, account)
 

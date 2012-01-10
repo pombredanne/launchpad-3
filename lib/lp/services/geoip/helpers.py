@@ -67,7 +67,7 @@ def ipaddress_from_request(request):
     if ipaddresses is None:
         return None
 
-    # We actually get a comma seperated list of addresses. We need to throw
+    # We actually get a comma separated list of addresses. We need to throw
     # away the obvious duds, such as loopback addresses
     ipaddresses = [addr.strip() for addr in ipaddresses.split(',')]
     ipaddresses = [

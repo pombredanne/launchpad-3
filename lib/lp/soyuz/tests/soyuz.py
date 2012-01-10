@@ -86,7 +86,7 @@ class SoyuzTestHelper:
                                         distroseries):
         """Return a list of `SourcePackagePublishingHistory`.
 
-        The publishing records are created according the given
+        The publishing records are created according to the given
         `SourcePackageRelease` and `DistroSeries` for all
         (status, archive, pocket) returned from `sample_publishing_data`.
         """
@@ -110,7 +110,7 @@ class SoyuzTestHelper:
                                             distroarchseries):
         """Return a list of `BinaryPackagePublishingHistory`.
 
-        The publishing records are created according the given
+        The publishing records are created according to the given
         `BinaryPackageRelease` and `DistroArchSeries` for all
         (status, archive, pocket) returned from `sample_publishing_data`.
         """

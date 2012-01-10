@@ -290,7 +290,7 @@ class SafeBranchOpener(object):
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
 
-        This exists as a separate method only to be overriden in unit tests.
+        This exists as a separate method only to be overridden in unit tests.
         """
         bzrdir = self._open_dir(url)
         return bzrdir.get_branch_reference()

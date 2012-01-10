@@ -37,7 +37,7 @@ class InitializeFromParentScript(LaunchpadScript):
             metavar="DISTRO", default="ubuntu", help="Distribution name")
         self.parser.add_option(
             "-a", "--arches", dest="arches",
-            help="A comma-seperated list of arches to limit the child "
+            help="A comma-separated list of arches to limit the child "
             "distroseries to inheriting")
 
     def main(self):

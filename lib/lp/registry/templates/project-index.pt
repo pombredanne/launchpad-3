@@ -111,11 +111,9 @@
         </tal:has-many-project>
 
         <h2>Milestones</h2>
-        <ul>
-          <li>
-            <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
-          </li>
-        </ul>
+        <p>
+          <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+        </p>
         <tal:search_by_tags_form
           content="structure view/project_group_milestone_tag/@@+portlet-milestone-tag-search" />
       </div>

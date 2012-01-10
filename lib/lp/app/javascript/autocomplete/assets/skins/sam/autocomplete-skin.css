@@ -213,7 +213,7 @@ http://www.gnu.org/licenses/agpl.txt
 
 .yui3-skin-sam .yui3-splitbuttonnav .yui3-menu-label .yui3-menu-toggle {
 
-    padding: 0; /* Overide padding applied by the preceeding rule. */
+    padding: 0; /* Override padding applied by the preceding rule. */
     border-left: solid 1px #ccc;
     width: 15px;
     overflow: hidden;

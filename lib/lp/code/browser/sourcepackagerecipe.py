@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -350,9 +350,14 @@ def builds_for_recipe(recipe):
         other circumstance which resulted in the build not being completed).
         This allows started but unfinished builds to show up in the view but
         be discarded as more recent builds become available.
+
+        Builds that the user does not have permission to see are excluded.
         """
-        builds = list(recipe.pending_builds)
+        builds = [build for build in recipe.pending_builds
+            if check_permission('launchpad.View', build)]
         for build in recipe.completed_builds:
+            if not check_permission('launchpad.View', build):
+                continue
             builds.append(build)
             if len(builds) >= 5:
                 break
@@ -383,8 +388,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         """
         initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
-        if build is not None:
-            initial_values['archive'] = build.archive
+        if build:
+            # If the build can't be viewed, the archive can't.
+            if check_permission('launchpad.View', build):
+                initial_values['archive'] = build.archive
         return initial_values
 
     class schema(Interface):

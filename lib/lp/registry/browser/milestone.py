@@ -25,6 +25,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
@@ -106,7 +107,7 @@ class MilestoneBreadcrumb(Breadcrumb):
     @property
     def text(self):
         milestone = IMilestoneData(self.context)
-        if hasattr(milestone, 'code_name') and milestone.code_name:
+        if safe_hasattr(milestone, 'code_name') and milestone.code_name:
             return '%s "%s"' % (milestone.name, milestone.code_name)
         else:
             return milestone.name
@@ -615,14 +616,9 @@ class MilestoneTagView(
         self.release = None
 
     @property
-    def tags(self):
-        """Return a list of tag names associated with current milestonetag."""
-        return self.context.name.split(u',')
-
-    @property
     def initial_values(self):
         """Set the initial value of the search tags field."""
-        return {'tags': u' '.join(self.tags)}
+        return {'tags': u' '.join(self.context.tags)}
 
     @safe_action
     @action(u'Search Milestone Tags', name='search')
