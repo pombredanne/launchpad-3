@@ -117,15 +117,12 @@
     </tal:activity>
     <tal:bugwatch-footer condition="comment/bugwatch">
       <div>
-        <table style="width: 100%">
+        <table class="remote-comment-reply-parent" style="width: 100%">
           <tr>
             <td style="text-align: left; vertical-align: middle">
               <tal:reply-link condition="view/user">
-                <a class="remote_comment_reply_link"
+                <a class="remote-comment-reply-link"
                     tal:attributes="href comment/fmt:url" href="#">
-                  <img class="remote_comment_reply_icon"
-                        tal:attributes="src python: '/@@/tree' + (view.expand_reply_box and 'Expanded' or 'Collapsed')"
-                       class="collapseIcon" height="14" width="14" />
                   Reply on <tal:bugtracker replace="comment/bugwatch/bugtracker/title"/>
                 </a>
               </tal:reply-link>
@@ -137,10 +134,8 @@
               </tal:sync-state>
             </td>
           </tr>
-          <tr tal:condition="view/user">
+          <tr class="remote-comment-reply" al:condition="view/user">
             <td colspan="2">
-              <div id="remote_comment_reply"
-                    tal:attributes="style python: 'display: ' + (view.expand_reply_box and 'block' or 'none')">
                 <form tal:attributes="action comment/add_comment_url"
                       name="launchpadform" method="post"
                       enctype="multipart/form-data"
@@ -165,7 +160,6 @@
                     </table>
                   </div>
                 </form>
-              </div>
             </td>
           </tr>
         </table>
