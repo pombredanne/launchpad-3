@@ -271,8 +271,7 @@ class DistroArchSeries(SQLBase):
             pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """See IDistroArchSeries."""
         queries = []
 
@@ -287,9 +286,6 @@ class DistroArchSeries(SQLBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
-
-        if exclude_pocket is not None:
-            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
