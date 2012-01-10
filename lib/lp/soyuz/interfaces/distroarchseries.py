@@ -123,7 +123,7 @@ class IDistroArchSeries(IHasOwner):
         )
     main_archive = exported(
         Reference(
-            Interface, # Really IArchive, circular import fixed below.
+            Interface,  # Really IArchive, circular import fixed below.
             title=_('Main Archive'),
             description=_("The main archive of the distroarchseries.")))
     chroot_url = exported(
@@ -161,14 +161,16 @@ class IDistroArchSeries(IHasOwner):
 
         :param: binary_name: should either be a `BinaryPackageName` instance
             or else a string which will be looked up as a `BinaryPackageName`;
-        :param: pocket: optional `PackagePublishingPocket` filter, if it is not
-            specified, we look in all pockets.
-        :param: include_pending: optionally return also the pending publication
-            records, those packages that will get published in the next publisher
-            run (it's only useful when we need to know if a given package is
-            known during a publisher run, mostly in pre-upload checks)
-        :param: archive: optional IArchive filter, if is not specified, consider
-            publication in the main_archives, otherwise respect the given value.
+        :param: pocket: optional `PackagePublishingPocket` filter, if it is
+            not specified, we look in all pockets.
+        :param: include_pending: optionally return also the pending
+            publication records, those packages that will get published in the
+            next publisher run (it's only useful when we need to know if a
+            given package is known during a publisher run, mostly in
+            pre-upload checks)
+        :param: archive: optional IArchive filter, if is not specified,
+            consider publication in the main_archives, otherwise respect the
+            given value.
 
         If the BinaryPackageName cannot be found, NotFoundError will be
         raised.
