@@ -323,14 +323,14 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 'copied from', 'a',
                 text=job.source_archive.displayname,
                 attrs={'class': re.compile('copied-from')}),
-            # Check the presence of the link remove the notification.
+            # Check the presence of the link to remove the notification.
             soupmatchers.Tag(
                 'no remove notification link', 'a',
                 text=re.compile('\s*Remove notification\s*'),
                 attrs={'class': re.compile('remove-notification')}),
             # Check the presence of the error message.
             soupmatchers.Tag(
-                'job error msg', 'span',
+                'job error msg', 'div',
                 text='Job failed!',
                 attrs={'class': re.compile('job-failed-error-msg')}),
             )
