@@ -41,12 +41,9 @@
     ></span>
     <tal:form-writeable condition="view/form_is_writeable">
       <a href=""
-         class="handle-click"
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
            id string:${view/html_id}_singular_copy_text;
-           data-from-id string:${view/html_id}_singular;
-           data-to-id string:${view/html_id_singular}_new;
          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>
@@ -190,22 +187,17 @@
               <input
                 type="radio"
                 checked="true"
-                class="handle-click"
                 tal:attributes="
                   name string:${translation_dictionary/html_id_translation}_radiobutton;
                   id string:${translation_dictionary/html_id_translation}_radiobutton;
                   class string:${view/html_id}_current;
                   value string:${translation_dictionary/html_id_translation};
-                  data-from-id string:${translation_dictionary/html_id_translation};
-                  data-to-id string:${translation_dictionary/html_id_translation}_new;
                 " />
             </tal:user-is-official-translator>
             <tal:is-not-editor condition="not:view/user_is_official_translator">
               <a href=""
-                 class="handle-click"
                  tal:attributes="
-                   data-from-id_translation string:${translation_dictionary/html_id_translation};
-                   data-to-id string:${translation_dictionary/html_id_translation}_new;
+                   id string:${translation_dictionary/html_id_translation}_singular_copy_text;
                  "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
             </tal:is-not-editor>
             </tal:form-writeable>
