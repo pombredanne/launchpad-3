@@ -22,6 +22,7 @@ from lp.bugs.enum import (
 from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
@@ -35,6 +36,7 @@ from lp.testing import (
     feature_flags,
     login_person,
     person_logged_in,
+    record_two_runs,
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -166,7 +168,7 @@ class TestBug(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             subscribers = list(bug.getDirectSubscribers())
             self.assertThat(len(subscribers), Equals(10 + 1))
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_mark_as_duplicate_query_count(self):
         bug = self.factory.makeBug()
@@ -396,7 +398,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(bug)
             # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
+            # the results returned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
         for level in BugNotificationLevel.items:
@@ -420,7 +422,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(bug)
             # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
+            # the results returned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
         subscriber = self.factory.makePerson()
@@ -475,6 +477,78 @@ class TestBug(TestCaseWithFactory):
             self.assertThat(recorder, HasQueryCount(LessThan(7)))
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
+
+    def test_getDirectSubscribers_with_recipients_query_count(self):
+        # getDirectSubscribers() uses a constant number of queries when given
+        # a recipients argument regardless of the number of subscribers.
+        bug = self.factory.makeBug()
+
+        def create_subscriber():
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            subs = bug.getDirectSubscribers(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_subscriber, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_getSubscribersFromDuplicates_with_recipients_query_count(self):
+        # getSubscribersFromDuplicates() uses a constant number of queries
+        # when given a recipients argument regardless of the number of
+        # subscribers.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+
+        def create_subscriber():
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                duplicate_bug.subscribe(subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            subs = bug.getSubscribersFromDuplicates(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_subscriber, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_getAlsoNotifiedSubscribers_with_recipients_query_count(self):
+        # getAlsoNotifiedSubscribers() uses a constant number of queries when
+        # given a recipients argument regardless of the number of subscribers.
+        bug = self.factory.makeBug()
+
+        def create_stuff():
+            # Create a new bugtask, set its assignee, set its pillar's
+            # official_malone=True, and subscribe someone to its target.
+            bugtask = self.factory.makeBugTask(bug=bug)
+            with person_logged_in(bugtask.owner):
+                bugtask.transitionToAssignee(bugtask.owner)
+            with person_logged_in(bugtask.pillar.owner):
+                bugtask.pillar.official_malone = True
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bugtask.target.addSubscription(
+                    subscriber, subscriber)
+
+        def get_subscribers():
+            recipients = BugNotificationRecipients()
+            subs = bug.getAlsoNotifiedSubscribers(recipients=recipients)
+            list(subs)  # Ensure they're pulled.
+
+        recorder1, recorder2 = record_two_runs(
+            get_subscribers, create_stuff, 3)
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesMixin:
@@ -553,7 +627,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         initial_subscribers = set((
             self.factory.makePerson(), bugtask_a.owner, bug_owner,
@@ -586,7 +660,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
             self.factory.makePerson(), bug_owner,
@@ -617,10 +691,10 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # If the bug is for a private project, then other direct subscribers
         # should be unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(),  bug_owner,
+            self.factory.makePerson(), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver,
             bugtask_a.pillar.bug_supervisor))
 
@@ -644,7 +718,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # When a bug is marked as private=false and security_related=false,
         # any existing subscriptions are left alone.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
             self.factory.makePerson(), bug_owner,
@@ -751,7 +825,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # The bug supervisors are unsubscribed if a bug is made public and an
         # email is sent telling them they have been unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
 
         with person_logged_in(bug_owner):
@@ -796,7 +870,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # set to false and an email is sent telling them they have been
         # unsubscribed.
 
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
 
         with person_logged_in(bug_owner):

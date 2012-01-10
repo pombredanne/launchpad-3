@@ -629,7 +629,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(
+            [foo_bar, daniel], [e.strip() for e in to_addrs])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
             % raw_msg)
@@ -663,7 +664,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(
+            [foo_bar, daniel], [e.strip() for e in to_addrs])
         self.assertTrue("Waiting for approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.\n"
                         "Got:\n%s" % raw_msg)

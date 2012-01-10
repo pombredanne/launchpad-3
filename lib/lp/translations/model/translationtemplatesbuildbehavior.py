@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -16,6 +16,7 @@ import os
 import tempfile
 
 import pytz
+import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
@@ -28,6 +29,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -60,8 +62,12 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._builder.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+            with DatabaseTransactionPolicy(read_only=False):
+                d = self._builder.slave.build(
+                    cookie, self.build_type, chroot_sha1, filemap, args)
+                transaction.commit()
+
+            return d
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -132,13 +138,16 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def storeBuildInfo(build, queue_item, build_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            build.build.log = lfa_id
-            build.build.builder = queue_item.builder
-            build.build.date_started = queue_item.date_started
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            build.build.date_finished = datetime.datetime.now(pytz.UTC)
+            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                build.build.log = lfa_id
+                build.build.builder = queue_item.builder
+                build.build.date_started = queue_item.date_started
+                # XXX cprov 20060615 bug=120584: Currently buildduration
+                # includes the scanner latency.  It should really be
+                # asking the slave for the duration spent building locally.
+                build.build.date_finished = datetime.datetime.now(pytz.UTC)
+                transaction.commit()
 
         d = build.getLogFromSlave(build, queue_item)
         return d.addCallback(got_log)
@@ -171,7 +180,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.FULLYBUILT)
+                    transaction.commit()
                 return
 
             tarball_file = open(filename)
@@ -181,17 +192,23 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     logger.error("Build produced empty tarball.")
                 else:
                     logger.debug("Uploading translation templates tarball.")
-                    self._uploadTarball(
-                        queue_item.specific_job.branch, tarball, logger)
+                    with DatabaseTransactionPolicy(read_only=False):
+                        self._uploadTarball(
+                            queue_item.specific_job.branch, tarball, logger)
+                        transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.FULLYBUILT)
+                    transaction.commit()
                 tarball_file.close()
                 os.remove(filename)
 
         def build_info_stored(ignored):
             if build_status == 'OK':
-                self.setBuildStatus(BuildStatus.UPLOADING)
+                with DatabaseTransactionPolicy(read_only=False):
+                    self.setBuildStatus(BuildStatus.UPLOADING)
+                    transaction.commit()
                 logger.debug("Processing successful templates build.")
                 filemap = slave_status.get('filemap')
                 d = self._readTarball(queue_item, filemap, logger)
@@ -199,7 +216,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 d.addCallback(clean_slave)
                 return d
 
-            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
+            with DatabaseTransactionPolicy(read_only=False):
+                self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
+                transaction.commit()
+
             return clean_slave(None)
 
         d = self.storeBuildInfo(self, queue_item, build_status)

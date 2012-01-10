@@ -144,7 +144,7 @@ def merge_duplicates(con):
         """)
     rows = list(cur.fetchall())
 
-    # Merge the duplicate entries, each one in a seperate transaction
+    # Merge the duplicate entries, each one in a separate transaction
     for sha1, filesize in rows:
         cur = con.cursor()
 

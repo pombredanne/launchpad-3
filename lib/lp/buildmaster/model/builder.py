@@ -1,4 +1,4 @@
-# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -66,6 +66,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -314,8 +315,8 @@ class BuilderSlave(object):
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
-    # token in the sentence received from status(), according the
-    # two status we care about. See lp:launchpad-buildd
+    # token in the sentence received from status(), according to the
+    # two statuses we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -430,6 +431,7 @@ class Builder(SQLBase):
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
+        self._clean_currentjob_cache()
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
@@ -478,10 +480,12 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
+        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+        self._clean_currentjob_cache()
 
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
@@ -497,10 +501,13 @@ class Builder(SQLBase):
 
     # XXX 2010-08-24 Julian bug=623281
     # This should not be a property!  It's masking a complicated query.
-    @property
+    @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def _clean_currentjob_cache(self):
+        del get_property_cache(self).currentjob
 
     def requestAbort(self):
         """See IBuilder."""
@@ -545,6 +552,8 @@ class Builder(SQLBase):
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
+        # XXX JeroenVermeulen 2011-11-09, bug=888010: Don't use this.
+        # It's a trap.  See bug for details.
         self._testing_slave = proxy
         del get_property_cache(self).slave
 
@@ -673,10 +682,13 @@ class Builder(SQLBase):
                 bytes_written = out_file.tell()
                 out_file.seek(0)
 
-                library_file = getUtility(ILibraryFileAliasSet).create(
-                    filename, bytes_written, out_file,
-                    contentType=filenameToContentType(filename),
-                    restricted=private)
+                transaction.commit()
+                with DatabaseTransactionPolicy(read_only=False):
+                    library_file = getUtility(ILibraryFileAliasSet).create(
+                        filename, bytes_written, out_file,
+                        contentType=filenameToContentType(filename),
+                        restricted=private)
+                    transaction.commit()
             finally:
                 # Remove the temporary file.  getFile() closes the file
                 # object.
@@ -714,7 +726,7 @@ class Builder(SQLBase):
     def acquireBuildCandidate(self):
         """Acquire a build candidate in an atomic fashion.
 
-        When retrieiving a candidate we need to mark it as building
+        When retrieving a candidate we need to mark it as building
         immediately so that it is not dispatched by another builder in the
         build manager.
 
@@ -724,12 +736,15 @@ class Builder(SQLBase):
         can be in this code at the same time.
 
         If there's ever more than one build manager running at once, then
-        this code will need some sort of mutex.
+        this code will need some sort of mutex, or run in a single
+        transaction.
         """
         candidate = self._findBuildCandidate()
         if candidate is not None:
-            candidate.markAsBuilding(self)
             transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                candidate.markAsBuilding(self)
+                transaction.commit()
         return candidate
 
     def _findBuildCandidate(self):
@@ -792,13 +807,17 @@ class Builder(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         candidate_jobs = store.execute(query).get_all()
 
-        for (candidate_id,) in candidate_jobs:
-            candidate = getUtility(IBuildQueueSet).get(candidate_id)
-            job_class = job_classes[candidate.job_type]
-            candidate_approved = job_class.postprocessCandidate(
-                candidate, logger)
-            if candidate_approved:
-                return candidate
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            for (candidate_id,) in candidate_jobs:
+                candidate = getUtility(IBuildQueueSet).get(candidate_id)
+                job_class = job_classes[candidate.job_type]
+                candidate_approved = job_class.postprocessCandidate(
+                    candidate, logger)
+                if candidate_approved:
+                    transaction.commit()
+                    return candidate
+            transaction.commit()
 
         return None
 

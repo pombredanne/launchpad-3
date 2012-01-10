@@ -9,12 +9,13 @@ __all__ = [
     ]
 
 
+from zope.interface import Attribute
+
 from lp.registry.interfaces.milestone import IMilestoneData
 
 
 class IProjectGroupMilestoneTag(IMilestoneData):
     """An IProjectGroupMilestoneTag is a tag aggretating milestones for the
     ProjectGroup with a given tag or tags.
-
-    This interface is just a marker.
     """
+    tags = Attribute("A list of tag names associated with the project group.")

@@ -827,7 +827,7 @@ class PackageRemover(SoyuzScript):
         removed_by = getUtility(IPersonSet).getByName(self.options.user)
         if removed_by is None:
             raise SoyuzScriptError(
-                "Invalid launchpad usename: %s" % self.options.user)
+                "Invalid launchpad username: %s" % self.options.user)
 
         removables = []
         for packagename in self.args:

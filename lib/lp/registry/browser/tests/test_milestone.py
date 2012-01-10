@@ -473,7 +473,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         view = create_initialized_view(self.milestonetag, '+index')
         self.assertEqual(self.milestonetag, view.context)
         self.assertEqual(self.milestonetag.title, view.page_title)
-        self.assertContentEqual(self.tags, view.tags)
+        self.assertContentEqual(self.tags, view.context.tags)
 
     def test_view_form_redirect(self):
         # Ensure a correct redirection is performed when tags are searched.
