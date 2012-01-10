@@ -6,15 +6,20 @@
 __metaclass__ = type
 
 import transaction
+import datetime
 
 from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
-from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.registry.model.milestonetag import (
+    MilestoneTag,
+    ProjectGroupMilestoneTag,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     ws_object,
     )
 
@@ -54,6 +59,39 @@ class MilestoneTagTest(TestCaseWithFactory):
             self.milestone.setTags(self.tags, self.person)
             self.milestone.setTags([], self.person)
         self.assertEquals([], self.milestone.getTags())
+
+    def test_user_metadata(self):
+        # Ensure the correct user metadata is created when tags are added.
+        tag = u'tag1'
+        with person_logged_in(self.person):
+            self.milestone.setTags([tag], self.person)
+        values = self.milestone.getTagsData().values(
+            MilestoneTag.created_by_id,
+            MilestoneTag.date_created,
+            )
+        created_by_id, date_created = values.next()
+        self.assertEqual(self.person.id, created_by_id)
+        self.assertIsInstance(date_created, datetime.datetime)
+
+    def test_user_metadata_override(self):
+        # Ensure the user metadata is correct when tags are saved
+        # multiple times by different users.
+        new_person = self.factory.makePerson()
+        with person_logged_in(self.person):
+            self.milestone.setTags(self.tags, self.person)
+            new_tags = [u'tag2', u'tag4', u'tag3']
+            self.milestone.setTags(new_tags, new_person)
+        values = self.milestone.getTagsData().values(
+            MilestoneTag.tag,
+            MilestoneTag.created_by_id,
+            )
+        tag_person_map = dict(values)
+        # Old tags are still created by self.person.
+        for tag in set(self.tags).intersection(new_tags):
+            self.assertEqual(self.person.id, tag_person_map[tag])
+        # Only new tags are created by new_person.
+        for tag in set(new_tags).difference(self.tags):
+            self.assertEqual(new_person.id, tag_person_map[tag])
 
 
 class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
@@ -168,20 +206,18 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
         self.assertContentEqual(specs, milestonetag.specifications)
 
 
-class MilestoneTagWebserviceTest(TestCaseWithFactory):
+class MilestoneTagWebServiceTest(WebServiceTestCase):
     """Test the getter and setter for milestonetags."""
 
     layer = AppServerLayer
 
     def setUp(self):
-        super(MilestoneTagWebserviceTest, self).setUp()
+        super(MilestoneTagWebServiceTest, self).setUp()
         self.owner = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.owner)
         self.milestone = self.factory.makeMilestone(product=self.product)
         transaction.commit()
-        self.service = self.factory.makeLaunchpadService(self.owner)
-        self.ws_milestone = ws_object(
-            self.service, self.milestone)
+        self.ws_milestone = self.wsObject(self.milestone, self.owner)
 
     def test_get_tags_none(self):
         self.assertEqual([], self.ws_milestone.getTags())

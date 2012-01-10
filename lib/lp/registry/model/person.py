@@ -1408,7 +1408,7 @@ class Person(
             # Initialize cache
             self._inTeam_cache = {}
         else:
-            # Retun from cache or fall through.
+            # Return from cache or fall through.
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:
@@ -3587,8 +3587,15 @@ class PersonSet:
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
-        return Person.select("Person.teamowner IS NOT NULL",
-            orderBy=['-datecreated'], limit=limit)
+        orderby = (Desc(Person.datecreated), Desc(Person.id))
+        result = IStore(Person).find(
+            Person,
+            And(
+                self._teamPrivacyQuery(),
+                TeamParticipation.team == Person.id,
+                Person.teamowner != None,
+                Person.merged == None))
+        return result.order_by(orderby).config(distinct=True)[:limit]
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):

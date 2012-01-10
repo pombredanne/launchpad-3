@@ -303,7 +303,7 @@ class PackageUploadFile(NascentUploadFile):
 
         They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
-        Even if they might be overriden in the future.
+        Even if they might be overridden in the future.
         """
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,

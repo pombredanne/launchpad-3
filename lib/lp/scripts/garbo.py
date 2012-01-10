@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -65,6 +65,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
@@ -85,6 +86,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -307,6 +309,31 @@ class OAuthNoncePruner(BulkPruner):
         SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
+
+
+class AccountOnlyEmailAddressPruner(BulkPruner):
+    """Remove EmailAddress records not linked to a Person."""
+    target_table_class = EmailAddress
+    ids_to_prune_query = "SELECT id FROM EmailAddress WHERE person IS NULL"
+
+
+class UnlinkedAccountPruner(BulkPruner):
+    """Remove Account records not linked to a Person."""
+    target_table_class = Account
+    # We join with EmailAddress to ensure we only attempt removal after
+    # the EmailAddress rows have been removed by
+    # AccountOnlyEmailAddressPruner. We join with Person to work around
+    # records with bad crosslinks. These bad crosslinks will be fixed by
+    # dropping the EmailAddress.account column.
+    ids_to_prune_query = """
+        SELECT Account.id
+        FROM Account
+        LEFT OUTER JOIN EmailAddress ON Account.id = EmailAddress.account
+        LEFT OUTER JOIN Person ON Account.id = Person.account
+        WHERE
+            EmailAddress.id IS NULL
+            AND Person.id IS NULL
         """
 
 
@@ -875,6 +902,42 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
+class SourcePackageReleaseDscBinariesUpdater(TunableLoop):
+    """Fix incorrect values for SourcePackageRelease.dsc_binaries."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SourcePackageReleaseDscBinariesUpdater, self).__init__(
+            log, abort_time)
+        self.store = IMasterStore(SourcePackageRelease)
+        self.ids = list(
+            self.store.find(
+                SourcePackageRelease.id,
+                # Get all SPR IDs which have an incorrectly-separated
+                # dsc_binaries value (space rather than comma-space).
+                SQL("dsc_binaries ~ '[a-z0-9+.-] '"),
+                # Skip rows with dsc_binaries in dependency relationship
+                # format.  This is a different bug.
+                SQL("dsc_binaries NOT LIKE '%(%'")))
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return len(self.ids) == 0
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        chunk_size = int(chunk_size + 0.5)
+        chunk_ids = self.ids[:chunk_size]
+        del self.ids[:chunk_size]
+        self.store.execute("""
+            UPDATE SourcePackageRelease
+            SET dsc_binaries = regexp_replace(
+                dsc_binaries, '([a-z0-9+.-]) ', E'\\\\1, ', 'g')
+            WHERE id IN %s""" % sqlvalues(chunk_ids), noresult=True)
+        transaction.commit()
+
+
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -1119,7 +1182,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1127,7 +1190,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
@@ -1239,9 +1302,12 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        SourcePackageReleaseDscBinariesUpdater,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
+        AccountOnlyEmailAddressPruner,
+        UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

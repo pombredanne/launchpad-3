@@ -244,12 +244,27 @@ class IMilestone(IAbstractMilestone):
 
         :param: tags The list of tags to be associated with milestone.
         :param: user The user who is updating tags for this milestone.
+
+        Note that this is not a property because, while the current user
+        is needed to store tags metadata, it is desirable to avoid
+        using thread locals to get the current request in models.
+        """
+
+    def getTagsData():
+        """Return MilestoneTag instances associated with milestone.
+
+        See above the IMilestone.setTags docstring for an explanation of
+        why this is not a property.
         """
 
     @export_read_operation()
     @operation_for_version('devel')
     def getTags():
-        """Return the milestone tags in alphabetical order."""
+        """Return the milestone tags in alphabetical order.
+
+        See above the IMilestone.setTags docstring for an explanation of
+        why this is not a property.
+        """
 
 
 # Avoid circular imports

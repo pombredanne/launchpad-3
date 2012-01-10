@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view for bug supervisor."""
@@ -14,7 +14,7 @@ from zope.interface import Interface
 
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.services.webapp.launchpadform import (
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )

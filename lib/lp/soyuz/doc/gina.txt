@@ -280,6 +280,8 @@ only imported one:
     -----END PGP SIGNATURE-----
     >>> print cap.maintainer.displayname
     Michael Vogt
+    >>> print cap.dsc_binaries
+    libcap-dev, libcap-bin, libcap1
 
 Test ubuntu-meta in breezy, which was forcefully imported.
 
