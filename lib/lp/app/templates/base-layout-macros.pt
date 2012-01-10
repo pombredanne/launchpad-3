@@ -78,7 +78,7 @@
    <script src="http://localhost:8000/?lp/meta.js"></script>
    <script type="text/javascript">
         var YUI_config = {
-            combine: true,
+            combine: false,
             comboBase: 'http://localhost:8000/?',
             root: 'yui/3.3/',
             filter: 'raw',
