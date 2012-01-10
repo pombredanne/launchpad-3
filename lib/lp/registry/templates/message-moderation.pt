@@ -13,9 +13,9 @@
     <span tal:replace="view/message_id">&lt;xyz123@example.com&gt;</span></div>
     </tt>
 
-    <span class="">
+    <span class="foldable-quoted">
     <br /><span tal:content="structure view/body_summary">First line of the message,</span>
-    <span class="" tal:content="structure view/body_details">
+    <span class="foldable" tal:content="structure view/body_details">
     followed by the subsequent lines of the message.</span>
     </span>
   </td>
