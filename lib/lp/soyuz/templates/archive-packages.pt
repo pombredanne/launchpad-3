@@ -135,7 +135,6 @@ tr#package-counters p{
 
         <div tal:condition="view/has_pending_copy_jobs">
           <div class="copy-job-message">
-            You have in progress or failed package copies.
             <tal:jobs tal:repeat="job view/package_copy_jobs">
             <div class="pending-job" tal:attributes="job_id job/id">
               <a href="" class="job-summary js-action">
@@ -165,10 +164,10 @@ tr#package-counters p{
                 Target series: <tal:target
                   tal:replace="job/target_distroseries/displayname">Oneiric
                   </tal:target>
-                <span class="job-failed-error-msg"
+                <div class="job-failed-error-msg"
                   tal:condition="job/error_message"
                   tal:content="job/error_message">
-                </span>
+                </div>
               </div>
             </div>
           </tal:jobs>
