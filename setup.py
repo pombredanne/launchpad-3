@@ -30,6 +30,7 @@ setup(
         'BeautifulSoup',
         'bzr',
         'Chameleon',
+        'convoy',
         'cssutils',
         # Required for pydkim
         'dnspython',

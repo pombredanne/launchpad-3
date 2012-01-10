@@ -72,19 +72,28 @@
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
 
   <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-
-  <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-  <script type="text/javascript">
-    // Define a global YUI sandbox that should be used by everyone.
-    var LPS = YUI({
-      // Don't try to fetch CSS files.
-      fetchCSS: false,
-      // For paranoia, set a low timeout to not wait on loading a resource.
-      timeout: 50
-      });
-  </script>
+
+   <script src="http://localhost:8000/?yui/3.3/yui/yui-min.js"></script>
+   <script src="http://localhost:8000/?lp/meta.js"></script>
+   <script type="text/javascript">
+        var YUI_config = {
+            combine: true,
+            comboBase: 'http://localhost:8000/?',
+            root: 'yui/3.3/',
+            filter: 'raw',
+            groups: {
+                lp: {
+                    combine: true,
+                    comboBase: 'http://localhost:8000/?',
+                    root: 'lp/',
+                    modules: LP_MODULES
+                }
+            }
+        };
+   </script>
+   <script src="http://localhost:8000/?yui/3.3/loader/loader-min.js"></script>
+
 </metal:load-javascript>
 
 
@@ -100,24 +109,19 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
-              'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
-                'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
-                function(Y) {
-          Y.on("domready", function () {
+      YUI(YUI_config).use('base', 'event', 'event-delegate', 'lp',
+        'lp.app.beta_features', 'lp.app.inlinehelp', 'lp.app.links',
+        'lp.app.longpoll', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+        'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
+        'oop', function(Y) { Y.on("domready", function () {
               if (Y.one(document.body).hasClass('private')) {
                   Y.lp.app.privacy.setup_privacy_notification();
                   Y.lp.app.privacy.display_privacy_notification();
               }
               Y.lp.app.beta_features.display_beta_notification();
           });
-      });
-    </script>
 
-  <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll',
-        'lp.app.inlinehelp', function(Y) {
-        Y.on('load', function(e) {
+          Y.on('load', function(e) {
             sortables_init();
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
@@ -131,11 +135,11 @@
             // page load are finished.  Hence we want the long poll request to start
             // right *after* the page has loaded.
             Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
-        }, window);
-
-        Y.on('lp:context:web_link:changed', function(e) {
-            window.location = e.new_value;
-        });
+          }, window);
+          
+          Y.on('lp:context:web_link:changed', function(e) {
+             window.location = e.new_value;
+          });
     });
   </script>
 </metal:page-javascript>

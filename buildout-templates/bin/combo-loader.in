@@ -1,0 +1,10 @@
+#!bin/py
+
+from wsgiref.simple_server import make_server
+
+from convoy.combo import combo_app
+
+app = combo_app('build/js')
+httpd = make_server('', 8000, app)
+httpd.serve_forever()
+
