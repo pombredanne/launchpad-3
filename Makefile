@@ -149,6 +149,7 @@ else
 endif
 
 css_combine: sprite_css bin/combine-css
+	${SHHH} bin/combine-css
 
 sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
 
@@ -176,13 +177,14 @@ else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
-jsbuild:
+jsbuild: $(PY) $(JS_OUT)
 	bin/combo-rootdir
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -267,7 +269,7 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll,combo-loader \
 	 -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -354,6 +356,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request

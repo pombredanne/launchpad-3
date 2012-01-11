@@ -2,23 +2,33 @@
 
 set -e
 
-rm -rf build/js
+rm -rf build
 mkdir -p build/js
+
+# Populate YUI.
 for yuitar in download-cache/dist/yui*.tar.gz ; do
     ver=$(echo $yuitar | sed -e 's/.*yui-\(.*\).tar.gz/\1/')
     mkdir -p build/js/yui/$ver
     tar zxf $yuitar -C build/js/yui/$ver
 done
+
+# Copy in our modules.
 mkdir build/js/lp
 for jsdir in lib/lp/*/javascript ; do
     app=$(echo $jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,')
     cp -a $jsdir build/js/lp/$app
 done
+
+# Build the LP module definition file.
 utilities/js-deps -n LP_MODULES -s build/js/lp -o build/js/lp/meta.js >/dev/null
+
+# Minify our JS.
 #for jsfile in $(find build/js/lp -name '*.js') ; do
 #    outfile=$(echo $jsfile | sed -e 's/.js$/-min.js/')
 #	bin/py -m lp.scripts.utilities.js.jsmin < $jsfile > $outfile
 #done
+
+# Check if any JS modules are missing.
 error=0
 for mod in $(grep '  LP' build/js/lp/meta.js | tr -s ' ' | cut -d\  -f2) ; do
     if ! grep -q "modules\[$mod\]" build/js/lp/meta.js ; then
@@ -26,4 +36,5 @@ for mod in $(grep '  LP' build/js/lp/meta.js | tr -s ' ' | cut -d\  -f2) ; do
         error=1
     fi
 done
+
 exit $error
