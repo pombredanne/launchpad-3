@@ -72,13 +72,13 @@
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-  <script
-   src="http://localhost:8000/?yui/3.3/yui/yui-min.js&lp/meta.js&yui/3.3/loader/loader-min.js"></script>
+   <script
+   src="http://localhost:8000/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
   <script type="text/javascript">
         YUI.GlobalConfig = {
             combine: true,
             comboBase: 'http://localhost:8000/?',
-            root: 'yui/3.3/',
+            root: 'yui/',
             filter: 'raw',
             fetchCSS: false,
             groups: {
