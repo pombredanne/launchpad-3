@@ -1,6 +1,6 @@
 -- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.8
+-- Created using pg_dump (PostgreSQL) 8.4.9
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -5680,6 +5680,13 @@ Martin Pitt wrote:
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
+
+
+ALTER TABLE milestonetag DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE milestonetag ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mirror DISABLE TRIGGER ALL;

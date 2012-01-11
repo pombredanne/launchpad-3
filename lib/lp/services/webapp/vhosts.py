@@ -59,7 +59,7 @@ class AllVirtualHostsConfiguration:
     the current Launchpad instance.
 
     self.use_https : do we use http or https
-                    (unless overriden for a particular virutal host)
+                    (unless overridden for a particular virtual host)
     self.configs : dict of 'config item name from conf file':VirtualHostConfig.
                    so, like this:
                    {'mainsite': config_for_mainsite,

@@ -31,7 +31,7 @@ class IIrcID(IHasOwner):
     """A person's nickname on an IRC network."""
     export_as_webservice_entry('irc_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    # schema=Interface will be overriden in person.py because of circular
+    # schema=Interface will be overridden in person.py because of circular
     # dependencies.
     person = exported(
         Reference(
