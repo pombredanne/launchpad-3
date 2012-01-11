@@ -19,6 +19,11 @@ for jsdir in lib/lp/*/javascript ; do
     cp -a $jsdir build/js/lp/$app
 done
 
+# We have to move some modules around.
+mv build/js/lp/contrib/lp.mustache.js build/js/lp
+cp lib/lp/services/worlddata/javascript/languages.js build/js/lp
+cp lib/lp/app/longpoll/javascript/longpoll.js build/js/lp
+
 # Build the LP module definition file.
 utilities/js-deps -n LP_MODULES -s build/js/lp -o build/js/lp/meta.js >/dev/null
 
