@@ -118,7 +118,6 @@
     LPS.use('node', 'event-delegate', 'lp', 'lp.app.foldables', 'lp.app.links',
         'lp.app.longpoll', 'lp.app.inlinehelp', function(Y) {
         Y.on('load', function(e) {
-            sortables_init();
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
             Y.lp.app.foldables.activate();
