@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -195,8 +195,6 @@ class IBuilder(IHasOwner):
 
     def setSlaveForTesting(proxy):
         """Sets the RPC proxy through which to operate the build slave."""
-        # XXX JeroenVermeulen 2011-11-09, bug=888010: Don't use this.
-        # It's a trap.  See bug for details.
 
     def verifySlaveBuildCookie(slave_build_id):
         """Verify that a slave's build cookie is consistent.

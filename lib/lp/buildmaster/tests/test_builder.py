@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Builder features."""
@@ -15,7 +15,6 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-import transaction
 from twisted.internet.defer import (
     CancelledError,
     DeferredList,
@@ -46,7 +45,6 @@ from lp.buildmaster.model.builder import (
     )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.testing import BuilddManagerTestFixture
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -62,7 +60,6 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehavior,
     WaitingSlave,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
@@ -85,69 +82,55 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestBuilderBasics(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestBuilderBasics, self).setUp()
-        self.useFixture(BuilddManagerTestFixture())
+    layer = DatabaseFunctionalLayer
 
     def test_providesInterface(self):
         # Builder provides IBuilder
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder()
+        builder = self.factory.makeBuilder()
         self.assertProvides(builder, IBuilder)
 
     def test_default_values(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder()
+        builder = self.factory.makeBuilder()
         # Make sure the Storm cache gets the values that the database
         # initializes.
         flush_database_updates()
-        self.useFixture(BuilddManagerTestFixture())
         self.assertEqual(0, builder.failure_count)
 
     def test_getCurrentBuildFarmJob(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
-            builder = self.factory.makeBuilder()
-            bq.markAsBuilding(builder)
-        self.useFixture(BuilddManagerTestFixture())
+        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
+        builder = self.factory.makeBuilder()
+        bq.markAsBuilding(builder)
         self.assertEqual(
             bq, builder.getCurrentBuildFarmJob().buildqueue_record)
 
     def test_getBuildQueue(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            buildqueueset = getUtility(IBuildQueueSet)
-            active_jobs = buildqueueset.getActiveBuildJobs()
-            [active_job] = active_jobs
-            builder = active_job.builder
+        buildqueueset = getUtility(IBuildQueueSet)
+        active_jobs = buildqueueset.getActiveBuildJobs()
+        [active_job] = active_jobs
+        builder = active_job.builder
 
         bq = builder.getBuildQueue()
         self.assertEqual(active_job, bq)
 
-        with BuilddManagerTestFixture.extraSetUp():
-            active_job.builder = None
-
+        active_job.builder = None
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
 
     def test_setting_builderok_resets_failure_count(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = removeSecurityProxy(self.factory.makeBuilder())
-            builder.failure_count = 1
-            builder.builderok = False
-
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.failure_count = 1
+        builder.builderok = False
         self.assertEqual(1, builder.failure_count)
-
-        with BuilddManagerTestFixture.extraSetUp():
-            builder.builderok = True
-
+        builder.builderok = True
         self.assertEqual(0, builder.failure_count)
 
 
@@ -159,7 +142,6 @@ class TestBuilder(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilder, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
-        self.useFixture(BuilddManagerTestFixture())
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -170,20 +152,18 @@ class TestBuilder(TestCaseWithFactory):
         d = lostbuilding_builder.updateStatus(BufferLogger())
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
-            # 'Fault' comes from the LostBuildingBrokenSlave.  This is
+            # 'Fault' comes from the LostBuildingBrokenSlave, this is
             # just testing that the value is passed through.
             self.assertIsInstance(failure.value, xmlrpclib.Fault)
         return d.addBoth(check_slave_status)
 
     def test_resumeSlaveHost_nonvirtual(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(virtualized=False)
+        builder = self.factory.makeBuilder(virtualized=False)
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
+        builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
@@ -194,9 +174,7 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset', reset_config)
         self.addCleanup(config.pop, 'reset')
 
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(
-                virtualized=True, vm_host="pop")
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
@@ -208,9 +186,7 @@ class TestBuilder(TestCaseWithFactory):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(
-                virtualized=True, vm_host="pop")
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
@@ -220,14 +196,11 @@ class TestBuilder(TestCaseWithFactory):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = self.factory.makeBuilder(
-                virtualized=True, vm_host="pop")
-            builder.builderok = True
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        builder.builderok = True
         d = builder.handleTimeout(BufferLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
 
-    @BuilddManagerTestFixture.extraSetUp
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
@@ -242,7 +215,6 @@ class TestBuilder(TestCaseWithFactory):
         distroseries.nominatedarchindep = das
         return builder, distroseries, das
 
-    @BuilddManagerTestFixture.extraSetUp
     def _setupRecipeBuildAndBuilder(self):
         # Helper function to make a builder capable of building a
         # recipe, returning both.
@@ -251,7 +223,6 @@ class TestBuilder(TestCaseWithFactory):
             distroseries=distroseries)
         return builder, build
 
-    @BuilddManagerTestFixture.extraSetUp
     def _setupBinaryBuildAndBuilder(self):
         # Helper function to make a builder capable of building a
         # binary package, returning both.
@@ -264,8 +235,7 @@ class TestBuilder(TestCaseWithFactory):
         # findAndStartJob finds the next queued job using _findBuildCandidate.
         # We don't care about the type of build at all.
         builder, build = self._setupRecipeBuildAndBuilder()
-        with BuilddManagerTestFixture.extraSetUp():
-            candidate = build.queueBuild()
+        candidate = build.queueBuild()
         # _findBuildCandidate is tested elsewhere, we just make sure that
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
@@ -278,8 +248,7 @@ class TestBuilder(TestCaseWithFactory):
         # and then starts it.
         # We don't care about the type of build at all.
         builder, build = self._setupRecipeBuildAndBuilder()
-        with BuilddManagerTestFixture.extraSetUp():
-            candidate = build.queueBuild()
+        candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
@@ -292,8 +261,7 @@ class TestBuilder(TestCaseWithFactory):
         # We need to send a ping to the builder to work around a bug
         # where sometimes the first network packet sent is dropped.
         builder, build = self._setupBinaryBuildAndBuilder()
-        with BuilddManagerTestFixture.extraSetUp():
-            candidate = build.queueBuild()
+        candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
@@ -306,8 +274,7 @@ class TestBuilder(TestCaseWithFactory):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
         # security context.
-        with BuilddManagerTestFixture.extraSetUp():
-            builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder = removeSecurityProxy(self.factory.makeBuilder())
         self.assertEqual(builder.url, builder.slave.url)
 
     def test_recovery_of_aborted_virtual_slave(self):
@@ -352,8 +319,7 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder(
-            "mock_builder", waiting_slave, TrivialBehavior())
+        builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -367,8 +333,7 @@ class TestBuilder(TestCaseWithFactory):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder(
-            "mock_builder", waiting_slave, CorruptBehavior())
+        builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -379,8 +344,7 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, TrivialBehavior())
+        builder = MockBuilder("mock_builder", building_slave, TrivialBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
@@ -391,8 +355,7 @@ class TestBuilder(TestCaseWithFactory):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, CorruptBehavior())
+        builder = MockBuilder("mock_builder", building_slave, CorruptBehavior())
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
@@ -405,11 +368,10 @@ class TestBuilder(TestCaseWithFactory):
         # too so that we don't traceback when the wrong behaviour tries
         # to access a non-existent job.
         builder, build = self._setupBinaryBuildAndBuilder()
-        with BuilddManagerTestFixture.extraSetUp():
-            candidate = build.queueBuild()
-            building_slave = BuildingSlave()
-            builder.setSlaveForTesting(building_slave)
-            candidate.markAsBuilding(builder)
+        candidate = build.queueBuild()
+        building_slave = BuildingSlave()
+        builder.setSlaveForTesting(building_slave)
+        candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
         self.assertFalse(
@@ -417,8 +379,8 @@ class TestBuilder(TestCaseWithFactory):
                 builder.current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
-        with BuilddManagerTestFixture.extraSetUp():
-            candidate.destroySelf()
+        candidate.destroySelf()
+        self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
         d = builder.rescueIfLost()
         def check_builder(ignored):
@@ -438,14 +400,13 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
     def setUp(self):
         super(TestBuilderSlaveStatus, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
-        self.builder = self.factory.makeBuilder()
-        self.useFixture(BuilddManagerTestFixture())
 
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        self.builder.setSlaveForTesting(slave)
-        d = self.builder.slaveStatus()
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(slave)
+        d = builder.slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -490,19 +451,21 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around slaveStatusSentence()
-        with BuilddManagerTestFixture.extraSetUp():
-            self.builder.builderok = False
-        d = self.builder.isAvailable()
+        builder = self.factory.makeBuilder()
+        builder.builderok = False
+        d = builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
-        self.builder.setSlaveForTesting(BrokenSlave())
-        d = self.builder.isAvailable()
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(BrokenSlave())
+        d = builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
-        self.builder.setSlaveForTesting(OkSlave())
-        d = self.builder.isAvailable()
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(OkSlave())
+        d = builder.isAvailable()
         return d.addCallback(self.assertTrue)
 
 
@@ -536,8 +499,6 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
             builder.builderok = True
             builder.manual = False
 
-        self.useFixture(BuilddManagerTestFixture())
-
 
 class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
     # Test usage of findBuildCandidate not specific to any archive type.
@@ -546,11 +507,10 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         # IBuilder._findBuildCandidate identifies if there are builds
         # for superseded source package releases in the queue and marks
         # the corresponding build record as SUPERSEDED.
-        with BuilddManagerTestFixture.extraSetUp():
-            archive = self.factory.makeArchive()
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=archive).createMissingBuilds()
+        archive = self.factory.makeArchive()
+        self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=archive).createMissingBuilds()
         old_candidate = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
 
@@ -561,8 +521,7 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # Now supersede the source package:
         publication = build.current_source_publication
-        with BuilddManagerTestFixture.extraSetUp():
-            publication.status = PackagePublishingStatus.SUPERSEDED
+        publication.status = PackagePublishingStatus.SUPERSEDED
 
         # The candidate returned is now a different one:
         new_candidate = removeSecurityProxy(
@@ -572,32 +531,13 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         # And the old_candidate is superseded:
         self.assertEqual(BuildStatus.SUPERSEDED, build.status)
 
-    def test_findBuildCandidate_postprocesses_in_read_write_policy(self):
-        # _findBuildCandidate invokes BuildFarmJob.postprocessCandidate,
-        # which may modify the database.  This happens in a read-write
-        # transaction even if _findBuildCandidate itself runs in a
-        # read-only transaction policy.
-
-        # PackageBuildJob.postprocessCandidate will attempt to delete
-        # security builds.
-        with BuilddManagerTestFixture.extraSetUp():
-            pub = self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.factory.makeArchive(),
-                pocket=PackagePublishingPocket.SECURITY)
-            pub.createMissingBuilds()
-        removeSecurityProxy(self.frog_builder)._findBuildCandidate()
-        # Passes without a "transaction is read-only" error...
-        transaction.commit()
-
     def test_acquireBuildCandidate_marks_building(self):
         # acquireBuildCandidate() should call _findBuildCandidate and
         # mark the build as building.
-        with BuilddManagerTestFixture.extraSetUp():
-            archive = self.factory.makeArchive()
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=archive).createMissingBuilds()
+        archive = self.factory.makeArchive()
+        self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=archive).createMissingBuilds()
         candidate = removeSecurityProxy(
             self.frog_builder).acquireBuildCandidate()
         self.assertEqual(JobStatus.RUNNING, candidate.job.status)
@@ -627,8 +567,6 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
             archive=self.ppa_joe).createMissingBuilds()
 
-        self.useFixture(BuilddManagerTestFixture())
-
     def test_findBuildCandidate_first_build_started(self):
         # The allocation rule for PPA dispatching doesn't apply when
         # there's only one builder available.
@@ -641,9 +579,8 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
         # If bob is in a failed state the joesppa build is still
         # returned.
-        with BuilddManagerTestFixture.extraSetUp():
-            self.bob_builder.builderok = False
-            self.bob_builder.manual = False
+        self.bob_builder.builderok = False
+        self.bob_builder.manual = False
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -655,7 +592,6 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
     ppa_joe_private = False
     ppa_jim_private = False
 
-    @BuilddManagerTestFixture.extraSetUp
     def _setBuildsBuildingForArch(self, builds_list, num_builds,
                                   archtag="i386"):
         """Helper function.
@@ -673,10 +609,7 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindBuildCandidatePPABase, self).setUp()
-        self.extraSetUp()
 
-    @BuilddManagerTestFixture.extraSetUp
-    def extraSetUp(self):
         # Create two PPAs and add some builds to each.
         self.ppa_joe = self.factory.makeArchive(
             name="joesppa", private=self.ppa_joe_private)
@@ -737,8 +670,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        with BuilddManagerTestFixture.extraSetUp():
-            self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
+        self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -746,12 +678,10 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_with_disabled_archive(self):
         # Disabled archives should not be considered for dispatching
         # builds.
-        disabled_job = removeSecurityProxy(
-            self.builder4)._findBuildCandidate()
-        with BuilddManagerTestFixture.extraSetUp():
-            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
-                disabled_job)
-            build.archive.disable()
+        disabled_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+            disabled_job)
+        build.archive.disable()
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         self.assertNotEqual(disabled_job, next_job)
 
@@ -771,8 +701,7 @@ class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
         # dispatched because the builder has to fetch the source files
         # from the (password protected) repo area, not the librarian.
         pub = build.current_source_publication
-        with BuilddManagerTestFixture.extraSetUp():
-            pub.status = PackagePublishingStatus.PENDING
+        pub.status = PackagePublishingStatus.PENDING
         candidate = removeSecurityProxy(self.builder4)._findBuildCandidate()
         self.assertNotEqual(next_job.id, candidate.id)
 
@@ -782,10 +711,6 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindBuildCandidateDistroArchive, self).setUp()
-        self.extraSetUp()
-
-    @BuilddManagerTestFixture.extraSetUp
-    def extraSetUp(self):
         # Create a primary archive and publish some builds for the
         # queue.
         self.non_ppa = self.factory.makeArchive(
@@ -801,6 +726,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
     def test_findBuildCandidate_for_non_ppa(self):
         # Normal archives are not restricted to serial builds per
         # arch.
+
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -809,9 +735,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        with BuilddManagerTestFixture.extraSetUp():
-            build.status = BuildStatus.BUILDING
-            build.builder = self.frog_builder
+        build.status = BuildStatus.BUILDING
+        build.builder = self.frog_builder
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
@@ -828,9 +753,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
         self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
 
-        with BuilddManagerTestFixture.extraSetUp():
-            recipe_build_job = (
-                self.factory.makeSourcePackageRecipeBuildJob(9999))
+        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
 
         self.assertEqual(recipe_build_job.lastscore, 9999)
 
@@ -844,7 +767,6 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
     # These tests operate in a "recipe builds only" setting.
     # Please see also bug #507782.
 
-    @BuilddManagerTestFixture.extraSetUp
     def clearBuildQueue(self):
         """Delete all `BuildQueue`, XXXJOb and `Job` instances."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -854,10 +776,6 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindRecipeBuildCandidates, self).setUp()
-        self.extraSetUp()
-
-    @BuilddManagerTestFixture.extraSetUp
-    def extraSetUp(self):
         # Create a primary archive and publish some builds for the
         # queue.
         self.non_ppa = self.factory.makeArchive(
@@ -903,8 +821,6 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.buildfarmjob = self.build.buildqueue_record.specific_job
 
-        self.useFixture(BuilddManagerTestFixture())
-
     def test_idle_behavior_when_no_current_build(self):
         """We return an idle behavior when there is no behavior specified
         nor a current build.
@@ -925,8 +841,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
-        with BuilddManagerTestFixture.extraSetUp():
-            self.build.buildqueue_record.builder = self.builder
+        self.build.buildqueue_record.builder = self.builder
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
@@ -1219,17 +1134,15 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         super(TestSlaveWithLibrarian, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-        self.useFixture(BuilddManagerTestFixture())
-
     def test_ensurepresent_librarian(self):
         # ensurepresent, when given an http URL for a file will download the
         # file from that URL and report that the file is present, and it was
         # downloaded.
 
         # Use the Librarian because it's a "convenient" web server.
-        with BuilddManagerTestFixture.extraSetUp():
-            lf = self.factory.makeLibraryFileAlias(
-                'HelloWorld.txt', content="Hello World")
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content="Hello World")
+        self.layer.txn.commit()
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(
@@ -1242,9 +1155,9 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         # filename made from the sha1 of the content underneath the
         # 'filecache' directory.
         content = "Hello World"
-        with BuilddManagerTestFixture.extraSetUp():
-            lf = self.factory.makeLibraryFileAlias(
-                'HelloWorld.txt', content=content)
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content=content)
+        self.layer.txn.commit()
         expected_url = '%s/filecache/%s' % (
             self.slave_helper.BASE_URL, lf.content.sha1)
         self.slave_helper.getServerSlave()
@@ -1270,6 +1183,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         def got_files(ignored):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
+            got_contents = []
             for sha1 in filemap:
                 local_file = filemap[sha1]
                 file = open(local_file)
@@ -1285,12 +1199,11 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         dl = []
         for content in contents:
             filename = content + '.txt'
-            with BuilddManagerTestFixture.extraSetUp():
-                lf = self.factory.makeLibraryFileAlias(
-                    filename, content=content)
+            lf = self.factory.makeLibraryFileAlias(filename, content=content)
             content_map[lf.content.sha1] = content
             fd, filemap[lf.content.sha1] = tempfile.mkstemp()
             self.addCleanup(os.remove, filemap[lf.content.sha1])
+            self.layer.txn.commit()
             d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
             dl.append(d)
 
