@@ -77,17 +77,20 @@
    <script src="http://localhost:8000/?yui/3.3/yui/yui-min.js"></script>
    <script src="http://localhost:8000/?lp/meta.js"></script>
    <script type="text/javascript">
-        var YUI_config = {
-            combine: true,
+        YUI.GlobalConfig = {
+            combine: false,
             comboBase: 'http://localhost:8000/?',
             root: 'yui/3.3/',
             filter: 'raw',
+            fetchCSS: false,
             groups: {
                 lp: {
-                    combine: true,
+                    combine: false,
+                    base: 'http://localhost:8000/?lp/',
                     comboBase: 'http://localhost:8000/?',
                     root: 'lp/',
-                    modules: LP_MODULES
+                    modules: LP_MODULES,
+                    fetchCSS: false
                 }
             }
         };
@@ -109,7 +112,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script type="text/javascript">
-      YUI(YUI_config).use('base', 'event', 'event-delegate', 'lp',
+      YUI().use('base', 'event', 'event-delegate', 'lp',
         'lp.app.beta_features', 'lp.app.inlinehelp', 'lp.app.links',
         'lp.app.longpoll', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
         'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
