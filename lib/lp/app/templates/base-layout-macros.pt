@@ -82,13 +82,15 @@
             comboBase: 'http://localhost:8000/?',
             root: 'yui/3.3/',
             filter: 'raw',
+            fetchCSS: false,
             groups: {
                 lp: {
                     combine: false,
                     base: 'http://localhost:8000/?lp/',
                     comboBase: 'http://localhost:8000/?',
                     root: 'lp/',
-                    modules: LP_MODULES
+                    modules: LP_MODULES,
+                    fetchCSS: false
                 }
             }
         };
