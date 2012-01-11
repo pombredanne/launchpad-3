@@ -115,7 +115,7 @@
       <metal:activity-table
           metal:use-macro="context/@@bugcomment-macros/activity-table" />
     </tal:activity>
-    <tal:bugwatch-footer condition="comment/bugwatch">
+    <tal:bugwatch-footer condition="python: view.user and comment.bugwatch">
       <div>
         <table class="remote-comment-reply-parent" style="width: 100%">
           <tr>
@@ -134,7 +134,7 @@
               </tal:sync-state>
             </td>
           </tr>
-          <tr class="remote-comment-reply" al:condition="view/user">
+          <tr class="remote-comment-reply" tal:condition="view/user">
             <td colspan="2">
                 <form tal:attributes="action comment/add_comment_url"
                       name="launchpadform" method="post"
