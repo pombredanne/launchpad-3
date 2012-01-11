@@ -2383,3 +2383,62 @@ class TestRemovingPermissions(TestCaseWithFactory):
         # not generate an error if the permission is None.
         ap_set = ArchivePermissionSet()
         ap_set._remove_permission(None)
+
+
+class TestRemovingCopyNotifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeJob(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        return (distroseries, archive1, archive2, requester, job)
+
+    def test_removeCopyNotification(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        job.start()
+        job.fail()
+
+        with person_logged_in(archive2.owner):
+            archive2.removeCopyNotification(job.id)
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        found_jobs = source.getIncompleteJobsForArchive(archive2)
+        self.assertEqual(None, found_jobs.any())
+
+    def test_removeCopyNotification_raises_for_not_failed(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        
+        self.assertNotEqual(JobStatus.FAILED, job.status)
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job.id)
+
+    def test_removeCopyNotification_raises_for_wrong_archive(self):
+        # If the job ID supplied is not for the context archive, an
+        # error should be raised.
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        job.start()
+        job.fail()
+
+        # Set up a second job in the other archive.
+        source = getUtility(IPlainPackageCopyJobSource)
+        job2 = source.create(
+            package_name="foo", source_archive=archive2,
+            target_archive=archive1, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job2.id)
