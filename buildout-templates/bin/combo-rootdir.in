@@ -18,6 +18,8 @@ for jsdir in lib/lp/*/javascript ; do
     app=$(echo $jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,')
     cp -a $jsdir build/js/lp/$app
 done
+# ... and delete tests.
+find build/js -name 'tests' -type d | xargs rm -rf
 
 # We have to move some modules around.
 mv build/js/lp/contrib/lp.mustache.js build/js/lp
