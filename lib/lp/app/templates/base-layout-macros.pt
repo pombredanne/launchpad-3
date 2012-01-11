@@ -122,8 +122,6 @@
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
             Y.lp.app.foldables.activate();
-
-            activateConstrainBugExpiration();
             Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
             // LP.cache.longpoll is populated.
