@@ -411,3 +411,35 @@ class TestgetPublishedBinaries(WebServiceTestCase):
         ws_archive = self.wsObject(self.archive, user=self.person)
         publications = ws_archive.getPublishedBinaries(ordered=False)
         self.assertEqual(2, len(publications))
+
+
+class TestremoveCopyNotification(WebServiceTestCase):
+    """Test removeCopyNotification."""
+
+    def setUp(self):
+        super(TestremoveCopyNotification, self).setUp()
+        self.ws_version = 'devel'
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=self.person)
+
+    def test_removeCopyNotification(self):
+        distroseries = self.factory.makeDistroSeries()
+        source_archive = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=source_archive,
+            target_archive=self.archive, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        job.start()
+        job.fail()
+
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        ws_archive.removeCopyNotification(job_id=job.id)
+        transaction.commit()
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            None, source.getIncompleteJobsForArchive(self.archive).any())
