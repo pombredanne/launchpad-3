@@ -40,6 +40,7 @@ setup(
         'funkload',
         'html5browser',
         'pygpgme',
+        'python-subunit',
         'launchpadlib',
         'lazr.batchnavigator',
         'lazr.config',

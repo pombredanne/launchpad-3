@@ -34,11 +34,6 @@ bug tracker.
     >>> print extract_text(footer)
     Reply on Debian Bug tracker...
 
-If javascript is available, we can expand the form inline.
-
-    >>> print footer.script
-    <script type="text/javascript">connectRemoteCommentReply(1);</script>
-
 When javascript is not available, the link simply takes us to the
 individual comment page, where the inline form is displayed.
 
