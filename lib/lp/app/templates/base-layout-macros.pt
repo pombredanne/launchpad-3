@@ -55,12 +55,6 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-
-    XXX mars 2010-01-21
-    We have to load MochiKit outside of the main javascript rollup so that the
-    rollup's size does not exceed 512Kb.  That magic number triggers a bug
-    somewhere in the automated test system that will prevent Windmill from
-    executing.
   </tal:comment>
   <script type="text/javascript">
     var LP = {
@@ -68,8 +62,6 @@
         links: {}
     };
   </script>
-  <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
    <script
@@ -125,8 +117,7 @@
             sortables_init();
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
+            Y.lp.app.foldables.activate();
             Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
             // LP.cache.longpoll is populated.

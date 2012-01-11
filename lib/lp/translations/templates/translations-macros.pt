@@ -21,21 +21,13 @@
             name string:${submission/translation_html_id}_radiobutton;
             id string:${submission/suggestion_html_id}_radiobutton;
             value string:${submission/suggestion_html_id};
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new')
             " />
         </tal:user-is-official-translator>
         <tal:user-is-not-official-translator condition="not:user_is_official_translator">
         <a href=""
           tal:attributes="
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new');;
-              selectWidget('${submission/translation_html_id}_new_select', event);;
-            return false;;
+            id string:${submission/suggestion_html_id}_singular_copy_text;
+            name string:${submission/translation_html_id}_singular_copy_text;
           "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
         </tal:user-is-not-official-translator>
         </tal:form-writeable>
