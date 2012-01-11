@@ -3,14 +3,10 @@
 set -e
 
 rm -rf build
-mkdir -p build/js
+mkdir -p build/js/yui
 
 # Populate YUI.
-for yuitar in download-cache/dist/yui*.tar.gz ; do
-    ver=$(echo $yuitar | sed -e 's/.*yui-\(.*\).tar.gz/\1/')
-    mkdir -p build/js/yui/$ver
-    tar zxf $yuitar -C build/js/yui/$ver
-done
+tar zxf download-cache/dist/yui-${versions:yui}.tar.gz -C build/js/yui
 
 # Copy in our modules.
 mkdir build/js/lp
