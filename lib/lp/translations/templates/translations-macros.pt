@@ -158,7 +158,7 @@
 
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
-      LPS.use('lp.translations.languages', 'event', function(Y) {
+      YUI.use('lp.translations.languages', 'event', function(Y) {
           Y.on("click", function(e) {
             Y.lp.translations.languages.toggle_languages_visibility(e);
           }, "#toggle-languages-visibility");

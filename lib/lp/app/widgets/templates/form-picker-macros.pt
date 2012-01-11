@@ -19,7 +19,7 @@
             />
       </select>
       <script type="text/javascript" tal:content="string:
-          LPS.use('node', 'lp.app.picker', function(Y) {
+          YUI.use('node', 'lp.app.picker', function(Y) {
               var text_input = Y.DOM.byId('${view/name}');
               var select_menu = Y.DOM.byId('${suggestion_id}');
               Y.lp.app.picker.connect_select_menu(
@@ -30,7 +30,7 @@
 
     <tal:chooseLink replace="structure view/chooseLink" />
     <script tal:content="structure string:
-    LPS.use('node', 'lp.app.picker', function(Y) {
+    YUI.use('node', 'lp.app.picker', function(Y) {
         if (Y.UA.ie) {
             return;
         }
