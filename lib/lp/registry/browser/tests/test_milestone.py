@@ -95,7 +95,7 @@ class TestMilestoneViews(TestCaseWithFactory):
             self.series, '+addmilestone', form=form)
         self.assertEqual([], view.errors)
         expected = sorted(tags.split())
-        self.assertEqual(expected, list(self.product.milestones[0].getTags()))
+        self.assertEqual(expected, self.product.milestones[0].getTags())
 
 
 class TestMilestoneEditView(TestCaseWithFactory):
@@ -124,7 +124,7 @@ class TestMilestoneEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual('new-name', self.milestone.name)
         expected = sorted(new_tags.lower().split())
-        self.assertEqual(expected, list(self.milestone.getTags()))
+        self.assertEqual(expected, self.milestone.getTags())
 
     def test_edit_milestone_clear_tags(self):
         orig_tags = u'b a c'
@@ -139,7 +139,7 @@ class TestMilestoneEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual('new-name', self.milestone.name)
         expected = []
-        self.assertEqual(expected, list(self.milestone.getTags()))
+        self.assertEqual(expected, self.milestone.getTags())
 
 
 class TestMilestoneMemcache(MemcacheTestCase):

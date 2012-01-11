@@ -308,15 +308,15 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         # Prevent circular references.
         from lp.registry.model.milestonetag import MilestoneTag
         store = Store.of(self)
-        return list(store.find(
+        return store.find(
             MilestoneTag, MilestoneTag.milestone_id == self.id
-            ).order_by(MilestoneTag.tag))
+            ).order_by(MilestoneTag.tag)
 
     def getTags(self):
         """See IMilestone."""
         # Prevent circular references.
         from lp.registry.model.milestonetag import MilestoneTag
-        return self.getTagsData().values(MilestoneTag.tag)
+        return list(self.getTagsData().values(MilestoneTag.tag))
 
 
 class MilestoneSet:
