@@ -18,7 +18,7 @@
     </tal:comment>
     <script type="text/javascript"
       tal:condition="not: view/shouldShowAdvancedForm">
-    LPS.use('lp.registry.structural_subscription', function(Y) {
+    YUI.use('lp.registry.structural_subscription', function(Y) {
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});

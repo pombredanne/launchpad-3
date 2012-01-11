@@ -148,7 +148,7 @@
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-          LPS.use('lp.app.widgets.expander', function(Y) {
+          YUI.use('lp.app.widgets.expander', function(Y) {
               var widget_header = Y.one('#ppa-install .widget-header');
               var content = Y.one('.widget-body');
               var expander = new Y.lp.app.widgets.expander.Expander(

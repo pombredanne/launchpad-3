@@ -320,7 +320,7 @@
     </div>
 
   <script type="text/javascript">
-    LPS.use('lp.anim', 'lp.ui', function(Y) {
+    YUI.use('lp.anim', 'lp.ui', function(Y) {
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');

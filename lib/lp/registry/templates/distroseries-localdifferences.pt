@@ -60,7 +60,7 @@
       </span>
       <div metal:fill-slot="buttons">
         <script type="text/javascript">
-          LPS.use(
+          YUI.use(
             'node', 'event', 'lp.registry.distroseriesdifferences_details',
             'lp.app.confirmationoverlay',function(Y) {
             Y.on('domready', function() {
@@ -295,14 +295,14 @@
       </div>
     </div>
 <script type="text/javascript">
-LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
+YUI.use('lp.registry.distroseriesdifferences_details', function(Y) {
   Y.on('domready', function() {
     Y.lp.registry.distroseriesdifferences_details.setup();
   });
 });
 </script>
 <script type="text/javascript">
-  LPS.use("lp.registry.distroseries.differences", function(Y) {
+  YUI.use("lp.registry.distroseries.differences", function(Y) {
     Y.on("domready", function() {
       var form = Y.one("form#distroseries-localdiff-search-filter");
       var differences = Y.lp.registry.distroseries.differences;
