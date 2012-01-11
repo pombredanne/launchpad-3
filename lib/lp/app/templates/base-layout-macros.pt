@@ -111,7 +111,9 @@
         'lp.app.beta_features', 'lp.app.inlinehelp', 'lp.app.links',
         'lp.app.longpoll', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
         'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
-        'oop', function(Y) { Y.on("domready", function () {
+        'oop', function(Y) {
+
+          Y.on("domready", function () {
               if (Y.one(document.body).hasClass('private')) {
                   Y.lp.app.privacy.setup_privacy_notification();
                   Y.lp.app.privacy.display_privacy_notification();
@@ -134,7 +136,7 @@
             // right *after* the page has loaded.
             Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
           }, window);
-          
+
           Y.on('lp:context:web_link:changed', function(e) {
              window.location = e.new_value;
           });
