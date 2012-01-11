@@ -29,7 +29,6 @@
                     }
 
                     var constraint = function (e) {
-                        debugger;
                         if (bug_tracker_input.get('checked')) {
                             bug_expiration_input.set('disabled', false);
                             bug_expiration_input.set('checked', true);
