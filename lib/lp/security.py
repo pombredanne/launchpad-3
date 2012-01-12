@@ -147,7 +147,6 @@ from lp.registry.interfaces.projectgroup import (
 from lp.registry.interfaces.role import (
     IHasDrivers,
     IHasOwner,
-    IPersonRoles,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import (
@@ -168,6 +167,7 @@ from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
+from lp.services.webapp.authorization import check_permission
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
@@ -235,6 +235,30 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
+
+
+class LimitedViewDeferredToView(AuthorizationBase):
+    """The default ruleset for the launchpad.LimitedView permission.
+
+    Few objects define LimitedView permission because it is only needed
+    in cases where a user may know something about a private object. The
+    default behaviour is to check if the user has launchpad.View permission;
+    private objects must define their own launchpad.LimitedView checker to
+    trully check the permission.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = Interface
+
+    def checkUnauthenticated(self):
+        # The forward adapter approach is not reliable because the object
+        # might not define a permission checker for launchpad.View.
+        # eg. IHasMilestones is implicitly public to anonymous users,
+        #     there is no nearest adapter to call checkUnauthenticated.
+        return check_permission('launchpad.View', self.obj)
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -2632,7 +2656,7 @@ class ViewEmailAddress(AuthorizationBase):
         # Anonymous users can never see email addresses.
         return False
 
-    def checkAuthenticated(self, person):
+    def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
@@ -2640,28 +2664,28 @@ class ViewEmailAddress(AuthorizationBase):
         admins can see them.
         """
         # Always allow users to see their own email addresses.
-        if self.obj.person == person:
+        if self.obj.person == user:
             return True
 
         if not (self.obj.person is None or
                 self.obj.person.hide_email_addresses):
             return True
 
-        return (self.obj.person is not None and person.inTeam(self.obj.person)
-                or person.in_commercial_admin
-                or person.in_registry_experts
-                or person.in_admin)
+        return (self.obj.person is not None and user.inTeam(self.obj.person)
+                or user.in_commercial_admin
+                or user.in_registry_experts
+                or user.in_admin)
 
 
 class EditEmailAddress(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IEmailAddress
 
-    def checkAuthenticated(self, person):
+    def checkAuthenticated(self, user):
         # Always allow users to see their own email addresses.
-        if self.obj.person == person:
+        if self.obj.person == user:
             return True
-        return super(EditEmailAddress, self).checkAuthenticated(person)
+        return super(EditEmailAddress, self).checkAuthenticated(user)
 
 
 class ViewGPGKey(AnonymousAuthorization):
