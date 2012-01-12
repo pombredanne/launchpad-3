@@ -277,8 +277,7 @@ Private teams are indicated as private.
 -------------
 
 This page lists the teams that you administer and can add as a member
-to the current team. Private teams cannot be added as members to another
-team.
+to the current team.
 
     >>> login_person(sample_person)
     >>> view = create_initialized_view(guadamen, '+add-my-teams')
@@ -286,3 +285,4 @@ team.
     ...     print candidate.name, candidate.visibility.title
     landscape-developers Public
     launchpad-users Public
+    private-team Private
