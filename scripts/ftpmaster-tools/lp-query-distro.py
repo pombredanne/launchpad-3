@@ -12,11 +12,11 @@
    * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
    * DEVELOPMENT distroseries name:
        `./ubuntu-helper.py -d ubuntu development`
-   * Distorelease architectures:
+   * Distroseries architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
-   * Distorelease official architectures:
+   * Distroseries official architectures:
        `./lp-query-distro.py -d ubuntu -s feisty official_archs`
-   * Distorelease nominated-arch-indep:
+   * Distroseries nominated-arch-indep:
        `./lp-query-distro.py -d ubuntu -s feisty nominated_arch_indep`
 
    Standard Output will carry the successfully executed information and

@@ -163,7 +163,7 @@ def fix_changelog(changelog):
             fixed += [" ."]
             fixed_idx += 1
         elif line.startswith(" --"):
-            # Strip any 'blank' lines preceeding the footer
+            # Strip any 'blank' lines preceding the footer
             while fixed[fixed_idx] == " .":
                 fixed.pop()
                 fixed_idx -= 1

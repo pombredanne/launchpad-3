@@ -717,7 +717,7 @@ class Archive(SQLBase):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
-        a list of clauseTables required according the given arguments.
+        a list of clauseTables required according to the given arguments.
         """
         clauses = ["""
             BinaryPackagePublishingHistory.archive = %s AND
@@ -1288,18 +1288,14 @@ class Archive(SQLBase):
             #   - the given source package directly
             #   - a package set in the correct distro series that includes the
             #     given source package
-            source_allowed = self.checkArchivePermission(person,
-                                                         sourcepackagename)
+            source_allowed = self.checkArchivePermission(
+                person, sourcepackagename)
             set_allowed = self.isSourceUploadAllowed(
                 sourcepackagename, person, distroseries)
             if source_allowed or set_allowed:
                 return None
 
         if not self.getComponentsForUploader(person):
-            # XXX: JamesWestby 2010-08-01 bug=612351: We have to use
-            # is_empty() as we don't get an SQLObjectResultSet back, and
-            # so __nonzero__ isn't defined on it, and a straight bool
-            # check wouldn't do the right thing.
             if self.getPackagesetsForUploader(person).is_empty():
                 return NoRightsForArchive()
             else:
@@ -2021,6 +2017,17 @@ class Archive(SQLBase):
         if self.purpose in MAIN_ARCHIVE_PURPOSES:
             return UbuntuOverridePolicy()
         return None
+
+    def removeCopyNotification(self, job_id):
+        """See `IArchive`."""
+        # Circular imports R us.
+        from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+        pcj = PlainPackageCopyJob.get(job_id)
+        job = pcj.job
+        if job.status != JobStatus.FAILED:
+            raise AssertionError("Job is not failed")
+        Store.of(pcj.context).remove(pcj.context)
+        job.destroySelf()
 
 
 class ArchiveSet:

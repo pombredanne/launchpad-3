@@ -44,12 +44,6 @@
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
            id string:${view/html_id}_singular_copy_text;
-           onClick string:
-             javascript:copyInnerHTMLById(
-               '${view/html_id}_singular',
-               '${view/html_id_singular}_new');;
-             selectWidget('${view/html_id_singular}_new_select', event);;
-             return false;;
          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>
@@ -68,12 +62,7 @@
     <tal:form-writeable condition="view/form_is_writeable">
     <a href=""
        tal:attributes="
-         onClick string:
-           javascript:writeTextIntoPluralTranslationFields(
-             '${view/html_id}_plural',
-             '${view/html_id}_${language_code}_translation_',
-             ${context/plural_forms});;
-           return false;;
+         id string:${view/html_id}_plural_copy_text;
       "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>
@@ -198,21 +187,12 @@
                   id string:${translation_dictionary/html_id_translation}_radiobutton;
                   class string:${view/html_id}_current;
                   value string:${translation_dictionary/html_id_translation};
-                  onClick string:
-                    javascript:copyInnerHTMLById(
-                      '${translation_dictionary/html_id_translation}',
-                      '${translation_dictionary/html_id_translation}_new')
                 " />
             </tal:user-is-official-translator>
             <tal:is-not-editor condition="not:view/user_is_official_translator">
               <a href=""
                  tal:attributes="
-                   onClick string:
-                     javascript:copyInnerHTMLById(
-                       '${translation_dictionary/html_id_translation}',
-                       '${translation_dictionary/html_id_translation}_new');;
-                     selectWidget('${translation_dictionary/html_id_translation}_new_select', event);;
-                     return false;;
+                   id string:${translation_dictionary/html_id_translation}_singular_copy_text;
                  "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
             </tal:is-not-editor>
             </tal:form-writeable>
