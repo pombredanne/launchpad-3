@@ -106,9 +106,11 @@
     </script>
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.foldables', 'lp.app.links',
-        'lp.app.longpoll', 'lp.app.inlinehelp', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.foldables',
+            'lp.app.links', 'lp.app.sorttable', 'lp.app.longpoll',
+            'lp.app.inlinehelp', function(Y) {
         Y.on('load', function(e) {
+            Y.lp.app.sorttable.SortTable.init();
             Y.lp.app.inlinehelp.init_help();
             Y.lp.activate_collapsibles();
             Y.lp.app.foldables.activate();
