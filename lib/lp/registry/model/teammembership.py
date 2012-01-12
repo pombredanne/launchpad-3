@@ -35,6 +35,7 @@ from lp.registry.errors import (
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.persontransferjob import (
@@ -84,7 +85,7 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
