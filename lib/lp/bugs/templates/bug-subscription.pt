@@ -16,7 +16,7 @@
             tal:content="string:var yui_base='${yui}';"></script>
 
     <script type="text/javascript">
-        YUI.use('base', 'node', 'oop', 'event',
+        YUI().use('base', 'node', 'oop', 'event',
                 'lp.bugs.bug_notification_level',
             function(Y) {
                 Y.on('domready', function () {

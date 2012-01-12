@@ -31,7 +31,7 @@
 </span>
 <script tal:condition="view/can_write"
         tal:content="string:
-YUI.use('lp.app.multicheckbox', function(Y) {
+YUI().use('lp.app.multicheckbox', function(Y) {
     if (Y.UA.ie) {
         return;
     }
