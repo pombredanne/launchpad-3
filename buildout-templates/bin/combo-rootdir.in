@@ -8,6 +8,9 @@ mkdir -p build/js/yui
 # Populate YUI.
 tar zxf download-cache/dist/yui-${versions:yui}.tar.gz -C build/js/yui
 
+# And YUI 2, for now.
+cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
+
 # Copy in our modules.
 mkdir build/js/lp
 for jsdir in lib/lp/*/javascript ; do

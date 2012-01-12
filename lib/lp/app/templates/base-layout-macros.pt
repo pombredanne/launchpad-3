@@ -63,8 +63,6 @@
     };
   </script>
   <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-  <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
    <script
    src="http://localhost:8000/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>

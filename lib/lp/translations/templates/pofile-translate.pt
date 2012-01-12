@@ -15,10 +15,8 @@
     </style>
 
     <script type="text/javascript">
-      registerLaunchpadFunction(insertAllExpansionButtons);
-
-      YUI().use('lp.translations.pofile', function(Y) {
-          Y.on('domready', Y.lp.translations.pofile.initializePOFile);
+      YUI.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializePOFile);
       });
 
     </script>
