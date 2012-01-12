@@ -81,6 +81,13 @@
                     root: 'lp/',
                     modules: LP_MODULES,
                     fetchCSS: false
+                },
+                yui2: {
+                    combine: true,
+                    base: 'http://localhost:8000/?yui2/',
+                    comboBase: 'http://localhost:8000/?',
+                    root: 'yui2/',
+                    fetchCSS: false
                 }
             }
         };
