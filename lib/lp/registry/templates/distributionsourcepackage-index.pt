@@ -236,7 +236,7 @@
       </p>
     </div>
 <script type="text/javascript">
-YUI.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+YUI().use('node', 'event', 'lp.app.widgets.expander', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.

@@ -97,7 +97,7 @@
     </tal:yui2resources>
 
     <script type="text/javascript">
-        YUI.use('lang', 'node', 'lp.app.calendar', function(Y) {
+        YUI().use('lang', 'node', 'lp.app.calendar', function(Y) {
             Y.lp.app.calendar.setup_calendar_widgets();
         });
     </script>

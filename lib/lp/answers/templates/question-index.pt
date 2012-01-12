@@ -17,7 +17,7 @@
   }
     </style>
     <script type="text/javascript">
-        YUI.use('base', 'node', 'event',
+        YUI().use('base', 'node', 'event',
                 'lp.comments.hide', 'lp.answers.subscribers',
             function(Y) {
         Y.on('domready', function() {

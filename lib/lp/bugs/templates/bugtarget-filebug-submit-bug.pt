@@ -10,7 +10,7 @@
             tal:condition="devmode"
             tal:content="string:var yui_base='${yui}';"></script>
     <script type="text/javascript">
-      YUI.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      YUI().use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
       function(Y) {
           Y.on('domready', function() {
               Y.lp.bugs.filebug_dupefinder.setup_dupes();

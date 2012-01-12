@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-YUI.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
+YUI().use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
         'lp.app.widgets.expander', function(Y) {
 
 
