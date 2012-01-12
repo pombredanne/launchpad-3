@@ -294,7 +294,6 @@ Team Membership
 ===============
 
 Mixing public and private teams can create interesting situations.
-Not every type of team can become a member of other types.
 
     >>> from lp.registry.interfaces.person import PrivatePersonLinkageError
     >>> reviewer = factory.makePerson()
@@ -321,8 +320,8 @@ Not every type of team can become a member of other types.
     ...         join_team(joined, joiner)
     ...     print "---"
     Public <- Public:  Allowed
-    Public <- Private:  Not Allowed
+    Public <- Private: Allowed
     ---
     Private <- Public:  Allowed
-    Private <- Private:  Not Allowed
+    Private <- Private: Allowed
     ---
