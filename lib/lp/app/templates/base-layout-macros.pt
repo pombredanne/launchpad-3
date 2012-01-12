@@ -87,7 +87,24 @@
                     base: 'http://localhost:8000/?yui2/',
                     comboBase: 'http://localhost:8000/?',
                     root: 'yui2/',
-                    fetchCSS: false
+                    fetchCSS: false,
+                    modules: {
+                        'yui2-yahoo': {
+                            path: 'yahoo/yahoo.js'
+                        },
+                        'yui2-event': {
+                            path: 'event/event.js'
+                        },
+                        'yui2-dom': {
+                            path: 'dom/dom.js'
+                        },
+                        'yui2-calendar': {
+                            path: 'calendar/calendar.js'
+                        },
+                        'yui2-dom-event': {
+                            path: 'yahoo-dom-event/yahoo-dom-event.js'
+                        }
+                    }
                 }
             }
         };
