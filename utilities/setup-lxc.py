@@ -31,6 +31,7 @@ LXC_REPOS = (
     'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
     'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
     )
+DEPENDENCIES_DIR = '~/dependencies'
 
 
 @contextmanager
@@ -124,16 +125,15 @@ def initialize_host(
         with open(resolv_file, 'w') as f:
             f.writelines(lines)
         # Set up source dependencies.
-        dependencies_dir = '~/dependencies'
         usercall('mkdir -p %s/eggs %s/yui' % (
-            dependencies_dir, dependencies_dir))
+            DEPENDENCIES_DIR, DEPENDENCIES_DIR))
         usercall(
             'cd %s && utilities/update-sourcecode %s' % (
-            checkout_dir, dependencies_dir))
+            checkout_dir, DEPENDENCIES_DIR))
         usercall(
             'cd %s && bzr co --lightweight '
             'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk '
-            'download-cache' % dependencies_dir)
+            'download-cache' % DEPENDENCIES_DIR)
 
 def create_lxc(user, lxcname):
     config_template = '/etc/lxc/local.conf'
@@ -162,12 +162,16 @@ def create_lxc(user, lxcname):
     subprocess.call('mkdir -p %s' % dst)
     shutil.copy(src, dst)
 
-def initialize_lxc(user, lxcname):
+def initialize_lxc(user, directory, lxcname):
     with ssh(lxcname) as sshcall:
         # APT repository update.
         sources = get_container_path(lxcname, '/etc/apt/sources.list')
         with open(sources, 'w') as f:
             f.write('\n'.join(LXC_REPOS))
+        # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
+        # containers currently does not work
+        sshcall("echo 'mountall hold' | dpkg --set-selections")
+        # Upgrading packages.
         sshcall(
             'apt-get update && '
             'apt-get -y install bzr launchpad-developer-dependencies')
@@ -177,12 +181,23 @@ def initialize_lxc(user, lxcname):
         gid = "`python -c 'import pwd; print pwd.getpwnam(\"%s\").pw_gid'`" % (
             user)
         sshcall('addgroup --gid %s %s' % (gid, user))
+    with ssh(lxcname, user) as sshcall:
+        # Launchpad database setup.
+        sshcall(
+            'cd %s && utilities/launchpad-database-setup %s' % (
+            directory, user))
+        sshcall(
+            'cd %s && utilities/link-external-sourcecode %s' % (
+            directory, DEPENDENCIES_DIR))
+        # Probably unnecessary (just a test).
+        sshcall('cd %s && make schema' % directory)
+        sshcall('cd %s && make install' % directory)
 
 def main(user, fullname, email, lpuser, private_key, public_key, directory):
     initialize_host(
         user, fullname, email, lpuser, private_key, public_key, directory)
     create_lxc(user, LXC_NAME)
-    initialize_lxc(user, LXC_NAME)
+    initialize_lxc(user, directory, LXC_NAME)
 
 
 if __name__ == '__main__':
