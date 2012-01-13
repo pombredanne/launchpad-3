@@ -240,20 +240,6 @@ class RabbitService(Service):
         self.useFixture(self.server)
 
 
-class ComboLoaderService(Service):
-    """A Combo Loader service."""
-
-    @property
-    def should_launch(self):
-        return True
-
-    def launch(self):
-        command = [os.path.join(config.root, 'bin', 'combo-loader')]
-        process = subprocess.Popen(command, stdin=subprocess.PIPE)
-        self.addCleanup(stop_process, process)
-        process.stdin.close()
-
-
 class TxLongPollService(Service):
     """A TxLongPoll service."""
 
@@ -303,7 +289,6 @@ SERVICES = {
     'memcached': MemcachedService(),
     'rabbitmq': RabbitService(),
     'txlongpoll': TxLongPollService(),
-    'combo-loader': ComboLoaderService(),
     }
 
 

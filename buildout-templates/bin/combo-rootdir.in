@@ -2,42 +2,43 @@
 
 set -e
 
-rm -rf build
-mkdir -p build/js/yui
+BUILD_DIR=$1
 
 # Populate YUI.
-tar zxf download-cache/dist/yui-${versions:yui}.tar.gz -C build/js/yui
+mkdir $BUILD_DIR/yui
+tar zxf download-cache/dist/yui-${versions:yui}.tar.gz -C $BUILD_DIR/yui
 
 # And YUI 2, for now.
-cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
+cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
 
 # Copy in our modules.
-mkdir build/js/lp
+mkdir $BUILD_DIR/lp
 for jsdir in lib/lp/*/javascript ; do
     app=$(echo $jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,')
-    cp -a $jsdir build/js/lp/$app
+    cp -a $jsdir $BUILD_DIR/lp/$app
 done
 # ... and delete tests.
-find build/js -name 'tests' -type d | xargs rm -rf
+find $BUILD_DIR -name 'tests' -type d | xargs rm -rf
 
 # We have to move some modules around.
-mv build/js/lp/contrib/lp.mustache.js build/js/lp
-cp lib/lp/services/worlddata/javascript/languages.js build/js/lp
-cp lib/lp/app/longpoll/javascript/longpoll.js build/js/lp
+cp lib/lp/contrib/javascript/lp.mustache.js $BUILD_DIR/lp
+rm $BUILD_DIR/lp/contrib/mustache.js
+cp lib/lp/services/worlddata/javascript/languages.js $BUILD_DIR/lp
+cp lib/lp/app/longpoll/javascript/longpoll.js $BUILD_DIR/lp
 
 # Build the LP module definition file.
-utilities/js-deps -n LP_MODULES -s build/js/lp -o build/js/lp/meta.js >/dev/null
+utilities/js-deps -n LP_MODULES -s $BUILD_DIR/lp -o $BUILD_DIR/lp/meta.js >/dev/null
 
 # Minify our JS.
-#for jsfile in $(find build/js/lp -name '*.js') ; do
+#for jsfile in $(find $BUILD_DIR/lp -name '*.js') ; do
 #    outfile=$(echo $jsfile | sed -e 's/.js$/-min.js/')
 #	bin/py -m lp.scripts.utilities.js.jsmin < $jsfile > $outfile
 #done
 
 # Check if any JS modules are missing.
 error=0
-for mod in $(grep '  LP' build/js/lp/meta.js | tr -s ' ' | cut -d\  -f2) ; do
-    if ! grep -q "modules\[$mod\]" build/js/lp/meta.js ; then
+for mod in $(grep '  LP' $BUILD_DIR/lp/meta.js | tr -s ' ' | cut -d\  -f2) ; do
+    if ! grep -q "modules\[$mod\]" $BUILD_DIR/lp/meta.js ; then
         echo "ERROR: $mod is not mentioned in the meta file"
         error=1
     fi
