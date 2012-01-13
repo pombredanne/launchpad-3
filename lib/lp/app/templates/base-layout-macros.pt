@@ -79,6 +79,7 @@
                     base: 'http://localhost:8000/?lp/',
                     comboBase: 'http://localhost:8000/?',
                     root: 'lp/',
+                    // comes from including lp/meta.js
                     modules: LP_MODULES,
                     fetchCSS: false
                 },
@@ -124,9 +125,9 @@
 
     <script id="base-layout-load-scripts" type="text/javascript">
         YUI().use('base', 'event', 'event-delegate', 'lp',
-            'lp.app.beta_features', 'lp.app.foldables', 'lp.app.inlinehelp',
-            'lp.app.links', 'lp.app.longpoll', 'lp.app.privacy',
-            'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+            'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
+            'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
+            'lp.app.privacy', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
             'oop', function(Y) {
 
@@ -136,12 +137,12 @@
                     Y.lp.app.privacy.display_privacy_notification();
                 }
                 Y.lp.app.beta_features.display_beta_notification();
-
                 sortables_init();
                 Y.lp.app.inlinehelp.init_help();
                 Y.lp.activate_collapsibles();
                 Y.lp.app.foldables.activate();
                 Y.lp.app.links.check_valid_lp_links();
+                Y.lp.app.sorttable.SortTable.init();
                 // Longpolling will only start if
                 // LP.cache.longpoll is populated.
                 // We use Y.later to work around a Safari/Chrome 'feature':
