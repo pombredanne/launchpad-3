@@ -72,29 +72,29 @@
 
   <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
-       src="/combo/revno/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+       src="/revno/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript">
         YUI.GlobalConfig = {
             combine: true,
-            comboBase: '/combo/revno/?',
-            root: 'yui/',
+            comboBase: '/combo/?',
+            root: 'revno/yui/',
             filter: 'raw',
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: '/combo/revno/?lp/',
-                    comboBase: '/combo/revno/?',
-                    root: 'lp/',
+                    base: '/combo/?revno/lp/',
+                    comboBase: '/combo/?',
+                    root: 'revno/lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
                     fetchCSS: false
                 },
                 yui2: {
                     combine: true,
-                    base: '/combo/revno/?yui2/',
-                    comboBase: 'http://localhost:8000/?',
-                    root: 'yui2/',
+                    base: '/combo/?revno/yui2/',
+                    comboBase: '/combo/?',
+                    root: 'revno/yui2/',
                     fetchCSS: false,
                     modules: {
                         'yui2-yahoo': {
