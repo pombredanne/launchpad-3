@@ -14,6 +14,8 @@ import os
 import pwd
 import shutil
 import subprocess
+import sys
+import time
 
 
 LXC_NAME = 'lptests'
@@ -22,14 +24,25 @@ LXC_OPTIONS = {
     'lxc.network.link': 'virbr0',
     'lxc.network.flags': 'up',
     }
+LXC_REPOS = (
+    'deb http://archive.ubuntu.com/ubuntu lucid main universe multiverse',
+    'deb http://archive.ubuntu.com/ubuntu lucid-updates main universe multiverse',
+    'deb http://archive.ubuntu.com/ubuntu lucid-security main universe multiverse',
+    'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
+    'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
+    )
 
 
 @contextmanager
-def ssh(location):
-    yield lambda cmd: subprocess.call(['ssh', location, cmd])
+def ssh(location, user=None):
+    sshcmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    if user is not None:
+        location = '%s@%s' % (user, location)
+    yield lambda cmd: subprocess.call([sshcmd, location, '--', "'%s'" % cmd])
 
 @contextmanager
 def su(user):
+    ssh = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     yield lambda cmd: subprocess.call(['su', '-c', "'%s'" % cmd, user])
 
 
@@ -60,6 +73,13 @@ parser.add_argument(
     'directory',
     help='The directory of the Launchpad repository to be created.')
 
+
+def error(msg):
+    print msg
+    sys.exit(1)
+
+def get_container_path(lxcname, path=''):
+    return '/var/lib/lxc/%s/rootfs/%s' % (lxc_name, path.lstrip('/'))
 
 def initialize_host(
     user, fullname, email, lpuser, private_key, public_key, directory):
@@ -105,7 +125,8 @@ def initialize_host(
             f.writelines(lines)
         # Set up source dependencies.
         dependencies_dir = '~/dependencies'
-        usercall('mkdir -p %s/eggs' % dependencies_dir)
+        usercall('mkdir -p %s/eggs %s/yui' % (
+            dependencies_dir, dependencies_dir))
         usercall(
             'cd %s && utilities/update-sourcecode %s' % (
             checkout_dir, dependencies_dir))
@@ -113,28 +134,55 @@ def initialize_host(
             'cd %s && bzr co --lightweight '
             'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk '
             'download-cache' % dependencies_dir)
-        usercall('cd %s && make' % checkout_dir)
-        # TODO: YUI
 
-def create_lxc(lxcname):
+def create_lxc(user, lxcname):
     config_template = '/etc/lxc/local.conf'
     # Container configuration template.
     content = '\n'.join('%s=%s' % i for i in LXC_OPTIONS.items())
-    with open(config_template, 'a') as f:
+    with open(config_template, 'w') as f:
         f.write(content)
     # Creating container.
     subprocess.call(
         'lxc-create -t ubuntu -n %s -f %s -- '
         '-r lucid -a i386 -b %s' % (lxcname, config_template, user))
+    subprocess.call('lxc-start -n %s -d' % lxcname)
+    # SSH the container
+    timeout = 30
+    with ssh(user, lxcname) as sshcall:
+        while timeout:
+            if not sshcall('true'):
+                break
+            timeout -= 1
+            time.sleep(1)
+        else:
+            error('Impossible to SSH into LXC.')
+    # Set up root ssh key.
+    src = '/home/%s/.ssh/authorized_keys' % user
+    dst = get_container_path(lxcname, '/root/.ssh/')
+    subprocess.call('mkdir -p %s' % dst)
+    shutil.copy(src, dst)
 
-def initialize_lxc():
-    pass
+def initialize_lxc(user, lxcname):
+    with ssh(lxcname) as sshcall:
+        # APT repository update.
+        sources = get_container_path(lxcname, '/etc/apt/sources.list')
+        with open(sources, 'w') as f:
+            f.write('\n'.join(LXC_REPOS))
+        sshcall(
+            'apt-get update && '
+            'apt-get -y install bzr launchpad-developer-dependencies')
+        # User configuration.
+        sshcall('adduser %s sudo' % user)
+        #
+        gid = "`python -c 'import pwd; print pwd.getpwnam(\"%s\").pw_gid'`" % (
+            user)
+        sshcall('addgroup --gid %s %s' % (gid, user))
 
 def main(user, fullname, email, lpuser, private_key, public_key, directory):
     initialize_host(
         user, fullname, email, lpuser, private_key, public_key, directory)
-    create_lxc(LXC_NAME)
-    initialize_lxc()
+    create_lxc(user, LXC_NAME)
+    initialize_lxc(user, LXC_NAME)
 
 
 if __name__ == '__main__':
