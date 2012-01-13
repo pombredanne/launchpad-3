@@ -22,9 +22,13 @@ def dirwalk(dir):
             yield fullpath
 
 
+def is_min(filename):
+    """Check if this file is alrady a minified file"""
+    return re.search("^(min).js$", filename)
+
 def minify(filename):
     """Given a filename, handle minifying it as -min.js"""
-    if not re.search("^(min).js$", filename):
+    if not is_min(filename):
         new_filename = re.sub(".js$", "-min.js", filename)
 
         with open(filename) as shrink_me:
@@ -34,5 +38,9 @@ def minify(filename):
 
 
 if __name__ == '__main__':
-    root_dir = sys.argv[1]
-    [minify(f) for f in dirwalk(root_dir)]
+    root = sys.argv[1]
+
+    if os.path.isfile(root):
+        minify(root)
+    else:
+        [minify(f) for f in dirwalk(root)]

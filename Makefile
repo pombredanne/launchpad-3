@@ -172,7 +172,7 @@ $(JS_LP): jsbuild_widget_css
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin_all > $@
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
