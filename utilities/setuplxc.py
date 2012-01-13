@@ -119,11 +119,13 @@ def initialize_host(
         checkout_dir = os.path.join(directory, 'lp')
         usercall('bzr branch lp:launchpad %s' % checkout_dir)
         resolv_file = '/etc/resolv.conf'
-        with open(resolv_file) as f:
+        with open(resolv_file, 'r+') as f:
             lines = f.readlines()
-        lines.insert(0, 'nameserver 192.168.122.1\n')
-        with open(resolv_file, 'w') as f:
-            f.writelines(lines)
+            line = 'nameserver 192.168.122.1\n'
+            if lines[0] != line:
+                f.seek(0)
+                lines.insert(0, line)
+                f.writelines(lines)
         # Set up source dependencies.
         usercall('mkdir -p %s/eggs %s/yui' % (
             DEPENDENCIES_DIR, DEPENDENCIES_DIR))
