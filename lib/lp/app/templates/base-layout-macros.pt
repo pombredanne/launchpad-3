@@ -66,6 +66,12 @@
   <tal:js-legacy condition="not: features/js.combo_loader.enabled">
     <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+    <script type="text/javascript">
+       YUI.GlobalConfig = {
+           fetchCSS: false,
+           timeout: 50
+        }
+    </script>
   </tal:js-legacy>
 
   <script type="text/javascript"
@@ -79,7 +85,6 @@
             combine: true,
             comboBase: '/combo/?',
             root: 'yui/',
-            filter: 'raw',
             fetchCSS: false,
             groups: {
                 lp: {
