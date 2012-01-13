@@ -39,6 +39,7 @@
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
+      yui_version view/yui_version;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -72,29 +73,29 @@
 
   <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
-       src="/revno/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
-   <script type="text/javascript">
+   src="/combo?revno/yui/yui/yui-min.js&revno/lp/meta.js&revno/yui/loader/loader-min.js"></script>
+   <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
             comboBase: '/combo/?',
-            root: 'revno/yui/',
+            root: '${revno}/${yui_version}/',
             filter: 'raw',
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: '/combo/?revno/lp/',
+                    base: '/combo/?',
                     comboBase: '/combo/?',
-                    root: 'revno/lp/',
+                    root: '${revno}/lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
                     fetchCSS: false
                 },
                 yui2: {
                     combine: true,
-                    base: '/combo/?revno/yui2/',
+                    base: '/combo/?${revno}/yui2/',
                     comboBase: '/combo/?',
-                    root: 'revno/yui2/',
+                    root: '${revno}/yui2/',
                     fetchCSS: false,
                     modules: {
                         'yui2-yahoo': {
@@ -115,7 +116,7 @@
                     }
                 }
             }
-        };
+        }">
    </script>
   </tal:js-loader>
 </metal:load-javascript>
