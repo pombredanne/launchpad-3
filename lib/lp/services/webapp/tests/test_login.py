@@ -292,25 +292,6 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(
             view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
-    def test_personless_account(self):
-        # When there is no Person record associated with the account, we
-        # create one.
-        account = self.factory.makeAccount('Test account')
-        self.assertIs(None, IPerson(account, None))
-        with SRegResponse_fromSuccessResponse_stubbed():
-            view, html = self._createViewWithResponse(account)
-        self.assertIsNot(None, IPerson(account, None))
-        self.assertTrue(view.login_called)
-        response = view.request.response
-        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEquals(view.request.form['starting_url'],
-                          response.getHeader('Location'))
-
-        # We also update the last_write flag in the session, to make sure
-        # further requests use the master DB and thus see the newly created
-        # stuff.
-        self.assertLastWriteIsSet(view.request)
-
     def test_unseen_identity(self):
         # When we get a positive assertion about an identity URL we've never
         # seen, we automatically register an account with that identity
@@ -329,11 +310,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = account_set.getByOpenIDIdentifier(identifier)
         self.assertIsNot(None, account)
         self.assertEquals(AccountStatus.ACTIVE, account.status)
-        self.assertEquals('non-existent@example.com',
-                          removeSecurityProxy(account.preferredemail).email)
         person = IPerson(account, None)
         self.assertIsNot(None, person)
         self.assertEquals('Foo User', person.displayname)
+        self.assertEquals('non-existent@example.com',
+                          removeSecurityProxy(person.preferredemail).email)
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
