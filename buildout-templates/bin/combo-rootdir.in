@@ -3,6 +3,7 @@
 set -e
 
 BUILD_DIR=$1
+rm -rf $BUILD_DIR/*
 
 # Populate YUI.
 mkdir $BUILD_DIR/yui
